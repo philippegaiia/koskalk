@@ -6,6 +6,7 @@ use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotStatus;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
@@ -35,6 +36,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,12 +44,16 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class InventoryIndex extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use WithPagination;
+
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
     private const int OPTION_LIMIT = 30;
 
@@ -59,7 +65,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     private ProductionBenchAccess $productionBenchAccess;
 
+    /** @var array<string, mixed> */
+    public array $filters = [];
+
     public string $mode = 'overview';
+
+    public int $perPage = 25;
 
     public ?string $statusMessage = null;
 
@@ -75,6 +86,49 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->currencyCatalog = $currencyCatalog;
         $this->massConverter = $massConverter;
         $this->productionBenchAccess = $productionBenchAccess;
+    }
+
+    public function mount(string $mode = 'overview'): void
+    {
+        $this->mode = in_array($mode, ['overview', 'stock', 'requirements'], true)
+            ? $mode
+            : 'overview';
+        $this->filtersForm->fill([
+            'search' => '',
+            'status' => 'all',
+        ]);
+    }
+
+    public function filtersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['md' => 2])
+                    ->schema([
+                        TextInput::make('search')
+                            ->label(__('production_bench.common.search'))
+                            ->type('search')
+                            ->live(debounce: 300)
+                            ->afterStateUpdated(fn () => $this->resetPage('stock-lots')),
+                        Select::make('status')
+                            ->label(__('production_bench.common.status'))
+                            ->options([
+                                'all' => __('production_bench.common.all'),
+                                StockLotStatus::Released->value => __('production_bench.inventory.released'),
+                                StockLotStatus::Quarantined->value => __('production_bench.inventory.quarantined'),
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetPage('stock-lots')),
+                    ]),
+            ])
+            ->statePath('filters');
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->normalizedPerPage();
+        $this->resetPage('stock-lots');
     }
 
     public function addStockAction(): Action
@@ -208,9 +262,16 @@ class InventoryIndex extends Component implements HasActions, HasForms
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
-        $stockLots = $this->mode === 'requirements'
-            ? collect()
-            : StockLot::query()
+        $lots = collect();
+
+        if ($this->mode === 'stock') {
+            $search = trim((string) ($this->filters['search'] ?? ''));
+            $searchTerm = '%'.Str::lower($search).'%';
+            $translationLocales = Ingredient::translationLocaleCandidates();
+            $status = in_array($this->filters['status'] ?? null, ['all', StockLotStatus::Released->value, StockLotStatus::Quarantined->value], true)
+                ? (string) $this->filters['status']
+                : 'all';
+            $stockLots = StockLot::query()
                 ->where('workspace_id', $workspace->id)
                 ->with([
                     'ingredient.translations',
@@ -221,20 +282,50 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 ->withSum([
                     'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
                 ], 'quantity')
+                ->when($status !== 'all', fn (Builder $query): Builder => $query->where('status', $status))
+                ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
+                    $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
+                        $searchQuery
+                            ->whereRaw('LOWER(internal_lot_code) LIKE ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(supplier_batch_number) LIKE ?', [$searchTerm])
+                            ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
+                                $ingredientQuery->where(function (Builder $ingredientNameQuery) use ($searchTerm, $translationLocales): void {
+                                    $ingredientNameQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+
+                                    if ($translationLocales !== []) {
+                                        $ingredientNameQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
+                                            $translationQuery
+                                                ->whereIn('locale', $translationLocales)
+                                                ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+                                        });
+                                    }
+                                });
+                            })
+                            ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
+                    });
+                })
                 ->latest('stocked_at')
                 ->latest('id')
-                ->get();
-        $forecastSubjects = collect();
+                ->paginate($this->normalizedPerPage(), ['*'], 'stock-lots');
 
-        foreach ($stockLots as $lot) {
-            if ($lot->ingredient_id !== null && $lot->ingredient !== null) {
-                $forecastSubjects->put('ingredient:'.$lot->ingredient_id, $lot->ingredient);
-            }
+            $lots = $stockLots->through(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
+                $stock = $positions->forLotWithLoadedMovementSum($lot);
 
-            if ($lot->packaging_item_id !== null && $lot->packagingItem !== null) {
-                $forecastSubjects->put('packaging:'.$lot->packaging_item_id, $lot->packagingItem);
-            }
+                return [
+                    'lot' => $lot,
+                    'positions' => collect($stock)
+                        ->only(['physical', 'quarantined', 'reserved', 'available'])
+                        ->map(
+                            fn (string $quantity): string => $lot->ingredient_id !== null
+                                ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
+                                : number_format((float) $quantity, 0),
+                        )
+                        ->all(),
+                ];
+            });
         }
+
+        $forecastSubjects = collect();
 
         if ($this->mode !== 'stock') {
             ProductionRequirement::query()
@@ -256,23 +347,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 });
         }
 
-        $lots = $stockLots
-            ->map(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
-                $stock = $positions->forLotWithLoadedMovementSum($lot);
-
-                return [
-                    'lot' => $lot,
-                    'positions' => collect($stock)->map(
-                        fn (string $quantity): string => $lot->ingredient_id !== null
-                            ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
-                            : number_format((float) $quantity, 0),
-                    )->all(),
-                ];
-            });
         $positionsByKey = $positions->forWorkspaceSubjects(
             workspace: $workspace,
             subjectKeys: $forecastSubjects->keys()->values()->all(),
-            loadedLots: $this->mode === 'requirements' ? null : $stockLots,
         );
         $forecast = $forecastSubjects
             ->map(function (Ingredient|PackagingItem $subject) use ($positionsByKey, $massConverter, $displayUnit): array {
@@ -297,6 +374,8 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 return [
                     'subject' => $subject,
                     'display_unit' => $subject instanceof Ingredient ? $displayUnit : __('production_bench.inventory.units'),
+                    'is_shortage' => bccomp($stock['forecast'], '0', 9) < 0,
+                    'has_incoming' => bccomp($stock['incoming'], '0', 9) > 0,
                     'required' => $format($required),
                     'positions' => [
                         'reserved' => $format($stock['reserved']),
@@ -306,7 +385,24 @@ class InventoryIndex extends Component implements HasActions, HasForms
                     ],
                 ];
             })
+            ->sort(function (array $left, array $right): int {
+                if ($left['is_shortage'] !== $right['is_shortage']) {
+                    return $left['is_shortage'] ? -1 : 1;
+                }
+
+                return strnatcasecmp($this->subjectName($left['subject']), $this->subjectName($right['subject']));
+            })
             ->values();
+        $overviewShortages = $forecast
+            ->where('is_shortage', true)
+            ->values();
+        $stockLotCounts = $this->mode === 'overview'
+            ? StockLot::query()
+                ->where('workspace_id', $workspace->id)
+                ->selectRaw('status, count(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status')
+            : collect();
 
         return view('livewire.production-bench.inventory-index', [
             'workspace' => $workspace,
@@ -314,6 +410,13 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'isReadOnly' => $access->isReadOnly($workspace),
             'lots' => $lots,
             'forecast' => $forecast,
+            'overviewShortages' => $overviewShortages,
+            'inventorySummary' => [
+                'lots' => $stockLotCounts->sum(),
+                'quarantined' => (int) ($stockLotCounts[StockLotStatus::Quarantined->value] ?? 0),
+                'shortages' => $overviewShortages->count(),
+                'incoming' => $forecast->where('has_incoming', true)->count(),
+            ],
             'displayUnit' => $displayUnit,
         ]);
     }
@@ -323,6 +426,18 @@ class InventoryIndex extends Component implements HasActions, HasForms
         return StockLot::query()
             ->where('workspace_id', $this->workspace()->id)
             ->findOrFail($lotId);
+    }
+
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
+    }
+
+    private function subjectName(Ingredient|PackagingItem $subject): string
+    {
+        return $subject instanceof Ingredient
+            ? $subject->localizedDisplayName()
+            : $subject->name;
     }
 
     /** @return array<int, string> */

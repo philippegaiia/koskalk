@@ -1,17 +1,24 @@
 <?php
 
+use App\Enums\ProductionRunStatus;
 use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductionRequirement;
+use App\Models\ProductionRun;
+use App\Models\StockLot;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -106,8 +113,8 @@ it('keeps manual stock entry out of the inventory overview', function (): void {
         ->assertOk()
         ->assertDontSee('Opening stock')
         ->assertDontSee('Add stock manually')
-        ->assertSee('Stock positions')
-        ->assertSee('Physical')
+        ->assertDontSee('Stock positions')
+        ->assertSee('Material requirements')
         ->assertSee('Available')
         ->assertDontSee('Add a lot already on your shelves')
         ->assertDontSee('No lots yet. Add the stock already on your shelves above.');
@@ -149,6 +156,115 @@ it('offers clear inventory sections for stock and material requirements', functi
         ->assertSee('Required')
         ->assertSee('Reserved')
         ->assertSee('Stock');
+});
+
+it('keeps the inventory overview focused on projected shortages', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $coveredIngredient = Ingredient::factory()->create(['display_name' => 'Covered oil']);
+    $shortIngredient = Ingredient::factory()->create(['display_name' => 'Short oil']);
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::Scheduled,
+    ]);
+
+    ProductionRequirement::factory()->for($production)->for($coveredIngredient)->create([
+        'required_mass_grams' => '100.000000000',
+        'sort_order' => 1,
+    ]);
+    ProductionRequirement::factory()->for($production)->for($shortIngredient)->create([
+        'required_mass_grams' => '500.000000000',
+        'sort_order' => 2,
+    ]);
+
+    $coveredLot = StockLot::factory()->for($workspace)->for($coveredIngredient)->released()->create();
+    StockMovement::factory()->for($coveredLot, 'stockLot')->create([
+        'quantity_delta' => '1000.000000000',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'overview'])
+        ->assertViewHas('overviewShortages', function ($shortages) use ($shortIngredient): bool {
+            return $shortages instanceof Collection
+                && $shortages->count() === 1
+                && $shortages->first()['subject']->is($shortIngredient);
+        })
+        ->assertSee('Short oil')
+        ->assertDontSee('Covered oil');
+});
+
+it('paginates the stock lot register', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    StockLot::factory()->count(26)->for($workspace)->for($ingredient)->released()->create();
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertViewHas('lots', fn ($lots): bool => $lots instanceof LengthAwarePaginator
+            && $lots->count() === 25
+            && $lots->total() === 26);
+});
+
+it('filters the stock lot register by material and status', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $coconut = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+    StockLot::factory()->for($workspace)->for($olive)->create();
+    StockLot::factory()->for($workspace)->for($olive)->released()->create();
+    StockLot::factory()->for($workspace)->for($coconut)->create();
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('filters.search', 'Olive')
+        ->set('filters.status', 'quarantined')
+        ->assertSee('Olive oil')
+        ->assertDontSee('Coconut oil')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1);
+});
+
+it('keeps subject forecasts out of the lot register', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSee(__('production_bench.inventory.physical'))
+        ->assertSee(__('production_bench.inventory.available'))
+        ->assertDontSee(__('production_bench.inventory.incoming'))
+        ->assertDontSee(__('production_bench.inventory.forecast'));
+});
+
+it('prioritizes material shortages in the requirements view', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $coveredIngredient = Ingredient::factory()->create(['display_name' => 'Covered oil']);
+    $shortIngredient = Ingredient::factory()->create(['display_name' => 'Short oil']);
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::Scheduled,
+    ]);
+    ProductionRequirement::factory()->for($production)->for($coveredIngredient)->create([
+        'required_mass_grams' => '100.000000000',
+        'sort_order' => 1,
+    ]);
+    ProductionRequirement::factory()->for($production)->for($shortIngredient)->create([
+        'required_mass_grams' => '500.000000000',
+        'sort_order' => 2,
+    ]);
+    $coveredLot = StockLot::factory()->for($workspace)->for($coveredIngredient)->released()->create();
+    StockMovement::factory()->for($coveredLot, 'stockLot')->create([
+        'quantity_delta' => '1000.000000000',
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'requirements'])
+        ->assertViewHas('forecast', fn ($forecast): bool => $forecast->first()['subject']->is($shortIngredient));
 });
 
 it('uses unit-of-measure wording for legacy packaging listing validation', function (): void {

@@ -11,106 +11,168 @@
 
         <header>
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_title') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_title') : __('production_bench.navigation.inventory')) }}</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.help')) }}</p>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.help')) }}</p>
         </header>
 
-        @if ($mode !== 'stock')
-        <section aria-labelledby="production-forecast-heading" class="sk-card overflow-hidden">
-            <div class="border-b border-[var(--color-line)] p-6">
-                <h2 id="production-forecast-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'requirements' ? __('production_bench.inventory.requirements_title') : __('production_bench.inventory.production_forecast') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.production_forecast_help') }}</p>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[720px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-                        <tr>
-                            <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
-                            @if ($mode === 'requirements')
+        @if ($mode === 'overview')
+            <section data-inventory-overview aria-labelledby="inventory-overview-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+                <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 id="inventory-overview-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.requirements_title') }}</h2>
+                    <a href="{{ route('production-bench.inventory.requirements') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.requirements') }}</a>
+                </div>
+
+                <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] border-b border-[var(--color-line)] sm:grid-cols-4 sm:divide-y-0">
+                    <div class="px-5 py-3">
+                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.stock') }}</dt>
+                        <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['lots'] }}</dd>
+                    </div>
+                    <div class="px-5 py-3">
+                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.quarantined') }}</dt>
+                        <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['quarantined'] }}</dd>
+                    </div>
+                    <div class="px-5 py-3">
+                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.production.shortage') }}</dt>
+                        <dd class="numeric mt-1 text-lg font-semibold {{ $inventorySummary['shortages'] > 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $inventorySummary['shortages'] }}</dd>
+                    </div>
+                    <div class="px-5 py-3">
+                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.incoming') }}</dt>
+                        <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['incoming'] }}</dd>
+                    </div>
+                </dl>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[720px] text-left text-sm">
+                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                            <tr>
+                                <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.required') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--color-line)]">
+                            @forelse ($overviewShortages as $row)
+                                @php($subject = $row['subject'])
+                                <tr>
+                                    <td class="px-5 py-3">
+                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
+                                        <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
+                                    </td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['required'] }}</td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['incoming'] }}</td>
+                                    <td class="numeric px-5 py-3 text-right font-semibold text-[var(--color-danger-strong)]">{{ $row['positions']['forecast'] }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @elseif ($mode === 'requirements')
+            <section aria-labelledby="production-requirements-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+                <div class="flex items-center justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4">
+                    <h2 id="production-requirements-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.requirements_title') }}</h2>
+                    <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[820px] text-left text-sm">
+                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                            <tr>
+                                <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.required') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
-                            @endif
-                            <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
-                            <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
-                            <th class="px-5 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--color-line)]">
-                        @forelse ($forecast as $row)
-                            @php($subject = $row['subject'])
-                            <tr>
-                                <td class="px-5 py-4">
-                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
-                                    <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
-                                </td>
-                                @if ($mode === 'requirements')
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['required'] }}</td>
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['reserved'] }}</td>
-                                @endif
-                                <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['available'] }}</td>
-                                <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['incoming'] }}</td>
-                                <td class="px-5 py-4 text-right font-mono font-semibold tabular-nums">{{ $row['positions']['forecast'] }}</td>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th>
                             </tr>
-                        @empty
-                            <tr><td colspan="{{ $mode === 'requirements' ? 6 : 4 }}" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        @endif
-
-        @if ($mode !== 'requirements')
-        <section aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
-            <div class="flex items-end justify-between gap-4 border-b border-[var(--color-line)] p-6">
-                <h2 id="inventory-positions-heading" class="text-xl font-semibold">{{ __('production_bench.inventory.stock_positions') }}</h2>
-                <div class="flex flex-wrap items-center justify-end gap-3">
-                    <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
-                    @if ($mode === 'stock' && ! $isReadOnly)
+                        </thead>
+                        <tbody class="divide-y divide-[var(--color-line)]">
+                            @forelse ($forecast as $row)
+                                @php($subject = $row['subject'])
+                                <tr class="{{ $row['is_shortage'] ? 'bg-[var(--color-danger-soft)]/40' : '' }}">
+                                    <td class="px-5 py-3">
+                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
+                                        <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
+                                    </td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['required'] }}</td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['reserved'] }}</td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['incoming'] }}</td>
+                                    <td class="numeric px-5 py-3 text-right font-semibold {{ $row['is_shortage'] ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $row['positions']['forecast'] }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @else
+            <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+                <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-baseline gap-3">
+                        <h2 id="inventory-positions-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.stock_positions') }}</h2>
+                        <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
+                    </div>
+                    @if (! $isReadOnly)
                         {{ $this->addStockAction }}
                     @endif
                 </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[980px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-                        <tr>
-                            <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th><th class="px-4 py-3">{{ __('production_bench.common.status') }}</th><th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th><th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th><th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th><th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th><th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th><th class="px-4 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th><th class="px-5 py-3"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--color-line)]">
-                        @forelse ($lots as $row)
-                            @php($lot = $row['lot'])
-                            <tr id="lot-{{ $lot->public_id }}">
-                                <td class="px-5 py-4">
-                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
-                                    <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p>
-                                    @if($lot->goodsReceiptLine?->goodsReceipt)
-                                        @php($originReceipt = $lot->goodsReceiptLine->goodsReceipt)
-                                        <p class="mt-2 text-xs text-[var(--color-ink-soft)]">
-                                            <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>
-                                            · {{ $originReceipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}
-                                            · {{ $originReceipt->supplier->name }}
-                                            · <span class="numeric">{{ $originReceipt->received_at->format('Y-m-d') }}</span>
-                                        </p>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ $lot->status->value === 'released' ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span></td>
-                                @foreach (['physical', 'quarantined', 'reserved', 'available', 'incoming', 'forecast'] as $position)
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions'][$position] }}</td>
-                                @endforeach
-                                <td class="px-5 py-4 text-right">
-                                    @if (! $isReadOnly)
-                                        <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-11 items-center px-2 text-xs font-medium text-[var(--color-accent)]">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
-                                    @endif
-                                </td>
+                <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                    {{ $this->filtersForm }}
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[880px] text-left text-sm">
+                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                            <tr>
+                                <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                                <th class="px-4 py-3">{{ __('production_bench.common.status') }}</th>
+                                <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
+                                <th class="px-5 py-3"></th>
                             </tr>
-                        @empty
-                            <tr><td colspan="9" class="px-6 py-12 text-center text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_lots') }}</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--color-line)]">
+                            @forelse ($lots as $row)
+                                @php($lot = $row['lot'])
+                                <tr id="lot-{{ $lot->public_id }}" wire:key="stock-lot-{{ $lot->id }}">
+                                    <td class="px-5 py-3">
+                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                        <p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p>
+                                        @if($lot->goodsReceiptLine?->goodsReceipt)
+                                            @php($originReceipt = $lot->goodsReceiptLine->goodsReceipt)
+                                            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
+                                                <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>
+                                                · {{ $originReceipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}
+                                                · {{ $originReceipt->supplier->name }}
+                                            </p>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ $lot->status->value === 'released' ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span></td>
+                                    <td class="numeric px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
+                                    @foreach (['physical', 'quarantined', 'reserved', 'available'] as $position)
+                                        <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
+                                    @endforeach
+                                    <td class="px-5 py-3 text-right">
+                                        @if (! $isReadOnly)
+                                            <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="8" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_lots') }}</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <x-table-pagination :paginator="$lots" :per-page-label="__('production_bench.inventory.stock_positions')" />
+            </section>
         @endif
 
         <x-filament-actions::modals />

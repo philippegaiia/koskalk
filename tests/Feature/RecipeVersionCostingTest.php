@@ -12,6 +12,7 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Services\PackagingItemAuthoringService;
+use App\Services\RecipeVersionCostingSynchronizer;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,39 @@ it('derives costing packaging rows from the packaging plan', function () {
         ->and($costing['packaging_items'][0]['name'])->toBe('Label')
         ->and($costing['packaging_items'][0]['components_per_unit'])->toBe(2.0)
         ->and($costing['packaging_items'][0]['unit_cost'])->toBe(0.08);
+});
+
+it('refreshes packaging costing rows against the plan before publishing copies them forward', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $firstVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient));
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($firstVersion, $user);
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($firstVersion->recipe_id);
+    $publishedVersion = $service->publish($user, $soapFamily, soapDraftPayload($ingredient) + [
+        'packaging_items' => [
+            [
+                'packaging_item_id' => null,
+                'name' => 'Curing Box',
+                'components_per_unit' => 1,
+                'notes' => null,
+            ],
+        ],
+    ], $recipe);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $publishedVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($costing->packagingItems)->toHaveCount(1)
+        ->and($costing->packagingItems->first()->name)->toBe('Curing Box');
 });
 
 it('loads an existing costing without rebuilding its rows', function () {
@@ -319,6 +353,29 @@ it('uses the workspace currency when costing updates the remembered amount', fun
 
     expect(bcmul($currentPrice->price_per_canonical_unit, '1000', 4))->toBe('8.9123')
         ->and($currentPrice->currency)->toBe('EUR')
+        ->and(RecipeVersionCosting::query()
+            ->where('recipe_version_id', $draftVersion->id)
+            ->where('user_id', $user->id)
+            ->value('currency'))->toBe('EUR');
+});
+
+it('reports the live workspace currency in the costing payload after the workspace changes it', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    expect($service->costingPayload($recipe, $user)['settings']['currency'])->toBe('EUR');
+
+    $user->company()->update(['default_currency' => 'USD']);
+
+    expect($service->costingPayload($recipe, $user)['settings']['currency'])->toBe('USD')
         ->and(RecipeVersionCosting::query()
             ->where('recipe_version_id', $draftVersion->id)
             ->where('user_id', $user->id)

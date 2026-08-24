@@ -1,4 +1,4 @@
-import { rowWeightForOilWeight } from '../calculation';
+import { rowWeightForOilWeight, lyeBreakdown as buildLyeBreakdown } from '../calculation';
 import {
     persistCosting,
     persistPackagingCatalogItem,
@@ -72,6 +72,8 @@ export function createCostingSection(payload) {
             this.costingUnitsProduced = costingPayload?.settings?.unitsProduced ?? this.costingUnitsProduced ?? null;
             this.costingCurrency = costingPayload?.settings?.currency ?? this.costingCurrency ?? this.defaultCurrency ?? 'EUR';
             this.persistedCostingItemPrices = costingPayload?.item_prices ?? [];
+            this.costingAlkaliIngredients = costingPayload?.alkali_ingredients ?? {};
+            this.costingWaterIngredient = costingPayload?.water_ingredient ?? null;
             this.packagingCostRows = (costingPayload?.packaging_items ?? []).map((row) => ({
                 id: row.id ?? this.makeLocalPackagingRowId(),
                 packaging_item_id: row.packaging_item_id ?? null,
@@ -166,25 +168,159 @@ export function createCostingSection(payload) {
         },
 
         get costingFormulaRows() {
-            return Object.entries(this.phaseItems).flatMap(([phaseKey, rows]) => rows.map((row, index) => {
-                const ingredient = this.ingredientForRow(row);
+            const rows = [];
 
+            Object.entries(this.phaseItems).forEach(([phaseKey, phaseRows]) => {
+                if (phaseKey === 'lye_water') {
+                    rows.push(...this.costingImplicitWaterRows());
+                }
+
+                rows.push(...phaseRows.map((row, index) => this.costingRowForPhaseItem(phaseKey, row, index)));
+
+                if (phaseKey === 'saponified_oils') {
+                    rows.push(...this.costingAlkaliRows());
+                }
+            });
+
+            return rows;
+        },
+
+        costingRowForPhaseItem(phaseKey, row, index) {
+            const ingredient = this.ingredientForRow(row);
+            const weight = this.costingWeightForRow(phaseKey, row);
+
+            return {
+                rowId: row.id,
+                ingredient_id: row.ingredient_id,
+                phaseKey,
+                phaseLabel: this.costingPhaseLabel(phaseKey),
+                position: index + 1,
+                name: row.name,
+                percentage: this.oilBasisPercentage(weight),
+                percentageLabel: '%',
+                weight,
+                weightUnit: this.costingBaseOilUnit,
+                defaultPricePerKg: ingredient?.default_price_per_kg ?? null,
+            };
+        },
+
+        /**
+         * Soap prices the calculated alkali (NaOH/KOH) like any other ingredient.
+         * The backend persists one costing row per active lye type under the
+         * synthetic `lye_alkali` phase; NaOH first keeps dual-lye positions stable.
+         */
+        costingAlkaliRows() {
+            const alkaliIngredients = this.costingAlkaliIngredients ?? {};
+
+            if (this.isCosmeticFormula || Object.keys(alkaliIngredients).length === 0) {
+                return [];
+            }
+
+            const lyeTypesBySelection = { naoh: ['naoh'], koh: ['koh'], dual: ['naoh', 'koh'] };
+            const lyeTypes = lyeTypesBySelection[this.lyeType] ?? ['naoh'];
+            const selectedWeights = this.selectedAlkaliWeights();
+            const scaleRatio = this.costingScaleRatio();
+
+            return lyeTypes
+                .map((lyeType, index) => {
+                    const ingredient = alkaliIngredients[lyeType];
+
+                    if (!ingredient || !(selectedWeights[lyeType] > 0)) {
+                        return null;
+                    }
+
+                    const weight = selectedWeights[lyeType] * scaleRatio;
+
+                    return {
+                        rowId: `${ingredient.ingredient_id}:lye_alkali:${index + 1}`,
+                        ingredient_id: ingredient.ingredient_id,
+                        phaseKey: 'lye_alkali',
+                        phaseLabel: this.t('costing.phases.alkali'),
+                        position: index + 1,
+                        name: ingredient.name,
+                        percentage: this.oilBasisPercentage(weight),
+                        percentageLabel: '%',
+                        weight,
+                        weightUnit: this.costingBaseOilUnit,
+                        defaultPricePerKg: ingredient.default_price_per_kg ?? null,
+                    };
+                })
+                .filter(Boolean);
+        },
+
+        /**
+         * The dilution liquid share not covered by added liquids is plain water.
+         * It gets its own priced row so bought water can be costed and own-tap
+         * water stays visible at a zero price.
+         */
+        costingImplicitWaterRows() {
+            if (this.isCosmeticFormula) {
+                return [];
+            }
+
+            const waterIngredient = this.costingWaterIngredient;
+            const scaleRatio = this.costingScaleRatio();
+            const weight = convertCostingMass(this.lyeLiquidWaterWeight(), this.oilUnit, this.costingBaseOilUnit)
+                * scaleRatio;
+
+            if (!waterIngredient || !(weight > 0)) {
+                return [];
+            }
+
+            return [{
+                rowId: `${waterIngredient.ingredient_id}:implicit_water:1`,
+                ingredient_id: waterIngredient.ingredient_id,
+                phaseKey: 'implicit_water',
+                phaseLabel: this.t('costing.phases.lye_liquid'),
+                position: 1,
+                name: waterIngredient.name,
+                percentage: this.oilBasisPercentage(weight),
+                percentageLabel: '%',
+                weight,
+                weightUnit: this.costingBaseOilUnit,
+                defaultPricePerKg: waterIngredient.default_price_per_kg ?? null,
+            }];
+        },
+
+        /** Percentage of the oil basis so every soap row shares one denominator. */
+        oilBasisPercentage(weight) {
+            const base = nonNegativeNumber(this.costingBaseOilWeight);
+
+            return base <= 0 ? 0 : nonNegativeNumber(weight) * (100 / base);
+        },
+
+        /** Weighed alkali amounts from the server calculation, with the local fallback. */
+        selectedAlkaliWeights() {
+            const backendLye = this.backendCalculation?.lye ?? null;
+
+            if (backendLye) {
                 return {
-                    rowId: row.id,
-                    ingredient_id: row.ingredient_id,
-                    phaseKey,
-                    phaseLabel: this.costingPhaseLabel(phaseKey),
-                    position: index + 1,
-                    name: row.name,
-                    percentage: nonNegativeNumber(row.percentage),
-                    percentageLabel: phaseKey === 'lye_water'
-                        ? this.t('costing.ingredients.lye_liquid_percentage')
-                        : '%',
-                    weight: this.costingWeightForRow(phaseKey, row),
-                    weightUnit: this.costingBaseOilUnit,
-                    defaultPricePerKg: ingredient?.default_price_per_kg ?? null,
+                    naoh: nonNegativeNumber(backendLye.selected?.naoh_weight),
+                    koh: nonNegativeNumber(backendLye.selected?.koh_to_weigh),
                 };
-            }));
+            }
+
+            const lye = buildLyeBreakdown(this);
+
+            return {
+                naoh: nonNegativeNumber(lye.selected_naoh_weight),
+                koh: nonNegativeNumber(lye.koh_to_weigh),
+            };
+        },
+
+        /** Ratio between the costed oil quantity and the formula's own oil quantity. */
+        costingScaleRatio() {
+            const formulaOilWeight = convertCostingMass(
+                this.oilWeight,
+                this.oilUnit,
+                this.costingBaseOilUnit,
+            );
+
+            if (formulaOilWeight <= 0) {
+                return 0;
+            }
+
+            return this.costingBaseOilWeight / formulaOilWeight;
         },
 
         costingWeightForRow(phaseKey, row) {
@@ -273,6 +409,14 @@ export function createCostingSection(payload) {
             this.scheduleCostingSave();
         },
 
+        updatePackagingUnitCost(row, value) {
+            row.unit_cost = `${value}`.trim() === ''
+                ? 0
+                : roundTo(parseDecimalInput(value), 4);
+
+            this.scheduleCostingSave();
+        },
+
         weightInKg(weight, unit = this.costingBaseOilUnit) {
             return convertCostingMass(nonNegativeNumber(weight), unit, 'kg');
         },
@@ -302,9 +446,29 @@ export function createCostingSection(payload) {
                 return null;
             }
 
-            return this.packagingCostRows.reduce((total, row) => {
+            return this.displayedPackagingCostRows.reduce((total, row) => {
                 return total + this.packagingBatchCostForRow(row);
             }, 0);
+        },
+
+        /**
+         * Before the first save no costing payload exists, so the live packaging
+         * plan stands in for the saved costing rows; prices start at zero and
+         * persistence stays blocked by the existing "save product first" guard.
+         */
+        get displayedPackagingCostRows() {
+            if (this.packagingCostRows.length > 0 || this.isLoadingCosting || this.hasLoadedCosting) {
+                return this.packagingCostRows;
+            }
+
+            return (this.packagingPlanRows ?? []).map((row) => ({
+                id: row.id,
+                packaging_item_id: row.packaging_item_id ?? null,
+                name: row.name ?? '',
+                unit_cost: 0,
+                quantity: nonNegativeNumber(row.components_per_unit),
+                isUnsavedPlanRow: true,
+            }));
         },
 
         get packagingCostPerFinishedUnitTotal() {
@@ -335,6 +499,19 @@ export function createCostingSection(payload) {
 
         packagingCostPerFinishedUnitForRow(row) {
             return nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity);
+        },
+
+        /** Packaging counts default to whole units; decimals appear only when present. */
+        formatPackagingQuantity(value) {
+            const quantity = number(value);
+
+            if (!Number.isFinite(quantity)) {
+                return '';
+            }
+
+            return Number.isInteger(quantity)
+                ? this.format(quantity, 0)
+                : this.format(quantity, 3);
         },
 
         packagingBatchCostForRow(row) {

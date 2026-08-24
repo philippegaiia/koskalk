@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\MassUnit;
 use App\Enums\MaterialPriceSource;
 use App\Enums\PackagingCategory;
@@ -36,6 +38,18 @@ use Illuminate\Validation\ValidationException;
  */
 class RecipeVersionCostingSynchronizer
 {
+    /** Synthetic phase key that prices the calculated soap alkali (NaOH/KOH). */
+    private const ALKALI_PHASE_KEY = 'lye_alkali';
+
+    /** Synthetic phase key that prices the plain-water share of the dilution liquid. */
+    private const IMPLICIT_WATER_PHASE_KEY = 'implicit_water';
+
+    /** Alkali ingredient subcategory backing each lye type. */
+    private const ALKALI_SUBCATEGORY_BY_LYE_TYPE = [
+        'naoh' => 'sodium_hydroxide',
+        'koh' => 'potassium_hydroxide',
+    ];
+
     public function __construct(
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly PackagingItemAuthoringService $packagingItemAuthoringService,
@@ -68,6 +82,8 @@ class RecipeVersionCostingSynchronizer
             return [
                 'settings' => null,
                 'item_prices' => [],
+                'alkali_ingredients' => [],
+                'water_ingredient' => null,
                 'packaging_items' => [],
                 'packaging_catalog' => $packagingCatalog,
             ];
@@ -83,13 +99,15 @@ class RecipeVersionCostingSynchronizer
             $costing = $this->ensureCosting($currentVersion, $user);
         }
 
+        $workspace = Workspace::withoutGlobalScopes()->findOrFail($currentVersion->workspace_id);
+
         return [
             'settings' => [
                 'id' => $costing->id,
                 'oilWeightForCosting' => $this->costingDisplayMass($costing),
                 'oilUnitForCosting' => $costing->oil_unit_for_costing,
                 'unitsProduced' => $costing->units_produced,
-                'currency' => $costing->currency,
+                'currency' => $workspace->default_currency,
             ],
             'item_prices' => $costing->items
                 ->map(fn (RecipeVersionCostingItem $item): array => [
@@ -100,6 +118,8 @@ class RecipeVersionCostingSynchronizer
                 ])
                 ->values()
                 ->all(),
+            'alkali_ingredients' => $this->alkaliIngredientsPayload($currentVersion, $user),
+            'water_ingredient' => $this->waterIngredientPayload($currentVersion),
             'packaging_items' => $costing->packagingItems
                 ->map(fn (RecipeVersionCostingPackagingItem $item): array => [
                     'id' => $item->id,
@@ -225,6 +245,52 @@ class RecipeVersionCostingSynchronizer
                     'quantity' => $item->quantity,
                 ]);
             });
+
+            $this->addMissingPlanPackagingRows($targetCosting);
+        });
+    }
+
+    /**
+     * Add costing rows for target-version plan packaging rows missing from the copied set.
+     *
+     * Copying forwards the source costing as-is, which can lag behind plan changes made
+     * after the last reconciliation. Matching by key keeps copied prices while newly
+     * planned rows enter with their catalog cost.
+     */
+    private function addMissingPlanPackagingRows(RecipeVersionCosting $targetCosting): void
+    {
+        $planItems = RecipeVersion::withoutGlobalScopes()
+            ->with(['packagingItems.packagingItem'])
+            ->findOrFail($targetCosting->recipe_version_id)
+            ->packagingItems
+            ->sortBy('position');
+
+        if ($planItems->isEmpty()) {
+            return;
+        }
+
+        $existingRowsByKey = $this->packagingCostingRowsByKey($targetCosting->packagingItems()->get());
+        $occurrences = [];
+
+        $planItems->each(function (RecipeVersionPackagingItem $item) use ($targetCosting, $existingRowsByKey, &$occurrences): void {
+            $key = $this->packagingKey(
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
+                $item->name,
+            );
+            $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $occurrences);
+
+            if ($existingRow instanceof RecipeVersionCostingPackagingItem) {
+                return;
+            }
+
+            $catalogItem = $item->packagingItem;
+
+            $targetCosting->packagingItems()->create([
+                'packaging_item_id' => $item->packaging_item_id,
+                'name' => $item->name,
+                'unit_cost' => $catalogItem?->unit_cost ?? 0,
+                'quantity' => $item->components_per_unit,
+            ]);
         });
     }
 
@@ -421,6 +487,9 @@ class RecipeVersionCostingSynchronizer
                     'phase_key' => $phase->slug,
                     'position' => (int) $item->position,
                 ]))
+            ->values()
+            ->merge($this->alkaliDesiredRows($recipeVersion))
+            ->merge($this->implicitWaterDesiredRows($recipeVersion))
             ->values();
 
         $existingRows = $costing->items()->get()->keyBy(fn (RecipeVersionCostingItem $item): string => $this->costingKey(
@@ -453,6 +522,183 @@ class RecipeVersionCostingSynchronizer
                         : bcmul($defaultPrice->price_per_canonical_unit, '1000', 12)),
             ]);
         });
+    }
+
+    /**
+     * Costing identity for the calculated soap alkali (NaOH/KOH), exposed to the frontend.
+     *
+     * Alkali is never a formula row — it is derived from SAP values and lye settings —
+     * so the payload carries the resolved ingredient records the costing table prices.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function alkaliIngredientsPayload(RecipeVersion $recipeVersion, User $user): array
+    {
+        if (! $this->isSoapVersion($recipeVersion)) {
+            return [];
+        }
+
+        return $this->soapAlkaliIngredientsByLyeType($user)
+            ->map(fn (Ingredient $ingredient): array => [
+                'ingredient_id' => $ingredient->id,
+                'name' => $ingredient->localizedDisplayName(),
+                'default_price_per_kg' => $this->derivedIngredientDefaultPricePerKg($recipeVersion, $ingredient),
+            ])
+            ->all();
+    }
+
+    /**
+     * Desired costing rows for the calculated alkali, keyed like formula rows.
+     *
+     * NaOH comes first so dual-lye positions stay stable: naoh → position 1,
+     * koh → position 2. The synthetic ALKALI_PHASE_KEY keeps these rows out of
+     * every authored phase while reusing the standard reconciliation rules.
+     *
+     * @return Collection<int, array{ingredient_id: int, phase_key: string, position: int}>
+     */
+    private function alkaliDesiredRows(RecipeVersion $recipeVersion): Collection
+    {
+        if (! $this->isSoapVersion($recipeVersion)) {
+            return collect();
+        }
+
+        $lyeType = $recipeVersion->calculation_context['lye_type'] ?? 'naoh';
+        $lyeTypes = match ($lyeType) {
+            'dual' => ['naoh', 'koh'],
+            'koh' => ['koh'],
+            default => ['naoh'],
+        };
+
+        $ingredients = $this->soapAlkaliIngredientsByLyeType(null);
+
+        return collect($lyeTypes)
+            ->filter(fn (string $lyeType): bool => $ingredients->has($lyeType))
+            ->values()
+            ->map(fn (string $lyeType, int $index): array => [
+                'ingredient_id' => (int) $ingredients->get($lyeType)->id,
+                'phase_key' => self::ALKALI_PHASE_KEY,
+                'position' => $index + 1,
+            ]);
+    }
+
+    /**
+     * Resolve the active catalog ingredients backing each lye type.
+     *
+     * @param  User|null  $user  When provided, workspace-owned alkalis are also accessible.
+     * @return Collection<string, Ingredient>
+     */
+    private function soapAlkaliIngredientsByLyeType(?User $user): Collection
+    {
+        $ingredientsBySubcategory = Ingredient::query()
+            ->withoutGlobalScopes()
+            ->where('is_active', true)
+            ->accessibleTo($user)
+            ->where('category', IngredientCategory::SoapmakingAlkalis->value)
+            ->whereIn('subcategory', array_values(self::ALKALI_SUBCATEGORY_BY_LYE_TYPE))
+            ->orderBy('id')
+            ->get()
+            ->keyBy(fn (Ingredient $ingredient): string => (string) $ingredient->subcategory?->value);
+
+        return collect(self::ALKALI_SUBCATEGORY_BY_LYE_TYPE)
+            ->filter(fn (string $subcategory): bool => $ingredientsBySubcategory->has($subcategory))
+            ->mapWithKeys(fn (string $subcategory, string $lyeType): array => [
+                $lyeType => $ingredientsBySubcategory->get($subcategory),
+            ]);
+    }
+
+    /**
+     * Costing identity for the plain-water share of the dilution liquid.
+     *
+     * Water not covered by added liquids is implicit (own tap water by default),
+     * but it still deserves a costing row: some users buy their water, and even
+     * free water makes the batch economics visible at a zero price.
+     */
+    private function waterIngredientPayload(RecipeVersion $recipeVersion): ?array
+    {
+        if (! $this->isSoapVersion($recipeVersion)) {
+            return null;
+        }
+
+        $water = $this->soapWaterIngredient();
+
+        if (! $water instanceof Ingredient) {
+            return null;
+        }
+
+        return [
+            'ingredient_id' => $water->id,
+            'name' => $water->localizedDisplayName(),
+            'default_price_per_kg' => $this->derivedIngredientDefaultPricePerKg($recipeVersion, $water),
+        ];
+    }
+
+    private function soapWaterIngredient(): ?Ingredient
+    {
+        return Ingredient::query()
+            ->withoutGlobalScopes()
+            ->where('is_active', true)
+            ->where('category', IngredientCategory::WaterSolventsCarriers->value)
+            ->where('subcategory', IngredientSubcategory::Water->value)
+            ->orderByRaw('CASE WHEN owner_type IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * Desired costing row for the implicit plain-water share of the dilution liquid.
+     *
+     * Present only when the added lye-liquid shares leave a water remainder
+     * (100% − sum of explicit shares > 0). A single fixed position keeps the
+     * signature stable for price persistence.
+     */
+    private function implicitWaterDesiredRows(RecipeVersion $recipeVersion): Collection
+    {
+        if (! $this->isSoapVersion($recipeVersion)) {
+            return collect();
+        }
+
+        $explicitLiquidShare = (float) $recipeVersion->phases
+            ->firstWhere('slug', 'lye_water')
+            ?->items
+            ->sum(fn ($item): float => max(0.0, (float) $item->percentage));
+
+        if (100.0 - min(100.0, $explicitLiquidShare) <= 0.0) {
+            return collect();
+        }
+
+        $water = $this->soapWaterIngredient();
+
+        if (! $water instanceof Ingredient) {
+            return collect();
+        }
+
+        return collect([[
+            'ingredient_id' => (int) $water->id,
+            'phase_key' => self::IMPLICIT_WATER_PHASE_KEY,
+            'position' => 1,
+        ]]);
+    }
+
+    private function isSoapVersion(RecipeVersion $recipeVersion): bool
+    {
+        $recipe = Recipe::query()->withoutGlobalScopes()->find($recipeVersion->recipe_id);
+
+        $productFamily = $recipe?->productFamily()->withoutGlobalScopes()->first();
+
+        return $productFamily?->slug === 'soap';
+    }
+
+    private function derivedIngredientDefaultPricePerKg(RecipeVersion $recipeVersion, Ingredient $ingredient): ?float
+    {
+        $defaultPrice = CurrentMaterialPrice::query()
+            ->where('workspace_id', $recipeVersion->workspace_id)
+            ->whereNotNull('ingredient_id')
+            ->where('ingredient_id', $ingredient->id)
+            ->first();
+
+        return $defaultPrice?->price_per_canonical_unit === null
+            ? null
+            : (float) bcmul($defaultPrice->price_per_canonical_unit, '1000', 12);
     }
 
     /**

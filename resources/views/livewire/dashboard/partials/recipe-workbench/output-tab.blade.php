@@ -5,13 +5,16 @@
 
 <div x-show="activeWorkbenchTab === 'output'" x-cloak role="tabpanel" aria-labelledby="tab-output" id="panel-output" class="space-y-6 pb-24">
 @if ($isCosmeticWorkbench)
- <section class="sk-card p-5">
+ <section class="sk-card p-5" aria-labelledby="output-cosmetic-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="sk-eyebrow">{{ __('workbench.output.cosmetic.title') }}</p>
+ <h2 id="output-cosmetic-heading" class="sk-eyebrow">{{ __('workbench.output.cosmetic.title') }}</h2>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.help') }}</p>
  </div>
+ <div class="flex flex-col items-start gap-3 lg:items-end">
+ @include('livewire.dashboard.partials.recipe-workbench.label-market-switcher')
  <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.basis') }}</span>
+ </div>
  </div>
 
  <div class="mt-4 grid gap-3 md:grid-cols-3">
@@ -30,10 +33,10 @@
  </div>
  </section>
 
- <section class="sk-card p-5">
+ <section class="sk-card p-5" aria-labelledby="output-cosmetic-ingredients-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="sk-eyebrow">{{ __('workbench.output.cosmetic.ingredients_title') }}</p>
+ <h2 id="output-cosmetic-ingredients-heading" class="sk-eyebrow">{{ __('workbench.output.cosmetic.ingredients_title') }}</h2>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.ingredients_help') }}</p>
  </div>
  <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.descending') }}</span>
@@ -42,12 +45,13 @@
  <template x-if="cosmeticOutputIngredientRows.length > 0">
  <div class="mt-4 overflow-x-auto rounded-lg border border-[var(--color-line)] bg-white">
  <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
+ <caption class="sr-only">{{ __('workbench.output.cosmetic.ingredients_title') }}</caption>
  <thead class="text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
  <tr>
- <th class="px-4 py-3">{{ __('workbench.output.common.ingredient') }}</th>
- <th class="px-4 py-3">{{ __('workbench.output.common.phase') }}</th>
- <th class="px-4 py-3">{{ __('workbench.output.common.formula_percent') }}</th>
- <th class="px-4 py-3" x-text="t('output.common.weight', { unit: oilUnit })"></th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.ingredient') }}</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.phase') }}</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.formula_percent') }}</th>
+ <th scope="col" class="px-4 py-3" x-text="t('output.common.weight', { unit: oilUnit })"></th>
  </tr>
  </thead>
  <tbody class="divide-y divide-[var(--color-line)]">
@@ -82,41 +86,45 @@
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
  @include('livewire.dashboard.partials.recipe-workbench.restrictions-preview')
 @else
- <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_290px] lg:items-start">
- <section class="sk-card p-5">
+ <section class="sk-card p-5" aria-labelledby="output-soap-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="sk-eyebrow">{{ __('workbench.output.soap.title') }}</p>
+ <h2 id="output-soap-heading" class="sk-eyebrow">{{ __('workbench.output.soap.title') }}</h2>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.help') }}</p>
  </div>
+ <div class="flex flex-col items-start gap-3 lg:items-end">
+ @include('livewire.dashboard.partials.recipe-workbench.label-market-switcher')
  <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.basis') }}</span>
  </div>
+ </div>
 
- <div class="mt-4">
- <div class="min-w-0 overflow-hidden rounded-lg border border-[var(--color-line)] bg-white">
+ <div class="mt-4" aria-labelledby="output-soap-composition-heading">
+ <div class="overflow-hidden rounded-lg border border-[var(--color-line)] bg-white">
  <div class="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
- <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.output.soap.composition') }}</p>
+ <h3 id="output-soap-composition-heading" class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.output.soap.composition') }}</h3>
  <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.composition_help') }}</p>
  </div>
+ <p class="border-b border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.label_basis_help') }}</p>
  <template x-if="curedSoapIngredientRows.length > 0">
  <div class="overflow-x-auto">
  <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
+ <caption class="sr-only">{{ __('workbench.output.soap.composition') }}</caption>
  <thead class="text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
  <tr>
- <th class="px-4 py-3">{{ __('workbench.output.common.label') }}</th>
- <th class="px-4 py-3">{{ __('workbench.output.common.role') }}</th>
- <th class="px-4 py-3">{{ __('workbench.output.common.soap_percent') }}</th>
- <th class="px-4 py-3" x-text="t('output.common.weight', { unit: oilUnit })"></th>
- <th class="px-4 py-3">{{ __('workbench.output.common.sources') }}</th>
+ <th scope="col" class="px-4 py-3 text-center">#</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.label') }}</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.role') }}</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.soap_percent') }}</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.sources') }}</th>
  </tr>
  </thead>
  <tbody class="divide-y divide-[var(--color-line)]">
- <template x-for="row in curedSoapIngredientRows" :key="row.label">
+ <template x-for="(row, index) in curedSoapIngredientRows" :key="row.label">
  <tr>
+ <td class="numeric px-4 py-3 align-middle text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
  <td class="px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
  <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
  <td class="numeric px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 3)}%`"></span></td>
- <td class="numeric px-4 py-3 align-middle text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.adjusted_weight)" x-text="format(row.adjusted_weight, 2)"></span></td>
  <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">
@@ -128,10 +136,10 @@
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
+ <td class="px-4 py-3"></td>
  <td class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
  <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.cured_basis') }}</td>
- <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${format(curedSoapIngredientTotalPercent, 3)}%`"></span></td>
- <td class="numeric px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(curedSoapIngredientTotalWeight)" x-text="format(curedSoapIngredientTotalWeight, 2)"></span></td>
+ <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${format(curedSoapIngredientTotalPercent, 1)}%`"></span></td>
  <td class="px-4 py-3"></td>
  </tr>
  </tbody>
@@ -147,81 +155,11 @@
  </div>
  </section>
 
- <section class="sk-card p-5">
- <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
- <div class="min-w-0">
- <p class="sk-eyebrow">{{ __('workbench.output.soap.label_basis') }}</p>
- <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.label_basis_help') }}</p>
- </div>
- </div>
-
- <div class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
- <div class="sk-inset p-4">
- <p class="sk-eyebrow">{{ __('workbench.output.soap.cured_bar_basis') }}</p>
- <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(curedSoapOutputBasisWeight, 1)} ${oilUnit}`"></p>
- </div>
- <div class="sk-inset p-4">
- <p class="sk-eyebrow">{{ __('workbench.output.soap.residual_water') }}</p>
- <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(curedSoapResidualWaterWeight, 1)} ${oilUnit}`"></p>
- </div>
- <div class="sk-inset p-4">
- <p class="sk-eyebrow">{{ __('workbench.output.soap.cured_total') }}</p>
- <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(curedSoapIngredientTotalPercent, 1)}%`"></p>
- </div>
- </div>
- </section>
- </div>
-
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
  @include('livewire.dashboard.partials.recipe-workbench.restrictions-preview')
 
- <section class="overflow-hidden sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="sk-eyebrow">{{ __('workbench.output.allergens.title') }}</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.allergens.help') }}</p>
- </div>
-
- <template x-if="curedSoapAllergenRows.length > 0">
- <div class="overflow-x-auto">
- <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
- <thead class="bg-[var(--color-panel)] text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
- <tr>
- <th class="px-5 py-3">{{ __('workbench.output.allergens.allergen') }}</th>
- <th class="px-5 py-3">{{ __('workbench.output.common.soap_percent') }}</th>
- <th class="px-5 py-3" x-text="t('output.common.weight', { unit: oilUnit })"></th>
- <th class="px-5 py-3">{{ __('workbench.output.common.sources') }}</th>
- </tr>
- </thead>
- <tbody class="divide-y divide-[var(--color-line)] bg-white">
- <template x-for="row in curedSoapAllergenRows" :key="row.label">
- <tr>
- <td class="px-5 py-4 align-middle font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
- <td class="numeric px-5 py-4 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 4)}%`"></span></td>
- <td class="numeric px-5 py-4 align-middle text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.adjusted_weight)" x-text="format(row.adjusted_weight, 4)"></span></td>
- <td class="px-5 py-4 align-middle text-[var(--color-ink-soft)]">
-     <template x-for="(source, idx) in row.source_ingredients" :key="idx">
-         <span class="inline-flex items-center gap-1">
-             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span>
-             <span x-text="source"></span>
-         </span>
-     </template>
- </td>
- </tr>
- </template>
- </tbody>
- </table>
- </div>
- </template>
-
- <template x-if="curedSoapAllergenRows.length === 0">
- <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
- {{ __('workbench.output.allergens.empty') }}
- </div>
- </template>
- </section>
-
- <template x-if="curedSoapIngredientRows.some(row => row.source_is_user_owned?.some(Boolean)) || curedSoapAllergenRows.some(row => row.source_is_user_owned?.some(Boolean))">
-     <p class="px-1 text-[0.625rem] leading-4 text-[var(--color-ink-soft)]">
+ <template x-if="curedSoapIngredientRows.some(row => row.source_is_user_owned?.some(Boolean)) || (activeIngredientListVariant?.declaration_rows ?? []).some(row => row.source_is_user_owned?.some(Boolean))">
+      <p class="px-1 text-[0.6875rem] leading-4 text-[var(--color-ink-soft)]">
          <span class="mr-1 inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60"></span>
          {{ __('workbench.output.common.user_owned_help') }}
      </p>

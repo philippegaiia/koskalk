@@ -1,23 +1,39 @@
-<section class="overflow-hidden sk-card">
+<section class="overflow-hidden sk-card" aria-labelledby="restrictions-preview-heading" x-data="{ overridden: null }">
  <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
  <div>
- <p class="sk-eyebrow">{{ __('workbench.output.restrictions.title') }}</p>
+ <h2 id="restrictions-preview-heading" class="sk-eyebrow">{{ __('workbench.output.restrictions.title') }}</h2>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]" x-text="`${restrictionRegimeLabel} · ${restrictionBasisLabel}`"></p>
  </div>
+ <div class="flex items-center gap-2">
  <span class="inline-flex w-fit rounded-full border px-3 py-1.5 text-xs font-semibold" :class="restrictionSummaryStyle(restrictionSummary.status)" x-text="restrictionSummaryLabel"></span>
+ <button
+ type="button"
+ :aria-expanded="(overridden ?? restrictionsRequireAttention).toString()"
+ aria-controls="restrictions-preview-body"
+ @click="overridden = !(overridden ?? restrictionsRequireAttention)"
+ class="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)]"
+ >
+ <svg viewBox="0 0 16 16" fill="none" class="size-4 transition-transform duration-200 motion-reduce:transition-none" :class="(overridden ?? restrictionsRequireAttention) ? 'rotate-180' : ''" aria-hidden="true">
+ <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+ </svg>
+ </button>
+ </div>
  </div>
 
+ <div id="restrictions-preview-body" class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="(overridden ?? restrictionsRequireAttention) ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+ <div class="overflow-hidden">
  <template x-if="restrictionRows.length > 0">
  <div class="overflow-x-auto">
  <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
+ <caption class="sr-only">{{ __('workbench.output.restrictions.title') }}</caption>
  <thead class="bg-[var(--color-panel)] text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
  <tr>
- <th class="px-5 py-3">{{ __('workbench.output.restrictions.substance') }}</th>
- <th class="px-5 py-3">{{ __('workbench.output.restrictions.rule') }}</th>
- <th class="px-5 py-3">{{ __('workbench.output.declarations.formula_percent') }}</th>
- <th class="px-5 py-3">{{ __('workbench.output.restrictions.limit') }}</th>
- <th class="px-5 py-3">{{ __('workbench.output.common.status') }}</th>
- <th class="px-5 py-3">{{ __('workbench.output.common.sources') }}</th>
+ <th scope="col" class="px-5 py-3">{{ __('workbench.output.restrictions.substance') }}</th>
+ <th scope="col" class="px-5 py-3">{{ __('workbench.output.restrictions.rule') }}</th>
+ <th scope="col" class="px-5 py-3">{{ __('workbench.output.declarations.formula_percent') }}</th>
+ <th scope="col" class="px-5 py-3">{{ __('workbench.output.restrictions.limit') }}</th>
+ <th scope="col" class="px-5 py-3">{{ __('workbench.output.common.status') }}</th>
+ <th scope="col" class="px-5 py-3">{{ __('workbench.output.common.sources') }}</th>
  </tr>
  </thead>
  <tbody class="divide-y divide-[var(--color-line)] bg-[var(--color-panel)]">
@@ -58,4 +74,6 @@
  </template>
  </div>
  </template>
+ </div>
+ </div>
 </section>

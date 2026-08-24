@@ -123,7 +123,7 @@ it('localizes composition and labeling copy and explains workspace currency sett
     expect($output)
         ->toContain("__('workbench.output.cosmetic.title')")
         ->toContain("__('workbench.output.soap.title')")
-        ->toContain("__('workbench.output.allergens.title')")
+        ->not->toContain("__('workbench.output.allergens.title')")
         ->not->toContain('>Formula output<')
         ->not->toContain('>Cured soap output<')
         ->not->toContain('>Declared allergens<')
@@ -140,6 +140,7 @@ it('localizes composition and labeling copy and explains workspace currency sett
         'output.cosmetic.title',
         'output.soap.title',
         'output.allergens.title',
+        'output.common.label_market',
         'settings.product_type_search',
     ])->and($catalogue['output.cosmetic.title']['text']['fr'])->toBe('Sortie de la formule')
         ->and(array_keys($catalogue['output.cosmetic.title']['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);

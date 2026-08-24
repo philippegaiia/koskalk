@@ -43,6 +43,7 @@ it('uses unit-aware precision for soap lye, liquids, additions, and batch totals
     $reactionCore = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/reaction-core.blade.php'));
     $postReaction = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/post-reaction.blade.php'));
     $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $output = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
 
     expect($formulaSection)
         ->toContain("massDecimals(value, profile = 'standard')")
@@ -61,7 +62,12 @@ it('uses unit-aware precision for soap lye, liquids, additions, and batch totals
         ->and($presentationSection)
         ->toContain('this.calculatedMassDecimals(producedGlycerineWeight)')
         ->toContain('this.calculatedMassDecimals(wetWeight)')
-        ->toContain('this.calculatedMassDecimals(curedWeight)');
+        ->toContain('this.calculatedMassDecimals(curedWeight)')
+        ->and($output)
+        ->toContain('format(curedSoapIngredientTotalPercent, 1)')
+        ->not->toContain('row.adjusted_weight')
+        ->not->toContain('curedSoapMassDecimals')
+        ->not->toContain('format(row.adjusted_weight, 2)');
 });
 
 it('formats percentages on first paint and aligns formula values on their decimal separator', function (): void {

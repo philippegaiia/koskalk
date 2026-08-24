@@ -438,7 +438,9 @@ export function createPresentationSection() {
         },
 
         get generatedPlainLanguageListText() {
-            return this.backendLabeling?.plain_language_list?.final_label_text ?? '';
+            return this.activeIngredientListVariant?.plain_label_text
+                ?? this.backendLabeling?.plain_language_list?.final_label_text
+                ?? '';
         },
 
         get finalIngredientListIsOutdated() {
@@ -499,6 +501,14 @@ export function createPresentationSection() {
 
         get restrictionWarnings() {
             return this.backendRestrictions?.warnings ?? [];
+        },
+
+        get restrictionsRequireAttention() {
+            return this.restrictionSummary.status !== 'pass' || this.restrictionWarnings.length > 0;
+        },
+
+        get declarationRowsRequireAttention() {
+            return this.curedSoapDeclarationRows.some((row) => Boolean(row.exceeds_threshold));
         },
 
         get restrictionRegimeLabel() {
@@ -579,7 +589,10 @@ export function createPresentationSection() {
 
             const curedBasisWeight = this.curedSoapOutputBasisWeight;
             const residualWaterWeight = this.curedSoapResidualWaterWeight;
-            const ingredientRows = this.activeIngredientListVariant?.ingredient_rows ?? [];
+            const ingredientRows = (this.defaultIngredientListVariant ?? this.activeIngredientListVariant)
+                ?.ingredient_rows
+                ?.filter((row) => row?.kind !== 'lye')
+                ?? [];
             const freshLyeLiquidWeight = ingredientRows
                 .reduce((sum, row) => sum + this.lyeLiquidProvenanceWeight(row), 0);
             const rows = ingredientRows
@@ -643,7 +656,7 @@ export function createPresentationSection() {
             const formulaWeight = this.number(this.labelingBasis?.formula_weight ?? this.finalBatchWeight());
             const curedBasisWeight = this.curedSoapOutputBasisWeight;
 
-            return (this.activeIngredientListVariant?.declaration_rows ?? [])
+            return ((this.defaultIngredientListVariant ?? this.activeIngredientListVariant)?.declaration_rows ?? [])
                 .map((row) => {
                     const declarationWeight = formulaWeight * (this.number(row.percent_of_formula) / 100);
                     const percentOfCuredBasis = row.percent_of_cured_basis === null || row.percent_of_cured_basis === undefined

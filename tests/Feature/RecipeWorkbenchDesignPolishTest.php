@@ -421,9 +421,28 @@ it('centers costing table row contents beside price inputs', function () {
         ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned"')
         ->toContain('x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"')
         ->toContain('flex items-center bg-white px-3 py-3')
-        ->toContain('numeric flex items-center gap-1 bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span x-text="costingCurrency"></span>')
         ->toContain('x-text="format(lineCostForRow(row), 2)"')
         ->not->toContain('numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
+});
+
+it('keeps currency in the packaging headers and out of the packaging cells', function () {
+    $costingTab = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
+
+    expect($costingTab)
+        ->toContain('x-text="t(\'costing.packaging.cost_per_unit\', { currency: costingCurrency })"')
+        ->toContain('x-text="t(\'costing.packaging.batch_cost\', { currency: costingCurrency })"')
+        ->toContain('x-text="format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>')
+        ->not->toContain('<span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))"')
+        ->not->toContain('<span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingBatchCostForRow(row))"');
+});
+
+it('formats the packaging unit price input with locale decimals', function () {
+    $costingTab = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
+
+    expect($costingTab)
+        ->toContain(':value="row.unit_cost === null || row.unit_cost === \'\' ? \'\' : format(row.unit_cost, 2)"')
+        ->toContain('@change="updatePackagingUnitCost(row, $event.target.value)"')
+        ->not->toContain('x-model="row.unit_cost"');
 });
 
 it('describes soap post-reaction percentages as oil-basis percentages', function () {
@@ -946,7 +965,7 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->not->toContain('Missing KOH SAP');
 });
 
-it('shows cured soap output beside restrictions and gives cosmetics one descending ingredient table', function () {
+it('shows the cured soap composition at full width above restrictions and gives cosmetics one descending ingredient table', function () {
     $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
         'isPublicCalculator' => true,
     ])->render();
@@ -957,14 +976,19 @@ it('shows cured soap output beside restrictions and gives cosmetics one descendi
     $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
 
     expect($outputTab)
-        ->toContain('lg:grid-cols-[minmax(0,1fr)_290px]')
-        ->toContain('sm:grid-cols-3 lg:grid-cols-1')
+        ->not->toContain('290px')
         ->toContain('Cured soap output')
         ->toContain('Cured soap composition')
         ->toContain('curedSoapIngredientRows')
         ->toContain('Formula %')
         ->toContain('% soap')
         ->toContain('align-middle')
+        ->toContain('output-soap-composition-heading')
+        ->toContain('Cured basis')
+        ->toContain('regulatoryRegime = regime.code')
+        ->toContain('Label market')
+        ->toContain('indicative and informative')
+        ->not->toContain('Declared allergens')
         ->not->toContain('Integrated ingredients')
         ->not->toContain('Mise en oeuvre')
         ->not->toContain('Ingredient basis')
@@ -973,7 +997,7 @@ it('shows cured soap output beside restrictions and gives cosmetics one descendi
         ->not->toContain('Production tables')
         ->not->toContain('lg:grid-cols-2')
         ->and(substr_count($outputTab, 'Cured soap composition'))
-        ->toBe(1)
+        ->toBe(2)
         ->and(strpos($outputTab, 'Cured soap composition'))
         ->toBeLessThan(strpos($outputTab, 'Restrictions'))
         ->and($cosmeticOutputTab)
@@ -1001,8 +1025,14 @@ it('uses the cured soap basis for soap output percentages', function () {
         ->toContain("__('workbench.output.soap.title')")
         ->toContain("__('workbench.output.soap.cured_basis')")
         ->toContain("__('workbench.output.common.soap_percent')")
-        ->and(substr_count($outputTab, 'numeric mt-3 text-xl'))
-        ->toBe(3)
+        ->toContain('x-for="(row, index) in curedSoapIngredientRows"')
+        ->and(file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/label-market-switcher.blade.php')))
+        ->toContain("__('workbench.output.common.label_market')")
+        ->toContain('@click="regulatoryRegime = regime.code"')
+        ->not->toContain("__('workbench.output.soap.cured_bar_basis')")
+        ->not->toContain('format(curedSoapOutputBasisWeight')
+        ->not->toContain('format(curedSoapResidualWaterWeight')
+        ->not->toContain('numeric mt-3 text-xl')
         ->and($outputTab)
         ->toContain("__('workbench.output.soap.label_basis_help')")
         ->not->toContain('This view normalizes the selected acceptable ingredient list')
@@ -1053,7 +1083,15 @@ it('keeps generated ingredient controls and final editors aligned in both lanes'
         ->toBe(2)
         ->and($source)
         ->toContain('@click="useGeneratedIngredientListAsFinal()" class="sk-btn sk-btn-outline"')
-        ->toContain('@click="useGeneratedPlainIngredientListAsFinal()" class="sk-btn sk-btn-outline"');
+        ->toContain('@click="useGeneratedPlainIngredientListAsFinal()" class="sk-btn sk-btn-outline"')
+        ->toContain('declarationRowsRequireAttention')
+        ->toContain('aria-controls="declaration-details-body"')
+        ->and(file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/restrictions-preview.blade.php')))
+        ->toContain('restrictionsRequireAttention')
+        ->toContain('aria-controls="restrictions-preview-body"')
+        ->and(file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js')))
+        ->toContain('get declarationRowsRequireAttention()')
+        ->toContain('get restrictionsRequireAttention()');
 });
 
 it('keeps the generated inci actions together beside compact helper text', function () {

@@ -27,7 +27,7 @@ When production editorial translation changes become authoritative, replace the 
 
 ## Standing Forge deploy script
 
-Since the 2026-08-21 release (IFRA amendments and product taxonomy rollout), the Forge deploy script keeps only the locale seeder and translation commands active. The reference-data seeders below shipped that release's taxonomy data once; IFRA categories, product families/areas/categories/types, and their mappings are now settled production data and must not re-run on every deploy — each run overwrites any admin-panel edits to those tables. They stay commented in the Forge script for reuse before launch: uncomment them only for a deploy that ships taxonomy or IFRA changes, keep the exact order below (dependencies), then re-comment afterwards.
+Since the 2026-08-21 release (IFRA amendments and product taxonomy rollout), the Forge deploy script keeps only the locale seeder and translation commands active. The reference-data seeders below shipped that release's taxonomy data once; IFRA categories, product families/areas/categories/types, and their mappings are now settled production data and must not re-run on every deploy — each run overwrites any admin-panel edits to those tables. They stay commented in the Forge script for reuse before launch: uncomment them only for a deploy that ships taxonomy, IFRA, or regulatory-regime changes, keep the exact order below (dependencies), then re-comment afterwards.
 
 ```shell
 # Reference-data seeders (one-time payload of the 2026-08-21 release; settled since)

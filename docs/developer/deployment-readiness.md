@@ -36,9 +36,14 @@ $FORGE_PHP artisan db:seed --class='Database\Seeders\IfraProductCategorySeeder' 
 $FORGE_PHP artisan db:seed --class='Database\Seeders\IfraAmendmentSeeder' --force --no-interaction
 $FORGE_PHP artisan db:seed --class='Database\Seeders\ProductTaxonomySeeder' --force --no-interaction
 $FORGE_PHP artisan db:seed --class='Database\Seeders\ProductTypeIfraCategorySeeder' --force --no-interaction
+
+# Regulatory regimes (Canada release; run once, then re-comment)
+$FORGE_PHP artisan db:seed --class='Database\Seeders\RegulatoryRegimeSeeder' --force --no-interaction
 ```
 
 `ProductTaxonomySeeder` requires both product families to exist first, and `ProductTypeIfraCategorySeeder` requires the IFRA categories, amendments, and product types — hence the order above. All five are idempotent (`updateOrCreate`/`upsert`), so a one-off re-run is safe, but it is a deliberate act, never part of routine deploys.
+
+The `RegulatoryRegimeSeeder` shipped with the Canada labelling release and must also run once per environment: it expands the `canada_2026` allergen mapping to the full catalog, renames the US regime, re-points any recipe versions stored against the retired `canada_expanded_preview` regime before deleting it, and leaves EU rules untouched. It is idempotent (`updateOrCreate`), but like the taxonomy seeders it is a deliberate act — uncomment for this deploy, then re-comment afterwards. Canadian declaration names on ingredients are then provisioned through the admin panel (`market_labels`, market `ca`); they are data entry, not seeding.
 
 ## Release checks
 

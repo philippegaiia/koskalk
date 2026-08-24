@@ -12036,6 +12036,18 @@
     },
     {
       "group": "media_library",
+      "key": "panel.groups.documents",
+      "text": {
+        "de": "Produktionsdokumente",
+        "es": "Documentos de producción",
+        "fr": "Documents de production",
+        "it": "Documenti di produzione",
+        "nl": "Productiedocumenten",
+        "pt_BR": "Documentos de produção"
+      }
+    },
+    {
+      "group": "media_library",
       "key": "panel.groups.ingredients",
       "text": {
         "de": "Zutaten",
@@ -13112,6 +13124,18 @@
         "it": "Utilizzata da",
         "nl": "Gebruikt door",
         "pt_BR": "Utilizado por"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "validation.asset_in_use_by_documents",
+      "text": {
+        "de": "Diese Datei ist Produktions- oder Wareneingangsdokumenten zugeordnet und kann nicht entfernt werden.",
+        "es": "Este archivo está adjunto a documentos de producción o de recepción y no se puede eliminar.",
+        "fr": "Ce fichier est joint à des documents de production ou de réception et ne peut pas être supprimé.",
+        "it": "Questo file è allegato a documenti di produzione o di ricezione e non può essere rimosso.",
+        "nl": "Dit bestand is gekoppeld aan productie- of ontvangstdocumenten en kan niet worden verwijderd.",
+        "pt_BR": "Este arquivo está anexado a documentos de produção ou recebimento e não pode ser removido."
       }
     },
     {
@@ -15720,6 +15744,42 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.add_stock",
+      "text": {
+        "de": "Bestand hinzufügen",
+        "es": "Añadir stock",
+        "fr": "Ajouter du stock",
+        "it": "Aggiungi stock",
+        "nl": "Voorraad toevoegen",
+        "pt_BR": "Adicionar estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.add_stock_description",
+      "text": {
+        "de": "Einen Bestand hinzufügen, der physisch vorhanden ist, aber nicht über den Einkauf erfasst wurde. Eine aktive Lieferantenliste ist erforderlich.",
+        "es": "Añade un lote que está físicamente disponible pero que no se registró a través de Compras. Se requiere una lista de proveedor activa.",
+        "fr": "Ajoutez un lot physiquement disponible mais non enregistré via les achats. Une liste fournisseur active est requise.",
+        "it": "Aggiungi un lotto fisicamente disponibile ma non registrato tramite gli acquisti. È richiesto un listino fornitore attivo.",
+        "nl": "Voeg een batch toe die fysiek aanwezig is maar niet via Inkoop is geregistreerd. Een actieve leverancierslijst is vereist.",
+        "pt_BR": "Adicione um lote que está fisicamente disponível, mas não foi registrado em Compras. É necessária uma lista de fornecedor ativa."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.add_stock_manually",
+      "text": {
+        "de": "Bestand manuell hinzufügen",
+        "es": "Añadir stock manualmente",
+        "fr": "Ajouter du stock manuellement",
+        "it": "Aggiungi stock manualmente",
+        "nl": "Voorraad handmatig toevoegen",
+        "pt_BR": "Adicionar estoque manualmente"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.available",
       "text": {
         "de": "Verfügbar",
@@ -15740,6 +15800,30 @@
         "it": "Scegli…",
         "nl": "Kiezen…",
         "pt_BR": "Escolher…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.cost_help",
+      "text": {
+        "de": "Aus der Lieferantenliste übernommen. Sie können die tatsächlichen Kosten für diese Charge eingeben.",
+        "es": "Precargado desde la lista del proveedor. Puede introducir el coste real de este lote.",
+        "fr": "Prérempli à partir de la liste du fournisseur. Vous pouvez saisir le coût réel de ce lot.",
+        "it": "Precompilato dal listino del fornitore. Puoi inserire il costo effettivo di questo lotto.",
+        "nl": "Vooraf ingevuld vanuit de leverancierslijst. U kunt de werkelijke kosten voor deze batch invoeren.",
+        "pt_BR": "Pré-preenchido a partir da lista do fornecedor. Você pode inserir o custo real deste lote."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.cost_per",
+      "text": {
+        "de": "Kosten / :unit",
+        "es": "Coste / :unit",
+        "fr": "Coût / :unit",
+        "it": "Costo / :unit",
+        "nl": "Kosten / :unit",
+        "pt_BR": "Custo / :unit"
       }
     },
     {
@@ -15788,6 +15872,30 @@
         "it": "In arrivo",
         "nl": "Inkomend",
         "pt_BR": "Entradas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.internal_batch",
+      "text": {
+        "de": "Interne Chargennummer",
+        "es": "Número de lote interno",
+        "fr": "Numéro de lot interne",
+        "it": "Numero di lotto interno",
+        "nl": "Intern batchnummer",
+        "pt_BR": "Número de lote interno"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.internal_batch_generated",
+      "text": {
+        "de": "Wird automatisch erzeugt, wenn der Bestand hinzugefügt wird.",
+        "es": "Se genera automáticamente al añadir el stock.",
+        "fr": "Généré automatiquement lorsque le stock est ajouté.",
+        "it": "Generato automaticamente quando lo stock viene aggiunto.",
+        "nl": "Wordt automatisch gegenereerd wanneer de voorraad wordt toegevoegd.",
+        "pt_BR": "Gerado automaticamente quando o estoque é adicionado."
       }
     },
     {
@@ -16080,6 +16188,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.search_supplier_listing",
+      "text": {
+        "de": "Nach Material, Lieferant, SKU oder Einkaufsformat suchen…",
+        "es": "Buscar por material, proveedor, SKU o formato de compra…",
+        "fr": "Rechercher par matière, fournisseur, SKU ou format d’achat…",
+        "it": "Cerca per materiale, fornitore, SKU o formato di acquisto…",
+        "nl": "Zoek op materiaal, leverancier, SKU of inkoopformaat…",
+        "pt_BR": "Busque por material, fornecedor, SKU ou formato de compra…"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.stock",
       "text": {
         "de": "Bestand",
@@ -16140,6 +16260,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.stocked_on_future",
+      "text": {
+        "de": "Das Eingelagert-am-Datum darf nicht in der Zukunft liegen.",
+        "es": "La fecha de entrada en stock no puede ser futura.",
+        "fr": "La date d’entrée en stock ne peut pas être dans le futur.",
+        "it": "La data di ingresso in stock non può essere nel futuro.",
+        "nl": "De datum van voorraadregistratie mag niet in de toekomst liggen.",
+        "pt_BR": "A data de entrada em estoque não pode estar no futuro."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.supplier_batch",
       "text": {
         "de": "Lieferantencharge",
@@ -16160,6 +16292,18 @@
         "it": "Articolo fornitore",
         "nl": "Leveranciersartikel",
         "pt_BR": "Oferta do fornecedor"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.unit",
+      "text": {
+        "de": "Einheit",
+        "es": "Unidad",
+        "fr": "Unité",
+        "it": "Unità",
+        "nl": "Eenheid",
+        "pt_BR": "Unidade"
       }
     },
     {
@@ -18692,6 +18836,42 @@
         "it": "Documento allegato al diario.",
         "nl": "Dagboekdocument toegevoegd.",
         "pt_BR": "Documento anexado ao diário."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.journal_document_detach",
+      "text": {
+        "de": "Entfernen",
+        "es": "Eliminar",
+        "fr": "Retirer",
+        "it": "Rimuovi",
+        "nl": "Verwijderen",
+        "pt_BR": "Remover"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.journal_document_detach_confirm",
+      "text": {
+        "de": "Dieses Dokument vom Produktionslauf trennen? Die Datei bleibt in der Medienbibliothek.",
+        "es": "¿Separar este documento del recorrido de producción? El archivo permanece en la biblioteca multimedia.",
+        "fr": "Détacher ce document du journal de production ? Le fichier reste dans la médiathèque.",
+        "it": "Staccare questo documento dal ciclo di produzione? Il file resta nella libreria multimediale.",
+        "nl": "Dit document loskoppelen van de productierun? Het bestand blijft in de mediabibliotheek.",
+        "pt_BR": "Desanexar este documento da produção? O arquivo permanece na biblioteca de mídia."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.journal_document_detached",
+      "text": {
+        "de": "Journaldokument entfernt.",
+        "es": "Documento del diario eliminado.",
+        "fr": "Document du journal retiré.",
+        "it": "Documento del diario rimosso.",
+        "nl": "Journaaldocument verwijderd.",
+        "pt_BR": "Documento do diário removido."
       }
     },
     {
@@ -21600,6 +21780,30 @@
     },
     {
       "group": "production_bench",
+      "key": "receipt.auto_rate_unavailable",
+      "text": {
+        "de": "Es ist kein automatischer Wechselkurs für :base → :quote verfügbar. Geben Sie für diese Position einen manuellen Wechselkurs ein.",
+        "es": "No hay ninguna tasa de cambio automática disponible para :base → :quote. Introduzca una tasa de cambio manual para esta línea.",
+        "fr": "Aucun taux de change automatique n’est disponible pour :base → :quote. Saisissez un taux de change manuel pour cette ligne.",
+        "it": "Non è disponibile alcun tasso di cambio automatico per :base → :quote. Inserisci un tasso di cambio manuale per questa riga.",
+        "nl": "Er is geen automatische wisselkoers beschikbaar voor :base → :quote. Voer voor deze regel een handmatige wisselkoers in.",
+        "pt_BR": "Nenhuma taxa de câmbio automática está disponível para :base → :quote. Informe uma taxa de câmbio manual para esta linha."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.auto_rate_unavailable_hint",
+      "text": {
+        "de": "Für dieses Währungspaar ist kein automatischer Kurs verfügbar. Tragen Sie den Kurs Ihrer Rechnung ein.",
+        "es": "Ninguna tasa automática cubre este par de divisas. Introduzca la tasa de su factura.",
+        "fr": "Aucun taux automatique ne couvre cette paire de devises. Saisissez le taux de votre facture.",
+        "it": "Nessun tasso automatico copre questa coppia di valute. Inserisci il tasso della tua fattura.",
+        "nl": "Er is geen automatische koers voor dit valutapaar. Voer de koers van uw factuur in.",
+        "pt_BR": "Nenhuma taxa automática cobre este par de moedas. Informe a taxa da sua nota fiscal."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "receipt.choose_line",
       "text": {
         "de": "Wählen Sie mindestens eine verfügbare Wareneingangsposition.",
@@ -21800,6 +22004,42 @@
         "it": "Documento allegato.",
         "nl": "Document bijgevoegd.",
         "pt_BR": "Documento anexado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.document_detach",
+      "text": {
+        "de": "Entfernen",
+        "es": "Eliminar",
+        "fr": "Retirer",
+        "it": "Rimuovi",
+        "nl": "Verwijderen",
+        "pt_BR": "Remover"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.document_detach_confirm",
+      "text": {
+        "de": "Dieses Dokument vom Wareneingang trennen? Die Datei bleibt in der Medienbibliothek.",
+        "es": "¿Separar este documento de la recepción? El archivo permanece en la biblioteca multimedia.",
+        "fr": "Détacher ce document de la réception ? Le fichier reste dans la médiathèque.",
+        "it": "Staccare questo documento dalla ricezione? Il file resta nella libreria multimediale.",
+        "nl": "Dit document loskoppelen van de ontvangst? Het bestand blijft in de mediabibliotheek.",
+        "pt_BR": "Desanexar este documento do recebimento? O arquivo permanece na biblioteca de mídia."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.document_detached",
+      "text": {
+        "de": "Dokument entfernt.",
+        "es": "Documento eliminado.",
+        "fr": "Document retiré.",
+        "it": "Documento rimosso.",
+        "nl": "Document verwijderd.",
+        "pt_BR": "Documento removido."
       }
     },
     {
@@ -26498,12 +26738,12 @@
       "group": "settings",
       "key": "workspace.currency_help",
       "text": {
-        "de": "Wird in diesem Arbeitsbereich standardmäßig für Kalkulationen und Preise verwendet.",
-        "es": "Se utiliza de forma predeterminada para los costes y precios de este espacio de trabajo.",
-        "fr": "Utilisée par défaut pour les coûts et les prix dans cet espace de travail.",
-        "it": "Usata come impostazione predefinita per costi e prezzi in questo spazio di lavoro.",
-        "nl": "Wordt in deze werkruimte standaard gebruikt voor kostprijsberekeningen en prijzen.",
-        "pt_BR": "Usado por padrão para custos e preços neste espaço de trabalho."
+        "de": "Wird in diesem Arbeitsbereich standardmäßig für Kalkulationen und Preise verwendet. Automatische Wechselkurse decken etwa dreißig wichtige Währungen ab; für andere geben Sie beim Wareneingang einen manuellen Kurs ein.",
+        "es": "Se utiliza de forma predeterminada para los costes y precios de este espacio de trabajo. Las tasas de cambio automáticas cubren unas treinta monedas principales; para las demás, introduzca una tasa manual al recibir mercancía.",
+        "fr": "Utilisée par défaut pour les coûts et les prix dans cet espace de travail. Les taux de change automatiques couvrent une trentaine de devises principales ; pour les autres, saisissez un taux manuel lors de la réception des marchandises.",
+        "it": "Usata come impostazione predefinita per costi e prezzi in questo spazio di lavoro. I tassi di cambio automatici coprono circa trenta valute principali; per le altre, inserisci un tasso manuale alla ricezione della merce.",
+        "nl": "Wordt in deze werkruimte standaard gebruikt voor kostprijsberekeningen en prijzen. Automatische wisselkoersen dekken ongeveer dertig belangrijke valuta; voor andere voert u bij het ontvangen van goederen een handmatige koers in.",
+        "pt_BR": "Usado por padrão para custos e preços neste espaço de trabalho. As taxas de câmbio automáticas cobrem cerca de trinta moedas principais; para as demais, informe uma taxa manual ao receber mercadorias."
       }
     },
     {
@@ -27468,6 +27708,18 @@
     },
     {
       "group": "workbench",
+      "key": "cosmetic.expanded_list_hint",
+      "text": {
+        "de": "Erweiterte Duftstoffe: neue Kosmetika ab :newFrom, bestehende Produkte ab :existingFrom.",
+        "es": "Fragancias ampliadas: nuevos cosméticos desde :newFrom, productos existentes desde :existingFrom.",
+        "fr": "Allergènes de parfum élargis : nouveaux cosmétiques à partir du :newFrom, produits existants à partir du :existingFrom.",
+        "it": "Fragranze ampliate: nuovi cosmetici da :newFrom, prodotti esistenti da :existingFrom.",
+        "nl": "Uitgebreide geurallergenen: nieuwe cosmetica vanaf :newFrom, bestaande producten vanaf :existingFrom.",
+        "pt_BR": "Fragrâncias ampliadas: novos cosméticos a partir de :newFrom, produtos existentes a partir de :existingFrom."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "cosmetic.exposure_label",
       "text": {
         "de": "Produktanwendung",
@@ -27608,6 +27860,18 @@
         "it": "Nessuna regola di controllo per questo quadro.",
         "nl": "Voor dit regelgevingskader zijn geen controleregels beschikbaar.",
         "pt_BR": "Não há regras de triagem para esta estrutura."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "cosmetic.not_applicable",
+      "text": {
+        "de": "noch nicht festgelegt",
+        "es": "aún no especificado",
+        "fr": "pas encore précisé",
+        "it": "non ancora specificato",
+        "nl": "nog niet gespecificeerd",
+        "pt_BR": "ainda não especificado"
       }
     },
     {
@@ -27830,12 +28094,12 @@
       "group": "workbench",
       "key": "costing.ingredients.count",
       "text": {
-        "de": ":count bepreiste Positionen",
-        "es": ":count líneas con precio",
-        "fr": ":count lignes chiffrées",
-        "it": ":count righe con prezzo",
-        "nl": ":count geprijsde regels",
-        "pt_BR": ":count linhas com preço"
+        "de": ":count Zeilen",
+        "es": ":count filas",
+        "fr": ":count lignes",
+        "it": ":count righe",
+        "nl": ":count rijen",
+        "pt_BR": ":count linhas"
       }
     },
     {
@@ -27866,12 +28130,12 @@
       "group": "workbench",
       "key": "costing.ingredients.line_cost",
       "text": {
-        "de": "Positionskosten",
-        "es": "Coste de la línea",
-        "fr": "Coût de la ligne",
-        "it": "Costo della riga",
-        "nl": "Regelkosten",
-        "pt_BR": "Custo da linha"
+        "de": "Positionskosten - :currency",
+        "es": "Coste de la línea - :currency",
+        "fr": "Coût de la ligne - :currency",
+        "it": "Costo della riga - :currency",
+        "nl": "Regelkosten - :currency",
+        "pt_BR": "Custo da linha - :currency"
       }
     },
     {
@@ -28022,24 +28286,24 @@
       "group": "workbench",
       "key": "costing.packaging.batch_cost",
       "text": {
-        "de": "Chargenkosten",
-        "es": "Coste del lote",
-        "fr": "Coût du lot",
-        "it": "Costo del lotto",
-        "nl": "Batchkosten",
-        "pt_BR": "Custo do lote"
+        "de": "Chargenkosten - :currency",
+        "es": "Coste del lote - :currency",
+        "fr": "Coût du lot - :currency",
+        "it": "Costo del lotto - :currency",
+        "nl": "Batchkosten - :currency",
+        "pt_BR": "Custo do lote - :currency"
       }
     },
     {
       "group": "workbench",
       "key": "costing.packaging.cost_per_unit",
       "text": {
-        "de": "Kosten pro Endprodukt",
-        "es": "Coste por unidad terminada",
-        "fr": "Coût par unité finie",
-        "it": "Costo per unità finita",
-        "nl": "Kosten per eindproduct",
-        "pt_BR": "Custo por unidade"
+        "de": "Kosten pro Stück - :currency",
+        "es": "Coste por unidad - :currency",
+        "fr": "Coût par unité - :currency",
+        "it": "Costo per unità - :currency",
+        "nl": "Kosten per eenheid - :currency",
+        "pt_BR": "Custo por unidade - :currency"
       }
     },
     {
@@ -28128,6 +28392,18 @@
     },
     {
       "group": "workbench",
+      "key": "costing.phases.alkali",
+      "text": {
+        "de": "Alkalien",
+        "es": "Álcalis",
+        "fr": "Alcalis",
+        "it": "Alcali",
+        "nl": "Alkaliën",
+        "pt_BR": "Álcalis"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.phases.fragrance",
       "text": {
         "de": "Duft- und Aromastoffe",
@@ -28212,42 +28488,6 @@
     },
     {
       "group": "workbench",
-      "key": "costing.settings.currencies.chf",
-      "text": {
-        "de": "Schweizer Franken",
-        "es": "franco suizo",
-        "fr": "franc suisse",
-        "it": "franco svizzero",
-        "nl": "Zwitserse frank",
-        "pt_BR": "Franco suíço"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "costing.settings.currencies.eur",
-      "text": {
-        "de": "Euro",
-        "es": "euro",
-        "fr": "euro",
-        "it": "euro",
-        "nl": "euro",
-        "pt_BR": "Euro"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "costing.settings.currencies.usd",
-      "text": {
-        "de": "US-Dollar",
-        "es": "dólar estadounidense",
-        "fr": "dollar américain",
-        "it": "dollaro statunitense",
-        "nl": "Amerikaanse dollar",
-        "pt_BR": "Dólar americano"
-      }
-    },
-    {
-      "group": "workbench",
       "key": "costing.settings.currency",
       "text": {
         "de": "Währung",
@@ -28268,18 +28508,6 @@
         "it": "Valuta del calcolo dei costi",
         "nl": "Valuta voor de kostencalculatie",
         "pt_BR": "Moeda do espaço de trabalho"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "costing.settings.currency_placeholder",
-      "text": {
-        "de": "Währung suchen",
-        "es": "Buscar monedas",
-        "fr": "Rechercher une devise",
-        "it": "Cerca valute",
-        "nl": "Valuta zoeken",
-        "pt_BR": "Pesquisar moedas"
       }
     },
     {
@@ -29532,6 +29760,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.common.label_market",
+      "text": {
+        "de": "Label market",
+        "es": "Label market",
+        "fr": "Marché de l’étiquette",
+        "it": "Label market",
+        "nl": "Label market",
+        "pt_BR": "Label market"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.common.phase",
       "text": {
         "de": "Phase",
@@ -29784,6 +30024,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.declarations.disclaimer",
+      "text": {
+        "de": "These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market.",
+        "es": "These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market.",
+        "fr": "Ces détails sont indicatifs et informatifs. Confirmez toujours l’étiquetage final avec un professionnel réglementaire ou l’autorité compétente de votre marché.",
+        "it": "These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market.",
+        "nl": "These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market.",
+        "pt_BR": "These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.declarations.empty",
       "text": {
         "de": "No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.",
@@ -29822,12 +30074,12 @@
       "group": "workbench",
       "key": "output.declarations.soap_help",
       "text": {
-        "de": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
-        "es": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
-        "fr": "Toutes les déclarations de parfum sont présentées avec leur contribution estimée au savon après cure et leur présence dans la liste sélectionnée.",
-        "it": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
-        "nl": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
-        "pt_BR": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list."
+        "de": "All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.",
+        "es": "All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.",
+        "fr": "Toutes les déclarations de parfum sont présentées avec leur contribution estimée à la base après cure et leur présence dans la liste sélectionnée. Elles ne sont pas comptées dans le total de 100 % car elles font déjà partie de leurs ingrédients aromatiques d’origine.",
+        "it": "All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.",
+        "nl": "All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.",
+        "pt_BR": "All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients."
       }
     },
     {
@@ -30072,6 +30324,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.restrictions.no_active_rule_set",
+      "text": {
+        "de": "Für die ausgewählte Regulierung ist kein aktiver Stoffregelsatz verfügbar.",
+        "es": "No hay un conjunto de reglas activo para sustancias disponible para la regulación seleccionada.",
+        "fr": "Aucun ensemble actif de règles pour les substances n'est disponible pour la réglementation sélectionnée.",
+        "it": "Nessun insieme di regole attivo per le sostanze è disponibile per la normativa selezionata.",
+        "nl": "Er is geen actieve set stofregels beschikbaar voor de geselecteerde regelgeving.",
+        "pt_BR": "Não há um conjunto ativo de regras de substâncias disponível para a regulamentação selecionada."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.restrictions.rule",
       "text": {
         "de": "Rule",
@@ -30134,48 +30398,36 @@
       "group": "workbench",
       "key": "output.soap.composition_help",
       "text": {
-        "de": "Main ingredient rows normalized on the cured soap basis.",
-        "es": "Main ingredient rows normalized on the cured soap basis.",
-        "fr": "Principales lignes d’ingrédients normalisées sur la base du savon après cure.",
-        "it": "Main ingredient rows normalized on the cured soap basis.",
-        "nl": "Main ingredient rows normalized on the cured soap basis.",
-        "pt_BR": "Main ingredient rows normalized on the cured soap basis."
+        "de": "Main ingredient rows normalized on the cured basis.",
+        "es": "Main ingredient rows normalized on the cured basis.",
+        "fr": "Principales lignes d’ingrédients normalisées sur la base après cure.",
+        "it": "Main ingredient rows normalized on the cured basis.",
+        "nl": "Main ingredient rows normalized on the cured basis.",
+        "pt_BR": "Main ingredient rows normalized on the cured basis."
       }
     },
     {
       "group": "workbench",
       "key": "output.soap.cured_bar_basis",
       "text": {
-        "de": "Cured bar basis",
-        "es": "Cured bar basis",
-        "fr": "Base du savon après cure",
-        "it": "Cured bar basis",
-        "nl": "Cured bar basis",
-        "pt_BR": "Cured bar basis"
+        "de": "Cured basis",
+        "es": "Cured basis",
+        "fr": "Base après cure",
+        "it": "Cured basis",
+        "nl": "Cured basis",
+        "pt_BR": "Cured basis"
       }
     },
     {
       "group": "workbench",
       "key": "output.soap.cured_basis",
       "text": {
-        "de": "Cured soap basis",
-        "es": "Cured soap basis",
-        "fr": "Base du savon après cure",
-        "it": "Cured soap basis",
-        "nl": "Cured soap basis",
-        "pt_BR": "Cured soap basis"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "output.soap.cured_total",
-      "text": {
-        "de": "Cured soap total",
-        "es": "Cured soap total",
-        "fr": "Total du savon après cure",
-        "it": "Cured soap total",
-        "nl": "Cured soap total",
-        "pt_BR": "Cured soap total"
+        "de": "Cured basis",
+        "es": "Cured basis",
+        "fr": "Base après cure",
+        "it": "Cured basis",
+        "nl": "Cured basis",
+        "pt_BR": "Cured basis"
       }
     },
     {
@@ -30194,36 +30446,36 @@
       "group": "workbench",
       "key": "output.soap.help",
       "text": {
-        "de": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
-        "es": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
+        "de": "The cured ingredient output used to prepare labels and review declared fragrance components.",
+        "es": "The cured ingredient output used to prepare labels and review declared fragrance components.",
         "fr": "La composition du savon après cure utilisée pour préparer les étiquettes et examiner les composants parfumants déclarés.",
-        "it": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
-        "nl": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
-        "pt_BR": "The cured-bar ingredient output used to prepare labels and review declared fragrance components."
+        "it": "The cured ingredient output used to prepare labels and review declared fragrance components.",
+        "nl": "The cured ingredient output used to prepare labels and review declared fragrance components.",
+        "pt_BR": "The cured ingredient output used to prepare labels and review declared fragrance components."
       }
     },
     {
       "group": "workbench",
       "key": "output.soap.label_basis",
       "text": {
-        "de": "Label output basis",
-        "es": "Label output basis",
-        "fr": "Base de calcul de l’étiquette",
-        "it": "Label output basis",
-        "nl": "Label output basis",
-        "pt_BR": "Label output basis"
+        "de": "Label basis",
+        "es": "Label basis",
+        "fr": "Base de l’étiquette",
+        "it": "Label basis",
+        "nl": "Label basis",
+        "pt_BR": "Label basis"
       }
     },
     {
       "group": "workbench",
       "key": "output.soap.label_basis_help",
       "text": {
-        "de": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "es": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "fr": "Les pourcentages utilisent le poids du savon après cure, dont 11 % d’eau résiduelle. Les allergènes sont présentés séparément.",
-        "it": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "nl": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "pt_BR": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils."
+        "de": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "es": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "fr": "Les pourcentages utilisent la base après cure, dont 11 % d’eau résiduelle. Les allergènes sont présentés séparément.",
+        "it": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "nl": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "pt_BR": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils."
       }
     },
     {

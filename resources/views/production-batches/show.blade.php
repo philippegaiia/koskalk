@@ -154,8 +154,8 @@
                                 <tr>
                                     <th class="px-5 py-3">Item</th>
                                     <th class="px-5 py-3">Components/unit</th>
-                                    <th class="px-5 py-3">Unit cost</th>
-                                    <th class="px-5 py-3">Batch cost</th>
+                                    <th class="px-5 py-3">Unit cost - {{ $productionBatch->currency }}</th>
+                                    <th class="px-5 py-3">Batch cost - {{ $productionBatch->currency }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-[var(--color-line)]">
@@ -163,8 +163,8 @@
                                     <tr>
                                         <td class="px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $packagingItem->name }}</td>
                                         <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]">{{ $formatNumber($packagingItem->components_per_unit, 3) }}</td>
-                                        <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]">{{ $formatMoney($packagingItem->unit_cost, $productionBatch->currency) }}</td>
-                                        <td class="numeric px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $formatMoney($packagingItem->line_cost, $productionBatch->currency) }}</td>
+                                        <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]">{{ $formatNumber($packagingItem->unit_cost, 2) }}</td>
+                                        <td class="numeric px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($packagingItem->line_cost, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

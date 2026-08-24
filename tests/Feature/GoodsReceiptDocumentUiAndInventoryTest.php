@@ -52,7 +52,7 @@ function receiptDocumentUiFixture(bool $reversed = false): array
     return [$owner, $workspace, $receipt, $line];
 }
 
-function receiptPageWorkspace(): array
+function goodsReceiptDocumentWorkspace(): array
 {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -256,7 +256,7 @@ it('links receipt-origin inventory rows to their receipt with stable provenance 
 });
 
 it('loads movement totals for many inventory lots without per-lot sum queries', function (): void {
-    [$owner, $workspace] = receiptPageWorkspace();
+    [$owner, $workspace] = goodsReceiptDocumentWorkspace();
     StockLot::factory()->count(15)->for($workspace)->create();
     $this->actingAs($owner);
     $movementQueries = [];

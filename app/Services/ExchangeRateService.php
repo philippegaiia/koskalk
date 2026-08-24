@@ -12,6 +12,15 @@ class ExchangeRateService
 {
     public function __construct(private readonly ExchangeRateProvider $provider) {}
 
+    public function canAutoConvert(string $baseCurrency, string $quoteCurrency): bool
+    {
+        $baseCurrency = $this->currency($baseCurrency);
+        $quoteCurrency = $this->currency($quoteCurrency);
+
+        return $baseCurrency === $quoteCurrency
+            || $this->provider->supports($baseCurrency, $quoteCurrency);
+    }
+
     public function snapshot(
         string $baseCurrency,
         string $quoteCurrency,
@@ -47,6 +56,10 @@ class ExchangeRateService
                 provider: 'manual',
                 isManual: true,
             );
+        }
+
+        if (! $this->canAutoConvert($baseCurrency, $quoteCurrency)) {
+            throw new InvalidArgumentException("No automatic exchange rate is available for {$baseCurrency} → {$quoteCurrency}.");
         }
 
         $cacheKey = "exchange-rate:frankfurter:{$rateDate}:{$baseCurrency}:{$quoteCurrency}";

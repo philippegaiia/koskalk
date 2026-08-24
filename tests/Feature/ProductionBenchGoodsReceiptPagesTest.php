@@ -428,6 +428,32 @@ it('shows a manual exchange-rate input for cross-currency receipts', function ()
         ->assertSeeHtml('data-receipt-manual-rate="'.$listing->id.'"');
 });
 
+it('warns about uncovered currency pairs and points to the manual rate on failure', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory())
+        ->create(['currency' => 'XOF']);
+    $this->actingAs($owner);
+
+    $component = Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
+        ->test(ReceiptCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->assertSee(__('production_bench.receipt.auto_rate_unavailable_hint'));
+
+    $component
+        ->set("selected.{$listing->id}", true)
+        ->set("lineInputs.{$listing->id}.packs_received", 1)
+        ->set("lineInputs.{$listing->id}.actual_quantity", '5')
+        ->call('post')
+        ->assertHasErrors('exchange_rate')
+        ->assertSee(__('production_bench.receipt.auto_rate_unavailable', ['base' => 'XOF', 'quote' => 'EUR']));
+
+    expect(GoodsReceipt::query()->count())->toBe(0);
+});
+
 it('renders a single-axis editable receipt layout with associated errors and loading feedback', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [$supplier, , $order, $line] = outstandingReceiptOrder($owner, $workspace);

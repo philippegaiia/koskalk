@@ -114,7 +114,12 @@ class PostGoodsReceiptLine
             );
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages([
-                'exchange_rate' => $exception->getMessage(),
+                'exchange_rate' => blank($manualRate)
+                    ? __('production_bench.receipt.auto_rate_unavailable', [
+                        'base' => strtoupper($currency),
+                        'quote' => strtoupper($workspace->default_currency),
+                    ])
+                    : $exception->getMessage(),
             ]);
         }
 

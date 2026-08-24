@@ -17,6 +17,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ExchangeRateService;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
@@ -211,6 +212,20 @@ class ReceiptCreate extends Component
 
         session()->flash('status', __('production_bench.receipt.posted'));
         $this->redirectRoute('production-bench.purchasing.receipts.show', ['goodsReceipt' => $receipt], navigate: true);
+    }
+
+    public function autoRateUnavailable(?string $currency): bool
+    {
+        $currency = strtoupper(trim((string) $currency));
+
+        if ($currency === '' || $currency === strtoupper($this->workspace()->default_currency)) {
+            return false;
+        }
+
+        static $coverage = [];
+
+        return $coverage[$currency] ??= ! app(ExchangeRateService::class)
+            ->canAutoConvert($currency, $this->workspace()->default_currency);
     }
 
     public function render(): View

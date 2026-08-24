@@ -229,6 +229,8 @@ return [
         'exchange_rate' => 'Exchange rate',
         'manual_exchange_rate' => 'Manual exchange rate (optional)',
         'manual_exchange_rate_help' => 'Use this when the exchange-rate provider is unavailable. Enter workspace currency per supplier currency.',
+        'auto_rate_unavailable_hint' => 'No automatic rate covers this currency pair. Enter the rate from your invoice.',
+        'auto_rate_unavailable' => 'No automatic :base → :quote exchange rate is available. Enter a manual exchange rate for this line.',
         'total_format' => 'Total format',
         'per_unit' => 'Per unit',
         'supplier_batch' => 'Supplier batch',

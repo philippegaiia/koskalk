@@ -20,7 +20,7 @@ return [
         'name' => 'Workspace name',
         'default_currency' => 'Default currency',
         'currency_search' => 'Search currencies',
-        'currency_help' => 'Used by default for costing and pricing in this workspace.',
+        'currency_help' => 'Used by default for costing and pricing in this workspace. Automatic exchange rates cover about thirty major currencies; for others, enter a manual rate when receiving goods.',
         'mass_display' => 'Measurement system',
         'mass_display_help' => 'Sets the starting unit for new formulas and the ingredient price basis. You can still convert any formula between g, kg, oz, and lb.',
         'mass_systems' => [

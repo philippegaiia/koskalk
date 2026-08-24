@@ -105,3 +105,32 @@ it('surfaces connection failures as an invalid exchange-rate error', function ()
     expect(Http::recorded(fn ($request): bool => $request->url() === 'https://api.frankfurter.dev/v2/rate/USD/EUR?date=2026-08-06'))
         ->toHaveCount(1);
 });
+
+it('reports automatic conversion coverage for currency pairs', function (): void {
+    $service = app(ExchangeRateService::class);
+
+    expect($service->canAutoConvert('EUR', 'EUR'))->toBeTrue()
+        ->and($service->canAutoConvert('USD', 'EUR'))->toBeTrue()
+        ->and($service->canAutoConvert('xof', 'EUR'))->toBeFalse()
+        ->and($service->canAutoConvert('EUR', 'xaf'))->toBeFalse();
+});
+
+it('refuses automatic conversion for uncovered pairs without calling the provider', function (): void {
+    Http::fake();
+
+    expect(fn () => app(ExchangeRateService::class)->snapshot('XOF', 'EUR', '2026-08-08'))
+        ->toThrow(InvalidArgumentException::class, 'No automatic exchange rate is available for XOF → EUR.');
+
+    Http::assertNothingSent();
+
+    $snapshot = app(ExchangeRateService::class)->snapshot(
+        baseCurrency: 'XOF',
+        quoteCurrency: 'EUR',
+        date: '2026-08-08',
+        manualRate: '0.0015',
+    );
+
+    expect($snapshot->provider)->toBe('manual')
+        ->and($snapshot->rate)->toBe('0.001500000000')
+        ->and(__('settings.workspace.currency_help'))->toContain('thirty major currencies');
+});

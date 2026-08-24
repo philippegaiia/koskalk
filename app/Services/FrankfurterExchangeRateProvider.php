@@ -11,7 +11,32 @@ use InvalidArgumentException;
 
 class FrankfurterExchangeRateProvider implements ExchangeRateProvider
 {
+    /** ECB reference-rate basket served by Frankfurter. */
+    public const SUPPORTED_CURRENCIES = [
+        'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR',
+        'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW',
+        'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD',
+        'THB', 'TRY', 'USD', 'ZAR',
+    ];
+
     public function __construct(private readonly HttpFactory $http) {}
+
+    /**
+     * @return list<string>
+     */
+    public function supportedCurrencies(): array
+    {
+        return self::SUPPORTED_CURRENCIES;
+    }
+
+    public function supports(string $baseCurrency, string $quoteCurrency): bool
+    {
+        $baseCurrency = $this->currency($baseCurrency);
+        $quoteCurrency = $this->currency($quoteCurrency);
+
+        return in_array($baseCurrency, self::SUPPORTED_CURRENCIES, true)
+            && in_array($quoteCurrency, self::SUPPORTED_CURRENCIES, true);
+    }
 
     public function rate(string $baseCurrency, string $quoteCurrency, string $date): ExchangeRateSnapshot
     {

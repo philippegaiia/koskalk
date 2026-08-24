@@ -258,6 +258,8 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         costingUnitsProduced: payload.costing?.settings?.unitsProduced ?? null,
         costingCurrency: payload.costing?.settings?.currency ?? payload.defaultCurrency ?? 'EUR',
         persistedCostingItemPrices: payload.costing?.item_prices ?? [],
+        costingAlkaliIngredients: payload.costing?.alkali_ingredients ?? {},
+        costingWaterIngredient: payload.costing?.water_ingredient ?? null,
         costingPriceByRowId: {},
         packagingPlanRows: (payload.packagingItems ?? []).map((row) => ({
             id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,

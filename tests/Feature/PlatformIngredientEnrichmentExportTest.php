@@ -90,7 +90,7 @@ it('writes the fixed input contract including vocabulary, requested output, and 
         'research_rules',
     ])
         ->and($record['format'])->toBe('soapkraft-platform-ingredient-enrichment-input')
-        ->and($record['vocabulary']['markets'])->toBe(['eu', 'us'])
+        ->and($record['vocabulary']['markets'])->toBe(['eu', 'us', 'ca'])
         ->and($record['requested_output']['fields'])->toContain('aliases')
         ->and($record['requested_output']['fields'])->toContain('market_labels')
         ->and($record['research_rules']['deferred_fields'])->toContain('sap');

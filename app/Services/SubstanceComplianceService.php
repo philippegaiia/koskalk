@@ -94,7 +94,7 @@ class SubstanceComplianceService
         $warnings = [];
 
         if (! ($ruleState['uses_regime_rules'] ?? false)) {
-            $warnings[] = 'No active substance rule set is available for the selected regime.';
+            $warnings[] = __('workbench.output.restrictions.no_active_rule_set');
         }
 
         foreach ($rows as $row) {

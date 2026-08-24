@@ -2282,6 +2282,82 @@ JS;
         ->and($rows[1]['position'])->toBe(2);
 });
 
+it('keeps the serialized dilution-liquid weights stable across backend preview updates', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const evalSource = (path) => fs
+  .readFileSync(path, 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace(/^export \{[^}]*\};\n/gm, '')
+  .replace(/export function /g, 'function ')
+  .replace(/export const /g, 'const ');
+
+const parseDecimalInput = (value) => Number.parseFloat(String(value ?? 0).replace(',', '.')) || 0;
+const normalizedIfraProductCategoryId = (value) => value;
+
+eval(`${evalSource('resources/js/recipe-workbench/utils.js')}\n${evalSource('resources/js/recipe-workbench/calculation.js')}\n${evalSource('resources/js/recipe-workbench/payload.js')}\nglobalThis.buildLyeBreakdown = lyeBreakdown;\nglobalThis.serializeDraft = serializeDraft;`);
+
+const buildState = (backendWaterWeight) => {
+  const state = {
+    formulaName: 'Hydrosol split',
+    oilUnit: 'g',
+    oilWeight: 1000,
+    waterMode: 'percent_of_oils',
+    waterValue: 38,
+    superfat: 5,
+    lyeType: 'naoh',
+    kohPurity: 90,
+    dualKohPercentage: 40,
+    oilRows: [{ id: 'oil', ingredient_id: 5, percentage: 100, koh_sap_value: 0.25 }],
+    backendCalculation: { lye: { water: { weight: backendWaterWeight } } },
+    phaseOrder: [
+      { key: 'saponified_oils', name: 'Saponified Oils' },
+      { key: 'lye_water', name: 'Dilution liquids' },
+    ],
+    phaseItems: {
+      saponified_oils: [{ id: 'oil', ingredient_id: 5, percentage: 100, note: null }],
+      lye_water: [{ id: 'hydrosol', ingredient_id: 9, percentage: 50, note: null }],
+    },
+    packagingPlanRows: [],
+  };
+
+  // Mirrors the formula-section readouts, which prefer the live backend preview.
+  state.lyeLiquidTotalWeight = function () {
+    return Number(this.backendCalculation?.lye?.water?.weight ?? 0);
+  };
+  state.lyeLiquidWeight = function (row) {
+    return this.lyeLiquidTotalWeight() * (row.percentage / 100);
+  };
+
+  return state;
+};
+
+const baseline = JSON.stringify(globalThis.serializeDraft(buildState(380)));
+const afterPreviewDrift = JSON.stringify(globalThis.serializeDraft(buildState(380.00000012)));
+
+// Preview/snapshot cycles may nudge the backend water weight by float noise;
+// the dirty signature must not move with it.
+assert.equal(afterPreviewDrift, baseline);
+
+const payload = JSON.parse(baseline);
+const hydrosol = payload.phase_items.lye_water[0];
+
+// Local math: 38% of 1000 g oils = 380 g liquid, 50% hydrosol share.
+assert.equal(hydrosol.weight, 190);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
 it('serializes and restores finished product identity fields in the browser draft', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
@@ -4294,7 +4370,7 @@ JS;
         ]);
 });
 
-it('parses localized lye liquid percentages and costs their share of the scaled dilution liquid', function () {
+it('parses localized lye liquid percentages and costs their real oil-basis share plus the implicit water', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -4329,6 +4405,8 @@ const workbench = {
   oilUnit: 'kg',
   costingOilWeight: 2000,
   costingOilUnit: 'g',
+  costingAlkaliIngredients: {},
+  costingWaterIngredient: { ingredient_id: 3, name: 'Water', default_price_per_kg: null },
   phaseOrder: [
     { key: 'saponified_oils', name: 'Saponified Oils' },
     { key: 'lye_water', name: 'Lye Water' },
@@ -4357,13 +4435,21 @@ assert.equal(workbench.lyeLiquidPercentageTotal(), 70);
 
 const oil = workbench.costingFormulaRows.find((row) => row.phaseKey === 'saponified_oils');
 const hydrosol = workbench.costingFormulaRows.find((row) => row.phaseKey === 'lye_water');
+const water = workbench.costingFormulaRows.find((row) => row.phaseKey === 'implicit_water');
+
+const roundToTwo = (value) => Math.round(value * 100) / 100;
 
 assert.equal(oil.weight, 2000);
 assert.equal(oil.percentageLabel, '%');
 assert.equal(hydrosol.weight, 532);
-assert.equal(hydrosol.percentage, 70);
-assert.equal(hydrosol.percentageLabel, 'Translated % lye liquid');
+assert.equal(roundToTwo(hydrosol.percentage), 26.6);
+assert.equal(hydrosol.percentageLabel, '%');
 assert.equal(hydrosol.phaseLabel, 'Lye liquid');
+assert.equal(water.name, 'Water');
+assert.equal(roundToTwo(water.weight), 228);
+assert.equal(water.ingredient_id, 3);
+assert.equal(roundToTwo(water.percentage), 11.4);
+assert.equal(water.phaseLabel, 'Lye liquid');
 JS;
 
     $process = Process::fromShellCommandline(
@@ -4769,6 +4855,105 @@ assert.equal(water.percent_of_cured_basis, 6.5);
 assert.equal(hydrosol.percent_of_cured_basis, 7.5);
 assert.equal(workbench.curedSoapIngredientTotalWeight, 1000);
 assert.equal(workbench.curedSoapIngredientTotalPercent, 100);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('pins the cured composition table to the saponified variant while lists follow the selection', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+const workbench = {
+  productFamilySlug: 'soap',
+  selectedIngredientListVariantKey: 'incorporated_ingredients',
+  backendLabeling: {
+    basis: {
+      formula_weight: 1270,
+      cured_weight: 1000,
+      residual_water_weight: 110,
+    },
+    default_variant_key: 'saponified_with_superfat',
+    plain_language_list: { final_label_text: 'Legacy plain text' },
+    list_variants: [
+      {
+        key: 'saponified_with_superfat',
+        final_label_text: 'SODIUM OLIVATE, AQUA, LAVANDULA ANGUSTIFOLIA FLOWER WATER',
+        plain_label_text: 'Saponified Oils of (Olive Oil), Water, Glycerin',
+        ingredient_rows: [
+          { label: 'SODIUM OLIVATE', weight: 860, lye_liquid_weight: 0, kind: 'saponified_oil' },
+          { label: 'AQUA', weight: 200, lye_liquid_weight: 190, kind: 'water' },
+          { label: 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', weight: 210, lye_liquid_weight: 190, kind: 'lye_liquid' },
+        ],
+        declaration_rows: [{ label: 'LINALOOL', percent_of_formula: 0.15, included_in_inci: true }],
+      },
+      {
+        key: 'incorporated_ingredients',
+        final_label_text: 'OLIVE OIL, AQUA, SODIUM HYDROXIDE',
+        plain_label_text: 'Lavender Water, Olive Oil, Sodium Hydroxide, Water',
+        ingredient_rows: [
+          { label: 'OLIVE OIL', weight: 800, lye_liquid_weight: 0, kind: 'ingredient' },
+          { label: 'AQUA', weight: 200, lye_liquid_weight: 200, kind: 'water' },
+          { label: 'SODIUM HYDROXIDE', weight: 144, lye_liquid_weight: 0, kind: 'lye' },
+          { label: 'POTASSIUM HYDROXIDE', weight: 0, lye_liquid_weight: 0, kind: 'lye' },
+        ],
+        declaration_rows: [],
+      },
+    ],
+  },
+  number: (value) => Number(value ?? 0),
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+const rows = workbench.curedSoapIngredientRows;
+const labels = rows.map((row) => row.label);
+
+assert.deepEqual(labels.sort(), ['AQUA', 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', 'SODIUM OLIVATE']);
+assert.equal(workbench.curedSoapIngredientTotalWeight, 1000);
+assert.equal(workbench.curedSoapIngredientTotalPercent, 100);
+assert.equal(workbench.curedSoapDeclarationRows.length, 1);
+assert.equal(workbench.generatedIngredientListText.includes('OLIVE OIL'), true);
+assert.equal(workbench.generatedPlainLanguageListText, 'Lavender Water, Olive Oil, Sodium Hydroxide, Water');
+
+workbench.selectIngredientListVariant('saponified_with_superfat');
+
+assert.equal(workbench.generatedPlainLanguageListText, 'Saponified Oils of (Olive Oil), Water, Glycerin');
+assert.deepEqual(
+  workbench.curedSoapIngredientRows.map((row) => row.label).sort(),
+  ['AQUA', 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', 'SODIUM OLIVATE'],
+);
+
+const legacyWorkbench = {
+  productFamilySlug: 'soap',
+  backendLabeling: {
+    basis: { formula_weight: 1270, cured_weight: 1000, residual_water_weight: 110 },
+    default_variant_key: 'saponified_with_superfat',
+    plain_language_list: { final_label_text: 'Legacy plain text' },
+    list_variants: [
+      { key: 'saponified_with_superfat', ingredient_rows: [], declaration_rows: [] },
+    ],
+  },
+  number: (value) => Number(value ?? 0),
+};
+
+Object.defineProperties(legacyWorkbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+assert.equal(legacyWorkbench.generatedPlainLanguageListText, 'Legacy plain text');
 JS;
 
     $process = Process::fromShellCommandline(

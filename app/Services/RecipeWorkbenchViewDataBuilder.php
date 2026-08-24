@@ -93,7 +93,7 @@ class RecipeWorkbenchViewDataBuilder
     }
 
     /**
-     * @return array<int, array{code: string, name: string, version_label: string|null, status: string, allergen_rule_count: int, substance_rule_count: int}>
+     * @return array<int, array{code: string, name: string, version_label: string|null, status: string, allergen_rule_count: int, substance_rule_count: int, milestones: array<string, string>}>
      */
     private function regulatoryRegimes(): array
     {
@@ -107,7 +107,7 @@ class RecipeWorkbenchViewDataBuilder
             ->orderByDesc('is_default')
             ->orderBy('market_code')
             ->orderBy('name')
-            ->get(['id', 'code', 'name', 'version_label', 'status'])
+            ->get(['id', 'code', 'name', 'version_label', 'status', 'source_data'])
             ->map(fn (RegulatoryRegime $regime): array => [
                 'code' => $regime->code,
                 'name' => $regime->name,
@@ -115,6 +115,12 @@ class RecipeWorkbenchViewDataBuilder
                 'status' => $regime->status,
                 'allergen_rule_count' => (int) $regime->allergen_rule_count,
                 'substance_rule_count' => (int) $regime->substance_rule_count,
+                'milestones' => is_array($regime->source_data)
+                    ? array_filter(array_map(
+                        fn (mixed $value): string => (string) $value,
+                        $regime->source_data['milestones'] ?? [],
+                    ))
+                    : [],
             ])
             ->values()
             ->all();
@@ -128,6 +134,7 @@ class RecipeWorkbenchViewDataBuilder
                 'status' => 'active',
                 'allergen_rule_count' => 0,
                 'substance_rule_count' => 0,
+                'milestones' => [],
             ]];
     }
 

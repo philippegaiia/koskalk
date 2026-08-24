@@ -160,3 +160,40 @@ it('uses the selected market declaration in generated ingredient lists', functio
     expect($result['final_labels'])->toContain('IRON OXIDES')
         ->and($result['final_labels'])->not->toContain('CI 77491');
 });
+
+it('keeps generated lists when a market declaration is missing by falling back to the canonical inci', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Almond Oil',
+        'inci_name' => 'PRUNUS AMYGDALUS DULCIS OIL',
+    ]);
+    $ingredient->load('marketLabels');
+
+    $regime = RegulatoryRegime::factory()->create([
+        'code' => 'us_fallback_test',
+        'market_code' => IngredientLabelMarket::Us->value,
+        'name' => 'US fallback regime',
+        'status' => 'active',
+    ]);
+
+    $result = app(InciGenerationService::class)->generate([
+        'oil_weight' => 100,
+        'manufacturing_mode' => 'blend_only',
+        'exposure_mode' => 'rinse_off',
+        'regulatory_regime' => $regime->code,
+        'phase_items' => [
+            'saponified_oils' => [],
+            'additives' => [[
+                'ingredient_id' => $ingredient->id,
+                'weight' => 10,
+                'percentage' => 10,
+            ]],
+            'fragrance' => [],
+        ],
+    ]);
+
+    expect($result['final_labels'])->toContain('PRUNUS AMYGDALUS DULCIS OIL')
+        ->and(collect($result['warnings'])->contains(
+            fn (string $warning): bool => str_contains($warning, 'No effective United States declaration is recorded for Almond Oil'),
+        ))->toBeTrue();
+});

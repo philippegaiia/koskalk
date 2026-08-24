@@ -67,6 +67,31 @@ export function createVersionSection() {
             return labels.join(' · ');
         },
 
+        /**
+         * Expanded-list awareness for Canada: the bench only evaluates the one
+         * Canadian version List (SOR/DORS-63), so the hint surfaces the two
+         * applicability dates that matter.
+         */
+        get regulatoryRegimeMilestoneHint() {
+            const milestones = this.selectedRegulatoryRegimeRecord?.milestones ?? null;
+
+            if (!milestones) {
+                return null;
+            }
+
+            const newCosmetics = milestones.new_cosmetics_required_from ?? null;
+            const existingProducts = milestones.existing_products_required_from ?? null;
+
+            if (!newCosmetics && !existingProducts) {
+                return null;
+            }
+
+            return this.t('cosmetic.expanded_list_hint', {
+                newFrom: newCosmetics ?? this.t('cosmetic.not_applicable'),
+                existingFrom: existingProducts ?? this.t('cosmetic.not_applicable'),
+            });
+        },
+
         get hasPostReactionRows() {
             return this.additiveRows.length > 0 || this.fragranceRows.length > 0;
         },

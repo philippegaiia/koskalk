@@ -12,12 +12,48 @@ use LogicException;
 
 class IngredientDeclarationNameResolver
 {
+    public const FALLBACK_US_BARE_CI = 'us_bare_ci';
+
+    public const FALLBACK_MISSING_DECLARATION = 'missing_declaration';
+
     public function resolve(
         Ingredient $ingredient,
         string $marketCode,
         ?CarbonImmutable $onDate = null,
         bool $allowLegacyEuFallback = false,
     ): ?string {
+        $resolved = $this->resolveWithFallback(
+            $ingredient,
+            $marketCode,
+            $onDate,
+            $allowLegacyEuFallback,
+        );
+        $declarationName = $resolved['declaration_name'];
+        $fallback = $resolved['fallback'];
+
+        if ($fallback === self::FALLBACK_US_BARE_CI) {
+            $this->throwInvalidUsDeclaration($ingredient);
+        }
+
+        if ($fallback === self::FALLBACK_MISSING_DECLARATION) {
+            $this->throwMissingDeclaration(
+                $ingredient,
+                IngredientLabelMarket::from(Str::lower(trim($marketCode))),
+            );
+        }
+
+        return $declarationName;
+    }
+
+    /**
+     * @return array{declaration_name: string|null, fallback: string|null}
+     */
+    public function resolveWithFallback(
+        Ingredient $ingredient,
+        string $marketCode,
+        ?CarbonImmutable $onDate = null,
+        bool $allowLegacyEuFallback = false,
+    ): array {
         $normalizedMarketCode = Str::lower(trim($marketCode));
         $market = IngredientLabelMarket::tryFrom($normalizedMarketCode);
 
@@ -34,12 +70,7 @@ class IngredientDeclarationNameResolver
         }
 
         $date = $onDate ?? CarbonImmutable::today();
-        $marketLabel = $ingredient->marketLabels
-            ->filter(fn (mixed $label): bool => $label instanceof IngredientMarketLabel)
-            ->filter(fn (IngredientMarketLabel $label): bool => $label->market_code === $market)
-            ->filter(fn (IngredientMarketLabel $label): bool => $this->isEffective($label, $date))
-            ->sortByDesc(fn (IngredientMarketLabel $label): string => $label->effective_from?->toDateString() ?? '')
-            ->first();
+        $marketLabel = $this->effectiveMarketLabel($ingredient, $market, $date);
 
         $declarationName = $marketLabel instanceof IngredientMarketLabel
             ? $this->normalize($marketLabel->declaration_name)
@@ -47,23 +78,52 @@ class IngredientDeclarationNameResolver
 
         if ($declarationName !== null) {
             if ($market === IngredientLabelMarket::Us && $this->isBareCi($declarationName)) {
-                $this->throwInvalidUsDeclaration($ingredient);
+                return [
+                    'declaration_name' => $this->normalize($ingredient->inci_name),
+                    'fallback' => self::FALLBACK_US_BARE_CI,
+                ];
             }
 
-            return $declarationName;
+            return ['declaration_name' => $declarationName, 'fallback' => null];
+        }
+
+        // Markets may inherit another market's provisioned names outright
+        // (Canada accepts EU declaration names as-is).
+        $inheritedMarket = $market->fallbackMarket();
+
+        if ($inheritedMarket instanceof IngredientLabelMarket) {
+            $inheritedLabel = $this->effectiveMarketLabel($ingredient, $inheritedMarket, $date);
+
+            $inheritedName = $inheritedLabel instanceof IngredientMarketLabel
+                ? $this->normalize($inheritedLabel->declaration_name)
+                : null;
+
+            if ($inheritedName !== null) {
+                return ['declaration_name' => $inheritedName, 'fallback' => null];
+            }
         }
 
         $canonicalName = $this->normalize($ingredient->inci_name);
 
-        if ($market === IngredientLabelMarket::Eu && $this->isBareCi($canonicalName)) {
-            return $canonicalName;
+        if (($market === IngredientLabelMarket::Eu || $market === IngredientLabelMarket::Ca)
+            && ($this->isBareCi($canonicalName) || $allowLegacyEuFallback)) {
+            return ['declaration_name' => $canonicalName, 'fallback' => null];
         }
 
-        if ($market === IngredientLabelMarket::Eu && $allowLegacyEuFallback) {
-            return $canonicalName;
-        }
+        return ['declaration_name' => $canonicalName, 'fallback' => self::FALLBACK_MISSING_DECLARATION];
+    }
 
-        $this->throwMissingDeclaration($ingredient, $market);
+    private function effectiveMarketLabel(
+        Ingredient $ingredient,
+        IngredientLabelMarket $market,
+        CarbonImmutable $date,
+    ): ?IngredientMarketLabel {
+        return $ingredient->marketLabels
+            ->filter(fn (mixed $label): bool => $label instanceof IngredientMarketLabel)
+            ->filter(fn (IngredientMarketLabel $label): bool => $label->market_code === $market)
+            ->filter(fn (IngredientMarketLabel $label): bool => $this->isEffective($label, $date))
+            ->sortByDesc(fn (IngredientMarketLabel $label): string => $label->effective_from?->toDateString() ?? '')
+            ->first();
     }
 
     private function isEffective(IngredientMarketLabel $label, CarbonImmutable $onDate): bool

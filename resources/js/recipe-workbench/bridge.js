@@ -61,6 +61,8 @@ export async function persistWorkbench(workbench, method) {
             workbench.applySnapshot(response.snapshot);
         }
 
+        workbench.hasLoadedCosting = false;
+
         workbench.refreshDirtyBaseline();
         workbench.dirtyStateRegistry.set('recipe-content', 'saved');
 

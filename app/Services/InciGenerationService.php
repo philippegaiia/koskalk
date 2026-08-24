@@ -83,7 +83,8 @@ class InciGenerationService
      *             notes: string|null
      *         }>,
      *         final_labels: array<int, string>,
-     *         final_label_text: string
+     *         final_label_text: string,
+     *         plain_label_text: string|null
      *     }>,
      *     default_variant_key: string,
      *     final_labels: array<int, string>,
@@ -99,6 +100,7 @@ class InciGenerationService
                 'allergenEntries.allergen',
                 'marketLabels',
                 'sapProfile',
+                'translations',
             ],
         );
         $declarationRuleState = $this->declarationRuleState($payload);
@@ -110,7 +112,12 @@ class InciGenerationService
         );
         $listVariants = $this->listVariants($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState);
         $defaultVariant = $this->defaultListVariant($listVariants);
-        $plainLanguageList = $this->plainLanguageList($payload, $rowContexts, $soapCalculation);
+        $plainLanguageList = $this->plainLanguageList(
+            $payload,
+            $rowContexts,
+            $soapCalculation,
+            $declarationRuleState['market_code'] ?? null,
+        );
         $ingredientListBasisHash = $this->ingredientListBasisHash($payload);
         $finalIngredientList = $this->finalIngredientListState(
             $payload,
@@ -135,7 +142,15 @@ class InciGenerationService
             'plain_language_list' => $plainLanguageList,
             'print_ingredient_list_text' => $finalIngredientList['final_text'],
             'print_plain_ingredient_list_text' => $plainLanguageList['final_text'],
-            'warnings' => $this->warnings($payload, $rowContexts, $this->variantWarnings($listVariants), $soapCalculation),
+            'warnings' => $this->warnings(
+                $payload,
+                $rowContexts,
+                [
+                    ...$this->variantWarnings($listVariants),
+                    ...($plainLanguageList['warnings'] ?? []),
+                ],
+                $soapCalculation,
+            ),
         ];
     }
 
@@ -279,6 +294,7 @@ class InciGenerationService
      *     }>,
      *     final_labels: array<int, string>,
      *     final_label_text: string,
+     *     plain_label_text: string|null,
      *     warnings: array<int, string>
      * }>
      */
@@ -361,6 +377,7 @@ class InciGenerationService
      *     }>,
      *     final_labels: array<int, string>,
      *     final_label_text: string,
+     *     plain_label_text: string|null,
      *     warnings: array<int, string>
      * }>
      */
@@ -372,7 +389,14 @@ class InciGenerationService
         ?array $soapCalculation,
         array $declarationRuleState,
     ): array {
-        return array_map(function (array $definition) use ($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState): array {
+        $plainLanguageTexts = $this->variantPlainLanguageTexts(
+            $payload,
+            $rowContexts,
+            $soapCalculation,
+            $declarationRuleState['market_code'] ?? null,
+        );
+
+        return array_map(function (array $definition) use ($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState, $plainLanguageTexts): array {
             $ingredientRowsState = $this->ingredientRowsState(
                 $payload,
                 $rowContexts,
@@ -398,6 +422,7 @@ class InciGenerationService
                 'declaration_rows' => $declarationRows,
                 'final_labels' => $finalLabels,
                 'final_label_text' => implode(', ', $finalLabels),
+                'plain_label_text' => $plainLanguageTexts[$definition['key']] ?? null,
                 'warnings' => $ingredientRowsState['fallback_warnings'],
             ];
         }, $variantDefinitions);
@@ -431,6 +456,7 @@ class InciGenerationService
      *     }>,
      *     final_labels: array<int, string>,
      *     final_label_text: string,
+     *     plain_label_text: string|null,
      *     warnings: array<int, string>
      * }>  $listVariants
      * @return array{
@@ -533,22 +559,27 @@ class InciGenerationService
      *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<string, mixed>|null  $soapCalculation
-     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string}
+     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string, warnings: array<int, string>}
      */
-    private function plainLanguageList(array $payload, array $rowContexts, ?array $soapCalculation): array
+    private function plainLanguageList(array $payload, array $rowContexts, ?array $soapCalculation, ?string $marketCode = null): array
     {
+        $bilingual = Str::lower(trim((string) $marketCode)) === IngredientLabelMarket::Ca->value;
+
         if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'saponify_in_formula') {
-            return $this->soapPlainLanguageList($rowContexts, $soapCalculation);
+            return $this->soapPlainLanguageList($rowContexts, $soapCalculation, $bilingual);
         }
 
         $rowsByLabel = [];
+        $warnings = [];
 
         foreach ($rowContexts as $context) {
+            $pair = $this->plainLabelPair($context, false, $bilingual);
             $this->appendPlainLanguageRow(
                 $rowsByLabel,
-                $this->plainIngredientLabel($context, false),
+                $this->joinBilingualLabel($pair),
                 (float) $context['weight'],
             );
+            $this->collectMissingFrenchWarning($warnings, $pair, $bilingual, (string) $context['ingredient_name']);
         }
 
         $labels = $this->sortedPlainLanguageLabels($rowsByLabel);
@@ -558,6 +589,7 @@ class InciGenerationService
             'note' => 'Uses ingredient display names in decreasing order on the full formula basis.',
             'final_labels' => $labels,
             'final_label_text' => implode(', ', $labels),
+            'warnings' => array_values(array_unique($warnings)),
         ];
     }
 
@@ -570,40 +602,46 @@ class InciGenerationService
      *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<string, mixed>|null  $soapCalculation
-     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string}
+     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string, warnings: array<int, string>}
      */
-    private function soapPlainLanguageList(array $rowContexts, ?array $soapCalculation): array
+    private function soapPlainLanguageList(array $rowContexts, ?array $soapCalculation, bool $bilingual = false): array
     {
         $oilNamesByKey = [];
         $restRowsByLabel = [];
+        $warnings = [];
 
         foreach ($rowContexts as $context) {
             if ($context['phase_key'] === 'saponified_oils') {
-                $oilLabel = $this->plainSaponifiedOilLabel($context);
+                $oilPair = $this->plainSaponifiedOilLabelPair($context, $bilingual);
+                $oilLabel = $this->joinBilingualLabel($oilPair);
 
                 if ($oilLabel !== null) {
                     $oilNamesByKey[$this->normalizeLabel($oilLabel)] = $oilLabel;
                 }
 
+                $this->collectMissingFrenchWarning($warnings, $oilPair, $bilingual, (string) $context['ingredient_name']);
+
                 continue;
             }
 
+            $pair = $this->plainLabelPair($context, true, $bilingual);
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
-                $this->plainIngredientLabel($context, true),
+                $this->joinBilingualLabel($pair),
                 (float) $context['weight'],
             );
+            $this->collectMissingFrenchWarning($warnings, $pair, $bilingual, (string) $context['ingredient_name']);
         }
 
         if (is_array($soapCalculation)) {
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
-                'Water',
+                $bilingual ? 'Water/Eau' : 'Water',
                 $this->freshWaterWeight($soapCalculation),
             );
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
-                'Glycerin',
+                $bilingual ? 'Glycerin/Glycérine' : 'Glycerin',
                 (float) data_get($soapCalculation, 'lye.selected.glycerine_weight', 0),
             );
         }
@@ -623,6 +661,86 @@ class InciGenerationService
         return [
             'label' => 'Plain-language ingredient list',
             'note' => 'Starts with the saponified oil basis, then lists remaining materials in decreasing order.',
+            'final_labels' => $labels,
+            'final_label_text' => implode(', ', $labels),
+            'warnings' => array_values(array_unique($warnings)),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }>  $rowContexts
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<string, string|null>
+     */
+    private function variantPlainLanguageTexts(array $payload, array $rowContexts, ?array $soapCalculation, ?string $marketCode = null): array
+    {
+        $bilingual = Str::lower(trim((string) $marketCode)) === IngredientLabelMarket::Ca->value;
+
+        if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') !== 'saponify_in_formula') {
+            return [
+                self::INCORPORATED_LIST_VARIANT_KEY => $this->plainLanguageList($payload, $rowContexts, $soapCalculation, $marketCode)['final_label_text'],
+            ];
+        }
+
+        return [
+            self::DEFAULT_LIST_VARIANT_KEY => $this->soapPlainLanguageList($rowContexts, $soapCalculation, $bilingual)['final_label_text'],
+            self::INCORPORATED_LIST_VARIANT_KEY => $this->soapIncorporatedPlainLanguageList($rowContexts, $soapCalculation, $bilingual)['final_label_text'],
+        ];
+    }
+
+    /**
+     * @param  array<int, array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }>  $rowContexts
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string}
+     */
+    private function soapIncorporatedPlainLanguageList(array $rowContexts, ?array $soapCalculation, bool $bilingual = false): array
+    {
+        $rowsByLabel = [];
+
+        foreach ($rowContexts as $context) {
+            $this->appendPlainLanguageRow(
+                $rowsByLabel,
+                $this->joinBilingualLabel($this->plainLabelPair($context, true, $bilingual)),
+                (float) $context['weight'],
+            );
+        }
+
+        if (is_array($soapCalculation)) {
+            $this->appendPlainLanguageRow(
+                $rowsByLabel,
+                $bilingual ? 'Water/Eau' : 'Water',
+                $this->freshWaterWeight($soapCalculation),
+            );
+            $this->appendPlainLanguageRow(
+                $rowsByLabel,
+                $bilingual ? 'Sodium Hydroxide/Sodium Hydroxyde' : 'Sodium Hydroxide',
+                (float) data_get($soapCalculation, 'lye.selected.naoh_weight', 0),
+            );
+            $this->appendPlainLanguageRow(
+                $rowsByLabel,
+                $bilingual ? 'Potassium Hydroxide/Potassium Hydroxyde' : 'Potassium Hydroxide',
+                (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0),
+            );
+        }
+
+        $labels = $this->sortedPlainLanguageLabels($rowsByLabel);
+
+        return [
+            'label' => 'Plain-language ingredient list (incorporated)',
+            'note' => 'Lists materials as incorporated before saponification in decreasing order.',
             'final_labels' => $labels,
             'final_label_text' => implode(', ', $labels),
         ];
@@ -696,6 +814,10 @@ class InciGenerationService
     }
 
     /**
+     * Plain-language label pair for one row, with an optional French equivalent
+     * for bilingual Canadian lists. English always resolves; French resolves only
+     * when the ingredient carries a distinct French translation.
+     *
      * @param  array{
      *     phase_key: string,
      *     weight: float,
@@ -703,19 +825,76 @@ class InciGenerationService
      *     ingredient_name: string,
      *     is_user_owned: bool
      * }  $context
+     * @return array{english: string|null, french: string|null}
      */
-    private function plainSaponifiedOilLabel(array $context): ?string
+    private function plainLabelPair(array $context, bool $titleCase, bool $bilingual): array
     {
-        $label = $this->plainIngredientLabel($context, true);
+        $english = $this->plainIngredientLabel($context, $titleCase);
 
-        if ($label === null) {
+        $french = null;
+
+        if ($bilingual && $english !== null && $context['ingredient'] instanceof Ingredient) {
+            $frenchName = Str::squish((string) ($context['ingredient']->frenchDisplayName() ?? ''));
+
+            if ($frenchName !== '' && $frenchName !== $english) {
+                $french = $frenchName;
+            }
+        }
+
+        return ['english' => $english, 'french' => $french];
+    }
+
+    private function joinBilingualLabel(array $pair): ?string
+    {
+        if ($pair['english'] === null) {
             return null;
         }
 
-        // US-style soap common-name lists group the commodity suffix once in "Saponified Oils of (...)".
-        $label = preg_replace('/\s+(Oil|Oils|Butter|Butters)\z/i', '', $label) ?? $label;
+        return $pair['french'] === null
+            || $pair['french'] === ''
+            ? $pair['english']
+            : "{$pair['english']}/{$pair['french']}";
+    }
 
-        return trim($label) !== '' ? trim($label) : null;
+    /**
+     * @param  array{english: string|null, french: string|null}  $pair
+     */
+    private function collectMissingFrenchWarning(array &$warnings, array $pair, bool $bilingual, string $ingredientName): void
+    {
+        if (! $bilingual || $pair['english'] === null || $pair['french'] !== null) {
+            return;
+        }
+
+        $warnings[] = "{$ingredientName} has no French name yet, so the Canadian plain-language list shows it in English only.";
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }  $context
+     * @return array{english: string|null, french: string|null}
+     */
+    private function plainSaponifiedOilLabelPair(array $context, bool $bilingual): array
+    {
+        $pair = $this->plainLabelPair($context, true, $bilingual);
+
+        foreach (['english', 'french'] as $key) {
+            $value = $pair[$key];
+
+            if ($value === null) {
+                continue;
+            }
+
+            $value = preg_replace('/\s+(Oil|Oils|Butter|Butters)\z/i', '', $value) ?? $value;
+
+            $pair[$key] = trim($value) !== '' ? trim($value) : null;
+        }
+
+        return $pair;
     }
 
     /**
@@ -861,6 +1040,7 @@ class InciGenerationService
      *     }>,
      *     final_labels: array<int, string>,
      *     final_label_text: string,
+     *     plain_label_text: string|null,
      *     warnings: array<int, string>
      * }>  $listVariants
      * @return array<int, string>
@@ -1521,25 +1701,32 @@ class InciGenerationService
                 ];
             }
 
-            $fallbackLabel = $this->resolveIngredientDeclaration($ingredient, $marketCode);
+            $fallbackState = $this->resolveIngredientDeclarationWithWarning($ingredient, $marketCode);
+            $fallbackLabel = $fallbackState['label'];
+
+            if ($fallbackState['warning'] === null && $fallbackLabel !== null) {
+                $fallbackWarning = "{$ingredientName} is missing soap-specific INCI output, so the preview is falling back to its regular ingredient label.";
+            } else {
+                $fallbackWarning = $fallbackState['warning'];
+            }
 
             return [
                 'label' => $fallbackLabel,
                 'kind' => 'saponified_oil',
-                'warning' => $fallbackLabel === null
-                    ? null
-                    : "{$ingredientName} is missing soap-specific INCI output, so the preview is falling back to its regular ingredient label.",
+                'warning' => $fallbackWarning,
             ];
         }
 
-        $label = $this->resolveIngredientDeclaration($ingredient, $marketCode);
+        $declarationState = $this->resolveIngredientDeclarationWithWarning($ingredient, $marketCode);
+        $label = $declarationState['label'];
+        $warning = $declarationState['warning'];
 
         if ($label !== null) {
             if ($this->isParfumLabel($label)) {
                 return [
                     'label' => 'PARFUM',
                     'kind' => 'parfum',
-                    'warning' => null,
+                    'warning' => $warning,
                 ];
             }
 
@@ -1555,7 +1742,7 @@ class InciGenerationService
                 'kind' => $replacementLabel !== null
                     ? 'declaration_alias'
                     : 'ingredient',
-                'warning' => null,
+                'warning' => $warning,
             ];
         }
 
@@ -1564,7 +1751,7 @@ class InciGenerationService
         return [
             'label' => $fallbackLabel,
             'kind' => 'ingredient',
-            'warning' => null,
+            'warning' => $warning,
         ];
     }
 
@@ -1590,13 +1777,13 @@ class InciGenerationService
             ];
         }
 
-        $label = $this->resolveIngredientDeclaration($ingredient, $marketCode);
+        $declarationState = $this->resolveIngredientDeclarationWithWarning($ingredient, $marketCode);
 
-        if ($label !== null) {
+        if ($declarationState['label'] !== null) {
             return [
-                'label' => $this->isParfumLabel($label) ? 'PARFUM' : $label,
+                'label' => $this->isParfumLabel($declarationState['label']) ? 'PARFUM' : $declarationState['label'],
                 'kind' => 'ingredient',
-                'warning' => null,
+                'warning' => $declarationState['warning'],
             ];
         }
 
@@ -1605,17 +1792,39 @@ class InciGenerationService
         return [
             'label' => $fallbackLabel,
             'kind' => 'ingredient',
-            'warning' => null,
+            'warning' => $declarationState['warning'],
         ];
     }
 
-    private function resolveIngredientDeclaration(Ingredient $ingredient, string $marketCode): ?string
+    /**
+     * @return array{label: string|null, warning: string|null}
+     */
+    private function resolveIngredientDeclarationWithWarning(Ingredient $ingredient, string $marketCode): array
     {
-        return $this->ingredientDeclarationNameResolver->resolve(
+        ['declaration_name' => $declarationName, 'fallback' => $fallback] = $this->ingredientDeclarationNameResolver->resolveWithFallback(
             $ingredient,
             $marketCode,
-            allowLegacyEuFallback: $marketCode === IngredientLabelMarket::Eu->value,
+            allowLegacyEuFallback: in_array(
+                $marketCode,
+                [IngredientLabelMarket::Eu->value, IngredientLabelMarket::Ca->value],
+                true,
+            ),
         );
+
+        if ($fallback === null) {
+            return ['label' => $declarationName, 'warning' => null];
+        }
+
+        $warning = $fallback === IngredientDeclarationNameResolver::FALLBACK_US_BARE_CI
+            ? __('ingredient_admin.market_labels.warnings.us_bare_ci_fallback', [
+                'ingredient' => $ingredient->display_name,
+            ])
+            : __('ingredient_admin.market_labels.warnings.missing_declaration_fallback', [
+                'ingredient' => $ingredient->display_name,
+                'market' => IngredientLabelMarket::tryFrom($marketCode)?->label() ?? $marketCode,
+            ]);
+
+        return ['label' => $declarationName, 'warning' => $warning];
     }
 
     /**

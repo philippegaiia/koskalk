@@ -98,6 +98,49 @@ it('includes active allergen and substance rule counts for each regime', functio
     ]);
 });
 
+it('exposes regime milestone dates so the switcher can surface applicability hints', function () {
+    $productFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    RegulatoryRegime::factory()->create([
+        'code' => 'canada_2026',
+        'name' => 'Canada',
+        'market_code' => 'ca',
+        'status' => 'active',
+        'source_data' => [
+            'milestones' => [
+                'list_1_required_from' => '2026-04-12',
+                'new_cosmetics_required_from' => '2026-08-01',
+                'existing_products_required_from' => '2028-08-01',
+            ],
+        ],
+    ]);
+    RegulatoryRegime::factory()->create([
+        'code' => 'eu',
+        'name' => 'EU regime',
+        'market_code' => 'eu',
+        'status' => 'active',
+        'is_default' => true,
+    ]);
+
+    mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')->andReturn(null);
+        $mock->shouldReceive('packagingCatalogPayload')->andReturn([]);
+        $mock->shouldReceive('phaseBlueprints')->andReturn([]);
+    });
+    mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
+
+    $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
+    $regimePayload = collect($payload['regulatoryRegimes'])->firstWhere('code', 'canada_2026');
+
+    expect($regimePayload['milestones'])->toBe([
+        'list_1_required_from' => '2026-04-12',
+        'new_cosmetics_required_from' => '2026-08-01',
+        'existing_products_required_from' => '2028-08-01',
+    ]);
+});
+
 it('builds the initial workbench payload without eager preview or costing data', function () {
     $productFamily = ProductFamily::factory()->create([
         'slug' => 'soap',

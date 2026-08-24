@@ -119,6 +119,17 @@ class Ingredient extends Model
         return $this->localizedPlatformValue('display_name', $locale, $this->display_name);
     }
 
+    /**
+     * French display name used for bilingual (English/French) Canadian
+     * plain-language labelling. Falls back to the base display name.
+     */
+    public function frenchDisplayName(): ?string
+    {
+        $frenchName = $this->localizedPlatformValue('display_name', 'fr', null);
+
+        return filled($frenchName) ? $frenchName : $this->display_name;
+    }
+
     public function localizedSaponificationName(?string $locale = null): ?string
     {
         return $this->localizedPlatformValue('saponification_name', $locale, $this->saponification_name);

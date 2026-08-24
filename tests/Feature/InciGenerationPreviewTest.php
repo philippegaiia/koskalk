@@ -144,7 +144,13 @@ it('returns a generated ingredient list and declaration details in the live prev
             'LAVANDULA ANGUSTIFOLIA OIL',
             'LINALOOL',
         )
-        ->and($incorporatedVariant['final_labels'])->not->toContain('SODIUM OLIVATE', 'GLYCERIN');
+        ->and($incorporatedVariant['final_labels'])->not->toContain('SODIUM OLIVATE', 'GLYCERIN')
+        ->and($result['labeling']['plain_language_list']['final_label_text'])->toStartWith('Saponified Oils of')
+        ->and($listVariants['saponified_with_superfat']['plain_label_text'])
+        ->toBe($result['labeling']['plain_language_list']['final_label_text'])
+        ->and($incorporatedVariant['plain_label_text'])
+        ->toContain('Sodium Hydroxide')
+        ->not->toContain('Saponified Oils of');
 });
 
 it('calculates declaration percentages on the cured soap basis', function () {

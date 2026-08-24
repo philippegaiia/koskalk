@@ -404,13 +404,11 @@ it('seeds the platform allergen label regimes with conservative mappings', funct
 
     expect($regimeCodes)->toBe([
         'canada_2026',
-        'canada_expanded_preview',
         'eu',
         'us_mocra_preview',
     ])
         ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'eu')->firstOrFail())->count())->toBe($allergenCount)
-        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'canada_2026')->firstOrFail())->count())->toBe(24)
-        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'canada_expanded_preview')->firstOrFail())->count())->toBe($allergenCount)
+        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'canada_2026')->firstOrFail())->count())->toBe($allergenCount)
         ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'us_mocra_preview')->firstOrFail())->count())->toBe(0);
 });
 
@@ -485,7 +483,7 @@ it('reuses legacy starter substance rows when reseeding the renamed catalog', fu
 
     expect(Substance::query()->whereIn('name', $substanceNames)->count())->toBe(6)
         ->and(Substance::query()->where('source_name', $legacySourceName)->count())->toBe(0)
-        ->and(RegulatoryRegimeSubstanceRule::query()->count())->toBe(24);
+        ->and(RegulatoryRegimeSubstanceRule::query()->count())->toBe(18);
 });
 
 it('preserves richer legacy starter substance child data while deduplicating', function () {

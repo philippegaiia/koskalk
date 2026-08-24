@@ -18,6 +18,7 @@ return [
         'markets' => [
             'eu' => 'European Union',
             'us' => 'United States',
+            'ca' => 'Canada',
         ],
         'action' => [
             'label' => 'Market colour labels',
@@ -45,6 +46,10 @@ return [
             'unsupported_market' => 'Market declarations are not configured for :market.',
             'invalid_us_declaration' => 'The US colour declaration for :ingredient must use the applicable US name, not a bare CI number.',
             'missing_declaration' => 'No effective :market colour declaration is recorded for :ingredient.',
+        ],
+        'warnings' => [
+            'missing_declaration_fallback' => 'No effective :market declaration is recorded for :ingredient, so the canonical INCI name is shown instead.',
+            'us_bare_ci_fallback' => ':ingredient has a bare CI number recorded as its US declaration, so the canonical INCI name is shown instead.',
         ],
     ],
     'translations' => [

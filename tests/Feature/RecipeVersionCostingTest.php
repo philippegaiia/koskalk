@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -20,6 +21,27 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function () {
+    // Costing resolves the canonical CH1/CH3 alkali identities for every soap
+    // formula, so provide the platform records up front.
+    foreach ([
+        'CH1' => IngredientSubcategory::SodiumHydroxide,
+        'CH3' => IngredientSubcategory::PotassiumHydroxide,
+    ] as $catalogKey => $subcategory) {
+        Ingredient::query()->withoutGlobalScopes()->firstOrCreate(
+            ['catalog_key' => $catalogKey],
+            [
+                'category' => IngredientCategory::SoapmakingAlkalis,
+                'subcategory' => $subcategory,
+                'display_name' => $subcategory === IngredientSubcategory::SodiumHydroxide
+                    ? 'Sodium hydroxide'
+                    : 'Potassium hydroxide',
+                'is_active' => true,
+            ],
+        );
+    }
+});
+
 it('prefills a costing row from the user ingredient price memory', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -36,9 +58,11 @@ it('prefills a costing row from the user ingredient price memory', function () {
 
     $costing = $service->costingPayload($recipe, $user);
 
-    expect($costing['item_prices'])->toHaveCount(1)
-        ->and($costing['item_prices'][0]['ingredient_id'])->toBe($ingredient->id)
-        ->and($costing['item_prices'][0]['price_per_kg'])->toBe(12.3456);
+    $oilRows = collect($costing['item_prices'])->where('phase_key', 'saponified_oils')->values();
+
+    expect($oilRows)->toHaveCount(1)
+        ->and($oilRows[0]['ingredient_id'])->toBe($ingredient->id)
+        ->and($oilRows[0]['price_per_kg'])->toBe(12.3456);
 });
 
 it('derives costing packaging rows from the packaging plan', function () {
@@ -197,7 +221,10 @@ it('reconciles an existing costing when the formula is saved', function () {
         ->where('user_id', $user->id)
         ->firstOrFail();
 
-    expect($costing->items()->pluck('ingredient_id')->all())->toBe([$secondIngredient->id]);
+    $canonicalNaoh = Ingredient::query()->where('catalog_key', 'CH1')->sole();
+
+    expect($costing->items()->pluck('ingredient_id')->sort()->values()->all())
+        ->toBe([$canonicalNaoh->id, $secondIngredient->id]);
 });
 
 it('saves formula costing separately while updating the user price memory', function () {
@@ -240,8 +267,8 @@ it('saves formula costing separately while updating the user price memory', func
         ->where('user_id', $user->id)
         ->firstOrFail();
 
-    expect($costing->items)->toHaveCount(1)
-        ->and((float) $costing->items->first()->price_per_kg)->toBe(8.9123)
+    expect($costing->items)->toHaveCount(2)
+        ->and((float) $costing->items->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe(8.9123)
         ->and($costing->packagingItems)->toHaveCount(1)
         ->and((float) $costing->packagingItems->first()->quantity)->toBe(2.0)
         ->and(bcmul(CurrentMaterialPrice::query()
@@ -416,7 +443,7 @@ it('saves large ingredient costing prices for high denomination currencies', fun
         ->where('user_id', $user->id)
         ->firstOrFail();
 
-    expect((float) $costing->items->first()->price_per_kg)->toBe($largePricePerKg)
+    expect((float) $costing->items->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe($largePricePerKg)
         ->and(bcmul(CurrentMaterialPrice::query()
             ->where('workspace_id', $user->company()?->id)
             ->where('ingredient_id', $ingredient->id)
@@ -636,7 +663,9 @@ it('propagates the workspace ingredient price to live costing rows', function ()
 
     $costing = $service->costingPayload($recipe->fresh(), $user);
 
-    expect($costing['item_prices'][0]['price_per_kg'])->toBe(19.99);
+    $oilRows = collect($costing['item_prices'])->where('phase_key', 'saponified_oils')->values();
+
+    expect($oilRows[0]['price_per_kg'])->toBe(19.99);
 });
 
 it('preserves duplicate ingredient row prices while updating price memory', function () {
@@ -695,6 +724,7 @@ it('preserves duplicate ingredient row prices while updating price memory', func
 
     expect(RecipeVersionCostingItem::query()
         ->where('recipe_version_costing_id', $costing->id)
+        ->where('phase_key', 'saponified_oils')
         ->orderBy('position')
         ->pluck('price_per_kg')
         ->all())->toBe(['3.1000', '7.2000'])
@@ -924,8 +954,8 @@ it('copies pricing and packaging rows forward when a draft is published into a n
         ->firstOrFail();
 
     expect($newDraftCosting->units_produced)->toBe(12)
-        ->and($newDraftCosting->items)->toHaveCount(1)
-        ->and((float) $newDraftCosting->items->first()->price_per_kg)->toBe(7.8)
+        ->and($newDraftCosting->items)->toHaveCount(2)
+        ->and((float) $newDraftCosting->items->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe(7.8)
         ->and($newDraftCosting->packagingItems)->toHaveCount(1)
         ->and($newDraftCosting->packagingItems->first()->name)->toBe('Bow 100 g')
         ->and((float) $newDraftCosting->packagingItems->first()->quantity)->toBe(2.0);
@@ -969,14 +999,16 @@ it('removes obsolete costing rows from the published version when formula ingred
         ->latest('version_number')
         ->firstOrFail();
 
+    $canonicalNaoh = Ingredient::query()->where('catalog_key', 'CH1')->sole();
+
     expect(RecipeVersionCostingItem::query()
         ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $publishedVersion->id))
         ->pluck('ingredient_id')
-        ->all())->toBe([$retainedIngredient->id])
+        ->sort()->values()->all())->toBe([$canonicalNaoh->id, $retainedIngredient->id])
         ->and(RecipeVersionCostingItem::query()
             ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $newDraftVersion->id))
             ->pluck('ingredient_id')
-            ->all())->toBe([$retainedIngredient->id]);
+            ->sort()->values()->all())->toBe([$canonicalNaoh->id, $retainedIngredient->id]);
 });
 
 function makeSharedCarrierOilIngredient(): Ingredient

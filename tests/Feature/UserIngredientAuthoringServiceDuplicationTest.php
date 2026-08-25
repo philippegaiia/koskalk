@@ -378,3 +378,28 @@ it('duplicates parent-level source notes for composition and allergens', functio
     expect($copy->composition_source_notes)->toBe('Composition COA')
         ->and($copy->allergen_source_notes)->toBe('Allergen SDS');
 });
+
+it('refuses to duplicate a platform soapmaking alkali into a workspace', function () {
+    $user = User::factory()->create();
+
+    $source = Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'display_name' => 'Sodium hydroxide',
+        'owner_type' => null,
+        'owner_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+
+    expect(fn () => app(UserIngredientAuthoringService::class)->duplicate($source, $user))
+        ->toThrow(
+            ValidationException::class,
+            __('ingredients.editor.validation.soapmaking_alkalis_platform_only'),
+        );
+
+    expect(Ingredient::query()
+        ->where('category', IngredientCategory::SoapmakingAlkalis->value)
+        ->whereNotNull('owner_type')
+        ->exists())->toBeFalse();
+});

@@ -881,3 +881,70 @@ it('deletes replaced ingredient media from storage during update', function () {
         ->and($updated->icon_image_path)->toBeNull()
         ->and($updated->icon_image_original_name)->toBeNull();
 });
+
+it('omits soapmaking alkalis from the workspace-authorable category options', function () {
+    $options = IngredientCategory::workspaceAuthorableOptions();
+
+    expect($options)->not->toHaveKey(IngredientCategory::SoapmakingAlkalis->value)
+        ->and($options)->toHaveKey(IngredientCategory::Lipids->value)
+        ->and($options)->toHaveKey(IngredientCategory::PhAdjustersBuffers->value)
+        ->and(IngredientCategory::options())->toHaveKey(IngredientCategory::SoapmakingAlkalis->value);
+});
+
+it('does not render the soapmaking alkalis option in the workspace editor selectors', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->assertDontSee('value="soapmaking_alkalis"', escape: false)
+        ->assertSee('value="lipids"', escape: false);
+});
+
+it('rejects a crafted create request with the soapmaking alkalis category', function () {
+    $user = User::factory()->create();
+
+    expect(fn () => app(UserIngredientAuthoringService::class)->create([
+        'name' => 'My Caustic Soda',
+        'category' => IngredientCategory::SoapmakingAlkalis->value,
+    ], $user))->toThrow(
+        ValidationException::class,
+        __('ingredients.editor.validation.soapmaking_alkalis_platform_only'),
+    );
+
+    expect(Ingredient::query()->where('display_name', 'My Caustic Soda')->exists())->toBeFalse();
+});
+
+it('rejects reclassifying a workspace ingredient into soapmaking alkalis', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::MineralsSaltsPowders,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    expect(fn () => app(UserIngredientAuthoringService::class)->update($ingredient, [
+        'name' => $ingredient->display_name,
+        'category' => IngredientCategory::SoapmakingAlkalis->value,
+    ], $user))->toThrow(
+        ValidationException::class,
+        __('ingredients.editor.validation.soapmaking_alkalis_platform_only'),
+    );
+
+    expect($ingredient->refresh()->category)->toBe(IngredientCategory::MineralsSaltsPowders);
+});
+
+it('guards quick blend-component creation against the soapmaking alkalis category', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('quickComponentName', 'Quick Potash')
+        ->set('quickComponentCategory', IngredientCategory::SoapmakingAlkalis->value)
+        ->call('createAndAddComponent')
+        ->assertHasErrors(['category']);
+
+    expect(Ingredient::query()->where('display_name', 'Quick Potash')->exists())->toBeFalse();
+});

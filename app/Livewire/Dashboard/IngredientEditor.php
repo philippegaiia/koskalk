@@ -401,7 +401,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->schema([
                                                 Select::make('category')
                                                     ->label(__('ingredients.editor.details.category'))
-                                                    ->options(IngredientCategory::options())
+                                                    ->options(IngredientCategory::workspaceAuthorableOptions())
                                                     ->required()
                                                     ->rules([Rule::enum(IngredientCategory::class)])
                                                     ->live(),

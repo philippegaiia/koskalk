@@ -196,6 +196,10 @@ class UserIngredientAuthoringService
             ]);
         }
 
+        if ($source->category instanceof IngredientCategory) {
+            $this->assertWorkspaceAuthorableCategory($source->category);
+        }
+
         if (
             $source->category === IngredientCategory::Lipids
             && $source->sapProfile?->koh_sap_value === null
@@ -345,6 +349,21 @@ class UserIngredientAuthoringService
     }
 
     /**
+     * Soapmaking alkalis are Koskalk-curated canonical materials; a workspace
+     * can never create, reclassify, or duplicate them.
+     */
+    private function assertWorkspaceAuthorableCategory(IngredientCategory $category): void
+    {
+        if ($category->isWorkspaceAuthorable()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'category' => __('ingredients.editor.validation.soapmaking_alkalis_platform_only'),
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $state
      */
     private function fillIngredient(Ingredient $ingredient, array $state): void
@@ -356,6 +375,8 @@ class UserIngredientAuthoringService
         } else {
             $ingredient->category = IngredientCategory::from((string) $category);
         }
+
+        $this->assertWorkspaceAuthorableCategory($ingredient->category);
 
         $subcategory = Arr::get($state, 'subcategory');
         $ingredient->subcategory = $subcategory instanceof IngredientSubcategory

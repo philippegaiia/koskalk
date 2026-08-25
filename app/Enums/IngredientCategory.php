@@ -103,6 +103,28 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
     }
 
     /**
+     * Soapmaking alkalis are Koskalk-curated canonical materials; workspaces
+     * may not author, reclassify, or duplicate them.
+     */
+    public function isWorkspaceAuthorable(): bool
+    {
+        return $this !== self::SoapmakingAlkalis;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function workspaceAuthorableOptions(): array
+    {
+        return collect(self::cases())
+            ->filter(fn (self $category): bool => $category->isWorkspaceAuthorable())
+            ->mapWithKeys(fn (self $category): array => [
+                $category->value => (string) $category->getLabel(),
+            ])
+            ->all();
+    }
+
+    /**
      * @return array<int, IngredientSubcategory>
      */
     public function subcategories(): array

@@ -888,6 +888,7 @@ return [
             'duplicate_platform_only' => 'Only Soapkraft ingredients can be duplicated.',
             'duplicate_soap_profile_required' => 'This Soapkraft oil cannot be duplicated until its KOH SAP value is available. Contact support@soapkraft.com.',
             'subcategory_mismatch' => 'Choose a subcategory that belongs to the selected category.',
+            'soapmaking_alkalis_platform_only' => 'Soapmaking alkalis are managed by Koskalk and cannot be created or duplicated in a workspace.',
             'blend_required' => 'Add at least one ingredient to save this blend.',
             'blend_component_unavailable' => 'One or more ingredients in this blend are no longer available to you.',
             'soap_koh_required' => 'Enter a KOH SAP value for this duplicated Soapkraft oil.',

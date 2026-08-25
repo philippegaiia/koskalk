@@ -164,7 +164,7 @@ class RecipeVersionCostingSynchronizer
             ]);
             $costing->save();
 
-            $this->syncFormulaItems($costing);
+            $this->syncFormulaItems($costing, $user);
             $this->applyItemPrices($costing, $user, $payload['items'] ?? []);
             $this->replacePackagingItems($costing, $payload['packaging_items'] ?? []);
 
@@ -213,7 +213,7 @@ class RecipeVersionCostingSynchronizer
             ]);
             $targetCosting->save();
 
-            $this->syncFormulaItems($targetCosting);
+            $this->syncFormulaItems($targetCosting, $user);
 
             $sourcePricesByKey = $sourceCosting->items
                 ->keyBy(fn (RecipeVersionCostingItem $item): string => $this->costingKey(
@@ -413,7 +413,7 @@ class RecipeVersionCostingSynchronizer
                 ],
             );
 
-            $this->syncFormulaItems($costing);
+            $this->syncFormulaItems($costing, $user);
             $this->syncPackagingItems($costing);
 
             return $costing->fresh(['items', 'packagingItems']) ?? $costing->load(['items', 'packagingItems']);
@@ -434,8 +434,8 @@ class RecipeVersionCostingSynchronizer
             return;
         }
 
-        DB::transaction(function () use ($costing): void {
-            $this->syncFormulaItems($costing);
+        DB::transaction(function () use ($costing, $user): void {
+            $this->syncFormulaItems($costing, $user);
             $this->syncPackagingItems($costing);
         });
     }
@@ -452,8 +452,8 @@ class RecipeVersionCostingSynchronizer
             return;
         }
 
-        DB::transaction(function () use ($costing): void {
-            $this->syncFormulaItems($costing);
+        DB::transaction(function () use ($costing, $user): void {
+            $this->syncFormulaItems($costing, $user);
         });
     }
 
@@ -469,7 +469,7 @@ class RecipeVersionCostingSynchronizer
      * This runs inside ensureCosting() and save(), so the costing items always
      * reflect the current formula state.
      */
-    private function syncFormulaItems(RecipeVersionCosting $costing): void
+    private function syncFormulaItems(RecipeVersionCosting $costing, User $user): void
     {
         $recipeVersion = RecipeVersion::withoutGlobalScopes()
             ->with([
@@ -488,7 +488,7 @@ class RecipeVersionCostingSynchronizer
                     'position' => (int) $item->position,
                 ]))
             ->values()
-            ->merge($this->alkaliDesiredRows($recipeVersion))
+            ->merge($this->alkaliDesiredRows($recipeVersion, $user))
             ->merge($this->implicitWaterDesiredRows($recipeVersion))
             ->values();
 
@@ -556,7 +556,7 @@ class RecipeVersionCostingSynchronizer
      *
      * @return Collection<int, array{ingredient_id: int, phase_key: string, position: int}>
      */
-    private function alkaliDesiredRows(RecipeVersion $recipeVersion): Collection
+    private function alkaliDesiredRows(RecipeVersion $recipeVersion, User $user): Collection
     {
         if (! $this->isSoapVersion($recipeVersion)) {
             return collect();
@@ -569,7 +569,7 @@ class RecipeVersionCostingSynchronizer
             default => ['naoh'],
         };
 
-        $ingredients = $this->soapAlkaliIngredientsByLyeType(null);
+        $ingredients = $this->soapAlkaliIngredientsByLyeType($user);
 
         return collect($lyeTypes)
             ->filter(fn (string $lyeType): bool => $ingredients->has($lyeType))
@@ -595,6 +595,7 @@ class RecipeVersionCostingSynchronizer
             ->accessibleTo($user)
             ->where('category', IngredientCategory::SoapmakingAlkalis->value)
             ->whereIn('subcategory', array_values(self::ALKALI_SUBCATEGORY_BY_LYE_TYPE))
+            ->orderByRaw('CASE WHEN owner_type IS NULL THEN 0 ELSE 1 END')
             ->orderBy('id')
             ->get()
             ->keyBy(fn (Ingredient $ingredient): string => (string) $ingredient->subcategory?->value);

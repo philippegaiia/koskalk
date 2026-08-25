@@ -2,6 +2,7 @@
 
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
@@ -127,6 +128,27 @@ it('round-trips an alkali price through save and reconcile', function () {
     expect($alkaliRow['price_per_kg'])->toBe(4.5);
 });
 
+it('prices a user-owned alkali ingredient as the costing identity when present', function () {
+    $user = User::factory()->create();
+    makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Public Caustic Soda');
+    $owned = makeUserOwnedAlkaliIngredient($user, IngredientSubcategory::SodiumHydroxide, 'My Caustic Soda');
+    $oil = makeCostingAlkaliOilIngredient();
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, makeCostingAlkaliSoapFamily(), costingAlkaliDraftPayload($oil));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $payload = $service->costingPayload($recipe, $user);
+
+    expect($payload['alkali_ingredients']['naoh']['ingredient_id'])->toBe($owned->id)
+        ->and($payload['alkali_ingredients']['naoh']['name'])->toBe('My Caustic Soda');
+
+    $alkaliRow = collect($payload['item_prices'])
+        ->first(fn (array $row): bool => $row['phase_key'] === 'lye_alkali');
+
+    expect($alkaliRow['ingredient_id'])->toBe($owned->id);
+});
+
 it('adds no alkali rows to cosmetic costing', function () {
     $user = User::factory()->create();
     makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Soude caustique');
@@ -197,6 +219,18 @@ function makeCostingAlkaliIngredient(IngredientSubcategory $subcategory, string 
         'subcategory' => $subcategory,
         'display_name' => $displayName,
         'is_active' => true,
+    ]);
+}
+
+function makeUserOwnedAlkaliIngredient(User $user, IngredientSubcategory $subcategory, string $displayName): Ingredient
+{
+    return Ingredient::factory()->create([
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => $subcategory,
+        'display_name' => $displayName,
+        'is_active' => true,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
     ]);
 }
 

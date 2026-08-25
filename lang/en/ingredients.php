@@ -504,6 +504,11 @@ return [
             'action' => 'Remove everywhere and delete',
         ],
     ],
+    'alkalis' => [
+        'validation' => [
+            'canonical_missing' => 'The required canonical alkali (:key) is missing from the ingredient catalogue.',
+        ],
+    ],
     'validation' => [
         'choose_compatible_replacement' => 'Choose an available compatible replacement ingredient.',
         'choose_dependency_action' => 'Choose how to update the formulas or composite ingredients that use this ingredient.',

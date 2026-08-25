@@ -324,3 +324,33 @@ function productionDetailPresenterFixture(): array
         'waterLine',
     );
 }
+
+it('presents the frozen KOH purity snapshot name without rebuilding a live label', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::InProduction,
+        'recipe_name_snapshot' => 'Potash soap',
+        'planning_batch_number' => 'PLAN-002',
+        'basis_quantity_grams' => '2000.000000000',
+        'expected_units' => 100,
+    ]);
+    $koh = Ingredient::factory()->create(['display_name' => 'Potassium hydroxide']);
+    ProductionFormulaLine::factory()->for($production, 'productionRun')->create([
+        'ingredient_id' => $koh->id,
+        'component' => ProductionFormulaComponent::Koh,
+        'subject_name_snapshot' => 'Potassium hydroxide (KOH 90%)',
+        'basis_percentage_snapshot' => '14.500000000',
+        'planned_mass_grams' => '290.000000000',
+        'sort_order' => 1,
+    ]);
+
+    $data = app(ProductionDetailPresenter::class)->present(
+        production: $production->load(['requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'tasks']),
+        actualRows: [],
+        calculatedActualRows: [],
+    );
+
+    expect(array_column($data['materials'], 'material_name'))
+        ->toBe(['Potassium hydroxide (KOH 90%)']);
+});

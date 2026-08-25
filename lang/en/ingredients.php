@@ -505,6 +505,7 @@ return [
         ],
     ],
     'alkalis' => [
+        'koh_with_purity' => ':name (KOH :purity%)',
         'validation' => [
             'canonical_missing' => 'The required canonical alkali (:key) is missing from the ingredient catalogue.',
         ],

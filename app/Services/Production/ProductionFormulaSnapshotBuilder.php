@@ -3,8 +3,10 @@
 namespace App\Services\Production;
 
 use App\Enums\ProductionFormulaComponent;
+use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Services\CanonicalSoapAlkaliResolver;
 use App\Services\MassConverter;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Support\Collection;
@@ -19,7 +21,7 @@ class ProductionFormulaSnapshotBuilder
     public function __construct(
         private readonly RecipeWorkbenchService $workbenchService,
         private readonly MassConverter $massConverter,
-        private readonly ProductionLyeMaterialResolver $lyeMaterialResolver,
+        private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
     ) {}
 
     /**
@@ -155,6 +157,7 @@ class ProductionFormulaSnapshotBuilder
         ];
 
         $unit = $draft['oilUnit'] ?? 'g';
+        $kohPurity = (int) round((float) ($draft['kohPurity'] ?? 90));
         $lines = collect();
 
         foreach ($candidates as $candidate) {
@@ -162,16 +165,18 @@ class ProductionFormulaSnapshotBuilder
                 continue;
             }
 
+            $component = $candidate['component'];
+            $ingredient = $this->alkaliIngredientFor($component);
+
             $mass = $this->roundStorage(
                 $this->massConverter->toGrams((string) $candidate['weight'], $unit),
             );
 
             $lines->push([
-                'ingredient_id' => $this->lyeMaterialResolver
-                    ->resolve($candidate['component'])?->id,
+                'ingredient_id' => $ingredient?->id,
                 'recipe_item_id' => null,
-                'component' => $candidate['component'],
-                'subject_name_snapshot' => $this->componentLabel($candidate['component']),
+                'component' => $component,
+                'subject_name_snapshot' => $this->componentLabel($component, $ingredient, $kohPurity),
                 'phase_key_snapshot' => 'lye_water',
                 'phase_name_snapshot' => __('production_bench.production.formula.lye_water_phase'),
                 'basis_percentage_snapshot' => $this->percentageOf($mass, $basisQuantityGrams),
@@ -190,20 +195,50 @@ class ProductionFormulaSnapshotBuilder
      */
     private function context(Recipe $recipe, bool $isSoap, array $draft): array
     {
+        $lyeType = $isSoap ? ($draft['lyeType'] ?? 'naoh') : null;
+
         return [
             'calculation_basis' => $recipe->productFamily?->calculation_basis,
-            'lye_type' => $isSoap ? ($draft['lyeType'] ?? 'naoh') : null,
+            'lye_type' => $lyeType,
             'superfat_percentage' => $isSoap ? ($draft['superfat'] ?? 5) : null,
             'water_mode' => $isSoap ? ($draft['waterMode'] ?? 'percent_of_oils') : null,
             'water_value' => $isSoap ? ($draft['waterValue'] ?? 38) : null,
+            ...($isSoap && in_array($lyeType, ['koh', 'dual'], true) ? [
+                'koh_purity_percentage' => (float) ($draft['kohPurity'] ?? 90),
+            ] : []),
         ];
     }
 
-    private function componentLabel(ProductionFormulaComponent $component): string
+    /**
+     * The calculated alkali component's canonical material, or null for
+     * non-alkali components such as water.
+     */
+    private function alkaliIngredientFor(ProductionFormulaComponent $component): ?Ingredient
     {
+        $lyeType = match ($component) {
+            ProductionFormulaComponent::Naoh => 'naoh',
+            ProductionFormulaComponent::Koh => 'koh',
+            default => null,
+        };
+
+        return $lyeType === null
+            ? null
+            : $this->alkaliResolver->resolve($lyeType);
+    }
+
+    private function componentLabel(
+        ProductionFormulaComponent $component,
+        ?Ingredient $ingredient,
+        int $kohPurity,
+    ): string {
         return match ($component) {
-            ProductionFormulaComponent::Naoh => __('production_bench.production.formula.sodium_hydroxide'),
-            ProductionFormulaComponent::Koh => __('production_bench.production.formula.potassium_hydroxide'),
+            ProductionFormulaComponent::Naoh => $ingredient?->localizedDisplayName()
+                ?? __('production_bench.production.formula.sodium_hydroxide'),
+            ProductionFormulaComponent::Koh => __('ingredients.alkalis.koh_with_purity', [
+                'name' => $ingredient?->localizedDisplayName()
+                    ?? __('production_bench.production.formula.potassium_hydroxide'),
+                'purity' => $kohPurity,
+            ]),
             ProductionFormulaComponent::Water => __('production_bench.production.formula.water'),
             ProductionFormulaComponent::Ingredient => '',
         };

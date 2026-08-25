@@ -20,6 +20,8 @@ class ProductionAvailabilityPreview
     public function __construct(
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
+        private readonly ProductionCalculatedRequirementBuilder $calculatedRequirementBuilder,
         private readonly ProductionWorkingCalendar $calendar,
         private readonly StockPositionService $stockPositions,
     ) {}
@@ -69,15 +71,30 @@ class ProductionAvailabilityPreview
 
         try {
             $basisUnit = MassUnit::fromInput($basisInputUnit);
+            $basisQuantityGrams = $this->massConverter->toGrams($basisInputValue, $basisUnit);
             $basisKind = $recipe->productFamily?->calculation_basis === 'total_formula'
                 ? ProductionBasisKind::TotalFormulaMass
                 : ProductionBasisKind::OilMass;
             $requirements = $this->requirementBuilder->build(
                 version: $version,
                 basisKind: $basisKind,
-                basisQuantityGrams: $this->massConverter->toGrams($basisInputValue, $basisUnit),
+                basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: (int) $expectedUnits,
             );
+            // Mirror production creation so calculated NaOH/KOH appear in the
+            // preview before any production exists. Read-only: nothing persists.
+            $formulaSnapshot = $this->formulaSnapshotBuilder->build(
+                recipe: $recipe,
+                version: $version,
+                basisQuantityGrams: $basisQuantityGrams,
+                requirements: $requirements,
+            );
+            $requirements = $requirements->concat(
+                $this->calculatedRequirementBuilder->build(
+                    formulaLines: $formulaSnapshot['lines'],
+                    startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
+                ),
+            )->values();
         } catch (ValidationException|\InvalidArgumentException) {
             return $preview;
         }

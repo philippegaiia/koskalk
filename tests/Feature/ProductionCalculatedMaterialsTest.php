@@ -18,6 +18,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\ProductionAvailabilityPreview;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -48,8 +49,11 @@ it('tracks KOH and dual-lye calculations against their platform materials', func
     $koh = Ingredient::query()->where('catalog_key', 'CH3')->sole();
 
     expect($kohLine?->ingredient_id)->toBe($koh->id)
+        ->and($kohLine?->subject_name_snapshot)->toBe('Potassium hydroxide (KOH 90%)')
         ->and($kohProduction->requirements->firstWhere('ingredient_id', $koh->id)?->required_mass_grams)
-        ->toBe($kohLine?->planned_mass_grams);
+        ->toBe($kohLine?->planned_mass_grams)
+        ->and($kohProduction->requirements->firstWhere('ingredient_id', $koh->id)?->subject_name_snapshot)
+        ->toBe('Potassium hydroxide (KOH 90%)');
 
     $dualFixture = productionCalculatedMaterialsFixture('dual');
     $dualProduction = createCalculatedMaterialProduction($dualFixture, 'calculated-dual');
@@ -58,6 +62,24 @@ it('tracks KOH and dual-lye calculations against their platform materials', func
 
     expect($dualProduction->requirements->whereIn('ingredient_id', [$naoh->id, $dualKoh->id])->count())
         ->toBe(2);
+});
+
+it('previews the calculated KOH requirement before any production exists', function (): void {
+    $fixture = productionCalculatedMaterialsFixture('koh');
+
+    $preview = app(ProductionAvailabilityPreview::class)->for(
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: 'kg',
+        expectedUnits: '288',
+        taskSet: null,
+        plannedFor: null,
+    );
+
+    expect(collect($preview['requirements'])->pluck('subject_name')->all())
+        ->toContain('Potassium hydroxide (KOH 90%)')
+        ->and(ProductionRun::query()->count())->toBe(0);
 });
 
 it('does not create calculated lye requirements for total-formula productions', function (): void {

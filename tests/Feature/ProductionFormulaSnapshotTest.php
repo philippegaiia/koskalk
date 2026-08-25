@@ -74,13 +74,38 @@ it('builds KOH soap snapshots with KOH and water but no NaOH line', function ():
 
     $snapshot = buildFormulaSnapshot($fixture, '14000.000000000', 100);
 
-    expect($snapshot['lines']->where('component', 'koh')->count())->toBe(1)
-        ->and($snapshot['lines']->where('component', 'naoh')->count())->toBe(0)
+    $kohLine = $snapshot['lines']->where('component', 'koh')->first();
+
+    expect($snapshot['lines']->where('component', 'naoh')->count())->toBe(0)
         ->and($snapshot['lines']->where('component', 'water')->count())->toBe(1)
-        ->and((float) $snapshot['lines']->where('component', 'koh')->first()['planned_mass_grams'])->toBeGreaterThan(0)
-        ->and($snapshot['lines']->where('component', 'koh')->first()['ingredient_id'])
+        ->and((float) $kohLine['planned_mass_grams'])->toBeGreaterThan(0)
+        ->and($kohLine['ingredient_id'])
         ->toBe(Ingredient::query()->where('catalog_key', 'CH3')->sole()->id)
-        ->and($snapshot['context']['lye_type'])->toBe('koh');
+        ->and($kohLine['subject_name_snapshot'])->toBe('Potassium hydroxide (KOH 90%)')
+        ->and($snapshot['context']['lye_type'])->toBe('koh')
+        ->and($snapshot['context']['koh_purity_percentage'])->toBe(90.0);
+});
+
+it('raises the frozen KOH purity label and lowers planned mass at one hundred percent', function (): void {
+    $ninetyFixture = productionFormulaSnapshotFixture('koh');
+    addSoapFormula($ninetyFixture);
+    $hundredFixture = productionFormulaSnapshotFixture('koh');
+    addSoapFormula($hundredFixture);
+    $context = $hundredFixture['version']->calculation_context;
+    $context['koh_purity_percentage'] = 100;
+    $hundredFixture['version']->forceFill(['calculation_context' => $context])->save();
+
+    $atNinety = buildFormulaSnapshot($ninetyFixture, '14000.000000000', 100);
+    $atHundred = buildFormulaSnapshot($hundredFixture, '14000.000000000', 100);
+
+    $kohAtNinety = $atNinety['lines']->where('component', 'koh')->first();
+    $kohAtHundred = $atHundred['lines']->where('component', 'koh')->first();
+
+    expect($kohAtHundred['subject_name_snapshot'])->toBe('Potassium hydroxide (KOH 100%)')
+        ->and($atHundred['context']['koh_purity_percentage'])->toBe(100.0)
+        ->and($kohAtHundred['ingredient_id'])->toBe($kohAtNinety['ingredient_id'])
+        ->and((float) $kohAtHundred['planned_mass_grams'])
+        ->toBeLessThan((float) $kohAtNinety['planned_mass_grams']);
 });
 
 it('builds dual-lye soap snapshots with NaOH, KOH, and water lines', function (): void {
@@ -98,7 +123,10 @@ it('builds dual-lye soap snapshots with NaOH, KOH, and water lines', function ()
         ->toBe(Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)
         ->and($snapshot['lines']->where('component', 'koh')->first()['ingredient_id'])
         ->toBe(Ingredient::query()->where('catalog_key', 'CH3')->sole()->id)
-        ->and($snapshot['context']['lye_type'])->toBe('dual');
+        ->and($snapshot['lines']->where('component', 'koh')->first()['subject_name_snapshot'])
+        ->toBe('Potassium hydroxide (KOH 90%)')
+        ->and($snapshot['context']['lye_type'])->toBe('dual')
+        ->and($snapshot['context']['koh_purity_percentage'])->toBe(90.0);
 });
 
 it('rejects a soap snapshot when recalculation produces no water', function (): void {
@@ -319,14 +347,14 @@ function productionFormulaSnapshotFixture(string $lyeType = 'naoh', string $calc
     ]);
 
     if ($calculationBasis !== 'total_formula') {
-        Ingredient::factory()->create([
-            'catalog_key' => 'CH1',
-            'display_name' => 'Sodium hydroxide',
-        ]);
-        Ingredient::factory()->create([
-            'catalog_key' => 'CH3',
-            'display_name' => 'Potassium hydroxide',
-        ]);
+        Ingredient::query()->withoutGlobalScopes()->firstOrCreate(
+            ['catalog_key' => 'CH1'],
+            ['display_name' => 'Sodium hydroxide'],
+        );
+        Ingredient::query()->withoutGlobalScopes()->firstOrCreate(
+            ['catalog_key' => 'CH3'],
+            ['display_name' => 'Potassium hydroxide'],
+        );
     }
 
     return compact('owner', 'workspace', 'recipe', 'version');
@@ -338,8 +366,10 @@ function productionFormulaSnapshotFixture(string $lyeType = 'naoh', string $calc
  */
 function addSoapFormula(array $fixture): array
 {
-    $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
-    $lauric = FattyAcid::factory()->create(['key' => 'lauric', 'name' => 'Lauric']);
+    $oleic = FattyAcid::query()->firstWhere('key', 'oleic')
+        ?? FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
+    $lauric = FattyAcid::query()->firstWhere('key', 'lauric')
+        ?? FattyAcid::factory()->create(['key' => 'lauric', 'name' => 'Lauric']);
 
     $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
     IngredientSapProfile::factory()->create(['ingredient_id' => $olive->id, 'koh_sap_value' => 0.188]);

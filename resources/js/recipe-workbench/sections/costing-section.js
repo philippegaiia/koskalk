@@ -237,7 +237,12 @@ export function createCostingSection(payload) {
                         phaseKey: 'lye_alkali',
                         phaseLabel: this.t('costing.phases.alkali'),
                         position: index + 1,
-                        name: ingredient.name,
+                        name: lyeType === 'koh'
+                            ? this.t('costing.ingredients.koh_with_purity', {
+                                name: ingredient.name,
+                                purity: this.format(this.kohPurity, 0),
+                            })
+                            : ingredient.name,
                         percentage: this.oilBasisPercentage(weight),
                         percentageLabel: '%',
                         weight,

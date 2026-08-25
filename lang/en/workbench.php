@@ -294,6 +294,7 @@ return [
             'line_cost' => 'Cost - :currency',
             'subtotal' => 'Ingredient subtotal',
             'empty' => 'Add ingredients on the Formula tab to start costing them here.',
+            'koh_with_purity' => ':name (KOH :purity%)',
         ],
         'packaging' => [
             'title' => 'Packaging costs',

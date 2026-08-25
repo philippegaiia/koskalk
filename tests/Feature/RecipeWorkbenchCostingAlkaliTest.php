@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\RecipeVersionCostingSynchronizer;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -101,6 +102,7 @@ it('creates one alkali costing row per lye type in stable dual-lye order', funct
 it('round-trips an alkali price through save and reconcile', function () {
     $user = User::factory()->create();
     $naoh = makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Soude caustique');
+    makeCostingAlkaliIngredient(IngredientSubcategory::PotassiumHydroxide, 'Potasse caustique');
     $oil = makeCostingAlkaliOilIngredient();
 
     $service = app(RecipeWorkbenchService::class);
@@ -128,10 +130,12 @@ it('round-trips an alkali price through save and reconcile', function () {
     expect($alkaliRow['price_per_kg'])->toBe(4.5);
 });
 
-it('prices a user-owned alkali ingredient as the costing identity when present', function () {
+it('keeps the canonical alkali as the costing identity when a workspace duplicate exists', function () {
     $user = User::factory()->create();
-    makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Public Caustic Soda');
-    $owned = makeUserOwnedAlkaliIngredient($user, IngredientSubcategory::SodiumHydroxide, 'My Caustic Soda');
+    $canonicalNaoh = makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Public Caustic Soda');
+    $canonicalKoh = makeCostingAlkaliIngredient(IngredientSubcategory::PotassiumHydroxide, 'Public Potash');
+    $naohDuplicate = makeUserOwnedAlkaliIngredient($user, IngredientSubcategory::SodiumHydroxide, 'My Caustic Soda');
+    $kohDuplicate = makeUserOwnedAlkaliIngredient($user, IngredientSubcategory::PotassiumHydroxide, 'My Potash');
     $oil = makeCostingAlkaliOilIngredient();
 
     $service = app(RecipeWorkbenchService::class);
@@ -140,14 +144,49 @@ it('prices a user-owned alkali ingredient as the costing identity when present',
 
     $payload = $service->costingPayload($recipe, $user);
 
-    expect($payload['alkali_ingredients']['naoh']['ingredient_id'])->toBe($owned->id)
-        ->and($payload['alkali_ingredients']['naoh']['name'])->toBe('My Caustic Soda');
+    expect($payload['alkali_ingredients']['naoh']['ingredient_id'])->toBe($canonicalNaoh->id)
+        ->and($payload['alkali_ingredients']['naoh']['ingredient_id'])->not->toBe($naohDuplicate->id)
+        ->and($payload['alkali_ingredients']['koh']['ingredient_id'])->toBe($canonicalKoh->id)
+        ->and($payload['alkali_ingredients']['koh']['ingredient_id'])->not->toBe($kohDuplicate->id);
 
     $alkaliRow = collect($payload['item_prices'])
         ->first(fn (array $row): bool => $row['phase_key'] === 'lye_alkali');
 
-    expect($alkaliRow['ingredient_id'])->toBe($owned->id);
+    expect($alkaliRow['ingredient_id'])->toBe($canonicalNaoh->id);
 });
+
+it('prices a koh-only formula against the canonical CH3 identity at position 1', function () {
+    $user = User::factory()->create();
+    makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Soude caustique');
+    $koh = makeCostingAlkaliIngredient(IngredientSubcategory::PotassiumHydroxide, 'Potasse caustique');
+    $oil = makeCostingAlkaliOilIngredient();
+
+    $soapFamily = makeCostingAlkaliSoapFamily();
+    $payload = costingAlkaliDraftPayload($oil);
+    $payload['lye_type'] = 'koh';
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $costingPayload = $service->costingPayload($recipe, $user);
+    $alkaliRows = collect($costingPayload['item_prices'])->where('phase_key', 'lye_alkali')->values();
+
+    expect($alkaliRows)->toHaveCount(1)
+        ->and($alkaliRows[0]['ingredient_id'])->toBe($koh->id)
+        ->and($alkaliRows[0]['position'])->toBe(1);
+});
+
+it('fails explicitly when the canonical alkali is missing instead of using a duplicate', function () {
+    $user = User::factory()->create();
+    makeUserOwnedAlkaliIngredient($user, IngredientSubcategory::SodiumHydroxide, 'My Caustic Soda');
+    $oil = makeCostingAlkaliOilIngredient();
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, makeCostingAlkaliSoapFamily(), costingAlkaliDraftPayload($oil));
+
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($draftVersion, $user);
+})->throws(ValidationException::class);
 
 it('adds no alkali rows to cosmetic costing', function () {
     $user = User::factory()->create();
@@ -215,9 +254,13 @@ function makeCostingAlkaliSoapFamily(): ProductFamily
 function makeCostingAlkaliIngredient(IngredientSubcategory $subcategory, string $displayName): Ingredient
 {
     return Ingredient::factory()->create([
+        'catalog_key' => $subcategory === IngredientSubcategory::SodiumHydroxide ? 'CH1' : 'CH3',
         'category' => IngredientCategory::SoapmakingAlkalis,
         'subcategory' => $subcategory,
         'display_name' => $displayName,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
         'is_active' => true,
     ]);
 }

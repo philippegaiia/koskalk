@@ -171,3 +171,84 @@ it('renders the active costing price basis instead of a fixed kilogram label', f
         'format(costingPriceForRow(row), 2)',
     );
 });
+
+it('labels the costing KOH row with the live purity without changing its identity', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { convertMass, convertMassPrice } from './resources/js/recipe-workbench/mass.js';
+
+const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
+const number = (value) => Number(value) || 0;
+const parseDecimalInput = number;
+const roundTo = (value, precision) => Number(Number(value).toFixed(precision));
+const rowWeightForOilWeight = (oilWeight, row) => oilWeight * (nonNegativeNumber(row.percentage) / 100);
+const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
+
+const source = fs
+    .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/export function /g, 'function ');
+
+eval(`${source}\nglobalThis.createCostingSection = createCostingSection;`);
+
+const translations = {
+    costing: {
+        ingredients: {
+            koh_with_purity: ':name (KOH :purity%)',
+        },
+    },
+};
+
+const state = {
+    isCosmeticFormula: false,
+    lyeType: 'koh',
+    kohPurity: 90,
+    costingAlkaliIngredients: {
+        koh: { ingredient_id: 7, name: 'Potassium hydroxide', default_price_per_kg: 12 },
+    },
+    backendCalculation: {
+        lye: { selected: { naoh_weight: 0, koh_to_weigh: 148.6 } },
+    },
+    costingOilWeight: 1,
+    costingOilUnit: 'kg',
+    oilWeight: 1,
+    oilUnit: 'kg',
+    format: (value, decimals = 2) => Number(value).toFixed(decimals),
+    t: (path, replacements = {}) => {
+        const value = path.split('.').reduce((copy, segment) => copy?.[segment], translations);
+        const text = typeof value === 'string' ? value : path;
+
+        return Object.entries(replacements).reduce(
+            (translated, [key, replacement]) => translated.replaceAll(`:${key}`, String(replacement)),
+            text,
+        );
+    },
+};
+
+Object.defineProperties(
+    state,
+    Object.getOwnPropertyDescriptors(globalThis.createCostingSection({})),
+);
+
+const rowAtNinety = state.costingAlkaliRows()[0];
+assert.equal(rowAtNinety.name, 'Potassium hydroxide (KOH 90%)');
+assert.equal(rowAtNinety.weight, 148.6);
+
+state.kohPurity = 100;
+const rowAtHundred = state.costingAlkaliRows()[0];
+assert.equal(rowAtHundred.name, 'Potassium hydroxide (KOH 100%)');
+assert.equal(rowAtHundred.ingredient_id, rowAtNinety.ingredient_id);
+assert.equal(rowAtHundred.phaseKey, 'lye_alkali');
+assert.equal(rowAtHundred.position, rowAtNinety.position);
+assert.equal(rowAtHundred.weight, rowAtNinety.weight);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->mustRun();
+
+    expect($process->getOutput())->toBe('');
+});

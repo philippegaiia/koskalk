@@ -44,16 +44,11 @@ class RecipeVersionCostingSynchronizer
     /** Synthetic phase key that prices the plain-water share of the dilution liquid. */
     private const IMPLICIT_WATER_PHASE_KEY = 'implicit_water';
 
-    /** Alkali ingredient subcategory backing each lye type. */
-    private const ALKALI_SUBCATEGORY_BY_LYE_TYPE = [
-        'naoh' => 'sodium_hydroxide',
-        'koh' => 'potassium_hydroxide',
-    ];
-
     public function __construct(
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly PackagingItemAuthoringService $packagingItemAuthoringService,
         private readonly MassConverter $massConverter,
+        private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
     ) {}
 
     /**
@@ -118,7 +113,7 @@ class RecipeVersionCostingSynchronizer
                 ])
                 ->values()
                 ->all(),
-            'alkali_ingredients' => $this->alkaliIngredientsPayload($currentVersion, $user),
+            'alkali_ingredients' => $this->alkaliIngredientsPayload($currentVersion),
             'water_ingredient' => $this->waterIngredientPayload($currentVersion),
             'packaging_items' => $costing->packagingItems
                 ->map(fn (RecipeVersionCostingPackagingItem $item): array => [
@@ -164,7 +159,7 @@ class RecipeVersionCostingSynchronizer
             ]);
             $costing->save();
 
-            $this->syncFormulaItems($costing, $user);
+            $this->syncFormulaItems($costing);
             $this->applyItemPrices($costing, $user, $payload['items'] ?? []);
             $this->replacePackagingItems($costing, $payload['packaging_items'] ?? []);
 
@@ -213,7 +208,7 @@ class RecipeVersionCostingSynchronizer
             ]);
             $targetCosting->save();
 
-            $this->syncFormulaItems($targetCosting, $user);
+            $this->syncFormulaItems($targetCosting);
 
             $sourcePricesByKey = $sourceCosting->items
                 ->keyBy(fn (RecipeVersionCostingItem $item): string => $this->costingKey(
@@ -413,7 +408,7 @@ class RecipeVersionCostingSynchronizer
                 ],
             );
 
-            $this->syncFormulaItems($costing, $user);
+            $this->syncFormulaItems($costing);
             $this->syncPackagingItems($costing);
 
             return $costing->fresh(['items', 'packagingItems']) ?? $costing->load(['items', 'packagingItems']);
@@ -434,8 +429,8 @@ class RecipeVersionCostingSynchronizer
             return;
         }
 
-        DB::transaction(function () use ($costing, $user): void {
-            $this->syncFormulaItems($costing, $user);
+        DB::transaction(function () use ($costing): void {
+            $this->syncFormulaItems($costing);
             $this->syncPackagingItems($costing);
         });
     }
@@ -452,8 +447,8 @@ class RecipeVersionCostingSynchronizer
             return;
         }
 
-        DB::transaction(function () use ($costing, $user): void {
-            $this->syncFormulaItems($costing, $user);
+        DB::transaction(function () use ($costing): void {
+            $this->syncFormulaItems($costing);
         });
     }
 
@@ -469,7 +464,7 @@ class RecipeVersionCostingSynchronizer
      * This runs inside ensureCosting() and save(), so the costing items always
      * reflect the current formula state.
      */
-    private function syncFormulaItems(RecipeVersionCosting $costing, User $user): void
+    private function syncFormulaItems(RecipeVersionCosting $costing): void
     {
         $recipeVersion = RecipeVersion::withoutGlobalScopes()
             ->with([
@@ -488,7 +483,7 @@ class RecipeVersionCostingSynchronizer
                     'position' => (int) $item->position,
                 ]))
             ->values()
-            ->merge($this->alkaliDesiredRows($recipeVersion, $user))
+            ->merge($this->alkaliDesiredRows($recipeVersion))
             ->merge($this->implicitWaterDesiredRows($recipeVersion))
             ->values();
 
@@ -528,17 +523,19 @@ class RecipeVersionCostingSynchronizer
      * Costing identity for the calculated soap alkali (NaOH/KOH), exposed to the frontend.
      *
      * Alkali is never a formula row — it is derived from SAP values and lye settings —
-     * so the payload carries the resolved ingredient records the costing table prices.
+     * so the payload carries the resolved canonical ingredient records the costing
+     * table prices. Both identities resolve because the user can change lye type
+     * without reloading.
      *
      * @return array<string, array<string, mixed>>
      */
-    private function alkaliIngredientsPayload(RecipeVersion $recipeVersion, User $user): array
+    private function alkaliIngredientsPayload(RecipeVersion $recipeVersion): array
     {
         if (! $this->isSoapVersion($recipeVersion)) {
             return [];
         }
 
-        return $this->soapAlkaliIngredientsByLyeType($user)
+        return $this->alkaliResolver->resolveMany(['naoh', 'koh'])
             ->map(fn (Ingredient $ingredient): array => [
                 'ingredient_id' => $ingredient->id,
                 'name' => $ingredient->localizedDisplayName(),
@@ -556,7 +553,7 @@ class RecipeVersionCostingSynchronizer
      *
      * @return Collection<int, array{ingredient_id: int, phase_key: string, position: int}>
      */
-    private function alkaliDesiredRows(RecipeVersion $recipeVersion, User $user): Collection
+    private function alkaliDesiredRows(RecipeVersion $recipeVersion): Collection
     {
         if (! $this->isSoapVersion($recipeVersion)) {
             return collect();
@@ -569,41 +566,12 @@ class RecipeVersionCostingSynchronizer
             default => ['naoh'],
         };
 
-        $ingredients = $this->soapAlkaliIngredientsByLyeType($user);
-
-        return collect($lyeTypes)
-            ->filter(fn (string $lyeType): bool => $ingredients->has($lyeType))
+        return $this->alkaliResolver->resolveMany($lyeTypes)
             ->values()
-            ->map(fn (string $lyeType, int $index): array => [
-                'ingredient_id' => (int) $ingredients->get($lyeType)->id,
+            ->map(fn (Ingredient $ingredient, int $index): array => [
+                'ingredient_id' => (int) $ingredient->id,
                 'phase_key' => self::ALKALI_PHASE_KEY,
                 'position' => $index + 1,
-            ]);
-    }
-
-    /**
-     * Resolve the active catalog ingredients backing each lye type.
-     *
-     * @param  User|null  $user  When provided, workspace-owned alkalis are also accessible.
-     * @return Collection<string, Ingredient>
-     */
-    private function soapAlkaliIngredientsByLyeType(?User $user): Collection
-    {
-        $ingredientsBySubcategory = Ingredient::query()
-            ->withoutGlobalScopes()
-            ->where('is_active', true)
-            ->accessibleTo($user)
-            ->where('category', IngredientCategory::SoapmakingAlkalis->value)
-            ->whereIn('subcategory', array_values(self::ALKALI_SUBCATEGORY_BY_LYE_TYPE))
-            ->orderByRaw('CASE WHEN owner_type IS NULL THEN 0 ELSE 1 END')
-            ->orderBy('id')
-            ->get()
-            ->keyBy(fn (Ingredient $ingredient): string => (string) $ingredient->subcategory?->value);
-
-        return collect(self::ALKALI_SUBCATEGORY_BY_LYE_TYPE)
-            ->filter(fn (string $subcategory): bool => $ingredientsBySubcategory->has($subcategory))
-            ->mapWithKeys(fn (string $subcategory, string $lyeType): array => [
-                $lyeType => $ingredientsBySubcategory->get($subcategory),
             ]);
     }
 

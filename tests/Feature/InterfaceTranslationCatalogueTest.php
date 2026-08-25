@@ -726,3 +726,27 @@ it('commits every production lifecycle key for every supported locale', function
         }
     }
 });
+
+it('commits the canonical alkali copy with intact placeholders in every locale', function (): void {
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    foreach ([
+        'ingredients.alkalis.validation.canonical_missing' => [':key'],
+        'ingredients.alkalis.koh_with_purity' => [':name', ':purity'],
+        'ingredients.editor.validation.soapmaking_alkalis_platform_only' => [],
+        'workbench.costing.ingredients.koh_with_purity' => [':name', ':purity'],
+    ] as $fullKey => $placeholders) {
+        expect($rows)->toHaveKey($fullKey);
+
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+            $text = trim((string) data_get($rows[$fullKey], "text.{$locale}"));
+            expect($text, "{$fullKey} [{$locale}]")->not->toBe('');
+
+            foreach ($placeholders as $placeholder) {
+                expect($text, "{$fullKey} [{$locale}]")->toContain($placeholder);
+            }
+        }
+    }
+});

@@ -37,6 +37,9 @@ A named, ordered part of a formula that groups ingredients by their role or poin
 **Reaction core**:
 The soap-specific part of a formula in which saponifiable materials, alkali, and water determine the saponification calculation.
 
+**Soapmaking alkali**:
+A Koskalk-curated canonical sodium hydroxide or potassium hydroxide material used by the soap calculation. Workspaces set formula purity and costing, but do not author the material identity.
+
 **Post-reaction additions**:
 Ingredients added outside the soap reaction core, such as additives, aromatic materials, and colourants.
 

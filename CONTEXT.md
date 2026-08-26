@@ -62,11 +62,11 @@ _Avoid_: Platform ingredient
 **Catalogue key**:
 The immutable Koskalk identifier used by catalog and resolver logic. It is an administrative reference and is hidden from normal workspace users.
 
-**Workspace material code**:
-An optional mnemonic reference chosen by a workspace, such as `RM-OLIVE`. It is unique among the workspace's current material assignments, is not generated automatically, and may be cleared or reused. Production requirements snapshot the code when they are created.
+**Internal material code**:
+An optional workspace-specific mnemonic reference, such as `RM-OLIVE`. It is unique among the workspace's current material assignments, is not generated automatically, and may be cleared or reused. Production requirements snapshot the code when they are created.
 
 **Supplier SKU**:
-The supplier's identifier for a supplier listing. It is distinct from a workspace material code; Koskalk does not add a second user-defined identifier to the listing itself.
+The supplier's identifier for a supplier listing. It is distinct from an internal material code; Koskalk does not add a second user-defined identifier to the listing itself.
 
 **Ingredient change review**:
 A recheck of a formula's INCI and regulatory guidance after the current data of any linked ingredient changes.

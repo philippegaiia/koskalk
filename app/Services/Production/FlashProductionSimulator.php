@@ -35,6 +35,7 @@ class FlashProductionSimulator
     public function __construct(
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly FlashProductionLimits $limits,
         private readonly ProductionReadyDateService $readyDates,
     ) {}
@@ -146,6 +147,9 @@ class FlashProductionSimulator
             ];
         }
 
+        $requirements = $this->materialCodeSnapshots
+            ->apply($workspace, $requirements->values())
+            ->keyBy('key');
         $prices = $this->pricesByKey($workspace, $requirements);
         $displayMassUnit = $workspace->mass_display_system->priceUnit();
         $priceCurrencies = collect($prices)->pluck('currency')->filter()->unique()->values();
@@ -178,6 +182,7 @@ class FlashProductionSimulator
 
             return [
                 ...$requirement,
+                'material_code' => $requirement['material_code_snapshot'] ?? null,
                 'subject' => $subject,
                 'required' => $required,
                 'required_display' => $requirement['ingredient_id'] !== null

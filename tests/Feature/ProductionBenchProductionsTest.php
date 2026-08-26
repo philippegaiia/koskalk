@@ -99,6 +99,7 @@ it('shows immutable planning snapshots, requirements, tasks, and employee assign
         ->create([
             'kind' => ProductionRequirementKind::Ingredient,
             'subject_name_snapshot' => 'Olive oil',
+            'material_code_snapshot' => 'RM-OLIVE',
             'required_mass_grams' => '250.000000000',
         ]);
     ProductionTask::factory()
@@ -115,6 +116,7 @@ it('shows immutable planning snapshots, requirements, tasks, and employee assign
     ])
         ->assertSee('Olive soap')
         ->assertSee('Olive oil')
+        ->assertSee('RM-OLIVE')
         ->assertSee('250 g')
         ->assertSee('Cut and cure')
         ->assertSee('Ana Maker')

@@ -19,6 +19,7 @@ use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceProductionEntitlement;
 use App\Services\Production\ProductionAvailabilityPreview;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -99,6 +100,49 @@ it('previews the calculated KOH requirement before any production exists', funct
     expect(collect($preview['requirements'])->pluck('subject_name')->all())
         ->toContain('Potassium hydroxide (KOH 90%)')
         ->and(ProductionRun::query()->count())->toBe(0);
+});
+
+it('freezes workspace material codes in production requirements and previews', function (): void {
+    $fixture = productionCalculatedMaterialsFixture('koh');
+    $olive = Ingredient::query()->where('display_name', 'Olive oil')->sole();
+    $koh = Ingredient::query()->where('catalog_key', 'CH3')->sole();
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'ingredient_id' => $olive->id,
+        'material_code' => 'RM-OLIVE',
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'ingredient_id' => $koh->id,
+        'material_code' => 'LYE-KOH90',
+    ]);
+
+    $preview = app(ProductionAvailabilityPreview::class)->for(
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: 'kg',
+        expectedUnits: '288',
+        taskSet: null,
+        plannedFor: null,
+    );
+
+    expect(collect($preview['requirements'])->firstWhere('subject_name', 'Olive oil')['material_code'])
+        ->toBe('RM-OLIVE')
+        ->and(collect($preview['requirements'])->firstWhere('subject_name', 'Potassium hydroxide (KOH 90%)')['material_code'])
+        ->toBe('LYE-KOH90');
+
+    $production = createCalculatedMaterialProduction($fixture, 'material-code-snapshot');
+    $kohRequirement = $production->requirements->firstWhere('ingredient_id', $koh->id);
+
+    expect($kohRequirement?->material_code_snapshot)->toBe('LYE-KOH90');
+
+    WorkspaceIngredientCode::query()
+        ->where('workspace_id', $fixture['workspace']->id)
+        ->where('ingredient_id', $koh->id)
+        ->update(['material_code' => 'LYE-KOH100']);
+
+    expect($kohRequirement->fresh()->material_code_snapshot)->toBe('LYE-KOH90');
 });
 
 it('surfaces a missing canonical alkali in the production preview', function (): void {

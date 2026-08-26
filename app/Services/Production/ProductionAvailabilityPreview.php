@@ -22,6 +22,7 @@ class ProductionAvailabilityPreview
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
         private readonly ProductionCalculatedRequirementBuilder $calculatedRequirementBuilder,
+        private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly ProductionWorkingCalendar $calendar,
         private readonly StockPositionService $stockPositions,
     ) {}
@@ -93,6 +94,7 @@ class ProductionAvailabilityPreview
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
                 ),
             )->values();
+            $requirements = $this->materialCodeSnapshots->apply($workspace, $requirements);
         } catch (ValidationException $exception) {
             $preview['error'] = (string) collect($exception->errors())->flatten()->first();
 
@@ -131,6 +133,7 @@ class ProductionAvailabilityPreview
             $preview['requirements'][] = [
                 'kind' => $requirement['kind'],
                 'subject_name' => $requirement['subject_name_snapshot'],
+                'material_code' => $requirement['material_code_snapshot'] ?? null,
                 'percentage' => $requirement['percentage_snapshot'],
                 'required' => $this->formatQuantity($requiredCanonical, $isIngredient, $displayUnit),
                 'available' => $this->formatQuantity($available, $isIngredient, $displayUnit),

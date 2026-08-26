@@ -240,7 +240,7 @@ export function createCostingSection(payload) {
                         name: lyeType === 'koh'
                             ? this.t('costing.ingredients.koh_with_purity', {
                                 name: ingredient.name,
-                                purity: this.format(this.kohPurity, 0),
+                                purity: formatDecimalInput(this.kohPurity, this.numberLocale),
                             })
                             : ingredient.name,
                         percentage: this.oilBasisPercentage(weight),

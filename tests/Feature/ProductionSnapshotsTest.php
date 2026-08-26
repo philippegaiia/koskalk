@@ -35,23 +35,19 @@ use Illuminate\Validation\ValidationException;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    // Live costing resolves the canonical CH1/CH3 alkali identities for soap
-    // formulas, so provide the platform records up front.
     foreach ([
         'CH1' => IngredientSubcategory::SodiumHydroxide,
         'CH3' => IngredientSubcategory::PotassiumHydroxide,
     ] as $catalogKey => $subcategory) {
-        Ingredient::query()->withoutGlobalScopes()->firstOrCreate(
-            ['catalog_key' => $catalogKey],
-            [
-                'category' => IngredientCategory::SoapmakingAlkalis,
-                'subcategory' => $subcategory,
-                'display_name' => $subcategory === IngredientSubcategory::SodiumHydroxide
-                    ? 'Sodium hydroxide'
-                    : 'Potassium hydroxide',
-                'is_active' => true,
-            ],
-        );
+        Ingredient::factory()->create([
+            'catalog_key' => $catalogKey,
+            'category' => IngredientCategory::SoapmakingAlkalis,
+            'subcategory' => $subcategory,
+            'display_name' => $subcategory === IngredientSubcategory::SodiumHydroxide
+                ? 'Sodium hydroxide'
+                : 'Potassium hydroxide',
+            'is_active' => true,
+        ]);
     }
 });
 

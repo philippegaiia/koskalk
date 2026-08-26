@@ -81,8 +81,6 @@ class ProductionAvailabilityPreview
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: (int) $expectedUnits,
             );
-            // Mirror production creation so calculated NaOH/KOH appear in the
-            // preview before any production exists. Read-only: nothing persists.
             $formulaSnapshot = $this->formulaSnapshotBuilder->build(
                 recipe: $recipe,
                 version: $version,
@@ -95,7 +93,11 @@ class ProductionAvailabilityPreview
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
                 ),
             )->values();
-        } catch (ValidationException|\InvalidArgumentException) {
+        } catch (ValidationException $exception) {
+            $preview['error'] = (string) collect($exception->errors())->flatten()->first();
+
+            return $preview;
+        } catch (\InvalidArgumentException) {
             return $preview;
         }
 

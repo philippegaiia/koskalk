@@ -9,6 +9,7 @@ use App\Models\RecipeVersion;
 use App\Services\CanonicalSoapAlkaliResolver;
 use App\Services\MassConverter;
 use App\Services\RecipeWorkbenchService;
+use App\Support\NumberLocale;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -157,7 +158,7 @@ class ProductionFormulaSnapshotBuilder
         ];
 
         $unit = $draft['oilUnit'] ?? 'g';
-        $kohPurity = (int) round((float) ($draft['kohPurity'] ?? 90));
+        $kohPurity = NumberLocale::formatAdaptiveDecimal($draft['kohPurity'] ?? 90, 0, 4);
         $lines = collect();
 
         foreach ($candidates as $candidate) {
@@ -229,7 +230,7 @@ class ProductionFormulaSnapshotBuilder
     private function componentLabel(
         ProductionFormulaComponent $component,
         ?Ingredient $ingredient,
-        int $kohPurity,
+        string $kohPurity,
     ): string {
         return match ($component) {
             ProductionFormulaComponent::Naoh => $ingredient?->localizedDisplayName()

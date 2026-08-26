@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\ProductionBasisKind;
 use App\Enums\Visibility;
@@ -26,6 +28,23 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    foreach ([
+        'CH1' => IngredientSubcategory::SodiumHydroxide,
+        'CH3' => IngredientSubcategory::PotassiumHydroxide,
+    ] as $catalogKey => $subcategory) {
+        Ingredient::factory()->create([
+            'catalog_key' => $catalogKey,
+            'category' => IngredientCategory::SoapmakingAlkalis,
+            'subcategory' => $subcategory,
+            'display_name' => $subcategory === IngredientSubcategory::SodiumHydroxide
+                ? 'Sodium hydroxide'
+                : 'Potassium hydroxide',
+            'is_active' => true,
+        ]);
+    }
+});
 
 it('stores nullable actual mass for calculated formula lines at canonical precision', function (): void {
     expect(Schema::hasColumn('production_formula_lines', 'actual_mass_grams'))->toBeTrue();
@@ -106,6 +125,20 @@ it('raises the frozen KOH purity label and lowers planned mass at one hundred pe
         ->and($kohAtHundred['ingredient_id'])->toBe($kohAtNinety['ingredient_id'])
         ->and((float) $kohAtHundred['planned_mass_grams'])
         ->toBeLessThan((float) $kohAtNinety['planned_mass_grams']);
+});
+
+it('preserves fractional KOH purity in the frozen production label', function (): void {
+    $fixture = productionFormulaSnapshotFixture('koh');
+    addSoapFormula($fixture);
+    $context = $fixture['version']->calculation_context;
+    $context['koh_purity_percentage'] = 90.5;
+    $fixture['version']->forceFill(['calculation_context' => $context])->save();
+
+    $snapshot = buildFormulaSnapshot($fixture, '14000.000000000', 100);
+    $kohLine = $snapshot['lines']->where('component', 'koh')->first();
+
+    expect($kohLine['subject_name_snapshot'])->toBe('Potassium hydroxide (KOH 90.5%)')
+        ->and($snapshot['context']['koh_purity_percentage'])->toBe(90.5);
 });
 
 it('builds dual-lye soap snapshots with NaOH, KOH, and water lines', function (): void {
@@ -345,17 +378,6 @@ function productionFormulaSnapshotFixture(string $lyeType = 'naoh', string $calc
         ],
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
     ]);
-
-    if ($calculationBasis !== 'total_formula') {
-        Ingredient::query()->withoutGlobalScopes()->firstOrCreate(
-            ['catalog_key' => 'CH1'],
-            ['display_name' => 'Sodium hydroxide'],
-        );
-        Ingredient::query()->withoutGlobalScopes()->firstOrCreate(
-            ['catalog_key' => 'CH3'],
-            ['display_name' => 'Potassium hydroxide'],
-        );
-    }
 
     return compact('owner', 'workspace', 'recipe', 'version');
 }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Production\CreateProductionDraft;
+use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\ProductionFormulaComponent;
 use App\Enums\Visibility;
@@ -23,6 +25,23 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    foreach ([
+        'CH1' => IngredientSubcategory::SodiumHydroxide,
+        'CH3' => IngredientSubcategory::PotassiumHydroxide,
+    ] as $catalogKey => $subcategory) {
+        Ingredient::factory()->create([
+            'catalog_key' => $catalogKey,
+            'category' => IngredientCategory::SoapmakingAlkalis,
+            'subcategory' => $subcategory,
+            'display_name' => $subcategory === IngredientSubcategory::SodiumHydroxide
+                ? 'Sodium hydroxide'
+                : 'Potassium hydroxide',
+            'is_active' => true,
+        ]);
+    }
+});
 
 it('turns calculated NaOH into a stock requirement while leaving water non-stock', function (): void {
     $fixture = productionCalculatedMaterialsFixture();
@@ -80,6 +99,37 @@ it('previews the calculated KOH requirement before any production exists', funct
     expect(collect($preview['requirements'])->pluck('subject_name')->all())
         ->toContain('Potassium hydroxide (KOH 90%)')
         ->and(ProductionRun::query()->count())->toBe(0);
+});
+
+it('surfaces a missing canonical alkali in the production preview', function (): void {
+    $fixture = productionCalculatedMaterialsFixture('koh');
+    Ingredient::query()->where('catalog_key', 'CH3')->delete();
+
+    $preview = app(ProductionAvailabilityPreview::class)->for(
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: 'kg',
+        expectedUnits: '288',
+        taskSet: null,
+        plannedFor: null,
+    );
+
+    expect($preview['error'])->toBe(__('ingredients.alkalis.validation.canonical_missing', ['key' => 'CH3']))
+        ->and($preview['requirements'])->toBeEmpty()
+        ->and(ProductionRun::query()->count())->toBe(0);
+});
+
+it('renders production preview errors to the user', function (): void {
+    $view = file_get_contents(resource_path('views/livewire/production-bench/production/production-create.blade.php'));
+
+    expect($view)
+        ->toContain(<<<'BLADE'
+@if ($preview['error'])
+BLADE)
+        ->toContain(<<<'BLADE'
+{{ $preview['error'] }}
+BLADE);
 });
 
 it('does not create calculated lye requirements for total-formula productions', function (): void {
@@ -156,17 +206,6 @@ function productionCalculatedMaterialsFixture(
             'totals' => [],
         ],
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
-    ]);
-
-    Ingredient::query()->withoutGlobalScopes()->firstOrCreate([
-        'catalog_key' => 'CH1',
-    ], [
-        'display_name' => 'Sodium hydroxide',
-    ]);
-    Ingredient::query()->withoutGlobalScopes()->firstOrCreate([
-        'catalog_key' => 'CH3',
-    ], [
-        'display_name' => 'Potassium hydroxide',
     ]);
 
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);

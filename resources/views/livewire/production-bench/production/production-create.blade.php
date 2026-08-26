@@ -102,7 +102,9 @@
                     <h2 id="requirements-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.requirements_preview') }}</h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.requirements_help') }}</p>
                 </div>
-                @if ($preview['requirements'])
+                @if ($preview['error'])
+                    <p role="alert" class="m-5 rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)] sm:m-6">{{ $preview['error'] }}</p>
+                @elseif ($preview['requirements'])
                     <div class="overflow-x-auto">
                         <table class="w-full min-w-[760px] text-left text-sm">
                             <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">

@@ -7,6 +7,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
+use App\Enums\WorkspaceMemberRole;
 use App\Forms\Components\IngredientIdentityFields;
 use App\Forms\Components\MediaAssetPicker;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
@@ -20,11 +21,13 @@ use App\Models\IngredientFunction;
 use App\Models\Substance;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\CurrentAppUserResolver;
 use App\Services\IngredientClassificationPromptBuilder;
 use App\Services\IngredientIdentitySynchronizer;
 use App\Services\MediaAssetUsageService;
 use App\Services\UserIngredientAuthoringService;
+use App\Services\WorkspaceIngredientCodeService;
 use App\SoapSap;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
@@ -48,6 +51,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
@@ -82,6 +86,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
      * @var array<string, mixed>
      */
     public array $data = [];
+
+    public ?string $workspaceMaterialCode = null;
 
     public ?string $statusMessage = null;
 
@@ -124,6 +130,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         ?Ingredient $ingredient,
         UserIngredientAuthoringService $userIngredientAuthoringService,
         MediaAssetUsageService $mediaAssetUsages,
+        WorkspaceIngredientCodeService $workspaceIngredientCodes,
     ): void {
         if ($ingredient?->exists !== true) {
             $ingredient = null;
@@ -149,6 +156,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $state['document_media_asset_ids'] = $ingredient instanceof Ingredient
             ? $mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientDocument)
             : [];
+        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $materialCode = $ingredient instanceof Ingredient && $workspace instanceof Workspace
+            ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
+            : null;
+        $state['material_code'] = $materialCode;
+        $this->workspaceMaterialCode = $ingredient?->owner_type === null ? $materialCode : null;
 
         $this->form->fill($state);
     }
@@ -156,6 +169,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function save(
         UserIngredientAuthoringService $userIngredientAuthoringService,
         MediaAssetUsageService $mediaAssetUsages,
+        WorkspaceIngredientCodeService $workspaceIngredientCodes,
     ) {
         $user = $this->currentUser();
         $wasEditing = $this->isEditing();
@@ -176,15 +190,23 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
         $iconMediaAssetId = $state['icon_media_asset_id'] ?? null;
         $documentMediaAssetIds = $state['document_media_asset_ids'] ?? [];
+        $workspaceMaterialCode = $state['material_code'] ?? null;
         unset($state['featured_media_asset_id'], $state['icon_media_asset_id'], $state['document_media_asset_ids']);
+        unset($state['material_code']);
         $state['public_id'] = $this->mediaPublicId;
         $currentIngredient = $this->currentIngredient();
 
         try {
-            $ingredient = DB::transaction(function () use ($currentIngredient, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService): Ingredient {
+            $ingredient = DB::transaction(function () use ($currentIngredient, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceMaterialCode): Ingredient {
                 $ingredient = $currentIngredient instanceof Ingredient
                     ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
                     : $userIngredientAuthoringService->create($state, $user);
+
+                $workspace = $this->workspaceForMaterialCode($ingredient);
+
+                if ($workspace instanceof Workspace) {
+                    $workspaceIngredientCodes->synchronize($user, $workspace, $ingredient, $workspaceMaterialCode);
+                }
 
                 $mediaAssetUsages->syncSingle(
                     $user,
@@ -251,6 +273,38 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         return null;
+    }
+
+    public function saveWorkspaceMaterialCode(WorkspaceIngredientCodeService $workspaceIngredientCodes): void
+    {
+        $user = $this->currentUser();
+        $ingredient = $this->currentIngredient();
+        $workspace = $this->workspaceForMaterialCode($ingredient);
+
+        if (! $user instanceof User || ! $ingredient instanceof Ingredient || $ingredient->owner_type !== null || ! $workspace instanceof Workspace) {
+            $this->addError('workspaceMaterialCode', __('ingredients.editor.validation.material_code_forbidden'));
+
+            return;
+        }
+
+        try {
+            $workspaceIngredientCodes->synchronize($user, $workspace, $ingredient, $this->workspaceMaterialCode);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('workspaceMaterialCode', $message);
+                }
+            }
+
+            return;
+        } catch (AuthorizationException) {
+            $this->addError('workspaceMaterialCode', __('ingredients.editor.validation.material_code_forbidden'));
+
+            return;
+        }
+
+        $this->workspaceMaterialCode = $workspaceIngredientCodes->codeFor($workspace, $ingredient);
+        $this->showAppNotification(__('ingredients.editor.material_code.saved'));
     }
 
     public function addComponent(int $ingredientId): void
@@ -376,6 +430,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         TextInput::make('inci_name')
                                             ->label(__('ingredients.editor.details.inci'))
                                             ->maxLength(255),
+                                        TextInput::make('material_code')
+                                            ->label(__('ingredients.editor.material_code.label'))
+                                            ->helperText(__('ingredients.editor.material_code.helper'))
+                                            ->placeholder(__('ingredients.editor.material_code.placeholder'))
+                                            ->maxLength(64)
+                                            ->visible(fn (): bool => ! $this->isReadOnly()),
                                         SchemaView::make('livewire.dashboard.partials.ingredient-classification-prompt')
                                             ->visible(fn (): bool => ! $this->isReadOnly())
                                             ->columnSpanFull(),
@@ -728,6 +788,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'ingredient' => $ingredient,
             'identityState' => $identityState,
             'hasSoapChemistry' => $this->soapChemistryAvailable(),
+            'canEditWorkspaceMaterialCode' => $this->canEditWorkspaceMaterialCode(),
         ]);
     }
 
@@ -935,6 +996,43 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve();
+    }
+
+    private function workspaceForMaterialCode(?Ingredient $ingredient = null): ?Workspace
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        if ($ingredient?->workspace_id !== null) {
+            $workspace = Workspace::withoutGlobalScopes()->find((int) $ingredient->workspace_id);
+
+            if ($workspace instanceof Workspace && $workspace->hasMember($user)) {
+                return $workspace;
+            }
+        }
+
+        return $user->company();
+    }
+
+    public function canEditWorkspaceMaterialCode(): bool
+    {
+        $ingredient = $this->currentIngredient();
+        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $user = $this->currentUser();
+
+        return $ingredient instanceof Ingredient
+            && $ingredient->owner_type === null
+            && $ingredient->is_active
+            && $workspace instanceof Workspace
+            && $user instanceof User
+            && in_array($workspace->roleFor($user), [
+                WorkspaceMemberRole::Owner,
+                WorkspaceMemberRole::Admin,
+                WorkspaceMemberRole::Editor,
+            ], true);
     }
 
     private function isEditing(): bool

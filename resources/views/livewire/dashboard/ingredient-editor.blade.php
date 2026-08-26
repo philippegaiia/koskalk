@@ -87,6 +87,37 @@
  </div>
  </dl>
  </section>
+
+ <section class="sk-card p-5 sm:p-6" aria-labelledby="platform-material-code-heading">
+ <div class="flex flex-col gap-1">
+ <p class="sk-eyebrow">{{ __('ingredients.editor.material_code.workspace_eyebrow') }}</p>
+ <h2 id="platform-material-code-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.workspace_heading') }}</h2>
+ <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.workspace_helper') }}</p>
+ </div>
+ <form wire:submit="saveWorkspaceMaterialCode" class="mt-5 max-w-xl space-y-3">
+ <label for="workspace-material-code" class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.label') }}</label>
+ <input
+ id="workspace-material-code"
+ type="text"
+ wire:model="workspaceMaterialCode"
+ maxlength="64"
+ placeholder="{{ __('ingredients.editor.material_code.placeholder') }}"
+ @disabled(! $canEditWorkspaceMaterialCode)
+ class="sk-field-control w-full"
+ aria-describedby="workspace-material-code-help"
+ aria-invalid="{{ $errors->has('workspaceMaterialCode') ? 'true' : 'false' }}"
+ />
+ <p id="workspace-material-code-help" class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ $canEditWorkspaceMaterialCode ? __('ingredients.editor.material_code.helper') : __('ingredients.editor.material_code.workspace_read_only') }}</p>
+ @error('workspaceMaterialCode')
+ <p class="text-sm text-[var(--color-danger-strong)]" role="alert">{{ $message }}</p>
+ @enderror
+ @if ($canEditWorkspaceMaterialCode)
+ <button type="submit" wire:loading.attr="disabled" wire:target="saveWorkspaceMaterialCode" class="sk-btn sk-btn-primary">
+ {{ __('ingredients.editor.material_code.save') }}
+ </button>
+ @endif
+ </form>
+ </section>
  @endif
 
  <form wire:submit="save" class="space-y-4 pb-24">

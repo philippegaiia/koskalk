@@ -103,8 +103,10 @@ class WorkspaceIngredientCodeService
         $isPlatformIngredient = $ingredient->owner_type === null
             && $ingredient->workspace_id === null;
         $isWorkspaceIngredient = (int) $ingredient->workspace_id === (int) $workspace->id;
+        $isLegacyUserIngredient = $ingredient->isOwnedBy($actor);
 
-        if (($isPlatformIngredient && ! $ingredient->is_active) || (! $isPlatformIngredient && ! $isWorkspaceIngredient)) {
+        if (($isPlatformIngredient && ! $ingredient->is_active)
+            || (! $isPlatformIngredient && ! $isWorkspaceIngredient && ! $isLegacyUserIngredient)) {
             throw ValidationException::withMessages([
                 'material_code' => __('ingredients.editor.validation.material_code_forbidden'),
             ]);

@@ -528,6 +528,11 @@ return [
             'helper' => 'Optional mnemonic reference used by your workspace, for example RM-OLIVE. It must be unique among your current materials.',
             'placeholder' => 'e.g. RM-OLIVE',
             'saved' => 'Internal material code saved.',
+            'save' => 'Save material code',
+            'workspace_eyebrow' => 'Workspace reference',
+            'workspace_heading' => 'Your material code',
+            'workspace_helper' => 'Assign a private reference used by this workspace. The Koskalk catalogue key remains unchanged.',
+            'workspace_read_only' => 'Only workspace owners, admins, and editors can change this reference.',
         ],
         'common' => [
             'breadcrumb' => 'Breadcrumb',

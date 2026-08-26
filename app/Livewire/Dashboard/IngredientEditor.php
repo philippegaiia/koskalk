@@ -253,6 +253,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->showAppNotification($statusMessage);
 
         $refreshedState = $userIngredientAuthoringService->formData($ingredient);
+        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $refreshedState['material_code'] = $workspace instanceof Workspace
+            ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
+            : null;
         $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
         $refreshedState['icon_media_asset_id'] = $iconMediaAssetId;
         $refreshedState['document_media_asset_ids'] = $documentMediaAssetIds;

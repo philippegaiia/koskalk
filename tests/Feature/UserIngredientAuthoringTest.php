@@ -125,12 +125,17 @@ it('saves an optional workspace material code without generating one', function 
 
     $this->actingAs($user);
 
-    Livewire::test(IngredientEditor::class)
+    $component = Livewire::test(IngredientEditor::class)
         ->set('data.name', 'French Green Clay')
         ->set('data.category', IngredientCategory::MineralsSaltsPowders->value)
         ->set('data.material_code', ' clay-01 ')
         ->call('save')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertSet('data.material_code', 'CLAY-01')
+        ->set('data.notes', 'Updated without changing the material code')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('data.material_code', 'CLAY-01');
 
     $ingredient = Ingredient::query()->where('display_name', 'French Green Clay')->sole();
     $workspace = $user->refresh()->company();

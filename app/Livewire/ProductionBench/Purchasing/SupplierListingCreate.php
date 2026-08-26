@@ -739,7 +739,9 @@ class SupplierListingCreate extends Component implements HasForms
 
     private function ingredientLabel(Ingredient $ingredient): string
     {
-        $label = $ingredient->localizedDisplayName() ?? $ingredient->display_name ?? $ingredient->catalog_key;
+        $label = $ingredient->localizedDisplayName()
+            ?? $ingredient->display_name
+            ?? __('formula_documents.ingredients.unnamed');
         $materialCode = $ingredient->relationLoaded('workspaceCodes')
             ? $ingredient->workspaceCodes->first()?->material_code
             : $this->workspaceIngredientCodes->codeFor($this->workspace(), $ingredient);

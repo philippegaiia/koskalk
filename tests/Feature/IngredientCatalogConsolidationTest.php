@@ -6,6 +6,7 @@ use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\RecipeItem;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Services\IngredientCatalogConsolidationService;
 use App\Support\IngredientCatalogConsolidationDataset;
 use App\Support\IngredientCatalogTaxonomyDataset;
@@ -136,6 +137,54 @@ it('merges an approved duplicate transactionally and preserves workspace ownersh
         ->and($recipeItem->fresh()->ingredient_id)->toBe($target->id)
         ->and($price->fresh()->ingredient_id)->toBe($target->id)
         ->and(Ingredient::query()->whereKey($source->id)->exists())->toBeFalse();
+});
+
+it('moves a source workspace material code to the target during a catalogue merge', function (): void {
+    $workspace = Workspace::factory()->create();
+    $source = Ingredient::factory()->create(['catalog_key' => 'EO26', 'owner_type' => null]);
+    $target = Ingredient::factory()->create(['catalog_key' => 'EO25', 'owner_type' => null]);
+    $code = WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'material_code' => 'EO-LAVENDER',
+    ]);
+
+    consolidationServiceFor([[
+        'action' => 'merge_into',
+        'source_catalog_key' => 'EO26',
+        'target_catalog_key' => 'EO25',
+        'reason' => 'Test-approved duplicate.',
+    ]])->apply();
+
+    expect($code->fresh()->ingredient_id)->toBe($target->id);
+});
+
+it('rolls back an approved merge when workspace material codes conflict', function (): void {
+    $workspace = Workspace::factory()->create();
+    $source = Ingredient::factory()->create(['catalog_key' => 'EO26', 'owner_type' => null]);
+    $target = Ingredient::factory()->create(['catalog_key' => 'EO25', 'owner_type' => null]);
+
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'material_code' => 'EO-LAVENDER-OLD',
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $target->id,
+        'material_code' => 'EO-LAVENDER-NEW',
+    ]);
+
+    expect(fn () => consolidationServiceFor([[
+        'action' => 'merge_into',
+        'source_catalog_key' => 'EO26',
+        'target_catalog_key' => 'EO25',
+        'reason' => 'Test-approved duplicate.',
+    ]])->apply())->toThrow(RuntimeException::class, 'workspace material code conflict');
+
+    expect(Ingredient::query()->whereKey($source->id)->exists())->toBeTrue()
+        ->and(WorkspaceIngredientCode::query()->where('ingredient_id', $source->id)->value('material_code'))->toBe('EO-LAVENDER-OLD')
+        ->and(WorkspaceIngredientCode::query()->where('ingredient_id', $target->id)->value('material_code'))->toBe('EO-LAVENDER-NEW');
 });
 
 it('rolls back an approved merge when workspace prices conflict', function (): void {

@@ -113,6 +113,22 @@ it('uses the workspace material code in ingredient labels and search', function 
         ->toBe([]);
 });
 
+it('does not expose a catalogue key when an ingredient has no display name', function (): void {
+    [$owner] = listingCreateWorkspace();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => null,
+        'catalog_key' => 'HIDDEN-TECHNICAL-KEY',
+    ]);
+    $this->actingAs($owner);
+
+    $label = Livewire::test(SupplierListingCreate::class)
+        ->instance()
+        ->ingredientOptionLabel($ingredient->id);
+
+    expect($label)->toBe('Unnamed ingredient')
+        ->not->toContain('HIDDEN-TECHNICAL-KEY');
+});
+
 it('requires a supplier on the global listing form', function (): void {
     [$owner] = listingCreateWorkspace();
     $ingredient = Ingredient::factory()->create();

@@ -3792,6 +3792,42 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.admin.identity.catalog_key",
+      "text": {
+        "de": "Koskalk-Katalogschlüssel",
+        "es": "Clave de catálogo de Koskalk",
+        "fr": "Clé de catalogue Koskalk",
+        "it": "Chiave catalogo Koskalk",
+        "nl": "Koskalk-catalogussleutel",
+        "pt_BR": "Chave de catálogo Koskalk"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.admin.identity.catalog_key_helper",
+      "text": {
+        "de": "Technische, unveränderliche Kennung des Koskalk-Katalogs und seiner Resolver-Logik.",
+        "es": "Identificador técnico e inmutable utilizado por el catálogo y la lógica de resolución de Koskalk.",
+        "fr": "Identifiant technique et immuable utilisé par le catalogue et la logique de résolution de Koskalk.",
+        "it": "Identificatore tecnico e immutabile usato dal catalogo e dalla logica di risoluzione di Koskalk.",
+        "nl": "Technische, onveranderlijke identificatie die door de Koskalk-catalogus en resolverlogica wordt gebruikt.",
+        "pt_BR": "Identificador técnico e imutável usado pelo catálogo e pela lógica de resolução da Koskalk."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.admin.identity.catalog_key_pending",
+      "text": {
+        "de": "Nach Erstellung zugewiesen",
+        "es": "Se asigna después de crear",
+        "fr": "Attribuée après la création",
+        "it": "Assegnata dopo la creazione",
+        "nl": "Wordt na aanmaken toegewezen",
+        "pt_BR": "Atribuída após a criação"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.admin.identity.description",
       "text": {
         "de": "Bearbeite den öffentlichen Materialnamen und seine kanonische kosmetische Identität.",
@@ -5880,6 +5916,114 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.material_code.helper",
+      "text": {
+        "de": "Optionale mnemonische Referenz für deinen Arbeitsbereich, zum Beispiel RM-OLIVE. Sie muss unter den aktuellen Materialien dieses Arbeitsbereichs eindeutig sein.",
+        "es": "Referencia mnemotécnica opcional de tu espacio de trabajo, por ejemplo RM-OLIVE. Debe ser única entre los materiales actuales de este espacio.",
+        "fr": "Référence mnémotechnique facultative de votre espace de travail, par exemple RM-OLIVE. Elle doit être unique parmi les matières actuelles de cet espace.",
+        "it": "Riferimento mnemonico opzionale del tuo spazio di lavoro, ad esempio RM-OLIVE. Deve essere univoco tra i materiali attuali dello spazio.",
+        "nl": "Optionele mnemonische referentie voor je werkruimte, bijvoorbeeld RM-OLIVE. Deze moet uniek zijn binnen de huidige materialen van deze werkruimte.",
+        "pt_BR": "Referência mnemônica opcional do seu espaço de trabalho, por exemplo RM-OLIVE. Ela deve ser única entre os materiais atuais deste espaço."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.label",
+      "text": {
+        "de": "Interner Materialcode",
+        "es": "Código interno de material",
+        "fr": "Code matière interne",
+        "it": "Codice materiale interno",
+        "nl": "Interne materiaalcode",
+        "pt_BR": "Código interno do material"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.placeholder",
+      "text": {
+        "de": "z. B. RM-OLIVE",
+        "es": "p. ej. RM-OLIVE",
+        "fr": "p. ex. RM-OLIVE",
+        "it": "es. RM-OLIVE",
+        "nl": "bijv. RM-OLIVE",
+        "pt_BR": "ex.: RM-OLIVE"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.save",
+      "text": {
+        "de": "Materialcode speichern",
+        "es": "Guardar código de material",
+        "fr": "Enregistrer le code matière",
+        "it": "Salva codice materiale",
+        "nl": "Materiaalcode opslaan",
+        "pt_BR": "Salvar código do material"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.saved",
+      "text": {
+        "de": "Interner Materialcode gespeichert.",
+        "es": "Código interno de material guardado.",
+        "fr": "Code matière interne enregistré.",
+        "it": "Codice materiale interno salvato.",
+        "nl": "Interne materiaalcode opgeslagen.",
+        "pt_BR": "Código interno do material salvo."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.workspace_eyebrow",
+      "text": {
+        "de": "Arbeitsbereichsreferenz",
+        "es": "Referencia del espacio de trabajo",
+        "fr": "Référence de l’espace de travail",
+        "it": "Riferimento dello spazio di lavoro",
+        "nl": "Werkruimtereferentie",
+        "pt_BR": "Referência do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.workspace_heading",
+      "text": {
+        "de": "Ihr Materialcode",
+        "es": "Tu código de material",
+        "fr": "Votre code matière",
+        "it": "Il tuo codice materiale",
+        "nl": "Je materiaalcode",
+        "pt_BR": "Seu código do material"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.workspace_helper",
+      "text": {
+        "de": "Weisen Sie eine private Referenz zu, die in diesem Arbeitsbereich verwendet wird. Der Koskalk-Katalogschlüssel bleibt unverändert.",
+        "es": "Asigna una referencia privada para usarla en este espacio de trabajo. La clave de catálogo de Koskalk no cambia.",
+        "fr": "Attribuez une référence privée utilisée dans cet espace de travail. La clé de catalogue Koskalk reste inchangée.",
+        "it": "Assegna un riferimento privato da usare in questo spazio di lavoro. La chiave catalogo Koskalk resta invariata.",
+        "nl": "Wijs een privéreferentie toe voor gebruik in deze werkruimte. De Koskalk-catalogussleutel blijft ongewijzigd.",
+        "pt_BR": "Atribua uma referência privada para usar neste espaço de trabalho. A chave de catálogo da Koskalk permanece inalterada."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.material_code.workspace_read_only",
+      "text": {
+        "de": "Nur Arbeitsbereichsinhaber, Administratoren und Bearbeiter können diese Referenz ändern.",
+        "es": "Solo los propietarios, administradores y editores del espacio de trabajo pueden cambiar esta referencia.",
+        "fr": "Seuls les propriétaires, administrateurs et éditeurs de l’espace de travail peuvent modifier cette référence.",
+        "it": "Solo proprietari, amministratori e redattori dello spazio di lavoro possono modificare questo riferimento.",
+        "nl": "Alleen werkruimte-eigenaren, beheerders en redacteurs kunnen deze referentie wijzigen.",
+        "pt_BR": "Somente proprietários, administradores e editores do espaço de trabalho podem alterar esta referência."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.media.description",
       "text": {
         "de": "Bewahre Quelldokumente, Bilder und praktische Arbeitsbereichsnotizen gemeinsam auf.",
@@ -6872,6 +7016,42 @@
         "it": "La concentrazione IFRA massima non può essere negativa.",
         "nl": "De maximale IFRA-concentratie mag niet negatief zijn.",
         "pt_BR": "A concentração máxima IFRA não pode ser negativa."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.material_code_forbidden",
+      "text": {
+        "de": "Für dieses Material kann kein Arbeitsbereichs-Materialcode vergeben werden.",
+        "es": "No se puede asignar un código de material del espacio de trabajo a este material.",
+        "fr": "Aucun code matière d’espace de travail ne peut être attribué à cette matière.",
+        "it": "Non è possibile assegnare un codice materiale dello spazio di lavoro a questo materiale.",
+        "nl": "Aan dit materiaal kan geen materiaalcode van de werkruimte worden toegewezen.",
+        "pt_BR": "Não é possível atribuir um código de material do espaço de trabalho a este material."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.material_code_format",
+      "text": {
+        "de": "Verwende 1–64 Buchstaben, Zahlen, Punkte, Unterstriche, Bindestriche oder Schrägstriche; beginne mit einem Buchstaben oder einer Zahl.",
+        "es": "Usa entre 1 y 64 letras, números, puntos, guiones bajos, guiones o barras; empieza con una letra o un número.",
+        "fr": "Utilisez 1 à 64 lettres, chiffres, points, traits de soulignement, tirets ou barres obliques ; commencez par une lettre ou un chiffre.",
+        "it": "Usa da 1 a 64 lettere, numeri, punti, trattini bassi, trattini o barre; inizia con una lettera o un numero.",
+        "nl": "Gebruik 1–64 letters, cijfers, punten, underscores, koppeltekens of schuine strepen; begin met een letter of cijfer.",
+        "pt_BR": "Use de 1 a 64 letras, números, pontos, sublinhados, hífens ou barras; comece com uma letra ou número."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.material_code_unique",
+      "text": {
+        "de": "Dieser interne Materialcode wird bereits von einem anderen aktuellen Material in diesem Arbeitsbereich verwendet.",
+        "es": "Este código interno de material ya lo utiliza otro material actual de este espacio de trabajo.",
+        "fr": "Ce code matière interne est déjà utilisé par une autre matière actuelle de cet espace de travail.",
+        "it": "Questo codice materiale interno è già utilizzato da un altro materiale attuale dello spazio di lavoro.",
+        "nl": "Deze interne materiaalcode wordt al gebruikt door een ander huidig materiaal in deze werkruimte.",
+        "pt_BR": "Este código interno do material já é usado por outro material atual deste espaço de trabalho."
       }
     },
     {

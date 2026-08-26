@@ -19,6 +19,7 @@ use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
+use App\Services\WorkspaceIngredientCodeService;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
 use Filament\Forms\Components\Radio;
@@ -53,6 +54,8 @@ class SupplierListingCreate extends Component implements HasForms
 
     private CurrencyCatalog $currencyCatalog;
 
+    private WorkspaceIngredientCodeService $workspaceIngredientCodes;
+
     #[Locked]
     public ?string $lockedSupplierPublicId = null;
 
@@ -81,9 +84,12 @@ class SupplierListingCreate extends Component implements HasForms
     /** @var array<string, mixed> */
     public array $data = [];
 
-    public function boot(CurrencyCatalog $currencyCatalog): void
-    {
+    public function boot(
+        CurrencyCatalog $currencyCatalog,
+        WorkspaceIngredientCodeService $workspaceIngredientCodes,
+    ): void {
         $this->currencyCatalog = $currencyCatalog;
+        $this->workspaceIngredientCodes = $workspaceIngredientCodes;
     }
 
     public function mount(
@@ -131,7 +137,7 @@ class SupplierListingCreate extends Component implements HasForms
 
         if ($ingredient instanceof Ingredient) {
             $materialType = 'ingredient';
-            $this->ingredientOptionLabels[$ingredient->id] = $ingredient->localizedDisplayName();
+            $this->ingredientOptionLabels[$ingredient->id] = $this->ingredientLabel($ingredient);
         }
 
         if ($packagingItem instanceof PackagingItem) {
@@ -434,8 +440,10 @@ class SupplierListingCreate extends Component implements HasForms
         $results = $this->availableIngredientQuery()
             ->when($search !== '', fn (Builder $query): Builder => $query->where(fn (Builder $nested): Builder => $nested
                 ->whereLike('display_name', "%{$search}%")
-                ->orWhereLike('catalog_key', "%{$search}%")
                 ->orWhereLike('inci_name', "%{$search}%")
+                ->orWhereHas('workspaceCodes', fn (Builder $codeQuery): Builder => $codeQuery
+                    ->where('workspace_id', $this->workspace()->id)
+                    ->whereLike('material_code', "%{$search}%"))
                 ->orWhereHas('translations', fn (Builder $translation): Builder => $translation->whereLike('display_name', "%{$search}%"))))
             ->orderBy('display_name')
             ->limit(self::OptionLimit)
@@ -591,7 +599,10 @@ class SupplierListingCreate extends Component implements HasForms
         $localeCandidates = Ingredient::translationLocaleCandidates();
 
         return Ingredient::query()
-            ->with(['translations' => fn ($query) => $query->whereIn('locale', $localeCandidates)])
+            ->with([
+                'translations' => fn ($query) => $query->whereIn('locale', $localeCandidates),
+                'workspaceCodes' => fn ($query) => $query->where('workspace_id', $workspace->id),
+            ])
             ->where('is_active', true)
             ->accessibleTo($user)
             ->where(function (Builder $query) use ($user, $workspace): void {
@@ -728,7 +739,12 @@ class SupplierListingCreate extends Component implements HasForms
 
     private function ingredientLabel(Ingredient $ingredient): string
     {
-        return $ingredient->localizedDisplayName() ?? $ingredient->display_name ?? $ingredient->catalog_key;
+        $label = $ingredient->localizedDisplayName() ?? $ingredient->display_name ?? $ingredient->catalog_key;
+        $materialCode = $ingredient->relationLoaded('workspaceCodes')
+            ? $ingredient->workspaceCodes->first()?->material_code
+            : $this->workspaceIngredientCodes->codeFor($this->workspace(), $ingredient);
+
+        return filled($materialCode) ? $materialCode.' · '.$label : $label;
     }
 
     private function normalizedSearch(string $search): string

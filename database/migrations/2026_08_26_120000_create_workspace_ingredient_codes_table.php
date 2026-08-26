@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('workspace_ingredient_codes', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('ingredient_id')->constrained()->restrictOnDelete();
+            $table->foreignId('ingredient_id')->constrained()->cascadeOnDelete();
             $table->string('material_code', 64);
             $table->timestamps();
 

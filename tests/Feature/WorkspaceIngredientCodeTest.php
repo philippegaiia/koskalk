@@ -87,6 +87,18 @@ it('frees a code when it is changed or cleared so it can be reused', function ()
         ->toBe('RM-OLIVE-NEW');
 });
 
+it('removes a current code when its ingredient is deleted', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $ingredient = workspacePrivateIngredient($workspace);
+    $service = app(WorkspaceIngredientCodeService::class);
+
+    $service->synchronize($owner, $workspace, $ingredient, 'RM-OLIVE');
+    $ingredient->delete();
+
+    expect(WorkspaceIngredientCode::query()->where('ingredient_id', $ingredient->id)->exists())->toBeFalse();
+});
+
 it('rejects invalid values and foreign private ingredients', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

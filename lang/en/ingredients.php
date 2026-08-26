@@ -523,6 +523,12 @@ return [
         'unavailable' => 'The ingredient is no longer available in your catalog.',
     ],
     'editor' => [
+        'material_code' => [
+            'label' => 'Internal material code',
+            'helper' => 'Optional mnemonic reference used by your workspace, for example RM-OLIVE. It must be unique among your current materials.',
+            'placeholder' => 'e.g. RM-OLIVE',
+            'saved' => 'Internal material code saved.',
+        ],
         'common' => [
             'breadcrumb' => 'Breadcrumb',
             'new_ingredient' => 'New ingredient',
@@ -905,6 +911,9 @@ return [
             'composition_total' => 'Blend percentages must total 100%.',
             'composition_self' => 'An ingredient cannot contain itself.',
             'composition_cycle' => 'This ingredient would create a circular blend.',
+            'material_code_format' => 'Use 1–64 letters, numbers, dots, underscores, hyphens, or slashes, starting with a letter or number.',
+            'material_code_unique' => 'This internal material code is already used by another current material in this workspace.',
+            'material_code_forbidden' => 'This ingredient is not available for a workspace material code.',
             'private_ingredient_limit' => '{1} Your current plan allows 1 private ingredient.|[2,*] Your current plan allows :limit private ingredients.',
         ],
     ],

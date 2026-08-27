@@ -98,6 +98,7 @@ it('presents one material row per formula or packaging item with reservation and
         ])
         ->and($water['actual']['rows'][0]['quantity'])->toBe('196.000000000')
         ->and($packaging['planned'])->toBe(['quantity' => '100', 'unit' => 'units'])
+        ->and($packaging['material_code'])->toBe('PK-BOX')
         ->and($packaging['actual']['rows'][0]['quantity'])->toBe('98');
 });
 
@@ -228,7 +229,10 @@ function productionDetailPresenterFixture(): array
     ]);
     $oil = Ingredient::factory()->create(['display_name' => 'Olive oil']);
     $lye = Ingredient::factory()->create(['display_name' => 'Sodium hydroxide']);
-    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Box']);
+    $packaging = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Box',
+        'material_code' => 'PK-BOX',
+    ]);
     $oilLine = ProductionFormulaLine::factory()->for($production, 'productionRun')->create([
         'ingredient_id' => $oil->id,
         'component' => ProductionFormulaComponent::Ingredient,
@@ -267,6 +271,7 @@ function productionDetailPresenterFixture(): array
     ]);
     $packagingRequirement = ProductionRequirement::factory()->for($production, 'productionRun')->forPackaging($packaging)->create([
         'subject_name_snapshot' => 'Box',
+        'material_code_snapshot' => 'PK-BOX',
         'required_units' => 100,
         'sort_order' => 3,
     ]);

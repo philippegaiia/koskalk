@@ -11,6 +11,7 @@ use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
+use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
@@ -145,6 +146,55 @@ it('freezes workspace material codes in production requirements and previews', f
         ->update(['material_code' => 'LYE-KOH100']);
 
     expect($kohRequirement->fresh()->material_code_snapshot)->toBe('LYE-KOH90');
+});
+
+it('freezes packaging material codes in production previews and requirements', function (): void {
+    $fixture = productionCalculatedMaterialsFixture('koh');
+    $packaging = PackagingItem::factory()->for($fixture['workspace'])->create([
+        'name' => 'Clear 250 ml bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
+    $fixture['version']->packagingItems()->create([
+        'packaging_item_id' => $packaging->id,
+        'name' => 'Clear 250 ml bottle',
+        'components_per_unit' => '1',
+        'position' => 1,
+    ]);
+
+    $preview = app(ProductionAvailabilityPreview::class)->for(
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: 'kg',
+        expectedUnits: '288',
+        taskSet: null,
+        plannedFor: null,
+    );
+
+    expect(collect($preview['requirements'])->firstWhere('subject_name', 'Clear 250 ml bottle')['material_code'])
+        ->toBe('PK-BOT-250');
+
+    $production = createCalculatedMaterialProduction($fixture, 'packaging-code-snapshot');
+    $packagingRequirement = $production->requirements->firstWhere('packaging_item_id', $packaging->id);
+
+    expect($packagingRequirement?->material_code_snapshot)->toBe('PK-BOT-250');
+
+    $packaging->update(['material_code' => 'PK-BOT-250-NEW']);
+
+    expect($packagingRequirement->fresh()->material_code_snapshot)->toBe('PK-BOT-250');
+
+    $nextPreview = app(ProductionAvailabilityPreview::class)->for(
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: 'kg',
+        expectedUnits: '288',
+        taskSet: null,
+        plannedFor: null,
+    );
+
+    expect(collect($nextPreview['requirements'])->firstWhere('subject_name', 'Clear 250 ml bottle')['material_code'])
+        ->toBe('PK-BOT-250-NEW');
 });
 
 it('surfaces a missing canonical alkali in the production preview', function (): void {

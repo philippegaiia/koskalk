@@ -204,7 +204,7 @@ class ProductionDetailPresenter
                 'group_key' => 'packaging',
                 'group_name' => __('production_bench.production.packaging_requirement'),
                 'material_name' => $requirement->subject_name_snapshot,
-                'material_code' => null,
+                'material_code' => $requirement->material_code_snapshot,
                 'percentage' => null,
                 'note' => $requirement->note_snapshot,
                 'planned' => [

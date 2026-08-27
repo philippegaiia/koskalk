@@ -8,6 +8,7 @@ use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\Livewire\ProductionBench\Production\StockPreparation;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
@@ -87,6 +88,28 @@ it('shows the snapshot product name on the stock preparation page', function ():
     Livewire::actingAs($fixture['owner'])->test(StockPreparation::class, ['productionRun' => (string) $production->id])
         ->assertSee('Historical soap')
         ->assertDontSee('Renamed live product');
+});
+
+it('shows the frozen packaging material code on the stock preparation page', function (): void {
+    $fixture = productionStockPreparationUiFixture();
+    $production = productionStockPreparationUiProduction($fixture, '2026-08-22');
+    $packaging = PackagingItem::factory()->for($fixture['workspace'])->create([
+        'name' => 'Clear bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
+    ProductionRequirement::factory()
+        ->for($production, 'productionRun')
+        ->forPackaging($packaging)
+        ->create([
+            'subject_name_snapshot' => 'Clear bottle',
+            'material_code_snapshot' => 'PK-BOT-250',
+        ]);
+    $packaging->update(['material_code' => 'PK-BOT-250-NEW']);
+
+    Livewire::actingAs($fixture['owner'])->test(StockPreparation::class, ['productionRun' => (string) $production->id])
+        ->assertSee('Clear bottle')
+        ->assertSee('PK-BOT-250')
+        ->assertDontSee('PK-BOT-250-NEW');
 });
 
 function productionStockPreparationUiFixture(): array

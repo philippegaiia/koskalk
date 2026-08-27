@@ -102,6 +102,7 @@ it('simulates multiple product lines and aggregate material requirements without
 
 it('includes the current workspace material code in flash requirements', function (): void {
     $fixture = flashSimulatorFixture();
+    $fixture['packaging']->update(['material_code' => 'PK-FLASH']);
     WorkspaceIngredientCode::factory()->create([
         'workspace_id' => $fixture['workspace']->id,
         'ingredient_id' => $fixture['ingredient']->id,
@@ -117,7 +118,9 @@ it('includes the current workspace material code in flash requirements', functio
     ]]);
 
     expect(collect($result['requirements'])->firstWhere('ingredient_id', $fixture['ingredient']->id)['material_code'])
-        ->toBe('RM-FLASH');
+        ->toBe('RM-FLASH')
+        ->and(collect($result['requirements'])->firstWhere('packaging_item_id', $fixture['packaging']->id)['material_code'])
+        ->toBe('PK-FLASH');
 });
 
 it('reports missing current prices without reading stock coverage', function (): void {

@@ -14424,6 +14424,42 @@
     },
     {
       "group": "packaging",
+      "key": "editor.form.material_code.helper",
+      "text": {
+        "de": "Optionale Arbeitsbereichsreferenz für Formeln, Kostenberechnung, Einkauf und Produktion. Koskalk generiert keinen Code.",
+        "es": "Referencia opcional del espacio de trabajo para fórmulas, costes, compras y producción. Koskalk no genera ningún código.",
+        "fr": "Référence facultative de l’espace de travail pour les formules, les coûts, les achats et la production. Koskalk ne génère aucun code.",
+        "it": "Riferimento opzionale dello spazio di lavoro per formule, costi, acquisti e produzione. Koskalk non genera alcun codice.",
+        "nl": "Optionele werkruimtereferentie voor formules, kostprijzen, inkoop en productie. Koskalk genereert geen code.",
+        "pt_BR": "Referência opcional do espaço de trabalho para fórmulas, custos, compras e produção. A Koskalk não gera nenhum código."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "editor.form.material_code.label",
+      "text": {
+        "de": "Interner Materialcode",
+        "es": "Código interno de material",
+        "fr": "Code matière interne",
+        "it": "Codice materiale interno",
+        "nl": "Interne materiaalcode",
+        "pt_BR": "Código interno do material"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "editor.form.material_code.placeholder",
+      "text": {
+        "de": "z. B. PK-BOT-250",
+        "es": "p. ej. PK-BOT-250",
+        "fr": "p. ex. PK-BOT-250",
+        "it": "es. PK-BOT-250",
+        "nl": "bijv. PK-BOT-250",
+        "pt_BR": "ex.: PK-BOT-250"
+      }
+    },
+    {
+      "group": "packaging",
       "key": "editor.form.name.label",
       "text": {
         "de": "Name",
@@ -14702,12 +14738,12 @@
       "group": "packaging",
       "key": "search.placeholder",
       "text": {
-        "de": "Name oder Notizen",
-        "es": "Nombre o notas",
-        "fr": "Nom ou notes",
-        "it": "Nome o note",
-        "nl": "Naam of notities",
-        "pt_BR": "Nome ou notas"
+        "de": "Name, Code oder Notizen",
+        "es": "Nombre, código o notas",
+        "fr": "Nom, code ou notes",
+        "it": "Nome, codice o note",
+        "nl": "Naam, code of notities",
+        "pt_BR": "Nome, código ou notas"
       }
     },
     {
@@ -14760,6 +14796,18 @@
     },
     {
       "group": "packaging",
+      "key": "table.material_code",
+      "text": {
+        "de": "Interner Materialcode",
+        "es": "Código interno de material",
+        "fr": "Code matière interne",
+        "it": "Codice materiale interno",
+        "nl": "Interne materiaalcode",
+        "pt_BR": "Código interno do material"
+      }
+    },
+    {
+      "group": "packaging",
       "key": "table.name",
       "text": {
         "de": "Name",
@@ -14804,6 +14852,30 @@
         "it": "Questa confezione è ancora utilizzata e non può essere eliminata.",
         "nl": "Deze verpakking is nog in gebruik en kan niet worden verwijderd.",
         "pt_BR": "Esta embalagem ainda está em uso e não pode ser excluída."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "validation.material_code_format",
+      "text": {
+        "de": "Verwende 1–64 Buchstaben, Zahlen, Punkte, Unterstriche, Bindestriche oder Schrägstriche; beginne mit einem Buchstaben oder einer Zahl.",
+        "es": "Usa entre 1 y 64 letras, números, puntos, guiones bajos, guiones o barras; empieza con una letra o un número.",
+        "fr": "Utilisez 1 à 64 lettres, chiffres, points, traits de soulignement, tirets ou barres obliques ; commencez par une lettre ou un chiffre.",
+        "it": "Usa da 1 a 64 lettere, numeri, punti, trattini bassi, trattini o barre; inizia con una lettera o un numero.",
+        "nl": "Gebruik 1–64 letters, cijfers, punten, underscores, koppeltekens of schuine strepen; begin met een letter of cijfer.",
+        "pt_BR": "Use de 1 a 64 letras, números, pontos, sublinhados, hífens ou barras; comece com uma letra ou número."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "validation.material_code_unique",
+      "text": {
+        "de": "Dieser interne Materialcode wird bereits von einer anderen Verpackung in diesem Arbeitsbereich verwendet.",
+        "es": "Este código interno de material ya lo utiliza otro envase de este espacio de trabajo.",
+        "fr": "Ce code matière interne est déjà utilisé par un autre emballage de cet espace de travail.",
+        "it": "Questo codice materiale interno è già utilizzato da un'altra confezione in questo spazio di lavoro.",
+        "nl": "Deze interne materiaalcode wordt al gebruikt door een andere verpakking in deze werkruimte.",
+        "pt_BR": "Este código interno do material já é usado por outra embalagem neste espaço de trabalho."
       }
     },
     {
@@ -28716,6 +28788,18 @@
     },
     {
       "group": "workbench",
+      "key": "costing.packaging.material_code",
+      "text": {
+        "de": "Interner Materialcode",
+        "es": "Código interno de material",
+        "fr": "Code matière interne",
+        "it": "Codice materiale interno",
+        "nl": "Interne materiaalcode",
+        "pt_BR": "Código interno do material"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.packaging.quantity_per_unit",
       "text": {
         "de": "Menge pro Einheit",
@@ -31008,6 +31092,30 @@
     },
     {
       "group": "workbench",
+      "key": "packaging.modal.material_code",
+      "text": {
+        "de": "Interner Materialcode (optional)",
+        "es": "Código interno de material (opcional)",
+        "fr": "Code matière interne (facultatif)",
+        "it": "Codice materiale interno (opzionale)",
+        "nl": "Interne materiaalcode (optioneel)",
+        "pt_BR": "Código interno do material (opcional)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.modal.material_code_helper",
+      "text": {
+        "de": "Optionale Arbeitsbereichsreferenz für Formeln, Kostenberechnung, Einkauf und Produktion. Koskalk generiert keinen Code.",
+        "es": "Referencia opcional del espacio de trabajo para fórmulas, costes, compras y producción. Koskalk no genera ningún código.",
+        "fr": "Référence facultative de l’espace de travail pour les formules, les coûts, les achats et la production. Koskalk ne génère aucun code.",
+        "it": "Riferimento opzionale dello spazio di lavoro per formule, costi, acquisti e produzione. Koskalk non genera alcun codice.",
+        "nl": "Optionele werkruimtereferentie voor formules, kostprijzen, inkoop en productie. Koskalk genereert geen code.",
+        "pt_BR": "Referência opcional do espaço de trabalho para fórmulas, custos, compras e produção. A Koskalk não gera nenhum código."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "packaging.modal.name",
       "text": {
         "de": "Name",
@@ -31136,6 +31244,18 @@
         "it": "Componente di confezionamento",
         "nl": "Verpakkingsonderdeel",
         "pt_BR": "Item de embalagem"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.plan.material_code",
+      "text": {
+        "de": "Interner Materialcode",
+        "es": "Código interno de material",
+        "fr": "Code matière interne",
+        "it": "Codice materiale interno",
+        "nl": "Interne materiaalcode",
+        "pt_BR": "Código interno do material"
       }
     },
     {

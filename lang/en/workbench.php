@@ -247,7 +247,7 @@ return [
             'cancel' => 'Cancel',
             'name' => 'Name',
             'material_code' => 'Internal material code (optional)',
-            'material_code_helper' => 'Optional workspace reference used in formulas, costing, purchasing, and production.',
+            'material_code_helper' => 'Optional workspace reference used in formulas, costing, purchasing, and production. Koskalk does not generate it.',
             'effective_unit_price' => 'Effective unit price (:unit)',
             'notes' => 'Notes',
             'save_to_library' => 'Save to library',

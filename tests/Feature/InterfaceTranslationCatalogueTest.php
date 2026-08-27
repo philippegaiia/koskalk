@@ -65,6 +65,32 @@ it('commits a complete reviewed translation for every owned interface key', func
     }
 });
 
+it('commits reviewed internal material code terminology for packaging workflows', function (): void {
+    $source = app(EnglishTranslationSource::class);
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    foreach ([
+        'packaging.editor.form.material_code.label' => 'Internal material code',
+        'packaging.table.material_code' => 'Internal material code',
+        'workbench.costing.packaging.material_code' => 'Internal material code',
+        'workbench.packaging.plan.material_code' => 'Internal material code',
+        'workbench.packaging.modal.material_code' => 'Internal material code (optional)',
+    ] as $fullKey => $english) {
+        [$group, $key] = explode('.', $fullKey, 2);
+
+        expect($source->get($group, $key))->toBe($english)
+            ->and($rows)->toHaveKey($fullKey)
+            ->and(array_keys($rows[$fullKey]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
+    }
+
+    expect($source->get('packaging', 'editor.form.material_code.helper'))
+        ->toContain('Koskalk does not generate it.')
+        ->and($source->get('workbench', 'packaging.modal.material_code_helper'))
+        ->toContain('Koskalk does not generate it.');
+});
+
 it('commits the reviewed classification helper description in every supported locale', function (): void {
     $catalogue = app(InterfaceTranslationCatalogue::class)
         ->read(database_path('seeders/data/interface-translations.json'));

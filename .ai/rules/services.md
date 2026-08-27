@@ -31,3 +31,6 @@ Soap formula authoring accepts only KOH 90% or KOH 100%; reject other values at 
 
 ## Reconcile workspace material codes during catalogue merges
 When merging platform ingredients, transfer a source-only workspace material code to the target. Preserve a target-only code, delete an identical duplicate assignment, and abort transactionally when one workspace assigned different codes to source and target. Ingredient deletion may still cascade because production history uses frozen snapshots.
+
+## Keep material codes optional and snapshot-backed
+Internal material codes are optional, workspace-authored mnemonic references and are never generated. Ingredient and packaging code namespaces remain separate; supplier_sku stays owned by each supplier listing. Production requirements and procurement lines must use creation-time material-code snapshots for historical output.

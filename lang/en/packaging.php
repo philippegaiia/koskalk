@@ -108,7 +108,7 @@ return [
             ],
             'material_code' => [
                 'label' => 'Internal material code',
-                'helper' => 'Optional workspace reference used in formulas, costing, purchasing, and production.',
+                'helper' => 'Optional workspace reference used in formulas, costing, purchasing, and production. Koskalk does not generate it.',
                 'placeholder' => 'e.g. PK-BOT-250',
             ],
             'unit_price' => 'Unit price (:currency)',

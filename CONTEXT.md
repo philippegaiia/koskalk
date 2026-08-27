@@ -63,7 +63,7 @@ _Avoid_: Platform ingredient
 The immutable Koskalk identifier used by catalog and resolver logic. It is an administrative reference and is hidden from normal workspace users.
 
 **Internal material code**:
-An optional workspace-specific mnemonic reference, such as `RM-OLIVE`. It is unique among the workspace's current material assignments, is not generated automatically, and may be cleared or reused. Production requirements snapshot the code when they are created.
+An optional workspace-authored mnemonic reference for an ingredient or packaging item. Ingredient codes and packaging codes are each unique among their own current workspace assignments, may be changed or reused, and are distinct from Koskalk catalogue keys, supplier codes, supplier SKUs, and stock-lot codes. Koskalk does not generate these codes. Production and procurement history preserve the value frozen at creation time.
 
 **Supplier SKU**:
 The supplier's identifier for a supplier listing. It is distinct from an internal material code; Koskalk does not add a second user-defined identifier to the listing itself.

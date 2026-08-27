@@ -82,6 +82,8 @@ class RecipeWorkbenchPayloadNormalizer
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
         $phasePayload = $this->phasePayload($payload);
         $massUnit = $this->normalizeMassUnit($payload['oil_unit'] ?? 'g');
+        $kohPurityPercentage = $this->kohPurityPercentage($payload['koh_purity_percentage'] ?? 90);
+        $payload['koh_purity_percentage'] = $kohPurityPercentage;
 
         try {
             $normalizedRecipe = $this->recipeNormalizationService->normalizeSoapRecipe(
@@ -158,7 +160,7 @@ class RecipeWorkbenchPayloadNormalizer
                 'lye_type' => in_array($payload['lye_type'] ?? 'naoh', ['naoh', 'koh', 'dual'], true)
                     ? $payload['lye_type']
                     : 'naoh',
-                'koh_purity_percentage' => (float) ($payload['koh_purity_percentage'] ?? 90),
+                'koh_purity_percentage' => $kohPurityPercentage,
                 'dual_lye_koh_percentage' => $this->boundedPercentage($payload['dual_lye_koh_percentage'] ?? 40),
                 'superfat' => (float) ($payload['superfat'] ?? 5),
                 'oil_weight' => $normalizedRecipe['oil_weight'],
@@ -717,6 +719,19 @@ class RecipeWorkbenchPayloadNormalizer
     private function boundedPercentage(mixed $value): float
     {
         return max(0.0, min(100.0, (float) $value));
+    }
+
+    private function kohPurityPercentage(mixed $value): int
+    {
+        $normalized = NumberLocale::normalizeDecimalString($value);
+
+        if ($normalized === null || ! in_array((float) $normalized, [90.0, 100.0], true)) {
+            throw ValidationException::withMessages([
+                'koh_purity_percentage' => __('workbench.validation.koh_purity'),
+            ]);
+        }
+
+        return (int) $normalized;
     }
 
     private function roundMass(string $value): string

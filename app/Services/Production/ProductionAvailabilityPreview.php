@@ -95,7 +95,11 @@ class ProductionAvailabilityPreview
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
                 ),
             )->values();
-        } catch (ValidationException|\InvalidArgumentException) {
+        } catch (ValidationException $exception) {
+            $preview['error'] = (string) collect($exception->errors())->flatten()->first();
+
+            return $preview;
+        } catch (\InvalidArgumentException) {
             return $preview;
         }
 

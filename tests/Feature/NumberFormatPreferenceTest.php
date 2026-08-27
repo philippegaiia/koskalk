@@ -146,7 +146,7 @@ const payload = globalThis.serializeDraft({
   oilWeight: '1000,5',
   waterValue: '38,5',
   superfat: '5,25',
-  kohPurity: '90,5',
+  kohPurity: '90',
   dualKohPercentage: '40,5',
   phaseOrder: [],
   phaseItems: {},
@@ -171,7 +171,7 @@ JS;
         'oil_weight' => 1000.5,
         'water_value' => 38.5,
         'superfat' => 5.25,
-        'koh_purity_percentage' => 90.5,
+        'koh_purity_percentage' => 90,
         'dual_lye_koh_percentage' => 40.5,
     ]);
 });

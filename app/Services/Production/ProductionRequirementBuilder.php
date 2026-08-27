@@ -31,7 +31,7 @@ class ProductionRequirementBuilder
     ): Collection {
         if (bccomp($basisQuantityGrams, '0', self::GuardScale) <= 0 || $expectedUnits < 1) {
             throw ValidationException::withMessages([
-                'production' => 'Production quantities must be greater than zero.',
+                'production' => __('production_bench.production.validation.quantities_positive'),
             ]);
         }
 
@@ -57,7 +57,7 @@ class ProductionRequirementBuilder
 
         if (! $recipe instanceof Recipe) {
             throw ValidationException::withMessages([
-                'recipe' => 'The published formula recipe could not be found.',
+                'recipe' => __('production_bench.production.validation.published_recipe_missing'),
             ]);
         }
 
@@ -67,7 +67,7 @@ class ProductionRequirementBuilder
 
         if ($basisKind !== $expectedBasisKind) {
             throw ValidationException::withMessages([
-                'basis_kind' => 'The production basis does not match the published formula.',
+                'basis_kind' => __('production_bench.production.validation.basis_mismatch'),
             ]);
         }
 
@@ -80,7 +80,7 @@ class ProductionRequirementBuilder
 
                 if (! $ingredient instanceof Ingredient) {
                     throw ValidationException::withMessages([
-                        'recipe' => 'Every published formula ingredient must still exist.',
+                        'recipe' => __('production_bench.production.validation.published_ingredient_missing'),
                     ]);
                 }
 
@@ -128,7 +128,7 @@ class ProductionRequirementBuilder
 
             if (! $packagingItem instanceof PackagingItem) {
                 throw ValidationException::withMessages([
-                    'packaging' => 'Every published packaging requirement must still exist.',
+                    'packaging' => __('production_bench.production.validation.published_packaging_missing'),
                 ]);
             }
 
@@ -173,7 +173,7 @@ class ProductionRequirementBuilder
 
         if (bccomp($referenceBasisGrams, '0', self::GuardScale) <= 0) {
             throw ValidationException::withMessages([
-                'recipe' => 'The published formula basis must be greater than zero.',
+                'recipe' => __('production_bench.production.validation.published_formula_basis_positive'),
             ]);
         }
 
@@ -195,7 +195,7 @@ class ProductionRequirementBuilder
     ): void {
         if ($material->workspace_id !== null && (int) $material->workspace_id !== $workspaceId) {
             throw ValidationException::withMessages([
-                $field => 'Every production material must belong to the production workspace.',
+                $field => __('production_bench.production.validation.material_workspace_invalid'),
             ]);
         }
     }
@@ -206,7 +206,7 @@ class ProductionRequirementBuilder
 
         if (preg_match('/^\d+(?:\.\d+)?$/', $normalized) !== 1) {
             throw ValidationException::withMessages([
-                'recipe' => 'Published formula quantities must be valid decimal values.',
+                'recipe' => __('production_bench.production.validation.published_quantity_decimal'),
             ]);
         }
 

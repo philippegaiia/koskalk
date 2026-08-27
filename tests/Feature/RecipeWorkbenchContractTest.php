@@ -11,8 +11,41 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+it('rejects unsupported KOH purity when saving a soap formula', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $soapFamily->id,
+    ]);
+    $oil = recipeWorkbenchCarrierOil();
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    try {
+        app(RecipeWorkbenchService::class)->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+            'product_type_id' => $productType->id,
+            'lye_type' => 'koh',
+            'koh_purity_percentage' => 90.5,
+        ]));
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toBe([
+            'koh_purity_percentage' => [__('workbench.validation.koh_purity')],
+        ]);
+
+        return;
+    }
+
+    $this->fail('Expected unsupported KOH purity to be rejected.');
+});
 
 it('keeps alternative lye liquids behind an opt-in progressive disclosure control', function () {
     $settings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));

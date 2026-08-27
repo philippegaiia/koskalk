@@ -45,7 +45,7 @@ class ProductionFormulaSnapshotBuilder
 
         if ($snapshot === null) {
             throw ValidationException::withMessages([
-                'recipe' => 'The published formula snapshot could not be rebuilt.',
+                'recipe' => __('production_bench.production.validation.formula_snapshot_rebuild_failed'),
             ]);
         }
 
@@ -119,7 +119,7 @@ class ProductionFormulaSnapshotBuilder
 
         if (! is_array($lye)) {
             throw ValidationException::withMessages([
-                'recipe' => 'The soap formula could not be recalculated for this production basis.',
+                'recipe' => __('production_bench.production.validation.formula_recalculation_failed'),
             ]);
         }
 
@@ -140,13 +140,13 @@ class ProductionFormulaSnapshotBuilder
 
         if (! $hasValidLye) {
             throw ValidationException::withMessages([
-                'recipe' => 'The soap formula calculation produced no measurable lye for this production basis.',
+                'recipe' => __('production_bench.production.validation.formula_lye_missing'),
             ]);
         }
 
         if ($totalLiquidWeight <= 0) {
             throw ValidationException::withMessages([
-                'recipe' => 'The soap formula calculation produced no measurable water for this production basis.',
+                'recipe' => __('production_bench.production.validation.formula_water_missing'),
             ]);
         }
 
@@ -248,7 +248,7 @@ class ProductionFormulaSnapshotBuilder
     {
         if (bccomp($basis, '0', self::GuardScale) <= 0) {
             throw ValidationException::withMessages([
-                'production' => 'The production basis must be greater than zero.',
+                'production' => __('production_bench.production.validation.basis_input_positive'),
             ]);
         }
 

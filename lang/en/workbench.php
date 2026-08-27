@@ -396,6 +396,7 @@ return [
         'formula_item_limit' => 'This formula has :count ingredient lines, but the current plan allows :limit. Remove ingredient lines or change the plan before saving.',
     ],
     'validation' => [
+        'koh_purity' => 'Choose KOH 90% or KOH 100%.',
         'lye_liquid_alkali' => 'Soapmaking alkalis cannot be used as dilution-liquid replacements.',
         'lye_liquid_ingredient' => 'Select an active, accessible ingredient for each dilution-liquid replacement.',
         'lye_liquid_negative_cured' => 'Cured soap weight cannot be negative.',

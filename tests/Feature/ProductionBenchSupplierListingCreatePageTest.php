@@ -35,7 +35,10 @@ it('shows a focused global listing form with searchable catalog selectors', func
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['code' => 'OLVEA', 'name' => 'Olvea']);
     Ingredient::factory()->create(['display_name' => 'Olive oil']);
-    PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
+    PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Amber bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
 
     $response = $this->actingAs($owner)
         ->get('/dashboard/production-bench/purchasing/listings/new');
@@ -88,7 +91,8 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertSee('Create packaging item')
         ->assertDontSee('Ingredient not in the catalogue?');
 
-    expect($component->instance()->packagingSearchResults('Amber'))->toHaveCount(1);
+    expect($component->instance()->packagingSearchResults('PK-BOT-250'))
+        ->toBe([$workspace->packagingItems()->where('name', 'Amber bottle')->value('id') => 'PK-BOT-250 · Amber bottle']);
 
     expect(SupplierListing::query()->count())->toBe(0);
 });
@@ -377,7 +381,10 @@ it('accepts localized decimal quantities and prices', function (): void {
 it('locks supplier context and returns scoped packaging listings to supplier detail', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['code' => 'BOTTLES', 'name' => 'Bottle House']);
-    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
+    $packaging = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Amber bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
     $this->actingAs($owner);
 
     $this->get('/dashboard/production-bench/purchasing/suppliers/'.$supplier->public_id.'/listings/new')
@@ -392,6 +399,7 @@ it('locks supplier context and returns scoped packaging listings to supplier det
         ->set('data.supplier_id', Supplier::factory()->for($workspace)->create()->id)
         ->set('data.material_type', 'packaging')
         ->set('data.packaging_item_id', $packaging->id)
+        ->set('data.material_code', 'FORGED-CODE')
         ->set('data.purchase_format', 'Carton of 500')
         ->set('data.net_quantity', '500')
         ->set('data.price_basis', ListingPriceBasis::TotalPurchaseFormat->value)
@@ -408,7 +416,8 @@ it('locks supplier context and returns scoped packaging listings to supplier det
         ->and($listing->packaging_item_id)->toBe($packaging->id)
         ->and($listing->ingredient_id)->toBeNull()
         ->and($listing->net_unit)->toBe('count')
-        ->and($listing->total_price)->toBe('90.000000000');
+        ->and($listing->total_price)->toBe('90.000000000')
+        ->and($packaging->fresh()->material_code)->toBe('PK-BOT-250');
 });
 
 it('uses the workspace mass basis for listing defaults and previews total prices', function (): void {

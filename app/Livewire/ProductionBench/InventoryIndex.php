@@ -301,7 +301,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
                                     }
                                 });
                             })
-                            ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
+                            ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
+                                ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                                ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]));
                     });
                 })
                 ->latest('stocked_at')
@@ -471,7 +473,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
                                 }
                             });
                         })
-                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
+                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
+                            ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]));
                 });
             })
             ->latest('id')
@@ -573,8 +577,10 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $subjectName = $listing->ingredient?->localizedDisplayName()
             ?? $listing->packagingItem?->name
             ?? __('production_bench.inventory.unknown_item');
+        $materialCode = $listing->packagingItem?->material_code;
 
         return collect([
+            $materialCode,
             $subjectName,
             $listing->supplier->name,
             $listing->supplier_sku,

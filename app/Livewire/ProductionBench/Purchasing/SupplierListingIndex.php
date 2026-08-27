@@ -153,7 +153,9 @@ class SupplierListingIndex extends Component implements HasForms
                                 ->where('workspace_id', $workspace->id)
                                 ->whereRaw('LOWER(material_code) LIKE ?', [$searchTerm]);
                         })
-                        ->orWhereHas('packagingItem', fn ($packagingQuery) => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
+                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
+                            ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]));
                 });
             })
             ->latest('id')

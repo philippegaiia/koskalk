@@ -260,6 +260,10 @@ it('shows workspace material codes on supplier listing tables and filters by the
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+    $packaging = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Amber bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
     WorkspaceIngredientCode::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $ingredient->id,
@@ -273,15 +277,35 @@ it('shows workspace material codes on supplier listing tables and filters by the
         'price_amount' => '4.20',
         'price_unit' => 'kg',
     ]);
+    $packagingListing = createSupplierPageListing($owner, $workspace, $supplier, $packaging, [
+        'supplier_sku' => 'SUP-123645',
+        'purchase_format' => 'Carton',
+        'net_quantity' => '500',
+        'net_unit' => 'count',
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '90',
+        'price_unit' => null,
+    ]);
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
         ->assertSee('Coconut oil')
-        ->assertSee('RM-COCO');
+        ->assertSee('RM-COCO')
+        ->assertSee('Amber bottle')
+        ->assertSee('PK-BOT-250')
+        ->assertSee('SUP-123645');
 
     Livewire::test(SupplierListingIndex::class)
         ->fillForm(['search' => 'RM-COCO'], 'filtersForm')
         ->assertSee('Coconut oil')
         ->assertSee('RM-COCO');
+
+    Livewire::test(SupplierListingIndex::class)
+        ->fillForm(['search' => 'PK-BOT-250'], 'filtersForm')
+        ->assertSee('Amber bottle')
+        ->assertSee('PK-BOT-250')
+        ->assertSee('SUP-123645');
+
+    expect($packagingListing->fresh()->packagingItem?->material_code)->toBe('PK-BOT-250');
 });
 
 it('does not expose supplier listing creation controls on the detail page', function (): void {

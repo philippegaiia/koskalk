@@ -3,6 +3,7 @@
 use App\Enums\StockLotOrigin;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
@@ -213,6 +214,36 @@ it('searches only active supplier listings from the current workspace', function
     expect($results)
         ->toHaveKey($matchingListing->id)
         ->toHaveCount(1);
+});
+
+it('finds packaging supplier listings by internal material code and shows the code in the option label', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Bottle Supply']);
+    $packagingItem = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Clear 250 ml bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->state([
+            'ingredient_id' => null,
+            'packaging_item_id' => $packagingItem->id,
+            'supplier_sku' => '123645',
+            'unit_kind' => 'count',
+            'net_quantity' => '100',
+            'net_unit' => 'count',
+            'canonical_quantity_per_purchase_format' => '100',
+        ])
+        ->create();
+    $this->actingAs($user);
+
+    $component = Livewire::test(InventoryIndex::class, ['mode' => 'stock']);
+
+    expect($component->instance()->supplierListingSearchResults('PK-BOT-250'))
+        ->toBe([$listing->id => 'PK-BOT-250 · Clear 250 ml bottle · Bottle Supply · 123645 · '.$listing->purchase_format])
+        ->and($component->instance()->supplierListingOptionLabel($listing->id))
+        ->toContain('PK-BOT-250');
 });
 
 it('creates a stock lot from the modal with an automatic internal batch number', function (): void {

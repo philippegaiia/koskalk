@@ -42,7 +42,13 @@
                 <div class="divide-y divide-[var(--color-line)]">
                     @forelse ($listings as $listing)
                         <div class="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_9rem] sm:items-center" wire:key="listing-{{ $listing->id }}">
-                            <div><p class="font-medium text-[var(--color-ink-strong)]">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</p><p class="text-sm text-[var(--color-ink-soft)]">{{ $listing->purchase_format }} · {{ $listing->currency }}@if($listing->supplier_sku) · {{ $listing->supplier_sku }}@endif</p></div>
+                            <div>
+                                <p class="font-medium text-[var(--color-ink-strong)]">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</p>
+                                @if ($listing->packagingItem?->material_code)
+                                    <p class="mt-0.5 font-mono text-xs font-medium text-[var(--color-ink-soft)]">{{ $listing->packagingItem->material_code }}</p>
+                                @endif
+                                <p class="text-sm text-[var(--color-ink-soft)]">{{ $listing->purchase_format }} · {{ $listing->currency }}@if($listing->supplier_sku) · {{ __('production_bench.listing.supplier_sku') }}: {{ $listing->supplier_sku }}@endif</p>
+                            </div>
                             <label class="text-sm">{{ __('production_bench.procurement.quantity') }}<input type="number" min="0" step="1" wire:model="packs.{{ $listing->id }}" class="sk-input mt-1 w-full" inputmode="numeric"></label>
                         </div>
                     @empty

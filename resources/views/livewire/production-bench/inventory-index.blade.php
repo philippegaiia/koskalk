@@ -54,9 +54,11 @@
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @forelse ($overviewShortages as $row)
                                 @php($subject = $row['subject'])
+                                @php($materialCode = $subject instanceof \App\Models\PackagingItem ? $subject->material_code : null)
                                 <tr>
                                     <td class="px-5 py-3">
                                         <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
+                                        @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
                                         <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
                                     </td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['required'] }}</td>
@@ -92,9 +94,11 @@
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @forelse ($forecast as $row)
                                 @php($subject = $row['subject'])
+                                @php($materialCode = $subject instanceof \App\Models\PackagingItem ? $subject->material_code : null)
                                 <tr class="{{ $row['is_shortage'] ? 'bg-[var(--color-danger-soft)]/40' : '' }}">
                                     <td class="px-5 py-3">
                                         <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
+                                        @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
                                         <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
                                     </td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['required'] }}</td>
@@ -141,9 +145,11 @@
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @forelse ($lots as $row)
                                 @php($lot = $row['lot'])
+                                @php($materialCode = $lot->packagingItem?->material_code)
                                 <tr id="lot-{{ $lot->public_id }}" wire:key="stock-lot-{{ $lot->id }}">
                                     <td class="px-5 py-3">
                                         <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                        @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
                                         <p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p>
                                         @if($lot->goodsReceiptLine?->goodsReceipt)
                                             @php($originReceipt = $lot->goodsReceiptLine->goodsReceipt)

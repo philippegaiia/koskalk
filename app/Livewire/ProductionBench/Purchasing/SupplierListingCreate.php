@@ -142,7 +142,7 @@ class SupplierListingCreate extends Component implements HasForms
 
         if ($packagingItem instanceof PackagingItem) {
             $materialType = 'packaging';
-            $this->packagingOptionLabels[$packagingItem->id] = $packagingItem->name;
+            $this->packagingOptionLabels[$packagingItem->id] = $this->packagingLabel($packagingItem);
         }
 
         $this->ingredientOptionLabels = array_replace($this->initialIngredientOptions(), $this->ingredientOptionLabels);
@@ -467,11 +467,16 @@ class SupplierListingCreate extends Component implements HasForms
 
         $results = PackagingItem::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('name', "%{$search}%"))
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $searchTerm = '%'.Str::lower($search).'%';
+                $query->where(fn (Builder $nested): Builder => $nested
+                    ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                    ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]));
+            })
             ->orderBy('name')
             ->limit(self::OptionLimit)
-            ->get(['id', 'name'])
-            ->mapWithKeys(fn (PackagingItem $item): array => [$item->id => $item->name])
+            ->get(['id', 'name', 'material_code'])
+            ->mapWithKeys(fn (PackagingItem $item): array => [$item->id => $this->packagingLabel($item)])
             ->all();
 
         $this->packagingOptionLabels = array_replace($this->packagingOptionLabels, $results);
@@ -515,15 +520,15 @@ class SupplierListingCreate extends Component implements HasForms
             return $this->packagingOptionLabels[$id];
         }
 
-        $label = PackagingItem::query()
+        $packagingItem = PackagingItem::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->find($id)?->name;
+            ->find($id, ['id', 'name', 'material_code']);
 
-        if ($label === null) {
+        if (! $packagingItem instanceof PackagingItem) {
             return null;
         }
 
-        return $this->packagingOptionLabels[$id] = $label;
+        return $this->packagingOptionLabels[$id] = $this->packagingLabel($packagingItem);
     }
 
     /** @param array<string, mixed> $state */
@@ -717,7 +722,7 @@ class SupplierListingCreate extends Component implements HasForms
             ->orderByDesc('packaging_items.id')
             ->limit(self::InitialOptionLimit)
             ->get()
-            ->mapWithKeys(fn (PackagingItem $item): array => [$item->id => $item->name])
+            ->mapWithKeys(fn (PackagingItem $item): array => [$item->id => $this->packagingLabel($item)])
             ->all();
     }
 
@@ -747,6 +752,13 @@ class SupplierListingCreate extends Component implements HasForms
             : $this->workspaceIngredientCodes->codeFor($this->workspace(), $ingredient);
 
         return filled($materialCode) ? $materialCode.' · '.$label : $label;
+    }
+
+    private function packagingLabel(PackagingItem $packagingItem): string
+    {
+        return filled($packagingItem->material_code)
+            ? $packagingItem->material_code.' · '.$packagingItem->name
+            : $packagingItem->name;
     }
 
     private function normalizedSearch(string $search): string

@@ -107,6 +107,38 @@ it('shows listing currencies and a visible error when selected quotation lines m
     expect(PurchaseOrder::query()->count())->toBe(0);
 });
 
+it('shows packaging material codes separately from supplier SKUs when choosing procurement lines', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $packagingItem = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Clear 250 ml bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
+    SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->state([
+            'ingredient_id' => null,
+            'packaging_item_id' => $packagingItem->id,
+            'supplier_sku' => '123645',
+            'unit_kind' => StockUnitKind::Count,
+            'net_quantity' => '100',
+            'net_unit' => 'count',
+            'canonical_quantity_per_purchase_format' => '100',
+            'currency' => 'EUR',
+        ])
+        ->create();
+    $this->actingAs($owner);
+
+    Livewire::test(ProcurementCreate::class, ['stage' => ProcurementStage::Quotation->value])
+        ->set('supplierId', $supplier->id)
+        ->assertSee('Clear 250 ml bottle')
+        ->assertSee('PK-BOT-250')
+        ->assertSee('123645');
+});
+
 it('saves ingredient and packaging quotation lines when their supplier currency matches', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

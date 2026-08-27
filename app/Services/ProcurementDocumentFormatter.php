@@ -29,6 +29,10 @@ class ProcurementDocumentFormatter
         foreach ($snapshot['lines'] ?? [] as $line) {
             $description = $line['ordered_purchase_formats'].' × '.$line['purchase_format'].' — '.$line['catalogue_name'];
 
+            if (($line['material_code'] ?? null) !== null) {
+                $description .= ' ['.$line['material_code'].']';
+            }
+
             if (($line['supplier_sku'] ?? null) !== null) {
                 $description .= ' ('.$line['supplier_sku'].')';
             }

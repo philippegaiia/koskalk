@@ -20,6 +20,7 @@ it('formats price-free quotation and priced purchase-order email text from issue
             'supplier' => ['name' => 'Original Oils'],
             'lines' => [[
                 'catalogue_name' => 'Olive oil',
+                'material_code' => 'RM-OLIVE',
                 'supplier_sku' => 'OO-5',
                 'purchase_format' => '5 kg pail',
                 'ordered_purchase_formats' => 3,
@@ -38,6 +39,7 @@ it('formats price-free quotation and priced purchase-order email text from issue
             'supplier' => ['name' => 'Original Oils'],
             'lines' => [[
                 'catalogue_name' => 'Olive oil',
+                'material_code' => 'RM-OLIVE',
                 'supplier_sku' => 'OO-5',
                 'purchase_format' => '5 kg pail',
                 'ordered_purchase_formats' => 3,
@@ -59,10 +61,12 @@ it('formats price-free quotation and priced purchase-order email text from issue
     $orderText = $formatter->emailText($purchaseOrder);
 
     expect($quotationText)->toContain('Quotation request RFQ-2608-0001')
-        ->and($quotationText)->toContain('3 × 5 kg pail — Olive oil (OO-5)')
+        ->and($quotationText)->toContain('3 × 5 kg pail — Olive oil [RM-OLIVE] (OO-5)')
+        ->and($quotationText)->toContain('RM-OLIVE')
         ->and($quotationText)->not->toContain('49.00 EUR')
         ->and($orderText)->toContain('Purchase order PO-2608-0002')
         ->and($orderText)->toContain('49.00 EUR each')
+        ->and($orderText)->toContain('RM-OLIVE')
         ->and($orderText)->toContain('Total: 147.00 EUR');
 
     $quotation->update(['stage' => ProcurementStage::PurchaseOrder]);
@@ -85,6 +89,7 @@ it('renders an issued procurement snapshot as a printable document for its works
             'delivery_address' => ['name' => 'Atelier Savon', 'city' => 'Lyon', 'country_code' => 'FR'],
             'lines' => [[
                 'catalogue_name' => 'Olive oil',
+                'material_code' => 'RM-OLIVE',
                 'supplier_sku' => 'OO-5',
                 'purchase_format' => '5 kg pail',
                 'ordered_purchase_formats' => 3,
@@ -106,6 +111,7 @@ it('renders an issued procurement snapshot as a printable document for its works
         ->assertSee('Purchase order')
         ->assertSee('PO-2608-0042')
         ->assertSee('Original Oils')
+        ->assertSee('RM-OLIVE')
         ->assertSee('147.00 EUR');
 
     $otherOwner = User::factory()->create();

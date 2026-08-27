@@ -52,7 +52,11 @@
         <tbody>
         @foreach ($snapshot['lines'] as $line)
             <tr>
-                <td>{{ $line['catalogue_name'] }}@if($line['supplier_sku'] ?? null)<br><small>{{ $line['supplier_sku'] }}</small>@endif</td>
+                <td>
+                    {{ $line['catalogue_name'] }}
+                    @if($line['material_code'] ?? null)<br><small>{{ $line['material_code'] }}</small>@endif
+                    @if($line['supplier_sku'] ?? null)<br><small>Supplier SKU: {{ $line['supplier_sku'] }}</small>@endif
+                </td>
                 <td>{{ $line['purchase_format'] }}</td>
                 <td>{{ $line['ordered_purchase_formats'] }}</td>
                 @unless($isQuotation)

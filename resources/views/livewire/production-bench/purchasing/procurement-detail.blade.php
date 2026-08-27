@@ -28,7 +28,15 @@
             @foreach ($order->lines as $line)
                 <article wire:key="line-{{ $line->id }}" data-production-bench-procurement-line class="sk-card-elevation-subtle isolate overflow-hidden rounded-xl bg-[var(--color-field-muted)]">
                     <div class="grid grid-cols-[minmax(0,1.15fr)_minmax(10rem,1fr)_7rem_minmax(12.5rem,1.15fr)]">
-                        <div class="px-4 py-3"><p class="font-medium text-[var(--color-ink-strong)]">{{ $line->ingredient?->localizedDisplayName() ?? $line->packagingItem?->name }}</p></div>
+                        <div class="px-4 py-3">
+                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $line->ingredient?->localizedDisplayName() ?? $line->packagingItem?->name }}</p>
+                            @if ($line->material_code_snapshot)
+                                <p class="mt-0.5 font-mono text-xs font-medium text-[var(--color-ink-soft)]">{{ $line->material_code_snapshot }}</p>
+                            @endif
+                            @if ($line->supplier_sku)
+                                <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.listing.supplier_sku') }}: {{ $line->supplier_sku }}</p>
+                            @endif
+                        </div>
                         <div class="px-4 py-3">{{ $line->listing_name }}</div>
                         <div class="numeric px-4 py-3 text-right">{{ $line->ordered_packs }}</div>
                         <div class="numeric whitespace-nowrap px-4 py-3 text-right">{{ $line->pack_price === null ? '—' : \App\Support\NumberLocale::formatAdaptiveDecimal($line->pack_price, 2, 4).' '.$line->currency }}</div>

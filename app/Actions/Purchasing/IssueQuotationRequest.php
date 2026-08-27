@@ -7,13 +7,17 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
+use App\Services\ProcurementLineSnapshotBuilder;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class IssueQuotationRequest
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(
+        private readonly ProductionBenchAccess $access,
+        private readonly ProcurementLineSnapshotBuilder $lineSnapshotBuilder,
+    ) {}
 
     public function handle(User $actor, PurchaseOrder $order): PurchaseOrder
     {
@@ -52,7 +56,7 @@ class IssueQuotationRequest
                     'currency' => $lockedOrder->currency,
                     'supplier' => $supplierSnapshot,
                     'lines' => $lockedOrder->lines
-                        ->map(fn (PurchaseOrderLine $line): array => $this->lineSnapshot($line, includePrice: false))
+                        ->map(fn (PurchaseOrderLine $line): array => $this->lineSnapshotBuilder->build($line, includePrice: false))
                         ->all(),
                     'notes' => $lockedOrder->notes,
                 ],
@@ -79,28 +83,6 @@ class IssueQuotationRequest
             'region' => $supplier->region,
             'postal_code' => $supplier->postal_code,
             'country_code' => $supplier->country_code,
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function lineSnapshot(PurchaseOrderLine $line, bool $includePrice): array
-    {
-        return [
-            'line_id' => $line->id,
-            'supplier_listing_id' => $line->supplier_listing_id,
-            'catalogue_type' => $line->ingredient_id === null ? 'packaging' : 'ingredient',
-            'catalogue_id' => $line->ingredient_id ?? $line->packaging_item_id,
-            'catalogue_name' => $line->ingredient?->display_name ?? $line->packagingItem?->name,
-            'supplier_sku' => $line->supplier_sku,
-            'supplier_item_name' => $line->supplier_item_name,
-            'purchase_format' => $line->listing_name,
-            'unit_kind' => $line->unit_kind->value,
-            'ordered_purchase_formats' => $line->ordered_packs,
-            'canonical_quantity_per_purchase_format' => $line->canonical_quantity_per_pack,
-            'expected_quantity' => $line->expected_quantity,
-            'price' => $includePrice ? $line->pack_price : null,
-            'currency' => $line->currency,
-            'organic_status' => $line->organic_status?->value,
         ];
     }
 }

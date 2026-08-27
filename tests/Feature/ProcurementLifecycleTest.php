@@ -11,10 +11,12 @@ use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -42,6 +44,7 @@ it('stores the quotation to purchase order lifecycle and immutable snapshots', f
             'price_amount',
             'price_unit',
             'price_recorded_at',
+            'material_code_snapshot',
         ]))->toBeTrue();
 });
 
@@ -75,6 +78,71 @@ it('creates a price-free quotation draft from selected supplier listings', funct
         ->and($line->ordered_packs)->toBe(2)
         ->and($line->pack_price)->toBeNull()
         ->and($line->expected_cost)->toBeNull();
+});
+
+it('freezes ingredient and packaging material codes on procurement drafts and quotation snapshots', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'material_code' => 'RM-OLIVE',
+    ]);
+    $packagingItem = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Clear 250 ml bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
+    $ingredientListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create(['currency' => 'EUR']);
+    $packagingListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->state([
+            'ingredient_id' => null,
+            'packaging_item_id' => $packagingItem->id,
+            'unit_kind' => 'count',
+            'canonical_quantity_per_purchase_format' => '100',
+            'net_quantity' => '100',
+            'net_unit' => 'count',
+            'currency' => 'EUR',
+        ])
+        ->create();
+
+    $quotation = app(CreatePurchaseOrder::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        lines: [
+            ['listing' => $ingredientListing, 'packs' => 1],
+            ['listing' => $packagingListing, 'packs' => 2],
+        ],
+        stage: ProcurementStage::Quotation,
+    );
+    $lines = $quotation->lines()->get()->keyBy('supplier_listing_id');
+
+    expect($lines[$ingredientListing->id]->material_code_snapshot)->toBe('RM-OLIVE')
+        ->and($lines[$packagingListing->id]->material_code_snapshot)->toBe('PK-BOT-250');
+
+    WorkspaceIngredientCode::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->update(['material_code' => 'RM-OLIVE-NEW']);
+    $packagingItem->update(['material_code' => 'PK-BOT-250-NEW']);
+
+    expect($lines[$ingredientListing->id]->fresh()->material_code_snapshot)->toBe('RM-OLIVE')
+        ->and($lines[$packagingListing->id]->fresh()->material_code_snapshot)->toBe('PK-BOT-250');
+
+    $issued = app(IssueQuotationRequest::class)->handle($owner, $quotation);
+    $snapshotLines = collect($issued->quotation_snapshot['lines'])->keyBy('supplier_listing_id');
+
+    expect($snapshotLines[$ingredientListing->id]['material_code'])->toBe('RM-OLIVE')
+        ->and($snapshotLines[$packagingListing->id]['material_code'])->toBe('PK-BOT-250');
 });
 
 it('issues an immutable price-free quotation snapshot', function (): void {
@@ -243,10 +311,16 @@ it('issues an immutable priced purchase order snapshot from a direct draft', fun
         'code' => 'PACK-01',
         'name' => 'Original Packaging',
     ]);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'material_code' => 'RM-COCO',
+    ]);
     $listing = SupplierListing::factory()
         ->for($workspace)
         ->for($supplier)
-        ->for(Ingredient::factory()->create(['display_name' => 'Coconut oil']))
+        ->for($ingredient)
         ->create([
             'supplier_item_name' => 'Organic coconut oil RBD',
             'purchase_format' => '20 kg drum',
@@ -280,6 +354,7 @@ it('issues an immutable priced purchase order snapshot from a direct draft', fun
         ->and($issued->lines()->sole()->supplier_item_name)->toBe('Organic coconut oil RBD')
         ->and($issued->lines()->sole()->price_basis)->toBe(ListingPriceBasis::PerUnit)
         ->and($issued->lines()->sole()->price_amount)->toBe('8.000000000')
+        ->and($snapshot['lines'][0]['material_code'])->toBe('RM-COCO')
         ->and($snapshot['lines'][0]['price'])->toBe('160.000000000')
         ->and($snapshot['subtotal'])->toBe('320.000000000')
         ->and($snapshot['total'])->toBe('361.000000000')
@@ -292,4 +367,46 @@ it('issues an immutable priced purchase order snapshot from a direct draft', fun
     $listing->update(['total_price' => '190']);
 
     expect($issued->refresh()->purchase_order_snapshot)->toBe($snapshot);
+});
+
+it('freezes packaging material codes in purchase order line and document snapshots', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $packagingItem = PackagingItem::factory()->for($workspace)->create([
+        'name' => 'Clear 250 ml bottle',
+        'material_code' => 'PK-BOT-250',
+    ]);
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->state([
+            'ingredient_id' => null,
+            'packaging_item_id' => $packagingItem->id,
+            'unit_kind' => 'count',
+            'canonical_quantity_per_purchase_format' => '100',
+            'net_quantity' => '100',
+            'net_unit' => 'count',
+            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'price_amount' => '90',
+            'price_unit' => null,
+            'total_price' => '90',
+            'currency' => 'EUR',
+        ])
+        ->create();
+    $order = app(CreatePurchaseOrder::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        lines: [['listing' => $listing, 'packs' => 2]],
+    );
+
+    expect($order->lines()->sole()->material_code_snapshot)->toBe('PK-BOT-250');
+
+    $packagingItem->update(['material_code' => 'PK-BOT-250-NEW']);
+    $issued = app(PlacePurchaseOrder::class)->handle($owner, $order);
+
+    expect($issued->lines()->sole()->fresh()->material_code_snapshot)->toBe('PK-BOT-250')
+        ->and($issued->purchase_order_snapshot['lines'][0]['material_code'])->toBe('PK-BOT-250');
 });

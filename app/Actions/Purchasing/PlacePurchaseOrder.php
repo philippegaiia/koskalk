@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
 use App\Services\CurrentMaterialPriceService;
+use App\Services\ProcurementLineSnapshotBuilder;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +19,7 @@ class PlacePurchaseOrder
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
+        private readonly ProcurementLineSnapshotBuilder $lineSnapshotBuilder,
     ) {}
 
     /** @param array<string, string|null> $deliveryAddress */
@@ -75,27 +77,9 @@ class PlacePurchaseOrder
                 9,
             );
             $issuedAt = now();
-            $lineSnapshots = $lockedOrder->lines->map(fn (PurchaseOrderLine $line): array => [
-                'line_id' => $line->id,
-                'supplier_listing_id' => $line->supplier_listing_id,
-                'catalogue_type' => $line->ingredient_id === null ? 'packaging' : 'ingredient',
-                'catalogue_id' => $line->ingredient_id ?? $line->packaging_item_id,
-                'catalogue_name' => $line->ingredient?->display_name ?? $line->packagingItem?->name,
-                'supplier_sku' => $line->supplier_sku,
-                'supplier_item_name' => $line->supplier_item_name,
-                'purchase_format' => $line->listing_name,
-                'unit_kind' => $line->unit_kind->value,
-                'ordered_purchase_formats' => $line->ordered_packs,
-                'canonical_quantity_per_purchase_format' => $line->canonical_quantity_per_pack,
-                'expected_quantity' => $line->expected_quantity,
-                'price_basis' => $line->price_basis?->value,
-                'price_amount' => $line->price_amount,
-                'price_unit' => $line->price_unit,
-                'price' => $line->pack_price,
-                'expected_cost' => $line->expected_cost,
-                'currency' => $line->currency,
-                'organic_status' => $line->organic_status?->value,
-            ])->all();
+            $lineSnapshots = $lockedOrder->lines
+                ->map(fn (PurchaseOrderLine $line): array => $this->lineSnapshotBuilder->build($line, includePrice: true))
+                ->all();
 
             $lockedOrder->update([
                 'status' => PurchaseOrderStatus::Ordered,

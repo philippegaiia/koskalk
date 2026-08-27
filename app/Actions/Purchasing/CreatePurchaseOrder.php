@@ -4,18 +4,23 @@ namespace App\Actions\Purchasing;
 
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
+use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\Services\WorkspaceIngredientCodeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreatePurchaseOrder
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(
+        private readonly ProductionBenchAccess $access,
+        private readonly WorkspaceIngredientCodeService $workspaceIngredientCodes,
+    ) {}
 
     /**
      * @param  array<int, array{listing: SupplierListing, packs: int}>  $lines
@@ -46,6 +51,27 @@ class CreatePurchaseOrder
         return DB::transaction(function () use ($actor, $workspace, $supplier, $lines, $expectedAt, $notes, $currencies, $stage): PurchaseOrder {
             Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
             $sequence = PurchaseOrder::query()->where('workspace_id', $workspace->id)->count() + 1;
+            $ingredientIds = collect($lines)
+                ->map(fn (array $line): ?int => $line['listing']->ingredient_id)
+                ->filter()
+                ->map(fn (int $ingredientId): int => $ingredientId)
+                ->unique()
+                ->values()
+                ->all();
+            $packagingItemIds = collect($lines)
+                ->map(fn (array $line): ?int => $line['listing']->packaging_item_id)
+                ->filter()
+                ->map(fn (int $packagingItemId): int => $packagingItemId)
+                ->unique()
+                ->values()
+                ->all();
+            $ingredientCodes = $this->workspaceIngredientCodes->codesFor($workspace, $ingredientIds);
+            $packagingCodes = $packagingItemIds === []
+                ? collect()
+                : PackagingItem::query()
+                    ->where('workspace_id', $workspace->id)
+                    ->whereIn('id', $packagingItemIds)
+                    ->pluck('material_code', 'id');
             $order = PurchaseOrder::query()->create([
                 'workspace_id' => $workspace->id,
                 'supplier_id' => $supplier->id,
@@ -78,6 +104,9 @@ class CreatePurchaseOrder
                     'supplier_sku' => $listing->supplier_sku,
                     'supplier_item_name' => $listing->supplier_item_name,
                     'listing_name' => $listing->purchase_format,
+                    'material_code_snapshot' => $listing->ingredient_id !== null
+                        ? $ingredientCodes->get($listing->ingredient_id)
+                        : $packagingCodes->get($listing->packaging_item_id),
                     'unit_kind' => $listing->unit_kind,
                     'ordered_packs' => $packs,
                     'canonical_quantity_per_pack' => $listing->canonical_quantity_per_purchase_format,

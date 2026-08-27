@@ -30,6 +30,7 @@ class PurchaseOrderLineFactory extends Factory
             'supplier_sku' => fake()->bothify('SKU-####'),
             'supplier_item_name' => null,
             'listing_name' => '5 kg pail',
+            'material_code_snapshot' => null,
             'unit_kind' => StockUnitKind::Mass,
             'ordered_packs' => 1,
             'canonical_quantity_per_pack' => '5000',

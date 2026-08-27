@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'purchase_order_id', 'supplier_listing_id', 'ingredient_id', 'packaging_item_id',
-    'supplier_sku', 'supplier_item_name', 'listing_name', 'unit_kind', 'ordered_packs', 'canonical_quantity_per_pack',
+    'supplier_sku', 'supplier_item_name', 'listing_name', 'material_code_snapshot', 'unit_kind', 'ordered_packs', 'canonical_quantity_per_pack',
     'pack_price', 'price_basis', 'price_amount', 'price_unit', 'price_recorded_at',
     'currency', 'expected_quantity', 'expected_cost', 'organic_status',
 ])]

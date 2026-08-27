@@ -53,6 +53,19 @@ return [
         ],
     ],
     'translations' => [
+        'freshness' => 'Translation status',
+        'freshness_states' => [
+            'current' => 'Current',
+            'outdated' => 'Outdated',
+        ],
+        'origins' => [
+            'legacy' => 'Legacy',
+            'ai_generated' => 'AI-generated',
+            'reviewer_edited' => 'Manually edited',
+        ],
+        'regenerate_outdated' => 'Regenerate outdated translations',
+        'regenerate_outdated_heading' => 'Regenerate outdated translations?',
+        'regenerate_outdated_description' => 'Create a review batch for outdated locales: :locales.',
         'validation' => [
             'platform_only' => 'Only platform ingredients can have managed translations.',
             'content_required' => 'Enter a translated name or translated guidance.',

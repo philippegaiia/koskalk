@@ -3,7 +3,7 @@
 return [
     'input_format' => 'soapkraft-platform-ingredient-enrichment-input',
     'result_format' => 'soapkraft-platform-ingredient-enrichment-result',
-    'schema_version' => 3,
+    'schema_version' => 4,
     'default_export_path' => 'storage/app/private/ingredient-enrichment/platform-ingredients.jsonl',
     'batch_artifacts' => [
         'disk' => env('INGREDIENT_ENRICHMENT_ARTIFACT_DISK', 'local'),
@@ -45,8 +45,8 @@ return [
         ],
     ],
     'guidance' => [
-        'minimum_words' => 140,
-        'maximum_words' => 280,
+        'minimum_words' => 80,
+        'maximum_words' => 160,
         'required_headings' => ['Overview', 'Formulation use'],
         'soapmaking_heading' => 'Soapmaking',
         'localized_headings' => [
@@ -99,7 +99,9 @@ return [
         'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 600),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
-        'editorial_prompt_version' => 'ingredient-enrichment-editorial-v6',
+        'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
+        'guidance_prompt_version' => 'ingredient-guidance-v1',
+        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',
             'single-market-economy.ec.europa.eu',

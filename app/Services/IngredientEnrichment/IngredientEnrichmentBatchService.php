@@ -2,10 +2,12 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientIntakeBatchStatus;
 use App\Enums\IngredientIntakeItemStatus;
+use App\Jobs\GenerateIngredientGuidanceRefresh;
 use App\Jobs\ResearchIngredientEnrichment;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
@@ -24,6 +26,7 @@ class IngredientEnrichmentBatchService
     public function __construct(
         private readonly IngredientEnrichmentInputBuilder $inputBuilder,
         private readonly IngredientEnrichmentSubjectBuilder $subjectBuilder,
+        private readonly IngredientGuidanceContextBuilder $guidanceContext,
     ) {}
 
     /** @param Collection<int, Ingredient> $ingredients */
@@ -61,6 +64,74 @@ class IngredientEnrichmentBatchService
                     'catalog_key' => $ingredient->catalog_key,
                     'snapshot' => $record,
                     'source_fingerprint' => $record['source_fingerprint'],
+                ]);
+            }
+
+            return $batch;
+        }, attempts: 5);
+
+        $this->dispatch($batch);
+
+        return $batch->refresh()->load('items');
+    }
+
+    /** @param Collection<int, Ingredient> $ingredients */
+    public function startGuidanceRefresh(
+        User $actor,
+        Collection $ingredients,
+        bool $localizationOnly = false,
+    ): IngredientEnrichmentBatch {
+        $this->assertConfigured();
+
+        $ids = $ingredients->pluck('id')->filter()->unique()->sort()->values();
+        $maximum = (int) config('ingredient-enrichment.direct_ai.maximum_batch_size');
+        if ($ids->isEmpty() || $ids->count() > $maximum) {
+            throw ValidationException::withMessages([
+                'ingredients' => __('ingredient_enrichment_admin.validation.selection_size', ['maximum' => $maximum]),
+            ]);
+        }
+
+        $mode = $localizationOnly
+            ? IngredientEnrichmentBatchMode::GuidanceLocalization
+            : IngredientEnrichmentBatchMode::GuidanceRefresh;
+        $promptVersion = $localizationOnly
+            ? config('ingredient-enrichment.openai.guidance_localization_prompt_version')
+            : config('ingredient-enrichment.openai.guidance_prompt_version');
+
+        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion): IngredientEnrichmentBatch {
+            $locked = Ingredient::query()
+                ->withoutGlobalScopes()
+                ->whereIn('id', $ids)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            if ($locked->count() !== $ids->count()
+                || $locked->contains(fn (Ingredient $ingredient): bool => $ingredient->owner_type !== null || $ingredient->owner_id !== null)) {
+                throw ValidationException::withMessages([
+                    'ingredients' => __('ingredient_enrichment_admin.validation.platform_only'),
+                ]);
+            }
+
+            $batch = IngredientEnrichmentBatch::query()->create([
+                'requested_by_user_id' => $actor->id,
+                'status' => IngredientEnrichmentBatchStatus::Pending,
+                'model' => config('ingredient-enrichment.openai.model'),
+                'reasoning_effort' => config('ingredient-enrichment.openai.reasoning_effort'),
+                'prompt_version' => $promptVersion,
+                'schema_version' => 1,
+                'mode' => $mode,
+                'total_count' => $locked->count(),
+                'pending_count' => $locked->count(),
+            ]);
+
+            foreach ($locked as $ingredient) {
+                $context = $this->guidanceContext->build($ingredient);
+                $batch->items()->create([
+                    'ingredient_id' => $ingredient->id,
+                    'catalog_key' => $ingredient->catalog_key,
+                    'snapshot' => $context,
+                    'source_fingerprint' => $context['source_fingerprint'],
+                    'warnings' => $context['warnings'] ?? [],
                 ]);
             }
 
@@ -199,10 +270,19 @@ class IngredientEnrichmentBatchService
         }
 
         $jobs = $items
-            ->map(fn (IngredientEnrichmentBatchItem $item): ResearchIngredientEnrichment => new ResearchIngredientEnrichment(
-                $item->id,
-                (bool) data_get($item->snapshot, 'research_rules.allow_gap_research', false),
-            ))
+            ->map(function (IngredientEnrichmentBatchItem $item) use ($batch): object {
+                if ($batch->mode instanceof IngredientEnrichmentBatchMode && $batch->mode->isGuidance()) {
+                    return new GenerateIngredientGuidanceRefresh(
+                        $item->id,
+                        $batch->mode->isLocalizationOnly(),
+                    );
+                }
+
+                return new ResearchIngredientEnrichment(
+                    $item->id,
+                    (bool) data_get($item->snapshot, 'research_rules.allow_gap_research', false),
+                );
+            })
             ->all();
 
         try {

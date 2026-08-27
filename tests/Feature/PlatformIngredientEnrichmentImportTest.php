@@ -309,7 +309,11 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->and(data_get($ingredient->source_data, 'enrichment.core.source_fingerprint'))
         ->toBe($result['source_fingerprint'])
         ->and(data_get($ingredient->source_data, 'enrichment.core.result_fingerprint'))
-        ->toMatch('/^[a-f0-9]{64}$/');
+        ->toMatch('/^[a-f0-9]{64}$/')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))
+        ->toBe('COSMILE Europe')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
+        ->toBe('ingredient-guidance-v1');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,
@@ -391,6 +395,13 @@ function importResult(Ingredient $ingredient): array
             'confidence' => 'verified',
             'source_version' => '32025D1175',
             'source_updated_at' => null,
+            'retrieved_at' => '2026-08-13T12:00:00+00:00',
+        ]],
+        'guidance_evidence' => [[
+            'source_name' => 'COSMILE Europe',
+            'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+            'summary' => 'A supported practical formulation fact.',
+            'source_tier' => 'editorial',
             'retrieved_at' => '2026-08-13T12:00:00+00:00',
         ]],
         'regulatory_findings' => [],

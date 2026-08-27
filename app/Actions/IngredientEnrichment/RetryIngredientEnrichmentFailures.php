@@ -2,9 +2,11 @@
 
 namespace App\Actions\IngredientEnrichment;
 
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Jobs\GenerateIngredientGuidanceRefresh;
 use App\Jobs\ResearchIngredientEnrichment;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\User;
@@ -53,9 +55,15 @@ class RetryIngredientEnrichmentFailures
         }, attempts: 5);
 
         if ($ids !== []) {
-            $laravelBatch = Bus::batch(collect($ids)->map(
-                fn (int $id): ResearchIngredientEnrichment => new ResearchIngredientEnrichment($id, $allowGapResearch),
-            )->all())
+            $mode = $batch->mode;
+            $jobs = collect($ids)->map(function (int $id) use ($mode, $allowGapResearch): object {
+                if ($mode instanceof IngredientEnrichmentBatchMode && $mode->isGuidance()) {
+                    return new GenerateIngredientGuidanceRefresh($id, $mode->isLocalizationOnly());
+                }
+
+                return new ResearchIngredientEnrichment($id, $allowGapResearch);
+            })->all();
+            $laravelBatch = Bus::batch($jobs)
                 ->name("ingredient-enrichment-retry:{$batch->public_id}")->allowFailures()
                 ->onQueue((string) config('ingredient-enrichment.direct_ai.queue'))->dispatch();
             $batch->update(['laravel_batch_id' => $laravelBatch->id, 'status' => IngredientEnrichmentBatchStatus::Processing, 'completed_at' => null]);

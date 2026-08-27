@@ -4,11 +4,15 @@ namespace App\Providers;
 
 use App\Contracts\ExchangeRateProvider;
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceAuthoringClient;
+use App\Contracts\IngredientGuidanceLocalizationClient;
 use App\Contracts\IngredientResearchClient;
 use App\Listeners\CreateDefaultCompany;
 use App\Listeners\SyncPlanEntitlementFromPaddleSubscription;
 use App\Services\FrankfurterExchangeRateProvider;
 use App\Services\IngredientEnrichment\OpenAiIngredientEditorialClient;
+use App\Services\IngredientEnrichment\OpenAiIngredientGuidanceClient;
+use App\Services\IngredientEnrichment\OpenAiIngredientGuidanceLocalizationClient;
 use App\Services\IngredientEnrichment\OpenAiIngredientResearchClient;
 use App\Services\LocalePreferenceResolver;
 use Filament\Auth\Events\Registered;
@@ -32,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(LocalePreferenceResolver::class);
         $this->app->bind(ExchangeRateProvider::class, FrankfurterExchangeRateProvider::class);
         $this->app->bind(IngredientEditorialClient::class, OpenAiIngredientEditorialClient::class);
+        $this->app->bind(IngredientGuidanceAuthoringClient::class, OpenAiIngredientGuidanceClient::class);
+        $this->app->bind(IngredientGuidanceLocalizationClient::class, OpenAiIngredientGuidanceLocalizationClient::class);
         $this->app->bind(IngredientResearchClient::class, OpenAiIngredientResearchClient::class);
     }
 

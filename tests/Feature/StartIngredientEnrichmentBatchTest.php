@@ -1,7 +1,10 @@
 <?php
 
 use App\Actions\IngredientEnrichment\StartIngredientEnrichmentBatch;
+use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
+use App\Jobs\GenerateIngredientGuidanceRefresh;
 use App\Jobs\ResearchIngredientEnrichment;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
@@ -59,4 +62,31 @@ it('rejects a non admin before creating or dispatching anything', function (): v
 
     expect(IngredientEnrichmentBatch::query()->count())->toBe(0);
     Bus::assertNothingBatched();
+});
+
+it('starts a guidance-only batch with a dedicated job and reusable context', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'source_data' => [
+            'enrichment' => [
+                'guidance' => [
+                    'evidence' => [[
+                        'source_name' => 'COSMILE Europe',
+                        'source_url' => 'https://cosmileeurope.eu/example',
+                        'summary' => 'Persisted practical evidence.',
+                        'source_tier' => 'editorial',
+                        'retrieved_at' => '2026-08-28T00:00:00+00:00',
+                    ]],
+                ],
+            ],
+        ],
+    ]);
+
+    $batch = app(StartIngredientGuidanceRefresh::class)->handle($admin, collect([$ingredient]));
+
+    expect($batch->mode)->toBe(IngredientEnrichmentBatchMode::GuidanceRefresh)
+        ->and($batch->status)->toBe(IngredientEnrichmentBatchStatus::Processing)
+        ->and(data_get($batch->items->sole()->snapshot, 'guidance_evidence.0.source_name'))->toBe('COSMILE Europe');
+
+    Bus::assertBatched(fn (PendingBatch $pending): bool => $pending->jobs[0] instanceof GenerateIngredientGuidanceRefresh);
 });

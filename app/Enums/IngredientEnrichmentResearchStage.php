@@ -12,6 +12,8 @@ enum IngredientEnrichmentResearchStage: string
     case ConflictEvaluation = 'conflict_evaluation';
     case AiGuidanceResearch = 'ai_guidance_research';
     case AiEditorial = 'ai_editorial';
+    case AiGuidanceAuthoring = 'ai_guidance_authoring';
+    case AiGuidanceLocalization = 'ai_guidance_localization';
     case Validation = 'validation';
 
     /**
@@ -28,6 +30,8 @@ enum IngredientEnrichmentResearchStage: string
             self::ConflictEvaluation,
             self::AiGuidanceResearch,
             self::AiEditorial,
+            self::AiGuidanceAuthoring,
+            self::AiGuidanceLocalization,
             self::Validation,
         ];
     }

@@ -2,6 +2,7 @@
 
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Enums\IngredientTranslationOrigin;
 use App\Enums\OwnerType;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
@@ -10,6 +11,7 @@ use App\Models\ProductFamily;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\IngredientTranslationService;
+use App\Services\IngredientTranslationSourceFingerprint;
 use App\Services\RecipeWorkbenchIngredientCatalogBuilder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,6 +32,9 @@ it('stores ingredient translations in a dedicated constrained table', function (
         'display_name',
         'saponification_name',
         'info_markdown',
+        'source_fingerprint',
+        'origin',
+        'prompt_version',
         'created_at',
         'updated_at',
     ]))->toBeTrue();
@@ -180,8 +185,87 @@ it('normalizes and synchronizes platform ingredient translations', function () {
                 'display_name' => 'Huile d’olive',
                 'saponification_name' => 'Olive',
                 'info_markdown' => null,
+                'origin' => 'reviewer_edited',
+                'freshness' => 'current',
+                'is_stale' => false,
             ],
         ]);
+});
+
+it('derives outdated translations when canonical English guidance changes', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => '## Overview\nOriginal guidance',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => '## Vue d’ensemble\nConseils originaux',
+    ]], IngredientTranslationOrigin::AiGenerated, 'ingredient-guidance-localization-v1');
+
+    $ingredient->update(['info_markdown' => '## Overview\nUpdated guidance']);
+
+    expect(collect($service->formData($ingredient))->first())->toMatchArray([
+        'info_markdown' => '## Vue d’ensemble\nConseils originaux',
+        'origin' => 'ai_generated',
+        'freshness' => 'outdated',
+        'is_stale' => true,
+    ]);
+});
+
+it('marks only changed locales as reviewer edited while preserving other metadata', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    SupportedLocale::factory()->create(['code' => 'de']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => '## Overview\nOriginal guidance',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [
+        ['locale' => 'fr', 'display_name' => 'Huile d’olive', 'info_markdown' => 'Conseils FR'],
+        ['locale' => 'de', 'display_name' => 'Olivenöl', 'info_markdown' => 'Hinweise DE'],
+    ], IngredientTranslationOrigin::AiGenerated, 'ingredient-guidance-localization-v1');
+    $german = $ingredient->translations()->where('locale', 'de')->firstOrFail();
+
+    $service->sync($ingredient, [
+        ['locale' => 'fr', 'display_name' => 'Huile d’olive', 'info_markdown' => 'Conseils FR révisés'],
+        ['locale' => 'de', 'display_name' => 'Olivenöl', 'info_markdown' => 'Hinweise DE'],
+    ]);
+
+    $french = $ingredient->translations()->where('locale', 'fr')->firstOrFail();
+    $german->refresh();
+    expect($french->origin)->toBe(IngredientTranslationOrigin::ReviewerEdited)
+        ->and($french->prompt_version)->toBeNull()
+        ->and($french->source_fingerprint)->toBe(app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient))
+        ->and($german->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($german->prompt_version)->toBe('ingredient-guidance-localization-v1')
+        ->and($german->info_markdown)->toBe('Hinweise DE');
+});
+
+it('marks a changed English source and an edited locale independently in one save', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    SupportedLocale::factory()->create(['code' => 'de']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => 'Original English',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [
+        ['locale' => 'fr', 'display_name' => 'Huile d’olive', 'info_markdown' => 'FR original'],
+        ['locale' => 'de', 'display_name' => 'Olivenöl', 'info_markdown' => 'DE original'],
+    ], IngredientTranslationOrigin::AiGenerated, 'ingredient-guidance-localization-v1');
+
+    $ingredient->update(['info_markdown' => 'Updated English']);
+    $service->sync($ingredient, [
+        ['locale' => 'fr', 'display_name' => 'Huile d’olive', 'info_markdown' => 'FR edited'],
+        ['locale' => 'de', 'display_name' => 'Olivenöl', 'info_markdown' => 'DE original'],
+    ]);
+
+    $rows = collect($service->formData($ingredient))->keyBy('locale');
+    expect($rows['fr'])->toMatchArray(['origin' => 'reviewer_edited', 'freshness' => 'current', 'is_stale' => false])
+        ->and($rows['de'])->toMatchArray(['origin' => 'ai_generated', 'freshness' => 'outdated', 'is_stale' => true]);
 });
 
 it('rejects invalid platform translation state', function (array $rows) {

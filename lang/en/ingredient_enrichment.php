@@ -27,7 +27,9 @@ return [
         'us_declaration' => 'US declaration lookup',
         'conflict_evaluation' => 'Conflict evaluation',
         'ai_guidance_research' => 'Guidance research',
-        'ai_editorial' => 'Editorial guidance and translations',
+        'ai_editorial' => 'Editorial metadata',
+        'ai_guidance_authoring' => 'English guidance authoring',
+        'ai_guidance_localization' => 'Guidance localization',
         'validation' => 'Validation',
     ],
     'validation' => [

@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
+use App\Models\IngredientTranslation;
 use App\Models\SupportedLocale;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -11,8 +13,12 @@ use Illuminate\Validation\ValidationException;
 
 class IngredientTranslationService
 {
+    public function __construct(
+        private readonly IngredientTranslationSourceFingerprint $sourceFingerprint,
+    ) {}
+
     /**
-     * @return array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>
+     * @return array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null, origin: string, freshness: string, is_stale: bool}>
      */
     public function formData(Ingredient $ingredient): array
     {
@@ -20,23 +26,43 @@ class IngredientTranslationService
             return [];
         }
 
+        $canonicalFingerprint = $this->sourceFingerprint->forIngredient($ingredient);
+
         return $ingredient->translations()
             ->orderBy('locale')
-            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown'])
-            ->map(fn ($translation): array => [
-                'locale' => $translation->locale,
-                'display_name' => $translation->display_name,
-                'saponification_name' => $translation->saponification_name,
-                'info_markdown' => $translation->info_markdown,
-            ])
+            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown', 'source_fingerprint', 'origin'])
+            ->map(function (IngredientTranslation $translation) use ($canonicalFingerprint): array {
+                $sourceFingerprint = is_string($translation->source_fingerprint)
+                    ? $translation->source_fingerprint
+                    : '';
+                $origin = $translation->origin instanceof IngredientTranslationOrigin
+                    ? $translation->origin->value
+                    : (string) ($translation->origin ?? IngredientTranslationOrigin::Legacy->value);
+
+                return [
+                    'locale' => $translation->locale,
+                    'display_name' => $translation->display_name,
+                    'saponification_name' => $translation->saponification_name,
+                    'info_markdown' => $translation->info_markdown,
+                    'origin' => $origin,
+                    'freshness' => $sourceFingerprint !== '' && $sourceFingerprint === $canonicalFingerprint
+                        ? 'current'
+                        : 'outdated',
+                    'is_stale' => $sourceFingerprint === '' || $sourceFingerprint !== $canonicalFingerprint,
+                ];
+            })
             ->all();
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $rows
      */
-    public function sync(Ingredient $ingredient, array $rows): void
-    {
+    public function sync(
+        Ingredient $ingredient,
+        array $rows,
+        IngredientTranslationOrigin $origin = IngredientTranslationOrigin::ReviewerEdited,
+        ?string $promptVersion = null,
+    ): void {
         if ($ingredient->owner_type !== null) {
             if ($rows !== []) {
                 throw ValidationException::withMessages([
@@ -49,7 +75,9 @@ class IngredientTranslationService
 
         $validatedRows = $this->validateRows($rows);
 
-        DB::transaction(function () use ($ingredient, $validatedRows): void {
+        $canonicalFingerprint = $this->sourceFingerprint->forIngredient($ingredient);
+
+        DB::transaction(function () use ($ingredient, $validatedRows, $canonicalFingerprint, $origin, $promptVersion): void {
             $locales = collect($validatedRows)->pluck('locale')->all();
 
             $ingredient->translations()
@@ -60,12 +88,35 @@ class IngredientTranslationService
                 ->delete();
 
             foreach ($validatedRows as $row) {
+                $existing = $ingredient->translations()->where('locale', $row['locale'])->first();
+                $sameContent = $existing instanceof IngredientTranslation
+                    && $this->normalizeRow([
+                        'locale' => $existing->locale,
+                        'display_name' => $existing->display_name,
+                        'saponification_name' => $existing->saponification_name,
+                        'info_markdown' => $existing->info_markdown,
+                    ]) === $row;
+                $metadata = $sameContent
+                    ? [
+                        'source_fingerprint' => $existing->source_fingerprint,
+                        'origin' => $existing->origin ?? IngredientTranslationOrigin::Legacy->value,
+                        'prompt_version' => $existing->prompt_version,
+                    ]
+                    : [
+                        'source_fingerprint' => $canonicalFingerprint,
+                        'origin' => $origin->value,
+                        'prompt_version' => $origin === IngredientTranslationOrigin::AiGenerated
+                            ? $promptVersion
+                            : null,
+                    ];
+
                 $ingredient->translations()->updateOrCreate(
                     ['locale' => $row['locale']],
                     [
                         'display_name' => $row['display_name'],
                         'saponification_name' => $row['saponification_name'],
                         'info_markdown' => $row['info_markdown'],
+                        ...$metadata,
                     ],
                 );
             }

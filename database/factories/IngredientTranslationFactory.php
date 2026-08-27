@@ -24,6 +24,9 @@ class IngredientTranslationFactory extends Factory
             'display_name' => fake()->words(3, true),
             'saponification_name' => null,
             'info_markdown' => fake()->optional()->paragraph(),
+            'source_fingerprint' => null,
+            'origin' => 'legacy',
+            'prompt_version' => null,
         ];
     }
 }

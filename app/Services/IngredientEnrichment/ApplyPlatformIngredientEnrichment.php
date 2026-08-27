@@ -5,6 +5,7 @@ namespace App\Services\IngredientEnrichment;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentReplaceField;
 use App\Enums\IngredientSubcategory;
+use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Services\IngredientDataEntryService;
 use App\Services\IngredientFunctionAssignmentService;
@@ -147,7 +148,12 @@ class ApplyPlatformIngredientEnrichment
         }
 
         $translationRows = is_array($effective['translations'] ?? null) ? $effective['translations'] : [];
-        $this->translationService->sync($ingredient, $translationRows);
+        $this->translationService->sync(
+            $ingredient,
+            $translationRows,
+            IngredientTranslationOrigin::AiGenerated,
+            (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+        );
 
         $marketRows = is_array($proposal['market_labels'] ?? null) ? $proposal['market_labels'] : [];
         if ($marketRows !== []) {
@@ -170,6 +176,17 @@ class ApplyPlatformIngredientEnrichment
             'result_fingerprint' => $resultFingerprint,
             'applied_at' => CarbonImmutable::now()->toIso8601String(),
         ]);
+        $guidanceEvidence = is_array($result['guidance_evidence'] ?? null)
+            ? $result['guidance_evidence']
+            : [];
+        if ($guidanceEvidence !== []) {
+            data_set($sourceData, 'enrichment.guidance', [
+                'evidence' => $guidanceEvidence,
+                'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
+                'localization_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+                'approved_at' => CarbonImmutable::now()->toIso8601String(),
+            ]);
+        }
         $ingredient->source_data = $sourceData;
         $ingredient->requires_admin_review = $promotion ? false : true;
         if ($promotion) {

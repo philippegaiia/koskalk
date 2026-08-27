@@ -97,6 +97,13 @@ class IngredientEnrichmentResultSchema
                 'field' => $this->string(),
                 ...$source,
             ])),
+            'guidance_evidence' => $this->array($this->object([
+                'source_name' => $this->string(),
+                'source_url' => $this->string(),
+                'summary' => $this->string(),
+                'source_tier' => $this->string(enum: ['editorial']),
+                'retrieved_at' => $this->string(format: 'date-time'),
+            ])),
             'regulatory_findings' => $this->array($this->object([
                 'market_code' => $this->string(enum: collect(IngredientLabelMarket::cases())->map->value->all()),
                 'finding' => $this->string(),

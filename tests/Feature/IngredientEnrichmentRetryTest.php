@@ -1,9 +1,11 @@
 <?php
 
 use App\Actions\IngredientEnrichment\RetryIngredientEnrichmentFailures;
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Jobs\GenerateIngredientGuidanceRefresh;
 use App\Jobs\ResearchIngredientEnrichment;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
@@ -96,6 +98,41 @@ it('restarts a post-pipeline validation failure from the structured source bound
 
     Bus::assertBatched(function (PendingBatch $pending): bool {
         return collect($pending->jobs)->contains(
+            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
+        );
+    });
+});
+
+it('retries guidance failures with the guidance job without reopening identity research', function (): void {
+    Bus::fake();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'olive_oil']);
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'research_stages' => [
+            'ai_guidance_authoring' => ['status' => 'failed'],
+        ],
+    ]);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending);
+    Bus::assertBatched(function (PendingBatch $pending): bool {
+        return collect($pending->jobs)->contains(
+            fn (mixed $job): bool => $job instanceof GenerateIngredientGuidanceRefresh
+                && $job->localizationOnly === false,
+        ) && collect($pending->jobs)->doesntContain(
             fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
         );
     });

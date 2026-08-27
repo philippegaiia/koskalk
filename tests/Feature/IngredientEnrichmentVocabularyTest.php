@@ -33,6 +33,8 @@ it('defines stable hybrid enrichment vocabulary', function (): void {
             IngredientEnrichmentResearchStage::ConflictEvaluation,
             IngredientEnrichmentResearchStage::AiGuidanceResearch,
             IngredientEnrichmentResearchStage::AiEditorial,
+            IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+            IngredientEnrichmentResearchStage::AiGuidanceLocalization,
             IngredientEnrichmentResearchStage::Validation,
         ]);
 });

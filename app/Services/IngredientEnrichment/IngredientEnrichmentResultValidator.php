@@ -44,7 +44,7 @@ class IngredientEnrichmentResultValidator
             [
                 'format', 'schema_version', 'subject_type', 'subject_public_id', 'catalog_key', 'source_fingerprint',
                 'proposal', 'field_confidence', 'value_provenance', 'evidence', 'regulatory_findings', 'confidence',
-                'warnings', 'unresolved_questions',
+                'guidance_evidence', 'warnings', 'unresolved_questions',
             ],
             'result',
             $errors,
@@ -54,7 +54,7 @@ class IngredientEnrichmentResultValidator
             $this->error($errors, 'format', $this->message('unsupported_format'));
         }
 
-        if ($schemaVersion !== $currentSchemaVersion && ! in_array($schemaVersion, [$currentSchemaVersion - 1], true)) {
+        if ($schemaVersion !== $currentSchemaVersion && ! in_array($schemaVersion, [$currentSchemaVersion - 1, $currentSchemaVersion - 2], true)) {
             $this->error($errors, 'schema_version', $this->message('unsupported_schema'));
         }
 
@@ -125,6 +125,10 @@ class IngredientEnrichmentResultValidator
         ]);
         $this->validateFieldConfidence($fieldConfidence, $errors);
         $this->validateEvidence($evidence, $errors);
+        $guidanceEvidence = $this->normalizeRows($result['guidance_evidence'] ?? null, [
+            'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+        ]);
+        $this->validateGuidanceEvidence($guidanceEvidence, $errors);
         $this->validateFieldConfidenceAgainstEvidence($fieldConfidence, $evidence, $errors);
         $this->validateRegulatoryFindings($regulatoryFindings, $errors);
         $valueProvenance = $this->normalizeRows($result['value_provenance'] ?? null, [
@@ -152,6 +156,7 @@ class IngredientEnrichmentResultValidator
                 'field_confidence' => $fieldConfidence,
                 'value_provenance' => $valueProvenance,
                 'evidence' => $evidence,
+                'guidance_evidence' => $guidanceEvidence,
                 'regulatory_findings' => $regulatoryFindings,
                 'confidence' => is_string($result['confidence'] ?? null) ? trim($result['confidence']) : $result['confidence'] ?? null,
                 'warnings' => $this->normalizeStringList($result['warnings'] ?? null),
@@ -731,6 +736,39 @@ class IngredientEnrichmentResultValidator
                 $path,
                 $errors,
             );
+        }
+    }
+
+    /**
+     * Guidance evidence is a deliberately small, editorial-only envelope.
+     * It is persisted for later no-web guidance refreshes, but it cannot
+     * support identity, regulatory, or declaration fields.
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     * @param  array<string, list<string>>  $errors
+     */
+    private function validateGuidanceEvidence(array $rows, array &$errors): void
+    {
+        foreach ($rows as $index => $row) {
+            $path = "guidance_evidence.{$index}";
+            $this->validateExactKeys($row, [
+                'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+            ], $path, $errors);
+            if (! is_string($row['source_name'] ?? null) || trim($row['source_name']) === '') {
+                $this->error($errors, "{$path}.source_name", $this->message('source_name'));
+            }
+            if (! $this->isHttpUrl($row['source_url'] ?? null)) {
+                $this->error($errors, "{$path}.source_url", $this->message('source_url'));
+            }
+            if (! is_string($row['summary'] ?? null) || trim($row['summary']) === '') {
+                $this->error($errors, "{$path}.summary", $this->message('required_non_empty'));
+            }
+            if (($row['source_tier'] ?? null) !== 'editorial') {
+                $this->error($errors, "{$path}.source_tier", $this->message('source_tier'));
+            }
+            if (! $this->isIsoDateTime($row['retrieved_at'] ?? null)) {
+                $this->error($errors, "{$path}.retrieved_at", $this->message('date_time_format'));
+            }
         }
     }
 

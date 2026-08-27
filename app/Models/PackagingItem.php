@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
     'workspace_id',
     'created_by_user_id',
     'name',
+    'material_code',
     'category',
     'notes',
     'is_active',
@@ -39,6 +40,7 @@ use Illuminate\Support\Carbon;
  * @property int $workspace_id
  * @property int|null $created_by_user_id
  * @property string $name
+ * @property string|null $material_code
  * @property PackagingCategory $category
  * @property string|null $notes
  * @property Carbon|null $created_at

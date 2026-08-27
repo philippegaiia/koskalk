@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OwnerType;
+use App\Enums\PackagingCategory;
 use App\Enums\Visibility;
 use App\Livewire\Dashboard\PackagingItemEditor;
 use App\Livewire\Dashboard\PackagingItemsIndex;
@@ -16,6 +17,7 @@ use App\Services\MediaStorage;
 use App\Services\PackagingItemAuthoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
@@ -33,6 +35,7 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
     createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Tube 50 g',
+        'material_code' => 'PK-TUBE-50',
         'unit_cost' => 0.1200,
         'currency' => 'EUR',
         'notes' => 'Reusable catalog item',
@@ -50,7 +53,9 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
         ->assertSee('Unit price (EUR)')
         ->assertSee('0.12')
         ->assertDontSee('0.1200')
-        ->assertSee('Tube 50 g');
+        ->assertSee('Tube 50 g')
+        ->assertSee('Internal material code')
+        ->assertSee('PK-TUBE-50');
 });
 
 it('renders compact accessible pagination for the packaging catalog', function () {
@@ -188,6 +193,7 @@ it('creates a packaging item from the dedicated editor', function () {
 
     $component
         ->set('data.name', 'Kraft soap box')
+        ->set('data.material_code', ' pk-box-100 ')
         ->set('data.unit_cost', '0,4200')
         ->set('data.notes', '100g rectangle')
         ->call('save')
@@ -197,6 +203,7 @@ it('creates a packaging item from the dedicated editor', function () {
     expect(PackagingItem::query()->where('workspace_id', $user->company()?->id)->first())
         ->not->toBeNull()
         ->name->toBe('Kraft soap box')
+        ->material_code->toBe('PK-BOX-100')
         ->currency->toBe('GBP');
 });
 
@@ -262,6 +269,7 @@ it('only shows the signed-in users packaging items in the packaging table and su
     createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Beta Box',
+        'material_code' => 'PK-BETA-BOX',
         'unit_cost' => 0.3000,
         'currency' => 'EUR',
         'notes' => 'Beta entry',
@@ -283,8 +291,36 @@ it('only shows the signed-in users packaging items in the packaging table and su
         ->assertDontSee('Other user entry')
         ->set('search', 'Beta')
         ->assertSee('Beta Box')
+        ->assertSee('PK-BETA-BOX')
         ->assertDontSee('First alpha entry')
         ->assertDontSee('Second alpha entry');
+});
+
+it('shows and searches packaging items by their internal material code', function (): void {
+    $user = User::factory()->create();
+
+    createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Clear bottle',
+        'material_code' => 'PK-BOT-250',
+        'unit_cost' => 0.20,
+        'currency' => 'EUR',
+    ]);
+    createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Amber jar',
+        'material_code' => 'PK-JAR-250',
+        'unit_cost' => 0.22,
+        'currency' => 'EUR',
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->set('search', 'PK-BOT-250')
+        ->assertSee('Clear bottle')
+        ->assertSee('PK-BOT-250')
+        ->assertDontSee('Amber jar');
 });
 
 it('updates a packaging item unit price from the catalog table', function () {
@@ -560,4 +596,95 @@ it('removes packaging from every saved formula version and costing before deleti
     expect(PackagingItem::query()->find($packagingItem->id))->toBeNull()
         ->and(RecipeVersionPackagingItem::query()->where('packaging_item_id', $packagingItem->id)->exists())->toBeFalse()
         ->and(RecipeVersionCostingPackagingItem::query()->where('packaging_item_id', $packagingItem->id)->exists())->toBeFalse();
+});
+
+it('leaves the packaging material code empty unless the user authors one', function (): void {
+    $user = User::factory()->create();
+    Workspace::factory()->create(['owner_user_id' => $user->id]);
+
+    $packagingItem = app(PackagingItemAuthoringService::class)->create([
+        'name' => 'Clear 250 ml bottle',
+        'category' => PackagingCategory::Bottle->value,
+        'unit_cost' => '0.20',
+    ], $user);
+
+    expect($packagingItem->material_code)->toBeNull();
+});
+
+it('normalizes, clears, and reuses an optional packaging material code', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $authoringService = app(PackagingItemAuthoringService::class);
+
+    $first = $authoringService->create([
+        'name' => 'Clear 250 ml bottle',
+        'category' => PackagingCategory::Bottle->value,
+        'unit_cost' => '0.20',
+        'material_code' => ' pk-bot_250 ',
+    ], $user);
+    $second = $authoringService->create([
+        'name' => 'Amber 250 ml bottle',
+        'category' => PackagingCategory::Bottle->value,
+        'unit_cost' => '0.22',
+    ], $user);
+
+    expect($first->material_code)->toBe('PK-BOT_250');
+
+    expect(fn () => $authoringService->update($second, [
+        'name' => $second->name,
+        'category' => $second->category->value,
+        'unit_cost' => '0.22',
+        'material_code' => 'pk-bot_250',
+    ], $user))->toThrow(ValidationException::class);
+
+    $cleared = $authoringService->update($first, [
+        'name' => $first->name,
+        'category' => $first->category->value,
+        'unit_cost' => '0.20',
+        'material_code' => '',
+    ], $user);
+
+    $reused = $authoringService->update($second, [
+        'name' => $second->name,
+        'category' => $second->category->value,
+        'unit_cost' => '0.22',
+        'material_code' => 'PK-BOT_250',
+    ], $user);
+
+    expect($cleared->material_code)->toBeNull()
+        ->and($reused->material_code)->toBe('PK-BOT_250')
+        ->and($reused->workspace_id)->toBe($workspace->id);
+});
+
+it('rejects invalid packaging material codes and allows the same code in another workspace', function (): void {
+    $firstUser = User::factory()->create();
+    $firstWorkspace = Workspace::factory()->create(['owner_user_id' => $firstUser->id]);
+    $secondUser = User::factory()->create();
+    $secondWorkspace = Workspace::factory()->create(['owner_user_id' => $secondUser->id]);
+    $authoringService = app(PackagingItemAuthoringService::class);
+
+    $first = $authoringService->create([
+        'name' => 'Clear bottle',
+        'category' => PackagingCategory::Bottle->value,
+        'unit_cost' => '0.20',
+        'material_code' => 'PK-BOT-250',
+    ], $firstUser);
+
+    expect(fn () => $authoringService->update($first, [
+        'name' => $first->name,
+        'category' => $first->category->value,
+        'unit_cost' => '0.20',
+        'material_code' => 'not valid',
+    ], $firstUser))->toThrow(ValidationException::class);
+
+    $second = $authoringService->create([
+        'name' => 'Clear bottle in another workspace',
+        'category' => PackagingCategory::Bottle->value,
+        'unit_cost' => '0.20',
+        'material_code' => 'PK-BOT-250',
+    ], $secondUser);
+
+    expect($first->workspace_id)->toBe($firstWorkspace->id)
+        ->and($second->workspace_id)->toBe($secondWorkspace->id)
+        ->and($second->material_code)->toBe('PK-BOT-250');
 });

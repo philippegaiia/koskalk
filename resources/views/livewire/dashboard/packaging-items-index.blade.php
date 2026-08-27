@@ -55,6 +55,7 @@
                             <tr>
                                 <th scope="col"><span class="sr-only">{{ __('packaging.table.image') }}</span></th>
                                 <th scope="col"><button type="button" wire:click="sortBy('name')" class="sk-table-sort-button">{{ __('packaging.table.name') }}</button></th>
+                                <th scope="col"><button type="button" wire:click="sortBy('material_code')" class="sk-table-sort-button">{{ __('packaging.table.material_code') }}</button></th>
                                 <th scope="col"><button type="button" wire:click="sortBy('unit_cost')" class="sk-table-sort-button">{{ $unitPriceLabel }}</button></th>
                                 <th scope="col">{{ __('packaging.table.notes') }}</th>
                                 <th scope="col" class="text-right">{{ __('packaging.table.actions') }}</th>
@@ -77,6 +78,7 @@
                                         @endif
                                     </td>
                                     <td class="font-semibold text-[var(--color-ink-strong)]">{{ $item->name }}</td>
+                                    <td class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $item->material_code ?? '—' }}</td>
                                     <td>
                                         <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32" aria-label="{{ __('packaging.accessibility.unit_price', ['item' => $item->name]) }}" />
                                         @error($errorKey)

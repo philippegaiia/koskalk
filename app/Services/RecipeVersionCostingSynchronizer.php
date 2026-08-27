@@ -85,7 +85,7 @@ class RecipeVersionCostingSynchronizer
         }
 
         $costing = RecipeVersionCosting::query()
-            ->with(['items', 'packagingItems'])
+            ->with(['items', 'packagingItems.packagingItem'])
             ->where('recipe_version_id', $currentVersion->id)
             ->where('user_id', $user->id)
             ->first();
@@ -120,6 +120,7 @@ class RecipeVersionCostingSynchronizer
                     'id' => $item->id,
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
+                    'material_code' => $item->packagingItem?->material_code,
                     'unit_cost' => (float) $item->unit_cost,
                     'components_per_unit' => (float) $item->quantity,
                 ])
@@ -327,6 +328,9 @@ class RecipeVersionCostingSynchronizer
             }
             $packagingItem = $this->packagingItemAuthoringService->update($packagingItem, [
                 'name' => $name,
+                'material_code' => array_key_exists('material_code', $payload)
+                    ? $payload['material_code']
+                    : $packagingItem->material_code,
                 'category' => $payload['category'] ?? $packagingItem->category->value,
                 'unit_cost' => $payload['unit_cost'] ?? 0,
                 'notes' => $payload['notes'] ?? null,
@@ -334,6 +338,7 @@ class RecipeVersionCostingSynchronizer
         } else {
             $packagingItem = $this->packagingItemAuthoringService->create([
                 'name' => $name,
+                'material_code' => $payload['material_code'] ?? null,
                 'category' => $payload['category'] ?? PackagingCategory::Other->value,
                 'unit_cost' => $payload['unit_cost'] ?? 0,
                 'notes' => $payload['notes'] ?? null,
@@ -345,6 +350,7 @@ class RecipeVersionCostingSynchronizer
             'packaging_item' => [
                 'id' => $packagingItem->id,
                 'name' => $packagingItem->name,
+                'material_code' => $packagingItem->material_code,
                 'unit_cost' => (float) $packagingItem->unit_cost,
                 'currency' => $packagingItem->currency,
                 'notes' => $packagingItem->notes,
@@ -370,6 +376,7 @@ class RecipeVersionCostingSynchronizer
             ->map(fn (PackagingItem $item): array => [
                 'id' => $item->id,
                 'name' => $item->name,
+                'material_code' => $item->material_code,
                 'unit_cost' => (float) $item->unit_cost,
                 'currency' => $currency,
                 'notes' => $item->notes,
@@ -411,7 +418,8 @@ class RecipeVersionCostingSynchronizer
             $this->syncFormulaItems($costing);
             $this->syncPackagingItems($costing);
 
-            return $costing->fresh(['items', 'packagingItems']) ?? $costing->load(['items', 'packagingItems']);
+            return $costing->fresh(['items', 'packagingItems.packagingItem'])
+                ?? $costing->load(['items', 'packagingItems.packagingItem']);
         });
     }
 

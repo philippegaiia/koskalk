@@ -23,6 +23,7 @@ class PackagingItemFactory extends Factory
             'workspace_id' => Workspace::factory(),
             'created_by_user_id' => null,
             'name' => fake()->words(2, true),
+            'material_code' => null,
             'category' => PackagingCategory::Other,
             'notes' => null,
             'is_active' => true,

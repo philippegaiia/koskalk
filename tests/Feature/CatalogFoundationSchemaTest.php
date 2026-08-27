@@ -41,6 +41,7 @@ it('uses workspace packaging and clean generic ingredient columns', function ():
         'workspace_id',
         'created_by_user_id',
         'name',
+        'material_code',
         'category',
         'notes',
         'is_active',

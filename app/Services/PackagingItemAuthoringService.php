@@ -6,8 +6,10 @@ use App\Enums\MaterialPriceSource;
 use App\Enums\PackagingCategory;
 use App\Models\PackagingItem;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class PackagingItemAuthoringService
@@ -24,6 +26,7 @@ class PackagingItemAuthoringService
     {
         return [
             'name' => null,
+            'material_code' => null,
             'category' => PackagingCategory::Other->value,
             'unit_cost' => null,
             'notes' => null,
@@ -39,6 +42,7 @@ class PackagingItemAuthoringService
     {
         return [
             'name' => $packagingItem->name,
+            'material_code' => $packagingItem->material_code,
             'category' => $packagingItem->category->value,
             'unit_cost' => $packagingItem->unit_cost === null ? null : (float) $packagingItem->unit_cost,
             'notes' => $packagingItem->notes,
@@ -150,7 +154,28 @@ class PackagingItemAuthoringService
             ]);
         }
 
+        $materialCode = array_key_exists('material_code', $state)
+            ? $this->normalizeMaterialCode(Arr::get($state, 'material_code'))
+            : $packagingItem->material_code;
+
+        if ($materialCode !== null) {
+            $this->validateMaterialCodeFormat($materialCode);
+
+            $duplicateExists = PackagingItem::query()
+                ->where('workspace_id', $packagingItem->workspace_id)
+                ->where('material_code', $materialCode)
+                ->when($packagingItem->exists, fn ($query) => $query->where('id', '!=', $packagingItem->id))
+                ->exists();
+
+            if ($duplicateExists) {
+                throw ValidationException::withMessages([
+                    'material_code' => __('packaging.validation.material_code_unique'),
+                ]);
+            }
+        }
+
         $packagingItem->name = $name;
+        $packagingItem->material_code = $materialCode;
         $packagingItem->category = $category;
         $packagingItem->notes = blank(Arr::get($state, 'notes'))
             ? null
@@ -162,7 +187,13 @@ class PackagingItemAuthoringService
                 ? Arr::get($state, 'featured_image_original_name')
                 : null;
         }
-        $packagingItem->save();
+        try {
+            $packagingItem->save();
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'material_code' => __('packaging.validation.material_code_unique'),
+            ]);
+        }
 
         return $packagingItem->fresh();
     }
@@ -184,5 +215,23 @@ class PackagingItemAuthoringService
             sourceId: null,
             actor: $user,
         );
+    }
+
+    private function normalizeMaterialCode(mixed $materialCode): ?string
+    {
+        $normalized = Str::upper(trim((string) $materialCode));
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function validateMaterialCodeFormat(string $materialCode): void
+    {
+        if (preg_match('/\A[A-Z0-9][A-Z0-9._\/-]{0,63}\z/', $materialCode) === 1) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'material_code' => __('packaging.validation.material_code_format'),
+        ]);
     }
 }

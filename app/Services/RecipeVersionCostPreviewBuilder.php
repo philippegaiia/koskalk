@@ -35,7 +35,7 @@ class RecipeVersionCostPreviewBuilder
     public function ensureCostingAndBuild(Recipe $recipe, RecipeVersion $version, User $user, string|int|float $batchBasisValue, ?int $unitsProduced): array
     {
         $existingCosting = RecipeVersionCosting::query()
-            ->with(['items', 'packagingItems'])
+            ->with(['items', 'packagingItems.packagingItem'])
             ->where('recipe_version_id', $version->id)
             ->where('user_id', $user->id)
             ->first();
@@ -229,6 +229,7 @@ class RecipeVersionCostPreviewBuilder
                     packagingItemId: $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                     position: (int) $item->position,
                     name: $item->name,
+                    materialCode: $item->packagingItem?->material_code,
                     componentsPerUnit: $costingItem?->quantity === null ? (float) $item->components_per_unit : (float) $costingItem->quantity,
                     unitCost: $this->plannedPackagingUnitCost(
                         costingItem: $costingItem,
@@ -256,6 +257,7 @@ class RecipeVersionCostPreviewBuilder
                 packagingItemId: $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 position: $version->packagingItems->count() + $index + 1,
                 name: $item->name,
+                materialCode: $item->packagingItem?->material_code,
                 componentsPerUnit: (float) $item->quantity,
                 unitCost: (float) $item->unit_cost,
                 unitsProduced: $unitsProduced,
@@ -267,7 +269,7 @@ class RecipeVersionCostPreviewBuilder
     /**
      * @return array<string, mixed>
      */
-    private function packagingRow(?int $packagingItemId, int $position, string $name, float $componentsPerUnit, ?float $unitCost, ?int $unitsProduced): array
+    private function packagingRow(?int $packagingItemId, int $position, string $name, ?string $materialCode, float $componentsPerUnit, ?float $unitCost, ?int $unitsProduced): array
     {
         $costPerFinishedUnit = $unitCost === null ? 0.0 : round($unitCost * $componentsPerUnit, 4);
 
@@ -275,6 +277,7 @@ class RecipeVersionCostPreviewBuilder
             'packaging_item_id' => $packagingItemId,
             'position' => $position,
             'name' => $name,
+            'material_code' => $materialCode,
             'components_per_unit' => $componentsPerUnit,
             'unit_cost' => $unitCost,
             'cost_per_finished_unit' => $costPerFinishedUnit,

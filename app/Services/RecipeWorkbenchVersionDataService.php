@@ -316,7 +316,7 @@ class RecipeWorkbenchVersionDataService
             'phases.items.ingredient.fattyAcidEntries.fattyAcid',
             'phases.items.ingredient.allergenEntries',
             'phases.items.ingredient.ifraCertificates.limits',
-            'packagingItems',
+            'packagingItems.packagingItem',
         ];
     }
 
@@ -329,7 +329,7 @@ class RecipeWorkbenchVersionDataService
             'regulatoryRegime',
             'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
             'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
-            'packagingItems',
+            'packagingItems.packagingItem',
         ];
     }
 

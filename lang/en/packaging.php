@@ -40,7 +40,7 @@ return [
     ],
     'search' => [
         'label' => 'Search',
-        'placeholder' => 'Name or notes',
+        'placeholder' => 'Name, code, or notes',
         'aria_label' => 'Search packaging',
     ],
     'empty' => [
@@ -51,6 +51,7 @@ return [
     'table' => [
         'image' => 'Image',
         'name' => 'Name',
+        'material_code' => 'Internal material code',
         'notes' => 'Notes',
         'actions' => 'Actions',
         'per_page' => 'Packaging items per page',
@@ -76,6 +77,8 @@ return [
     'validation' => [
         'remove_from_formulas' => 'Remove this packaging item from every formula before deleting it.',
         'in_use' => 'This packaging item is still in use and cannot be deleted.',
+        'material_code_format' => 'Use 1–64 letters, numbers, periods, underscores, hyphens, or slashes; start with a letter or number.',
+        'material_code_unique' => 'This internal material code is already used by another packaging item in this workspace.',
     ],
     'status' => [
         'deleted' => ':item was deleted.',
@@ -102,6 +105,11 @@ return [
             'name' => [
                 'label' => 'Name',
                 'placeholder' => 'e.g. 100 g kraft soap box',
+            ],
+            'material_code' => [
+                'label' => 'Internal material code',
+                'helper' => 'Optional workspace reference used in formulas, costing, purchasing, and production.',
+                'placeholder' => 'e.g. PK-BOT-250',
             ],
             'unit_price' => 'Unit price (:currency)',
             'category' => 'Category',

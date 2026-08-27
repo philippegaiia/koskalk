@@ -116,6 +116,7 @@ class RecipeWorkbenchVersionPayloadMapper
                     'id' => 'saved-packaging-'.$item->id,
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
+                    'material_code' => $item->packagingItem?->material_code,
                     'components_per_unit' => (float) $item->components_per_unit,
                     'notes' => $item->notes,
                 ])

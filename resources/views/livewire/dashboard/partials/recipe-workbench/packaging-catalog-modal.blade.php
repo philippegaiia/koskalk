@@ -24,6 +24,12 @@
  </label>
 
  <label class="sk-inset p-4">
+ <span class="sk-eyebrow">{{ __('workbench.packaging.modal.material_code') }}</span>
+ <span class="mt-1 block text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.packaging.modal.material_code_helper') }}</span>
+ <input x-model="packagingCatalogForm.material_code" maxlength="64" type="text" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 font-mono text-sm text-[var(--color-ink-strong)] transition" />
+ </label>
+
+ <label class="sk-inset p-4">
  <span class="sk-eyebrow" x-text="t('packaging.modal.effective_unit_price', { unit: packagingCatalogForm.currency || costingCurrency || defaultCurrency || @js($packagingCatalogCurrency) })">{{ __('workbench.packaging.modal.effective_unit_price', ['unit' => $packagingCatalogCurrency]) }}</span>
  <input x-model="packagingCatalogForm.unit_cost" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition" />
  </label>

@@ -9,6 +9,7 @@ export function createPackagingSection() {
                     id: this.makeLocalPackagingPlanRowId(),
                     packaging_item_id: packagingItem?.id ?? null,
                     name: packagingItem?.name ?? '',
+                    material_code: packagingItem?.material_code ?? null,
                     components_per_unit: 1,
                     notes: '',
                 },

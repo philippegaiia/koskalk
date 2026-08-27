@@ -2210,6 +2210,7 @@ it('returns the saved packaging item payload when saving a packaging catalog ite
     $result = $component->savePackagingCatalogItem(
         [
             'name' => 'Amber Jar',
+            'material_code' => ' pk-jar-250 ',
             'unit_cost' => 1.2345,
             'currency' => 'EUR',
             'notes' => 'For 100 g bars',
@@ -2221,6 +2222,7 @@ it('returns the saved packaging item payload when saving a packaging catalog ite
         ->and($result['packaging_catalog'])->toHaveCount(1)
         ->and($result['packaging_item'])->toMatchArray([
             'name' => 'Amber Jar',
+            'material_code' => 'PK-JAR-250',
             'unit_cost' => 1.2345,
             'currency' => 'EUR',
             'notes' => 'For 100 g bars',
@@ -2512,6 +2514,7 @@ const state = globalThis.draftStateFromDraft({
       id: 'saved-packaging-14',
       packaging_item_id: 14,
       name: 'Amber Jar',
+      material_code: 'PK-JAR-250',
       components_per_unit: 1,
       notes: 'Primary pack',
     },
@@ -2561,6 +2564,7 @@ JS;
             'id' => 'saved-packaging-14',
             'packaging_item_id' => 14,
             'name' => 'Amber Jar',
+            'material_code' => 'PK-JAR-250',
             'components_per_unit' => 1,
             'notes' => 'Primary pack',
         ]);
@@ -2847,6 +2851,7 @@ it('includes the user packaging catalog on the rendered workbench component', fu
     createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Amber Jar',
+        'material_code' => 'PK-JAR-250',
         'unit_cost' => 0.82,
         'currency' => 'EUR',
         'notes' => 'Reusable catalog item',
@@ -2862,6 +2867,7 @@ it('includes the user packaging catalog on the rendered workbench component', fu
     expect($workbench['packagingCatalog'])->toHaveCount(1)
         ->and($workbench['packagingCatalog'][0])->toMatchArray([
             'name' => 'Amber Jar',
+            'material_code' => 'PK-JAR-250',
             'unit_cost' => 0.82,
             'currency' => 'EUR',
             'notes' => 'Reusable catalog item',
@@ -2882,6 +2888,7 @@ const state = {
   packagingCatalogForm: {
     id: null,
     name: 'Amber Jar',
+    material_code: 'PK-JAR-250',
     unit_cost: 1.2345,
     currency: 'EUR',
     notes: 'For boxed bars',
@@ -2896,6 +2903,7 @@ const state = {
     this.packagingCatalogForm = {
       id: null,
       name: '',
+      material_code: '',
       unit_cost: '',
       currency: this.costingCurrency ?? 'EUR',
       notes: '',
@@ -2910,6 +2918,7 @@ const state = {
           {
             id: 41,
             name: payload.name,
+            material_code: payload.material_code,
             unit_cost: payload.unit_cost,
             currency: payload.currency,
             notes: payload.notes,
@@ -2918,6 +2927,7 @@ const state = {
         packaging_item: {
           id: 41,
           name: payload.name,
+          material_code: payload.material_code,
           unit_cost: payload.unit_cost,
           currency: payload.currency,
           notes: payload.notes,
@@ -2984,6 +2994,7 @@ JS;
         ->and($payload['row'])->toMatchArray([
             'packaging_item_id' => 41,
             'name' => 'Amber Jar',
+            'material_code' => 'PK-JAR-250',
             'components_per_unit' => 1,
             'notes' => '',
         ])
@@ -2991,6 +3002,7 @@ JS;
         ->and($payload['form'])->toMatchArray([
             'id' => null,
             'name' => '',
+            'material_code' => '',
             'unit_cost' => '',
             'currency' => 'EUR',
             'notes' => '',

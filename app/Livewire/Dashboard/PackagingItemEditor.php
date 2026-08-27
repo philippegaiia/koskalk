@@ -174,6 +174,11 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->placeholder(__('packaging.editor.form.name.placeholder'))
                             ->required()
                             ->maxLength(255),
+                        TextInput::make('material_code')
+                            ->label(__('packaging.editor.form.material_code.label'))
+                            ->helperText(__('packaging.editor.form.material_code.helper'))
+                            ->placeholder(__('packaging.editor.form.material_code.placeholder'))
+                            ->maxLength(64),
                         Select::make('category')
                             ->label(__('packaging.editor.form.category'))
                             ->options(PackagingCategory::class)

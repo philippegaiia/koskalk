@@ -78,6 +78,7 @@ export function createCostingSection(payload) {
                 id: row.id ?? this.makeLocalPackagingRowId(),
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
+                material_code: row.material_code ?? null,
                 unit_cost: row.unit_cost ?? 0,
                 quantity: row.components_per_unit ?? row.quantity ?? 1,
             }));
@@ -470,6 +471,7 @@ export function createCostingSection(payload) {
                 id: row.id,
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
+                material_code: row.material_code ?? null,
                 unit_cost: 0,
                 quantity: nonNegativeNumber(row.components_per_unit),
                 isUnsavedPlanRow: true,
@@ -557,6 +559,7 @@ export function createCostingSection(payload) {
             this.packagingCatalogForm = {
                 id: null,
                 name: '',
+                material_code: '',
                 unit_cost: '',
                 currency: this.costingCurrency ?? this.defaultCurrency ?? 'EUR',
                 notes: '',

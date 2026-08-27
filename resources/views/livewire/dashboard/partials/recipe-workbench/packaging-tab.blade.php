@@ -1,9 +1,9 @@
 @php
     $packagingCatalogOptions = collect($workbench['packagingCatalog'] ?? [])->map(fn (array $item): array => [
         'id' => $item['id'],
-        'label' => $item['name'],
+        'label' => $item['material_code'] ? $item['name'].' · '.$item['material_code'] : $item['name'],
         'description' => $item['notes'] ?? null,
-        'searchText' => implode(' ', array_filter([$item['name'], $item['notes'] ?? null])),
+        'searchText' => implode(' ', array_filter([$item['name'], $item['material_code'] ?? null, $item['notes'] ?? null])),
     ])->values()->all();
 @endphp
 
@@ -28,7 +28,7 @@
  :empty-message="__('workbench.packaging.plan.no_matches')"
  :retain-selection="false"
  class="w-full sm:w-72 sm:min-w-72"
- x-effect="replaceOptions(packagingCatalog.map((item) => ({ id: item.id, label: item.name, description: item.notes || '', searchText: `${item.name} ${item.notes || ''}` })))"
+ x-effect="replaceOptions(packagingCatalog.map((item) => ({ id: item.id, label: item.material_code ? item.name + ' · ' + item.material_code : item.name, description: item.notes || '', searchText: [item.name, item.material_code, item.notes].filter(Boolean).join(' ') })))"
  x-on:search-combobox-selected="selectPackagingCatalogItem(packagingCatalog.find((item) => String(item.id) === String($event.detail.id)))"
  />
  </template>
@@ -60,7 +60,10 @@
  <template x-for="row in packagingPlanRows" :key="row.id">
 	 <div class="grid grid-cols-1 gap-3 bg-white p-3 text-sm lg:grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
 	 <div class="flex items-center bg-white lg:px-4 lg:py-3">
+ <div>
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p x-show="row.material_code" x-text="row.material_code" class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]"></p>
+ </div>
  </div>
 	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
 	 <span class="sk-eyebrow lg:hidden">{{ __('workbench.packaging.plan.quantity_per_unit') }}</span>

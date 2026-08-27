@@ -38,6 +38,8 @@ it('uses the approved task-focused copy on the add packaging page', function () 
         ->assertSeeText('Add the information you need to identify and cost this packaging.')
         ->assertSeeText('Name')
         ->assertSee('placeholder="e.g. 100 g kraft soap box"', false)
+        ->assertSeeText('Internal material code')
+        ->assertSeeText('Optional workspace reference used in formulas, costing, purchasing, and production.')
         ->assertSeeText('Unit price (GBP)')
         ->assertSeeText('Packaging image')
         ->assertSeeText('Optional square image shown in your packaging library and selectors.')
@@ -90,6 +92,8 @@ it('loads packaging editor interface copy from the database', function () {
         'editor.form.description' => 'Ajoutez les informations nécessaires pour identifier et chiffrer cet emballage.',
         'editor.form.name.label' => 'Nom',
         'editor.form.name.placeholder' => 'p. ex. boîte kraft pour savon de 100 g',
+        'editor.form.material_code.label' => 'Code matière interne',
+        'editor.form.material_code.helper' => 'Référence d’espace de travail facultative utilisée dans les formules, les coûts, les achats et la production.',
         'editor.form.unit_price' => 'Prix unitaire (:currency)',
         'editor.form.image.label' => 'Image de l’emballage',
         'editor.form.image.helper' => 'Image carrée facultative affichée dans votre bibliothèque et les sélecteurs d’emballages.',
@@ -112,6 +116,8 @@ it('loads packaging editor interface copy from the database', function () {
         ->assertSeeText('Annuler')
         ->assertSeeText('Détails de l’emballage')
         ->assertSee('placeholder="p. ex. boîte kraft pour savon de 100 g"', false)
+        ->assertSeeText('Code matière interne')
+        ->assertSeeText('Référence d’espace de travail facultative utilisée dans les formules, les coûts, les achats et la production.')
         ->assertSeeText('Prix unitaire (EUR)')
         ->assertSeeText('Image de l’emballage')
         ->assertSeeText('Ajouter l’emballage');
@@ -167,6 +173,8 @@ it('keeps every packaging editor string in the packaging translation group', fun
         'editor.form.description',
         'editor.form.name.label',
         'editor.form.name.placeholder',
+        'editor.form.material_code.label',
+        'editor.form.material_code.helper',
         'editor.form.unit_price',
         'editor.form.image.label',
         'editor.form.image.helper',

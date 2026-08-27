@@ -64,7 +64,7 @@ class PackagingItemsIndex extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['name', 'unit_cost'], true)) {
+        if (! in_array($field, ['name', 'material_code', 'unit_cost'], true)) {
             return;
         }
 
@@ -225,13 +225,14 @@ class PackagingItemsIndex extends Component
         }
 
         return PackagingItem::query()
-            ->select(['id', 'public_id', 'workspace_id', 'created_by_user_id', 'name', 'category', 'notes', 'is_active', 'featured_image_path', 'created_at', 'updated_at'])
+            ->select(['id', 'public_id', 'workspace_id', 'created_by_user_id', 'name', 'material_code', 'category', 'notes', 'is_active', 'featured_image_path', 'created_at', 'updated_at'])
             ->where('workspace_id', $user->company()?->id)
             ->withCount('costingItems')
             ->with(['currentPrice', 'mediaAssetUsages.mediaAsset'])
             ->when($this->search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $where): Builder => $where
                     ->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('material_code', 'like', '%'.$this->search.'%')
                     ->orWhere('notes', 'like', '%'.$this->search.'%')))
             ->when($this->sortField === 'unit_cost', fn (Builder $query): Builder => $query
                 ->orderBy(
@@ -242,6 +243,7 @@ class PackagingItemsIndex extends Component
                 )
                 ->orderBy('id'))
             ->when($this->sortField === 'name', fn (Builder $query): Builder => $query->orderBy('name', $this->sortDirection)->orderBy('id', $this->sortDirection))
+            ->when($this->sortField === 'material_code', fn (Builder $query): Builder => $query->orderBy('material_code', $this->sortDirection)->orderBy('id', $this->sortDirection))
             ->paginate($perPage);
     }
 

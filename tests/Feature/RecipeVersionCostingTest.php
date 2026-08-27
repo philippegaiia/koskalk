@@ -71,6 +71,7 @@ it('derives costing packaging rows from the packaging plan', function () {
     $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Label',
+        'material_code' => 'PK-LABEL-001',
         'unit_cost' => 0.08,
         'currency' => 'EUR',
     ]);
@@ -91,6 +92,7 @@ it('derives costing packaging rows from the packaging plan', function () {
 
     expect($costing['packaging_items'])->toHaveCount(1)
         ->and($costing['packaging_items'][0]['name'])->toBe('Label')
+        ->and($costing['packaging_items'][0]['material_code'])->toBe('PK-LABEL-001')
         ->and($costing['packaging_items'][0]['components_per_unit'])->toBe(2.0)
         ->and($costing['packaging_items'][0]['unit_cost'])->toBe(0.08);
 });

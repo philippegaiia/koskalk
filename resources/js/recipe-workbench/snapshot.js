@@ -63,6 +63,7 @@ export function draftStateFromDraft(draft, currentState) {
                 id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
+                material_code: row.material_code ?? null,
                 components_per_unit: number(row.components_per_unit ?? 1),
                 notes: row.notes ?? '',
             }))

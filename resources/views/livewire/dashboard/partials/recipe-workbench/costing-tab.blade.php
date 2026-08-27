@@ -91,7 +91,9 @@
  <div class="grid grid-cols-[8rem_minmax(0,1.6fr)_8rem_8rem_8rem_9rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"></div>
  <div class="flex items-center bg-white px-4 py-3">
+ <div>
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ </div>
  </div>
  <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></span></div>
  <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 2)"></span></div>
@@ -162,6 +164,7 @@
  <div class="grid grid-cols-[minmax(0,1.8fr)_9rem_9rem_9rem_9rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="flex items-center bg-white px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p x-show="row.material_code" x-text="row.material_code" class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]"></p>
  </div>
  <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]">
  <span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.quantity)" x-text="formatPackagingQuantity(row.quantity)"></span>

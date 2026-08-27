@@ -265,6 +265,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
             id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
             packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
+            material_code: row.material_code ?? null,
             components_per_unit: row.components_per_unit ?? 1,
             notes: row.notes ?? '',
         })),
@@ -273,6 +274,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         packagingCatalogForm: {
             id: null,
             name: '',
+            material_code: '',
             unit_cost: '',
             currency: payload.costing?.settings?.currency ?? payload.defaultCurrency ?? 'EUR',
             notes: '',

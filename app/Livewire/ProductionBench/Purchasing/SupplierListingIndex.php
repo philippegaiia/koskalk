@@ -117,14 +117,19 @@ class SupplierListingIndex extends Component implements HasForms
         $translationLocales = Ingredient::translationLocaleCandidates();
         $listings = SupplierListing::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['supplier', 'ingredient.translations', 'packagingItem'])
+            ->with([
+                'supplier',
+                'ingredient.translations',
+                'ingredient.workspaceCodes' => fn ($query) => $query->where('workspace_id', $workspace->id),
+                'packagingItem',
+            ])
             ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
             ->when($materialType === 'ingredient', fn ($query) => $query->whereNotNull('ingredient_id'))
             ->when($materialType === 'packaging', fn ($query) => $query->whereNotNull('packaging_item_id'))
             ->when($status === 'active', fn ($query) => $query->where('is_active', true))
             ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
-            ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
-                $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
+            ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales, $workspace): void {
+                $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales, $workspace): void {
                     $searchQuery
                         ->whereRaw('LOWER(supplier_sku) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(supplier_item_name) LIKE ?', [$searchTerm])
@@ -142,6 +147,11 @@ class SupplierListingIndex extends Component implements HasForms
                                     });
                                 }
                             });
+                        })
+                        ->orWhereHas('ingredient.workspaceCodes', function (Builder $codeQuery) use ($searchTerm, $workspace): void {
+                            $codeQuery
+                                ->where('workspace_id', $workspace->id)
+                                ->whereRaw('LOWER(material_code) LIKE ?', [$searchTerm]);
                         })
                         ->orWhereHas('packagingItem', fn ($packagingQuery) => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
                 });

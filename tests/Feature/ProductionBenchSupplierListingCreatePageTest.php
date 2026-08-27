@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -90,6 +91,42 @@ it('shows a focused global listing form with searchable catalog selectors', func
     expect($component->instance()->packagingSearchResults('Amber'))->toHaveCount(1);
 
     expect(SupplierListing::query()->count())->toBe(0);
+});
+
+it('uses the workspace material code in ingredient labels and search', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil', 'catalog_key' => 'PLATFORM-OLIVE']);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'material_code' => 'RM-OLIVE',
+    ]);
+    $this->actingAs($owner);
+
+    $component = Livewire::test(SupplierListingCreate::class);
+
+    expect($component->instance()->ingredientSearchResults('RM-OLIVE'))
+        ->toBe([$ingredient->id => 'RM-OLIVE · Olive oil'])
+        ->and($component->instance()->ingredientOptionLabel($ingredient->id))
+        ->toBe('RM-OLIVE · Olive oil')
+        ->and($component->instance()->ingredientSearchResults('PLATFORM-OLIVE'))
+        ->toBe([]);
+});
+
+it('does not expose a catalogue key when an ingredient has no display name', function (): void {
+    [$owner] = listingCreateWorkspace();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => null,
+        'catalog_key' => 'HIDDEN-TECHNICAL-KEY',
+    ]);
+    $this->actingAs($owner);
+
+    $label = Livewire::test(SupplierListingCreate::class)
+        ->instance()
+        ->ingredientOptionLabel($ingredient->id);
+
+    expect($label)->toBe('Unnamed ingredient')
+        ->not->toContain('HIDDEN-TECHNICAL-KEY');
 });
 
 it('requires a supplier on the global listing form', function (): void {

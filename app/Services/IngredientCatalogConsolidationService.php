@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Models\WorkspaceIngredientCode;
 use App\Support\IngredientCatalogConsolidationDataset;
 use App\Support\IngredientCatalogTaxonomyDataset;
 use Illuminate\Support\Collection;
@@ -177,6 +178,7 @@ class IngredientCatalogConsolidationService
             throw new RuntimeException("Approved merge [{$sourceCatalogKey} -> {$targetCatalogKey}] requires both platform ingredients.");
         }
 
+        $this->mergeWorkspaceMaterialCodes($source, $target);
         $this->mergeWorkspacePrices($source, $target);
 
         foreach (self::MERGE_REFERENCE_COLUMNS as $table => $column) {
@@ -189,6 +191,40 @@ class IngredientCatalogConsolidationService
             ->update(['usable_id' => $target->id]);
 
         $source->delete();
+    }
+
+    private function mergeWorkspaceMaterialCodes(Ingredient $source, Ingredient $target): void
+    {
+        $codes = WorkspaceIngredientCode::query()
+            ->whereIn('ingredient_id', [$source->id, $target->id])
+            ->orderBy('workspace_id')
+            ->lockForUpdate()
+            ->get()
+            ->groupBy('workspace_id');
+
+        foreach ($codes as $workspaceId => $workspaceCodes) {
+            $sourceCode = $workspaceCodes->firstWhere('ingredient_id', $source->id);
+
+            if (! $sourceCode instanceof WorkspaceIngredientCode) {
+                continue;
+            }
+
+            $targetCode = $workspaceCodes->firstWhere('ingredient_id', $target->id);
+
+            if (! $targetCode instanceof WorkspaceIngredientCode) {
+                $sourceCode->update(['ingredient_id' => $target->id]);
+
+                continue;
+            }
+
+            if ($sourceCode->material_code === $targetCode->material_code) {
+                $sourceCode->delete();
+
+                continue;
+            }
+
+            throw new RuntimeException("Cannot merge {$source->catalog_key} into {$target->catalog_key}: workspace material code conflict for workspace {$workspaceId}.");
+        }
     }
 
     private function mergeWorkspacePrices(Ingredient $source, Ingredient $target): void

@@ -25,8 +25,9 @@
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($listingRows as $row)
                             @php($listing = $row['listing'])
+                            @php($materialCode = $listing->ingredient?->workspaceCodes?->first()?->material_code)
                             <tr wire:key="supplier-listing-{{ $listing->id }}">
-                                <td class="px-5 py-4 font-medium">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</td>
+                                <td class="px-5 py-4"><p class="font-medium">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</p>@if ($materialCode)<p class="numeric mt-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif</td>
                                 <td class="px-4 py-4"><a href="{{ route('production-bench.purchasing.supplier', $listing->supplier) }}" wire:navigate class="text-[var(--color-ink-strong)] hover:text-[var(--color-accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ $listing->supplier->name }}</a></td>
                                 <td class="px-4 py-4">{{ $listing->purchase_format }}<span class="numeric ml-1 text-xs text-[var(--color-ink-soft)]">{{ $listing->supplier_sku }}</span></td>
                                 <td class="numeric px-4 py-4 text-right">{{ rtrim(rtrim($listing->net_quantity, '0'), '.') }} {{ $listing->net_unit }}</td>

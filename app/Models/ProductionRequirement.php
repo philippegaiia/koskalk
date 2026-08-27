@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'required_mass_grams',
     'required_units',
     'subject_name_snapshot',
+    'material_code_snapshot',
     'phase_key_snapshot',
     'phase_name_snapshot',
     'percentage_snapshot',

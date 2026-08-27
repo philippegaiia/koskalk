@@ -55,7 +55,11 @@ class SupplierDetail extends Component
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'listingRows' => $this->supplier->listings()
-                ->with(['ingredient.translations', 'packagingItem'])
+                ->with([
+                    'ingredient.translations',
+                    'ingredient.workspaceCodes' => fn ($query) => $query->where('workspace_id', $workspace->id),
+                    'packagingItem',
+                ])
                 ->when($this->listingStatus === 'active', fn (Builder $query) => $query->where('is_active', true))
                 ->when($this->listingStatus === 'inactive', fn (Builder $query) => $query->where('is_active', false))
                 ->latest('id')

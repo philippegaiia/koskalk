@@ -85,6 +85,7 @@ const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
 const number = (value) => Number(value) || 0;
 const parseDecimalInput = number;
 const roundTo = (value, precision) => Number(Number(value).toFixed(precision));
+const formatDecimalInput = (value) => String(Number(value));
 const rowWeightForOilWeight = (oilWeight, row) => oilWeight * (nonNegativeNumber(row.percentage) / 100);
 const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
 
@@ -182,6 +183,7 @@ const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
 const number = (value) => Number(value) || 0;
 const parseDecimalInput = number;
 const roundTo = (value, precision) => Number(Number(value).toFixed(precision));
+const formatDecimalInput = (value) => String(Number(value));
 const rowWeightForOilWeight = (oilWeight, row) => oilWeight * (nonNegativeNumber(row.percentage) / 100);
 const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
 
@@ -203,7 +205,8 @@ const translations = {
 const state = {
     isCosmeticFormula: false,
     lyeType: 'koh',
-    kohPurity: 90,
+    kohPurity: 90.5,
+    numberLocale: 'en_US',
     costingAlkaliIngredients: {
         koh: { ingredient_id: 7, name: 'Potassium hydroxide', default_price_per_kg: 12 },
     },
@@ -231,17 +234,17 @@ Object.defineProperties(
     Object.getOwnPropertyDescriptors(globalThis.createCostingSection({})),
 );
 
-const rowAtNinety = state.costingAlkaliRows()[0];
-assert.equal(rowAtNinety.name, 'Potassium hydroxide (KOH 90%)');
-assert.equal(rowAtNinety.weight, 148.6);
+const rowAtNinetyPointFive = state.costingAlkaliRows()[0];
+assert.equal(rowAtNinetyPointFive.name, 'Potassium hydroxide (KOH 90.5%)');
+assert.equal(rowAtNinetyPointFive.weight, 148.6);
 
 state.kohPurity = 100;
 const rowAtHundred = state.costingAlkaliRows()[0];
 assert.equal(rowAtHundred.name, 'Potassium hydroxide (KOH 100%)');
-assert.equal(rowAtHundred.ingredient_id, rowAtNinety.ingredient_id);
+assert.equal(rowAtHundred.ingredient_id, rowAtNinetyPointFive.ingredient_id);
 assert.equal(rowAtHundred.phaseKey, 'lye_alkali');
-assert.equal(rowAtHundred.position, rowAtNinety.position);
-assert.equal(rowAtHundred.weight, rowAtNinety.weight);
+assert.equal(rowAtHundred.position, rowAtNinetyPointFive.position);
+assert.equal(rowAtHundred.weight, rowAtNinetyPointFive.weight);
 JS;
 
     $process = Process::fromShellCommandline(

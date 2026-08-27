@@ -31,6 +31,7 @@ class ProductionRequirementFactory extends Factory
             'required_mass_grams' => '100.000000000',
             'required_units' => null,
             'subject_name_snapshot' => fake()->words(2, true),
+            'material_code_snapshot' => null,
             'phase_key_snapshot' => 'main',
             'phase_name_snapshot' => 'Main',
             'percentage_snapshot' => '10.000000000',

@@ -3,6 +3,7 @@
 use App\Enums\IngredientCategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
@@ -14,6 +15,9 @@ use App\Models\Plan;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
+use App\Models\WorkspaceMember;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
@@ -113,6 +117,143 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->and($ingredient->identifiers->where('scheme', 'ec')->value('value'))->toBe('310-194-1')
         ->and($ingredient->notes)->toBe('Fine cosmetic-grade green clay')
         ->and($ingredient->is_active)->toBeTrue();
+});
+
+it('saves an optional workspace material code without generating one', function (): void {
+    $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'French Green Clay')
+        ->set('data.category', IngredientCategory::MineralsSaltsPowders->value)
+        ->set('data.material_code', ' clay-01 ')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('data.material_code', 'CLAY-01')
+        ->set('data.notes', 'Updated without changing the material code')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('data.material_code', 'CLAY-01');
+
+    $ingredient = Ingredient::query()->where('display_name', 'French Green Clay')->sole();
+    $workspace = $user->refresh()->company();
+
+    expect($workspace)->toBeInstanceOf(Workspace::class)
+        ->and(WorkspaceIngredientCode::query()
+            ->where('workspace_id', $workspace->id)
+            ->where('ingredient_id', $ingredient->id)
+            ->value('material_code'))->toBe('CLAY-01');
+});
+
+it('updates and clears the workspace material code while editing an ingredient', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Green Clay',
+        'category' => IngredientCategory::MineralsSaltsPowders->value,
+    ], $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->assertSet('data.material_code', null)
+        ->set('data.material_code', 'CLAY-OLD')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->set('data.material_code', 'CLAY-NEW')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(WorkspaceIngredientCode::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->value('material_code'))->toBe('CLAY-NEW');
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient->fresh()])
+        ->set('data.material_code', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(WorkspaceIngredientCode::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->exists())->toBeFalse();
+});
+
+it('rejects duplicate workspace material codes and rolls back a new ingredient', function (): void {
+    $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'First Ingredient')
+        ->set('data.category', IngredientCategory::Other->value)
+        ->set('data.material_code', 'SHARED-01')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'Second Ingredient')
+        ->set('data.category', IngredientCategory::Other->value)
+        ->set('data.material_code', ' shared-01 ')
+        ->call('save')
+        ->assertHasErrors(['data.material_code']);
+
+    expect(Ingredient::query()->where('display_name', 'Second Ingredient')->exists())->toBeFalse();
+});
+
+it('lets an editor assign a platform material code in the active workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($editor);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->assertSet('workspaceMaterialCode', null)
+        ->set('workspaceMaterialCode', 'PLAT-01')
+        ->call('saveWorkspaceMaterialCode')
+        ->assertHasNoErrors();
+
+    expect(WorkspaceIngredientCode::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->value('material_code'))->toBe('PLAT-01');
+});
+
+it('does not let a workspace viewer save a platform material code', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($viewer);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->set('workspaceMaterialCode', 'VIEW-01')
+        ->call('saveWorkspaceMaterialCode')
+        ->assertHasErrors(['workspaceMaterialCode']);
+
+    expect(WorkspaceIngredientCode::query()->where('ingredient_id', $platform->id)->exists())->toBeFalse();
 });
 
 it('lets a workspace manage bounded identity aliases and declared substances', function (): void {

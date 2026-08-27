@@ -28,3 +28,6 @@ readyDelayDays, productReference, and nominalContentValue are no longer editable
 
 ## KOH purity is a closed authored choice
 Soap formula authoring accepts only KOH 90% or KOH 100%; reject other values at the Recipe Workbench payload boundary. Costing and production snapshots must display and use the selected purity. Do not add fractional-purity or legacy compatibility without a new product decision.
+
+## Reconcile workspace material codes during catalogue merges
+When merging platform ingredients, transfer a source-only workspace material code to the target. Preserve a target-only code, delete an identical duplicate assignment, and abort transactionally when one workspace assigned different codes to source and target. Ingredient deletion may still cascade because production history uses frozen snapshots.

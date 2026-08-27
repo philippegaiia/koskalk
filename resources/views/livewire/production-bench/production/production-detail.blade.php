@@ -141,6 +141,9 @@
                                                 <span class="ml-1 font-mono text-xs font-normal text-[var(--color-ink-soft)]">({{ $material['percentage'] }})</span>
                                             @endif
                                         </p>
+                                        @if ($material['material_code'])
+                                            <p class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]">{{ $material['material_code'] }}</p>
+                                        @endif
                                         @if ($material['note'])
                                             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $material['note'] }}</p>
                                         @endif

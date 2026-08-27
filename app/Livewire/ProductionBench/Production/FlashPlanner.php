@@ -312,6 +312,7 @@ class FlashPlanner extends Component
                 ])->values()->all() ?? [],
             ], $result['lines']),
             'requirements' => array_map(fn (array $requirement): array => [
+                'material_code' => $requirement['material_code'] ?? null,
                 'subject_name' => $requirement['subject_name'],
                 'required_display' => $requirement['required_display'],
                 'display_unit' => $requirement['display_unit'],

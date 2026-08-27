@@ -60,6 +60,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,6 +69,32 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('shows the immutable catalog key to admins without an editable input', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'ADM-OLIVE']);
+    $this->actingAs($admin);
+
+    $component = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id]);
+    $catalogKey = $component->instance()->form->getComponent('catalog_key', withHidden: true);
+
+    expect($catalogKey)->toBeInstanceOf(TextEntry::class)
+        ->and($component->html())->toContain('ADM-OLIVE')
+        ->and($component->html())->not->toContain('wire:model="data.catalog_key"');
+});
+
+it('does not allow an admin form submission to change the catalog key', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'ADM-STABLE']);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->fillForm(['catalog_key' => 'ADM-CHANGED'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($ingredient->refresh()->catalog_key)->toBe('ADM-STABLE');
+});
 
 it('keeps the entered display name when an admin creates an ingredient', function (): void {
     $admin = User::factory()->admin()->create();

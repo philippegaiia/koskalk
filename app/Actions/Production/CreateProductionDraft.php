@@ -17,6 +17,7 @@ use App\Services\Production\ProductionCalculatedRequirementBuilder;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionRequirementBuilder;
+use App\Services\Production\ProductionRequirementMaterialCodeSnapshotter;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
@@ -34,6 +35,7 @@ class CreateProductionDraft
         private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
         private readonly ProductionCalculatedRequirementBuilder $calculatedRequirementBuilder,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
@@ -205,6 +207,7 @@ class CreateProductionDraft
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
                 ),
             )->values();
+            $requirements = $this->materialCodeSnapshots->apply($lockedWorkspace, $requirements);
             $outputSnapshot = $this->readyDates->snapshot($lockedRecipe, $lockedWorkspace, $plannedFor);
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 

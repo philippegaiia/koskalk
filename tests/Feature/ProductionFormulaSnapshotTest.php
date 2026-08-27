@@ -127,6 +127,20 @@ it('raises the frozen KOH purity label and lowers planned mass at one hundred pe
         ->toBeLessThan((float) $kohAtNinety['planned_mass_grams']);
 });
 
+it('preserves fractional KOH purity in the frozen production label', function (): void {
+    $fixture = productionFormulaSnapshotFixture('koh');
+    addSoapFormula($fixture);
+    $context = $fixture['version']->calculation_context;
+    $context['koh_purity_percentage'] = 90.5;
+    $fixture['version']->forceFill(['calculation_context' => $context])->save();
+
+    $snapshot = buildFormulaSnapshot($fixture, '14000.000000000', 100);
+    $kohLine = $snapshot['lines']->where('component', 'koh')->first();
+
+    expect($kohLine['subject_name_snapshot'])->toBe('Potassium hydroxide (KOH 90.5%)')
+        ->and($snapshot['context']['koh_purity_percentage'])->toBe(90.5);
+});
+
 it('builds dual-lye soap snapshots with NaOH, KOH, and water lines', function (): void {
     $fixture = productionFormulaSnapshotFixture('dual');
     addSoapFormula($fixture);

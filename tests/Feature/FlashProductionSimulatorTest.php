@@ -23,6 +23,7 @@ use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceProductionEntitlement;
 use App\Services\Production\FlashDateProposalService;
 use App\Services\Production\FlashProductionSimulator;
@@ -97,6 +98,26 @@ it('simulates multiple product lines and aggregate material requirements without
         ->toHaveCount(1)
         ->and(collect($queries)->filter(fn (string $query): bool => str_contains($query, 'production_task_set_recipe')))
         ->toHaveCount(1);
+});
+
+it('includes the current workspace material code in flash requirements', function (): void {
+    $fixture = flashSimulatorFixture();
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'ingredient_id' => $fixture['ingredient']->id,
+        'material_code' => 'RM-FLASH',
+    ]);
+
+    $result = app(FlashProductionSimulator::class)->simulate($fixture['workspace'], [[
+        'recipe_id' => $fixture['recipe']->id,
+        'desired_units' => '10',
+        'expected_units_per_batch' => '100',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+    ]]);
+
+    expect(collect($result['requirements'])->firstWhere('ingredient_id', $fixture['ingredient']->id)['material_code'])
+        ->toBe('RM-FLASH');
 });
 
 it('reports missing current prices without reading stock coverage', function (): void {

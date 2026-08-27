@@ -21,6 +21,7 @@ use App\Models\SupplierListing;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
 use Illuminate\Database\Eloquent\Model;
@@ -252,6 +253,35 @@ it('shows mass and packaging supplier listings on the supplier detail page', fun
         ->assertSee('90.00');
 
     expect(SupplierListing::query()->where('supplier_id', $supplier->id)->count())->toBe(2);
+});
+
+it('shows workspace material codes on supplier listing tables and filters by them', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'material_code' => 'RM-COCO',
+    ]);
+    createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+        'purchase_format' => 'Drum',
+        'net_quantity' => '200',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '4.20',
+        'price_unit' => 'kg',
+    ]);
+
+    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->assertSee('Coconut oil')
+        ->assertSee('RM-COCO');
+
+    Livewire::test(SupplierListingIndex::class)
+        ->fillForm(['search' => 'RM-COCO'], 'filtersForm')
+        ->assertSee('Coconut oil')
+        ->assertSee('RM-COCO');
 });
 
 it('does not expose supplier listing creation controls on the detail page', function (): void {

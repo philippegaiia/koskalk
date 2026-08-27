@@ -50,6 +50,9 @@
                                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                     <div>
                                         <h3 class="font-semibold text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</h3>
+                                        @if ($requirement->material_code_snapshot)
+                                            <p class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]">{{ $requirement->material_code_snapshot }}</p>
+                                        @endif
                                         <p class="mt-1 text-sm text-[var(--color-ink-soft)]">
                                             {{ $requirement->ingredient_id !== null ? $requirementProposal['required'].' g' : $requirementProposal['required'].' '.__('production_bench.inventory.units') }}
                                             · {{ __('production_bench.production.remaining_to_prepare') }} {{ $requirementProposal['remaining'] }}

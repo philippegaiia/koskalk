@@ -154,6 +154,7 @@ class ProductionDetailPresenter
                 'group_key' => (string) ($line->phase_key_snapshot ?? 'formula'),
                 'group_name' => (string) ($line->phase_name_snapshot ?? __('production_bench.production.formula.title')),
                 'material_name' => $line->subject_name_snapshot,
+                'material_code' => $requirement?->material_code_snapshot,
                 'percentage' => $line->basis_percentage_snapshot === null
                     ? null
                     : $this->formatPercentage($line->basis_percentage_snapshot, $locale),
@@ -183,6 +184,7 @@ class ProductionDetailPresenter
                 'group_key' => (string) ($requirement->phase_key_snapshot ?? 'formula'),
                 'group_name' => (string) ($requirement->phase_name_snapshot ?? __('production_bench.production.formula.title')),
                 'material_name' => $requirement->subject_name_snapshot,
+                'material_code' => $requirement->material_code_snapshot,
                 'percentage' => $requirement->percentage_snapshot === null
                     ? null
                     : $this->formatPercentage($requirement->percentage_snapshot, $locale),
@@ -202,6 +204,7 @@ class ProductionDetailPresenter
                 'group_key' => 'packaging',
                 'group_name' => __('production_bench.production.packaging_requirement'),
                 'material_name' => $requirement->subject_name_snapshot,
+                'material_code' => null,
                 'percentage' => null,
                 'note' => $requirement->note_snapshot,
                 'planned' => [

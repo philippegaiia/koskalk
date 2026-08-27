@@ -194,7 +194,7 @@
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @foreach ($simulation['requirements'] as $requirement)
                                 <tr>
-                                    <td class="px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $requirement['subject_name'] }}</td>
+                                    <td class="px-5 py-4"><p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement['subject_name'] }}</p>@if ($requirement['material_code'])<p class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]">{{ $requirement['material_code'] }}</p>@endif</td>
                                     <td class="px-4 py-4 text-right font-mono tabular-nums">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['required_display'], 2, 3, $numberLocale) }} {{ $requirement['display_unit'] }}</td>
                                     <td class="px-4 py-4 text-right font-mono tabular-nums">
                                         @if ($requirement['display_unit_price'] !== null)

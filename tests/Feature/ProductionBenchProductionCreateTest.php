@@ -26,6 +26,7 @@ use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +85,11 @@ it('loads the only applicable batch size when the product has no explicit defaul
 
 it('previews scaled requirements, stock positions, shortages, and task dates without writing a production', function (): void {
     $fixture = productionCreateFixture();
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'ingredient_id' => $fixture['ingredient']->id,
+        'material_code' => 'RM-OLIVE',
+    ]);
 
     $page = Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
         ->set('recipeId', (string) $fixture['recipe']->id)
@@ -93,6 +99,7 @@ it('previews scaled requirements, stock positions, shortages, and task dates wit
         ->set('plannedFor', '2026-08-10');
 
     $page->assertSee('Olive oil')
+        ->assertSee('RM-OLIVE')
         ->assertSee('Soap box')
         ->assertSee('6.00 kg')
         ->assertSee('5.00 kg')

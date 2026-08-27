@@ -75,6 +75,12 @@ class IngredientForm
                 Section::make(__('ingredients.editor.admin.classification.section'))
                     ->description(__('ingredients.editor.admin.classification.description'))
                     ->schema([
+                        TextEntry::make('catalog_key')
+                            ->label(__('ingredients.editor.admin.identity.catalog_key'))
+                            ->state(fn (?Ingredient $record): string => $record?->catalog_key
+                                ?? __('ingredients.editor.admin.identity.catalog_key_pending'))
+                            ->helperText(__('ingredients.editor.admin.identity.catalog_key_helper'))
+                            ->copyable(fn (?Ingredient $record): bool => $record instanceof Ingredient),
                         TextInput::make('current_version.display_name')
                             ->label(__('ingredients.editor.admin.identity.display_name'))
                             ->required()

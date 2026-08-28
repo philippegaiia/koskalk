@@ -719,6 +719,8 @@ return [
                 'guidance' => 'Translated guidance',
                 'guidance_helper' => 'Leave empty to show the English guidance.',
                 'add' => 'Add language',
+                'write_intent_locale' => 'Translation intent locale',
+                'write_intent_value' => 'Translation write intent',
             ],
             'components' => [
                 'section' => 'Composite Components',
@@ -923,6 +925,13 @@ return [
             'material_code_unique' => 'This internal material code is already used by another current material in this workspace.',
             'material_code_forbidden' => 'This ingredient is not available for a workspace material code.',
             'private_ingredient_limit' => '{1} Your current plan allows 1 private ingredient.|[2,*] Your current plan allows :limit private ingredients.',
+            'translation_write_intent_invalid' => 'Each translation write intent must use a valid intent value.',
+            'translation_write_intent_locale_distinct' => 'Each translation write intent locale must be unique.',
+            'translation_write_intent_locale_invalid' => 'Choose a supported non-English locale for each translation write intent.',
+            'translation_write_intent_locale_max' => 'Each translation write intent locale may not exceed :max characters.',
+            'translation_write_intent_locale_missing' => 'Each translation write intent locale must be included in the submitted translations.',
+            'translation_write_intent_locale_required' => 'A locale is required for each translation write intent.',
+            'translation_write_intent_locale_string' => 'Each translation write intent locale must be text.',
         ],
     ],
 ];

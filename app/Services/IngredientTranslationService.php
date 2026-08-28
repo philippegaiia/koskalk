@@ -7,6 +7,7 @@ use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
 use App\Models\SupportedLocale;
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -139,59 +140,83 @@ class IngredientTranslationService
             return [];
         }
 
+        $normalizedEntries = collect($writeIntents)
+            ->map(fn (mixed $intent, string|int $locale): array => [
+                'locale' => is_string($locale) ? trim($locale) : $locale,
+                'intent' => $intent,
+            ])
+            ->values()
+            ->all();
+        $localeCandidates = collect($normalizedEntries)
+            ->pluck('locale')
+            ->filter(fn (mixed $locale): bool => is_string($locale) && $locale !== '')
+            ->unique()
+            ->values()
+            ->all();
+        $supportedLocales = $localeCandidates === []
+            ? []
+            : SupportedLocale::query()
+                ->where('code', '!=', 'en')
+                ->whereIn('code', $localeCandidates)
+                ->pluck('code')
+                ->all();
         $rowLocales = collect($validatedRows)->pluck('locale')->all();
-        $normalizedIntents = [];
-        $errors = [];
-        $attribute = __('ingredient_admin.translations.freshness');
 
-        foreach ($writeIntents as $locale => $intent) {
-            if (! is_string($locale)) {
-                $errors['write_intents'] = __('validation.string', ['attribute' => $attribute]);
+        $validator = Validator::make(
+            ['write_intents' => $normalizedEntries],
+            [
+                'write_intents' => ['array'],
+                'write_intents.*' => ['array'],
+                'write_intents.*.locale' => [
+                    'bail',
+                    'required',
+                    'string',
+                    'max:16',
+                    'distinct',
+                    Rule::in($supportedLocales),
+                ],
+            ],
+            [
+                'write_intents.*.locale.required' => __('ingredients.editor.validation.translation_write_intent_locale_required'),
+                'write_intents.*.locale.string' => __('ingredients.editor.validation.translation_write_intent_locale_string'),
+                'write_intents.*.locale.max' => __('ingredients.editor.validation.translation_write_intent_locale_max'),
+                'write_intents.*.locale.distinct' => __('ingredients.editor.validation.translation_write_intent_locale_distinct'),
+                'write_intents.*.locale.in' => __('ingredients.editor.validation.translation_write_intent_locale_invalid'),
+            ],
+            [
+                'write_intents.*.locale' => __('ingredients.editor.admin.translations.write_intent_locale'),
+                'write_intents.*.intent' => __('ingredients.editor.admin.translations.write_intent_value'),
+            ],
+        );
 
-                continue;
+        $validator->after(function (ValidatorContract $validator) use ($normalizedEntries, $rowLocales, $supportedLocales): void {
+            foreach ($normalizedEntries as $index => $entry) {
+                $locale = $entry['locale'] ?? null;
+                if (
+                    is_string($locale)
+                    && in_array($locale, $supportedLocales, true)
+                    && ! in_array($locale, $rowLocales, true)
+                ) {
+                    $validator->errors()->add(
+                        "write_intents.{$index}.locale",
+                        __('ingredients.editor.validation.translation_write_intent_locale_missing'),
+                    );
+                }
+
+                if (! ($entry['intent'] ?? null) instanceof IngredientTranslationWriteIntent) {
+                    $validator->errors()->add(
+                        "write_intents.{$index}.intent",
+                        __('ingredients.editor.validation.translation_write_intent_invalid'),
+                    );
+                }
             }
+        });
 
-            $normalizedLocale = trim($locale);
-            $errorKey = "write_intents.{$normalizedLocale}";
-            if (
-                $normalizedLocale === ''
-                || mb_strlen($normalizedLocale) > 16
-                || ! SupportedLocale::query()
-                    ->where('code', $normalizedLocale)
-                    ->where('code', '!=', 'en')
-                    ->exists()
-            ) {
-                $errors[$errorKey] = __('validation.exists', ['attribute' => $attribute]);
+        $validator->validate();
 
-                continue;
-            }
-
-            if (! in_array($normalizedLocale, $rowLocales, true)) {
-                $errors[$errorKey] = __('validation.exists', ['attribute' => $attribute]);
-
-                continue;
-            }
-
-            if (! $intent instanceof IngredientTranslationWriteIntent) {
-                $errors[$errorKey] = __('validation.in', ['attribute' => $attribute]);
-
-                continue;
-            }
-
-            if (array_key_exists($normalizedLocale, $normalizedIntents)) {
-                $errors[$errorKey] = __('validation.distinct', ['attribute' => $attribute]);
-
-                continue;
-            }
-
-            $normalizedIntents[$normalizedLocale] = $intent;
-        }
-
-        if ($errors !== []) {
-            throw ValidationException::withMessages($errors);
-        }
-
-        return $normalizedIntents;
+        return collect($normalizedEntries)
+            ->mapWithKeys(fn (array $entry): array => [(string) $entry['locale'] => $entry['intent']])
+            ->all();
     }
 
     /**

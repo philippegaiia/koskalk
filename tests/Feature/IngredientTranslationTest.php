@@ -338,7 +338,170 @@ it('preserves all metadata for an identical translation without a locale intent'
         ->and($translation->origin)->toBe($original->origin)
         ->and($translation->prompt_version)->toBe($original->prompt_version)
         ->and($translation->display_name)->toBe($original->display_name)
+        ->and($translation->saponification_name)->toBe($original->saponification_name)
         ->and($translation->info_markdown)->toBe($original->info_markdown);
+});
+
+it('preserves metadata for identical content when an explicit intent does not refresh it', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => 'Original English',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'saponification_name' => 'Huile d’olive saponifiée',
+        'info_markdown' => 'Conseils originaux',
+    ]], IngredientTranslationOrigin::AiGenerated, 'localization-v1');
+    $original = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+
+    $ingredient->update(['info_markdown' => 'Updated English']);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'saponification_name' => 'Huile d’olive saponifiée',
+        'info_markdown' => 'Conseils originaux',
+    ]], writeIntents: [
+        'fr' => new IngredientTranslationWriteIntent(
+            IngredientTranslationOrigin::ReviewerEdited,
+            null,
+            refreshMetadata: false,
+        ),
+    ]);
+
+    $translation = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+    expect($translation->source_fingerprint)->toBe($original->source_fingerprint)
+        ->and($translation->origin)->toBe($original->origin)
+        ->and($translation->prompt_version)->toBe($original->prompt_version)
+        ->and($translation->display_name)->toBe($original->display_name)
+        ->and($translation->saponification_name)->toBe($original->saponification_name)
+        ->and($translation->info_markdown)->toBe($original->info_markdown);
+});
+
+it('rejects a write intent value that is not the intent DTO', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create();
+    $translation = IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Original translation',
+    ]);
+
+    $exception = null;
+    try {
+        app(IngredientTranslationService::class)->sync(
+            $ingredient,
+            [['locale' => 'fr', 'display_name' => 'Updated translation']],
+            writeIntents: ['fr' => 'invalid'],
+        );
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors())->toHaveKey('write_intents.0.intent')
+        ->and($exception->errors()['write_intents.0.intent'][0])
+        ->toBe(__('ingredients.editor.validation.translation_write_intent_invalid'));
+
+    expect($translation->fresh()->display_name)->toBe('Original translation');
+});
+
+it('rejects a blank write intent locale with a required error', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create();
+
+    $exception = null;
+    try {
+        app(IngredientTranslationService::class)->sync(
+            $ingredient,
+            [['locale' => 'fr', 'display_name' => 'Huile d’olive']],
+            writeIntents: [
+                '' => new IngredientTranslationWriteIntent(IngredientTranslationOrigin::AiGenerated, 'v1'),
+            ],
+        );
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors())->toHaveKey('write_intents.0.locale')
+        ->and($exception->errors()['write_intents.0.locale'][0])
+        ->toBe(__('ingredients.editor.validation.translation_write_intent_locale_required'));
+});
+
+it('rejects an overlength write intent locale with a max error', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create();
+
+    $exception = null;
+    try {
+        app(IngredientTranslationService::class)->sync(
+            $ingredient,
+            [['locale' => 'fr', 'display_name' => 'Huile d’olive']],
+            writeIntents: [
+                str_repeat('f', 17) => new IngredientTranslationWriteIntent(
+                    IngredientTranslationOrigin::AiGenerated,
+                    'v1',
+                ),
+            ],
+        );
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors())->toHaveKey('write_intents.0.locale')
+        ->and($exception->errors()['write_intents.0.locale'][0])
+        ->toBe(__('ingredients.editor.validation.translation_write_intent_locale_max', ['max' => 16]));
+});
+
+it('rejects write intent locale keys that collide after trimming', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create();
+
+    $exception = null;
+    try {
+        app(IngredientTranslationService::class)->sync(
+            $ingredient,
+            [['locale' => 'fr', 'display_name' => 'Huile d’olive']],
+            writeIntents: [
+                'fr' => new IngredientTranslationWriteIntent(IngredientTranslationOrigin::AiGenerated, 'v1'),
+                ' fr ' => new IngredientTranslationWriteIntent(IngredientTranslationOrigin::AiGenerated, 'v2'),
+            ],
+        );
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors())->toHaveKey('write_intents.1.locale')
+        ->and($exception->errors()['write_intents.1.locale'][0])
+        ->toBe(__('ingredients.editor.validation.translation_write_intent_locale_distinct'));
+});
+
+it('rejects a write intent locale absent from the submitted translations', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    SupportedLocale::factory()->create(['code' => 'de']);
+    $ingredient = Ingredient::factory()->create();
+
+    $exception = null;
+    try {
+        app(IngredientTranslationService::class)->sync(
+            $ingredient,
+            [['locale' => 'fr', 'display_name' => 'Huile d’olive']],
+            writeIntents: [
+                'de' => new IngredientTranslationWriteIntent(IngredientTranslationOrigin::AiGenerated, 'v1'),
+            ],
+        );
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors())->toHaveKey('write_intents.0.locale')
+        ->and($exception->errors()['write_intents.0.locale'][0])
+        ->toBe(__('ingredients.editor.validation.translation_write_intent_locale_missing'));
 });
 
 it('marks a changed English source and an edited locale independently in one save', function (): void {

@@ -4260,6 +4260,30 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.admin.translations.write_intent_locale",
+      "text": {
+        "de": "Sprache der Übersetzungsabsicht",
+        "es": "Idioma de la intención de traducción",
+        "fr": "Langue de l’intention de traduction",
+        "it": "Lingua dell’intento di traduzione",
+        "nl": "Taal van de vertaalintentie",
+        "pt_BR": "Idioma da intenção de tradução"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.admin.translations.write_intent_value",
+      "text": {
+        "de": "Übersetzungsschreibabsicht",
+        "es": "Intención de escritura de traducción",
+        "fr": "Intention d’écriture de traduction",
+        "it": "Intento di scrittura della traduzione",
+        "nl": "Schrijfintentie voor vertaling",
+        "pt_BR": "Intenção de escrita da tradução"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.carrier_oil_warning.description",
       "text": {
         "de": "Ein selbst angelegtes Pflanzenöl kann einer Rezeptur hinzugefügt, aber nicht für die Verseifung ausgewählt werden. Um es als zu verseifendes Öl zu verwenden, dupliziere das entsprechende Soapkraft-Pflanzenöl und bearbeite deine Kopie.",
@@ -7148,6 +7172,90 @@
         "it": "Scegli una sottocategoria appartenente alla categoria selezionata.",
         "nl": "Kies een subcategorie die bij de geselecteerde categorie hoort.",
         "pt_BR": "Escolha uma subcategoria pertencente à categoria selecionada."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_invalid",
+      "text": {
+        "de": "Jede Übersetzungsschreibabsicht muss einen gültigen Absichtswert verwenden.",
+        "es": "Cada intención de escritura de traducción debe usar un valor de intención válido.",
+        "fr": "Chaque intention d’écriture de traduction doit utiliser une valeur valide.",
+        "it": "Ogni intento di scrittura della traduzione deve usare un valore valido.",
+        "nl": "Elke schrijfintentie voor vertaling moet een geldige intentiewaarde gebruiken.",
+        "pt_BR": "Cada intenção de escrita da tradução deve usar um valor válido."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_locale_distinct",
+      "text": {
+        "de": "Die Sprache jeder Übersetzungsabsicht muss eindeutig sein.",
+        "es": "El idioma de cada intención de traducción debe ser único.",
+        "fr": "La langue de chaque intention de traduction doit être unique.",
+        "it": "La lingua di ogni intento di traduzione deve essere univoca.",
+        "nl": "De taal van elke vertaalintentie moet uniek zijn.",
+        "pt_BR": "O idioma de cada intenção de tradução deve ser exclusivo."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_locale_invalid",
+      "text": {
+        "de": "Wähle für jede Übersetzungsabsicht eine unterstützte, nicht englische Sprache.",
+        "es": "Elige un idioma admitido que no sea inglés para cada intención de traducción.",
+        "fr": "Choisissez une langue prise en charge autre que l’anglais pour chaque intention de traduction.",
+        "it": "Scegli una lingua supportata diversa dall’inglese per ogni intento di traduzione.",
+        "nl": "Kies voor elke vertaalintentie een ondersteunde taal die niet Engels is.",
+        "pt_BR": "Escolha um idioma compatível que não seja o inglês para cada intenção de tradução."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_locale_max",
+      "text": {
+        "de": "Die Sprache der Übersetzungsabsicht darf höchstens :max Zeichen enthalten.",
+        "es": "El idioma de la intención de traducción no puede superar los :max caracteres.",
+        "fr": "La langue de l’intention de traduction ne peut pas dépasser :max caractères.",
+        "it": "La lingua dell’intento di traduzione non può superare :max caratteri.",
+        "nl": "De taal van de vertaalintentie mag niet meer dan :max tekens bevatten.",
+        "pt_BR": "O idioma da intenção de tradução não pode exceder :max caracteres."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_locale_missing",
+      "text": {
+        "de": "Die Sprache der Übersetzungsabsicht muss in den eingereichten Übersetzungen enthalten sein.",
+        "es": "El idioma de la intención de traducción debe estar incluido en las traducciones enviadas.",
+        "fr": "La langue de l’intention de traduction doit figurer parmi les traductions envoyées.",
+        "it": "La lingua dell’intento di traduzione deve essere inclusa nelle traduzioni inviate.",
+        "nl": "De taal van de vertaalintentie moet in de ingediende vertalingen staan.",
+        "pt_BR": "O idioma da intenção de tradução deve estar incluído nas traduções enviadas."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_locale_required",
+      "text": {
+        "de": "Für jede Übersetzungsabsicht ist eine Sprache erforderlich.",
+        "es": "Cada intención de traducción requiere un idioma.",
+        "fr": "Chaque intention de traduction doit indiquer une langue.",
+        "it": "Ogni intento di traduzione richiede una lingua.",
+        "nl": "Elke vertaalintentie vereist een taal.",
+        "pt_BR": "Cada intenção de tradução exige um idioma."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.translation_write_intent_locale_string",
+      "text": {
+        "de": "Die Sprache der Übersetzungsabsicht muss als Text angegeben werden.",
+        "es": "El idioma de la intención de traducción debe ser texto.",
+        "fr": "La langue de l’intention de traduction doit être du texte.",
+        "it": "La lingua dell’intento di traduzione deve essere testo.",
+        "nl": "De taal van de vertaalintentie moet tekst zijn.",
+        "pt_BR": "O idioma da intenção de tradução deve ser texto."
       }
     },
     {

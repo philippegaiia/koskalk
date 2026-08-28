@@ -566,9 +566,11 @@ class IngredientGuidanceStageRunner
 
     private function validationDependencyFingerprint(IngredientEnrichmentBatchItem $item): string
     {
+        $stages = is_array($item->research_stages) ? $item->research_stages : [];
+
         return hash('sha256', $this->snapshots->canonicalJson([
-            'authoring' => data_get($item->research_stages, 'ai_guidance_authoring.data.stage_context'),
-            'localization' => data_get($item->research_stages, 'ai_guidance_localization.data.stage_context'),
+            'authoring' => data_get($stages, 'ai_guidance_authoring.data'),
+            'localization' => data_get($stages, 'ai_guidance_localization.data'),
         ]));
     }
 

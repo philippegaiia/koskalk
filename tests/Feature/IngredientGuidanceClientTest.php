@@ -1,6 +1,7 @@
 <?php
 
 use App\Contracts\IngredientGuidanceAuthoringClient;
+use App\Services\IngredientEnrichment\IngredientResearchProviderException;
 use App\Services\IngredientEnrichment\OpenAiStructuredOutputTransport;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -64,6 +65,20 @@ it('authors concise guidance with a strict no-web response contract', function (
             && str_contains((string) $data['instructions'], 'not a regulatory or safety limit')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });
+});
+
+it('fails safely before sending when the structured output api key is missing', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', null);
+    Http::fake();
+
+    expect(fn () => app(OpenAiStructuredOutputTransport::class)->send(
+        instructions: 'Return the answer.',
+        input: '<context>value</context>',
+        schemaName: 'transport_test',
+        schema: ['type' => 'object'],
+    ))->toThrow(RuntimeException::class, 'not configured');
+
+    Http::assertNothingSent();
 });
 
 it('normalizes a structured response with provider accounting and identifiers', function (): void {
@@ -175,4 +190,77 @@ it('redacts provider response bodies and retries transient failures', function (
     }
 
     Http::assertSentCount(3);
+});
+
+it('rejects completed responses with missing metadata or invalid token counts', function (array $overrides, array $headers): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    Http::preventStrayRequests();
+    $payload = array_replace([
+        'id' => 'resp_transport_123',
+        'status' => 'completed',
+        'model' => 'gpt-5.6-terra-2026-08-01',
+        'output' => [[
+            'type' => 'message',
+            'content' => [[
+                'type' => 'output_text',
+                'text' => json_encode(['answer' => 'ok'], JSON_THROW_ON_ERROR),
+            ]],
+        ]],
+        'usage' => ['input_tokens' => 21, 'output_tokens' => 13],
+    ], $overrides);
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response($payload, 200, $headers),
+    ]);
+
+    expect(fn () => app(OpenAiStructuredOutputTransport::class)->send(
+        instructions: 'Return the answer.',
+        input: '<context>value</context>',
+        schemaName: 'transport_test',
+        schema: ['type' => 'object'],
+    ))->toThrow(RuntimeException::class, 'invalid ingredient result');
+})->with([
+    'missing response id' => [['id' => null], ['x-request-id' => 'req_transport_456']],
+    'non-scalar response id' => [['id' => ['resp_transport_123']], ['x-request-id' => 'req_transport_456']],
+    'blank response id' => [['id' => '   '], ['x-request-id' => 'req_transport_456']],
+    'missing model' => [['model' => null], ['x-request-id' => 'req_transport_456']],
+    'non-scalar model' => [['model' => ['gpt-5.6-terra-2026-08-01']], ['x-request-id' => 'req_transport_456']],
+    'blank model' => [['model' => '   '], ['x-request-id' => 'req_transport_456']],
+    'missing request id' => [[], []],
+    'missing input token count' => [['usage' => ['output_tokens' => 13]], ['x-request-id' => 'req_transport_456']],
+    'negative output token count' => [['usage' => ['input_tokens' => 21, 'output_tokens' => -1]], ['x-request-id' => 'req_transport_456']],
+    'non-integer input token count' => [['usage' => ['input_tokens' => '21', 'output_tokens' => 13]], ['x-request-id' => 'req_transport_456']],
+]);
+
+it('uses an unknown diagnostic for non-scalar provider error fields', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'error' => [
+                'code' => ['provider-sensitive-code'],
+                'type' => ['provider-sensitive-type'],
+                'message' => 'provider-sensitive-body',
+            ],
+        ], 400, ['x-request-id' => 'req_transport_error']),
+    ]);
+
+    try {
+        app(OpenAiStructuredOutputTransport::class)->send(
+            instructions: 'Return the answer.',
+            input: '<context>value</context>',
+            schemaName: 'transport_test',
+            schema: ['type' => 'object'],
+        );
+
+        $this->fail('The provider response should have failed.');
+    } catch (IngredientResearchProviderException $exception) {
+        expect($exception->failureCode)
+            ->toBe('provider_http_400_unknown_error')
+            ->and($exception->getMessage())
+            ->toContain('HTTP 400')
+            ->toContain('req_transport_error')
+            ->not->toContain('provider-sensitive-body')
+            ->not->toContain('provider-sensitive-code')
+            ->not->toContain('provider-sensitive-type');
+    }
 });

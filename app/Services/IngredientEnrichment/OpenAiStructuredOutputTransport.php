@@ -64,12 +64,29 @@ class OpenAiStructuredOutputTransport
             throw $this->providerException(
                 $response->status(),
                 is_array($errorPayload) ? $errorPayload : null,
-                (string) $response->header('x-request-id'),
+                $this->nonEmptyScalarString($response->header('x-request-id')) ?? '',
             );
         }
 
         $payload = $response->json();
         if (! is_array($payload) || ($payload['status'] ?? null) !== 'completed') {
+            throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
+        }
+
+        $responseId = $this->nonEmptyScalarString($payload['id'] ?? null);
+        $requestId = $this->nonEmptyScalarString($response->header('x-request-id'));
+        $model = $this->nonEmptyScalarString($payload['model'] ?? null);
+        $usage = $payload['usage'] ?? null;
+
+        if ($responseId === null || $requestId === null || $model === null
+            || ! is_array($usage)
+            || ! array_key_exists('input_tokens', $usage)
+            || ! array_key_exists('output_tokens', $usage)
+            || ! is_int($usage['input_tokens'])
+            || $usage['input_tokens'] < 0
+            || ! is_int($usage['output_tokens'])
+            || $usage['output_tokens'] < 0
+        ) {
             throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
         }
 
@@ -95,19 +112,37 @@ class OpenAiStructuredOutputTransport
             throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
         }
 
-        $inputTokens = (int) data_get($payload, 'usage.input_tokens', 0);
-        $outputTokens = (int) data_get($payload, 'usage.output_tokens', 0);
-        $totalTokens = data_get($payload, 'usage.total_tokens');
+        $inputTokens = $usage['input_tokens'];
+        $outputTokens = $usage['output_tokens'];
+        $totalTokens = $inputTokens + $outputTokens;
+        if (array_key_exists('total_tokens', $usage)) {
+            if (! is_int($usage['total_tokens']) || $usage['total_tokens'] < 0) {
+                throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
+            }
+
+            $totalTokens = $usage['total_tokens'];
+        }
 
         return new OpenAiStructuredOutputResponse(
             payload: $decoded,
-            responseId: (string) ($payload['id'] ?? ''),
-            requestId: (string) $response->header('x-request-id'),
-            model: (string) ($payload['model'] ?? config('ingredient-enrichment.openai.model')),
+            responseId: $responseId,
+            requestId: $requestId,
+            model: $model,
             inputTokens: $inputTokens,
             outputTokens: $outputTokens,
-            totalTokens: is_numeric($totalTokens) ? (int) $totalTokens : $inputTokens + $outputTokens,
+            totalTokens: $totalTokens,
         );
+    }
+
+    private function nonEmptyScalarString(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        return trim($value) === '' ? null : $value;
     }
 
     /**
@@ -118,7 +153,8 @@ class OpenAiStructuredOutputTransport
         $providerCode = data_get($payload, 'error.code')
             ?? data_get($payload, 'error.type')
             ?? 'unknown_error';
-        $providerCode = substr(preg_replace('/[^a-zA-Z0-9._-]/', '', (string) $providerCode) ?: 'unknown_error', 0, 60);
+        $providerCode = is_scalar($providerCode) ? (string) $providerCode : 'unknown_error';
+        $providerCode = substr(preg_replace('/[^a-zA-Z0-9._-]/', '', $providerCode) ?: 'unknown_error', 0, 60);
         $safeRequestId = substr(preg_replace('/[^a-zA-Z0-9._-]/', '', $requestId) ?: 'unavailable', 0, 100);
 
         return new IngredientResearchProviderException(

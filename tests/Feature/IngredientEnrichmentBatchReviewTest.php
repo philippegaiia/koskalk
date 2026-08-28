@@ -69,7 +69,8 @@ it('keeps approval write free then explicitly applies the approved proposal', fu
         ->and($ingredient->fresh()->soap_inci_naoh_name)->toBe('Sodium reviewate')
         ->and($ingredient->fresh()->soap_inci_koh_name)->toBe('Potassium reviewate')
         ->and($approved->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
-        ->and($approved->fresh()->applied_by_user_id)->toBe($admin->id);
+        ->and($approved->fresh()->applied_by_user_id)->toBe($admin->id)
+        ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied);
 });
 
 it('lets the reviewer approve unresolved proposals individually', function (): void {

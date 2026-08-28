@@ -389,6 +389,38 @@ class IngredientEnrichmentBatchService
         ]);
     }
 
+    public function markAppliedWhenComplete(int $batchId): void
+    {
+        DB::transaction(function () use ($batchId): void {
+            $batch = IngredientEnrichmentBatch::query()->lockForUpdate()->find($batchId);
+            if (! $batch instanceof IngredientEnrichmentBatch || $batch->status === IngredientEnrichmentBatchStatus::Cancelled) {
+                return;
+            }
+
+            $completedStatuses = [
+                IngredientEnrichmentItemStatus::Applied->value,
+                IngredientEnrichmentItemStatus::Unchanged->value,
+                IngredientEnrichmentItemStatus::Rejected->value,
+                IngredientEnrichmentItemStatus::Cancelled->value,
+            ];
+            $items = $batch->items()->reorder();
+
+            if (! (clone $items)->exists()
+                || (clone $items)->whereNotIn('status', $completedStatuses)->exists()
+                || ! (clone $items)->whereIn('status', [
+                    IngredientEnrichmentItemStatus::Applied->value,
+                    IngredientEnrichmentItemStatus::Unchanged->value,
+                ])->exists()) {
+                return;
+            }
+
+            $batch->update([
+                'status' => IngredientEnrichmentBatchStatus::Applied,
+                'completed_at' => now(),
+            ]);
+        }, attempts: 5);
+    }
+
     private function hasUnresolvedExactDuplicate(IngredientIntakeItem $item): bool
     {
         return $item->duplicate_resolution === null

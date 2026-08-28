@@ -10,7 +10,6 @@ use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatchItem;
-use App\Services\IngredientTranslationSourceFingerprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -26,7 +25,6 @@ class IngredientGuidanceRefreshProcessor
         private readonly IngredientGuidanceStageRunner $stages,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly LocalizedGuidanceHeadings $headings,
-        private readonly IngredientTranslationSourceFingerprint $translationFingerprint,
     ) {}
 
     public function handle(int $itemId): void
@@ -92,20 +90,19 @@ class IngredientGuidanceRefreshProcessor
                 $englishGuidance,
                 '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
             );
-            $locales = $this->frozenLocales($context)
-                ?? ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization
-                    ? $this->outdatedLocales($ingredient)
-                    : $this->snapshots->targetLocales());
             $metadataTranslations = $this->metadataTranslations($context);
             $localization = $this->stages->run(
                 $itemId,
                 IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                function () use ($locales, $englishGuidance, $soapmakingRelevant, $metadataTranslations): IngredientSourceStageResult {
+                function (array $stageContext) use ($englishGuidance, $metadataTranslations): IngredientSourceStageResult {
+                    $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
                     $response = $this->localization->localize([
-                        'locales' => $locales,
+                        'locales' => $stageContext['expected_locales'],
                         'english_guidance' => $englishGuidance,
-                        'soapmaking_relevant' => $soapmakingRelevant,
-                        'localized_headings' => config('ingredient-enrichment.guidance.localized_headings', []),
+                        'soapmaking_relevant' => $stageContext['soapmaking_relevant'],
+                        'localized_headings' => is_array($providerConfiguration['localized_headings'] ?? null)
+                            ? $providerConfiguration['localized_headings']
+                            : [],
                         'metadata_translations' => $metadataTranslations,
                     ]);
 
@@ -129,7 +126,8 @@ class IngredientGuidanceRefreshProcessor
             $validation = $this->stages->run(
                 $itemId,
                 IngredientEnrichmentResearchStage::Validation,
-                function () use ($mode, $ingredient, $sourceFingerprint, $englishGuidance, $translations, $context, $guidance): IngredientSourceStageResult {
+                function (array $stageContext) use ($mode, $ingredient, $sourceFingerprint, $englishGuidance, $translations, $context, $guidance): IngredientSourceStageResult {
+                    $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::Validation->value] ?? [];
                     $candidate = [
                         'format' => 'soapkraft-ingredient-guidance-refresh-result',
                         'schema_version' => 1,
@@ -142,8 +140,10 @@ class IngredientGuidanceRefreshProcessor
                             ? $context['guidance_evidence']
                             : [],
                         'prompt_versions' => [
-                            'guidance' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
-                            'localization' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+                            'guidance' => (string) ($providerConfiguration['guidance_prompt_version']
+                                ?? config('ingredient-enrichment.openai.guidance_prompt_version')),
+                            'localization' => (string) ($providerConfiguration['localization_prompt_version']
+                                ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version')),
                         ],
                         'warnings' => collect(is_array($context['warnings'] ?? null) ? $context['warnings'] : [])
                             ->merge(is_array($guidance['warnings'] ?? null) ? $guidance['warnings'] : [])
@@ -314,7 +314,7 @@ class IngredientGuidanceRefreshProcessor
     /** @return list<array{locale:string,info_markdown:string}> */
     private function normalizedTranslations(IngredientSourceStageResult $localization, bool $soapmakingRelevant): array
     {
-        return collect($localization->data['translations'] ?? [])
+        $translations = collect($localization->data['translations'] ?? [])
             ->filter(fn (mixed $translation): bool => is_array($translation))
             ->map(fn (array $translation): array => [
                 'locale' => (string) ($translation['locale'] ?? ''),
@@ -324,8 +324,19 @@ class IngredientGuidanceRefreshProcessor
                     $soapmakingRelevant,
                 ),
             ])
-            ->values()
-            ->all();
+            ->values();
+        $expectedLocales = data_get($localization->data, 'stage_context.expected_locales');
+        if (is_array($expectedLocales) && array_is_list($expectedLocales)) {
+            $localeOrder = collect($expectedLocales)
+                ->filter(fn (mixed $locale): bool => is_string($locale))
+                ->mapWithKeys(fn (string $locale, int $index): array => [$locale => $index])
+                ->all();
+            $translations = $translations->sortBy(
+                fn (array $translation): int => $localeOrder[$translation['locale']] ?? PHP_INT_MAX,
+            )->values();
+        }
+
+        return $translations->all();
     }
 
     /** @return array<string,mixed> */
@@ -390,32 +401,5 @@ class IngredientGuidanceRefreshProcessor
             'output_tokens' => (int) ($authoringData['output_tokens'] ?? 0)
                 + (int) ($localizationData['output_tokens'] ?? 0),
         ];
-    }
-
-    /** @return list<string> */
-    private function outdatedLocales(Ingredient $ingredient): array
-    {
-        $fingerprint = $this->translationFingerprint->forIngredient($ingredient);
-
-        return $ingredient->translations()
-            ->get(['locale', 'source_fingerprint'])
-            ->filter(fn ($translation): bool => is_string($translation->locale)
-                && ($translation->source_fingerprint === null || $translation->source_fingerprint !== $fingerprint))
-            ->pluck('locale')
-            ->intersect($this->snapshots->targetLocales())
-            ->values()
-            ->all();
-    }
-
-    /** @param array<string,mixed> $context @return list<string>|null */
-    private function frozenLocales(array $context): ?array
-    {
-        $locales = data_get($context, 'guidance_stage_context.localization.expected_locales');
-        if (! is_array($locales) || ! array_is_list($locales)
-            || collect($locales)->contains(fn (mixed $locale): bool => ! is_string($locale))) {
-            return null;
-        }
-
-        return array_values($locales);
     }
 }

@@ -17,10 +17,12 @@ use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
+use App\Services\IngredientEnrichment\IngredientEnrichmentStageStore;
 use App\Services\IngredientEnrichment\IngredientGuidanceContextBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceRefreshProcessor;
 use App\Services\IngredientEnrichment\IngredientGuidanceRefreshResultValidator;
 use App\Services\IngredientEnrichment\IngredientGuidanceStageRunner;
+use App\Services\IngredientEnrichment\LocalizedGuidanceHeadings;
 use App\Services\IngredientTranslationSourceFingerprint;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -74,7 +76,7 @@ it('queues a guidance refresh and calls authoring and localization without resea
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
                     'info_markdown' => localizedGuidanceText(),
-                ])->all(),
+                ])->values()->all(),
                 responseId: 'resp-localization',
                 requestId: 'req-localization',
                 model: 'gpt-test',
@@ -120,6 +122,32 @@ it('queues a guidance refresh and calls authoring and localization without resea
         ->and($item->output_tokens)->toBe(66)
         ->and($item->web_search_calls)->toBe(0)
         ->and($item->plan['decisions'])->toHaveCount(7);
+
+    $stages = $item->research_stages;
+    expect(data_get($stages, 'ai_guidance_authoring.data.stage_context.provider_configuration'))
+        ->toMatchArray([
+            'model' => (string) config('ingredient-enrichment.openai.model'),
+            'reasoning_effort' => (string) config('ingredient-enrichment.openai.reasoning_effort'),
+            'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
+            'required_headings' => config('ingredient-enrichment.guidance.required_headings'),
+            'soapmaking_heading' => (string) config('ingredient-enrichment.guidance.soapmaking_heading'),
+        ])
+        ->and(data_get($stages, 'ai_guidance_localization.data.stage_context.provider_configuration'))
+        ->toMatchArray([
+            'model' => (string) config('ingredient-enrichment.openai.model'),
+            'reasoning_effort' => (string) config('ingredient-enrichment.openai.reasoning_effort'),
+            'localization_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+            'localized_headings' => config('ingredient-enrichment.guidance.localized_headings'),
+        ])
+        ->and(data_get($stages, 'validation.data.stage_context.provider_configuration'))
+        ->toMatchArray([
+            'model' => (string) config('ingredient-enrichment.openai.model'),
+            'reasoning_effort' => (string) config('ingredient-enrichment.openai.reasoning_effort'),
+            'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
+            'localization_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+            'required_headings' => config('ingredient-enrichment.guidance.required_headings'),
+            'localized_headings' => config('ingredient-enrichment.guidance.localized_headings'),
+        ]);
 });
 
 it('rejects a completed authoring cache whose item provenance changed', function (): void {
@@ -257,6 +285,68 @@ it('rejects a completed localization cache whose upstream guidance changed', fun
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('completed')
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('failed')
         ->and(data_get($fixture['item']->fresh()->research_stages, 'validation'))->toBeNull();
+});
+
+it('recomputes guidance stages when effective provider configuration changes', function (): void {
+    $calls = ['author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-provider-config',
+                requestId: 'req-guidance-provider-config',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->all(),
+                responseId: 'resp-localization-provider-config',
+                requestId: 'req-localization-provider-config',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    config()->set('ingredient-enrichment.openai.model', 'gpt-configuration-updated');
+    $fixture['item']->update(['status' => IngredientEnrichmentItemStatus::Failed]);
+
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+        ->toThrow(LogicException::class);
+
+    expect($calls)->toBe(['author' => 1, 'localize' => 1]);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($fixture['admin'], $fixture['batch']);
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    expect($calls)->toBe(['author' => 2, 'localize' => 2])
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
 });
 
 it('invalidates downstream guidance caches when a queued retry recomputes authoring', function (): void {
@@ -409,6 +499,228 @@ it('localizes only outdated locales and never calls English authoring', function
         ->and(data_get($item->fresh()->snapshot, 'guidance_stage_context.localization.expected_locales'))->toBe(['fr'])
         ->and($item->fresh()->result['translations'])->toHaveCount(1)
         ->and($item->fresh()->result['translations'][0]['locale'])->toBe('fr');
+});
+
+it('rejects corrupt frozen locales at the localization stage before calling the provider', function (): void {
+    $corruptLocales = [
+        'empty' => [],
+        'duplicate' => ['fr', 'fr'],
+        'blank' => ['fr', ''],
+        'unsupported' => ['fr', 'xx'],
+    ];
+
+    foreach ($corruptLocales as $name => $locales) {
+        $calls = ['localize' => 0];
+        app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+        {
+            /** @param array<string,int> $calls */
+            public function __construct(private array &$calls) {}
+
+            public function localize(array $context): IngredientGuidanceLocalizationResponse
+            {
+                $this->calls['localize']++;
+
+                return new IngredientGuidanceLocalizationResponse(
+                    translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                        'locale' => $locale,
+                        'info_markdown' => localizedGuidanceText(),
+                    ])->all(),
+                    responseId: 'resp-localization-corrupt',
+                    requestId: 'req-localization-corrupt',
+                    model: 'gpt-test',
+                    inputTokens: 3,
+                    outputTokens: 4,
+                );
+            }
+        });
+
+        $fixture = guidanceResumeFixture();
+        $fixture['batch']->update(['mode' => IngredientEnrichmentBatchMode::GuidanceLocalization]);
+        $snapshot = $fixture['item']->snapshot;
+        data_set($snapshot, 'guidance_stage_context.localization.expected_locales', $locales);
+        $fixture['item']->update([
+            'status' => IngredientEnrichmentItemStatus::Pending,
+            'snapshot' => $snapshot,
+        ]);
+
+        expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+            ->toThrow(LogicException::class);
+
+        expect($calls)->toBe(['localize' => 0])
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('failed')
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'validation'))->toBeNull();
+    }
+});
+
+it('orders first localization provider locales by configured target locale order', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr', 'de', 'es', 'it', 'nl', 'pt_BR']);
+    $requestedLocales = [];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            throw new RuntimeException('authoring must not run');
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($requestedLocales) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param list<list<string>> $requestedLocales */
+        public function __construct(private array &$requestedLocales) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->requestedLocales[] = $context['locales'] ?? [];
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->reverse()->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->values()->all(),
+                responseId: 'resp-localization-order',
+                requestId: 'req-localization-order',
+                model: 'gpt-test',
+                inputTokens: 3,
+                outputTokens: 4,
+            );
+        }
+    });
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive oil',
+        'info_markdown' => guidanceText(),
+    ]);
+    $ingredient->translations()->create([
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => localizedGuidanceText(),
+        'source_fingerprint' => str_repeat('a', 64),
+        'origin' => 'ai_generated',
+    ]);
+    $ingredient->translations()->create([
+        'locale' => 'de',
+        'display_name' => 'Olivenöl',
+        'info_markdown' => localizedGuidanceText(),
+        'source_fingerprint' => str_repeat('a', 64),
+        'origin' => 'ai_generated',
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Pending,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $context = app(IngredientGuidanceContextBuilder::class)->build($ingredient);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => $context,
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($requestedLocales)->toBe([['fr', 'de']])
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and(collect($item->fresh()->result['translations'])->pluck('locale')->all())->toBe(['fr', 'de']);
+});
+
+it('uses the runner frozen localization context after a translation update race', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['de', 'fr', 'es', 'it', 'nl', 'pt_BR']);
+    $requestedLocales = [];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            throw new RuntimeException('authoring must not run');
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($requestedLocales) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param list<list<string>> $requestedLocales */
+        public function __construct(private array &$requestedLocales) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->requestedLocales[] = $context['locales'] ?? [];
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->all(),
+                responseId: 'resp-localization-race',
+                requestId: 'req-localization-race',
+                model: 'gpt-test',
+                inputTokens: 3,
+                outputTokens: 4,
+            );
+        }
+    });
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive oil',
+        'info_markdown' => guidanceText(),
+    ]);
+    $ingredient->translations()->createMany([
+        [
+            'locale' => 'fr',
+            'display_name' => 'Huile d’olive',
+            'info_markdown' => localizedGuidanceText(),
+            'source_fingerprint' => str_repeat('a', 64),
+            'origin' => 'ai_generated',
+        ],
+        [
+            'locale' => 'de',
+            'display_name' => 'Olivenöl',
+            'info_markdown' => localizedGuidanceText(),
+            'source_fingerprint' => str_repeat('a', 64),
+            'origin' => 'ai_generated',
+        ],
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Pending,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $context = app(IngredientGuidanceContextBuilder::class)->build($ingredient);
+    data_set($context, 'guidance_stage_context.localization.expected_locales', ['fr', 'de']);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => $context,
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    app()->instance(IngredientGuidanceStageRunner::class, new class($ingredient) extends IngredientGuidanceStageRunner
+    {
+        public function __construct(private Ingredient $ingredient)
+        {
+            parent::__construct(
+                app(IngredientEnrichmentStageStore::class),
+                app(IngredientGuidanceRefreshResultValidator::class),
+                app(IngredientEnrichmentSnapshotBuilder::class),
+                app(IngredientTranslationSourceFingerprint::class),
+                app(LocalizedGuidanceHeadings::class),
+            );
+        }
+
+        public function run(
+            int $itemId,
+            IngredientEnrichmentResearchStage $stage,
+            callable $callback,
+        ): IngredientSourceStageResult {
+            return parent::run($itemId, $stage, function (array $context) use ($stage, $callback): IngredientSourceStageResult {
+                if ($stage === IngredientEnrichmentResearchStage::AiGuidanceLocalization) {
+                    $fingerprint = app(IngredientTranslationSourceFingerprint::class)->forIngredient($this->ingredient->fresh());
+                    $this->ingredient->translations()->update(['source_fingerprint' => $fingerprint]);
+                }
+
+                return $callback($context);
+            });
+        }
+    });
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($requestedLocales)->toBe([['de', 'fr']])
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning);
 });
 
 it('resumes localization after a guidance refresh failure without repeating authoring', function (): void {

@@ -99,7 +99,10 @@ class ApplyPlatformIngredientEnrichment
         $storedSourceFingerprint = data_get($ingredient->source_data, 'enrichment.core.source_fingerprint');
         $storedResultFingerprint = data_get($ingredient->source_data, 'enrichment.core.result_fingerprint');
 
-        if (! $promotion && $sourceFingerprint === $storedSourceFingerprint && $currentFingerprint === $storedResultFingerprint) {
+        if (! $promotion
+            && ($plan['changed'] ?? false) !== true
+            && $sourceFingerprint === $storedSourceFingerprint
+            && $currentFingerprint === $storedResultFingerprint) {
             return ['status' => 'unchanged', 'ingredient' => $ingredient];
         }
 

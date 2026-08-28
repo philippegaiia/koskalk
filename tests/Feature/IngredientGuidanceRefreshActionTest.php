@@ -15,6 +15,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use App\Services\IngredientTranslationSourceFingerprint;
 use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Actions\Testing\TestAction;
+use Filament\Actions\ViewAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Livewire\Livewire;
@@ -148,6 +149,84 @@ it('uses focused guidance fields for guidance batch review actions', function ()
         ->mountAction(TestAction::make('approve')->table($item))
         ->assertMountedActionModalSee('Identity, taxonomy, identifiers, names, and declarations are not included.')
         ->assertFormFieldDoesNotExist('replace_fields');
+});
+
+it('renders guidance evidence as translated read-only review evidence', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => 'Existing guidance',
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+    ]);
+    $evidence = [
+        [
+            'source_name' => 'Safe source',
+            'source_url' => 'https://example.test/safe',
+            'summary' => 'Safe evidence.',
+            'source_tier' => 'editorial',
+            'retrieved_at' => '2026-08-28T00:00:00+00:00',
+        ],
+        [
+            'source_name' => 'Unsafe source',
+            'source_url' => 'javascript:alert(1)',
+            'summary' => 'Unsafe evidence.',
+            'source_tier' => 'editorial',
+            'retrieved_at' => '2026-08-28T00:00:00+00:00',
+        ],
+    ];
+    $item = IngredientEnrichmentBatchItem::factory()
+        ->for($batch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Ready,
+            'result' => ['guidance_evidence' => $evidence],
+            'plan' => [
+                'decisions' => [[
+                    'field' => 'guidance.evidence',
+                    'decision' => 'replace',
+                    'current' => [],
+                    'proposed' => $evidence,
+                ]],
+            ],
+        ]);
+
+    $rows = app(IngredientEnrichmentReviewPresenter::class)->rows($item);
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0])->toMatchArray([
+            'path' => 'guidance.evidence',
+            'label' => 'Evidence',
+            'decision' => 'replace',
+        ])
+        ->and($rows[0]['evidence'])->toHaveCount(1)
+        ->and($rows[0]['evidence'][0])->toMatchArray([
+            'title' => 'Safe source',
+            'url' => 'https://example.test/safe',
+        ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(ItemsRelationManager::class, [
+        'ownerRecord' => $batch,
+        'pageClass' => ViewIngredientEnrichmentBatch::class,
+    ])
+        ->loadTable()
+        ->mountAction(TestAction::make(ViewAction::class)->table($item))
+        ->assertMountedActionModalSee('Evidence')
+        ->assertMountedActionModalSee('Safe source')
+        ->assertMountedActionModalDontSee('href="javascript:alert(1)"');
+
+    Livewire::test(ItemsRelationManager::class, [
+        'ownerRecord' => $batch,
+        'pageClass' => ViewIngredientEnrichmentBatch::class,
+    ])
+        ->loadTable()
+        ->mountAction(TestAction::make('editProposal')->table($item))
+        ->assertFormFieldDoesNotExist('guidance_evidence')
+        ->assertFormFieldDoesNotExist('evidence');
 });
 
 it('keeps English guidance read-only in localization-only review batches', function (): void {

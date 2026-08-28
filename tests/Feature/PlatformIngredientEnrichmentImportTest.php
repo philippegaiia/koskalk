@@ -4,6 +4,7 @@ use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientIdentifier;
 use App\Models\IngredientTranslation;
+use App\Services\IngredientEnrichment\ApplyPlatformIngredientEnrichment;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -309,6 +310,69 @@ it('plans changed guidance evidence during full enrichment', function (): void {
             'current' => $currentEvidence,
             'proposed' => $result['guidance_evidence'],
         ]);
+});
+
+it('applies successive evidence-only updates with the same source fingerprint', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EVIDENCE-REPLAY',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+        'inci_name' => 'EXISTING INGREDIENT',
+        'info_markdown' => "## Overview\nExisting guidance.\n\n## Formulation use\nUse this material in a suitable formulation.",
+    ]);
+    $result = importResult($ingredient);
+    $result['proposal'] = [
+        'display_name' => $ingredient->display_name,
+        'inci_name' => $ingredient->inci_name,
+        'category' => $ingredient->category->value,
+        'subcategory' => null,
+        'saponification_name' => null,
+        'soap_inci_naoh_name' => null,
+        'soap_inci_koh_name' => null,
+        'info_markdown' => $ingredient->info_markdown,
+        'soapmaking_relevant' => false,
+        'aliases' => [],
+        'identifiers' => [],
+        'cosing_functions' => [],
+        'translations' => [],
+        'market_labels' => [],
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $firstEvidence = [[
+        'source_name' => 'First source',
+        'source_url' => 'https://example.test/first',
+        'summary' => 'First evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $secondEvidence = [[
+        'source_name' => 'Second source',
+        'source_url' => 'https://example.test/second',
+        'summary' => 'Second evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-28T00:00:00+00:00',
+    ]];
+    $result['guidance_evidence'] = $firstEvidence;
+    $planner = app(IngredientEnrichmentPlanner::class);
+    $applier = app(ApplyPlatformIngredientEnrichment::class);
+    $firstPlan = $planner->plan($ingredient, $result);
+
+    expect($firstPlan['changed'])->toBeTrue()
+        ->and(collect($firstPlan['decisions'])
+            ->reject(fn (array $decision): bool => $decision['decision'] === 'unchanged')
+            ->pluck('field')
+            ->all())->toBe(['guidance.evidence'])
+        ->and($applier->apply($firstPlan, $result)['status'])->toBe('applied');
+
+    $result['guidance_evidence'] = $secondEvidence;
+    $currentIngredient = $ingredient->fresh();
+    $secondPlan = $planner->plan($currentIngredient, $result);
+    $secondApply = $applier->apply($secondPlan, $result);
+
+    expect($secondPlan['changed'])->toBeTrue()
+        ->and($secondApply['status'])->toBe('applied')
+        ->and(data_get($secondApply['ingredient']->source_data, 'enrichment.guidance.evidence'))
+        ->toBe($secondEvidence);
 });
 
 it('applies a valid result atomically, records enrichment metadata, and is idempotent', function (): void {

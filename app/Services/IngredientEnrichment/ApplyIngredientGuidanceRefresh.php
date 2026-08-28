@@ -40,7 +40,9 @@ class ApplyIngredientGuidanceRefresh
                     $batch = $item->batch()->firstOrFail();
                     $mode = $batch->mode;
                     if (! $mode instanceof IngredientEnrichmentBatchMode || ! $mode->isGuidance()) {
-                        throw ValidationException::withMessages(['batch' => 'This is not a guidance refresh batch.']);
+                        throw ValidationException::withMessages([
+                            'batch' => __('ingredient_enrichment_admin.validation.guidance_batch_mode'),
+                        ]);
                     }
 
                     $ingredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($item->ingredient_id);

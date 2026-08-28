@@ -12,6 +12,7 @@ use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
+use App\Services\IngredientEnrichment\IngredientGuidanceProposalReviewService;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -90,6 +91,41 @@ it('rejects identity fields in a guidance proposal and marks stale items before 
     expect(fn () => app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item->fresh()))
         ->toThrow(ValidationException::class);
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Stale);
+});
+
+it('delegates guidance edits from the Action to the review service', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create(['info_markdown' => guidanceApplyText('Original')]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+    ]);
+    $proposal = ['info_markdown' => guidanceApplyText('Edited')];
+    $review = Mockery::mock(IngredientGuidanceProposalReviewService::class);
+    $review->shouldReceive('edit')->once()->with($admin, $item, $proposal)->andReturn($item);
+    app()->instance(IngredientGuidanceProposalReviewService::class, $review);
+
+    expect(app(EditIngredientGuidanceProposal::class)->handle($admin, $item, $proposal))->toBe($item);
+});
+
+it('delegates guidance approvals from the Action to the review service', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create(['info_markdown' => guidanceApplyText('Original')]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+    ]);
+    $review = Mockery::mock(IngredientGuidanceProposalReviewService::class);
+    $review->shouldReceive('approve')->once()->with($admin, $item)->andReturn($item);
+    app()->instance(IngredientGuidanceProposalReviewService::class, $review);
+
+    expect(app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item))->toBe($item);
 });
 
 /** @return array<string,mixed> */

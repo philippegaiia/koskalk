@@ -30,38 +30,38 @@ class IngredientGuidanceRefreshResultValidator
             'warnings', 'unresolved_questions',
         ];
         foreach (array_diff(array_keys($result), $allowedKeys) as $unknown) {
-            $this->error($errors, 'result', "Unknown field {$unknown}.");
+            $this->error($errors, 'result', (string) __('ingredient_enrichment.validation.guidance_unknown_field', ['field' => $unknown]));
         }
 
         if (($result['format'] ?? null) !== 'soapkraft-ingredient-guidance-refresh-result') {
-            $this->error($errors, 'format', 'Unsupported guidance refresh format.');
+            $this->error($errors, 'format', (string) __('ingredient_enrichment.validation.guidance_unsupported_format'));
         }
         if (($result['schema_version'] ?? null) !== 1) {
-            $this->error($errors, 'schema_version', 'Unsupported guidance refresh schema.');
+            $this->error($errors, 'schema_version', (string) __('ingredient_enrichment.validation.guidance_unsupported_schema'));
         }
         if (($result['mode'] ?? null) !== $mode->value) {
-            $this->error($errors, 'mode', 'Guidance refresh mode does not match the batch.');
+            $this->error($errors, 'mode', (string) __('ingredient_enrichment.validation.guidance_mode_mismatch'));
         }
         if (($result['subject_public_id'] ?? null) !== (string) $ingredient->public_id) {
-            $this->error($errors, 'subject_public_id', 'Guidance refresh subject does not match the ingredient.');
+            $this->error($errors, 'subject_public_id', (string) __('ingredient_enrichment.validation.guidance_subject_mismatch'));
         }
 
         $sourceFingerprint = is_string($result['source_fingerprint'] ?? null)
             ? strtolower(trim($result['source_fingerprint']))
             : '';
         if (preg_match('/^[a-f0-9]{64}$/', $sourceFingerprint) !== 1) {
-            $this->error($errors, 'source_fingerprint', 'Guidance refresh fingerprint is invalid.');
+            $this->error($errors, 'source_fingerprint', (string) __('ingredient_enrichment.validation.guidance_fingerprint_invalid'));
         }
         $currentFingerprint = $this->snapshots->fingerprint($ingredient);
         $stale = $sourceFingerprint !== '' && $sourceFingerprint !== $currentFingerprint;
         if ($stale) {
-            $this->error($errors, 'source_fingerprint', 'Guidance refresh is stale.');
+            $this->error($errors, 'source_fingerprint', (string) __('ingredient_enrichment.validation.guidance_stale'));
         }
 
         $english = is_string($result['info_markdown'] ?? null) ? trim($result['info_markdown']) : '';
         $soapmakingRelevant = false;
         if ($english === '') {
-            $this->error($errors, 'info_markdown', 'English guidance is required.');
+            $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_english_required'));
         } else {
             $soapmakingRelevant = $this->validateEnglishHeadings($english, $errors, $warnings);
         }
@@ -114,7 +114,7 @@ class IngredientGuidanceRefreshResultValidator
         if (! $report['valid']) {
             throw ValidationException::withMessages(
                 collect($report['errors'])
-                    ->map(fn (array $messages): string => $messages[0] ?? 'Invalid guidance refresh result.')
+                    ->map(fn (array $messages): string => $messages[0] ?? (string) __('ingredient_enrichment.validation.guidance_invalid_result'))
                     ->all(),
             );
         }
@@ -132,7 +132,7 @@ class IngredientGuidanceRefreshResultValidator
         $soapmakingRelevant = in_array($soapmakingHeading, $headings, true);
         $expected = $soapmakingRelevant ? [...$required, $soapmakingHeading] : $required;
         if ($headings !== $expected) {
-            $this->error($errors, 'info_markdown', 'English guidance headings are invalid.');
+            $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_headings'));
         }
         $this->warnOnWordCount($guidance, 'info_markdown', $warnings);
 
@@ -148,7 +148,7 @@ class IngredientGuidanceRefreshResultValidator
         array &$warnings,
     ): array {
         if (! is_array($rows)) {
-            $this->error($errors, 'translations', 'Translations must be an array.');
+            $this->error($errors, 'translations', (string) __('ingredient_enrichment.validation.guidance_translations_array'));
 
             return [];
         }
@@ -159,22 +159,22 @@ class IngredientGuidanceRefreshResultValidator
         foreach ($rows as $index => $row) {
             $path = "translations.{$index}";
             if (! is_array($row)) {
-                $this->error($errors, $path, 'Translation must be an object.');
+                $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_translation_object'));
 
                 continue;
             }
             $this->validateExactKeys($row, ['locale', 'info_markdown'], $path, $errors);
             $locale = is_string($row['locale'] ?? null) ? trim($row['locale']) : '';
             if (! in_array($locale, $expectedLocales, true)) {
-                $this->error($errors, "{$path}.locale", 'Translation locale is not supported.');
+                $this->error($errors, "{$path}.locale", (string) __('ingredient_enrichment.validation.guidance_translation_locale'));
             }
             if (isset($seen[$locale])) {
-                $this->error($errors, "{$path}.locale", 'Translation locale is duplicated.');
+                $this->error($errors, "{$path}.locale", (string) __('ingredient_enrichment.validation.guidance_translation_duplicate'));
             }
             $seen[$locale] = true;
             $guidance = is_string($row['info_markdown'] ?? null) ? trim($row['info_markdown']) : '';
             if ($guidance === '') {
-                $this->error($errors, "{$path}.info_markdown", 'Translated guidance is required.');
+                $this->error($errors, "{$path}.info_markdown", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
             } else {
                 $this->validateTranslatedHeadings($guidance, $locale, $soapmakingRelevant, "{$path}.info_markdown", $errors);
                 $this->warnOnWordCount($guidance, "{$path}.info_markdown", $warnings);
@@ -183,7 +183,7 @@ class IngredientGuidanceRefreshResultValidator
         }
 
         foreach (array_diff($expectedLocales, array_keys($seen)) as $locale) {
-            $this->error($errors, 'translations', "Translation is missing for {$locale}.");
+            $this->error($errors, 'translations', (string) __('ingredient_enrichment.validation.guidance_translation_missing', ['locale' => $locale]));
         }
 
         return $normalized;
@@ -205,7 +205,7 @@ class IngredientGuidanceRefreshResultValidator
             $soapmakingRelevant ? ($localized['soapmaking'] ?? null) : null,
         ])->filter(fn (mixed $heading): bool => is_string($heading) && $heading !== '')->values()->all();
         if (array_map('trim', $matches[1] ?? []) !== $expected) {
-            $this->error($errors, $path, 'Translated guidance headings are invalid.');
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_translation_headings'));
         }
     }
 
@@ -213,7 +213,7 @@ class IngredientGuidanceRefreshResultValidator
     private function normalizeEvidence(mixed $rows, array &$errors): array
     {
         if (! is_array($rows)) {
-            $this->error($errors, 'guidance_evidence', 'Guidance evidence must be an array.');
+            $this->error($errors, 'guidance_evidence', (string) __('ingredient_enrichment.validation.guidance_evidence_array'));
 
             return [];
         }
@@ -221,24 +221,24 @@ class IngredientGuidanceRefreshResultValidator
         foreach ($rows as $index => $row) {
             $path = "guidance_evidence.{$index}";
             if (! is_array($row)) {
-                $this->error($errors, $path, 'Guidance evidence must be an object.');
+                $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_evidence_object'));
 
                 continue;
             }
             $this->validateExactKeys($row, ['source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at'], $path, $errors);
             foreach (['source_name', 'source_url', 'summary', 'retrieved_at'] as $field) {
                 if (! is_string($row[$field] ?? null) || trim($row[$field]) === '') {
-                    $this->error($errors, "{$path}.{$field}", 'Guidance evidence field is required.');
+                    $this->error($errors, "{$path}.{$field}", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
                 }
             }
             if (($row['source_tier'] ?? null) !== 'editorial') {
-                $this->error($errors, "{$path}.source_tier", 'Guidance evidence must be editorial.');
+                $this->error($errors, "{$path}.source_tier", (string) __('ingredient_enrichment.validation.guidance_evidence_tier'));
             }
             if (! $this->isHttpUrl($row['source_url'] ?? null)) {
-                $this->error($errors, "{$path}.source_url", 'Guidance evidence URL is invalid.');
+                $this->error($errors, "{$path}.source_url", (string) __('ingredient_enrichment.validation.guidance_evidence_url'));
             }
             if (! $this->isIsoDateTime($row['retrieved_at'] ?? null)) {
-                $this->error($errors, "{$path}.retrieved_at", 'Guidance evidence date is invalid.');
+                $this->error($errors, "{$path}.retrieved_at", (string) __('ingredient_enrichment.validation.guidance_evidence_date'));
             }
             $normalized[] = [
                 'source_name' => trim((string) ($row['source_name'] ?? '')),
@@ -256,13 +256,13 @@ class IngredientGuidanceRefreshResultValidator
     private function normalizePromptVersions(mixed $versions, array &$errors): array
     {
         if (! is_array($versions)) {
-            $this->error($errors, 'prompt_versions', 'Prompt versions are required.');
+            $this->error($errors, 'prompt_versions', (string) __('ingredient_enrichment.validation.guidance_prompt_versions'));
 
             return ['guidance' => '', 'localization' => ''];
         }
         foreach (['guidance', 'localization'] as $field) {
             if (! is_string($versions[$field] ?? null) || trim($versions[$field]) === '') {
-                $this->error($errors, "prompt_versions.{$field}", 'Prompt version is required.');
+                $this->error($errors, "prompt_versions.{$field}", (string) __('ingredient_enrichment.validation.guidance_prompt_version'));
             }
         }
 
@@ -276,7 +276,7 @@ class IngredientGuidanceRefreshResultValidator
     private function validateExactKeys(array $row, array $allowed, string $path, array &$errors): void
     {
         foreach (array_diff(array_keys($row), $allowed) as $unknown) {
-            $this->error($errors, $path, "Unknown field {$unknown}.");
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_unknown_field', ['field' => $unknown]));
         }
     }
 
@@ -284,13 +284,13 @@ class IngredientGuidanceRefreshResultValidator
     private function validateStringList(mixed $value, string $path, array &$errors): void
     {
         if (! is_array($value)) {
-            $this->error($errors, $path, 'Value must be an array.');
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_value_array'));
 
             return;
         }
         foreach ($value as $index => $entry) {
             if (! is_string($entry)) {
-                $this->error($errors, "{$path}.{$index}", 'Value must be a string.');
+                $this->error($errors, "{$path}.{$index}", (string) __('ingredient_enrichment.validation.guidance_value_string'));
             }
         }
     }

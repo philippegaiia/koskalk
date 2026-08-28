@@ -23,6 +23,7 @@ class IngredientGuidanceRefreshProcessor
         private readonly IngredientGuidanceAuthoringClient $authoring,
         private readonly IngredientGuidanceLocalizationClient $localization,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
+        private readonly IngredientGuidanceChangePlanner $planner,
         private readonly IngredientEnrichmentStageStore $stages,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly LocalizedGuidanceHeadings $headings,
@@ -197,7 +198,7 @@ class IngredientGuidanceRefreshProcessor
 
                 $report = $this->validator->validateOrFail($result, $currentIngredient, $mode, $locales);
                 $normalized = $report['normalized'];
-                $plan = $this->plan($currentIngredient, $normalized);
+                $plan = $this->planner->plan($currentIngredient, $normalized, $mode);
                 $warnings = collect($report['warnings'])
                     ->merge($normalized['warnings'])
                     ->merge($normalized['unresolved_questions'])
@@ -275,48 +276,5 @@ class IngredientGuidanceRefreshProcessor
             ->intersect($this->snapshots->targetLocales())
             ->values()
             ->all();
-    }
-
-    /** @param array<string,mixed> $result @return array<string,mixed> */
-    private function plan(Ingredient $ingredient, array $result): array
-    {
-        $decisions = [];
-        $currentEnglish = (string) ($ingredient->info_markdown ?? '');
-        $proposedEnglish = (string) ($result['info_markdown'] ?? '');
-        if ($currentEnglish !== $proposedEnglish) {
-            $decisions[] = [
-                'field' => 'proposal.info_markdown',
-                'decision' => 'replace',
-                'current' => $currentEnglish,
-                'proposed' => $proposedEnglish,
-            ];
-        }
-
-        $currentTranslations = $ingredient->translations()->get(['locale', 'info_markdown'])->keyBy('locale');
-        foreach ($result['translations'] ?? [] as $translation) {
-            if (! is_array($translation)) {
-                continue;
-            }
-            $locale = (string) ($translation['locale'] ?? '');
-            $proposed = (string) ($translation['info_markdown'] ?? '');
-            $current = (string) ($currentTranslations->get($locale)?->info_markdown ?? '');
-            if ($current !== $proposed) {
-                $decisions[] = [
-                    'field' => "proposal.translations.{$locale}.info_markdown",
-                    'decision' => 'replace',
-                    'current' => $current,
-                    'proposed' => $proposed,
-                ];
-            }
-        }
-
-        return [
-            'changed' => $decisions !== [],
-            'decisions' => $decisions,
-            'effective' => [
-                'info_markdown' => $proposedEnglish,
-                'translations' => $result['translations'] ?? [],
-            ],
-        ];
     }
 }

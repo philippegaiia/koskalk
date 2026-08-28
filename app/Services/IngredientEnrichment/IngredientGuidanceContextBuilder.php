@@ -25,7 +25,7 @@ class IngredientGuidanceContextBuilder
         $legacyEvidence = $persistedEvidence === [] ? $this->legacyBatchEvidence($ingredient) : [];
         $evidence = $persistedEvidence !== [] ? $persistedEvidence : $legacyEvidence;
         $warnings = $evidence === []
-            ? ['No persisted guidance evidence is available; refresh evidence before making source-backed guidance claims.']
+            ? [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')]
             : [];
 
         return [

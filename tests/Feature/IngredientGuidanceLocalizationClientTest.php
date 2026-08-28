@@ -46,9 +46,42 @@ it('localizes approved guidance with a locale-bounded strict response contract',
         $properties = data_get($data, 'text.format.schema.properties', []);
         $translationProperties = data_get($properties, 'translations.items.properties', []);
 
-        return ! array_key_exists('tools', $data)
+        return $request->method() === 'POST'
+            && $request->url() === 'https://api.openai.com/v1/responses'
+            && $request->hasHeader('Authorization', 'Bearer test-key-never-log')
+            && $data['model'] === 'gpt-5.6-terra'
+            && $data['store'] === false
+            && ! array_key_exists('tools', $data)
             && ! array_key_exists('include', $data)
+            && data_get($data, 'text.format.type') === 'json_schema'
+            && data_get($data, 'text.format.name') === 'ingredient_guidance_localization'
+            && data_get($data, 'text.format.strict') === true
+            && data_get($data, 'text.format.schema.required') === ['translations']
+            && data_get($data, 'text.format.schema.additionalProperties') === false
             && array_keys($properties) === ['translations']
             && array_keys($translationProperties) === ['locale', 'info_markdown'];
     });
+});
+
+it('fails safely when the no-web provider connection cannot be established', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'secret-api-key');
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::failedConnection(),
+    ]);
+
+    try {
+        app(IngredientGuidanceLocalizationClient::class)->localize([
+            'locales' => ['fr'],
+            'english_guidance' => "## Overview\n\nA concise overview.",
+        ]);
+
+        $this->fail('The provider connection should have failed.');
+    } catch (RuntimeException $exception) {
+        expect($exception->getMessage())
+            ->toContain('could not complete')
+            ->not->toContain('secret-api-key');
+    }
+
+    Http::assertSentCount(3);
 });

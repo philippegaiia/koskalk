@@ -37,13 +37,29 @@ it('sends deterministic facts to a strict editorial-only response request', func
     Http::assertSent(function (Request $request): bool {
         $data = $request->data();
 
-        return $request->url() === 'https://api.openai.com/v1/responses'
+        return $request->method() === 'POST'
+            && $request->url() === 'https://api.openai.com/v1/responses'
+            && $request->hasHeader('Authorization', 'Bearer test-key-never-log')
             && $data['model'] === 'gpt-5.6-terra'
             && $data['store'] === false
             && ! array_key_exists('tools', $data)
             && ! array_key_exists('include', $data)
             && data_get($data, 'text.format.type') === 'json_schema'
+            && data_get($data, 'text.format.name') === 'ingredient_enrichment_editorial'
             && data_get($data, 'text.format.strict') === true
+            && data_get($data, 'text.format.schema.required') === [
+                'display_name',
+                'category',
+                'subcategory',
+                'saponification_name',
+                'soap_inci_naoh_name',
+                'soap_inci_koh_name',
+                'soapmaking_relevant',
+                'translations',
+                'warnings',
+                'unresolved_questions',
+            ]
+            && data_get($data, 'text.format.schema.additionalProperties') === false
             && array_keys(data_get($data, 'text.format.schema.properties', [])) === [
                 'display_name',
                 'category',
@@ -63,6 +79,32 @@ it('sends deterministic facts to a strict editorial-only response request', func
             && str_contains((string) $data['input'], 'ARGAN OIL')
             && str_contains((string) $data['input'], 'verified');
     });
+});
+
+it('redacts an unparseable provider error body after transient retries', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'secret-api-key');
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response(
+            'provider-raw-sensitive-body',
+            500,
+            ['x-request-id' => 'req_editorial_failure'],
+        ),
+    ]);
+
+    try {
+        app(IngredientEditorialClient::class)->edit(editorialFacts());
+
+        $this->fail('The provider response should have failed.');
+    } catch (RuntimeException $exception) {
+        expect($exception->getMessage())
+            ->toContain('HTTP 500')
+            ->toContain('req_editorial_failure')
+            ->not->toContain('secret-api-key')
+            ->not->toContain('provider-raw-sensitive-body');
+    }
+
+    Http::assertSentCount(3);
 });
 
 it('uses source-restricted web search only in an explicitly enabled gap-research call', function (): void {

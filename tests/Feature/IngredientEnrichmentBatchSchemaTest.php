@@ -115,9 +115,14 @@ it('removes relationship ordering from the grouped batch status query', function
         'status' => IngredientEnrichmentItemStatus::Ready,
     ]);
     $queries = [];
+    $transactionLevels = [];
     DB::listen(function ($query) use (&$queries): void {
         $queries[] = $query->sql;
     });
+    DB::listen(function ($query) use (&$transactionLevels): void {
+        $transactionLevels[] = $query->connection->transactionLevel();
+    });
+    $baselineTransactionLevel = DB::connection()->transactionLevel();
 
     app(IngredientEnrichmentBatchService::class)->refresh($batch->id);
 
@@ -126,5 +131,6 @@ it('removes relationship ordering from the grouped batch status query', function
     );
 
     expect($statusQuery)->toBeString()
-        ->and(strtolower($statusQuery))->not->toContain('order by');
+        ->and(strtolower($statusQuery))->not->toContain('order by')
+        ->and($transactionLevels)->toContain($baselineTransactionLevel + 1);
 });

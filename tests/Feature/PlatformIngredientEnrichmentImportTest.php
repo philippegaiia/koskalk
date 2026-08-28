@@ -244,6 +244,7 @@ it('does not write an unchanged normalized result and previews all warnings', fu
 
     $result = importResult($ingredient);
     $result['source_fingerprint'] = strtoupper(app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient));
+    $result['guidance_evidence'] = [];
     $result['warnings'] = ['Research confidence needs Admin confirmation.'];
     $result['unresolved_questions'] = ['Confirm the supplier grade.'];
     $path = writeJsonl($result);
@@ -281,6 +282,33 @@ it('merges collections by stable keys and replaces only explicit collections', f
             fn (array $decision): bool => $decision['field'] === 'proposal.translations'
                 && $decision['decision'] === 'replace',
         ))->toBeTrue();
+});
+
+it('plans changed guidance evidence during full enrichment', function (): void {
+    $currentEvidence = [[
+        'source_name' => 'Existing source',
+        'source_url' => 'https://example.test/existing',
+        'summary' => 'Existing evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EVIDENCE-PLAN',
+        'category' => IngredientCategory::Other,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $currentEvidence]]],
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result);
+
+    expect($plan['changed'])->toBeTrue()
+        ->and(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))
+        ->toMatchArray([
+            'decision' => 'replace',
+            'current' => $currentEvidence,
+            'proposed' => $result['guidance_evidence'],
+        ]);
 });
 
 it('applies a valid result atomically, records enrichment metadata, and is idempotent', function (): void {

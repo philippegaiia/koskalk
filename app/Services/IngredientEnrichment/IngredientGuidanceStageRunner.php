@@ -19,6 +19,7 @@ class IngredientGuidanceStageRunner
         private readonly IngredientGuidanceRefreshResultValidator $validator,
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
         private readonly IngredientTranslationSourceFingerprint $translationFingerprint,
+        private readonly LocalizedGuidanceHeadings $headings,
     ) {}
 
     /**
@@ -45,7 +46,7 @@ class IngredientGuidanceStageRunner
                 if ($storedResult->stage !== $stage) {
                     throw new LogicException("Unexpected enrichment stage {$storedResult->stage->value}.");
                 }
-                $storedResult = $this->validateResult($storedResult, $context);
+                $storedResult = $this->validateResult($storedResult, $context, requireValidationEnvelope: true);
 
                 return ['result' => $storedResult, 'context' => $context];
             }, attempts: 5);
@@ -93,18 +94,22 @@ class IngredientGuidanceStageRunner
      *     ingredient: Ingredient,
      *     subject_public_id: string,
      *     source_fingerprint: string,
-     *     expected_locales: list<string>
+     *     expected_locales: list<string>,
+     *     soapmaking_relevant: bool
      * }  $context
      */
-    private function validateResult(IngredientSourceStageResult $result, array $context): IngredientSourceStageResult
-    {
+    private function validateResult(
+        IngredientSourceStageResult $result,
+        array $context,
+        bool $requireValidationEnvelope = false,
+    ): IngredientSourceStageResult {
         if ($result->stage === IngredientEnrichmentResearchStage::Validation) {
-            return $this->validateValidation($result, $context);
+            return $this->validateValidation($result, $context, $requireValidationEnvelope);
         }
 
         match ($result->stage) {
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring => $this->validateAuthoring($result->data),
-            IngredientEnrichmentResearchStage::AiGuidanceLocalization => $this->validateLocalization($result->data),
+            IngredientEnrichmentResearchStage::AiGuidanceLocalization => $this->validateLocalization($result->data, $context),
             default => null,
         };
 
@@ -118,6 +123,7 @@ class IngredientGuidanceStageRunner
         if (! is_array($guidance)) {
             throw new LogicException('Guidance authoring stage data is missing guidance.');
         }
+        $this->validateExactKeys($guidance, ['info_markdown', 'warnings', 'unresolved_questions'], 'Guidance authoring stage guidance');
 
         $englishGuidance = $guidance['info_markdown'] ?? null;
         if (! is_string($englishGuidance) || trim($englishGuidance) === '') {
@@ -125,18 +131,35 @@ class IngredientGuidanceStageRunner
         }
         $this->validateStringList($guidance, 'warnings', 'Guidance authoring stage data');
         $this->validateStringList($guidance, 'unresolved_questions', 'Guidance authoring stage data');
+        if (! $this->validator->validateGuidance($englishGuidance)['valid']) {
+            throw new LogicException('Guidance authoring stage data contains invalid guidance.');
+        }
         $this->validateProviderAccounting($data, 'Guidance authoring stage data');
     }
 
-    /** @param array<string,mixed> $data */
-    private function validateLocalization(array $data): void
+    /**
+     * @param  array<string,mixed>  $data
+     * @param  array<string,mixed>  $context
+     */
+    private function validateLocalization(array $data, array $context): void
     {
         $translations = $data['translations'] ?? null;
         if (! is_array($translations) || ! array_is_list($translations)) {
             throw new LogicException('Guidance localization stage data is missing translations.');
         }
 
-        $this->validateTranslations($translations, 'Guidance localization stage data');
+        $normalizedTranslations = collect($translations)
+            ->map(fn (mixed $translation): mixed => is_array($translation)
+                ? $this->normalizeTranslationHeadings($translation, $context['soapmaking_relevant'])
+                : $translation)
+            ->all();
+        if (! $this->validator->validateTranslations(
+            $normalizedTranslations,
+            $context['expected_locales'],
+            $context['soapmaking_relevant'],
+        )['valid']) {
+            throw new LogicException('Guidance localization stage data contains invalid translations.');
+        }
         $this->validateProviderAccounting($data, 'Guidance localization stage data');
     }
 
@@ -146,12 +169,24 @@ class IngredientGuidanceStageRunner
      *     ingredient: Ingredient,
      *     subject_public_id: string,
      *     source_fingerprint: string,
-     *     expected_locales: list<string>
+     *     expected_locales: list<string>,
+     *     soapmaking_relevant: bool
      * }  $context
      */
-    private function validateValidation(IngredientSourceStageResult $stageResult, array $context): IngredientSourceStageResult
-    {
+    private function validateValidation(
+        IngredientSourceStageResult $stageResult,
+        array $context,
+        bool $requireValidationEnvelope,
+    ): IngredientSourceStageResult {
         $data = $stageResult->data;
+        if ($requireValidationEnvelope
+            && (! array_key_exists('result', $data) || ! is_array($data['result']))) {
+            throw new LogicException('Guidance validation stage data is missing the result envelope.');
+        }
+        if ($requireValidationEnvelope
+            && (! array_key_exists('validation_report', $data) || ! is_array($data['validation_report']))) {
+            throw new LogicException('Guidance validation stage data is missing the validation report envelope.');
+        }
         $candidate = $data['candidate'] ?? $data['result'] ?? null;
         if (! is_array($candidate)) {
             throw new LogicException('Guidance validation stage data is missing the normalized result.');
@@ -181,7 +216,7 @@ class IngredientGuidanceStageRunner
         if (array_key_exists('result', $data) && (! is_array($result) || $result !== $normalized)) {
             throw new LogicException('Guidance validation stage data result is not canonically normalized.');
         }
-        if (array_key_exists('validation_report', $data)) {
+        if ($requireValidationEnvelope || array_key_exists('validation_report', $data)) {
             $storedReport = $data['validation_report'];
             if (! is_array($storedReport)
                 || ! array_key_exists('result', $data)
@@ -216,7 +251,8 @@ class IngredientGuidanceStageRunner
      *     ingredient: Ingredient,
      *     subject_public_id: string,
      *     source_fingerprint: string,
-     *     expected_locales: list<string>
+     *     expected_locales: list<string>,
+     *     soapmaking_relevant: bool
      * }
      */
     private function context(IngredientEnrichmentBatchItem $item): array
@@ -240,6 +276,38 @@ class IngredientGuidanceStageRunner
             'expected_locales' => $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
                 ? $this->outdatedLocales($ingredient)
                 : $this->snapshots->targetLocales(),
+            'soapmaking_relevant' => $this->soapmakingRelevant($item, $ingredient),
+        ];
+    }
+
+    private function soapmakingRelevant(IngredientEnrichmentBatchItem $item, Ingredient $ingredient): bool
+    {
+        $englishGuidance = data_get($item->research_stages, 'ai_guidance_authoring.data.guidance.info_markdown');
+        if (! is_string($englishGuidance) || trim($englishGuidance) === '') {
+            $englishGuidance = data_get($item->snapshot, 'current.canonical.info_markdown');
+        }
+        if (! is_string($englishGuidance) || trim($englishGuidance) === '') {
+            $englishGuidance = (string) ($ingredient->info_markdown ?? '');
+        }
+
+        return str_contains(
+            $englishGuidance,
+            '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
+        );
+    }
+
+    /** @param array<string,mixed> $translation */
+    private function normalizeTranslationHeadings(array $translation, bool $soapmakingRelevant): array
+    {
+        $locale = $translation['locale'] ?? null;
+        $guidance = $translation['info_markdown'] ?? null;
+        if (! is_string($locale) || ! is_string($guidance)) {
+            return $translation;
+        }
+
+        return [
+            ...$translation,
+            'info_markdown' => $this->headings->normalize($guidance, $locale, $soapmakingRelevant),
         ];
     }
 
@@ -258,43 +326,11 @@ class IngredientGuidanceStageRunner
             ->all();
     }
 
-    /** @param list<mixed> $translations */
-    private function validateTranslations(array $translations, string $label): void
+    /** @param array<string,mixed> $data @param list<string> $allowed */
+    private function validateExactKeys(array $data, array $allowed, string $label): void
     {
-        $locales = [];
-        foreach ($translations as $translation) {
-            if (! is_array($translation)) {
-                throw new LogicException("{$label} contains an invalid translation.");
-            }
-
-            $locale = $translation['locale'] ?? null;
-            if (! is_string($locale) || trim($locale) === '') {
-                throw new LogicException("{$label} contains an invalid translation locale.");
-            }
-            if (in_array($locale, $locales, true)) {
-                throw new LogicException("{$label} contains duplicate translations.");
-            }
-            $locales[] = $locale;
-
-            $infoMarkdown = $translation['info_markdown'] ?? null;
-            if (! is_string($infoMarkdown) || trim($infoMarkdown) === '') {
-                throw new LogicException("{$label} contains an invalid translation.");
-            }
-        }
-    }
-
-    /** @param list<mixed> $evidence */
-    private function validateEvidence(array $evidence): void
-    {
-        foreach ($evidence as $row) {
-            if (! is_array($row)) {
-                throw new LogicException('Guidance validation stage data contains invalid evidence.');
-            }
-            foreach (['source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at'] as $field) {
-                if (! is_string($row[$field] ?? null) || trim($row[$field]) === '') {
-                    throw new LogicException("Guidance validation stage data evidence is missing {$field}.");
-                }
-            }
+        foreach (array_diff(array_keys($data), $allowed) as $unknown) {
+            throw new LogicException("{$label} contains an unexpected {$unknown} field.");
         }
     }
 

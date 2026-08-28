@@ -29,7 +29,8 @@ class RetryIngredientEnrichmentFailures
         bool $allowGapResearch = false,
     ): IngredientEnrichmentBatch {
         Gate::forUser($actor)->authorize('retry', $batch);
-        $ids = DB::transaction(function () use ($batch): array {
+        /** @var array{ids:list<int>, mode:IngredientEnrichmentBatchMode|null} $retry */
+        $retry = DB::transaction(function () use ($batch): array {
             $locked = IngredientEnrichmentBatch::query()->lockForUpdate()->findOrFail($batch->id);
             $ids = [];
             foreach ($locked->items()->whereIn('status', [
@@ -53,11 +54,15 @@ class RetryIngredientEnrichmentFailures
                 $ids[] = $item->id;
             }
 
-            return $ids;
+            return [
+                'ids' => $ids,
+                'mode' => $locked->mode instanceof IngredientEnrichmentBatchMode ? $locked->mode : null,
+            ];
         }, attempts: 5);
+        $ids = $retry['ids'];
+        $mode = $retry['mode'];
 
         if ($ids !== []) {
-            $mode = $batch->mode;
             $jobs = collect($ids)->map(function (int $id) use ($mode, $allowGapResearch): object {
                 if ($mode instanceof IngredientEnrichmentBatchMode && $mode->isGuidance()) {
                     return new GenerateIngredientGuidanceRefresh($id);

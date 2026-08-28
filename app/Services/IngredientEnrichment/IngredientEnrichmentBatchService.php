@@ -260,31 +260,50 @@ class IngredientEnrichmentBatchService
      */
     public function dispatch(IngredientEnrichmentBatch $batch, ?array $itemIds = null): void
     {
-        $items = $batch->items()
-            ->when($itemIds !== null, fn ($query) => $query->whereIn('id', $itemIds))
-            ->where('status', IngredientEnrichmentItemStatus::Pending)
-            ->get();
+        /** @var array{batch_public_id:string, items:\Illuminate\Database\Eloquent\Collection<int, IngredientEnrichmentBatchItem>, jobs:list<object>} $dispatch */
+        $dispatch = DB::transaction(function () use ($batch, $itemIds): array {
+            $lockedBatch = IngredientEnrichmentBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            $items = $lockedBatch->items()
+                ->when($itemIds !== null, fn ($query) => $query->whereIn('id', $itemIds))
+                ->where('status', IngredientEnrichmentItemStatus::Pending)
+                ->get();
 
-        if ($items->isEmpty()) {
+            if ($items->isEmpty()) {
+                return [
+                    'batch_public_id' => (string) $lockedBatch->public_id,
+                    'items' => $items,
+                    'jobs' => [],
+                ];
+            }
+
+            $jobs = $items
+                ->map(function (IngredientEnrichmentBatchItem $item) use ($lockedBatch): object {
+                    if ($lockedBatch->mode instanceof IngredientEnrichmentBatchMode && $lockedBatch->mode->isGuidance()) {
+                        return new GenerateIngredientGuidanceRefresh($item->id);
+                    }
+
+                    return new ResearchIngredientEnrichment(
+                        $item->id,
+                        (bool) data_get($item->snapshot, 'research_rules.allow_gap_research', false),
+                    );
+                })
+                ->all();
+
+            return [
+                'batch_public_id' => (string) $lockedBatch->public_id,
+                'items' => $items,
+                'jobs' => $jobs,
+            ];
+        }, attempts: 5);
+        $items = $dispatch['items'];
+
+        if ($dispatch['jobs'] === []) {
             return;
         }
 
-        $jobs = $items
-            ->map(function (IngredientEnrichmentBatchItem $item) use ($batch): object {
-                if ($batch->mode instanceof IngredientEnrichmentBatchMode && $batch->mode->isGuidance()) {
-                    return new GenerateIngredientGuidanceRefresh($item->id);
-                }
-
-                return new ResearchIngredientEnrichment(
-                    $item->id,
-                    (bool) data_get($item->snapshot, 'research_rules.allow_gap_research', false),
-                );
-            })
-            ->all();
-
         try {
-            $laravelBatch = Bus::batch($jobs)
-                ->name("ingredient-enrichment:{$batch->public_id}")
+            $laravelBatch = Bus::batch($dispatch['jobs'])
+                ->name("ingredient-enrichment:{$dispatch['batch_public_id']}")
                 ->allowFailures()
                 ->onQueue((string) config('ingredient-enrichment.direct_ai.queue'))
                 ->dispatch();

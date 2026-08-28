@@ -104,7 +104,12 @@ class IngredientEnrichmentBatchItem extends Model
     public function retryableFromStage(?IngredientEnrichmentBatchMode $mode = null): ?IngredientEnrichmentResearchStage
     {
         $stages = is_array($this->research_stages) ? $this->research_stages : [];
-        $orderedStages = $mode?->guidanceStages() ?? [];
+        $effectiveMode = $mode;
+        if ($effectiveMode === null) {
+            $batchMode = $this->batch?->mode;
+            $effectiveMode = $batchMode instanceof IngredientEnrichmentBatchMode ? $batchMode : null;
+        }
+        $orderedStages = $effectiveMode?->guidanceStages() ?? [];
         if ($orderedStages === []) {
             $orderedStages = IngredientEnrichmentResearchStage::ordered();
         }
@@ -115,16 +120,41 @@ class IngredientEnrichmentBatchItem extends Model
                 return $stage;
             }
 
-            if (is_array($result['unresolved_questions'] ?? null) && $result['unresolved_questions'] !== []) {
+            if ($this->hasUnresolvedQuestions($result, $effectiveMode)) {
                 return $stage;
             }
         }
 
         return $this->status === IngredientEnrichmentItemStatus::Failed
-            ? ($mode?->isGuidance()
+            ? ($effectiveMode?->isGuidance()
                 ? $orderedStages[array_key_last($orderedStages)]
                 : IngredientEnrichmentResearchStage::EuStructured)
             : null;
+    }
+
+    /** @param array<string, mixed> $stage */
+    private function hasUnresolvedQuestions(array $stage, ?IngredientEnrichmentBatchMode $mode): bool
+    {
+        $outerQuestions = $stage['unresolved_questions'] ?? null;
+        if (is_array($outerQuestions) && $outerQuestions !== []) {
+            return true;
+        }
+
+        $batchMode = $mode ?? $this->batch?->mode;
+        if (! $batchMode instanceof IngredientEnrichmentBatchMode || ! $batchMode->isGuidance()) {
+            return false;
+        }
+
+        foreach ([
+            data_get($stage, 'data.guidance.unresolved_questions'),
+            data_get($stage, 'data.result.unresolved_questions'),
+        ] as $questions) {
+            if (is_array($questions) && $questions !== []) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function casts(): array

@@ -58,15 +58,16 @@ class IngredientGuidanceRefreshResultValidator
             $this->error($errors, 'source_fingerprint', (string) __('ingredient_enrichment.validation.guidance_stale'));
         }
 
-        $english = is_string($result['info_markdown'] ?? null) ? trim($result['info_markdown']) : '';
-        $soapmakingRelevant = false;
-        if ($english === '') {
-            $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_english_required'));
-        } else {
-            $soapmakingRelevant = $this->validateEnglishHeadings($english, $errors, $warnings);
-        }
+        $guidanceReport = $this->validateGuidance($result['info_markdown'] ?? null);
+        $errors = [...$errors, ...$guidanceReport['errors']];
+        $warnings = [...$warnings, ...$guidanceReport['warnings']];
+        $english = $guidanceReport['normalized'];
+        $soapmakingRelevant = $guidanceReport['soapmaking_relevant'];
 
-        $translations = $this->normalizeTranslations($result['translations'] ?? null, $errors, $expectedLocales, $soapmakingRelevant, $warnings);
+        $translationsReport = $this->validateTranslations($result['translations'] ?? null, $expectedLocales, $soapmakingRelevant);
+        $errors = [...$errors, ...$translationsReport['errors']];
+        $warnings = [...$warnings, ...$translationsReport['warnings']];
+        $translations = $translationsReport['normalized'];
         $guidanceEvidence = $this->normalizeEvidence($result['guidance_evidence'] ?? null, $errors);
         $promptVersions = $this->normalizePromptVersions($result['prompt_versions'] ?? null, $errors);
         $this->validateStringList($result['warnings'] ?? null, 'warnings', $errors);
@@ -120,6 +121,57 @@ class IngredientGuidanceRefreshResultValidator
         }
 
         return $report;
+    }
+
+    /**
+     * @return array{valid:bool,errors:array<string,list<string>>,warnings:list<string>,normalized:string,soapmaking_relevant:bool}
+     */
+    public function validateGuidance(mixed $guidance): array
+    {
+        $errors = [];
+        $warnings = [];
+        $normalized = is_string($guidance) ? trim($guidance) : '';
+        $soapmakingRelevant = false;
+        if ($normalized === '') {
+            $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_english_required'));
+        } else {
+            $soapmakingRelevant = $this->validateEnglishHeadings($normalized, $errors, $warnings);
+        }
+
+        return [
+            'valid' => $errors === [],
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'normalized' => $normalized,
+            'soapmaking_relevant' => $soapmakingRelevant,
+        ];
+    }
+
+    /**
+     * @param  list<string>|null  $expectedLocales
+     * @return array{valid:bool,errors:array<string,list<string>>,warnings:list<string>,normalized:list<array{locale:string,info_markdown:string}>}
+     */
+    public function validateTranslations(
+        mixed $translations,
+        ?array $expectedLocales,
+        bool $soapmakingRelevant,
+    ): array {
+        $errors = [];
+        $warnings = [];
+        $normalized = $this->normalizeTranslations(
+            $translations,
+            $errors,
+            $expectedLocales,
+            $soapmakingRelevant,
+            $warnings,
+        );
+
+        return [
+            'valid' => $errors === [],
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'normalized' => $normalized,
+        ];
     }
 
     /** @param array<string,list<string>> $errors @param list<string> $warnings */

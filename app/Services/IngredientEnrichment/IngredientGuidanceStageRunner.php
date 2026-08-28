@@ -5,7 +5,9 @@ namespace App\Services\IngredientEnrichment;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatchItem;
+use App\Services\IngredientTranslationSourceFingerprint;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use Throwable;
@@ -14,6 +16,9 @@ class IngredientGuidanceStageRunner
 {
     public function __construct(
         private readonly IngredientEnrichmentStageStore $stages,
+        private readonly IngredientGuidanceRefreshResultValidator $validator,
+        private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
+        private readonly IngredientTranslationSourceFingerprint $translationFingerprint,
     ) {}
 
     /**
@@ -25,24 +30,27 @@ class IngredientGuidanceStageRunner
         callable $callback,
     ): IngredientSourceStageResult {
         try {
-            $stored = DB::transaction(function () use ($itemId, $stage): ?IngredientSourceStageResult {
+            $execution = DB::transaction(function () use ($itemId, $stage): array {
                 $item = IngredientEnrichmentBatchItem::query()
                     ->lockForUpdate()
                     ->findOrFail($itemId);
+                $context = $this->context($item);
                 $stored = $this->stages->stages($item)[$stage->value] ?? null;
 
                 if (! is_array($stored) || ($stored['status'] ?? null) !== 'completed') {
-                    return null;
+                    return ['result' => null, 'context' => $context];
                 }
 
                 $storedResult = IngredientSourceStageResult::fromArray($stored);
                 if ($storedResult->stage !== $stage) {
                     throw new LogicException("Unexpected enrichment stage {$storedResult->stage->value}.");
                 }
-                $this->validateResult($storedResult);
+                $storedResult = $this->validateResult($storedResult, $context);
 
-                return $storedResult;
+                return ['result' => $storedResult, 'context' => $context];
             }, attempts: 5);
+            $stored = $execution['result'];
+            $context = $execution['context'];
 
             if ($stored instanceof IngredientSourceStageResult) {
                 return $stored;
@@ -58,7 +66,7 @@ class IngredientGuidanceStageRunner
             if ($result->status !== 'completed') {
                 throw new LogicException("Enrichment stage {$stage->value} did not complete.");
             }
-            $this->validateResult($result);
+            $result = $this->validateResult($result, $context);
 
             $this->stages->complete($itemId, $result);
 
@@ -79,14 +87,28 @@ class IngredientGuidanceStageRunner
         return mb_strtolower(class_basename($exception));
     }
 
-    private function validateResult(IngredientSourceStageResult $result): void
+    /**
+     * @param  array{
+     *     mode: IngredientEnrichmentBatchMode,
+     *     ingredient: Ingredient,
+     *     subject_public_id: string,
+     *     source_fingerprint: string,
+     *     expected_locales: list<string>
+     * }  $context
+     */
+    private function validateResult(IngredientSourceStageResult $result, array $context): IngredientSourceStageResult
     {
+        if ($result->stage === IngredientEnrichmentResearchStage::Validation) {
+            return $this->validateValidation($result, $context);
+        }
+
         match ($result->stage) {
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring => $this->validateAuthoring($result->data),
             IngredientEnrichmentResearchStage::AiGuidanceLocalization => $this->validateLocalization($result->data),
-            IngredientEnrichmentResearchStage::Validation => $this->validateValidation($result->data),
             default => null,
         };
+
+        return $result;
     }
 
     /** @param array<string,mixed> $data */
@@ -118,63 +140,122 @@ class IngredientGuidanceStageRunner
         $this->validateProviderAccounting($data, 'Guidance localization stage data');
     }
 
-    /** @param array<string,mixed> $data */
-    private function validateValidation(array $data): void
+    /**
+     * @param  array{
+     *     mode: IngredientEnrichmentBatchMode,
+     *     ingredient: Ingredient,
+     *     subject_public_id: string,
+     *     source_fingerprint: string,
+     *     expected_locales: list<string>
+     * }  $context
+     */
+    private function validateValidation(IngredientSourceStageResult $stageResult, array $context): IngredientSourceStageResult
     {
-        $result = $data['result'] ?? null;
-        if (! is_array($result)) {
+        $data = $stageResult->data;
+        $candidate = $data['candidate'] ?? $data['result'] ?? null;
+        if (! is_array($candidate)) {
             throw new LogicException('Guidance validation stage data is missing the normalized result.');
         }
 
-        foreach (['format', 'mode', 'subject_public_id', 'source_fingerprint', 'info_markdown'] as $field) {
-            if (! is_string($result[$field] ?? null) || trim($result[$field]) === '') {
-                throw new LogicException("Guidance validation stage data is missing {$field}.");
-            }
+        if (($candidate['mode'] ?? null) !== $context['mode']->value) {
+            throw new LogicException('Guidance validation stage data does not match the persisted batch mode.');
         }
-        if (($result['format'] ?? null) !== 'soapkraft-ingredient-guidance-refresh-result') {
-            throw new LogicException('Guidance validation stage data has an invalid format.');
+        if (($candidate['subject_public_id'] ?? null) !== $context['subject_public_id']) {
+            throw new LogicException('Guidance validation stage data does not match the ingredient subject.');
         }
-        if (($result['schema_version'] ?? null) !== 1) {
-            throw new LogicException('Guidance validation stage data has an invalid schema version.');
-        }
-        if (! IngredientEnrichmentBatchMode::tryFrom($result['mode'])?->isGuidance()) {
-            throw new LogicException('Guidance validation stage data has an invalid mode.');
-        }
-        if (preg_match('/^[a-f0-9]{64}$/', $result['source_fingerprint']) !== 1) {
-            throw new LogicException('Guidance validation stage data has an invalid source fingerprint.');
-        }
-        $translations = $result['translations'] ?? null;
-        if (! is_array($translations) || ! array_is_list($translations)) {
-            throw new LogicException('Guidance validation stage data is missing translations.');
-        }
-        $this->validateTranslations($translations, 'Guidance validation stage data');
-        $evidence = $result['guidance_evidence'] ?? null;
-        if (! is_array($evidence) || ! array_is_list($evidence)) {
-            throw new LogicException('Guidance validation stage data is missing guidance evidence.');
-        }
-        $this->validateEvidence($evidence);
-        $this->validateStringList($result, 'warnings', 'Guidance validation stage data');
-        $this->validateStringList($result, 'unresolved_questions', 'Guidance validation stage data');
-        $promptVersions = $result['prompt_versions'] ?? null;
-        if (! is_array($promptVersions)
-            || ! is_string($promptVersions['guidance'] ?? null)
-            || trim($promptVersions['guidance']) === ''
-            || ! is_string($promptVersions['localization'] ?? null)
-            || trim($promptVersions['localization']) === '') {
-            throw new LogicException('Guidance validation stage data is missing prompt versions.');
+        if (($candidate['source_fingerprint'] ?? null) !== $context['source_fingerprint']) {
+            throw new LogicException('Guidance validation stage data does not match the expected source fingerprint.');
         }
 
+        $report = $this->validator->validateOrFail(
+            $candidate,
+            $context['ingredient'],
+            $context['mode'],
+            $context['expected_locales'],
+        );
+        if (! is_array($report['normalized'] ?? null)) {
+            throw new LogicException('Guidance validation stage data is missing canonical normalization.');
+        }
+        $normalized = $report['normalized'];
+        $result = $data['result'] ?? null;
+        if (array_key_exists('result', $data) && (! is_array($result) || $result !== $normalized)) {
+            throw new LogicException('Guidance validation stage data result is not canonically normalized.');
+        }
         if (array_key_exists('validation_report', $data)) {
-            $report = $data['validation_report'];
-            if (! is_array($report)
-                || ($report['valid'] ?? null) !== true
-                || ! is_array($report['errors'] ?? null)
-                || ! is_array($report['warnings'] ?? null)
-                || ! is_array($report['normalized'] ?? null)
-                || ($report['stale'] ?? null) !== false) {
+            $storedReport = $data['validation_report'];
+            if (! is_array($storedReport)
+                || ! array_key_exists('result', $data)
+                || ($storedReport['valid'] ?? null) !== true
+                || ! is_array($storedReport['errors'] ?? null)
+                || ! is_array($storedReport['warnings'] ?? null)
+                || ($storedReport['normalized'] ?? null) !== $normalized) {
                 throw new LogicException('Guidance validation stage data contains an invalid validation report.');
             }
+            if (($storedReport['stale'] ?? null) !== false) {
+                throw new LogicException('Guidance validation stage data contains a stale validation report.');
+            }
         }
+
+        return new IngredientSourceStageResult(
+            stage: $stageResult->stage,
+            status: $stageResult->status,
+            data: [
+                'result' => $normalized,
+                'validation_report' => $report,
+            ],
+            evidence: $stageResult->evidence,
+            warnings: $stageResult->warnings,
+            unresolvedQuestions: $stageResult->unresolvedQuestions,
+            sourceCalls: $stageResult->sourceCalls,
+        );
+    }
+
+    /**
+     * @return array{
+     *     mode: IngredientEnrichmentBatchMode,
+     *     ingredient: Ingredient,
+     *     subject_public_id: string,
+     *     source_fingerprint: string,
+     *     expected_locales: list<string>
+     * }
+     */
+    private function context(IngredientEnrichmentBatchItem $item): array
+    {
+        $batch = $item->batch()->lockForUpdate()->first();
+        $mode = $batch?->mode;
+        $ingredient = Ingredient::query()
+            ->withoutGlobalScopes()
+            ->lockForUpdate()
+            ->find($item->ingredient_id);
+        if (! $mode instanceof IngredientEnrichmentBatchMode || ! $mode->isGuidance()
+            || ! $ingredient) {
+            throw new LogicException('Guidance stage context is unavailable.');
+        }
+
+        return [
+            'mode' => $mode,
+            'ingredient' => $ingredient,
+            'subject_public_id' => (string) $ingredient->public_id,
+            'source_fingerprint' => (string) $item->source_fingerprint,
+            'expected_locales' => $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
+                ? $this->outdatedLocales($ingredient)
+                : $this->snapshots->targetLocales(),
+        ];
+    }
+
+    /** @return list<string> */
+    private function outdatedLocales(Ingredient $ingredient): array
+    {
+        $fingerprint = $this->translationFingerprint->forIngredient($ingredient);
+
+        return $ingredient->translations()
+            ->get(['locale', 'source_fingerprint'])
+            ->filter(fn ($translation): bool => is_string($translation->locale)
+                && ($translation->source_fingerprint === null || $translation->source_fingerprint !== $fingerprint))
+            ->pluck('locale')
+            ->intersect($this->snapshots->targetLocales())
+            ->values()
+            ->all();
     }
 
     /** @param list<mixed> $translations */

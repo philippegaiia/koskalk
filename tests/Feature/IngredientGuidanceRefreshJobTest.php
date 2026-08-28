@@ -677,6 +677,103 @@ it('validates malformed fresh stage accounting before persisting completion', fu
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.data'))->toBe([]);
 });
 
+it('fails cached validation when its envelope context or normalized result is inconsistent', function (): void {
+    $calls = ['author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-context',
+                requestId: 'req-guidance-context',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->all(),
+                responseId: 'resp-localization-context',
+                requestId: 'req-localization-context',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $mismatches = [
+        'mode' => function (array $result): array {
+            return [...$result, 'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization->value];
+        },
+        'subject' => function (array $result): array {
+            return [...$result, 'subject_public_id' => 'another-ingredient'];
+        },
+        'fingerprint' => function (array $result): array {
+            return [...$result, 'source_fingerprint' => hash('sha256', 'unrelated-input')];
+        },
+        'report' => static fn (array $result): array => $result,
+        'normalized' => function (array $result): array {
+            return [...$result, 'info_markdown' => $result['info_markdown'].'\nmutated'];
+        },
+    ];
+
+    foreach ($mismatches as $name => $mutate) {
+        $calls = ['author' => 0, 'localize' => 0];
+        $fixture = guidanceResumeFixture();
+        app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+        $validValidation = $fixture['item']->fresh()->research_stages['validation'];
+        $validResult = $validValidation['data']['result'];
+        $corruptValidation = $validValidation;
+        if ($name === 'normalized') {
+            $corruptValidation['data']['validation_report']['normalized'] = $mutate($validResult);
+        } elseif ($name === 'report') {
+            $corruptValidation['data']['validation_report']['valid'] = false;
+        } else {
+            $corruptValidation['data']['result'] = $mutate($validResult);
+        }
+        $fixture['item']->update([
+            'status' => IngredientEnrichmentItemStatus::Failed,
+            'research_stages' => [
+                ...$fixture['item']->fresh()->research_stages,
+                'validation' => $corruptValidation,
+            ],
+        ]);
+
+        expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+            ->toThrow(LogicException::class);
+
+        expect($calls)->toBe(['author' => 1, 'localize' => 1])
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'validation.status'))->toBe('failed');
+
+        app(RetryIngredientEnrichmentFailures::class)->handle($fixture['admin'], $fixture['batch']);
+        app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+        expect($calls)->toBe(['author' => 1, 'localize' => 1])
+            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'validation.status'))->toBe('completed');
+    }
+});
+
 /**
  * @return array{admin: User, ingredient: Ingredient, batch: IngredientEnrichmentBatch, item: IngredientEnrichmentBatchItem}
  */

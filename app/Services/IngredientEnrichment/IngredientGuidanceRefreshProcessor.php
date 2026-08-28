@@ -22,7 +22,6 @@ class IngredientGuidanceRefreshProcessor
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
         private readonly IngredientGuidanceAuthoringClient $authoring,
         private readonly IngredientGuidanceLocalizationClient $localization,
-        private readonly IngredientGuidanceRefreshResultValidator $validator,
         private readonly IngredientGuidanceChangePlanner $planner,
         private readonly IngredientGuidanceStageRunner $stages,
         private readonly IngredientEnrichmentBatchService $batches,
@@ -149,14 +148,12 @@ class IngredientGuidanceRefreshProcessor
                             ->filter(fn (mixed $question): bool => is_string($question) && trim($question) !== '')
                             ->unique()->values()->all(),
                     ];
-                    $report = $this->validator->validateOrFail($candidate, $ingredient, $mode, $this->expectedLocales($mode, $ingredient));
 
                     return new IngredientSourceStageResult(
                         stage: IngredientEnrichmentResearchStage::Validation,
                         status: 'completed',
                         data: [
-                            'result' => $report['normalized'],
-                            'validation_report' => $report,
+                            'candidate' => $candidate,
                         ],
                     );
                 },
@@ -386,14 +383,6 @@ class IngredientGuidanceRefreshProcessor
             'output_tokens' => (int) ($authoringData['output_tokens'] ?? 0)
                 + (int) ($localizationData['output_tokens'] ?? 0),
         ];
-    }
-
-    /** @return list<string> */
-    private function expectedLocales(IngredientEnrichmentBatchMode $mode, Ingredient $ingredient): array
-    {
-        return $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
-            ? $this->outdatedLocales($ingredient)
-            : $this->snapshots->targetLocales();
     }
 
     /** @return list<string> */

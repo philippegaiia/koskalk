@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Data\IngredientTranslationWriteIntent;
 use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
@@ -56,12 +57,14 @@ class IngredientTranslationService
 
     /**
      * @param  array<int, array<string, mixed>>  $rows
+     * @param  array<string, IngredientTranslationWriteIntent>  $writeIntents
      */
     public function sync(
         Ingredient $ingredient,
         array $rows,
         IngredientTranslationOrigin $origin = IngredientTranslationOrigin::ReviewerEdited,
         ?string $promptVersion = null,
+        array $writeIntents = [],
     ): void {
         if ($ingredient->owner_type !== null) {
             if ($rows !== []) {
@@ -74,10 +77,11 @@ class IngredientTranslationService
         }
 
         $validatedRows = $this->validateRows($rows);
+        $validatedWriteIntents = $this->validateWriteIntents($writeIntents, $validatedRows);
 
         $canonicalFingerprint = $this->sourceFingerprint->forIngredient($ingredient);
 
-        DB::transaction(function () use ($ingredient, $validatedRows, $canonicalFingerprint, $origin, $promptVersion): void {
+        DB::transaction(function () use ($ingredient, $validatedRows, $validatedWriteIntents, $canonicalFingerprint, $origin, $promptVersion): void {
             $locales = collect($validatedRows)->pluck('locale')->all();
 
             $ingredient->translations()
@@ -96,7 +100,8 @@ class IngredientTranslationService
                         'saponification_name' => $existing->saponification_name,
                         'info_markdown' => $existing->info_markdown,
                     ]) === $row;
-                $metadata = $sameContent
+                $intent = $validatedWriteIntents[$row['locale']] ?? null;
+                $metadata = $sameContent && ! ($intent?->refreshMetadata ?? false)
                     ? [
                         'source_fingerprint' => $existing->source_fingerprint,
                         'origin' => $existing->origin ?? IngredientTranslationOrigin::Legacy->value,
@@ -104,10 +109,10 @@ class IngredientTranslationService
                     ]
                     : [
                         'source_fingerprint' => $canonicalFingerprint,
-                        'origin' => $origin->value,
-                        'prompt_version' => $origin === IngredientTranslationOrigin::AiGenerated
-                            ? $promptVersion
-                            : null,
+                        'origin' => $intent?->origin->value ?? $origin->value,
+                        'prompt_version' => $intent instanceof IngredientTranslationWriteIntent
+                            ? $intent->promptVersion
+                            : ($origin === IngredientTranslationOrigin::AiGenerated ? $promptVersion : null),
                     ];
 
                 $ingredient->translations()->updateOrCreate(
@@ -121,6 +126,72 @@ class IngredientTranslationService
                 );
             }
         });
+    }
+
+    /**
+     * @param  array<string, IngredientTranslationWriteIntent>  $writeIntents
+     * @param  array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>  $validatedRows
+     * @return array<string, IngredientTranslationWriteIntent>
+     */
+    private function validateWriteIntents(array $writeIntents, array $validatedRows): array
+    {
+        if ($writeIntents === []) {
+            return [];
+        }
+
+        $rowLocales = collect($validatedRows)->pluck('locale')->all();
+        $normalizedIntents = [];
+        $errors = [];
+        $attribute = __('ingredient_admin.translations.freshness');
+
+        foreach ($writeIntents as $locale => $intent) {
+            if (! is_string($locale)) {
+                $errors['write_intents'] = __('validation.string', ['attribute' => $attribute]);
+
+                continue;
+            }
+
+            $normalizedLocale = trim($locale);
+            $errorKey = "write_intents.{$normalizedLocale}";
+            if (
+                $normalizedLocale === ''
+                || mb_strlen($normalizedLocale) > 16
+                || ! SupportedLocale::query()
+                    ->where('code', $normalizedLocale)
+                    ->where('code', '!=', 'en')
+                    ->exists()
+            ) {
+                $errors[$errorKey] = __('validation.exists', ['attribute' => $attribute]);
+
+                continue;
+            }
+
+            if (! in_array($normalizedLocale, $rowLocales, true)) {
+                $errors[$errorKey] = __('validation.exists', ['attribute' => $attribute]);
+
+                continue;
+            }
+
+            if (! $intent instanceof IngredientTranslationWriteIntent) {
+                $errors[$errorKey] = __('validation.in', ['attribute' => $attribute]);
+
+                continue;
+            }
+
+            if (array_key_exists($normalizedLocale, $normalizedIntents)) {
+                $errors[$errorKey] = __('validation.distinct', ['attribute' => $attribute]);
+
+                continue;
+            }
+
+            $normalizedIntents[$normalizedLocale] = $intent;
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $normalizedIntents;
     }
 
     /**

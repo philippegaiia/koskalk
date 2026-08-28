@@ -1,5 +1,6 @@
 <?php
 
+use App\Data\IngredientTranslationWriteIntent;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\IngredientTranslationOrigin;
@@ -242,6 +243,102 @@ it('marks only changed locales as reviewer edited while preserving other metadat
         ->and($german->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
         ->and($german->prompt_version)->toBe('ingredient-guidance-localization-v1')
         ->and($german->info_markdown)->toBe('Hinweise DE');
+});
+
+it('refreshes stale metadata for an identical translation with an explicit locale intent', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => 'Original English',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => 'Conseils originaux',
+    ]], IngredientTranslationOrigin::AiGenerated, 'localization-v1');
+
+    $ingredient->update(['info_markdown' => 'Updated English']);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => 'Conseils originaux',
+    ]], writeIntents: [
+        'fr' => new IngredientTranslationWriteIntent(
+            IngredientTranslationOrigin::AiGenerated,
+            'localization-v2',
+            refreshMetadata: true,
+        ),
+    ]);
+
+    $translation = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+    expect($translation->source_fingerprint)
+        ->toBe(app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient))
+        ->and($translation->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($translation->prompt_version)->toBe('localization-v2')
+        ->and($translation->display_name)->toBe('Huile d’olive')
+        ->and($translation->info_markdown)->toBe('Conseils originaux');
+});
+
+it('applies reviewer provenance only to the locale with a reviewer intent', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    SupportedLocale::factory()->create(['code' => 'de']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => 'Original English',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [
+        ['locale' => 'fr', 'display_name' => 'Huile d’olive', 'info_markdown' => 'Conseils FR'],
+        ['locale' => 'de', 'display_name' => 'Olivenöl', 'info_markdown' => 'Hinweise DE'],
+    ], IngredientTranslationOrigin::AiGenerated, 'localization-v1');
+
+    $service->sync($ingredient, [
+        ['locale' => 'fr', 'display_name' => 'Huile d’olive', 'info_markdown' => 'Conseils FR révisés'],
+        ['locale' => 'de', 'display_name' => 'Olivenöl', 'info_markdown' => 'Hinweise DE'],
+    ], writeIntents: [
+        'fr' => new IngredientTranslationWriteIntent(
+            IngredientTranslationOrigin::ReviewerEdited,
+            null,
+        ),
+    ]);
+
+    $translations = $ingredient->translations()->get()->keyBy('locale');
+    expect($translations['fr']->origin)->toBe(IngredientTranslationOrigin::ReviewerEdited)
+        ->and($translations['fr']->prompt_version)->toBeNull()
+        ->and($translations['fr']->info_markdown)->toBe('Conseils FR révisés')
+        ->and($translations['de']->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($translations['de']->prompt_version)->toBe('localization-v1')
+        ->and($translations['de']->info_markdown)->toBe('Hinweise DE');
+});
+
+it('preserves all metadata for an identical translation without a locale intent', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => 'Original English',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => 'Conseils originaux',
+    ]], IngredientTranslationOrigin::AiGenerated, 'localization-v1');
+    $original = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+
+    $ingredient->update(['info_markdown' => 'Updated English']);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => 'Conseils originaux',
+    ]]);
+
+    $translation = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+    expect($translation->source_fingerprint)->toBe($original->source_fingerprint)
+        ->and($translation->origin)->toBe($original->origin)
+        ->and($translation->prompt_version)->toBe($original->prompt_version)
+        ->and($translation->display_name)->toBe($original->display_name)
+        ->and($translation->info_markdown)->toBe($original->info_markdown);
 });
 
 it('marks a changed English source and an edited locale independently in one save', function (): void {

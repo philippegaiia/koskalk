@@ -36,7 +36,9 @@ class RetryIngredientEnrichmentFailures
                 IngredientEnrichmentItemStatus::Failed->value,
                 IngredientEnrichmentItemStatus::Warning->value,
             ])->lockForUpdate()->get() as $item) {
-                $retryFrom = $item->retryableFromStage();
+                $retryFrom = $item->retryableFromStage(
+                    $locked->mode instanceof IngredientEnrichmentBatchMode ? $locked->mode : null,
+                );
                 if (! $retryFrom instanceof IngredientEnrichmentResearchStage) {
                     continue;
                 }
@@ -58,7 +60,7 @@ class RetryIngredientEnrichmentFailures
             $mode = $batch->mode;
             $jobs = collect($ids)->map(function (int $id) use ($mode, $allowGapResearch): object {
                 if ($mode instanceof IngredientEnrichmentBatchMode && $mode->isGuidance()) {
-                    return new GenerateIngredientGuidanceRefresh($id, $mode->isLocalizationOnly());
+                    return new GenerateIngredientGuidanceRefresh($id);
                 }
 
                 return new ResearchIngredientEnrichment($id, $allowGapResearch);

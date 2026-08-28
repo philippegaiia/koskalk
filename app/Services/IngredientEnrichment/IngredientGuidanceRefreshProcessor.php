@@ -24,13 +24,13 @@ class IngredientGuidanceRefreshProcessor
         private readonly IngredientGuidanceLocalizationClient $localization,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
         private readonly IngredientGuidanceChangePlanner $planner,
-        private readonly IngredientEnrichmentStageStore $stages,
+        private readonly IngredientGuidanceStageRunner $stages,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly LocalizedGuidanceHeadings $headings,
         private readonly IngredientTranslationSourceFingerprint $translationFingerprint,
     ) {}
 
-    public function handle(int $itemId, bool $localizationOnly = false): void
+    public function handle(int $itemId): void
     {
         $initial = DB::transaction(function () use ($itemId): ?array {
             $item = IngredientEnrichmentBatchItem::query()->lockForUpdate()->find($itemId);
@@ -77,116 +77,103 @@ class IngredientGuidanceRefreshProcessor
             $ingredient = Ingredient::query()->withoutGlobalScopes()->findOrFail((int) $initial['ingredient_id']);
             $context = is_array($initial['snapshot']) ? $initial['snapshot'] : $this->contexts->build($ingredient);
             $sourceFingerprint = (string) $initial['source_fingerprint'];
-            $guidanceResponse = null;
-            $englishGuidance = (string) ($ingredient->info_markdown ?? '');
-            $inputTokens = 0;
-            $outputTokens = 0;
-            $providerResponseId = '';
-            $providerRequestId = '';
-            $providerModel = '';
-
-            if (! $mode->isLocalizationOnly()) {
-                $guidanceResponse = $this->authoring->author([
-                    ...$context,
-                    'guidance_evidence' => $context['guidance_evidence'] ?? [],
-                ]);
-                $englishGuidance = (string) ($guidanceResponse->guidance['info_markdown'] ?? '');
-                $inputTokens += $guidanceResponse->inputTokens;
-                $outputTokens += $guidanceResponse->outputTokens;
-                $providerResponseId = $guidanceResponse->responseId;
-                $providerRequestId = $guidanceResponse->requestId;
-                $providerModel = $guidanceResponse->model;
-                $this->stages->complete($itemId, new IngredientSourceStageResult(
-                    stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-                    status: 'completed',
-                    data: [
-                        'guidance' => $guidanceResponse->guidance,
-                        'provider_response_id' => $guidanceResponse->responseId,
-                        'provider_request_id' => $guidanceResponse->requestId,
-                        'provider_model' => $guidanceResponse->model,
-                        'input_tokens' => $guidanceResponse->inputTokens,
-                        'output_tokens' => $guidanceResponse->outputTokens,
-                    ],
-                ));
-            }
-
-            $soapmakingRelevant = str_contains($englishGuidance, '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'));
-            $locales = $mode->isLocalizationOnly()
+            $authoring = $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+                ? $this->runAuthoring($itemId, $context)
+                : null;
+            $englishGuidance = $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+                ? $this->englishGuidanceFromAuthoring($authoring)
+                : $this->canonicalEnglishGuidance($context, $ingredient);
+            $soapmakingRelevant = str_contains(
+                $englishGuidance,
+                '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
+            );
+            $locales = $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
                 ? $this->outdatedLocales($ingredient)
                 : $this->snapshots->targetLocales();
-            $metadataTranslations = collect(data_get($context, 'current.translations', []))
-                ->filter(fn (mixed $translation): bool => is_array($translation))
-                ->map(fn (array $translation): array => collect($translation)->only([
-                    'locale', 'display_name', 'saponification_name',
-                ])->all())
-                ->values()
-                ->all();
-            $localizationResponse = $this->localization->localize([
-                'locales' => $locales,
-                'english_guidance' => $englishGuidance,
-                'soapmaking_relevant' => $soapmakingRelevant,
-                'localized_headings' => config('ingredient-enrichment.guidance.localized_headings', []),
-                'metadata_translations' => $metadataTranslations,
-            ]);
-            $inputTokens += $localizationResponse->inputTokens;
-            $outputTokens += $localizationResponse->outputTokens;
-            if ($providerResponseId === '') {
-                $providerResponseId = $localizationResponse->responseId;
-                $providerRequestId = $localizationResponse->requestId;
-                $providerModel = $localizationResponse->model;
-            }
-            $this->stages->complete($itemId, new IngredientSourceStageResult(
-                stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                status: 'completed',
-                data: [
-                    'translations' => $localizationResponse->translations,
-                    'provider_response_id' => $localizationResponse->responseId,
-                    'provider_request_id' => $localizationResponse->requestId,
-                    'provider_model' => $localizationResponse->model,
-                    'input_tokens' => $localizationResponse->inputTokens,
-                    'output_tokens' => $localizationResponse->outputTokens,
-                ],
-            ));
+            $metadataTranslations = $this->metadataTranslations($context);
+            $localization = $this->stages->run(
+                $itemId,
+                IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                function () use ($locales, $englishGuidance, $soapmakingRelevant, $metadataTranslations): IngredientSourceStageResult {
+                    $response = $this->localization->localize([
+                        'locales' => $locales,
+                        'english_guidance' => $englishGuidance,
+                        'soapmaking_relevant' => $soapmakingRelevant,
+                        'localized_headings' => config('ingredient-enrichment.guidance.localized_headings', []),
+                        'metadata_translations' => $metadataTranslations,
+                    ]);
 
-            $translations = collect($localizationResponse->translations)
-                ->filter(fn (mixed $translation): bool => is_array($translation))
-                ->map(fn (array $translation): array => [
-                    'locale' => (string) ($translation['locale'] ?? ''),
-                    'info_markdown' => $this->headings->normalize(
-                        (string) ($translation['info_markdown'] ?? ''),
-                        (string) ($translation['locale'] ?? ''),
-                        $soapmakingRelevant,
-                    ),
-                ])
-                ->values()
-                ->all();
-            $result = [
-                'format' => 'soapkraft-ingredient-guidance-refresh-result',
-                'schema_version' => 1,
-                'mode' => $mode->value,
-                'subject_public_id' => (string) $ingredient->public_id,
-                'source_fingerprint' => $sourceFingerprint,
-                'info_markdown' => $englishGuidance,
-                'translations' => $translations,
-                'guidance_evidence' => is_array($context['guidance_evidence'] ?? null)
-                    ? $context['guidance_evidence']
-                    : [],
-                'prompt_versions' => [
-                    'guidance' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
-                    'localization' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
-                ],
-                'warnings' => collect($context['warnings'] ?? [])
-                    ->merge(is_array($guidanceResponse?->guidance['warnings'] ?? null) ? $guidanceResponse->guidance['warnings'] : [])
-                    ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
-                    ->unique()->values()->all(),
-                'unresolved_questions' => collect(is_array($guidanceResponse?->guidance['unresolved_questions'] ?? null)
-                    ? $guidanceResponse->guidance['unresolved_questions']
-                    : [])
-                    ->filter(fn (mixed $question): bool => is_string($question) && trim($question) !== '')
-                    ->unique()->values()->all(),
-            ];
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                        status: 'completed',
+                        data: [
+                            'translations' => $response->translations,
+                            'provider_response_id' => $response->responseId,
+                            'provider_request_id' => $response->requestId,
+                            'provider_model' => $response->model,
+                            'input_tokens' => $response->inputTokens,
+                            'output_tokens' => $response->outputTokens,
+                        ],
+                    );
+                },
+            );
 
-            DB::transaction(function () use ($itemId, $mode, $ingredient, $sourceFingerprint, $result, $locales, $inputTokens, $outputTokens, $providerResponseId, $providerRequestId, $providerModel): void {
+            $translations = $this->normalizedTranslations($localization, $soapmakingRelevant);
+            $guidance = $this->authoringGuidance($authoring);
+            $validation = $this->stages->run(
+                $itemId,
+                IngredientEnrichmentResearchStage::Validation,
+                function () use ($mode, $ingredient, $sourceFingerprint, $englishGuidance, $translations, $context, $guidance): IngredientSourceStageResult {
+                    $candidate = [
+                        'format' => 'soapkraft-ingredient-guidance-refresh-result',
+                        'schema_version' => 1,
+                        'mode' => $mode->value,
+                        'subject_public_id' => (string) $ingredient->public_id,
+                        'source_fingerprint' => $sourceFingerprint,
+                        'info_markdown' => $englishGuidance,
+                        'translations' => $translations,
+                        'guidance_evidence' => is_array($context['guidance_evidence'] ?? null)
+                            ? $context['guidance_evidence']
+                            : [],
+                        'prompt_versions' => [
+                            'guidance' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
+                            'localization' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+                        ],
+                        'warnings' => collect(is_array($context['warnings'] ?? null) ? $context['warnings'] : [])
+                            ->merge(is_array($guidance['warnings'] ?? null) ? $guidance['warnings'] : [])
+                            ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
+                            ->unique()->values()->all(),
+                        'unresolved_questions' => collect(is_array($guidance['unresolved_questions'] ?? null)
+                            ? $guidance['unresolved_questions']
+                            : [])
+                            ->filter(fn (mixed $question): bool => is_string($question) && trim($question) !== '')
+                            ->unique()->values()->all(),
+                    ];
+                    $report = $this->validator->validateOrFail($candidate, $ingredient, $mode, $this->expectedLocales($mode, $ingredient));
+
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::Validation,
+                        status: 'completed',
+                        data: [
+                            'result' => $report['normalized'],
+                            'validation_report' => $report,
+                        ],
+                    );
+                },
+            );
+            $normalized = $this->normalizedResult($validation);
+            $validationReport = $this->validationReport($validation, $normalized);
+            $providerData = $this->providerData($authoring, $localization);
+
+            DB::transaction(function () use (
+                $itemId,
+                $mode,
+                $ingredient,
+                $sourceFingerprint,
+                $normalized,
+                $validationReport,
+                $providerData,
+            ): void {
                 $item = IngredientEnrichmentBatchItem::query()->lockForUpdate()->findOrFail($itemId);
                 $currentIngredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($ingredient->id);
                 if ($this->snapshots->fingerprint($currentIngredient) !== $sourceFingerprint) {
@@ -196,12 +183,11 @@ class IngredientGuidanceRefreshProcessor
                     return;
                 }
 
-                $report = $this->validator->validateOrFail($result, $currentIngredient, $mode, $locales);
-                $normalized = $report['normalized'];
                 $plan = $this->planner->plan($currentIngredient, $normalized, $mode);
-                $warnings = collect($report['warnings'])
-                    ->merge($normalized['warnings'])
-                    ->merge($normalized['unresolved_questions'])
+                $warnings = collect($validationReport['warnings'] ?? [])
+                    ->merge($normalized['warnings'] ?? [])
+                    ->merge($normalized['unresolved_questions'] ?? [])
+                    ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
                     ->values()->unique()->all();
                 $status = ! $plan['changed']
                     ? IngredientEnrichmentItemStatus::Unchanged
@@ -210,29 +196,27 @@ class IngredientGuidanceRefreshProcessor
                     'status' => $status,
                     'result' => $normalized,
                     'original_result' => $item->original_result ?? $normalized,
-                    'validation_report' => $report,
+                    'validation_report' => $validationReport,
                     'plan' => $plan,
                     'warnings' => $warnings,
                     'unresolved_questions' => $normalized['unresolved_questions'],
-                    'sources' => collect($normalized['guidance_evidence'])
+                    'sources' => collect($normalized['guidance_evidence'] ?? [])
+                        ->filter(fn (mixed $evidence): bool => is_array($evidence))
                         ->map(fn (array $evidence): array => [
-                            'url' => $evidence['source_url'],
-                            'title' => $evidence['source_name'],
-                        ])->all(),
-                    'provider_response_id' => $providerResponseId,
-                    'provider_request_id' => $providerRequestId,
-                    'provider_model' => $providerModel,
-                    'input_tokens' => $inputTokens,
-                    'output_tokens' => $outputTokens,
+                            'url' => (string) ($evidence['source_url'] ?? ''),
+                            'title' => (string) ($evidence['source_name'] ?? ''),
+                        ])
+                        ->filter(fn (array $source): bool => $source['url'] !== '')
+                        ->values()->all(),
+                    'provider_response_id' => $providerData['response_id'],
+                    'provider_request_id' => $providerData['request_id'],
+                    'provider_model' => $providerData['model'],
+                    'input_tokens' => $providerData['input_tokens'],
+                    'output_tokens' => $providerData['output_tokens'],
                     'web_search_calls' => 0,
                     'structured_source_calls' => 0,
                     'research_completed_at' => now(),
                 ]);
-                $this->stages->complete($itemId, new IngredientSourceStageResult(
-                    stage: IngredientEnrichmentResearchStage::Validation,
-                    status: 'completed',
-                    data: ['result' => $normalized],
-                ));
                 $this->batches->refresh($item->ingredient_enrichment_batch_id);
             }, attempts: 5);
         } catch (Throwable $exception) {
@@ -261,6 +245,155 @@ class IngredientGuidanceRefreshProcessor
             ]);
             $this->batches->refresh($item->ingredient_enrichment_batch_id);
         }, attempts: 5);
+    }
+
+    /** @param array<string,mixed> $context */
+    private function runAuthoring(int $itemId, array $context): IngredientSourceStageResult
+    {
+        return $this->stages->run(
+            $itemId,
+            IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+            function () use ($context): IngredientSourceStageResult {
+                $response = $this->authoring->author([
+                    ...$context,
+                    'guidance_evidence' => $context['guidance_evidence'] ?? [],
+                ]);
+
+                return new IngredientSourceStageResult(
+                    stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                    status: 'completed',
+                    data: [
+                        'guidance' => $response->guidance,
+                        'provider_response_id' => $response->responseId,
+                        'provider_request_id' => $response->requestId,
+                        'provider_model' => $response->model,
+                        'input_tokens' => $response->inputTokens,
+                        'output_tokens' => $response->outputTokens,
+                    ],
+                );
+            },
+        );
+    }
+
+    private function englishGuidanceFromAuthoring(IngredientSourceStageResult $authoring): string
+    {
+        $englishGuidance = data_get($authoring->data, 'guidance.info_markdown');
+        if (! is_string($englishGuidance) || trim($englishGuidance) === '') {
+            throw new \LogicException('Completed guidance authoring data is missing English guidance.');
+        }
+
+        return $englishGuidance;
+    }
+
+    /** @param array<string,mixed> $context */
+    private function canonicalEnglishGuidance(array $context, Ingredient $ingredient): string
+    {
+        $englishGuidance = data_get($context, 'current.canonical.info_markdown');
+
+        return is_string($englishGuidance) && trim($englishGuidance) !== ''
+            ? $englishGuidance
+            : (string) ($ingredient->info_markdown ?? '');
+    }
+
+    /** @param array<string,mixed> $context @return list<array<string,mixed>> */
+    private function metadataTranslations(array $context): array
+    {
+        return collect(data_get($context, 'current.translations', []))
+            ->filter(fn (mixed $translation): bool => is_array($translation))
+            ->map(fn (array $translation): array => collect($translation)->only([
+                'locale', 'display_name', 'saponification_name',
+            ])->all())
+            ->values()
+            ->all();
+    }
+
+    /** @return list<array{locale:string,info_markdown:string}> */
+    private function normalizedTranslations(IngredientSourceStageResult $localization, bool $soapmakingRelevant): array
+    {
+        return collect($localization->data['translations'] ?? [])
+            ->filter(fn (mixed $translation): bool => is_array($translation))
+            ->map(fn (array $translation): array => [
+                'locale' => (string) ($translation['locale'] ?? ''),
+                'info_markdown' => $this->headings->normalize(
+                    (string) ($translation['info_markdown'] ?? ''),
+                    (string) ($translation['locale'] ?? ''),
+                    $soapmakingRelevant,
+                ),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string,mixed> */
+    private function authoringGuidance(?IngredientSourceStageResult $authoring): array
+    {
+        $guidance = $authoring?->data['guidance'] ?? [];
+
+        return is_array($guidance) ? $guidance : [];
+    }
+
+    /** @return array<string,mixed> */
+    private function normalizedResult(IngredientSourceStageResult $validation): array
+    {
+        $result = $validation->data['result'] ?? null;
+        if (! is_array($result)) {
+            throw new \LogicException('Completed guidance validation data is missing the normalized result.');
+        }
+
+        return $result;
+    }
+
+    /** @param array<string,mixed> $normalized @return array<string,mixed> */
+    private function validationReport(IngredientSourceStageResult $validation, array $normalized): array
+    {
+        $report = $validation->data['validation_report'] ?? null;
+
+        return is_array($report)
+            ? $report
+            : [
+                'valid' => true,
+                'errors' => [],
+                'warnings' => [],
+                'normalized' => $normalized,
+                'stale' => false,
+            ];
+    }
+
+    /**
+     * @return array{response_id:string,request_id:string,model:string,input_tokens:int,output_tokens:int}
+     */
+    private function providerData(
+        ?IngredientSourceStageResult $authoring,
+        IngredientSourceStageResult $localization,
+    ): array {
+        $authoringData = is_array($authoring?->data) ? $authoring->data : [];
+        $localizationData = $localization->data;
+        $providerResponseId = (string) ($authoringData['provider_response_id'] ?? '');
+        $providerRequestId = (string) ($authoringData['provider_request_id'] ?? '');
+        $providerModel = (string) ($authoringData['provider_model'] ?? '');
+        if ($providerResponseId === '') {
+            $providerResponseId = (string) ($localizationData['provider_response_id'] ?? '');
+            $providerRequestId = (string) ($localizationData['provider_request_id'] ?? '');
+            $providerModel = (string) ($localizationData['provider_model'] ?? '');
+        }
+
+        return [
+            'response_id' => $providerResponseId,
+            'request_id' => $providerRequestId,
+            'model' => $providerModel,
+            'input_tokens' => (int) ($authoringData['input_tokens'] ?? 0)
+                + (int) ($localizationData['input_tokens'] ?? 0),
+            'output_tokens' => (int) ($authoringData['output_tokens'] ?? 0)
+                + (int) ($localizationData['output_tokens'] ?? 0),
+        ];
+    }
+
+    /** @return list<string> */
+    private function expectedLocales(IngredientEnrichmentBatchMode $mode, Ingredient $ingredient): array
+    {
+        return $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
+            ? $this->outdatedLocales($ingredient)
+            : $this->snapshots->targetLocales();
     }
 
     /** @return list<string> */

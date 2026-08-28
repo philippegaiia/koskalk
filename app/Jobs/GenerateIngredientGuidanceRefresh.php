@@ -23,7 +23,6 @@ class GenerateIngredientGuidanceRefresh implements ShouldBeUnique, ShouldQueue
 
     public function __construct(
         public readonly int $itemId,
-        public readonly bool $localizationOnly = false,
     ) {
         $this->timeout = (int) config('ingredient-enrichment.direct_ai.job_timeout_seconds');
     }
@@ -34,7 +33,7 @@ class GenerateIngredientGuidanceRefresh implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $processor->handle($this->itemId, $this->localizationOnly);
+        $processor->handle($this->itemId);
     }
 
     public function failed(?Throwable $exception): void

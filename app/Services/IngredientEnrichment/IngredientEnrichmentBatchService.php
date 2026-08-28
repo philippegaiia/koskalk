@@ -272,10 +272,7 @@ class IngredientEnrichmentBatchService
         $jobs = $items
             ->map(function (IngredientEnrichmentBatchItem $item) use ($batch): object {
                 if ($batch->mode instanceof IngredientEnrichmentBatchMode && $batch->mode->isGuidance()) {
-                    return new GenerateIngredientGuidanceRefresh(
-                        $item->id,
-                        $batch->mode->isLocalizationOnly(),
-                    );
+                    return new GenerateIngredientGuidanceRefresh($item->id);
                 }
 
                 return new ResearchIngredientEnrichment(

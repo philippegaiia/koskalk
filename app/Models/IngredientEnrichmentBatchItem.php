@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Models\Concerns\HasPublicId;
@@ -100,11 +101,15 @@ class IngredientEnrichmentBatchItem extends Model
         return $this->belongsTo(User::class, 'edited_by_user_id');
     }
 
-    public function retryableFromStage(): ?IngredientEnrichmentResearchStage
+    public function retryableFromStage(?IngredientEnrichmentBatchMode $mode = null): ?IngredientEnrichmentResearchStage
     {
         $stages = is_array($this->research_stages) ? $this->research_stages : [];
+        $orderedStages = $mode?->guidanceStages() ?? [];
+        if ($orderedStages === []) {
+            $orderedStages = IngredientEnrichmentResearchStage::ordered();
+        }
 
-        foreach (IngredientEnrichmentResearchStage::ordered() as $stage) {
+        foreach ($orderedStages as $stage) {
             $result = $stages[$stage->value] ?? null;
             if (! is_array($result) || ($result['status'] ?? null) !== 'completed') {
                 return $stage;
@@ -116,7 +121,9 @@ class IngredientEnrichmentBatchItem extends Model
         }
 
         return $this->status === IngredientEnrichmentItemStatus::Failed
-            ? IngredientEnrichmentResearchStage::EuStructured
+            ? ($mode?->isGuidance()
+                ? $orderedStages[array_key_last($orderedStages)]
+                : IngredientEnrichmentResearchStage::EuStructured)
             : null;
     }
 

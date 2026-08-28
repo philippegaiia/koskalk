@@ -14,6 +14,25 @@ enum IngredientEnrichmentBatchMode: string
         return in_array($this, [self::GuidanceRefresh, self::GuidanceLocalization], true);
     }
 
+    /**
+     * @return list<IngredientEnrichmentResearchStage>
+     */
+    public function guidanceStages(): array
+    {
+        return match ($this) {
+            self::GuidanceRefresh => [
+                IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                IngredientEnrichmentResearchStage::Validation,
+            ],
+            self::GuidanceLocalization => [
+                IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                IngredientEnrichmentResearchStage::Validation,
+            ],
+            default => [],
+        };
+    }
+
     public function isLocalizationOnly(): bool
     {
         return $this === self::GuidanceLocalization;

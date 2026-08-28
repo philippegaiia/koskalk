@@ -131,9 +131,20 @@ it('retries guidance failures with the guidance job without reopening identity r
     Bus::assertBatched(function (PendingBatch $pending): bool {
         return collect($pending->jobs)->contains(
             fn (mixed $job): bool => $job instanceof GenerateIngredientGuidanceRefresh
-                && $job->localizationOnly === false,
+                && ! property_exists($job, 'localizationOnly'),
         ) && collect($pending->jobs)->doesntContain(
             fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
         );
     });
+});
+
+it('defines guidance stage order from the persisted batch mode', function (): void {
+    expect(IngredientEnrichmentBatchMode::GuidanceRefresh->guidanceStages())->toBe([
+        IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+        IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+        IngredientEnrichmentResearchStage::Validation,
+    ])->and(IngredientEnrichmentBatchMode::GuidanceLocalization->guidanceStages())->toBe([
+        IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+        IngredientEnrichmentResearchStage::Validation,
+    ])->and(IngredientEnrichmentBatchMode::FillMissing->guidanceStages())->toBe([]);
 });

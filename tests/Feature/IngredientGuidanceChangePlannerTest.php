@@ -60,6 +60,31 @@ it('creates a revalidate decision for identical stale localization guidance', fu
         ->toBe('revalidate');
 });
 
+it('creates a revalidate decision for identical stale guidance refresh localization', function (): void {
+    $english = guidancePlannerText('Current');
+    $french = guidancePlannerLocalizedText('French');
+    $ingredient = Ingredient::factory()->create(['info_markdown' => $english]);
+    IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'info_markdown' => $french,
+        'source_fingerprint' => str_repeat('0', 64),
+    ]);
+
+    $plan = app(IngredientGuidanceChangePlanner::class)->plan(
+        $ingredient,
+        guidancePlannerResult($ingredient, $english, [[
+            'locale' => 'fr',
+            'info_markdown' => $french,
+        ]]),
+        IngredientEnrichmentBatchMode::GuidanceRefresh,
+    );
+
+    expect($plan['changed'])->toBeTrue()
+        ->and(collect($plan['decisions'])
+            ->firstWhere('field', 'proposal.translations.fr.info_markdown')['decision'])
+        ->toBe('revalidate');
+});
+
 it('does not plan a content or metadata change for identical current localization guidance', function (): void {
     $english = guidancePlannerText('Current');
     $french = guidancePlannerLocalizedText('French');

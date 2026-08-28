@@ -43,7 +43,7 @@ class IngredientGuidanceChangePlanner
             : [];
         $translationDecisions = collect($proposedTranslations)
             ->filter(fn (mixed $translation): bool => is_array($translation))
-            ->map(function (array $translation) use ($currentTranslations, $canonicalTranslationFingerprint, $mode): ?array {
+            ->map(function (array $translation) use ($currentTranslations, $canonicalTranslationFingerprint): ?array {
                 $locale = (string) ($translation['locale'] ?? '');
                 $proposed = (string) ($translation['info_markdown'] ?? '');
                 $currentTranslation = $currentTranslations->get($locale);
@@ -58,8 +58,7 @@ class IngredientGuidanceChangePlanner
                     ];
                 }
 
-                if ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization
-                    && $currentTranslation?->source_fingerprint !== $canonicalTranslationFingerprint) {
+                if ($currentTranslation?->source_fingerprint !== $canonicalTranslationFingerprint) {
                     return [
                         'field' => "proposal.translations.{$locale}.info_markdown",
                         'decision' => 'revalidate',

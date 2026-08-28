@@ -365,6 +365,86 @@ it('revalidates an identical stale locale without changing its text or unrelated
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))->toBe('stored-guidance-v1');
 });
 
+it('revalidates an identical stale locale in guidance refresh batches', function (): void {
+    $admin = User::factory()->admin()->create();
+    $storedFrench = guidanceApplyTranslationText('Stored French');
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => guidanceApplyText('Original'),
+        'source_data' => [
+            'enrichment' => [
+                'guidance' => [
+                    'evidence' => [[
+                        'source_name' => 'COSMILE Europe',
+                        'source_url' => 'https://cosmileeurope.eu/example',
+                        'summary' => 'A supported practical formulation fact.',
+                        'source_tier' => 'editorial',
+                        'retrieved_at' => '2026-08-28T00:00:00+00:00',
+                    ]],
+                    'guidance_prompt_version' => 'stored-guidance-v1',
+                    'localization_prompt_version' => 'stored-localization-v1',
+                ],
+            ],
+        ],
+    ]);
+    app(IngredientTranslationService::class)->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => $storedFrench,
+    ]], IngredientTranslationOrigin::Legacy, 'stored-localization-v1');
+    $ingredient->update(['info_markdown' => guidanceApplyText('Updated')]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = guidanceResult($ingredient, $sourceFingerprint);
+    $result['info_markdown'] = guidanceApplyText('Updated');
+    $result['translations'] = [[
+        'locale' => 'fr',
+        'info_markdown' => $storedFrench,
+    ]];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $plan = app(IngredientGuidanceChangePlanner::class)->plan(
+        $ingredient,
+        $result,
+        IngredientEnrichmentBatchMode::GuidanceRefresh,
+    );
+
+    expect($plan['changed'])->toBeTrue()
+        ->and($plan['decisions'])->toHaveCount(1)
+        ->and($plan['decisions'][0])->toMatchArray([
+            'field' => 'proposal.translations.fr.info_markdown',
+            'decision' => 'revalidate',
+            'current' => trim($storedFrench),
+            'proposed' => trim($storedFrench),
+        ]);
+
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => $result,
+        'plan' => $plan,
+    ]);
+    $beforeFrench = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    $ingredient->refresh();
+    $french = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+    $currentFingerprint = app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient);
+    expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
+        ->and($french->info_markdown)->toBe($beforeFrench->info_markdown)
+        ->and($french->display_name)->toBe($beforeFrench->display_name)
+        ->and($french->source_fingerprint)->toBe($currentFingerprint)
+        ->and($french->source_fingerprint)->not->toBe($beforeFrench->source_fingerprint)
+        ->and($french->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($french->prompt_version)->toBe('ingredient-guidance-localization-v1')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))->toBe('ingredient-guidance-v1')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.localization_prompt_version'))->toBe('ingredient-guidance-localization-v1')
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
+        ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied);
+});
+
 it('persists approved guidance evidence when prose is identical', function (): void {
     $admin = User::factory()->admin()->create();
     $firstEvidence = [[

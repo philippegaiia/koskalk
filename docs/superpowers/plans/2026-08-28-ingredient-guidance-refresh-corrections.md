@@ -90,7 +90,7 @@ public function plan(
 ): array
 ```
 
-Use collection pipelines to compare English guidance and translations. A text-equal locale receives `revalidate` only when the mode is `GuidanceLocalization` and its stored fingerprint differs from `IngredientTranslationSourceFingerprint::forIngredient($ingredient)`. Compare normalized result evidence with `source_data.enrichment.guidance.evidence`.
+Use collection pipelines to compare English guidance and translations. A text-equal locale receives `revalidate` in either guidance mode when its stored fingerprint differs from `IngredientTranslationSourceFingerprint::forIngredient($ingredient)`. Compare normalized result evidence with `source_data.enrichment.guidance.evidence`.
 
 ```php
 'changed' => collect($decisions)->contains(

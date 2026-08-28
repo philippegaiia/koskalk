@@ -58,11 +58,17 @@ class IngredientGuidanceRefreshProcessor
                 'failure_code' => null,
                 'failure_message' => null,
             ]);
+            $snapshot = is_array($item->snapshot)
+                ? $item->snapshot
+                : $this->contexts->build($ingredient);
+            if (! is_array($item->snapshot)) {
+                $item->update(['snapshot' => $snapshot]);
+            }
 
             return [
                 'mode' => $mode->value,
                 'source_fingerprint' => $item->source_fingerprint,
-                'snapshot' => is_array($item->snapshot) ? $item->snapshot : $this->contexts->build($ingredient),
+                'snapshot' => $snapshot,
                 'ingredient_id' => $ingredient->id,
             ];
         }, attempts: 5);
@@ -86,9 +92,10 @@ class IngredientGuidanceRefreshProcessor
                 $englishGuidance,
                 '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
             );
-            $locales = $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
-                ? $this->outdatedLocales($ingredient)
-                : $this->snapshots->targetLocales();
+            $locales = $this->frozenLocales($context)
+                ?? ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization
+                    ? $this->outdatedLocales($ingredient)
+                    : $this->snapshots->targetLocales());
             $metadataTranslations = $this->metadataTranslations($context);
             $localization = $this->stages->run(
                 $itemId,
@@ -252,7 +259,7 @@ class IngredientGuidanceRefreshProcessor
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
             function () use ($context): IngredientSourceStageResult {
                 $response = $this->authoring->author([
-                    ...$context,
+                    ...collect($context)->except('guidance_stage_context')->all(),
                     'guidance_evidence' => $context['guidance_evidence'] ?? [],
                 ]);
 
@@ -398,5 +405,17 @@ class IngredientGuidanceRefreshProcessor
             ->intersect($this->snapshots->targetLocales())
             ->values()
             ->all();
+    }
+
+    /** @param array<string,mixed> $context @return list<string>|null */
+    private function frozenLocales(array $context): ?array
+    {
+        $locales = data_get($context, 'guidance_stage_context.localization.expected_locales');
+        if (! is_array($locales) || ! array_is_list($locales)
+            || collect($locales)->contains(fn (mixed $locale): bool => ! is_string($locale))) {
+            return null;
+        }
+
+        return array_values($locales);
     }
 }

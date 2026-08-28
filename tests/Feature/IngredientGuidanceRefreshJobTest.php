@@ -122,8 +122,213 @@ it('queues a guidance refresh and calls authoring and localization without resea
         ->and($item->plan['decisions'])->toHaveCount(7);
 });
 
+it('rejects a completed authoring cache whose item provenance changed', function (): void {
+    $calls = ['author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-provenance',
+                requestId: 'req-guidance-provenance',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->all(),
+                responseId: 'resp-localization-provenance',
+                requestId: 'req-localization-provenance',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+    $validStages = $fixture['item']->fresh()->research_stages;
+    expect(data_get($validStages, 'ai_guidance_authoring.data.stage_context'))->toBeArray();
+
+    foreach ([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization->value,
+        'subject_public_id' => 'copied-ingredient',
+        'source_fingerprint' => hash('sha256', 'unrelated-input'),
+        'input_fingerprint' => hash('sha256', 'unrelated-context'),
+        'dependency_fingerprint' => hash('sha256', 'unrelated-guidance'),
+    ] as $field => $value) {
+        $stages = $validStages;
+        data_set($stages, "ai_guidance_authoring.data.stage_context.{$field}", $value);
+        $fixture['item']->update([
+            'status' => IngredientEnrichmentItemStatus::Failed,
+            'research_stages' => $stages,
+        ]);
+
+        expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+            ->toThrow(LogicException::class);
+
+        expect($calls)->toBe(['author' => 1, 'localize' => 1])
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed')
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization'))->toBeNull()
+            ->and(data_get($fixture['item']->fresh()->research_stages, 'validation'))->toBeNull();
+    }
+});
+
+it('rejects a completed localization cache whose upstream guidance changed', function (): void {
+    $calls = ['author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-provenance-localization',
+                requestId: 'req-guidance-provenance-localization',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->all(),
+                responseId: 'resp-localization-provenance-localization',
+                requestId: 'req-localization-provenance-localization',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+    $stages = $fixture['item']->fresh()->research_stages;
+    expect(data_get($stages, 'ai_guidance_localization.data.stage_context'))->toBeArray();
+
+    data_set($stages, 'ai_guidance_localization.data.stage_context.dependency_fingerprint', str_repeat('f', 64));
+    $fixture['item']->update([
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'research_stages' => $stages,
+    ]);
+
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+        ->toThrow(LogicException::class);
+
+    expect($calls)->toBe(['author' => 1, 'localize' => 1])
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('completed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('failed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'validation'))->toBeNull();
+});
+
+it('invalidates downstream guidance caches when a queued retry recomputes authoring', function (): void {
+    $calls = ['author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-queued-retry',
+                requestId: 'req-guidance-queued-retry',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->all(),
+                responseId: 'resp-localization-queued-retry',
+                requestId: 'req-localization-queued-retry',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+    $stages = $fixture['item']->fresh()->research_stages;
+    data_set($stages, 'ai_guidance_authoring.data.guidance.info_markdown', str_replace('## Overview', '## Summary', guidanceText()));
+    $fixture['item']->update([
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'research_stages' => $stages,
+    ]);
+
+    $job = new GenerateIngredientGuidanceRefresh($fixture['item']->id);
+    expect(fn () => $job->handle(app(IngredientGuidanceRefreshProcessor::class)))
+        ->toThrow(LogicException::class);
+
+    expect($calls)->toBe(['author' => 1, 'localize' => 1])
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization'))->toBeNull()
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'validation'))->toBeNull();
+
+    $job->handle(app(IngredientGuidanceRefreshProcessor::class));
+    expect($calls)->toBe(['author' => 2, 'localize' => 2])
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
+});
+
 it('localizes only outdated locales and never calls English authoring', function (): void {
     $calls = ['author' => 0, 'localize' => 0];
+    $requestedLocales = [];
     app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
     {
         public function __construct(private array &$calls) {}
@@ -134,13 +339,15 @@ it('localizes only outdated locales and never calls English authoring', function
             throw new RuntimeException('authoring must not run');
         }
     });
-    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls, $requestedLocales) implements IngredientGuidanceLocalizationClient
     {
-        public function __construct(private array &$calls) {}
+        /** @param array<string,int> $calls @param list<list<string>> $requestedLocales */
+        public function __construct(private array &$calls, private array &$requestedLocales) {}
 
         public function localize(array $context): IngredientGuidanceLocalizationResponse
         {
             $this->calls['localize']++;
+            $this->requestedLocales[] = $context['locales'] ?? [];
             if ($this->calls['localize'] === 1) {
                 throw new RuntimeException('temporary localization failure');
             }
@@ -191,10 +398,15 @@ it('localizes only outdated locales and never calls English authoring', function
     expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($item->id))
         ->toThrow(RuntimeException::class, 'temporary localization failure');
 
+    $ingredient->translations()->where('locale', 'fr')->update([
+        'source_fingerprint' => $fingerprint,
+    ]);
     app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
     app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
 
     expect($calls)->toBe(['author' => 0, 'localize' => 2])
+        ->and($requestedLocales)->toBe([['fr'], ['fr']])
+        ->and(data_get($item->fresh()->snapshot, 'guidance_stage_context.localization.expected_locales'))->toBe(['fr'])
         ->and($item->fresh()->result['translations'])->toHaveCount(1)
         ->and($item->fresh()->result['translations'][0]['locale'])->toBe('fr');
 });
@@ -486,7 +698,7 @@ it('fails a corrupt completed authoring stage and retries authoring from that st
     ]);
 
     expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
-        ->toThrow(LogicException::class, 'missing English guidance');
+        ->toThrow(LogicException::class, 'provenance context');
 
     expect($calls)->toBe(['author' => 0, 'localize' => 0])
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed');
@@ -501,7 +713,7 @@ it('fails a corrupt completed authoring stage and retries authoring from that st
         ->and(data_get($completed->research_stages, 'ai_guidance_localization.status'))->toBe('completed');
 });
 
-it('fails a corrupt completed localization stage and retries localization without repeating authoring', function (): void {
+it('fails an ambiguous completed localization stage before retrying its upstream authoring', function (): void {
     $calls = ['author' => 0, 'localize' => 0];
     app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
     {
@@ -511,7 +723,15 @@ it('fails a corrupt completed localization stage and retries localization withou
         public function author(array $context): IngredientGuidanceAuthoringResponse
         {
             $this->calls['author']++;
-            throw new RuntimeException('stored authoring should be reused');
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-ambiguous-cache',
+                requestId: 'req-guidance-ambiguous-cache',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
         }
     });
     app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
@@ -559,16 +779,16 @@ it('fails a corrupt completed localization stage and retries localization withou
     ]);
 
     expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
-        ->toThrow(LogicException::class, 'translations');
+        ->toThrow(LogicException::class, 'provenance context');
 
     expect($calls)->toBe(['author' => 0, 'localize' => 0])
-        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('failed');
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed');
 
     app(RetryIngredientEnrichmentFailures::class)->handle($fixture['admin'], $fixture['batch']);
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
     $completed = $fixture['item']->fresh();
-    expect($calls)->toBe(['author' => 0, 'localize' => 1])
+    expect($calls)->toBe(['author' => 1, 'localize' => 1])
         ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(data_get($completed->research_stages, 'ai_guidance_authoring.status'))->toBe('completed')
         ->and(data_get($completed->research_stages, 'ai_guidance_localization.status'))->toBe('completed');
@@ -632,7 +852,7 @@ it('fails a completed authoring stage with malformed accounting instead of dropp
     ]);
 
     expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
-        ->toThrow(LogicException::class, 'input_tokens');
+        ->toThrow(LogicException::class, 'provenance context');
 
     expect($calls)->toBe(['author' => 0, 'localize' => 0])
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed');
@@ -1041,6 +1261,8 @@ it('fails cached validation when its envelope context or normalized result is in
             return [...$result, 'source_fingerprint' => hash('sha256', 'unrelated-input')];
         },
         'report' => static fn (array $result): array => $result,
+        'report_errors' => static fn (array $result): array => $result,
+        'report_warnings' => static fn (array $result): array => $result,
         'normalized' => function (array $result): array {
             return [...$result, 'info_markdown' => $result['info_markdown'].'\nmutated'];
         },
@@ -1059,6 +1281,10 @@ it('fails cached validation when its envelope context or normalized result is in
             $corruptValidation['data']['validation_report']['normalized'] = $mutate($validResult);
         } elseif ($name === 'report') {
             $corruptValidation['data']['validation_report']['valid'] = false;
+        } elseif ($name === 'report_errors') {
+            $corruptValidation['data']['validation_report']['errors'] = ['result' => ['stale report']];
+        } elseif ($name === 'report_warnings') {
+            $corruptValidation['data']['validation_report']['warnings'] = ['stale report'];
         } elseif ($name === 'missing_result') {
             unset($corruptValidation['data']['result']);
         } elseif ($name === 'missing_report') {

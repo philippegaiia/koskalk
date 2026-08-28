@@ -36,6 +36,10 @@ class IngredientGuidanceStageRunner
                     ->lockForUpdate()
                     ->findOrFail($itemId);
                 $context = $this->context($item);
+                if ($stage === IngredientEnrichmentResearchStage::AiGuidanceLocalization) {
+                    $this->freezeExpectedLocales($item, $context['expected_locales']);
+                    $context = $this->context($item);
+                }
                 $stored = $this->stages->stages($item)[$stage->value] ?? null;
 
                 if (! is_array($stored) || ($stored['status'] ?? null) !== 'completed') {
@@ -46,7 +50,12 @@ class IngredientGuidanceStageRunner
                 if ($storedResult->stage !== $stage) {
                     throw new LogicException("Unexpected enrichment stage {$storedResult->stage->value}.");
                 }
-                $storedResult = $this->validateResult($storedResult, $context, requireValidationEnvelope: true);
+                $storedResult = $this->validateResult(
+                    $storedResult,
+                    $context,
+                    requireValidationEnvelope: true,
+                    requireStageContext: true,
+                );
 
                 return ['result' => $storedResult, 'context' => $context];
             }, attempts: 5);
@@ -68,11 +77,14 @@ class IngredientGuidanceStageRunner
                 throw new LogicException("Enrichment stage {$stage->value} did not complete.");
             }
             $result = $this->validateResult($result, $context);
+            $result = $this->withStageContext($result, $context);
 
+            $this->stages->invalidateFrom($itemId, $stage);
             $this->stages->complete($itemId, $result);
 
             return $result;
         } catch (Throwable $exception) {
+            $this->stages->invalidateFrom($itemId, $stage);
             $this->stages->fail($itemId, $stage, $this->safeFailureCode($exception));
 
             throw $exception;
@@ -95,14 +107,25 @@ class IngredientGuidanceStageRunner
      *     subject_public_id: string,
      *     source_fingerprint: string,
      *     expected_locales: list<string>,
-     *     soapmaking_relevant: bool
+     *     soapmaking_relevant: bool,
+     *     input_fingerprint: string,
+     *     authoring_dependency_fingerprint: string,
+     *     localization_dependency_fingerprint: string
      * }  $context
      */
     private function validateResult(
         IngredientSourceStageResult $result,
         array $context,
         bool $requireValidationEnvelope = false,
+        bool $requireStageContext = false,
     ): IngredientSourceStageResult {
+        if ($requireStageContext && in_array($result->stage, [
+            IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+            IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+        ], true)) {
+            $this->validateStageContext($result, $context);
+        }
+
         if ($result->stage === IngredientEnrichmentResearchStage::Validation) {
             return $this->validateValidation($result, $context, $requireValidationEnvelope);
         }
@@ -220,14 +243,8 @@ class IngredientGuidanceStageRunner
             $storedReport = $data['validation_report'];
             if (! is_array($storedReport)
                 || ! array_key_exists('result', $data)
-                || ($storedReport['valid'] ?? null) !== true
-                || ! is_array($storedReport['errors'] ?? null)
-                || ! is_array($storedReport['warnings'] ?? null)
-                || ($storedReport['normalized'] ?? null) !== $normalized) {
+                || $this->canonicalize($storedReport) !== $this->canonicalize($report)) {
                 throw new LogicException('Guidance validation stage data contains an invalid validation report.');
-            }
-            if (($storedReport['stale'] ?? null) !== false) {
-                throw new LogicException('Guidance validation stage data contains a stale validation report.');
             }
         }
 
@@ -252,7 +269,10 @@ class IngredientGuidanceStageRunner
      *     subject_public_id: string,
      *     source_fingerprint: string,
      *     expected_locales: list<string>,
-     *     soapmaking_relevant: bool
+     *     soapmaking_relevant: bool,
+     *     input_fingerprint: string,
+     *     authoring_dependency_fingerprint: string,
+     *     localization_dependency_fingerprint: string
      * }
      */
     private function context(IngredientEnrichmentBatchItem $item): array
@@ -273,16 +293,186 @@ class IngredientGuidanceStageRunner
             'ingredient' => $ingredient,
             'subject_public_id' => (string) $ingredient->public_id,
             'source_fingerprint' => (string) $item->source_fingerprint,
-            'expected_locales' => $mode === IngredientEnrichmentBatchMode::GuidanceLocalization
-                ? $this->outdatedLocales($ingredient)
-                : $this->snapshots->targetLocales(),
-            'soapmaking_relevant' => $this->soapmakingRelevant($item, $ingredient),
+            'expected_locales' => $this->frozenExpectedLocales($item)
+                ?? ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization
+                    ? $this->outdatedLocales($ingredient)
+                    : $this->snapshots->targetLocales()),
+            'soapmaking_relevant' => $this->soapmakingRelevant($item, $ingredient, $mode),
+            'input_fingerprint' => $this->inputFingerprint($item),
+            'authoring_dependency_fingerprint' => $this->authoringDependencyFingerprint($item),
+            'localization_dependency_fingerprint' => $this->localizationDependencyFingerprint($item, $ingredient, $mode),
         ];
     }
 
-    private function soapmakingRelevant(IngredientEnrichmentBatchItem $item, Ingredient $ingredient): bool
+    /**
+     * @param  array{
+     *     mode: IngredientEnrichmentBatchMode,
+     *     ingredient: Ingredient,
+     *     subject_public_id: string,
+     *     source_fingerprint: string,
+     *     expected_locales: list<string>,
+     *     soapmaking_relevant: bool,
+     *     input_fingerprint: string,
+     *     authoring_dependency_fingerprint: string,
+     *     localization_dependency_fingerprint: string
+     * }  $context
+     */
+    private function validateStageContext(IngredientSourceStageResult $result, array $context): void
     {
-        $englishGuidance = data_get($item->research_stages, 'ai_guidance_authoring.data.guidance.info_markdown');
+        $storedContext = $result->data['stage_context'] ?? null;
+        if (! is_array($storedContext)
+            || $this->canonicalize($storedContext) !== $this->canonicalize($this->stageContext($result->stage, $context))) {
+            throw new LogicException("Guidance {$result->stage->value} stage data has invalid provenance context.");
+        }
+    }
+
+    /**
+     * @param  array{
+     *     mode: IngredientEnrichmentBatchMode,
+     *     ingredient: Ingredient,
+     *     subject_public_id: string,
+     *     source_fingerprint: string,
+     *     expected_locales: list<string>,
+     *     soapmaking_relevant: bool,
+     *     input_fingerprint: string,
+     *     authoring_dependency_fingerprint: string,
+     *     localization_dependency_fingerprint: string
+     * }  $context
+     */
+    private function withStageContext(IngredientSourceStageResult $result, array $context): IngredientSourceStageResult
+    {
+        if (! in_array($result->stage, [
+            IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+            IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+        ], true)) {
+            return $result;
+        }
+
+        return new IngredientSourceStageResult(
+            stage: $result->stage,
+            status: $result->status,
+            data: [
+                ...$result->data,
+                'stage_context' => $this->stageContext($result->stage, $context),
+            ],
+            evidence: $result->evidence,
+            warnings: $result->warnings,
+            unresolvedQuestions: $result->unresolvedQuestions,
+            sourceCalls: $result->sourceCalls,
+        );
+    }
+
+    /**
+     * @param  array{
+     *     mode: IngredientEnrichmentBatchMode,
+     *     ingredient: Ingredient,
+     *     subject_public_id: string,
+     *     source_fingerprint: string,
+     *     expected_locales: list<string>,
+     *     soapmaking_relevant: bool,
+     *     input_fingerprint: string,
+     *     authoring_dependency_fingerprint: string,
+     *     localization_dependency_fingerprint: string
+     * }  $context
+     * @return array{mode:string,subject_public_id:string,source_fingerprint:string,input_fingerprint:string,dependency_fingerprint:string}
+     */
+    private function stageContext(IngredientEnrichmentResearchStage $stage, array $context): array
+    {
+        return [
+            'mode' => $context['mode']->value,
+            'subject_public_id' => $context['subject_public_id'],
+            'source_fingerprint' => $context['source_fingerprint'],
+            'input_fingerprint' => $context['input_fingerprint'],
+            'dependency_fingerprint' => match ($stage) {
+                IngredientEnrichmentResearchStage::AiGuidanceAuthoring => $context['authoring_dependency_fingerprint'],
+                IngredientEnrichmentResearchStage::AiGuidanceLocalization => $context['localization_dependency_fingerprint'],
+                default => $context['input_fingerprint'],
+            },
+        ];
+    }
+
+    /** @return list<string>|null */
+    private function frozenExpectedLocales(IngredientEnrichmentBatchItem $item): ?array
+    {
+        $locales = data_get($item->snapshot, 'guidance_stage_context.localization.expected_locales');
+        if (! is_array($locales) || ! array_is_list($locales)
+            || collect($locales)->contains(fn (mixed $locale): bool => ! is_string($locale))) {
+            return null;
+        }
+
+        return array_values($locales);
+    }
+
+    /** @param list<string> $locales */
+    private function freezeExpectedLocales(IngredientEnrichmentBatchItem $item, array $locales): void
+    {
+        if ($this->frozenExpectedLocales($item) !== null) {
+            return;
+        }
+
+        $snapshot = is_array($item->snapshot) ? $item->snapshot : [];
+        data_set($snapshot, 'guidance_stage_context.localization.expected_locales', array_values($locales));
+        $item->update(['snapshot' => $snapshot]);
+        $item->setAttribute('snapshot', $snapshot);
+    }
+
+    private function inputFingerprint(IngredientEnrichmentBatchItem $item): string
+    {
+        $snapshot = is_array($item->snapshot) ? $item->snapshot : [];
+        unset($snapshot['guidance_stage_context']);
+
+        return hash('sha256', $this->snapshots->canonicalJson($snapshot));
+    }
+
+    private function authoringDependencyFingerprint(IngredientEnrichmentBatchItem $item): string
+    {
+        return $this->inputFingerprint($item);
+    }
+
+    private function localizationDependencyFingerprint(
+        IngredientEnrichmentBatchItem $item,
+        Ingredient $ingredient,
+        IngredientEnrichmentBatchMode $mode,
+    ): string {
+        $upstreamGuidance = $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+            ? data_get($item->research_stages, 'ai_guidance_authoring.data.guidance')
+            : null;
+        if (! is_array($upstreamGuidance)) {
+            $englishGuidance = data_get($item->snapshot, 'current.canonical.info_markdown');
+            $upstreamGuidance = ['info_markdown' => is_string($englishGuidance) ? trim($englishGuidance) : (string) ($ingredient->info_markdown ?? '')];
+        }
+
+        return hash('sha256', $this->snapshots->canonicalJson([
+            'guidance' => $upstreamGuidance,
+            'expected_locales' => $this->frozenExpectedLocales($item) ?? [],
+            'soapmaking_relevant' => $this->soapmakingRelevant($item, $ingredient, $mode),
+        ]));
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $canonical = collect($value)
+            ->map(fn (mixed $nested): mixed => $this->canonicalize($nested))
+            ->all();
+        if (! array_is_list($canonical)) {
+            ksort($canonical);
+        }
+
+        return $canonical;
+    }
+
+    private function soapmakingRelevant(
+        IngredientEnrichmentBatchItem $item,
+        Ingredient $ingredient,
+        IngredientEnrichmentBatchMode $mode,
+    ): bool {
+        $englishGuidance = $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+            ? data_get($item->research_stages, 'ai_guidance_authoring.data.guidance.info_markdown')
+            : null;
         if (! is_string($englishGuidance) || trim($englishGuidance) === '') {
             $englishGuidance = data_get($item->snapshot, 'current.canonical.info_markdown');
         }

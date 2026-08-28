@@ -106,7 +106,8 @@ class ApplyIngredientGuidanceRefresh
                             ]];
                         });
                     $selectedProposalRows = $proposalRows
-                        ->filter(fn (array $translation, string $locale): bool => ! $englishEdited || $reviewerLocales->contains($locale));
+                        ->filter(fn (array $translation, string $locale): bool => ! ($englishEdited || $reviewerLocales->isNotEmpty())
+                            || $reviewerLocales->contains($locale));
                     $selectedProposalRows
                         ->each(fn (array $translation, string $locale) => $translationRows->put($locale, $translation));
                     $localizationPromptVersion = (string) ($normalized['prompt_versions']['localization']

@@ -173,8 +173,18 @@ it('marks a French-only reviewer edit with current reviewer provenance', functio
         'info_markdown' => guidanceApplyText('Original'),
     ]);
     app(IngredientTranslationService::class)->sync($ingredient, [
-        ['locale' => 'fr', 'info_markdown' => guidanceApplyTranslationText('Stored French')],
-        ['locale' => 'de', 'info_markdown' => guidanceApplyLocalizedTranslationText('Stored German', 'de')],
+        [
+            'locale' => 'fr',
+            'display_name' => 'Huile d’olive conservée',
+            'saponification_name' => 'Savon d’huile conservé',
+            'info_markdown' => guidanceApplyTranslationText('Stored French'),
+        ],
+        [
+            'locale' => 'de',
+            'display_name' => 'Gespeichertes Olivenöl',
+            'saponification_name' => 'Gespeicherte Olivenölseife',
+            'info_markdown' => guidanceApplyLocalizedTranslationText('Stored German', 'de'),
+        ],
     ], IngredientTranslationOrigin::AiGenerated, 'ingredient-guidance-localization-v1');
     $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
     $batch = IngredientEnrichmentBatch::factory()->create([
@@ -183,11 +193,16 @@ it('marks a French-only reviewer edit with current reviewer provenance', functio
     ]);
     $result = guidanceResult($ingredient, $sourceFingerprint);
     $result['info_markdown'] = guidanceApplyText('Original');
+    $result['translations'][] = [
+        'locale' => 'de',
+        'info_markdown' => guidanceApplyLocalizedTranslationText('Generated German', 'de'),
+    ];
     $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
         'status' => IngredientEnrichmentItemStatus::Ready,
         'source_fingerprint' => $sourceFingerprint,
         'result' => $result,
     ]);
+    $beforeGerman = $ingredient->translations()->where('locale', 'de')->firstOrFail()->fresh();
 
     app(EditIngredientGuidanceProposal::class)->handle($admin, $item, [
         'translations' => [[
@@ -206,8 +221,36 @@ it('marks a French-only reviewer edit with current reviewer provenance', functio
         ->and($translations['fr']->origin)->toBe(IngredientTranslationOrigin::ReviewerEdited)
         ->and($translations['fr']->prompt_version)->toBeNull()
         ->and($translations['fr']->source_fingerprint)->toBe($currentFingerprint)
-        ->and($translations['de']->info_markdown)->toBe(guidanceApplyLocalizedTranslationText('Stored German', 'de'))
-        ->and($translations['de']->origin)->toBe(IngredientTranslationOrigin::AiGenerated);
+        ->and($translations['de']->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]))->toBe($beforeGerman->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]));
+});
+
+it('does not revive a cancelled guidance batch during apply completion', function (): void {
+    $admin = User::factory()->admin()->create();
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::Cancelled,
+    ]);
+    IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'status' => IngredientEnrichmentItemStatus::Applied,
+    ]);
+
+    app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    expect($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Cancelled);
 });
 
 it('revalidates an identical stale locale without changing its text or unrelated metadata', function (): void {

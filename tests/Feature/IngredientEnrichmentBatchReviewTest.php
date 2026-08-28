@@ -12,6 +12,7 @@ use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -175,6 +176,44 @@ it('cancels only pending items and preserves completed proposals', function (): 
     expect($pending->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Cancelled)
         ->and($ready->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Cancelled);
+});
+
+it('does not mark incomplete or cancelled batches as applied', function (): void {
+    $cases = [
+        ['batch_status' => IngredientEnrichmentBatchStatus::ReadyForReview, 'item_status' => null],
+        ['batch_status' => IngredientEnrichmentBatchStatus::Processing, 'item_status' => IngredientEnrichmentItemStatus::Researching],
+        ['batch_status' => IngredientEnrichmentBatchStatus::PartiallyFailed, 'item_status' => IngredientEnrichmentItemStatus::Failed],
+        ['batch_status' => IngredientEnrichmentBatchStatus::ReadyForReview, 'item_status' => IngredientEnrichmentItemStatus::Stale],
+        ['batch_status' => IngredientEnrichmentBatchStatus::ReadyForReview, 'item_status' => IngredientEnrichmentItemStatus::Ready],
+        ['batch_status' => IngredientEnrichmentBatchStatus::ReadyForReview, 'item_status' => IngredientEnrichmentItemStatus::Warning],
+        ['batch_status' => IngredientEnrichmentBatchStatus::ReadyForReview, 'item_status' => IngredientEnrichmentItemStatus::Approved],
+        ['batch_status' => IngredientEnrichmentBatchStatus::Cancelled, 'item_status' => IngredientEnrichmentItemStatus::Applied],
+    ];
+
+    foreach ($cases as $case) {
+        $batch = IngredientEnrichmentBatch::factory()->create(['status' => $case['batch_status']]);
+        if ($case['item_status'] instanceof IngredientEnrichmentItemStatus) {
+            IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create(['status' => $case['item_status']]);
+        }
+
+        app(IngredientEnrichmentBatchService::class)->markAppliedWhenComplete($batch->id);
+
+        expect($batch->fresh()->status)->toBe($case['batch_status']);
+    }
+});
+
+it('does not revive a cancelled full enrichment batch during apply completion', function (): void {
+    $admin = User::factory()->admin()->create();
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::Cancelled,
+    ]);
+    IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'status' => IngredientEnrichmentItemStatus::Applied,
+    ]);
+
+    app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    expect($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Cancelled);
 });
 
 /** @return array<string, mixed> */

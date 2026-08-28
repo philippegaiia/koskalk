@@ -369,6 +369,7 @@ class IngredientEnrichmentBatchService
     public function refresh(int $batchId): void
     {
         $batch = IngredientEnrichmentBatch::query()->lockForUpdate()->findOrFail($batchId);
+        $isCancelled = $batch->status === IngredientEnrichmentBatchStatus::Cancelled;
         $counts = $batch->items()->reorder()->selectRaw('status, count(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
         $values = collect(IngredientEnrichmentItemStatus::cases())->mapWithKeys(
             fn (IngredientEnrichmentItemStatus $status): array => ["{$status->value}_count" => (int) ($counts[$status->value] ?? 0)],
@@ -380,12 +381,14 @@ class IngredientEnrichmentBatchService
         unset($values['applying_count']);
         $batch->update([
             ...$values,
-            'status' => $status,
+            'status' => $isCancelled ? IngredientEnrichmentBatchStatus::Cancelled : $status,
             'input_tokens' => (int) $batch->items()->sum('input_tokens'),
             'output_tokens' => (int) $batch->items()->sum('output_tokens'),
             'web_search_calls' => (int) $batch->items()->sum('web_search_calls'),
             'structured_source_calls' => (int) $batch->items()->sum('structured_source_calls'),
-            'completed_at' => $active === 0 ? now() : null,
+            'completed_at' => $isCancelled
+                ? $batch->completed_at
+                : ($active === 0 ? now() : null),
         ]);
     }
 

@@ -215,6 +215,25 @@ it('does not draw a rule under the whole navigation', function (): void {
         ->not->toContain('border-bottom');
 });
 
+it('shares the content left edge instead of indenting the navigation', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // The navigation sits inside the same `max-w-app` wrapper as the content, so
+    // any inline-start offset on a row pulls its left edge inboard while its
+    // right edge stays flush — the menu then reads as right-aligned. The rail is
+    // a bordered panel with its own start border; that is what carries the
+    // recess, not an offset. Asserted against the stylesheet because PHPUnit
+    // cannot compute layout.
+    preg_match_all('/\.sk-nav-rail\s*\{([^}]*)\}/', $css, $railBlocks);
+
+    expect(implode(' ', $railBlocks[1] ?? []))
+        ->not->toContain('margin-inline-start')
+        // Level-1 tabs carry their own `padding-inline`; padding on the row would
+        // double-indent them off the content edge.
+        ->and($css)
+        ->not->toMatch("/\.sk-nav-row\[data-level='1'\] \{[^}]*padding-inline/");
+});
+
 it('declares durable navigation state in every production bench Livewire view', function (): void {
     $viewExpectations = [
         'home-index.blade.php' => ['active="home"'],

@@ -440,10 +440,12 @@
         row-gap: 0.5rem;
     }
 
-    .sk-nav-row[data-level='1'] {
-        padding-inline: 0.75rem;
-    }
-
+    /*
+     * Level 1 carries no inline padding of its own. The navigation has to share
+     * a left edge with the content below it, and the row is the outermost box
+     * the tabs sit in — any padding here double-indents them, because each tab
+     * already carries its own `padding-inline` (owner override O5).
+     */
     .sk-nav-cluster {
         display: flex;
         flex-wrap: wrap;
@@ -535,10 +537,17 @@
         border-inline-start: 1px solid var(--color-line);
     }
 
-    /* Level 2 — the drawer. Recessed panel, indent, 36px targets. */
+    /*
+     * Level 2 — the drawer. Recessed panel, 36px targets.
+     *
+     * No start indent: the panel is the hierarchy signal, not an offset from the
+     * row above it. Indenting it pulled the drawer's left edge 1rem inboard of
+     * the content while its right edge stayed flush, so the navigation read as
+     * right-aligned (owner override O5). The start border and panel fill carry
+     * the recess on their own.
+     */
     .sk-nav-rail {
         margin-block-start: 0.75rem;
-        margin-inline-start: 1rem;
         padding-block: 0.5rem;
         padding-inline: 1.125rem 0.75rem;
         border: 1px solid var(--color-line);
@@ -582,13 +591,12 @@
     }
 
     /*
-     * Below `sm`, reclaim the indent and drop Settings' leading rule: the row
-     * wraps there, so the rule can end up at the start of a line where it reads
-     * as a stray vertical stroke rather than a separator.
+     * Below `sm`, tighten the drawer's leading padding and drop Settings'
+     * leading rule: the row wraps there, so the rule can end up at the start of
+     * a line where it reads as a stray vertical stroke rather than a separator.
      */
     @media (width < 40rem) {
         .sk-nav-rail {
-            margin-inline-start: 0.5rem;
             padding-inline-start: 0.75rem;
         }
 

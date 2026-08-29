@@ -592,3 +592,39 @@ has no route and therefore still lands on `default => 'all'`. Deleting the `all`
 branch means rewriting that 60-line test into five route-level tests. Worth
 doing, but it is a separate job from this one and is the main piece of test-only
 surface in this component.
+
+### O5 — the navigation shares the content's left edge
+
+The owner's verdict on seeing it rendered: the menu does not take the full width,
+it is flush on the right but inset on the left.
+
+They were right, and the two causes were both mine. `.sk-nav` sits inside the
+same `max-w-app` wrapper as the content, so the rows inherit the full 1184px
+(`--container-app: 74rem`). Two offsets then ate into the start edge only:
+
+- `.sk-nav-row[data-level='1'] { padding-inline: 0.75rem; }` — 12px, on top of
+  the 12px every level-1 tab already carries in its own `padding-inline`. The
+  first tab's text started 24px inboard of the content.
+- `.sk-nav-rail { margin-inline-start: 1rem; }` — the drawer's indent.
+
+Because `.sk-nav` is a column flex container, a row with only a *start* margin
+stretches to the remaining width: its right edge stayed flush at 1184px while its
+left edge moved 16px inboard. That asymmetry is exactly "aligned on the right but
+not on the left".
+
+Both are removed. The drawer keeps its `margin-block-start`, its 2px start
+border, its panel fill and its radii — **the panel is the recess, not the
+offset** — so the level-2 tier still reads as nested without being pushed off the
+content edge. The small-screen override that reclaimed part of the indent drops
+its margin and keeps only its tighter leading padding.
+
+Pinned by `ProductionBenchLayoutTest::shares the content left edge instead of
+indenting the navigation`, which asserts no `margin-inline-start` in any
+`.sk-nav-rail` block (including the media-query one) and no `padding-inline` on
+the level-1 row.
+
+This is the second time the same class of mistake has reached the owner: O1 was a
+container border that double-lined a child's own edge. The rule both times is
+that **an outer box must not add an edge its child already draws** — here the row
+duplicated the tabs' padding, and the rail added a start offset to a box that was
+already full-bleed.

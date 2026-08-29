@@ -3,11 +3,14 @@
 return [
     'title' => 'Production Bench',
     'navigation' => [
-        'home' => 'Home',
+        'home' => 'Dashboard',
+        'home_aria' => 'Production Bench dashboard',
         'inventory' => 'Inventory',
         'purchasing' => 'Purchasing',
-        'production' => 'Production setup',
+        'production_runs' => 'Production runs',
         'production_workflow' => 'Production',
+        'settings' => 'Settings',
+        'settings_group_resources' => 'Resources',
         'flash' => 'Flash planner',
         'calendar' => 'Calendar',
         'suppliers' => 'Suppliers',

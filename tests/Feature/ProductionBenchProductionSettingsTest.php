@@ -193,7 +193,7 @@ it('keeps the setup page read-only when the entitlement is cancelled', function 
 
 it('has English labels for the setup workspace', function (): void {
     expect(Lang::has('production_bench.settings.title', 'en'))->toBeTrue()
-        ->and(Lang::get('production_bench.navigation.production', [], 'en'))->toBe('Production setup');
+        ->and(Lang::get('production_bench.navigation.settings', [], 'en'))->toBe('Settings');
 });
 
 it('deletes unused templates while protecting task types used by a task set', function (): void {

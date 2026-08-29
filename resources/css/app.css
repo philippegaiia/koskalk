@@ -404,6 +404,167 @@
         border-color: color-mix(in oklab, var(--quality-tone, var(--color-quality-ideal)) 42%, white 58%);
         color: var(--quality-tone, var(--color-quality-ideal));
     }
+
+    /*
+     * Production Bench navigation.
+     *
+     * Every tier is expressed as a `[data-level]` attribute selector, so a
+     * parent and its children can never drift apart: they share one rule set
+     * and differ only by the attributes the tree emits. Depth reads as
+     * descending weight, descending size, and descending selected-state
+     * intensity, wrapped in a recessed rail that belongs to the parent above.
+     */
+    .sk-nav {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-bottom: 1px solid var(--color-line);
+    }
+
+    .sk-nav-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .sk-nav-row[data-level='1'] {
+        gap: 0.25rem;
+        padding-inline: 0.75rem;
+    }
+
+    .sk-nav-cluster {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .sk-nav-cluster > .sk-nav-group-label {
+        margin-inline-end: 0.25rem;
+        color: var(--color-ink-soft);
+        opacity: 0.85;
+    }
+
+    .sk-nav-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 0.5rem;
+        color: var(--color-ink-soft);
+        text-decoration: none;
+        transition:
+            color 150ms ease,
+            background-color 150ms ease,
+            border-color 150ms ease;
+    }
+
+    .sk-nav-item:hover {
+        color: var(--color-ink-strong);
+    }
+
+    .sk-nav-item:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .sk-nav-icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    .sk-nav-label {
+        white-space: nowrap;
+    }
+
+    /* Level 1 — the section row. Underline tabs, 44px targets. */
+    .sk-nav-item[data-level='1'] {
+        min-height: 2.75rem;
+        padding-inline: 0.75rem;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        letter-spacing: 0.005em;
+    }
+
+    .sk-nav-item[data-level='1'].is-active,
+    .sk-nav-item[data-level='1'].is-branch {
+        border-bottom-color: var(--color-accent);
+        color: var(--color-ink-strong);
+    }
+
+    /* Rule between the landing page and the workflow sections. */
+    .sk-nav-item[data-level='1'][data-nav-divider] {
+        margin-inline-end: 0.5rem;
+        padding-inline-end: 1rem;
+        border-right: 1px solid var(--color-line);
+    }
+
+    /* Settings is a utility, not a workflow step: pin it to the trailing edge. */
+    .sk-nav-item[data-level='1'][data-nav-end] {
+        margin-inline-start: auto;
+        padding-inline-start: 1rem;
+        border-left: 1px solid var(--color-line);
+    }
+
+    /* Level 2 — the drawer. Recessed panel, indent, 36px targets. */
+    .sk-nav-rail {
+        margin-top: 0.75rem;
+        margin-left: 1rem;
+        padding: 0.5rem 0.75rem 0.5rem 1.125rem;
+        border: 1px solid var(--color-line);
+        border-left-width: 2px;
+        border-radius: 0.25rem 0.75rem 0.75rem 0.25rem;
+        background: var(--color-panel);
+    }
+
+    .sk-nav-item[data-level='2'] {
+        min-height: 2.25rem;
+        padding-inline: 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 400;
+    }
+
+    .sk-nav-item[data-level='2']:hover {
+        background: var(--color-panel-strong);
+        color: var(--color-ink-strong);
+    }
+
+    .sk-nav-item[data-level='2'].is-active {
+        background: var(--color-accent-soft);
+        color: var(--color-accent-strong);
+        font-weight: 500;
+    }
+
+    /*
+     * Dormant: a third tier is a config change plus this rule. Nothing else in
+     * the navigation hard-codes a depth.
+     */
+    .sk-nav-item[data-level='3'] {
+        min-height: 2rem;
+        padding-inline: 0.5rem;
+        font-size: 0.8125rem;
+        font-weight: 400;
+    }
+
+    /* Below `sm`, reclaim the indent and let Settings wrap with the row. */
+    @media (width < 40rem) {
+        .sk-nav-rail {
+            margin-left: 0.5rem;
+            padding-left: 0.75rem;
+        }
+
+        .sk-nav-item[data-level='1'][data-nav-end] {
+            margin-inline-start: 0;
+            padding-inline-start: 0.75rem;
+            border-left: 0;
+        }
+
+        .sk-nav-item[data-level='1'][data-nav-divider] {
+            padding-inline-end: 0.75rem;
+        }
+    }
 }
 
 @layer base {

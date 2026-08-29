@@ -11531,90 +11531,6 @@
       }
     },
     {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_invalid",
-      "text": {
-        "de": "Jede Übersetzungsschreibabsicht muss einen gültigen Absichtswert verwenden.",
-        "es": "Cada intención de escritura de traducción debe usar un valor de intención válido.",
-        "fr": "Chaque intention d’écriture de traduction doit utiliser une valeur valide.",
-        "it": "Ogni intento di scrittura della traduzione deve usare un valore valido.",
-        "nl": "Elke schrijfintentie voor vertaling moet een geldige intentiewaarde gebruiken.",
-        "pt_BR": "Cada intenção de escrita da tradução deve usar um valor válido."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_locale_distinct",
-      "text": {
-        "de": "Die Sprache jeder Übersetzungsabsicht muss eindeutig sein.",
-        "es": "El idioma de cada intención de traducción debe ser único.",
-        "fr": "La langue de chaque intention de traduction doit être unique.",
-        "it": "La lingua di ogni intento di traduzione deve essere univoca.",
-        "nl": "De taal van elke vertaalintentie moet uniek zijn.",
-        "pt_BR": "O idioma de cada intenção de tradução deve ser exclusivo."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_locale_invalid",
-      "text": {
-        "de": "Wähle für jede Übersetzungsabsicht eine unterstützte, nicht englische Sprache.",
-        "es": "Elige un idioma admitido que no sea inglés para cada intención de traducción.",
-        "fr": "Choisissez une langue prise en charge autre que l’anglais pour chaque intention de traduction.",
-        "it": "Scegli una lingua supportata diversa dall’inglese per ogni intento di traduzione.",
-        "nl": "Kies voor elke vertaalintentie een ondersteunde taal die niet Engels is.",
-        "pt_BR": "Escolha um idioma compatível que não seja inglês para cada intenção de tradução."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_locale_max",
-      "text": {
-        "de": "Die Sprache der Übersetzungsabsicht darf höchstens :max Zeichen enthalten.",
-        "es": "El idioma de la intención de traducción no puede superar los :max caracteres.",
-        "fr": "La langue de l’intention de traduction ne peut pas dépasser :max caractères.",
-        "it": "La lingua dell’intento di traduzione non può superare :max caratteri.",
-        "nl": "De taal van de vertaalintentie mag niet meer dan :max tekens bevatten.",
-        "pt_BR": "O idioma da intenção de tradução não pode exceder :max caracteres."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_locale_missing",
-      "text": {
-        "de": "Die Sprache der Übersetzungsabsicht muss in den eingereichten Übersetzungen enthalten sein.",
-        "es": "El idioma de la intención de traducción debe estar incluido en las traducciones enviadas.",
-        "fr": "La langue de l’intention de traduction doit figurer parmi les traductions envoyées.",
-        "it": "La lingua dell’intento di traduzione deve essere inclusa nelle traduzioni inviate.",
-        "nl": "De taal van de vertaalintentie moet in de ingediende vertalingen staan.",
-        "pt_BR": "O idioma da intenção de tradução deve estar incluído nas traduções enviadas."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_locale_required",
-      "text": {
-        "de": "Für jede Übersetzungsabsicht ist eine Sprache erforderlich.",
-        "es": "Cada intención de traducción requiere un idioma.",
-        "fr": "Chaque intention de traduction doit indiquer une langue.",
-        "it": "Ogni intento di traduzione richiede una lingua.",
-        "nl": "Elke vertaalintentie vereist een taal.",
-        "pt_BR": "Cada intenção de tradução exige um idioma."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.translation_write_intent_locale_string",
-      "text": {
-        "de": "Die Sprache der Übersetzungsabsicht muss als Text angegeben werden.",
-        "es": "El idioma de la intención de traducción debe ser texto.",
-        "fr": "La langue de l’intention de traduction doit être du texte.",
-        "it": "La lingua dell’intento di traduzione deve essere testo.",
-        "nl": "De taal van de vertaalintentie moet tekst zijn.",
-        "pt_BR": "O idioma da intenção de tradução deve ser texto."
-      }
-    },
-    {
       "group": "media",
       "key": "current_image",
       "text": {
@@ -17450,12 +17366,24 @@
       "group": "production_bench",
       "key": "navigation.home",
       "text": {
-        "de": "Start",
-        "es": "Inicio",
-        "fr": "Accueil",
-        "it": "Home",
-        "nl": "Home",
-        "pt_BR": "Início"
+        "de": "Dashboard",
+        "es": "Panel",
+        "fr": "Tableau de bord",
+        "it": "Dashboard",
+        "nl": "Dashboard",
+        "pt_BR": "Painel"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "navigation.home_aria",
+      "text": {
+        "de": "Dashboard Produktionsbereich",
+        "es": "Panel del área de producción",
+        "fr": "Tableau de bord de l’espace de production",
+        "it": "Dashboard area produzione",
+        "nl": "Dashboard productieomgeving",
+        "pt_BR": "Painel da bancada de produção"
       }
     },
     {
@@ -17472,14 +17400,14 @@
     },
     {
       "group": "production_bench",
-      "key": "navigation.production",
+      "key": "navigation.production_runs",
       "text": {
-        "de": "Produktion einrichten",
-        "es": "Configuración de producción",
-        "fr": "Configuration de la production",
-        "it": "Impostazioni produzione",
-        "nl": "Productie instellen",
-        "pt_BR": "Configuração da produção"
+        "de": "Produktionen",
+        "es": "Producciones",
+        "fr": "Productions",
+        "it": "Produzioni",
+        "nl": "Producties",
+        "pt_BR": "Produções"
       }
     },
     {
@@ -17540,6 +17468,30 @@
         "it": "Ricezioni",
         "nl": "Ontvangsten",
         "pt_BR": "Recebimentos"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "navigation.settings",
+      "text": {
+        "de": "Einstellungen",
+        "es": "Ajustes",
+        "fr": "Paramètres",
+        "it": "Impostazioni",
+        "nl": "Instellingen",
+        "pt_BR": "Configurações"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "navigation.settings_group_resources",
+      "text": {
+        "de": "Ressourcen",
+        "es": "Recursos",
+        "fr": "Ressources",
+        "it": "Risorse",
+        "nl": "Middelen",
+        "pt_BR": "Recursos"
       }
     },
     {

@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -74,12 +75,19 @@ it('exposes authenticated workspace-scoped receipt routes and navigation', funct
 
     $this->get(route('production-bench.purchasing.receipts'))->assertRedirect(route('login'));
 
-    $this->actingAs($owner)
+    $response = $this->actingAs($owner)
         ->get(route('production-bench.purchasing.receipts'))
         ->assertOk()
         ->assertSee('Receipts')
-        ->assertSeeHtml('aria-label="Purchasing sections"')
+        ->assertSeeHtml('aria-label="Production Bench"')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.receipts').'"');
+
+    // The Purchasing sub-navigation is no longer its own landmark, so the entry
+    // is identified by being the one link marked as the current page.
+    expect(Str::of($response->getContent())
+        ->after('href="'.route('production-bench.purchasing.receipts').'"')
+        ->before('</a>')
+        ->toString())->toContain('aria-current="page"');
 
     $this->get(route('production-bench.purchasing.receipts.show', $foreignReceipt))->assertNotFound();
 });

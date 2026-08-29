@@ -128,7 +128,7 @@ function trustResult(?Ingredient $ingredient = null): array
 
     $result = [
         'format' => config('ingredient-enrichment.result_format'),
-        'schema_version' => 3,
+        'schema_version' => (int) config('ingredient-enrichment.schema_version'),
         'subject_type' => 'ingredient',
         'subject_public_id' => $ingredient?->public_id ?? 'ingredient-public-id',
         'catalog_key' => $ingredient?->catalog_key ?? 'TRUST-INTAKE',

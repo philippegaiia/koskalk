@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\IngredientIntake\StartIngredientIntakeResearch;
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientIntakeBatchStatus;
 use App\Enums\IngredientIntakeItemStatus;
@@ -41,7 +42,7 @@ it('accepts one ten and seventy intake rows with the same queue workflow', funct
     $enrichment = app(StartIngredientIntakeResearch::class)->handle($admin, $intake);
 
     expect($enrichment->status)->toBe(IngredientEnrichmentBatchStatus::Processing)
-        ->and($enrichment->mode)->toBe('intake')
+        ->and($enrichment->mode)->toBe(IngredientEnrichmentBatchMode::Intake)
         ->and($enrichment->total_count)->toBe($count)
         ->and($enrichment->items)->toHaveCount($count)
         ->and($intake->fresh()->status)->toBe(IngredientIntakeBatchStatus::Researching)

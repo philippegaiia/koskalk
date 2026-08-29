@@ -147,6 +147,11 @@ final class ProductionBenchNavigation
                     // locates the level 1 node first, then looks up `subnavigation`
                     // within that node's children only.
                     self::leaf('calendar', 'production-bench.production.settings.calendar', 'production_bench.settings.working_calendar', 'working-calendar', 'production_bench.navigation.production_workflow', ['production-bench.production.settings.calendar*']),
+                    // Ready dates lived only on the page that rendered every
+                    // section at once. It gets its own entry because it is the
+                    // workspace default behind every production run's estimated
+                    // ready date, so it cannot be left unreachable.
+                    self::leaf('ready-dates', 'production-bench.production.settings.ready-dates', 'production_bench.settings.ready_dates', 'ready-dates', 'production_bench.navigation.production_workflow', ['production-bench.production.settings.ready-dates*']),
                     self::leaf('departments', 'production-bench.production.settings.departments', 'production_bench.settings.departments', 'departments', 'production_bench.navigation.settings_group_resources', ['production-bench.production.settings.departments*']),
                     self::leaf('employees', 'production-bench.production.settings.employees', 'production_bench.settings.employees', 'employees', 'production_bench.navigation.settings_group_resources', ['production-bench.production.settings.employees*']),
                 ],

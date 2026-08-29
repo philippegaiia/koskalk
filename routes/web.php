@@ -172,10 +172,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/production/settings/task-sets/new', 'production-bench.production.task-set-create')->name('production.settings.task-sets.create');
             Route::view('/production/settings/task-sets/{taskSet}/edit', 'production-bench.production.task-set-edit')->name('production.settings.task-sets.edit');
             Route::view('/production/settings/task-sets', 'production-bench.production.task-set-index')->name('production.settings.task-sets');
-            Route::view('/production/settings/departments', 'production-bench.production.settings')->name('production.settings.departments');
-            Route::view('/production/settings/employees', 'production-bench.production.settings')->name('production.settings.employees');
-            Route::view('/production/settings/tasks', 'production-bench.production.settings')->name('production.settings.task-types');
-            Route::view('/production/settings/calendar', 'production-bench.production.settings')->name('production.settings.calendar');
+            // Each settings route declares the one section it shows, so the
+            // component never has to guess from the request and no section can
+            // be reached by two spellings.
+            Route::view('/production/settings/departments', 'production-bench.production.settings', ['section' => 'departments'])->name('production.settings.departments');
+            Route::view('/production/settings/employees', 'production-bench.production.settings', ['section' => 'employees'])->name('production.settings.employees');
+            Route::view('/production/settings/tasks', 'production-bench.production.settings', ['section' => 'task-types'])->name('production.settings.task-types');
+            Route::view('/production/settings/calendar', 'production-bench.production.settings', ['section' => 'calendar'])->name('production.settings.calendar');
+            // Ready dates used to live only on the page that rendered every
+            // section at once. It is the workspace default behind every
+            // production run's estimated ready date, so it gets its own page.
+            Route::view('/production/settings/ready-dates', 'production-bench.production.settings', ['section' => 'ready-dates'])->name('production.settings.ready-dates');
             Route::view('/production/prepare-stock/{productionRun?}', 'production-bench.production.prepare-stock')->name('production.prepare');
             Route::view('/production/flash', 'production-bench.production.flash')->name('production.flash');
             Route::view('/production/calendar', 'production-bench.production.calendar')->name('production.calendar');

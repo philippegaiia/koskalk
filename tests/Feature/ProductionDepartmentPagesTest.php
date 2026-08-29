@@ -30,8 +30,7 @@ it('exposes a persistent departments settings route and setup navigation', funct
 it('creates and edits departments from the settings component', function (): void {
     $fixture = productionDepartmentPagesFixture();
 
-    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
-        ->set('section', 'departments')
+    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'departments'])
         ->set('departmentName', '  Finishing  ')
         ->call('saveDepartment')
         ->assertHasNoErrors();
@@ -64,8 +63,7 @@ it('saves employee titles and multiple active department memberships', function 
         'normalized_name' => 'quality',
     ]);
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
-        ->set('section', 'employees')
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'employees'])
         ->set('employeeFirstName', 'Ana')
         ->set('employeeLastName', 'Maker')
         ->set('employeeTitle', 'Workshop lead')
@@ -87,8 +85,7 @@ it('saves an optional default department on a task type', function (): void {
         'normalized_name' => 'packing',
     ]);
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
-        ->set('section', 'task-types')
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'task-types'])
         ->set('taskTypeName', 'Pack')
         ->set('taskTypeDepartmentId', $department->id)
         ->call('saveTaskType')
@@ -106,8 +103,7 @@ it('deletes unused departments and preserves used records through the UI', funct
         'normalized_name' => 'unused',
     ]);
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
-        ->set('section', 'departments')
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'departments'])
         ->call('deleteDepartment', $department->id)
         ->assertHasNoErrors();
 

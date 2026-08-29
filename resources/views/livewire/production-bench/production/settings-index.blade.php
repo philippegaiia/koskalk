@@ -1,4 +1,4 @@
-<x-production-bench.page active="production-setup" :subnavigation="$section === 'all' ? null : $section">
+<x-production-bench.page active="production-setup" :subnavigation="$section">
     @php($numberLocale = auth()->user()?->number_locale)
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -13,19 +13,7 @@
         @endif
     </header>
 
-    @if ($section === 'all')
-    <section aria-labelledby="preset-heading" class="space-y-4">
-        <div class="flex flex-col gap-4 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h2 id="preset-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.presets') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.presets_help') }}</p>
-            </div>
-            <a href="{{ route('production-bench.production.settings.presets') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.settings.manage_batch_sizes') }}</a>
-        </div>
-    </section>
-    @endif
-
-    @if ($section === 'all')
+    @if ($section === 'ready-dates')
     <section aria-labelledby="ready-date-heading" class="space-y-4">
         <div>
             <h2 id="ready-date-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.ready_dates') }}</h2>
@@ -47,7 +35,7 @@
     </section>
     @endif
 
-    @if (in_array($section, ['all', 'departments'], true))
+    @if ($section === 'departments')
     <section aria-labelledby="department-heading" class="space-y-4">
         <div>
             <h2 id="department-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.departments') }}</h2>
@@ -88,12 +76,9 @@
     </section>
     @endif
 
-    @if (in_array($section, ['all', 'employees', 'task-types'], true))
-    <div @class([
-        'grid gap-8',
-        'lg:grid-cols-2' => $section === 'all',
-    ])>
-        @if (in_array($section, ['all', 'employees'], true))
+    @if (in_array($section, ['employees', 'task-types'], true))
+    <div class="grid gap-8">
+        @if ($section === 'employees')
         <section aria-labelledby="employee-heading" class="space-y-4">
             <div><h2 id="employee-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.employees') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.employees_help') }}</p></div>
             <form wire:submit="saveEmployee" class="sk-card grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(13rem,1fr)_auto_auto] lg:items-end">
@@ -108,7 +93,7 @@
         </section>
         @endif
 
-        @if (in_array($section, ['all', 'task-types'], true))
+        @if ($section === 'task-types')
         <section aria-labelledby="task-type-heading" class="space-y-4">
             <div><h2 id="task-type-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.task_types') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_types_help') }}</p></div>
             <form wire:submit="saveTaskType" class="sk-card grid gap-4 p-5">
@@ -125,25 +110,7 @@
     </div>
     @endif
 
-    {{-- Task sets are managed on their own page; `task-sets` is no longer a value `mount()` can produce. --}}
-    @if ($section === 'all')
-    <section aria-labelledby="task-set-heading" class="space-y-4">
-        <div class="flex flex-col gap-4 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h2 id="task-set-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.task_sets') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_sets_help') }}</p>
-            </div>
-            <span class="flex flex-wrap gap-2">
-                <a href="{{ route('production-bench.production.settings.task-sets') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.settings.manage_task_sets') }}</a>
-                @if ($isBenchActive && ! $isReadOnly)
-                    <a href="{{ route('production-bench.production.settings.task-sets.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.settings.new_task_set') }}</a>
-                @endif
-            </span>
-        </div>
-    </section>
-    @endif
-
-    @if (in_array($section, ['all', 'calendar'], true))
+    @if ($section === 'calendar')
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.65fr)]">
         <section aria-labelledby="holiday-heading" class="space-y-4">
             <div><h2 id="holiday-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.working_calendar') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.working_calendar_help') }}</p></div>

@@ -38,6 +38,7 @@ it('resolves every navigation state the production bench views pass', function (
     'settings task types' => ['production-setup', 'task-types', ['production-setup', 'task-types']],
     'settings task sets' => ['production-setup', 'task-sets', ['production-setup', 'task-sets']],
     'settings working calendar' => ['production-setup', 'calendar', ['production-setup', 'calendar']],
+    'settings ready dates' => ['production-setup', 'ready-dates', ['production-setup', 'ready-dates']],
     // The Settings tab lands on Numbering, its first child, so it behaves like
     // every other group: the tab is a branch and the child is the page.
     'settings landing resolves to numbering' => ['production-setup', null, ['production-setup', 'numbering']],
@@ -97,7 +98,7 @@ it('groups settings children and leaves other rows ungrouped', function (): void
     expect($settingsGroups)->toHaveCount(2)
         ->and($settingsGroups[0]['label'])->toBe('production_bench.navigation.production_workflow')
         ->and(array_column($settingsGroups[0]['nodes'], 'key'))
-        ->toBe(['numbering', 'presets', 'task-types', 'task-sets', 'calendar'])
+        ->toBe(['numbering', 'presets', 'task-types', 'task-sets', 'calendar', 'ready-dates'])
         ->and($settingsGroups[1]['label'])->toBe('production_bench.navigation.settings_group_resources')
         ->and(array_column($settingsGroups[1]['nodes'], 'key'))->toBe(['departments', 'employees']);
 

@@ -30,6 +30,7 @@
     'task-types' => '<rect x="3.6" y="3.6" width="7.6" height="7.6" rx="1.6"/><circle cx="16" cy="7.6" r="3.8"/><path d="M12 18.4 16 12.4l4 6z"/>',
     'task-sets' => '<rect x="3.2" y="3.6" width="7" height="5.6" rx="1.5"/><rect x="13.8" y="3.6" width="7" height="5.6" rx="1.5"/><rect x="8.5" y="14.8" width="7" height="5.6" rx="1.5"/><path d="M6.7 9.2v2.4h10.6V9.2M12 11.6v3.2"/>',
     'working-calendar' => '<rect x="3.4" y="5" width="17.2" height="15.6" rx="2.4"/><path d="M3.4 9.8h17.2M8.2 3.2v3.4M15.8 3.2v3.4"/><path d="m8.8 15 2.3 2.3 4.1-4.4"/>',
+    'ready-dates' => '<circle cx="12" cy="13" r="8"/><path d="M12 8.6V13l3 1.9"/><path d="M9.4 3.4h5.2"/>',
     'departments' => '<path d="M3.6 20.8V5.6L12 3.2l8.4 2.4v15.2"/><path d="M7 9.4h2.8M14.2 9.4H17M7 13.6h2.8M14.2 13.6H17"/><path d="M9.8 20.8v-4.6h4.4v4.6"/>',
     'employees' => '<circle cx="12" cy="7.8" r="3.9"/><path d="M4.6 20.8v-1.4a4.4 4.4 0 0 1 4.4-4.4h6a4.4 4.4 0 0 1 4.4 4.4v1.4"/>',
     default => '',

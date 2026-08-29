@@ -4,5 +4,5 @@
 @section('page_heading', __('production_bench.title'))
 
 @section('content')
-    <livewire:production-bench.production.settings-index />
+    <livewire:production-bench.production.settings-index :section="$section" />
 @endsection

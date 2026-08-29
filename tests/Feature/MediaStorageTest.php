@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -122,29 +123,20 @@ it('omits unsupported object ACL options for R2 disks', function () {
         ->toBe(['visibility' => 'private']);
 });
 
-it('stores rich content images as bounded webp attachments without cropping', function () {
+it('rejects direct rich-content uploads because descriptions are text-only', function (): void {
     Storage::fake('local');
 
     config(['media.recipe_disk' => 'local']);
 
-    $file = UploadedFile::fake()->image('inline.jpg', 1200, 600);
     $recipe = Recipe::factory()->create();
+    $provider = app(RecipeRichContentAttachmentProvider::class)
+        ->attribute($recipe->getRichContentAttribute('description'));
 
-    $path = app(RecipeRichContentAttachmentProvider::class)
-        ->attribute($recipe->getRichContentAttribute('description'))
-        ->saveUploadedFileAttachment($file);
-    $image = getimagesizefromstring(Storage::disk('local')->get($path));
-
-    expect($path)->toStartWith('recipes/'.$recipe->public_id.'/rich-content/')
-        ->and($path)->toEndWith('.webp')
-        ->and(Storage::disk('local')->exists($path))->toBeTrue()
-        ->and(MediaStorage::recipeVisibility())->toBe('private')
-        ->and($image)->not->toBeFalse()
-        ->and($image['mime'] ?? null)->toBe('image/webp')
-        ->and($image[0] ?? null)->toBeLessThanOrEqual(680)
-        ->and($image[1] ?? null)->toBeLessThanOrEqual(340)
-        ->and(($image[0] ?? 0) / ($image[1] ?? 1))->toBeGreaterThan(1.99)
-        ->and(($image[0] ?? 0) / ($image[1] ?? 1))->toBeLessThan(2.01);
+    expect(fn () => $provider->saveUploadedFileAttachment(
+        UploadedFile::fake()->image('inline.jpg', 1200, 600),
+    ))
+        ->toThrow(ValidationException::class, __('media_library.validation.description_text_only'))
+        ->and(Storage::disk('local')->allFiles())->toBeEmpty();
 });
 
 it('stores featured recipe images within their configured bounds without cropping', function (): void {

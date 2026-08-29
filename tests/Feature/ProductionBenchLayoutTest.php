@@ -88,9 +88,6 @@ it('marks exactly one navigation entry current on every production bench page', 
     'tasks' => ['production-bench.production.tasks', 'production-bench.production.tasks'],
     'flash planner' => ['production-bench.production.flash', 'production-bench.production.flash'],
     'production calendar' => ['production-bench.production.calendar', 'production-bench.production.calendar'],
-    // The settings landing page shows every section, so no child route matches
-    // and the Settings tab itself stays the current page.
-    'settings landing' => ['production-bench.production.settings', 'production-bench.production.settings'],
     'settings numbering' => ['production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
     'settings batch sizes' => ['production-bench.production.settings.presets', 'production-bench.production.settings.presets'],
     'settings task types' => ['production-bench.production.settings.task-types', 'production-bench.production.settings.task-types'],
@@ -105,24 +102,17 @@ it('marks exactly one navigation entry current on every production bench page', 
     'purchasing receipts' => ['production-bench.purchasing.receipts', 'production-bench.purchasing.receipts'],
 ]);
 
-it('leaves every settings child unmarked on the all sections landing page', function (): void {
+it('sends the settings landing url to the numbering page', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
 
-    $html = $this->actingAs($user)
+    // The tab no longer renders every section at once. The old URL survives
+    // only so bookmarks resolve, and forwards to Numbering, which is the
+    // group's first child and therefore the tab's own destination.
+    $this->actingAs($user)
         ->get(route('production-bench.production.settings'))
-        ->assertOk()
-        ->getContent();
-
-    // The landing page renders all seven sections, so no child is the
-    // destination. Marking one would announce `/settings/numbering` as the
-    // current page while the browser sits on `/settings`.
-    expect(Str::of($html)->after('sk-nav-rail')->before('</nav>')->toString())
-        ->not->toContain('aria-current')
-        ->and(substr_count($html, 'aria-current="page"'))->toBe(1)
-        ->and(Str::of($html)->afterLast('href="'.route('production-bench.production.settings').'"')->before('</a>')->toString())
-        ->toContain('aria-current="page"');
+        ->assertRedirect(route('production-bench.production.settings.numbering'));
 });
 
 it('renders explicit production bench navigation state without relying on the request route', function (string $active, ?string $subnavigation, string $currentRoute, ?string $branchRoute): void {
@@ -159,16 +149,17 @@ it('renders explicit production bench navigation state without relying on the re
     'purchasing quotations' => ['purchasing', 'quotations', 'production-bench.purchasing.quotations', 'production-bench.purchasing.suppliers'],
     'purchasing orders' => ['purchasing', 'orders', 'production-bench.purchasing.orders', 'production-bench.purchasing.suppliers'],
     'purchasing receipts' => ['purchasing', 'receipts', 'production-bench.purchasing.receipts', 'production-bench.purchasing.suppliers'],
-    // `subnavigation` null means "no child is the destination", so the Settings
-    // tab is the page and there is no branch to mark.
-    'setup all sections' => ['production-setup', null, 'production-bench.production.settings', null],
-    'setup numbering' => ['production-setup', 'numbering', 'production-bench.production.settings.numbering', 'production-bench.production.settings'],
-    'setup presets' => ['production-setup', 'presets', 'production-bench.production.settings.presets', 'production-bench.production.settings'],
-    'setup task types' => ['production-setup', 'task-types', 'production-bench.production.settings.task-types', 'production-bench.production.settings'],
-    'setup task sets' => ['production-setup', 'task-sets', 'production-bench.production.settings.task-sets', 'production-bench.production.settings'],
-    'setup working calendar' => ['production-setup', 'calendar', 'production-bench.production.settings.calendar', 'production-bench.production.settings'],
-    'setup departments' => ['production-setup', 'departments', 'production-bench.production.settings.departments', 'production-bench.production.settings'],
-    'setup employees' => ['production-setup', 'employees', 'production-bench.production.settings.employees', 'production-bench.production.settings'],
+    // The Settings tab shares its href with Numbering, its first child, so
+    // `subnavigation` null resolves to Numbering and the tab is a branch —
+    // the same shape as Inventory overview and Production runs.
+    'setup default' => ['production-setup', null, 'production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
+    'setup numbering' => ['production-setup', 'numbering', 'production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
+    'setup presets' => ['production-setup', 'presets', 'production-bench.production.settings.presets', 'production-bench.production.settings.numbering'],
+    'setup task types' => ['production-setup', 'task-types', 'production-bench.production.settings.task-types', 'production-bench.production.settings.numbering'],
+    'setup task sets' => ['production-setup', 'task-sets', 'production-bench.production.settings.task-sets', 'production-bench.production.settings.numbering'],
+    'setup working calendar' => ['production-setup', 'calendar', 'production-bench.production.settings.calendar', 'production-bench.production.settings.numbering'],
+    'setup departments' => ['production-setup', 'departments', 'production-bench.production.settings.departments', 'production-bench.production.settings.numbering'],
+    'setup employees' => ['production-setup', 'employees', 'production-bench.production.settings.employees', 'production-bench.production.settings.numbering'],
 ]);
 
 it('renders a nested second row for every branch destination', function (string $active): void {
@@ -186,7 +177,9 @@ it('keeps the dashboard first and sets settings apart at the end of the top leve
     $html = Blade::render('<x-production-bench.page><span>Content</span></x-production-bench.page>');
 
     $dashboardHref = 'href="'.route('production-bench.home').'"';
-    $settingsHref = 'href="'.route('production-bench.production.settings').'"';
+    // The Settings tab links to Numbering, its first child, which is also where
+    // the old `/settings` URL now redirects.
+    $settingsHref = 'href="'.route('production-bench.production.settings.numbering').'"';
 
     expect(strpos($html, $dashboardHref))->toBeLessThan(strpos($html, $settingsHref))
         ->and(Str::of($html)->after($dashboardHref)->before('</a>')->toString())

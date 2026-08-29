@@ -38,9 +38,9 @@ it('resolves every navigation state the production bench views pass', function (
     'settings task types' => ['production-setup', 'task-types', ['production-setup', 'task-types']],
     'settings task sets' => ['production-setup', 'task-sets', ['production-setup', 'task-sets']],
     'settings working calendar' => ['production-setup', 'calendar', ['production-setup', 'calendar']],
-    // Settings is the one group whose landing page is not also one of its
-    // children: `all` renders every section, so no child may be the page.
-    'settings landing keeps the group current' => ['production-setup', null, ['production-setup']],
+    // The Settings tab lands on Numbering, its first child, so it behaves like
+    // every other group: the tab is a branch and the child is the page.
+    'settings landing resolves to numbering' => ['production-setup', null, ['production-setup', 'numbering']],
 ]);
 
 it('defaults to the first child only where the group and that child share a route', function (): void {

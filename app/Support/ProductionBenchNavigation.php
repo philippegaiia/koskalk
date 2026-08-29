@@ -121,7 +121,12 @@ final class ProductionBenchNavigation
             ],
             [
                 'key' => 'production-setup',
-                'route' => 'production-bench.production.settings',
+                // Deliberately the same route as the first child. The tab used to
+                // point at `/settings`, which rendered every section at once; it
+                // now lands on Numbering, the group's first child, which is what
+                // Inventory, Production and Purchasing already do. `/settings`
+                // itself is a route-level redirect kept for old bookmarks.
+                'route' => 'production-bench.production.settings.numbering',
                 'label' => 'production_bench.navigation.settings',
                 'aria' => null,
                 'icon' => 'settings',
@@ -178,10 +183,8 @@ final class ProductionBenchNavigation
 
             // Default to the first child only where the group's own link points
             // at the same route, which is what makes the group and its first
-            // child two spellings of one destination. Settings has no such
-            // child: its landing page renders every section, so defaulting
-            // would announce `/settings/numbering` as the current page while
-            // the browser sits on `/settings`.
+            // child two spellings of one destination. This holds for all four
+            // groups now that Settings lands on Numbering.
             //
             // The default also has to survive Livewire update requests, where
             // `routeIs()` sees `livewire.update` rather than the page route and

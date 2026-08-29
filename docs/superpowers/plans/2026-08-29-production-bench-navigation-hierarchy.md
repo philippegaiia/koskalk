@@ -121,7 +121,9 @@ Three disambiguations:
 
   *Fallback if that one line is considered out of scope:* make `resolve()` deterministic (declaration order, shallowest first) and pin it with a unit test asserting `active="calendar"` resolves to the Production calendar. Documented in task 2. Both fixes are cheap; the rename is preferred because it makes the config self-documenting.
 
-**Level-1 groups are also links.** `inventory` → `production-bench.inventory`, `production` → `production-bench.production.index`, `purchasing` → `production-bench.purchasing.suppliers`, `production-setup` → `production-bench.production.settings`. The group's landing page is therefore duplicated by its first child (exactly as `Inventory` / `Overview` is today). That duplication already exists and is intentional: it keeps the route contract and the `aria-current` assertions stable, and gives each group a clickable target.
+**Level-1 groups are also links.** `inventory` → `production-bench.inventory`, `production` → `production-bench.production.index`, `purchasing` → `production-bench.purchasing.suppliers`, `production-setup` → `production-bench.production.settings.numbering`. The group's landing page is therefore duplicated by its first child (exactly as `Inventory` / `Overview` is today). That duplication already exists and is intentional: it keeps the route contract and the `aria-current` assertions stable, and gives each group a clickable target.
+
+*Settings originally read `production-setup` → `production-bench.production.settings`, the only group whose landing page was not one of its children. O4 in §9 changed it; `/production/settings` is now a route-level redirect kept for old bookmarks.*
 
 ### 2.2 Settings sub-headings
 
@@ -411,9 +413,9 @@ inaccuracies in this plan. All five are recorded here; the two defects are fixed
 > Level-1 groups are also links … The group's landing page is therefore duplicated
 > by its first child (exactly as `Inventory` / `Overview` is today).
 
-True for three of the four groups, false for the fourth:
+True for three of the four groups at the time, false for the fourth:
 
-| Group | Group route | First child route | Duplicated? |
+| Group | Group route (then) | First child route | Duplicated? |
 | --- | --- | --- | --- |
 | `inventory` | `production-bench.inventory` | `production-bench.inventory` | yes |
 | `production` | `production-bench.production.index` | `production-bench.production.index` | yes |
@@ -429,7 +431,12 @@ exactly the duplication the plan describes.
 The default cannot simply be deleted: `detectSubnavigationKey()` resolves via
 `routeIs()`, which sees `livewire.update` rather than the page route during a
 Livewire update request, so the default is what keeps a child highlighted across
-live updates for the three groups that do share a route.
+live updates for the groups that share a route.
+
+**Superseded by O4 in §9**, which retires the exception by pointing the Settings
+tab at Numbering. All four groups are duplicated now, so the equality check
+covers every one of them and the exception is gone. The check stays — it is the
+general rule, not a Settings special case.
 
 ### C5 — Settings was not right-aligned (was a live defect)
 
@@ -545,3 +552,43 @@ The flag keeps its name: it still marks the last top-level tab. Its docblock in
 `ProductionBenchNavigation::tree()` and its CSS comment now describe it as
 drawing a rule rather than as moving the item, because the previous wording is
 what made C5 look like a defect worth fixing.
+
+### O4 — Settings lands on Numbering, not on a page of every section
+
+§2.1 kept `/production/settings` as the tab destination, and `SettingsIndex`
+renders **seven** sections there when `$section === 'all'`: the batch-sizes card,
+ready dates, departments, employees beside task types, task sets, and the working
+calendar. The owner's verdict on seeing it: settings scattered across one page.
+
+The tab now points at `production-bench.production.settings.numbering`, which is
+already its first child, so Settings follows the same rule as Inventory,
+Production and Purchasing: **the tab and its first child are one destination.**
+
+- `routes/web.php` — `Route::view('/production/settings', …)` became
+  `Route::redirect('/production/settings', '…/settings/numbering')`, keeping the
+  route name so `route('production-bench.production.settings')` still resolves.
+  Bookmarks and old links forward instead of 404ing. Same mechanism as the
+  existing `Route::redirect('/purchasing', …)`.
+- `ProductionBenchNavigation::tree()` — the `production-setup` route became
+  `production-bench.production.settings.numbering`.
+- `resolve()` — no code change. The route-equality check that C4 introduced
+  already covers this: now that the group route equals the first child route,
+  the default fires and Settings resolves two deep like every other group. The
+  comment that called Settings out as the exception is gone.
+- `SettingsIndex::mount()` — the `presets` branch is deleted. Route
+  `production.settings.presets` renders `BatchSizeIndex`, not this component, so
+  the branch could never match. The matching `in_array($section, ['all',
+  'presets'], true)` in the view narrowed to `$section === 'all'`.
+- Tests: `settings landing keeps the group current` → `settings landing resolves
+  to numbering`; the route-walk `settings landing` case is replaced by
+  `sends the settings landing url to the numbering page`, which asserts the
+  redirect; every `branchRoute` in the explicit-state dataset became
+  `…settings.numbering`, since that is the tab's own href now.
+
+**Deliberately left alone:** the `all` rendering inside `SettingsIndex`. It is no
+longer reachable from the UI, but `ProductionBenchProductionSettingsTest`
+mounts the component directly with `Livewire::test(SettingsIndex::class)`, which
+has no route and therefore still lands on `default => 'all'`. Deleting the `all`
+branch means rewriting that 60-line test into five route-level tests. Worth
+doing, but it is a separate job from this one and is the main piece of test-only
+surface in this component.

@@ -13,7 +13,7 @@
         @endif
     </header>
 
-    @if (in_array($section, ['all', 'presets'], true))
+    @if ($section === 'all')
     <section aria-labelledby="preset-heading" class="space-y-4">
         <div class="flex flex-col gap-4 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>

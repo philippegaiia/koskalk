@@ -161,7 +161,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/inventory/requirements', 'production-bench.inventory-requirements')->name('inventory.requirements');
             Route::view('/production', 'production-bench.production.index')->name('production.index');
             Route::view('/production/new', 'production-bench.production.create')->name('production.create');
-            Route::view('/production/settings', 'production-bench.production.settings')->name('production.settings');
+            // The tab lands on Numbering now, not on the page that rendered every
+            // section at once. The old URL is kept as a redirect so bookmarks and
+            // any link that predates the change still resolve.
+            Route::redirect('/production/settings', '/dashboard/production-bench/production/settings/numbering')->name('production.settings');
             Route::view('/production/settings/numbering', 'production-bench.production.numbering')->name('production.settings.numbering');
             Route::view('/production/settings/batch-sizes/new', 'production-bench.production.batch-size-create')->name('production.settings.presets.create');
             Route::view('/production/settings/batch-sizes/{preset}/edit', 'production-bench.production.batch-size-edit')->name('production.settings.presets.edit');

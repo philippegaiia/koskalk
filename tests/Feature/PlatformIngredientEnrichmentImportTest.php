@@ -4,6 +4,7 @@ use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientIdentifier;
 use App\Models\IngredientTranslation;
+use App\Services\IngredientEnrichment\ApplyPlatformIngredientEnrichment;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -244,6 +245,7 @@ it('does not write an unchanged normalized result and previews all warnings', fu
 
     $result = importResult($ingredient);
     $result['source_fingerprint'] = strtoupper(app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient));
+    $result['guidance_evidence'] = [];
     $result['warnings'] = ['Research confidence needs Admin confirmation.'];
     $result['unresolved_questions'] = ['Confirm the supplier grade.'];
     $path = writeJsonl($result);
@@ -283,6 +285,96 @@ it('merges collections by stable keys and replaces only explicit collections', f
         ))->toBeTrue();
 });
 
+it('plans changed guidance evidence during full enrichment', function (): void {
+    $currentEvidence = [[
+        'source_name' => 'Existing source',
+        'source_url' => 'https://example.test/existing',
+        'summary' => 'Existing evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EVIDENCE-PLAN',
+        'category' => IngredientCategory::Other,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $currentEvidence]]],
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result);
+
+    expect($plan['changed'])->toBeTrue()
+        ->and(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))
+        ->toMatchArray([
+            'decision' => 'replace',
+            'current' => $currentEvidence,
+            'proposed' => $result['guidance_evidence'],
+        ]);
+});
+
+it('applies successive evidence-only updates with the same source fingerprint', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EVIDENCE-REPLAY',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+        'inci_name' => 'EXISTING INGREDIENT',
+        'info_markdown' => "## Overview\nExisting guidance.\n\n## Formulation use\nUse this material in a suitable formulation.",
+    ]);
+    $result = importResult($ingredient);
+    $result['proposal'] = [
+        'display_name' => $ingredient->display_name,
+        'inci_name' => $ingredient->inci_name,
+        'category' => $ingredient->category->value,
+        'subcategory' => null,
+        'saponification_name' => null,
+        'soap_inci_naoh_name' => null,
+        'soap_inci_koh_name' => null,
+        'info_markdown' => $ingredient->info_markdown,
+        'soapmaking_relevant' => false,
+        'aliases' => [],
+        'identifiers' => [],
+        'cosing_functions' => [],
+        'translations' => [],
+        'market_labels' => [],
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $firstEvidence = [[
+        'source_name' => 'First source',
+        'source_url' => 'https://example.test/first',
+        'summary' => 'First evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $secondEvidence = [[
+        'source_name' => 'Second source',
+        'source_url' => 'https://example.test/second',
+        'summary' => 'Second evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-28T00:00:00+00:00',
+    ]];
+    $result['guidance_evidence'] = $firstEvidence;
+    $planner = app(IngredientEnrichmentPlanner::class);
+    $applier = app(ApplyPlatformIngredientEnrichment::class);
+    $firstPlan = $planner->plan($ingredient, $result);
+
+    expect($firstPlan['changed'])->toBeTrue()
+        ->and(collect($firstPlan['decisions'])
+            ->reject(fn (array $decision): bool => $decision['decision'] === 'unchanged')
+            ->pluck('field')
+            ->all())->toBe(['guidance.evidence'])
+        ->and($applier->apply($firstPlan, $result)['status'])->toBe('applied');
+
+    $result['guidance_evidence'] = $secondEvidence;
+    $currentIngredient = $ingredient->fresh();
+    $secondPlan = $planner->plan($currentIngredient, $result);
+    $secondApply = $applier->apply($secondPlan, $result);
+
+    expect($secondPlan['changed'])->toBeTrue()
+        ->and($secondApply['status'])->toBe('applied')
+        ->and(data_get($secondApply['ingredient']->source_data, 'enrichment.guidance.evidence'))
+        ->toBe($secondEvidence);
+});
+
 it('applies a valid result atomically, records enrichment metadata, and is idempotent', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $ingredient = Ingredient::factory()->create([
@@ -309,7 +401,11 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->and(data_get($ingredient->source_data, 'enrichment.core.source_fingerprint'))
         ->toBe($result['source_fingerprint'])
         ->and(data_get($ingredient->source_data, 'enrichment.core.result_fingerprint'))
-        ->toMatch('/^[a-f0-9]{64}$/');
+        ->toMatch('/^[a-f0-9]{64}$/')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))
+        ->toBe('COSMILE Europe')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
+        ->toBe('ingredient-guidance-v1');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,
@@ -391,6 +487,13 @@ function importResult(Ingredient $ingredient): array
             'confidence' => 'verified',
             'source_version' => '32025D1175',
             'source_updated_at' => null,
+            'retrieved_at' => '2026-08-13T12:00:00+00:00',
+        ]],
+        'guidance_evidence' => [[
+            'source_name' => 'COSMILE Europe',
+            'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+            'summary' => 'A supported practical formulation fact.',
+            'source_tier' => 'editorial',
             'retrieved_at' => '2026-08-13T12:00:00+00:00',
         ]],
         'regulatory_findings' => [],

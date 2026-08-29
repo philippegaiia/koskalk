@@ -3,7 +3,7 @@
 namespace App\Actions\IngredientEnrichment;
 
 use App\Actions\IngredientIntake\PromoteIngredientIntakeItem;
-use App\Enums\IngredientEnrichmentBatchStatus;
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
@@ -21,12 +21,17 @@ class ApplyApprovedIngredientEnrichment
         private readonly ApplyPlatformIngredientEnrichment $applier,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly PromoteIngredientIntakeItem $promoter,
+        private readonly ApplyApprovedIngredientGuidanceRefresh $guidanceRefresh,
     ) {}
 
     /** @return array{applied:int,unchanged:int,stale:int,failed:int} */
     public function handle(User $actor, IngredientEnrichmentBatch $batch): array
     {
         Gate::forUser($actor)->authorize('apply', $batch);
+        if ($batch->mode instanceof IngredientEnrichmentBatchMode && $batch->mode->isGuidance()) {
+            return $this->guidanceRefresh->handle($actor, $batch);
+        }
+
         $totals = ['applied' => 0, 'unchanged' => 0, 'stale' => 0, 'failed' => 0];
         $approvedItemIds = $batch->items()
             ->where('status', IngredientEnrichmentItemStatus::Approved->value)
@@ -83,17 +88,7 @@ class ApplyApprovedIngredientEnrichment
         }
 
         $this->batches->refresh($batch->id);
-        if ($approvedItemIds->isNotEmpty()
-            && $totals['failed'] === 0
-            && $totals['stale'] === 0
-            && $batch->items()->whereNotIn('status', [
-                IngredientEnrichmentItemStatus::Applied->value,
-                IngredientEnrichmentItemStatus::Unchanged->value,
-                IngredientEnrichmentItemStatus::Rejected->value,
-                IngredientEnrichmentItemStatus::Cancelled->value,
-            ])->doesntExist()) {
-            $batch->refresh()->update(['status' => IngredientEnrichmentBatchStatus::Applied, 'completed_at' => now()]);
-        }
+        $this->batches->markAppliedWhenComplete($batch->id);
 
         return $totals;
     }

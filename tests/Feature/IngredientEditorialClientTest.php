@@ -37,13 +37,29 @@ it('sends deterministic facts to a strict editorial-only response request', func
     Http::assertSent(function (Request $request): bool {
         $data = $request->data();
 
-        return $request->url() === 'https://api.openai.com/v1/responses'
+        return $request->method() === 'POST'
+            && $request->url() === 'https://api.openai.com/v1/responses'
+            && $request->hasHeader('Authorization', 'Bearer test-key-never-log')
             && $data['model'] === 'gpt-5.6-terra'
             && $data['store'] === false
             && ! array_key_exists('tools', $data)
             && ! array_key_exists('include', $data)
             && data_get($data, 'text.format.type') === 'json_schema'
+            && data_get($data, 'text.format.name') === 'ingredient_enrichment_editorial'
             && data_get($data, 'text.format.strict') === true
+            && data_get($data, 'text.format.schema.required') === [
+                'display_name',
+                'category',
+                'subcategory',
+                'saponification_name',
+                'soap_inci_naoh_name',
+                'soap_inci_koh_name',
+                'soapmaking_relevant',
+                'translations',
+                'warnings',
+                'unresolved_questions',
+            ]
+            && data_get($data, 'text.format.schema.additionalProperties') === false
             && array_keys(data_get($data, 'text.format.schema.properties', [])) === [
                 'display_name',
                 'category',
@@ -51,7 +67,6 @@ it('sends deterministic facts to a strict editorial-only response request', func
                 'saponification_name',
                 'soap_inci_naoh_name',
                 'soap_inci_koh_name',
-                'info_markdown',
                 'soapmaking_relevant',
                 'translations',
                 'warnings',
@@ -64,6 +79,32 @@ it('sends deterministic facts to a strict editorial-only response request', func
             && str_contains((string) $data['input'], 'ARGAN OIL')
             && str_contains((string) $data['input'], 'verified');
     });
+});
+
+it('redacts an unparseable provider error body after transient retries', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'secret-api-key');
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response(
+            'provider-raw-sensitive-body',
+            500,
+            ['x-request-id' => 'req_editorial_failure'],
+        ),
+    ]);
+
+    try {
+        app(IngredientEditorialClient::class)->edit(editorialFacts());
+
+        $this->fail('The provider response should have failed.');
+    } catch (RuntimeException $exception) {
+        expect($exception->getMessage())
+            ->toContain('HTTP 500')
+            ->toContain('req_editorial_failure')
+            ->not->toContain('secret-api-key')
+            ->not->toContain('provider-raw-sensitive-body');
+    }
+
+    Http::assertSentCount(3);
 });
 
 it('uses source-restricted web search only in an explicitly enabled gap-research call', function (): void {
@@ -172,56 +213,32 @@ it('rejects COSMILE candidate evidence for an identity or declaration field', fu
         ->toThrow(RuntimeException::class, 'cannot support identity or declaration fields');
 });
 
-it('requires native editorial localization in every target locale', function (): void {
+it('keeps metadata editorial separate from guidance localization', function (): void {
     $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
 
     expect($prompt['instructions'])
-        ->toContain('## Overview', '## Formulation use')
-        ->toContain('not a sentence-by-sentence translation')
-        ->toContain('as though it were originally written by a native cosmetic formulator')
-        ->toContain('freely recast sentence structure')
-        ->toContain('does not need to preserve the number or order of sentences')
-        ->toContain('English calques')
-        ->toContain('native technical terminology, idiom, syntax, register, and rhetorical flow')
-        ->toContain('Do not use English as a grammatical template')
-        ->toContain('Apply this same native-editor standard to every locale')
-        ->toContain('every supported fact, caution, omission, and section')
-        ->toContain('introduce no factual claims');
+        ->toContain('Do not write `info_markdown`')
+        ->toContain('Translate only display names and saponification stems')
+        ->toContain('Do not research the web');
 });
 
-it('requires useful catalogue guidance and localized soapmaking names instead of research commentary', function (): void {
+it('keeps research commentary out of metadata editorial output', function (): void {
     $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
 
     expect($prompt['instructions'])
         ->toContain('Never mention the research process')
-        ->toContain('what the ingredient is and where it comes from')
-        ->toContain('useful consequence for formulation')
-        ->toContain('Do not begin every section or paragraph with the ingredient name')
-        ->toContain('phase, dispersion, solubility')
-        ->toContain('handling, stability, compatibility')
-        ->toContain('Avoid generic filler')
-        ->toContain('saponified fatty-acid contribution')
-        ->toContain('trusted soap chemistry')
-        ->toContain('use it only for qualitative soapmaking consequences')
-        ->toContain('Never reproduce exact KOH or NaOH SAP values, iodine or INS values, or fatty-acid percentages in catalogue prose')
-        ->toContain('short ingredient stem without words such as oil')
-        ->toContain('must be non-empty in every locale');
+        ->toContain('Never mention the research process')
+        ->toContain('When the supplied facts are insufficient')
+        ->toContain('human reviewer makes the final taxonomy decision');
 });
 
 it('filters low-value editorial claims instead of mechanically expanding source facts', function (): void {
     $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
 
-    expect($prompt['version'])->toBe('ingredient-enrichment-editorial-v6')
+    expect($prompt['version'])->toBe('ingredient-enrichment-metadata-v1')
         ->and($prompt['instructions'])
-        ->toContain('apply a relevance filter')
-        ->toContain('either state a supported practical formulation consequence or omit the function from the prose')
-        ->toContain('Its skin-conditioning function helps maintain skin in good condition')
-        ->toContain('Its perfuming function can contribute to or modify product odour')
-        ->toContain('Do not assume a grade-specific processing method')
-        ->toContain('Exclude generic SDS language')
-        ->toContain('Do not explain routine soapmaking steps')
-        ->toContain('saponified fatty-acid contribution rather than the raw oil\'s emollient properties')
-        ->toContain('Do not repeat the same handling or storage advice across sections');
+        ->toContain('Do not research the web')
+        ->toContain('Do not write `info_markdown`');
 });
 
 it('allows a bounded taxonomy proposal while keeping the family hint non-authoritative', function (): void {
@@ -283,13 +300,11 @@ function editorialValues(): array
         'category' => 'lipids',
         'subcategory' => 'vegetable_oils',
         'saponification_name' => 'Argan oil',
-        'info_markdown' => "## Overview\nArgan oil is a plant-derived lipid.\n\n## Formulation use\nIt contributes emollience.\n\n## Soapmaking\nIt can be included as an oil component.",
         'soapmaking_relevant' => true,
         'translations' => [[
             'locale' => 'fr',
             'display_name' => 'Huile d’argan',
             'saponification_name' => 'Huile d’argan',
-            'info_markdown' => "## Vue d’ensemble\nL’huile d’argan est un lipide d’origine végétale.\n\n## Utilisation en formulation\nElle apporte de l’émollience.\n\n## Savonnerie\nElle peut être intégrée comme corps gras.",
         ]],
         'warnings' => [],
         'unresolved_questions' => [],

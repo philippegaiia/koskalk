@@ -155,6 +155,8 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         'conflict_evaluation',
         'ai_guidance_research',
         'ai_editorial',
+        'ai_guidance_authoring',
+        'ai_guidance_localization',
         'validation',
     ])->and($response->structuredSourceCalls)->toBe(3)
         ->and($response->inputTokens)->toBe(321)

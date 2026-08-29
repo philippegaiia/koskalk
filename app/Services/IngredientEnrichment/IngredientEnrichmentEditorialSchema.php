@@ -30,13 +30,11 @@ class IngredientEnrichmentEditorialSchema
             'saponification_name' => $this->nullableString(),
             'soap_inci_naoh_name' => $this->nullableString(),
             'soap_inci_koh_name' => $this->nullableString(),
-            'info_markdown' => $this->string(),
             'soapmaking_relevant' => ['type' => 'boolean'],
             'translations' => $this->array($this->object([
                 'locale' => $this->string(enum: $locales),
                 'display_name' => $this->string(),
                 'saponification_name' => $this->nullableString(),
-                'info_markdown' => $this->string(),
             ])),
             'warnings' => $this->array($this->string()),
             'unresolved_questions' => $this->array($this->string()),

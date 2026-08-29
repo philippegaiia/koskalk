@@ -2,8 +2,12 @@
 
 namespace App\Services;
 
+use App\Data\IngredientTranslationWriteIntent;
+use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
+use App\Models\IngredientTranslation;
 use App\Models\SupportedLocale;
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -11,8 +15,12 @@ use Illuminate\Validation\ValidationException;
 
 class IngredientTranslationService
 {
+    public function __construct(
+        private readonly IngredientTranslationSourceFingerprint $sourceFingerprint,
+    ) {}
+
     /**
-     * @return array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>
+     * @return array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null, origin: string, freshness: string, is_stale: bool}>
      */
     public function formData(Ingredient $ingredient): array
     {
@@ -20,23 +28,45 @@ class IngredientTranslationService
             return [];
         }
 
+        $canonicalFingerprint = $this->sourceFingerprint->forIngredient($ingredient);
+
         return $ingredient->translations()
             ->orderBy('locale')
-            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown'])
-            ->map(fn ($translation): array => [
-                'locale' => $translation->locale,
-                'display_name' => $translation->display_name,
-                'saponification_name' => $translation->saponification_name,
-                'info_markdown' => $translation->info_markdown,
-            ])
+            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown', 'source_fingerprint', 'origin'])
+            ->map(function (IngredientTranslation $translation) use ($canonicalFingerprint): array {
+                $sourceFingerprint = is_string($translation->source_fingerprint)
+                    ? $translation->source_fingerprint
+                    : '';
+                $origin = $translation->origin instanceof IngredientTranslationOrigin
+                    ? $translation->origin->value
+                    : (string) ($translation->origin ?? IngredientTranslationOrigin::Legacy->value);
+
+                return [
+                    'locale' => $translation->locale,
+                    'display_name' => $translation->display_name,
+                    'saponification_name' => $translation->saponification_name,
+                    'info_markdown' => $translation->info_markdown,
+                    'origin' => $origin,
+                    'freshness' => $sourceFingerprint !== '' && $sourceFingerprint === $canonicalFingerprint
+                        ? 'current'
+                        : 'outdated',
+                    'is_stale' => $sourceFingerprint === '' || $sourceFingerprint !== $canonicalFingerprint,
+                ];
+            })
             ->all();
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $rows
+     * @param  array<string, IngredientTranslationWriteIntent>  $writeIntents
      */
-    public function sync(Ingredient $ingredient, array $rows): void
-    {
+    public function sync(
+        Ingredient $ingredient,
+        array $rows,
+        IngredientTranslationOrigin $origin = IngredientTranslationOrigin::ReviewerEdited,
+        ?string $promptVersion = null,
+        array $writeIntents = [],
+    ): void {
         if ($ingredient->owner_type !== null) {
             if ($rows !== []) {
                 throw ValidationException::withMessages([
@@ -48,8 +78,11 @@ class IngredientTranslationService
         }
 
         $validatedRows = $this->validateRows($rows);
+        $validatedWriteIntents = $this->validateWriteIntents($writeIntents, $validatedRows);
 
-        DB::transaction(function () use ($ingredient, $validatedRows): void {
+        $canonicalFingerprint = $this->sourceFingerprint->forIngredient($ingredient);
+
+        DB::transaction(function () use ($ingredient, $validatedRows, $validatedWriteIntents, $canonicalFingerprint, $origin, $promptVersion): void {
             $locales = collect($validatedRows)->pluck('locale')->all();
 
             $ingredient->translations()
@@ -60,16 +93,130 @@ class IngredientTranslationService
                 ->delete();
 
             foreach ($validatedRows as $row) {
+                $existing = $ingredient->translations()->where('locale', $row['locale'])->first();
+                $sameContent = $existing instanceof IngredientTranslation
+                    && $this->normalizeRow([
+                        'locale' => $existing->locale,
+                        'display_name' => $existing->display_name,
+                        'saponification_name' => $existing->saponification_name,
+                        'info_markdown' => $existing->info_markdown,
+                    ]) === $row;
+                $intent = $validatedWriteIntents[$row['locale']] ?? null;
+                $metadata = $sameContent && ! ($intent?->refreshMetadata ?? false)
+                    ? [
+                        'source_fingerprint' => $existing->source_fingerprint,
+                        'origin' => $existing->origin ?? IngredientTranslationOrigin::Legacy->value,
+                        'prompt_version' => $existing->prompt_version,
+                    ]
+                    : [
+                        'source_fingerprint' => $canonicalFingerprint,
+                        'origin' => $intent?->origin->value ?? $origin->value,
+                        'prompt_version' => $intent instanceof IngredientTranslationWriteIntent
+                            ? $intent->promptVersion
+                            : ($origin === IngredientTranslationOrigin::AiGenerated ? $promptVersion : null),
+                    ];
+
                 $ingredient->translations()->updateOrCreate(
                     ['locale' => $row['locale']],
                     [
                         'display_name' => $row['display_name'],
                         'saponification_name' => $row['saponification_name'],
                         'info_markdown' => $row['info_markdown'],
+                        ...$metadata,
                     ],
                 );
             }
         });
+    }
+
+    /**
+     * @param  array<string, IngredientTranslationWriteIntent>  $writeIntents
+     * @param  array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>  $validatedRows
+     * @return array<string, IngredientTranslationWriteIntent>
+     */
+    private function validateWriteIntents(array $writeIntents, array $validatedRows): array
+    {
+        if ($writeIntents === []) {
+            return [];
+        }
+
+        $normalizedEntries = collect($writeIntents)
+            ->map(fn (mixed $intent, string|int $locale): array => [
+                'locale' => is_string($locale) ? trim($locale) : $locale,
+                'intent' => $intent,
+            ])
+            ->values()
+            ->all();
+        $localeCandidates = collect($normalizedEntries)
+            ->pluck('locale')
+            ->filter(fn (mixed $locale): bool => is_string($locale) && $locale !== '')
+            ->unique()
+            ->values()
+            ->all();
+        $supportedLocales = $localeCandidates === []
+            ? []
+            : SupportedLocale::query()
+                ->where('code', '!=', 'en')
+                ->whereIn('code', $localeCandidates)
+                ->pluck('code')
+                ->all();
+        $rowLocales = collect($validatedRows)->pluck('locale')->all();
+
+        $validator = Validator::make(
+            ['write_intents' => $normalizedEntries],
+            [
+                'write_intents' => ['array'],
+                'write_intents.*' => ['array'],
+                'write_intents.*.locale' => [
+                    'bail',
+                    'required',
+                    'string',
+                    'max:16',
+                    'distinct',
+                    Rule::in($supportedLocales),
+                ],
+            ],
+            [
+                'write_intents.*.locale.required' => __('ingredients.editor.validation.translation_write_intent_locale_required'),
+                'write_intents.*.locale.string' => __('ingredients.editor.validation.translation_write_intent_locale_string'),
+                'write_intents.*.locale.max' => __('ingredients.editor.validation.translation_write_intent_locale_max'),
+                'write_intents.*.locale.distinct' => __('ingredients.editor.validation.translation_write_intent_locale_distinct'),
+                'write_intents.*.locale.in' => __('ingredients.editor.validation.translation_write_intent_locale_invalid'),
+            ],
+            [
+                'write_intents.*.locale' => __('ingredients.editor.admin.translations.write_intent_locale'),
+                'write_intents.*.intent' => __('ingredients.editor.admin.translations.write_intent_value'),
+            ],
+        );
+
+        $validator->after(function (ValidatorContract $validator) use ($normalizedEntries, $rowLocales, $supportedLocales): void {
+            foreach ($normalizedEntries as $index => $entry) {
+                $locale = $entry['locale'] ?? null;
+                if (
+                    is_string($locale)
+                    && in_array($locale, $supportedLocales, true)
+                    && ! in_array($locale, $rowLocales, true)
+                ) {
+                    $validator->errors()->add(
+                        "write_intents.{$index}.locale",
+                        __('ingredients.editor.validation.translation_write_intent_locale_missing'),
+                    );
+                }
+
+                if (! ($entry['intent'] ?? null) instanceof IngredientTranslationWriteIntent) {
+                    $validator->errors()->add(
+                        "write_intents.{$index}.intent",
+                        __('ingredients.editor.validation.translation_write_intent_invalid'),
+                    );
+                }
+            }
+        });
+
+        $validator->validate();
+
+        return collect($normalizedEntries)
+            ->mapWithKeys(fn (array $entry): array => [(string) $entry['locale'] => $entry['intent']])
+            ->all();
     }
 
     /**

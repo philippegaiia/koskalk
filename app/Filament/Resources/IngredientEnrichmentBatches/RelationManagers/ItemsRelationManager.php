@@ -3,10 +3,14 @@
 namespace App\Filament\Resources\IngredientEnrichmentBatches\RelationManagers;
 
 use App\Actions\IngredientEnrichment\ApproveIngredientEnrichmentItem;
+use App\Actions\IngredientEnrichment\ApproveIngredientGuidanceProposal;
 use App\Actions\IngredientEnrichment\EditIngredientEnrichmentProposal;
+use App\Actions\IngredientEnrichment\EditIngredientGuidanceProposal;
 use App\Actions\IngredientEnrichment\RejectIngredientEnrichmentItem;
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Filament\Resources\IngredientEnrichmentBatches\Schemas\IngredientEnrichmentProposalForm;
+use App\Filament\Resources\IngredientEnrichmentBatches\Schemas\IngredientGuidanceProposalForm;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Services\IngredientEnrichment\IngredientEnrichmentApprovalPresenter;
 use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
@@ -99,23 +103,62 @@ class ItemsRelationManager extends RelationManager
                 Action::make('editProposal')
                     ->label(__('ingredient_enrichment_admin.actions.edit'))
                     ->icon('heroicon-o-pencil-square')
-                    ->visible(fn (IngredientEnrichmentBatchItem $record): bool => in_array($record->status, [
-                        IngredientEnrichmentItemStatus::Ready,
-                        IngredientEnrichmentItemStatus::Warning,
-                        IngredientEnrichmentItemStatus::Approved,
-                        IngredientEnrichmentItemStatus::Rejected,
-                    ], true))
-                    ->fillForm(fn (IngredientEnrichmentBatchItem $record): array => is_array(data_get($record->result, 'proposal'))
-                        ? data_get($record->result, 'proposal')
-                        : [])
-                    ->schema(IngredientEnrichmentProposalForm::schema())
+                    ->visible(function (IngredientEnrichmentBatchItem $record): bool {
+                        $statuses = $record->batch?->mode instanceof IngredientEnrichmentBatchMode
+                            && $record->batch->mode->isGuidance()
+                            ? [IngredientEnrichmentItemStatus::Ready, IngredientEnrichmentItemStatus::Warning]
+                            : [
+                                IngredientEnrichmentItemStatus::Ready,
+                                IngredientEnrichmentItemStatus::Warning,
+                                IngredientEnrichmentItemStatus::Approved,
+                                IngredientEnrichmentItemStatus::Rejected,
+                            ];
+
+                        return in_array($record->status, $statuses, true);
+                    })
+                    ->fillForm(function (IngredientEnrichmentBatchItem $record): array {
+                        if ($record->batch?->mode instanceof IngredientEnrichmentBatchMode && $record->batch->mode->isGuidance()) {
+                            return [
+                                'info_markdown' => data_get($record->result, 'info_markdown', ''),
+                                'translations' => data_get($record->result, 'translations', []),
+                            ];
+                        }
+
+                        return is_array(data_get($record->result, 'proposal')) ? data_get($record->result, 'proposal') : [];
+                    })
+                    ->schema(function (IngredientEnrichmentBatchItem $record): array {
+                        $mode = $record->batch?->mode;
+
+                        if ($mode instanceof IngredientEnrichmentBatchMode && $mode->isGuidance()) {
+                            return IngredientGuidanceProposalForm::schema($mode->isLocalizationOnly());
+                        }
+
+                        return IngredientEnrichmentProposalForm::schema();
+                    })
                     ->successNotificationTitle(__('ingredient_enrichment_admin.notifications.edited'))
-                    ->action(fn (IngredientEnrichmentBatchItem $record, array $data, EditIngredientEnrichmentProposal $editProposal) => $editProposal->handle(auth()->user(), $record, $data)),
+                    ->action(function (
+                        IngredientEnrichmentBatchItem $record,
+                        array $data,
+                        EditIngredientEnrichmentProposal $editProposal,
+                        EditIngredientGuidanceProposal $editGuidanceProposal,
+                    ): void {
+                        if ($record->batch?->mode instanceof IngredientEnrichmentBatchMode && $record->batch->mode->isGuidance()) {
+                            $editGuidanceProposal->handle(auth()->user(), $record, $data);
+
+                            return;
+                        }
+
+                        $editProposal->handle(auth()->user(), $record, $data);
+                    }),
                 Action::make('approve')
                     ->label(__('ingredient_enrichment_admin.actions.approve'))
                     ->icon('heroicon-o-check')
                     ->visible(fn (IngredientEnrichmentBatchItem $record): bool => in_array($record->status, [IngredientEnrichmentItemStatus::Ready, IngredientEnrichmentItemStatus::Warning], true))
                     ->schema(function (IngredientEnrichmentBatchItem $record): array {
+                        if ($record->batch?->mode instanceof IngredientEnrichmentBatchMode && $record->batch->mode->isGuidance()) {
+                            return [Text::make(__('ingredient_enrichment_admin.approval.guidance_confirmation'))];
+                        }
+
                         $conflicts = app(IngredientEnrichmentApprovalPresenter::class)->replacementConflicts($record);
 
                         if ($conflicts === []) {
@@ -134,7 +177,20 @@ class ItemsRelationManager extends RelationManager
                         ];
                     })
                     ->successNotificationTitle(__('ingredient_enrichment_admin.notifications.approved'))
-                    ->action(fn (IngredientEnrichmentBatchItem $record, array $data, ApproveIngredientEnrichmentItem $approveItem) => $approveItem->handle(auth()->user(), $record, $data['replace_fields'] ?? [])),
+                    ->action(function (
+                        IngredientEnrichmentBatchItem $record,
+                        array $data,
+                        ApproveIngredientEnrichmentItem $approveItem,
+                        ApproveIngredientGuidanceProposal $approveGuidanceProposal,
+                    ): void {
+                        if ($record->batch?->mode instanceof IngredientEnrichmentBatchMode && $record->batch->mode->isGuidance()) {
+                            $approveGuidanceProposal->handle(auth()->user(), $record);
+
+                            return;
+                        }
+
+                        $approveItem->handle(auth()->user(), $record, $data['replace_fields'] ?? []);
+                    }),
                 Action::make('reject')
                     ->label(__('ingredient_enrichment_admin.actions.reject'))
                     ->icon('heroicon-o-x-mark')

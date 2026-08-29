@@ -2,9 +2,11 @@
 
 namespace App\Actions\IngredientEnrichment;
 
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Jobs\GenerateIngredientGuidanceRefresh;
 use App\Jobs\ResearchIngredientEnrichment;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\User;
@@ -27,14 +29,17 @@ class RetryIngredientEnrichmentFailures
         bool $allowGapResearch = false,
     ): IngredientEnrichmentBatch {
         Gate::forUser($actor)->authorize('retry', $batch);
-        $ids = DB::transaction(function () use ($batch): array {
+        /** @var array{ids:list<int>, mode:IngredientEnrichmentBatchMode|null} $retry */
+        $retry = DB::transaction(function () use ($batch): array {
             $locked = IngredientEnrichmentBatch::query()->lockForUpdate()->findOrFail($batch->id);
             $ids = [];
             foreach ($locked->items()->whereIn('status', [
                 IngredientEnrichmentItemStatus::Failed->value,
                 IngredientEnrichmentItemStatus::Warning->value,
             ])->lockForUpdate()->get() as $item) {
-                $retryFrom = $item->retryableFromStage();
+                $retryFrom = $item->retryableFromStage(
+                    $locked->mode instanceof IngredientEnrichmentBatchMode ? $locked->mode : null,
+                );
                 if (! $retryFrom instanceof IngredientEnrichmentResearchStage) {
                     continue;
                 }
@@ -49,13 +54,23 @@ class RetryIngredientEnrichmentFailures
                 $ids[] = $item->id;
             }
 
-            return $ids;
+            return [
+                'ids' => $ids,
+                'mode' => $locked->mode instanceof IngredientEnrichmentBatchMode ? $locked->mode : null,
+            ];
         }, attempts: 5);
+        $ids = $retry['ids'];
+        $mode = $retry['mode'];
 
         if ($ids !== []) {
-            $laravelBatch = Bus::batch(collect($ids)->map(
-                fn (int $id): ResearchIngredientEnrichment => new ResearchIngredientEnrichment($id, $allowGapResearch),
-            )->all())
+            $jobs = collect($ids)->map(function (int $id) use ($mode, $allowGapResearch): object {
+                if ($mode instanceof IngredientEnrichmentBatchMode && $mode->isGuidance()) {
+                    return new GenerateIngredientGuidanceRefresh($id);
+                }
+
+                return new ResearchIngredientEnrichment($id, $allowGapResearch);
+            })->all();
+            $laravelBatch = Bus::batch($jobs)
                 ->name("ingredient-enrichment-retry:{$batch->public_id}")->allowFailures()
                 ->onQueue((string) config('ingredient-enrichment.direct_ai.queue'))->dispatch();
             $batch->update(['laravel_batch_id' => $laravelBatch->id, 'status' => IngredientEnrichmentBatchStatus::Processing, 'completed_at' => null]);

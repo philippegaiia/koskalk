@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\IngredientEnrichmentBatchFactory;
@@ -67,6 +68,7 @@ class IngredientEnrichmentBatch extends Model
     {
         return [
             'status' => IngredientEnrichmentBatchStatus::class,
+            'mode' => IngredientEnrichmentBatchMode::class,
             'schema_version' => 'integer',
             'total_count' => 'integer',
             'pending_count' => 'integer',

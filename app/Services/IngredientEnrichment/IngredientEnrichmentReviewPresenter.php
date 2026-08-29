@@ -43,6 +43,26 @@ class IngredientEnrichmentReviewPresenter
         $confidence = collect($result['field_confidence'] ?? [])->keyBy('field');
         $provenance = collect($result['value_provenance'] ?? [])->keyBy('field');
         $evidence = collect($result['evidence'] ?? [])->groupBy('field');
+        $guidanceEvidence = collect($result['guidance_evidence'] ?? [])
+            ->map(fn (mixed $row): array => is_array($row) ? [
+                'field' => 'proposal.info_markdown',
+                'source_name' => $row['source_name'] ?? null,
+                'source_url' => $row['source_url'] ?? null,
+                'source_tier' => $row['source_tier'] ?? null,
+                'confidence' => 'supported',
+                'source_version' => null,
+                'retrieved_at' => $row['retrieved_at'] ?? null,
+            ] : [])
+            ->filter(fn (array $row): bool => filled($row['source_url'] ?? null))
+            ->groupBy('field');
+        $evidence = $evidence->put(
+            'proposal.info_markdown',
+            $evidence->get('proposal.info_markdown', collect())->merge($guidanceEvidence->get('proposal.info_markdown', collect())),
+        );
+        $evidence = $evidence->put(
+            'guidance.evidence',
+            $guidanceEvidence->get('proposal.info_markdown', collect()),
+        );
 
         return collect($plan['decisions'] ?? [])
             ->filter(fn (mixed $decision): bool => is_array($decision) && is_string($decision['field'] ?? null))
@@ -114,9 +134,12 @@ class IngredientEnrichmentReviewPresenter
     private function label(string $path): string
     {
         $key = str($path)->afterLast('.')->value();
-        $translation = __("ingredient_enrichment_admin.review.labels.{$key}");
+        $translationKey = $path === 'guidance.evidence'
+            ? 'ingredient_enrichment_admin.review.evidence'
+            : "ingredient_enrichment_admin.review.labels.{$key}";
+        $translation = __($translationKey);
 
-        return $translation === "ingredient_enrichment_admin.review.labels.{$key}"
+        return $translation === $translationKey
             ? Str::headline($key)
             : $translation;
     }

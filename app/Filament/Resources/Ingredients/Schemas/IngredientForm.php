@@ -300,6 +300,10 @@ class IngredientForm
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                TextEntry::make('translation_status')
+                                    ->label(__('ingredient_admin.translations.freshness'))
+                                    ->state(fn (Get $get): string => __('ingredient_admin.translations.freshness_states.'.(($get('freshness') ?: 'outdated')))
+                                        .' · '.__('ingredient_admin.translations.origins.'.(($get('origin') ?: 'legacy')))),
                                 TextInput::make('display_name')
                                     ->label(__('ingredients.editor.admin.translations.display_name'))
                                     ->maxLength(255)

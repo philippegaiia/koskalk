@@ -3,6 +3,8 @@
 namespace App\Services\IngredientEnrichment;
 
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceAuthoringClient;
+use App\Contracts\IngredientGuidanceLocalizationClient;
 use App\Data\IngredientEnrichmentPipelineResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientCategory;
@@ -26,6 +28,8 @@ class IngredientEnrichmentPipeline
         private readonly UsIngredientDeclarationService $usDeclarations,
         private readonly IngredientEnrichmentFactsBuilder $facts,
         private readonly IngredientEditorialClient $editorial,
+        private readonly IngredientGuidanceAuthoringClient $guidanceAuthoring,
+        private readonly IngredientGuidanceLocalizationClient $guidanceLocalization,
         private readonly OpenAiIngredientGapResearchClient $gapResearch,
         private readonly LocalizedGuidanceHeadings $localizedGuidanceHeadings,
     ) {}
@@ -163,13 +167,158 @@ class IngredientEnrichmentPipeline
                 );
             },
         );
-        $editorialValues = is_array($editorial->data['editorial'] ?? null) ? $editorial->data['editorial'] : [];
-        $soapmakingRelevant = (bool) ($editorialValues['soapmaking_relevant'] ?? false);
-        $editorialValues['translations'] = collect($editorialValues['translations'] ?? [])
+        $metadataValues = is_array($editorial->data['editorial'] ?? null) ? $editorial->data['editorial'] : [];
+        $legacyGuidance = array_key_exists('info_markdown', $metadataValues)
+            ? [
+                'info_markdown' => is_string($metadataValues['info_markdown'] ?? null)
+                    ? $metadataValues['info_markdown']
+                    : '',
+                'warnings' => $metadataValues['warnings'] ?? [],
+                'unresolved_questions' => $metadataValues['unresolved_questions'] ?? [],
+            ]
+            : null;
+        $guidance = $this->runStage(
+            $itemId,
+            IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+            function () use ($editorialFacts, $guidanceResearch, $legacyGuidance): IngredientSourceStageResult {
+                if ($legacyGuidance !== null) {
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                        status: 'completed',
+                        data: [
+                            'guidance' => $legacyGuidance,
+                            'provider_response_id' => '',
+                            'provider_request_id' => '',
+                            'provider_model' => '',
+                            'input_tokens' => 0,
+                            'output_tokens' => 0,
+                        ],
+                    );
+                }
+
+                $context = [
+                    ...$editorialFacts,
+                    'guidance_evidence' => $this->guidanceEvidence($guidanceResearch),
+                ];
+                $response = $this->guidanceAuthoring->author($context);
+
+                return new IngredientSourceStageResult(
+                    stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                    status: 'completed',
+                    data: [
+                        'guidance' => $response->guidance,
+                        'provider_response_id' => $response->responseId,
+                        'provider_request_id' => $response->requestId,
+                        'provider_model' => $response->model,
+                        'input_tokens' => $response->inputTokens,
+                        'output_tokens' => $response->outputTokens,
+                    ],
+                );
+            },
+        );
+        $metadataValues['info_markdown'] = (string) data_get($guidance->data, 'guidance.info_markdown', '');
+        $metadataValues['warnings'] = collect($metadataValues['warnings'] ?? [])
+            ->merge(data_get($guidance->data, 'guidance.warnings', []))
+            ->merge($guidanceResearch->data['warnings'] ?? [])
+            ->filter()->unique()->values()->all();
+        $metadataValues['unresolved_questions'] = collect($metadataValues['unresolved_questions'] ?? [])
+            ->merge(data_get($guidance->data, 'guidance.unresolved_questions', []))
+            ->merge($guidanceResearch->data['unresolved_questions'] ?? [])
+            ->filter()->unique()->values()->all();
+        $soapmakingRelevant = (bool) ($metadataValues['soapmaking_relevant'] ?? false);
+        $metadataTranslations = collect($metadataValues['translations'] ?? [])
             ->filter(fn (mixed $translation): bool => is_array($translation))
-            ->map(function (array $translation) use ($soapmakingRelevant): array {
+            ->map(fn (array $translation): array => collect($translation)->only([
+                'locale', 'display_name', 'saponification_name',
+            ])->all())
+            ->values()
+            ->all();
+        $localization = $this->runStage(
+            $itemId,
+            IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+            function () use ($metadataTranslations, $metadataValues, $guidance, $legacyGuidance): IngredientSourceStageResult {
+                if ($legacyGuidance !== null) {
+                    $legacyTranslations = collect($metadataValues['translations'] ?? [])
+                        ->filter(fn (mixed $translation): bool => is_array($translation))
+                        ->map(fn (array $translation): array => [
+                            'locale' => (string) ($translation['locale'] ?? ''),
+                            'info_markdown' => is_string($translation['info_markdown'] ?? null)
+                                ? $translation['info_markdown']
+                                : '',
+                        ])
+                        ->values()
+                        ->all();
+
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                        status: 'completed',
+                        data: [
+                            'translations' => $legacyTranslations,
+                            'provider_response_id' => '',
+                            'provider_request_id' => '',
+                            'provider_model' => '',
+                            'input_tokens' => 0,
+                            'output_tokens' => 0,
+                        ],
+                    );
+                }
+
+                $legacyTranslations = collect($metadataValues['translations'] ?? [])
+                    ->filter(fn (mixed $translation): bool => is_array($translation)
+                        && array_key_exists('info_markdown', $translation))
+                    ->map(fn (array $translation): array => [
+                        'locale' => (string) ($translation['locale'] ?? ''),
+                        'info_markdown' => is_string($translation['info_markdown'] ?? null)
+                            ? $translation['info_markdown']
+                            : '',
+                    ])
+                    ->values()
+                    ->all();
+                if ($legacyTranslations !== []) {
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                        status: 'completed',
+                        data: [
+                            'translations' => $legacyTranslations,
+                            'provider_response_id' => '',
+                            'provider_request_id' => '',
+                            'provider_model' => '',
+                            'input_tokens' => 0,
+                            'output_tokens' => 0,
+                        ],
+                    );
+                }
+
+                $localizationContext = [
+                    'locales' => collect($metadataTranslations)->pluck('locale')->filter()->values()->all(),
+                    'english_guidance' => (string) data_get($guidance->data, 'guidance.info_markdown', ''),
+                    'soapmaking_relevant' => (bool) ($metadataValues['soapmaking_relevant'] ?? false),
+                    'localized_headings' => config('ingredient-enrichment.guidance.localized_headings', []),
+                    'metadata_translations' => $metadataTranslations,
+                ];
+                $response = $this->guidanceLocalization->localize($localizationContext);
+
+                return new IngredientSourceStageResult(
+                    stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                    status: 'completed',
+                    data: [
+                        'translations' => $response->translations,
+                        'provider_response_id' => $response->responseId,
+                        'provider_request_id' => $response->requestId,
+                        'provider_model' => $response->model,
+                        'input_tokens' => $response->inputTokens,
+                        'output_tokens' => $response->outputTokens,
+                    ],
+                );
+            },
+        );
+        $localizedGuidance = collect($localization->data['translations'] ?? [])
+            ->filter(fn (mixed $translation): bool => is_array($translation))
+            ->keyBy('locale');
+        $metadataValues['translations'] = collect($metadataTranslations)
+            ->map(function (array $translation) use ($localizedGuidance, $soapmakingRelevant): array {
                 $locale = (string) ($translation['locale'] ?? '');
-                $guidance = (string) ($translation['info_markdown'] ?? '');
+                $guidance = (string) data_get($localizedGuidance->get($locale), 'info_markdown', '');
 
                 return [
                     ...$translation,
@@ -178,35 +327,14 @@ class IngredientEnrichmentPipeline
             })
             ->values()
             ->all();
-        $editorialValues['warnings'] = collect($editorialValues['warnings'] ?? [])
-            ->merge($guidanceResearch->data['warnings'] ?? [])->filter()->unique()->values()->all();
-        $editorialValues['unresolved_questions'] = collect($editorialValues['unresolved_questions'] ?? [])
-            ->merge($guidanceResearch->data['unresolved_questions'] ?? [])->filter()->unique()->values()->all();
-        $editorialValues['guidance_evidence'] = collect($guidanceResearch->data['candidate_evidence'] ?? [])
-            ->filter(fn (mixed $row): bool => is_array($row)
-                && ($row['field'] ?? null) === 'proposal.info_markdown'
-                && is_string($row['source_name'] ?? null)
-                && is_string($row['source_url'] ?? null))
-            ->map(fn (array $row): array => [
-                'field' => 'proposal.info_markdown',
-                'source_name' => trim($row['source_name']),
-                'source_url' => trim($row['source_url']),
-                'source_tier' => 'editorial',
-                'confidence' => 'supported',
-                'source_version' => null,
-                'source_updated_at' => null,
-                'retrieved_at' => now()->toImmutable()->toIso8601String(),
-            ])
-            ->unique('source_url')
-            ->values()
-            ->all();
+        $metadataValues['guidance_evidence'] = $this->guidanceEvidence($guidanceResearch);
         $validation = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::Validation,
             fn (): IngredientSourceStageResult => new IngredientSourceStageResult(
                 stage: IngredientEnrichmentResearchStage::Validation,
                 status: 'completed',
-                data: ['result' => $this->result($input, $facts, $editorialValues)],
+                data: ['result' => $this->result($input, $facts, $metadataValues)],
             ),
         );
         $result = is_array($validation->data['result'] ?? null) ? $validation->data['result'] : [];
@@ -224,14 +352,35 @@ class IngredientEnrichmentPipeline
                 ->unique('url')
                 ->values()
                 ->all(),
-            providerResponseId: (string) ($editorial->data['provider_response_id'] ?? ''),
-            providerRequestId: (string) ($editorial->data['provider_request_id'] ?? ''),
-            providerModel: (string) ($editorial->data['provider_model'] ?? ''),
+            providerResponseId: (string) (
+                $localization->data['provider_response_id']
+                    ?? $guidance->data['provider_response_id']
+                    ?? $editorial->data['provider_response_id']
+                    ?? ''
+            ),
+            providerRequestId: (string) (
+                $localization->data['provider_request_id']
+                    ?? $guidance->data['provider_request_id']
+                    ?? $editorial->data['provider_request_id']
+                    ?? ''
+            ),
+            providerModel: (string) (
+                $localization->data['provider_model']
+                    ?? $guidance->data['provider_model']
+                    ?? $editorial->data['provider_model']
+                    ?? ''
+            ),
             inputTokens: (int) ($editorial->data['input_tokens'] ?? 0)
+                + (int) ($guidance->data['input_tokens'] ?? 0)
+                + (int) ($localization->data['input_tokens'] ?? 0)
                 + (int) ($guidanceResearch->data['input_tokens'] ?? 0),
             outputTokens: (int) ($editorial->data['output_tokens'] ?? 0)
+                + (int) ($guidance->data['output_tokens'] ?? 0)
+                + (int) ($localization->data['output_tokens'] ?? 0)
                 + (int) ($guidanceResearch->data['output_tokens'] ?? 0),
             webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0)
+                + (int) ($guidance->data['web_search_calls'] ?? 0)
+                + (int) ($localization->data['web_search_calls'] ?? 0)
                 + (int) ($guidanceResearch->data['web_search_calls'] ?? 0),
             structuredSourceCalls: collect($completed)->sum(fn (array $stage): int => (int) ($stage['source_calls'] ?? 0)),
         );
@@ -253,6 +402,32 @@ class IngredientEnrichmentPipeline
             'output_tokens' => 0,
             'web_search_calls' => 0,
         ];
+    }
+
+    /**
+     * @return list<array{source_name: string, source_url: string, summary: string, source_tier: string, retrieved_at: string}>
+     */
+    private function guidanceEvidence(IngredientSourceStageResult $guidanceResearch): array
+    {
+        return collect($guidanceResearch->data['candidate_evidence'] ?? [])
+            ->filter(fn (mixed $row): bool => is_array($row)
+                && ($row['field'] ?? null) === 'proposal.info_markdown'
+                && is_string($row['source_name'] ?? null)
+                && is_string($row['source_url'] ?? null)
+                && is_string($row['summary'] ?? null))
+            ->map(fn (array $row): array => [
+                'source_name' => trim((string) $row['source_name']),
+                'source_url' => trim((string) $row['source_url']),
+                'summary' => trim((string) $row['summary']),
+                'source_tier' => 'editorial',
+                'retrieved_at' => (string) ($row['retrieved_at'] ?? now()->toImmutable()->toIso8601String()),
+            ])
+            ->filter(fn (array $row): bool => $row['source_name'] !== ''
+                && $row['source_url'] !== ''
+                && $row['summary'] !== '')
+            ->unique('source_url')
+            ->values()
+            ->all();
     }
 
     /** @param array<string, mixed> $record @return array<string, mixed> */
@@ -375,8 +550,25 @@ class IngredientEnrichmentPipeline
             'value_provenance' => $this->valueProvenance($input, $facts, $editorial, $proposal),
             'evidence' => [
                 ...($facts['evidence'] ?? []),
-                ...($editorial['guidance_evidence'] ?? []),
+                ...collect($editorial['guidance_evidence'] ?? [])
+                    ->filter(fn (mixed $row): bool => is_array($row))
+                    ->map(fn (array $row): array => [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => (string) ($row['source_name'] ?? ''),
+                        'source_url' => (string) ($row['source_url'] ?? ''),
+                        'source_tier' => (string) ($row['source_tier'] ?? 'editorial'),
+                        'confidence' => 'supported',
+                        'source_version' => null,
+                        'source_updated_at' => null,
+                        'retrieved_at' => (string) ($row['retrieved_at'] ?? now()->toImmutable()->toIso8601String()),
+                    ])
+                    ->filter(fn (array $row): bool => $row['source_name'] !== '' && $row['source_url'] !== '')
+                    ->all(),
             ],
+            'guidance_evidence' => collect($editorial['guidance_evidence'] ?? [])
+                ->filter(fn (mixed $row): bool => is_array($row))
+                ->values()
+                ->all(),
             'regulatory_findings' => data_get($facts, 'regulatory_findings', []),
             'confidence' => $this->confidence($facts),
             'warnings' => collect([

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Ingredients\Tables;
 
 use App\Actions\IngredientEnrichment\StartIngredientEnrichmentBatch;
+use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
 use App\Enums\IngredientCategory;
 use App\Filament\Exports\IngredientExporter;
 use App\Filament\Resources\IngredientEnrichmentBatches\IngredientEnrichmentBatchResource;
@@ -80,6 +81,18 @@ class IngredientsTable
                         ]))
                         ->action(function (Collection $records, StartIngredientEnrichmentBatch $startBatch): mixed {
                             $batch = $startBatch->handle(auth()->user(), $records);
+
+                            return redirect(IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('runGuidanceRefresh')
+                        ->label(__('ingredient_enrichment_admin.actions.guidance_refresh'))
+                        ->icon('heroicon-o-sparkles')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('ingredient_enrichment_admin.actions.guidance_refresh_heading'))
+                        ->modalDescription(__('ingredient_enrichment_admin.actions.guidance_refresh_description'))
+                        ->action(function (Collection $records, StartIngredientGuidanceRefresh $startRefresh): mixed {
+                            $batch = $startRefresh->handle(auth()->user(), $records);
 
                             return redirect(IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]));
                         })

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Models\Concerns\HasPublicId;
@@ -100,24 +101,60 @@ class IngredientEnrichmentBatchItem extends Model
         return $this->belongsTo(User::class, 'edited_by_user_id');
     }
 
-    public function retryableFromStage(): ?IngredientEnrichmentResearchStage
+    public function retryableFromStage(?IngredientEnrichmentBatchMode $mode = null): ?IngredientEnrichmentResearchStage
     {
         $stages = is_array($this->research_stages) ? $this->research_stages : [];
+        $effectiveMode = $mode;
+        if ($effectiveMode === null) {
+            $batchMode = $this->batch?->mode;
+            $effectiveMode = $batchMode instanceof IngredientEnrichmentBatchMode ? $batchMode : null;
+        }
+        $orderedStages = $effectiveMode?->guidanceStages() ?? [];
+        if ($orderedStages === []) {
+            $orderedStages = IngredientEnrichmentResearchStage::ordered();
+        }
 
-        foreach (IngredientEnrichmentResearchStage::ordered() as $stage) {
+        foreach ($orderedStages as $stage) {
             $result = $stages[$stage->value] ?? null;
             if (! is_array($result) || ($result['status'] ?? null) !== 'completed') {
                 return $stage;
             }
 
-            if (is_array($result['unresolved_questions'] ?? null) && $result['unresolved_questions'] !== []) {
+            if ($this->hasUnresolvedQuestions($result, $effectiveMode)) {
                 return $stage;
             }
         }
 
         return $this->status === IngredientEnrichmentItemStatus::Failed
-            ? IngredientEnrichmentResearchStage::EuStructured
+            ? ($effectiveMode?->isGuidance()
+                ? $orderedStages[array_key_last($orderedStages)]
+                : IngredientEnrichmentResearchStage::EuStructured)
             : null;
+    }
+
+    /** @param array<string, mixed> $stage */
+    private function hasUnresolvedQuestions(array $stage, ?IngredientEnrichmentBatchMode $mode): bool
+    {
+        $outerQuestions = $stage['unresolved_questions'] ?? null;
+        if (is_array($outerQuestions) && $outerQuestions !== []) {
+            return true;
+        }
+
+        $batchMode = $mode ?? $this->batch?->mode;
+        if (! $batchMode instanceof IngredientEnrichmentBatchMode || ! $batchMode->isGuidance()) {
+            return false;
+        }
+
+        foreach ([
+            data_get($stage, 'data.guidance.unresolved_questions'),
+            data_get($stage, 'data.result.unresolved_questions'),
+        ] as $questions) {
+            if (is_array($questions) && $questions !== []) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function casts(): array

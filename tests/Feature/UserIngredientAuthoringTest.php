@@ -11,13 +11,16 @@ use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\IngredientTranslation;
 use App\Models\Plan;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
+use App\Services\LocalePreferenceResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
@@ -254,6 +257,169 @@ it('does not let a workspace viewer save a platform material code', function ():
         ->assertHasErrors(['workspaceMaterialCode']);
 
     expect(WorkspaceIngredientCode::query()->where('ingredient_id', $platform->id)->exists())->toBeFalse();
+});
+
+it('lets an editor customize and reset localized platform guidance', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $editor = User::factory()->create([
+        'active_workspace_id' => $workspace->id,
+        'locale' => 'fr',
+    ]);
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Platform guidance in English',
+    ]);
+    IngredientTranslation::factory()->for($platform)->create([
+        'locale' => 'fr',
+        'info_markdown' => 'Conseils de la plateforme',
+    ]);
+
+    $this->actingAs($editor);
+    app()->setLocale('fr');
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->assertSeeText('Conseils de la plateforme')
+        ->assertSet('workspaceGuidanceMarkdown', null)
+        ->assertSet('isEditingWorkspaceGuidance', false)
+        ->assertSeeText('Customize guidance')
+        ->assertDontSeeText('Edit guidance')
+        ->assertDontSeeText('Use platform guidance');
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->exists())->toBeFalse();
+
+    $component
+        ->call('startWorkspaceGuidanceCustomization')
+        ->assertSet('workspaceGuidanceMarkdown', 'Conseils de la plateforme')
+        ->assertSet('isEditingWorkspaceGuidance', true)
+        ->assertSee('id="workspace-guidance-markdown"', escape: false)
+        ->assertSee('maxlength="2000"', escape: false)
+        ->assertSee('Array.from(value ?? \'\').length', escape: false)
+        ->assertSeeText('Save guidance')
+        ->assertSeeText('Cancel');
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->exists())->toBeFalse();
+
+    $component
+        ->set('workspaceGuidanceMarkdown', '  Workspace-authored guidance  ')
+        ->call('saveWorkspaceGuidance')
+        ->assertHasNoErrors()
+        ->assertSet('workspaceGuidanceMarkdown', 'Workspace-authored guidance')
+        ->assertSet('isEditingWorkspaceGuidance', false)
+        ->assertSeeText('Workspace-authored guidance')
+        ->assertSeeText('Workspace guidance')
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && $payload['message'] === 'Workspace guidance saved.';
+        });
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->value('guidance_markdown'))->toBe('Workspace-authored guidance');
+
+    $editor->update(['locale' => 'en']);
+    app()->setLocale('en');
+    session()->put(LocalePreferenceResolver::SessionKey, 'en');
+
+    $englishComponent = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $englishComponent
+        ->assertSet('workspaceGuidanceMarkdown', 'Workspace-authored guidance')
+        ->assertSeeText('Workspace-authored guidance')
+        ->assertSeeText('Edit guidance')
+        ->assertSeeText('Use platform guidance')
+        ->assertSee('wire:confirm="Remove the workspace guidance and use the current platform guidance?"', escape: false)
+        ->call('resetWorkspaceGuidance')
+        ->assertSet('workspaceGuidanceMarkdown', null)
+        ->assertSet('isEditingWorkspaceGuidance', false)
+        ->assertSeeText('Platform guidance in English')
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && $payload['message'] === 'Platform guidance restored.';
+        });
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->exists())->toBeFalse();
+
+    app()->setLocale('en');
+});
+
+it('keeps workspace guidance read-only for viewers', function (): void {
+    app()->setLocale('en');
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Platform guidance',
+    ]);
+
+    $this->actingAs($viewer);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->assertSeeText('Platform guidance')
+        ->assertSeeText('Only workspace owners, admins, and editors can change this guidance.')
+        ->assertDontSeeText('Customize guidance')
+        ->assertDontSeeText('Edit guidance')
+        ->assertDontSeeText('Use platform guidance')
+        ->call('startWorkspaceGuidanceCustomization')
+        ->assertHasErrors(['workspaceGuidanceMarkdown'])
+        ->call('saveWorkspaceGuidance')
+        ->assertHasErrors(['workspaceGuidanceMarkdown'])
+        ->call('resetWorkspaceGuidance')
+        ->assertHasErrors(['workspaceGuidanceMarkdown']);
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->exists())->toBeFalse();
+});
+
+it('keeps workspace-owned ingredient guidance in its existing editor', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'info_markdown' => 'Existing private guidance',
+    ]);
+
+    $this->actingAs($owner);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->assertDontSeeText('Workspace content')
+        ->set('data.info_markdown', 'Updated private guidance')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($ingredient->fresh()->info_markdown)->toBe('Updated private guidance')
+        ->and(WorkspaceIngredientGuidance::query()
+            ->where('workspace_id', $workspace->id)
+            ->where('ingredient_id', $ingredient->id)
+            ->exists())->toBeFalse();
 });
 
 it('lets a workspace manage bounded identity aliases and declared substances', function (): void {

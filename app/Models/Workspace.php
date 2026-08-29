@@ -80,6 +80,11 @@ class Workspace extends Model
         return $this->hasMany(WorkspaceIngredientCode::class);
     }
 
+    public function ingredientGuidances(): HasMany
+    {
+        return $this->hasMany(WorkspaceIngredientGuidance::class);
+    }
+
     public function productionEntitlement(): HasOne
     {
         return $this->hasOne(WorkspaceProductionEntitlement::class);

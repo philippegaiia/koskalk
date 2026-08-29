@@ -11,6 +11,8 @@ use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceChangePlanner;
 use App\Services\IngredientEnrichment\IngredientGuidanceProposalReviewService;
@@ -69,6 +71,52 @@ it('edits and applies guidance without changing approved identity fields', funct
         ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))->toBe(trim(guidanceApplyTranslationText('Révisé')))
         ->and($ingredient->translations()->where('locale', 'fr')->value('origin'))->toBe(IngredientTranslationOrigin::ReviewerEdited)
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))->toBe('COSMILE Europe');
+});
+
+it('keeps a workspace override unchanged while applying reviewed platform guidance', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'info_markdown' => guidanceApplyText('Original'),
+        'category' => 'lipids',
+    ]);
+    $ingredient->translations()->create([
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'info_markdown' => guidanceApplyTranslationText('Original'),
+    ]);
+    $workspace = Workspace::factory()->create();
+    $override = WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'guidance_markdown' => 'Workspace-authored guidance',
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => guidanceResult($ingredient, $sourceFingerprint),
+    ]);
+
+    app(EditIngredientGuidanceProposal::class)->handle($admin, $item, [
+        'info_markdown' => guidanceApplyText('Edited'),
+        'translations' => [[
+            'locale' => 'fr',
+            'info_markdown' => guidanceApplyTranslationText('Révisé'),
+        ]],
+    ]);
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item->fresh());
+    app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    expect($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Edited')))
+        ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))
+        ->toBe(trim(guidanceApplyTranslationText('Révisé')))
+        ->and($override->fresh()->guidance_markdown)->toBe('Workspace-authored guidance');
 });
 
 it('leaves unedited locales unchanged and outdated when English guidance is edited', function (): void {

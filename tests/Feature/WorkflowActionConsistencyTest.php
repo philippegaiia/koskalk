@@ -40,7 +40,7 @@ it('uses rectangular primary actions for inventory and settings', function (): v
     $settings = file_get_contents(resource_path('views/livewire/dashboard/settings-index.blade.php'));
 
     expect($inventory)
-        ->toContain('class="sk-btn sk-btn-primary"')
+        ->toContain('{{ $this->addStockAction }}')
         ->not->toContain('class="rounded-full bg-[var(--color-accent)] px-5 py-2.5')
         ->and(substr_count($settings, 'class="sk-btn sk-btn-primary"'))
         ->toBe(2)

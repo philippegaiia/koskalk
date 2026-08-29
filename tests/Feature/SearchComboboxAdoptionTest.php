@@ -31,14 +31,18 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
 
 it('gives the product category combobox room without clipping or a nested focus line', function () {
     $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $component = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $styles = file_get_contents(resource_path('css/app.css'));
 
     expect($formulaSettings)
         ->toContain('data-product-category-setting')
         ->toContain('class="mt-3 max-w-3xl"')
-        ->toContain("isFormulaSettingsOpen ? 'overflow-visible' : 'overflow-hidden'")
+        ->toContain("formulaSettingsOverflow ? 'overflow-visible' : 'overflow-hidden'")
         ->toContain('lg:grid-cols-2 xl:grid-cols-4')
         ->not->toContain('lg:grid-cols-2 xl:grid-cols-5')
+        ->and($component)
+        ->toContain('formulaSettingsOverflow: initialDraft === null')
+        ->toContain('this.formulaSettingsOverflowTimer = setTimeout')
         ->and($styles)
         ->toContain('input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control)')
         ->toContain('.sk-combobox-control:focus-within')

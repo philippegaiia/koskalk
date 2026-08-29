@@ -89,8 +89,8 @@ it('marks exactly one navigation entry current on every production bench page', 
     'flash planner' => ['production-bench.production.flash', 'production-bench.production.flash'],
     'production calendar' => ['production-bench.production.calendar', 'production-bench.production.calendar'],
     // The settings landing page shows every section, so no child route matches
-    // and the row falls back to its first entry.
-    'settings landing' => ['production-bench.production.settings', 'production-bench.production.settings.numbering'],
+    // and the Settings tab itself stays the current page.
+    'settings landing' => ['production-bench.production.settings', 'production-bench.production.settings'],
     'settings numbering' => ['production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
     'settings batch sizes' => ['production-bench.production.settings.presets', 'production-bench.production.settings.presets'],
     'settings task types' => ['production-bench.production.settings.task-types', 'production-bench.production.settings.task-types'],
@@ -104,6 +104,26 @@ it('marks exactly one navigation entry current on every production bench page', 
     'purchasing orders' => ['production-bench.purchasing.orders', 'production-bench.purchasing.orders'],
     'purchasing receipts' => ['production-bench.purchasing.receipts', 'production-bench.purchasing.receipts'],
 ]);
+
+it('leaves every settings child unmarked on the all sections landing page', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $html = $this->actingAs($user)
+        ->get(route('production-bench.production.settings'))
+        ->assertOk()
+        ->getContent();
+
+    // The landing page renders all seven sections, so no child is the
+    // destination. Marking one would announce `/settings/numbering` as the
+    // current page while the browser sits on `/settings`.
+    expect(Str::of($html)->after('sk-nav-rail')->before('</nav>')->toString())
+        ->not->toContain('aria-current')
+        ->and(substr_count($html, 'aria-current="page"'))->toBe(1)
+        ->and(Str::of($html)->afterLast('href="'.route('production-bench.production.settings').'"')->before('</a>')->toString())
+        ->toContain('aria-current="page"');
+});
 
 it('renders explicit production bench navigation state without relying on the request route', function (string $active, ?string $subnavigation, string $currentRoute, ?string $branchRoute): void {
     $html = Blade::render(
@@ -139,7 +159,9 @@ it('renders explicit production bench navigation state without relying on the re
     'purchasing quotations' => ['purchasing', 'quotations', 'production-bench.purchasing.quotations', 'production-bench.purchasing.suppliers'],
     'purchasing orders' => ['purchasing', 'orders', 'production-bench.purchasing.orders', 'production-bench.purchasing.suppliers'],
     'purchasing receipts' => ['purchasing', 'receipts', 'production-bench.purchasing.receipts', 'production-bench.purchasing.suppliers'],
-    'setup default' => ['production-setup', null, 'production-bench.production.settings.numbering', 'production-bench.production.settings'],
+    // `subnavigation` null means "no child is the destination", so the Settings
+    // tab is the page and there is no branch to mark.
+    'setup all sections' => ['production-setup', null, 'production-bench.production.settings', null],
     'setup numbering' => ['production-setup', 'numbering', 'production-bench.production.settings.numbering', 'production-bench.production.settings'],
     'setup presets' => ['production-setup', 'presets', 'production-bench.production.settings.presets', 'production-bench.production.settings'],
     'setup task types' => ['production-setup', 'task-types', 'production-bench.production.settings.task-types', 'production-bench.production.settings'],
@@ -171,6 +193,17 @@ it('keeps the dashboard first and pins settings to the trailing edge of the top 
         ->toContain('data-nav-divider="true"')
         ->and(Str::of($html)->after($settingsHref)->before('</a>')->toString())
         ->toContain('data-nav-end="true"');
+});
+
+it('lets the top level row span its width so the trailing edge pin has space to act on', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // `margin-inline-start: auto` on `[data-nav-end]` only pushes Settings right
+    // if the cluster it sits in spans the row. Left content-sized, the cluster
+    // leaves the slack in `.sk-nav-row` where the auto margin cannot reach it,
+    // and Settings sits inline beside Purchasing. Asserted against the
+    // stylesheet because PHPUnit cannot compute layout.
+    expect($css)->toMatch("/\.sk-nav-row\[data-level='1'\] > \.sk-nav-cluster \{[^}]*flex: 1 1 auto;/");
 });
 
 it('declares durable navigation state in every production bench Livewire view', function (): void {

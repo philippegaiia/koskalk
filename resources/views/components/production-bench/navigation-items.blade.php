@@ -12,9 +12,10 @@
     same partial, so a parent can never drift from its children in markup,
     classes, icon treatment, or aria semantics.
 
-    `data-level` drives every visual difference in CSS. Nothing here hard-codes
-    a tier by position, and adding a third tier is a config change plus one
-    dormant CSS rule.
+    `data-level` drives every visual difference in CSS and nothing here
+    hard-codes a tier by position, but the *number* of tiers is fixed at two by
+    `ProductionBenchNavigation::rows()` and `navigation.blade.php`, which emit
+    and render levels 1 and 2 by index.
 --}}
 <div {{ $attributes->class(['sk-nav-row']) }} data-level="{{ $level }}">
     @foreach ($chunks as $chunkIndex => $chunk)
@@ -28,7 +29,7 @@
             @endif
         >
             @if ($labelId !== null)
-                <p class="sk-eyebrow sk-nav-group-label" id="{{ $labelId }}">{{ __($chunk['label']) }}</p>
+                <h3 class="sk-eyebrow sk-nav-group-label" id="{{ $labelId }}">{{ __($chunk['label']) }}</h3>
             @endif
 
             @foreach ($chunk['nodes'] as $node)

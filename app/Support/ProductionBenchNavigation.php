@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Illuminate\Support\Collection;
+
 /**
  * Declarative navigation tree for the Production Bench.
  *
@@ -12,6 +14,13 @@ namespace App\Support;
  * pass to `<x-production-bench.page>`. That is what keeps this a lookup rather
  * than a rewrite: promoting `production-setup` to a top level, for example,
  * required no view changes at all.
+ *
+ * `aria` and `also` are optional because only `leaf()` populates them; the five
+ * top-level nodes are written out longhand. The shape is recursive, hence the
+ * alias — a bare `list<array>` cannot express the nesting.
+ *
+ * @phpstan-type NavNode array{key: string, route: string, label: string, icon: string, group: ?string, end: bool, divider: bool, children: list<NavNode>, aria?: ?string, also?: list<string>}
+ * @phpstan-type NavGroup array{label: ?string, nodes: list<NavNode>}
  */
 final class ProductionBenchNavigation
 {
@@ -23,7 +32,7 @@ final class ProductionBenchNavigation
      * `navigation-items.blade.php`, so the partial never hard-codes "the last
      * item" or "the first item" positionally.
      *
-     * @return list<array{key: string, route: string, label: string, aria: ?string, icon: string, group: ?string, end: bool, divider: bool, children: list<array>}>
+     * @return list<NavNode>
      */
     public static function tree(): array
     {
@@ -141,7 +150,7 @@ final class ProductionBenchNavigation
     /**
      * Resolve the active trail and the rows that should be rendered.
      *
-     * @return array{path: list<string>, rows: array<int, list<array>>}
+     * @return array{path: list<string>, rows: array<int, list<NavNode>>}
      */
     public static function resolve(?string $active, ?string $subnavigation): array
     {
@@ -163,10 +172,25 @@ final class ProductionBenchNavigation
 
         if ($node['children'] !== []) {
             $child = self::find($node['children'], $subnavigation)
-                ?? self::find($node['children'], self::detectSubnavigationKey($node['children']))
-                ?? $node['children'][0];
+                ?? self::find($node['children'], self::detectSubnavigationKey($node['children']));
 
-            $path[] = $child['key'];
+            // Default to the first child only where the group's own link points
+            // at the same route, which is what makes the group and its first
+            // child two spellings of one destination. Settings has no such
+            // child: its landing page renders every section, so defaulting
+            // would announce `/settings/numbering` as the current page while
+            // the browser sits on `/settings`.
+            //
+            // The default also has to survive Livewire update requests, where
+            // `routeIs()` sees `livewire.update` rather than the page route and
+            // `detectSubnavigationKey()` therefore resolves to null.
+            if ($child === null && $node['route'] === $node['children'][0]['route']) {
+                $child = $node['children'][0];
+            }
+
+            if ($child !== null) {
+                $path[] = $child['key'];
+            }
         }
 
         return ['path' => $path, 'rows' => self::rows($tree, $path)];
@@ -188,30 +212,35 @@ final class ProductionBenchNavigation
      * Siblings without a group produce a single unlabelled chunk, so Inventory
      * and Purchasing keep a plain row while Settings gains sub-headings.
      *
-     * @param  list<array>  $nodes
-     * @return list<array{label: ?string, nodes: list<array>}>
+     * @param  list<NavNode>  $nodes
+     * @return list<NavGroup>
      */
     public static function groups(array $nodes): array
     {
-        $groups = [];
-
-        foreach ($nodes as $node) {
-            $label = $node['group'] ?? null;
-
-            if ($groups === [] || $groups[count($groups) - 1]['label'] !== $label) {
-                $groups[] = ['label' => $label, 'nodes' => []];
-            }
-
-            $groups[count($groups) - 1]['nodes'][] = $node;
-        }
-
-        return $groups;
+        // `chunkWhile` seeds the first sibling into the chunk and only then
+        // starts asking, so comparing against the chunk's last entry groups
+        // consecutive runs without a counter.
+        return collect($nodes)
+            ->chunkWhile(
+                fn (array $node, int|string $key, Collection $chunk): bool => ($node['group'] ?? null) === ($chunk->last()['group'] ?? null),
+            )
+            ->map(fn (Collection $chunk): array => [
+                'label' => $chunk->first()['group'] ?? null,
+                'nodes' => $chunk->values()->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
-     * @param  list<array>  $tree
+     * The rows to render: level 1 always, level 2 only for the active branch.
+     *
+     * Both levels are named here, which is why the tree has exactly two visual
+     * depths today despite `data-level` being open-ended in CSS.
+     *
+     * @param  list<NavNode>  $tree
      * @param  list<string>  $path
-     * @return array<int, list<array>>
+     * @return array<int, list<NavNode>>
      */
     private static function rows(array $tree, array $path): array
     {
@@ -232,7 +261,8 @@ final class ProductionBenchNavigation
      * This is what keeps `calendar` unambiguous: the Production calendar is
      * declared before the Settings working calendar.
      *
-     * @param  list<array>  $nodes
+     * @param  list<NavNode>  $nodes
+     * @return ?NavNode
      */
     private static function find(array $nodes, ?string $key): ?array
     {
@@ -260,8 +290,8 @@ final class ProductionBenchNavigation
     }
 
     /**
-     * @param  list<array>  $nodes
-     * @return ?array{node: array, trail: list<string>}
+     * @param  list<NavNode>  $nodes
+     * @return ?array{node: NavNode, trail: list<string>}
      */
     private static function locate(array $nodes, string $key, array $trail = []): ?array
     {
@@ -308,7 +338,7 @@ final class ProductionBenchNavigation
 
     /**
      * @param  list<string>  $also  Extra route patterns that should mark this child current.
-     * @return array{key: string, route: string, label: string, aria: ?string, icon: string, group: ?string, end: bool, divider: bool, also: list<string>, children: list<array>}
+     * @return NavNode
      */
     private static function leaf(string $key, string $route, string $label, string $icon, ?string $group = null, array $also = []): array
     {
@@ -330,7 +360,7 @@ final class ProductionBenchNavigation
      * Pick the child whose route matches the current request, so a page that
      * omits `subnavigation` still highlights the right entry.
      *
-     * @param  list<array>  $children
+     * @param  list<NavNode>  $children
      */
     private static function detectSubnavigationKey(array $children): ?string
     {

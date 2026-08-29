@@ -439,8 +439,20 @@
         gap: 0.25rem;
     }
 
+    /*
+     * Only the top level fills its row. Without this the cluster is a
+     * content-sized flex item, so `margin-inline-start: auto` on `[data-nav-end]`
+     * has no free space to absorb and Settings sits inline beside Purchasing
+     * instead of on the trailing edge. Level 2 clusters stay content-sized so
+     * the Settings sub-groups keep their natural gap instead of being split.
+     */
+    .sk-nav-row[data-level='1'] > .sk-nav-cluster {
+        flex: 1 1 auto;
+    }
+
     .sk-nav-cluster > .sk-nav-group-label {
-        margin-inline-end: 0.25rem;
+        margin-block: 0;
+        margin-inline: 0 0.25rem;
         color: var(--color-ink-soft);
         opacity: 0.85;
     }
@@ -538,8 +550,10 @@
     }
 
     /*
-     * Dormant: a third tier is a config change plus this rule. Nothing else in
-     * the navigation hard-codes a depth.
+     * Dormant and kept deliberately (plan §3.1). A third tier is NOT a config
+     * change: `ProductionBenchNavigation::rows()` emits levels 1 and 2, and
+     * `navigation.blade.php` renders them by index, so both need a third entry
+     * before this rule has anything to match.
      */
     .sk-nav-item[data-level='3'] {
         min-height: 2rem;

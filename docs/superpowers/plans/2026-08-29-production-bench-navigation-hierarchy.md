@@ -189,7 +189,7 @@ This keeps the Soapkraft north star — "tonal layering first, restrained colour
 
 ### 3.6 Accessibility
 
-- **Exactly one `aria-current="page"` per page**, on the deepest active node. Ancestors get `aria-current="true"` and a `data-nav-branch` attribute for styling.
+- **Exactly one `aria-current="page"` per page**, on the deepest active node. Ancestors get `aria-current="true"` and the `.is-branch` class for styling. **C7 in §8 resolves this bullet's original `data-nav-branch` attribute in favour of the class.**
   - *This is a deliberate change.* Today the page emits two `aria-current="page"` (parent + child) and the layout test asserts it. `aria-current="page"` means "the current item **within a set**"; marking nested ancestors as the current page is ambiguous for screen-reader users. Called out here because it requires updating `ProductionBenchLayoutTest`.
 - Every `<nav>` gets a specific, **translated** `aria-label` (e.g. `__('production_bench.navigation.settings_sections')`). This also fixes the hard-coded English `aria-label="Purchasing sections"` noted in §1.
 - Sub-headings are real headings (`<h3>` inside the rail, or `role="presentation"` if they are purely visual) and are associated with their chip group via `aria-labelledby` on the wrapping `<div role="group">`.
@@ -397,3 +397,79 @@ Verified after import — `de` now reads `Dashboard` (was `Start`), `Einstellung
 - No Livewire view under `resources/views/livewire/production-bench/` was modified.
 - No route was added, removed, or renamed. The only non-navigation source change is one line in `SettingsIndex::mount()`.
 - Full suite green except the one pre-existing ingredient-authoring failure; Pint clean.
+
+---
+
+## 8. Corrections from review (2026-08-29)
+
+An external review of the committed implementation surfaced two defects and three
+inaccuracies in this plan. All five are recorded here; the two defects are fixed.
+
+### C4 — §2.1 is wrong about `production-setup` (was a live defect)
+
+> Level-1 groups are also links … The group's landing page is therefore duplicated
+> by its first child (exactly as `Inventory` / `Overview` is today).
+
+True for three of the four groups, false for the fourth:
+
+| Group | Group route | First child route | Duplicated? |
+| --- | --- | --- | --- |
+| `inventory` | `production-bench.inventory` | `production-bench.inventory` | yes |
+| `production` | `production-bench.production.index` | `production-bench.production.index` | yes |
+| `purchasing` | `production-bench.purchasing.suppliers` | `production-bench.purchasing.suppliers` | yes |
+| `production-setup` | `production-bench.production.settings` | `production-bench.production.settings.numbering` | **no** |
+
+The unconditional `?? $node['children'][0]` fallback in `resolve()` therefore
+announced `/settings/numbering` as the current page while the browser sat on
+`/settings`, which renders **all seven** sections. Fixed by making the fallback
+conditional on `$node['route'] === $node['children'][0]['route']`, which is
+exactly the duplication the plan describes.
+
+The default cannot simply be deleted: `detectSubnavigationKey()` resolves via
+`routeIs()`, which sees `livewire.update` rather than the page route during a
+Livewire update request, so the default is what keeps a child highlighted across
+live updates for the three groups that do share a route.
+
+### C5 — Settings was not right-aligned (was a live defect)
+
+`margin-inline-start: auto` on `[data-nav-end]` never did anything. The item sits
+in `.sk-nav-cluster`, a content-sized flex item inside `.sk-nav-row`, so the row's
+free space was outside the cluster where an auto margin cannot reach it. Fixed
+with `.sk-nav-row[data-level='1'] > .sk-nav-cluster { flex: 1 1 auto; }`, scoped
+to level 1 so the two Settings sub-groups keep their natural gap.
+
+### C6 — §3.1 understates the cost of a third tier
+
+> Keep a dormant `[data-level='3']` selector so a future third tier is a three-line
+> change.
+
+Not configuration-only: `ProductionBenchNavigation::rows()` emits levels 1 and 2
+by index and `navigation.blade.php` renders them by index, so both need a third
+entry. The rule is kept as instructed, but the CSS comment now says so.
+
+### C7 — §3.6 contradicts itself (resolved in favour of the class)
+
+§3.6 named a `data-nav-branch` attribute on ancestors; §5 and task 10 both name an
+`.is-branch` class. The implementation emits the class, and `data-nav-branch`
+appears nowhere else in the codebase. Resolved by keeping the class and correcting
+§3.6.
+
+The apparent inconsistency with `data-nav-end` / `data-nav-divider` is not one. The
+two families differ in where the flag comes from:
+
+| Flag | Source | Mechanism |
+| --- | --- | --- |
+| `data-nav-end`, `data-nav-divider` | declarative, carried on the node in `tree()` | attribute |
+| `.is-active`, `.is-branch` | computed per render from the resolved `$path` | class |
+
+`.is-branch` also shares its CSS rule with `.is-active` — both mean "this item is on
+the active path" — which an attribute selector could not do without duplicating the
+declaration or abandoning the grouping:
+
+```css
+.sk-nav-item[data-level='1'].is-active,
+.sk-nav-item[data-level='1'].is-branch {
+    border-bottom-color: var(--color-accent);
+    color: var(--color-ink-strong);
+}
+```

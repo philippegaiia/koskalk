@@ -38,8 +38,25 @@ it('resolves every navigation state the production bench views pass', function (
     'settings task types' => ['production-setup', 'task-types', ['production-setup', 'task-types']],
     'settings task sets' => ['production-setup', 'task-sets', ['production-setup', 'task-sets']],
     'settings working calendar' => ['production-setup', 'calendar', ['production-setup', 'calendar']],
-    'settings defaults to its first child' => ['production-setup', null, ['production-setup', 'numbering']],
+    // Settings is the one group whose landing page is not also one of its
+    // children: `all` renders every section, so no child may be the page.
+    'settings landing keeps the group current' => ['production-setup', null, ['production-setup']],
 ]);
+
+it('defaults to the first child only where the group and that child share a route', function (): void {
+    foreach (ProductionBenchNavigation::tree() as $node) {
+        if ($node['children'] === []) {
+            continue;
+        }
+
+        $sharesRoute = $node['route'] === $node['children'][0]['route'];
+        $path = ProductionBenchNavigation::resolve($node['key'], null)['path'];
+
+        // A group resolves two deep only when its first child is the same
+        // destination. Otherwise it stays the current page itself.
+        expect(count($path) === 2)->toBe($sharesRoute, $node['key'].' resolved unexpectedly');
+    }
+});
 
 it('resolves the calendar key to the production calendar, not the settings working calendar', function (): void {
     expect(ProductionBenchNavigation::resolve('calendar', null)['path'])->toBe(['production', 'calendar']);

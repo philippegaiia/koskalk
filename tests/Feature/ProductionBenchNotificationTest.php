@@ -15,7 +15,7 @@ it('dispatches setup saves through the shared app notification', function (): vo
     WorkspaceProductionEntitlement::factory()->for($workspace)->create();
 
     Livewire::actingAs($owner)
-        ->test(SettingsIndex::class)
+        ->test(SettingsIndex::class, ['section' => 'employees'])
         ->set('employeeFirstName', 'Ana')
         ->set('employeeLastName', 'Maker')
         ->call('saveEmployee')

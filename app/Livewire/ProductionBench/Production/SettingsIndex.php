@@ -29,13 +29,15 @@ use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class SettingsIndex extends Component
 {
     use InteractsWithAppNotifications;
 
-    public string $section = 'all';
+    #[Locked]
+    public string $section = '';
 
     public ?string $statusMessage = null;
 
@@ -126,17 +128,21 @@ class SettingsIndex extends Component
 
     public string $cosmeticReadyDelayDays = '3';
 
-    public function mount(): void
+    /**
+     * The section comes from the route, not from sniffing the request.
+     *
+     * Deriving it from `request()->routeIs()` meant the mapping lived in two
+     * places at once, and every branch whose route rendered a different
+     * component (`presets`, `task-sets`) or no route at all (`all`) was dead
+     * code that only a direct component mount could reach. The route now
+     * declares its own section, so there is no fallback to disagree with it.
+     *
+     * `#[Locked]` keeps it read-only for the client: it is set once at mount
+     * and a tampered snapshot cannot widen the rendered section.
+     */
+    public function mount(string $section): void
     {
-        $this->section = match (true) {
-            request()->routeIs('production-bench.production.settings.presets') => 'presets',
-            request()->routeIs('production-bench.production.settings.departments') => 'departments',
-            request()->routeIs('production-bench.production.settings.employees') => 'employees',
-            request()->routeIs('production-bench.production.settings.task-types') => 'task-types',
-            request()->routeIs('production-bench.production.settings.task-sets') => 'task-sets',
-            request()->routeIs('production-bench.production.settings.calendar') => 'calendar',
-            default => 'all',
-        };
+        $this->section = $section;
 
         $this->worksOnWeekends = (bool) $this->workspace()->production_works_on_weekends;
         $outputSettings = $this->workspace()->productionOutputSetting;

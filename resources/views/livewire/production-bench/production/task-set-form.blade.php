@@ -1,7 +1,7 @@
 <x-production-bench.page active="production-setup" subnavigation="task-sets">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <p class="sk-eyebrow">{{ __('production_bench.navigation.production') }}</p>
+            <p class="sk-eyebrow">{{ __('production_bench.navigation.settings') }}</p>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $editing ? __('production_bench.settings.edit_task_set') : __('production_bench.settings.new_task_set') }}</h1>
             <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_sets_help') }}</p>
         </div>

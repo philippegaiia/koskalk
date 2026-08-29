@@ -19,6 +19,7 @@ use App\Services\Production\ProductionReadyDateService;
 use App\Services\WorkspaceProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Lang;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -26,10 +27,13 @@ uses(RefreshDatabase::class);
 it('renders the setup workspace and saves employee, task, task set, and calendar settings', function (): void {
     $fixture = productionSettingsFixture();
 
-    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class);
+    // Mounted on one section, but the saves below still exercise the whole
+    // component: Livewire calls public methods directly, so an action does not
+    // need its form on the page to be invoked.
+    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'employees']);
 
     $page->assertSee(__('production_bench.settings.title'))
-        ->assertSee(__('production_bench.settings.presets'))
+        ->assertSee(__('production_bench.settings.employees'))
         ->set('employeeFirstName', 'Ana')
         ->set('employeeLastName', 'Maker')
         ->call('saveEmployee')
@@ -73,7 +77,7 @@ it('saves editable batch presets and keeps workspace data isolated', function ()
     $fixture = productionSettingsFixture();
     $other = productionSettingsFixture();
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'ready-dates'])
         ->set('presetRecipeIds', [(string) $fixture['recipe']->id])
         ->set('presetName', 'Default soap batch')
         ->set('presetBasisInputValue', '12')
@@ -89,15 +93,19 @@ it('saves editable batch presets and keeps workspace data isolated', function ()
         ->and($preset->basis_quantity_grams)->toBe('12000.000000000')
         ->and($preset->fresh()->defaultRecipes()->whereKey($fixture['recipe']->id)->exists())->toBeTrue();
 
-    Livewire::actingAs($other['owner'])->test(SettingsIndex::class)
-        ->assertDontSee($preset->name);
+    // Presets are edited on their own page, so isolation is asserted against
+    // the rows rather than this component's markup, which never lists them.
+    expect(ProductionBatchPreset::query()
+        ->withoutGlobalScopes()
+        ->where('workspace_id', $other['workspace']->id)
+        ->exists())->toBeFalse();
 });
 
 it('saves ready-date defaults and resolves them by formula family', function (): void {
     $fixture = productionSettingsFixture();
     ProductionOutputSetting::factory()->for($fixture['workspace'])->create();
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'ready-dates'])
         ->set('soapReadyDelayDays', '30')
         ->set('cosmeticReadyDelayDays', '5')
         ->call('saveOutputSettings')
@@ -143,7 +151,7 @@ it('keeps ready-date settings read-only when the production bench is unavailable
         'cancelled_at' => now(),
     ]);
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'ready-dates'])
         ->set('soapReadyDelayDays', '30')
         ->set('cosmeticReadyDelayDays', '5')
         ->call('saveOutputSettings')
@@ -157,18 +165,18 @@ it('rejects blank, negative, and fractional ready-date settings', function (): v
     $fixture = productionSettingsFixture();
     ProductionOutputSetting::factory()->for($fixture['workspace'])->create();
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'ready-dates'])
         ->set('soapReadyDelayDays', '')
         ->call('saveOutputSettings')
         ->assertHasErrors('soapReadyDelayDays');
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'ready-dates'])
         ->set('soapReadyDelayDays', '2.5')
         ->set('cosmeticReadyDelayDays', '3')
         ->call('saveOutputSettings')
         ->assertHasErrors('soapReadyDelayDays');
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'ready-dates'])
         ->set('soapReadyDelayDays', '0')
         ->set('cosmeticReadyDelayDays', '-1')
         ->call('saveOutputSettings')
@@ -182,7 +190,7 @@ it('keeps the setup page read-only when the entitlement is cancelled', function 
         'cancelled_at' => now(),
     ]);
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'employees'])
         ->set('employeeFirstName', 'Blocked')
         ->set('employeeLastName', 'Maker')
         ->call('saveEmployee')
@@ -193,12 +201,12 @@ it('keeps the setup page read-only when the entitlement is cancelled', function 
 
 it('has English labels for the setup workspace', function (): void {
     expect(Lang::has('production_bench.settings.title', 'en'))->toBeTrue()
-        ->and(Lang::get('production_bench.navigation.production', [], 'en'))->toBe('Production setup');
+        ->and(Lang::get('production_bench.navigation.settings', [], 'en'))->toBe('Settings');
 });
 
 it('deletes unused templates while protecting task types used by a task set', function (): void {
     $fixture = productionSettingsFixture();
-    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class);
+    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'task-types']);
     $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create();
     $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create();
     $taskSet->items()->create([
@@ -211,7 +219,7 @@ it('deletes unused templates while protecting task types used by a task set', fu
     $page->call('deleteTaskType', $taskType->id)
         ->assertHasErrors('taskTypeName');
 
-    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class, ['section' => 'task-types'])
         ->call('deleteTaskSet', $taskSet->id)
         ->call('deleteTaskType', $taskType->id)
         ->call('deletePreset', $preset->id)
@@ -227,11 +235,26 @@ it('deletes employees from the setup list', function (): void {
     $employee = Employee::factory()->for($fixture['workspace'])->create();
 
     Livewire::actingAs($fixture['owner'])
-        ->test(SettingsIndex::class)
+        ->test(SettingsIndex::class, ['section' => 'employees'])
         ->call('deleteEmployee', $employee->id)
         ->assertHasNoErrors();
 
     expect(Employee::query()->find($employee->id))->toBeNull();
+});
+
+it('keeps the rendered section out of the client\'s hands', function (): void {
+    $fixture = productionSettingsFixture();
+
+    // `mount()` takes the section from the route and marks it `#[Locked]`, so
+    // a tampered snapshot cannot widen what the page renders. Every settings
+    // action stays callable from any section, so this is the only thing that
+    // stands between a crafted request and a section it was never routed to.
+    // It would matter the moment one section is authorized differently from
+    // the rest; today it keeps the rendered page and the route in agreement.
+    expect(fn () => Livewire::actingAs($fixture['owner'])
+        ->test(SettingsIndex::class, ['section' => 'departments'])
+        ->set('section', 'ready-dates'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
 });
 
 it('organizes production setup into focused submenu routes', function (): void {
@@ -242,6 +265,7 @@ it('organizes production setup into focused submenu routes', function (): void {
         'task-types' => 'task-type-heading',
         'task-sets' => 'task-set-heading',
         'calendar' => 'holiday-heading',
+        'ready-dates' => 'ready-date-heading',
     ];
 
     foreach ($sections as $section => $heading) {

@@ -6,7 +6,7 @@
     @else
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="sk-eyebrow">{{ __('production_bench.navigation.production') }}</p>
+                <p class="sk-eyebrow">{{ __('production_bench.navigation.settings') }}</p>
                 <h1 id="task-set-heading" class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.task_sets') }}</h1>
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_sets_help') }}</p>
             </div>

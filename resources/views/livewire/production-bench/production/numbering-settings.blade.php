@@ -1,6 +1,6 @@
 <x-production-bench.page active="production-setup" subnavigation="numbering">
     <header>
-        <p class="sk-eyebrow">{{ __('production_bench.navigation.production') }}</p>
+        <p class="sk-eyebrow">{{ __('production_bench.navigation.settings') }}</p>
         <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.numbering') }}</h1>
         <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.numbering_help') }}</p>
     </header>

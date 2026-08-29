@@ -17594,12 +17594,24 @@
       "group": "production_bench",
       "key": "navigation.home",
       "text": {
-        "de": "Start",
-        "es": "Inicio",
-        "fr": "Accueil",
-        "it": "Home",
-        "nl": "Home",
-        "pt_BR": "Início"
+        "de": "Dashboard",
+        "es": "Panel",
+        "fr": "Tableau de bord",
+        "it": "Dashboard",
+        "nl": "Dashboard",
+        "pt_BR": "Painel"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "navigation.home_aria",
+      "text": {
+        "de": "Dashboard Produktionsbereich",
+        "es": "Panel del área de producción",
+        "fr": "Tableau de bord de l’espace de production",
+        "it": "Dashboard area produzione",
+        "nl": "Dashboard productieomgeving",
+        "pt_BR": "Painel da bancada de produção"
       }
     },
     {
@@ -17616,14 +17628,14 @@
     },
     {
       "group": "production_bench",
-      "key": "navigation.production",
+      "key": "navigation.production_runs",
       "text": {
-        "de": "Produktion einrichten",
-        "es": "Configuración de producción",
-        "fr": "Configuration de la production",
-        "it": "Impostazioni produzione",
-        "nl": "Productie instellen",
-        "pt_BR": "Configuração da produção"
+        "de": "Produktionen",
+        "es": "Producciones",
+        "fr": "Productions",
+        "it": "Produzioni",
+        "nl": "Producties",
+        "pt_BR": "Produções"
       }
     },
     {
@@ -17684,6 +17696,30 @@
         "it": "Ricezioni",
         "nl": "Ontvangsten",
         "pt_BR": "Recebimentos"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "navigation.settings",
+      "text": {
+        "de": "Einstellungen",
+        "es": "Ajustes",
+        "fr": "Paramètres",
+        "it": "Impostazioni",
+        "nl": "Instellingen",
+        "pt_BR": "Configurações"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "navigation.settings_group_resources",
+      "text": {
+        "de": "Ressourcen",
+        "es": "Recursos",
+        "fr": "Ressources",
+        "it": "Risorse",
+        "nl": "Middelen",
+        "pt_BR": "Recursos"
       }
     },
     {

@@ -47,11 +47,15 @@ it('keeps the inventory overview navigation visibly selected across live updates
     app(ProductionBenchAccess::class)->activate($user, $workspace);
     $this->actingAs($user);
 
+    // The overview is the exact destination, so it is the only `page`. Its
+    // parent tab shares the same href and is marked as a `branch` instead.
     $assertInventoryNavigationIsActive = function (string $html): void {
-        expect(substr_count($html, 'aria-current="page"'))->toBe(2)
+        expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+            ->and(Str::of($html)->afterLast('href="'.route('production-bench.inventory').'"')->before('</a>')->toString())
+            ->toContain('aria-current="page"')
+            ->toContain('class="sk-nav-item is-active"')
             ->and($html)
-            ->toContain('border-[var(--color-accent)] text-[var(--color-ink-strong)]')
-            ->toContain('bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]');
+            ->toContain('class="sk-nav-item is-branch"');
     };
     $component = Livewire::test(InventoryIndex::class, ['mode' => 'overview']);
 
@@ -62,41 +66,154 @@ it('keeps the inventory overview navigation visibly selected across live updates
     $assertInventoryNavigationIsActive($component->html());
 });
 
-it('renders explicit production bench navigation state without relying on the request route', function (string $active, ?string $subnavigation, array $currentRoutes): void {
+it('marks exactly one navigation entry current on every production bench page', function (string $routeName, string $currentRoute): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $html = $this->actingAs($user)
+        ->get(route($routeName))
+        ->assertOk()
+        ->getContent();
+
+    expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+        ->and(Str::of($html)->afterLast('href="'.route($currentRoute).'"')->before('</a>')->toString())
+        ->toContain('aria-current="page"');
+})->with([
+    'dashboard' => ['production-bench.home', 'production-bench.home'],
+    'inventory overview' => ['production-bench.inventory', 'production-bench.inventory'],
+    'inventory stock' => ['production-bench.inventory.stock', 'production-bench.inventory.stock'],
+    'inventory requirements' => ['production-bench.inventory.requirements', 'production-bench.inventory.requirements'],
+    'production runs' => ['production-bench.production.index', 'production-bench.production.index'],
+    'tasks' => ['production-bench.production.tasks', 'production-bench.production.tasks'],
+    'flash planner' => ['production-bench.production.flash', 'production-bench.production.flash'],
+    'production calendar' => ['production-bench.production.calendar', 'production-bench.production.calendar'],
+    'settings numbering' => ['production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
+    'settings batch sizes' => ['production-bench.production.settings.presets', 'production-bench.production.settings.presets'],
+    'settings task types' => ['production-bench.production.settings.task-types', 'production-bench.production.settings.task-types'],
+    'settings task sets' => ['production-bench.production.settings.task-sets', 'production-bench.production.settings.task-sets'],
+    'settings working calendar' => ['production-bench.production.settings.calendar', 'production-bench.production.settings.calendar'],
+    'settings departments' => ['production-bench.production.settings.departments', 'production-bench.production.settings.departments'],
+    'settings employees' => ['production-bench.production.settings.employees', 'production-bench.production.settings.employees'],
+    'settings ready dates' => ['production-bench.production.settings.ready-dates', 'production-bench.production.settings.ready-dates'],
+    'purchasing suppliers' => ['production-bench.purchasing.suppliers', 'production-bench.purchasing.suppliers'],
+    'purchasing listings' => ['production-bench.purchasing.listings', 'production-bench.purchasing.listings'],
+    'purchasing quotations' => ['production-bench.purchasing.quotations', 'production-bench.purchasing.quotations'],
+    'purchasing orders' => ['production-bench.purchasing.orders', 'production-bench.purchasing.orders'],
+    'purchasing receipts' => ['production-bench.purchasing.receipts', 'production-bench.purchasing.receipts'],
+]);
+
+it('sends the settings landing url to the numbering page', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    // The tab no longer renders every section at once. The old URL survives
+    // only so bookmarks resolve, and forwards to Numbering, which is the
+    // group's first child and therefore the tab's own destination.
+    $this->actingAs($user)
+        ->get(route('production-bench.production.settings'))
+        ->assertRedirect(route('production-bench.production.settings.numbering'));
+});
+
+it('renders explicit production bench navigation state without relying on the request route', function (string $active, ?string $subnavigation, string $currentRoute, ?string $branchRoute): void {
     $html = Blade::render(
         '<x-production-bench.page :active="$active" :subnavigation="$subnavigation"><span>Content</span></x-production-bench.page>',
         compact('active', 'subnavigation'),
     );
 
-    expect(substr_count($html, 'aria-current="page"'))->toBe(count($currentRoutes));
+    // Exactly one link is the page itself. Every ancestor is a branch, so the
+    // parent tab and the child entry are never both announced as "page". Where
+    // parent and child share an href (Inventory overview, Production runs,
+    // Purchasing suppliers) the level 1 tab renders first, so `after` reads the
+    // branch and `afterLast` reads the current entry.
+    expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+        ->and(Str::of($html)->afterLast('href="'.route($currentRoute).'"')->before('</a>')->toString())
+        ->toContain('aria-current="page"');
 
-    foreach ($currentRoutes as $currentRoute) {
-        $link = Str::of($html)
-            ->after('href="'.route($currentRoute).'"')
-            ->before('</a>');
-
-        expect($link->toString())->toContain('aria-current="page"');
+    if ($branchRoute !== null) {
+        expect(Str::of($html)->after('href="'.route($branchRoute).'"')->before('</a>')->toString())
+            ->toContain('aria-current="true"');
     }
 })->with([
-    'home' => ['home', null, ['production-bench.home']],
-    'inventory stock' => ['inventory', 'stock', ['production-bench.inventory', 'production-bench.inventory.stock']],
-    'production workflow' => ['production', null, ['production-bench.production.index']],
-    'tasks' => ['tasks', null, ['production-bench.production.tasks']],
-    'flash planner' => ['flash', null, ['production-bench.production.flash']],
-    'calendar' => ['calendar', null, ['production-bench.production.calendar']],
-    'purchasing suppliers' => ['purchasing', 'suppliers', ['production-bench.purchasing.suppliers', 'production-bench.purchasing.suppliers']],
-    'purchasing listings' => ['purchasing', 'listings', ['production-bench.purchasing.suppliers', 'production-bench.purchasing.listings']],
-    'purchasing quotations' => ['purchasing', 'quotations', ['production-bench.purchasing.suppliers', 'production-bench.purchasing.quotations']],
-    'purchasing orders' => ['purchasing', 'orders', ['production-bench.purchasing.suppliers', 'production-bench.purchasing.orders']],
-    'purchasing receipts' => ['purchasing', 'receipts', ['production-bench.purchasing.suppliers', 'production-bench.purchasing.receipts']],
-    'setup numbering' => ['production-setup', 'numbering', ['production-bench.production.settings.presets', 'production-bench.production.settings.numbering']],
-    'setup presets' => ['production-setup', 'presets', ['production-bench.production.settings.presets', 'production-bench.production.settings.presets']],
-    'setup departments' => ['production-setup', 'departments', ['production-bench.production.settings.presets', 'production-bench.production.settings.departments']],
-    'setup employees' => ['production-setup', 'employees', ['production-bench.production.settings.presets', 'production-bench.production.settings.employees']],
-    'setup task types' => ['production-setup', 'task-types', ['production-bench.production.settings.presets', 'production-bench.production.settings.task-types']],
-    'setup task sets' => ['production-setup', 'task-sets', ['production-bench.production.settings.presets', 'production-bench.production.settings.task-sets']],
-    'setup calendar' => ['production-setup', 'calendar', ['production-bench.production.settings.presets', 'production-bench.production.settings.calendar']],
+    'dashboard' => ['home', null, 'production-bench.home', null],
+    'inventory overview' => ['inventory', 'overview', 'production-bench.inventory', 'production-bench.inventory'],
+    'inventory stock' => ['inventory', 'stock', 'production-bench.inventory.stock', 'production-bench.inventory'],
+    'inventory requirements' => ['inventory', 'requirements', 'production-bench.inventory.requirements', 'production-bench.inventory'],
+    'production runs' => ['production', 'runs', 'production-bench.production.index', 'production-bench.production.index'],
+    'production default' => ['production', null, 'production-bench.production.index', 'production-bench.production.index'],
+    'tasks' => ['tasks', null, 'production-bench.production.tasks', 'production-bench.production.index'],
+    'flash planner' => ['flash', null, 'production-bench.production.flash', 'production-bench.production.index'],
+    'calendar' => ['calendar', null, 'production-bench.production.calendar', 'production-bench.production.index'],
+    'purchasing suppliers' => ['purchasing', 'suppliers', 'production-bench.purchasing.suppliers', 'production-bench.purchasing.suppliers'],
+    'purchasing listings' => ['purchasing', 'listings', 'production-bench.purchasing.listings', 'production-bench.purchasing.suppliers'],
+    'purchasing quotations' => ['purchasing', 'quotations', 'production-bench.purchasing.quotations', 'production-bench.purchasing.suppliers'],
+    'purchasing orders' => ['purchasing', 'orders', 'production-bench.purchasing.orders', 'production-bench.purchasing.suppliers'],
+    'purchasing receipts' => ['purchasing', 'receipts', 'production-bench.purchasing.receipts', 'production-bench.purchasing.suppliers'],
+    // The Settings tab shares its href with Numbering, its first child, so
+    // `subnavigation` null resolves to Numbering and the tab is a branch —
+    // the same shape as Inventory overview and Production runs.
+    'setup default' => ['production-setup', null, 'production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
+    'setup numbering' => ['production-setup', 'numbering', 'production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
+    'setup presets' => ['production-setup', 'presets', 'production-bench.production.settings.presets', 'production-bench.production.settings.numbering'],
+    'setup task types' => ['production-setup', 'task-types', 'production-bench.production.settings.task-types', 'production-bench.production.settings.numbering'],
+    'setup task sets' => ['production-setup', 'task-sets', 'production-bench.production.settings.task-sets', 'production-bench.production.settings.numbering'],
+    'setup working calendar' => ['production-setup', 'calendar', 'production-bench.production.settings.calendar', 'production-bench.production.settings.numbering'],
+    'setup ready dates' => ['production-setup', 'ready-dates', 'production-bench.production.settings.ready-dates', 'production-bench.production.settings.numbering'],
+    'setup departments' => ['production-setup', 'departments', 'production-bench.production.settings.departments', 'production-bench.production.settings.numbering'],
+    'setup employees' => ['production-setup', 'employees', 'production-bench.production.settings.employees', 'production-bench.production.settings.numbering'],
 ]);
+
+it('renders a nested second row for every branch destination', function (string $active): void {
+    $html = Blade::render(
+        '<x-production-bench.page :active="$active"><span>Content</span></x-production-bench.page>',
+        ['active' => $active],
+    );
+
+    expect($html)
+        ->toContain('class="sk-nav-row sk-nav-rail"')
+        ->toContain('data-level="2"');
+})->with(['inventory', 'production', 'tasks', 'flash', 'calendar', 'purchasing', 'production-setup']);
+
+it('keeps the dashboard first and sets settings apart at the end of the top level row', function (): void {
+    $html = Blade::render('<x-production-bench.page><span>Content</span></x-production-bench.page>');
+
+    $dashboardHref = 'href="'.route('production-bench.home').'"';
+    // The Settings tab links to Numbering, its first child, which is also where
+    // the old `/settings` URL now redirects.
+    $settingsHref = 'href="'.route('production-bench.production.settings.numbering').'"';
+
+    expect(strpos($html, $dashboardHref))->toBeLessThan(strpos($html, $settingsHref))
+        ->and(Str::of($html)->after($dashboardHref)->before('</a>')->toString())
+        ->toContain('data-nav-divider="true"')
+        ->and(Str::of($html)->after($settingsHref)->before('</a>')->toString())
+        ->toContain('data-nav-end="true"');
+});
+
+it('stacks one nav cluster per line and gives each group label a line of its own', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // Two clusters sharing a row read as one run of chips, because the only
+    // thing between them is a gap. Stacking the row puts the boundary in
+    // position instead, and `flex-basis: 100%` on the label is what stops a
+    // stacked cluster's items from starting at an offset set by its label's
+    // translation. Asserted against the stylesheet because PHPUnit cannot
+    // compute layout.
+    expect($css)
+        ->toMatch("/\.sk-nav-row \{[^}]*flex-direction: column;/")
+        ->and($css)
+        ->toMatch("/\.sk-nav-cluster > \.sk-nav-group-label \{[^}]*flex: 1 0 100%;/");
+});
+
+it('does not draw a rule under the whole navigation', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // Whichever row renders last already carries its own edge: the level-1 tabs
+    // have a 2px underline and the level-2 rail is a bordered panel. A rule on
+    // the container sits directly under one of them and reads as a double line.
+    expect(Str::of($css)->after('.sk-nav {')->before('}')->toString())
+        ->not->toContain('border-bottom');
+});
 
 it('declares durable navigation state in every production bench Livewire view', function (): void {
     $viewExpectations = [
@@ -139,11 +256,14 @@ it('declares durable navigation state in every production bench Livewire view', 
 
 it('keeps the production bench navigation out of a scroll container', function (): void {
     $navigation = file_get_contents(resource_path('views/components/production-bench/navigation.blade.php'));
+    $items = file_get_contents(resource_path('views/components/production-bench/navigation-items.blade.php'));
 
     expect($navigation)
         ->not->toContain('overflow-x-auto')
         ->not->toContain('-mb-px')
-        ->toContain('aria-current="page"');
+        ->and($items)
+        ->toContain('aria-current="page"')
+        ->toContain('wire:navigate');
 });
 
 it('reserves the document scrollbar gutter', function (): void {

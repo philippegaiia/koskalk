@@ -125,7 +125,8 @@
     </div>
     @endif
 
-    @if (in_array($section, ['all', 'task-sets'], true))
+    {{-- Task sets are managed on their own page; `task-sets` is no longer a value `mount()` can produce. --}}
+    @if ($section === 'all')
     <section aria-labelledby="task-set-heading" class="space-y-4">
         <div class="flex flex-col gap-4 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>

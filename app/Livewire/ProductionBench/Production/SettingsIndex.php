@@ -128,14 +128,14 @@ class SettingsIndex extends Component
 
     public function mount(): void
     {
-        // No `presets` branch: that route renders `BatchSizeIndex`, not this
-        // component, so the branch could never match. The batch-sizes card
-        // below stays because the `all` page still links out to it.
+        // No `presets` or `task-sets` branch: those routes render
+        // `BatchSizeIndex` and `TaskSetIndex`, neither of which is this
+        // component, so both branches could only ever be dead. The two cards
+        // below stay because the `all` page still links out to both.
         $this->section = match (true) {
             request()->routeIs('production-bench.production.settings.departments') => 'departments',
             request()->routeIs('production-bench.production.settings.employees') => 'employees',
             request()->routeIs('production-bench.production.settings.task-types') => 'task-types',
-            request()->routeIs('production-bench.production.settings.task-sets') => 'task-sets',
             request()->routeIs('production-bench.production.settings.calendar') => 'calendar',
             default => 'all',
         };

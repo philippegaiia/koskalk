@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\WorkspaceIngredientCode;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Support\IngredientCatalogConsolidationDataset;
 use App\Support\IngredientCatalogTaxonomyDataset;
 use Illuminate\Support\Collection;
@@ -179,6 +180,7 @@ class IngredientCatalogConsolidationService
         }
 
         $this->mergeWorkspaceMaterialCodes($source, $target);
+        $this->mergeWorkspaceGuidances($source, $target);
         $this->mergeWorkspacePrices($source, $target);
 
         foreach (self::MERGE_REFERENCE_COLUMNS as $table => $column) {
@@ -224,6 +226,42 @@ class IngredientCatalogConsolidationService
             }
 
             throw new RuntimeException("Cannot merge {$source->catalog_key} into {$target->catalog_key}: workspace material code conflict for workspace {$workspaceId}.");
+        }
+    }
+
+    private function mergeWorkspaceGuidances(Ingredient $source, Ingredient $target): void
+    {
+        $guidances = WorkspaceIngredientGuidance::query()
+            ->whereIn('ingredient_id', [$source->id, $target->id])
+            ->orderBy('workspace_id')
+            ->lockForUpdate()
+            ->get()
+            ->groupBy('workspace_id');
+
+        foreach ($guidances as $workspaceId => $workspaceGuidances) {
+            $sourceGuidance = $workspaceGuidances->firstWhere('ingredient_id', $source->id);
+
+            if (! $sourceGuidance instanceof WorkspaceIngredientGuidance) {
+                continue;
+            }
+
+            $targetGuidance = $workspaceGuidances->firstWhere('ingredient_id', $target->id);
+
+            if (! $targetGuidance instanceof WorkspaceIngredientGuidance) {
+                $sourceGuidance->update(['ingredient_id' => $target->id]);
+
+                continue;
+            }
+
+            if ($sourceGuidance->guidance_markdown === $targetGuidance->guidance_markdown) {
+                $sourceGuidance->delete();
+
+                continue;
+            }
+
+            throw new RuntimeException(
+                "Cannot merge {$source->catalog_key} into {$target->catalog_key}: workspace ingredient guidance conflict for workspace {$workspaceId}.",
+            );
         }
     }
 

@@ -30,3 +30,6 @@ Expose SAP and fatty-acid data to enrichment prose only when Ingredient::canDriv
 
 ## Keep catalogue aliases manually curated
 Do not spend AI or source-research effort proposing catalogue aliases. Existing aliases may be used internally as identity search terms, and deterministic source names may help match the correct record, but enrichment proposals must leave aliases empty so reviewed/manual aliases remain untouched.
+
+## Treat guidance metadata revalidation as reviewable
+Guidance plans treat stale-locale revalidation and changed evidence as reviewable metadata changes even when prose is identical. If English is reviewer-edited, unedited generated localizations are not applied as current; only reviewer-edited locales may receive the new canonical fingerprint. Guidance retries resume completed stages according to persisted batch mode.

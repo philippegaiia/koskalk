@@ -145,6 +145,43 @@ it('commits reviewed workspace ingredient alerts and document picker copy', func
     ]);
 });
 
+it('commits reviewed workspace ingredient guidance copy', function (): void {
+    $catalogue = app(InterfaceTranslationCatalogue::class)
+        ->read(database_path('seeders/data/interface-translations.json'));
+    $translations = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    foreach ([
+        'ingredients.editor.workspace_guidance.eyebrow',
+        'ingredients.editor.workspace_guidance.heading',
+        'ingredients.editor.workspace_guidance.platform_badge',
+        'ingredients.editor.workspace_guidance.override_badge',
+        'ingredients.editor.workspace_guidance.helper',
+        'ingredients.editor.workspace_guidance.read_only',
+        'ingredients.editor.workspace_guidance.customize',
+        'ingredients.editor.workspace_guidance.edit',
+        'ingredients.editor.workspace_guidance.save',
+        'ingredients.editor.workspace_guidance.cancel',
+        'ingredients.editor.workspace_guidance.reset',
+        'ingredients.editor.workspace_guidance.reset_confirm',
+        'ingredients.editor.workspace_guidance.count',
+        'ingredients.editor.workspace_guidance.saved',
+        'ingredients.editor.workspace_guidance.reset_done',
+        'ingredients.editor.validation.workspace_guidance_forbidden',
+        'ingredients.editor.validation.workspace_guidance_required',
+        'ingredients.editor.validation.workspace_guidance_max',
+        'ingredients.editor.validation.workspace_guidance_html',
+    ] as $fullKey) {
+        expect($translations)->toHaveKey($fullKey)
+            ->and(array_keys($translations[$fullKey]['text']))
+            ->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
+
+        foreach ($translations[$fullKey]['text'] as $text) {
+            expect(trim((string) $text))->not->toBe('');
+        }
+    }
+});
+
 it('commits reviewed labels for additional ingredient identifier schemes', function (): void {
     $catalogue = app(InterfaceTranslationCatalogue::class)
         ->read(database_path('seeders/data/interface-translations.json'));

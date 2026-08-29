@@ -214,6 +214,11 @@ class Ingredient extends Model
         return $this->hasMany(WorkspaceIngredientCode::class);
     }
 
+    public function workspaceGuidances(): HasMany
+    {
+        return $this->hasMany(WorkspaceIngredientGuidance::class);
+    }
+
     protected function userPricePerKg(): Attribute
     {
         return Attribute::make(

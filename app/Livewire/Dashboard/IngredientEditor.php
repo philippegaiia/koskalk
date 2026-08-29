@@ -28,6 +28,7 @@ use App\Services\IngredientIdentitySynchronizer;
 use App\Services\MediaAssetUsageService;
 use App\Services\UserIngredientAuthoringService;
 use App\Services\WorkspaceIngredientCodeService;
+use App\Services\WorkspaceIngredientGuidanceService;
 use App\SoapSap;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
@@ -89,6 +90,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public ?string $workspaceMaterialCode = null;
 
+    public ?string $workspaceGuidanceMarkdown = null;
+
+    public bool $isEditingWorkspaceGuidance = false;
+
     public ?string $statusMessage = null;
 
     public string $statusType = 'idle';
@@ -131,6 +136,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         UserIngredientAuthoringService $userIngredientAuthoringService,
         MediaAssetUsageService $mediaAssetUsages,
         WorkspaceIngredientCodeService $workspaceIngredientCodes,
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
         if ($ingredient?->exists !== true) {
             $ingredient = null;
@@ -156,12 +162,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $state['document_media_asset_ids'] = $ingredient instanceof Ingredient
             ? $mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientDocument)
             : [];
-        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
         $materialCode = $ingredient instanceof Ingredient && $workspace instanceof Workspace
             ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
             : null;
         $state['material_code'] = $materialCode;
         $this->workspaceMaterialCode = $ingredient?->owner_type === null ? $materialCode : null;
+        $override = $ingredient instanceof Ingredient
+            && $ingredient->owner_type === null
+            && $workspace instanceof Workspace
+                ? $workspaceIngredientGuidances->overrideFor($workspace, $ingredient)
+                : null;
+        $this->workspaceGuidanceMarkdown = $override?->guidance_markdown;
 
         $this->form->fill($state);
     }
@@ -202,7 +214,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
                     : $userIngredientAuthoringService->create($state, $user);
 
-                $workspace = $this->workspaceForMaterialCode($ingredient);
+                $workspace = $this->workspaceForIngredientSettings($ingredient);
 
                 if ($workspace instanceof Workspace) {
                     $workspaceIngredientCodes->synchronize($user, $workspace, $ingredient, $workspaceMaterialCode);
@@ -253,7 +265,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->showAppNotification($statusMessage);
 
         $refreshedState = $userIngredientAuthoringService->formData($ingredient);
-        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
         $refreshedState['material_code'] = $workspace instanceof Workspace
             ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
             : null;
@@ -283,7 +295,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     {
         $user = $this->currentUser();
         $ingredient = $this->currentIngredient();
-        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
 
         if (! $user instanceof User || ! $ingredient instanceof Ingredient || $ingredient->owner_type !== null || ! $workspace instanceof Workspace) {
             $this->addError('workspaceMaterialCode', __('ingredients.editor.validation.material_code_forbidden'));
@@ -309,6 +321,139 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $this->workspaceMaterialCode = $workspaceIngredientCodes->codeFor($workspace, $ingredient);
         $this->showAppNotification(__('ingredients.editor.material_code.saved'));
+    }
+
+    public function startWorkspaceGuidanceCustomization(
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
+    ): void {
+        $context = $this->workspaceGuidanceWriteContext();
+
+        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
+            $this->addError(
+                'workspaceGuidanceMarkdown',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        [, $workspace, $ingredient] = $context;
+
+        $this->workspaceGuidanceMarkdown = $workspaceIngredientGuidances
+            ->effectiveGuidance($workspace, $ingredient, app()->getLocale());
+        $this->isEditingWorkspaceGuidance = true;
+        $this->resetErrorBag('workspaceGuidanceMarkdown');
+    }
+
+    public function cancelWorkspaceGuidanceCustomization(
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
+    ): void {
+        $context = $this->workspaceGuidanceWriteContext();
+        $override = $context === null
+            ? null
+            : $workspaceIngredientGuidances->overrideFor($context[1], $context[2]);
+
+        $this->workspaceGuidanceMarkdown = $override?->guidance_markdown;
+        $this->isEditingWorkspaceGuidance = false;
+        $this->resetErrorBag('workspaceGuidanceMarkdown');
+    }
+
+    public function saveWorkspaceGuidance(
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
+    ): void {
+        $context = $this->workspaceGuidanceWriteContext();
+
+        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
+            $this->addError(
+                'workspaceGuidanceMarkdown',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        [$user, $workspace, $ingredient] = $context;
+
+        try {
+            $override = $workspaceIngredientGuidances->save(
+                $user,
+                $workspace,
+                $ingredient,
+                $this->workspaceGuidanceMarkdown,
+            );
+        } catch (ValidationException $exception) {
+            $this->addWorkspaceGuidanceValidationErrors($exception);
+
+            return;
+        } catch (AuthorizationException) {
+            $this->addError(
+                'workspaceGuidanceMarkdown',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        $this->workspaceGuidanceMarkdown = $override->guidance_markdown;
+        $this->isEditingWorkspaceGuidance = false;
+        $this->resetErrorBag('workspaceGuidanceMarkdown');
+        $this->showAppNotification(__('ingredients.editor.workspace_guidance.saved'));
+    }
+
+    public function resetWorkspaceGuidance(
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
+    ): void {
+        $context = $this->workspaceGuidanceWriteContext();
+
+        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
+            $this->addError(
+                'workspaceGuidanceMarkdown',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        [$user, $workspace, $ingredient] = $context;
+
+        try {
+            $workspaceIngredientGuidances->reset($user, $workspace, $ingredient);
+        } catch (ValidationException $exception) {
+            $this->addWorkspaceGuidanceValidationErrors($exception);
+
+            return;
+        } catch (AuthorizationException) {
+            $this->addError(
+                'workspaceGuidanceMarkdown',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        $this->workspaceGuidanceMarkdown = null;
+        $this->isEditingWorkspaceGuidance = false;
+        $this->resetErrorBag('workspaceGuidanceMarkdown');
+        $this->showAppNotification(__('ingredients.editor.workspace_guidance.reset_done'));
+    }
+
+    public function canEditWorkspaceGuidance(): bool
+    {
+        $context = $this->workspaceGuidanceWriteContext();
+
+        if ($context === null) {
+            return false;
+        }
+
+        [$user, $workspace, $ingredient] = $context;
+
+        return $ingredient->owner_type === null
+            && $ingredient->is_active
+            && in_array($workspace->roleFor($user), [
+                WorkspaceMemberRole::Owner,
+                WorkspaceMemberRole::Admin,
+                WorkspaceMemberRole::Editor,
+            ], true);
     }
 
     public function addComponent(int $ingredientId): void
@@ -779,6 +924,21 @@ class IngredientEditor extends Component implements HasActions, HasForms
     {
         $ingredient = $this->currentIngredient();
         $ingredient?->loadMissing('allergenEntries.allergen');
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
+        $workspaceGuidanceOverride = $ingredient instanceof Ingredient
+            && $ingredient->owner_type === null
+            && $workspace instanceof Workspace
+                ? app(WorkspaceIngredientGuidanceService::class)->overrideFor($workspace, $ingredient)
+                : null;
+        $effectiveWorkspaceGuidance = $ingredient instanceof Ingredient
+            && $ingredient->owner_type === null
+            && $workspace instanceof Workspace
+                ? app(WorkspaceIngredientGuidanceService::class)->effectiveGuidance(
+                    $workspace,
+                    $ingredient,
+                    app()->getLocale(),
+                )
+                : null;
         $identityState = $ingredient instanceof Ingredient
             ? app(IngredientIdentitySynchronizer::class)->formState($ingredient)
             : [
@@ -793,6 +953,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'identityState' => $identityState,
             'hasSoapChemistry' => $this->soapChemistryAvailable(),
             'canEditWorkspaceMaterialCode' => $this->canEditWorkspaceMaterialCode(),
+            'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
+            'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
+            'canEditWorkspaceGuidance' => $this->canEditWorkspaceGuidance(),
         ]);
     }
 
@@ -1002,7 +1165,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return app(CurrentAppUserResolver::class)->resolve();
     }
 
-    private function workspaceForMaterialCode(?Ingredient $ingredient = null): ?Workspace
+    private function workspaceForIngredientSettings(?Ingredient $ingredient = null): ?Workspace
     {
         $user = $this->currentUser();
 
@@ -1021,10 +1184,37 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return $user->company();
     }
 
+    /**
+     * @return array{User, Workspace, Ingredient}|null
+     */
+    private function workspaceGuidanceWriteContext(): ?array
+    {
+        $user = $this->currentUser();
+        $ingredient = $this->currentIngredient();
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
+
+        if (! $user instanceof User
+            || ! $ingredient instanceof Ingredient
+            || ! $workspace instanceof Workspace) {
+            return null;
+        }
+
+        return [$user, $workspace, $ingredient];
+    }
+
+    private function addWorkspaceGuidanceValidationErrors(ValidationException $exception): void
+    {
+        foreach ($exception->errors() as $messages) {
+            foreach ($messages as $message) {
+                $this->addError('workspaceGuidanceMarkdown', $message);
+            }
+        }
+    }
+
     public function canEditWorkspaceMaterialCode(): bool
     {
         $ingredient = $this->currentIngredient();
-        $workspace = $this->workspaceForMaterialCode($ingredient);
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
         $user = $this->currentUser();
 
         return $ingredient instanceof Ingredient

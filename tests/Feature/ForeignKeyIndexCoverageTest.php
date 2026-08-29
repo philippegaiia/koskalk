@@ -78,6 +78,14 @@ const FOREIGN_KEY_INDEX_MANIFEST = [
             ['table' => 'workspace_members', 'column' => 'user_id', 'name' => 'workspace_members_user_id_index'],
         ],
     ],
+    'workspace-guidance' => [
+        'migration' => 'add_foreign_key_indexes_to_workspace_ingredient_guidances_table',
+        'indexes' => [
+            ['table' => 'workspace_ingredient_guidances', 'column' => 'ingredient_id', 'name' => 'workspace_ingredient_guidances_ingredient_id_index'],
+            ['table' => 'workspace_ingredient_guidances', 'column' => 'created_by_user_id', 'name' => 'workspace_ingredient_guidances_created_by_user_id_index'],
+            ['table' => 'workspace_ingredient_guidances', 'column' => 'updated_by_user_id', 'name' => 'workspace_ingredient_guidances_updated_by_user_id_index'],
+        ],
+    ],
 ];
 
 it('covers explicit foreign key indexes', function (string $group): void {

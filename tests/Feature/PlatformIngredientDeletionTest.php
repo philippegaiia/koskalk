@@ -14,6 +14,8 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Services\MediaStorage;
 use App\Services\PlatformIngredientDeletionService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -51,6 +53,23 @@ it('deletes an unused platform ingredient with its catalog children and public m
     $this->assertModelMissing($translation);
     Storage::disk(MediaStorage::publicDisk())->assertMissing($ingredient->featured_image_path);
     Storage::disk(MediaStorage::publicDisk())->assertMissing($ingredient->icon_image_path);
+});
+
+it('cascades workspace guidance when an authorized platform ingredient is deleted', function (): void {
+    $admin = User::factory()->admin()->create();
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $guidance = WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+    ]);
+
+    app(PlatformIngredientDeletionService::class)->delete($admin, $ingredient);
+
+    $this->assertModelMissing($guidance);
 });
 
 it('blocks platform ingredient deletion while external records still depend on it', function (string $usage) {

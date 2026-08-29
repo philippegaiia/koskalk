@@ -7260,6 +7260,234 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.validation.workspace_guidance_forbidden",
+      "text": {
+        "de": "Diese Zutatenhinweise können in diesem Arbeitsbereich nicht geändert werden.",
+        "es": "La guía de este ingrediente no se puede cambiar en este espacio de trabajo.",
+        "fr": "Ces conseils sur l’ingrédient ne peuvent pas être modifiés dans cet espace de travail.",
+        "it": "Queste indicazioni sull’ingrediente non possono essere modificate in questo spazio di lavoro.",
+        "nl": "Deze ingrediëntrichtlijnen kunnen in deze werkruimte niet worden gewijzigd.",
+        "pt_BR": "As orientações deste ingrediente não podem ser alteradas neste espaço de trabalho."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.workspace_guidance_html",
+      "text": {
+        "de": "Verwende Markdown statt rohem HTML.",
+        "es": "Usa Markdown en lugar de HTML sin formato.",
+        "fr": "Utilisez Markdown plutôt que du HTML brut.",
+        "it": "Usa Markdown invece dell’HTML non elaborato.",
+        "nl": "Gebruik Markdown in plaats van onbewerkte HTML.",
+        "pt_BR": "Use Markdown em vez de HTML bruto."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.workspace_guidance_max",
+      "text": {
+        "de": "Zutatenhinweise dürfen höchstens :max Zeichen enthalten.",
+        "es": "La guía del ingrediente no puede superar los :max caracteres.",
+        "fr": "Les conseils sur l’ingrédient ne peuvent pas dépasser :max caractères.",
+        "it": "Le indicazioni sull’ingrediente non possono superare :max caratteri.",
+        "nl": "Ingrediëntrichtlijnen mogen niet langer zijn dan :max tekens.",
+        "pt_BR": "As orientações do ingrediente não podem exceder :max caracteres."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.workspace_guidance_required",
+      "text": {
+        "de": "Gib vor dem Speichern Zutatenhinweise ein.",
+        "es": "Introduce la guía del ingrediente antes de guardarla.",
+        "fr": "Saisissez des conseils sur l’ingrédient avant de les enregistrer.",
+        "it": "Inserisci le indicazioni dell’ingrediente prima di salvarle.",
+        "nl": "Voer ingrediëntrichtlijnen in voordat je ze opslaat.",
+        "pt_BR": "Insira as orientações do ingrediente antes de salvar."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.cancel",
+      "text": {
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.count",
+      "text": {
+        "de": ":count/:max Zeichen",
+        "es": ":count/:max caracteres",
+        "fr": ":count/:max caractères",
+        "it": ":count/:max caratteri",
+        "nl": ":count/:max tekens",
+        "pt_BR": ":count/:max caracteres"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.customize",
+      "text": {
+        "de": "Hinweise anpassen",
+        "es": "Personalizar la guía",
+        "fr": "Personnaliser les conseils",
+        "it": "Personalizza le indicazioni",
+        "nl": "Richtlijnen aanpassen",
+        "pt_BR": "Personalizar orientações"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.edit",
+      "text": {
+        "de": "Hinweise bearbeiten",
+        "es": "Editar la guía",
+        "fr": "Modifier les conseils",
+        "it": "Modifica le indicazioni",
+        "nl": "Richtlijnen bewerken",
+        "pt_BR": "Editar orientações"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.eyebrow",
+      "text": {
+        "de": "Arbeitsbereichsinhalte",
+        "es": "Contenido del espacio de trabajo",
+        "fr": "Contenu de l’espace de travail",
+        "it": "Contenuti dello spazio di lavoro",
+        "nl": "Werkruimte-inhoud",
+        "pt_BR": "Conteúdo do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.heading",
+      "text": {
+        "de": "Zutatenhinweise",
+        "es": "Guía del ingrediente",
+        "fr": "Conseils sur l’ingrédient",
+        "it": "Indicazioni sull’ingrediente",
+        "nl": "Ingrediëntrichtlijnen",
+        "pt_BR": "Orientações sobre o ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.helper",
+      "text": {
+        "de": "Verwende die Plattformhinweise oder ersetze sie für alle in diesem Arbeitsbereich.",
+        "es": "Usa la guía de la plataforma o sustitúyela para todos en este espacio de trabajo.",
+        "fr": "Utilisez les conseils de la plateforme ou remplacez-les pour tout le monde dans cet espace de travail.",
+        "it": "Usa le indicazioni della piattaforma oppure sostituiscile per tutti in questo spazio di lavoro.",
+        "nl": "Gebruik de platformrichtlijnen of vervang ze voor iedereen in deze werkruimte.",
+        "pt_BR": "Use as orientações da plataforma ou substitua-as para todos neste espaço de trabalho."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.override_badge",
+      "text": {
+        "de": "Arbeitsbereichshinweise",
+        "es": "Guía del espacio de trabajo",
+        "fr": "Conseils de l’espace de travail",
+        "it": "Indicazioni dello spazio di lavoro",
+        "nl": "Werkruimterichtlijnen",
+        "pt_BR": "Orientações do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.platform_badge",
+      "text": {
+        "de": "Plattformhinweise",
+        "es": "Guía de la plataforma",
+        "fr": "Conseils de la plateforme",
+        "it": "Indicazioni della piattaforma",
+        "nl": "Platformrichtlijnen",
+        "pt_BR": "Orientações da plataforma"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.read_only",
+      "text": {
+        "de": "Nur Arbeitsbereichsinhaber, Administratoren und Redakteure können diese Hinweise ändern.",
+        "es": "Solo los propietarios, administradores y editores del espacio de trabajo pueden cambiar esta guía.",
+        "fr": "Seuls les propriétaires, administrateurs et éditeurs de l’espace de travail peuvent modifier ces conseils.",
+        "it": "Solo i proprietari, gli amministratori e gli editori dello spazio di lavoro possono modificare queste indicazioni.",
+        "nl": "Alleen werkruimte-eigenaren, beheerders en editors kunnen deze richtlijnen wijzigen.",
+        "pt_BR": "Somente proprietários, administradores e editores do espaço de trabalho podem alterar estas orientações."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.reset",
+      "text": {
+        "de": "Plattformhinweise verwenden",
+        "es": "Usar la guía de la plataforma",
+        "fr": "Utiliser les conseils de la plateforme",
+        "it": "Usa le indicazioni della piattaforma",
+        "nl": "Platformrichtlijnen gebruiken",
+        "pt_BR": "Usar orientações da plataforma"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.reset_confirm",
+      "text": {
+        "de": "Arbeitsbereichshinweise entfernen und die aktuellen Plattformhinweise verwenden?",
+        "es": "¿Eliminar la guía del espacio de trabajo y usar la guía actual de la plataforma?",
+        "fr": "Supprimer les conseils de l’espace de travail et utiliser les conseils actuels de la plateforme ?",
+        "it": "Rimuovere le indicazioni dello spazio di lavoro e usare quelle attuali della piattaforma?",
+        "nl": "De werkruimterichtlijnen verwijderen en de huidige platformrichtlijnen gebruiken?",
+        "pt_BR": "Remover as orientações do espaço de trabalho e usar as orientações atuais da plataforma?"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.reset_done",
+      "text": {
+        "de": "Plattformhinweise wiederhergestellt.",
+        "es": "Se ha restaurado la guía de la plataforma.",
+        "fr": "Conseils de la plateforme restaurés.",
+        "it": "Indicazioni della piattaforma ripristinate.",
+        "nl": "Platformrichtlijnen hersteld.",
+        "pt_BR": "Orientações da plataforma restauradas."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.save",
+      "text": {
+        "de": "Hinweise speichern",
+        "es": "Guardar la guía",
+        "fr": "Enregistrer les conseils",
+        "it": "Salva indicazioni",
+        "nl": "Richtlijnen opslaan",
+        "pt_BR": "Salvar orientações"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.saved",
+      "text": {
+        "de": "Arbeitsbereichshinweise gespeichert.",
+        "es": "Guía del espacio de trabajo guardada.",
+        "fr": "Conseils de l’espace de travail enregistrés.",
+        "it": "Indicazioni dello spazio di lavoro salvate.",
+        "nl": "Werkruimterichtlijnen opgeslagen.",
+        "pt_BR": "Orientações do espaço de trabalho salvas."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "empty.description",
       "text": {
         "de": "Erstelle deine erste Zutat oder hinterlege einen Preis für eine Soapkraft-Zutat, damit sie hier erscheint.",

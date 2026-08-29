@@ -88,6 +88,79 @@
  </dl>
  </section>
 
+ <section class="sk-card p-5 sm:p-6" aria-labelledby="workspace-guidance-heading">
+ <div class="flex flex-col gap-1">
+ <p class="sk-eyebrow">{{ __('ingredients.editor.workspace_guidance.eyebrow') }}</p>
+ <div class="flex flex-wrap items-center justify-between gap-3">
+ <h2 id="workspace-guidance-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.workspace_guidance.heading') }}</h2>
+ <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+ {{ $workspaceGuidanceOverride ? __('ingredients.editor.workspace_guidance.override_badge') : __('ingredients.editor.workspace_guidance.platform_badge') }}
+ </span>
+ </div>
+ <p class="text-sm leading-6 text-[var(--color-ink-soft)]">
+ {{ $canEditWorkspaceGuidance ? __('ingredients.editor.workspace_guidance.helper') : __('ingredients.editor.workspace_guidance.read_only') }}
+ </p>
+ </div>
+
+ <div class="prose prose-sm mt-5 max-w-none text-[var(--color-ink-strong)]">
+ @if (filled($effectiveWorkspaceGuidance))
+ {!! \Illuminate\Support\Str::markdown($effectiveWorkspaceGuidance, [
+     'html_input' => 'strip',
+     'allow_unsafe_links' => false,
+ ]) !!}
+ @else
+ <p class="text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.common.not_available') }}</p>
+ @endif
+ </div>
+
+ @if ($isEditingWorkspaceGuidance && $canEditWorkspaceGuidance)
+ <form wire:submit="saveWorkspaceGuidance" class="mt-5 max-w-2xl space-y-3">
+ <label for="workspace-guidance-markdown" class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.workspace_guidance.heading') }}</label>
+ <p id="workspace-guidance-help" class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.workspace_guidance.helper') }}</p>
+ <div x-data="{ value: $wire.entangle('workspaceGuidanceMarkdown').live }">
+ <textarea
+ id="workspace-guidance-markdown"
+ x-model="value"
+ maxlength="2000"
+ rows="12"
+ class="sk-field-control w-full"
+ aria-describedby="workspace-guidance-help workspace-guidance-count"
+ aria-invalid="{{ $errors->has('workspaceGuidanceMarkdown') ? 'true' : 'false' }}"
+ ></textarea>
+ <p id="workspace-guidance-count" aria-live="polite" class="mt-1 text-xs text-[var(--color-ink-soft)]">
+ <span x-text="Array.from(value ?? '').length"></span>/2000
+ </p>
+ </div>
+ @error('workspaceGuidanceMarkdown')
+ <p class="text-sm text-[var(--color-danger-strong)]" role="alert">{{ $message }}</p>
+ @enderror
+ <div class="flex flex-wrap gap-3">
+ <button type="submit" wire:loading.attr="disabled" wire:target="saveWorkspaceGuidance" class="sk-btn sk-btn-primary">
+ {{ __('ingredients.editor.workspace_guidance.save') }}
+ </button>
+ <button type="button" wire:click="cancelWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="cancelWorkspaceGuidanceCustomization" class="sk-btn sk-btn-ghost">
+ {{ __('ingredients.editor.workspace_guidance.cancel') }}
+ </button>
+ </div>
+ </form>
+ @elseif ($canEditWorkspaceGuidance)
+ <div class="mt-5 flex flex-wrap gap-3">
+ @if ($workspaceGuidanceOverride)
+ <button type="button" wire:click="startWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="startWorkspaceGuidanceCustomization" class="sk-btn sk-btn-secondary">
+ {{ __('ingredients.editor.workspace_guidance.edit') }}
+ </button>
+ <button type="button" wire:click="resetWorkspaceGuidance" wire:confirm="{{ __('ingredients.editor.workspace_guidance.reset_confirm') }}" wire:loading.attr="disabled" wire:target="resetWorkspaceGuidance" class="sk-btn sk-btn-ghost">
+ {{ __('ingredients.editor.workspace_guidance.reset') }}
+ </button>
+ @else
+ <button type="button" wire:click="startWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="startWorkspaceGuidanceCustomization" class="sk-btn sk-btn-primary">
+ {{ __('ingredients.editor.workspace_guidance.customize') }}
+ </button>
+ @endif
+ </div>
+ @endif
+ </section>
+
  <section class="sk-card p-5 sm:p-6" aria-labelledby="platform-material-code-heading">
  <div class="flex flex-col gap-1">
  <p class="sk-eyebrow">{{ __('ingredients.editor.material_code.workspace_eyebrow') }}</p>

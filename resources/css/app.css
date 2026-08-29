@@ -413,22 +413,34 @@
      * and differ only by the attributes the tree emits. Depth reads as
      * descending weight, descending size, and descending selected-state
      * intensity, wrapped in a recessed rail that belongs to the parent above.
+     *
+     * No border on the container itself. Whichever row renders last already
+     * carries its own edge — the level-1 tabs have a 2px underline, the
+     * level-2 rail is a bordered panel — so a rule here double-lines it. The
+     * page wrapper's `space-y-6` is what separates the navigation from the
+     * content (plan §9, override O1).
      */
     .sk-nav {
         display: flex;
         flex-direction: column;
         min-width: 0;
-        border-bottom: 1px solid var(--color-line);
     }
 
+    /*
+     * Clusters stack. On a wide display a row-direction row fits every cluster
+     * side by side, which turns grouped siblings into one undifferentiated run
+     * of chips. Stacking gives each group its own line, so the boundary is
+     * position rather than a gap (plan §9, override O2).
+     */
     .sk-nav-row {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: 0;
+        row-gap: 0.5rem;
     }
 
     .sk-nav-row[data-level='1'] {
-        gap: 0.25rem;
         padding-inline: 0.75rem;
     }
 
@@ -440,19 +452,16 @@
     }
 
     /*
-     * Only the top level fills its row. Without this the cluster is a
-     * content-sized flex item, so `margin-inline-start: auto` on `[data-nav-end]`
-     * has no free space to absorb and Settings sits inline beside Purchasing
-     * instead of on the trailing edge. Level 2 clusters stay content-sized so
-     * the Settings sub-groups keep their natural gap instead of being split.
+     * The label claims a line of its own. `flex-basis: 100%` makes it too wide
+     * to share a line, so the items wrap underneath it and each cluster reads
+     * as a heading over a row of chips. Without this the label sits inline to
+     * the left of the items and the item columns start at whatever offset the
+     * label's translation happens to be, which ragged-aligns stacked clusters.
      */
-    .sk-nav-row[data-level='1'] > .sk-nav-cluster {
-        flex: 1 1 auto;
-    }
-
     .sk-nav-cluster > .sk-nav-group-label {
-        margin-block: 0;
-        margin-inline: 0 0.25rem;
+        flex: 1 0 100%;
+        margin-block: 0 0.125rem;
+        margin-inline: 0;
         color: var(--color-ink-soft);
         opacity: 0.85;
     }
@@ -513,9 +522,15 @@
         border-right: 1px solid var(--color-line);
     }
 
-    /* Settings is a utility, not a workflow step: pin it to the trailing edge. */
+    /*
+     * Settings is a utility, not a workflow step, so it is ruled off from the
+     * sections beside it. It stays in the natural reading order next to
+     * Purchasing rather than being pushed to the trailing edge: the accent
+     * underline already marks the active tab, and a tab parked alone at the far
+     * right of a five-item row over-signals its importance.
+     */
     .sk-nav-item[data-level='1'][data-nav-end] {
-        margin-inline-start: auto;
+        margin-inline-start: 0.25rem;
         padding-inline-start: 1rem;
         border-left: 1px solid var(--color-line);
     }
@@ -562,7 +577,11 @@
         font-weight: 400;
     }
 
-    /* Below `sm`, reclaim the indent and let Settings wrap with the row. */
+    /*
+     * Below `sm`, reclaim the indent and drop Settings' leading rule: the row
+     * wraps there, so the rule can end up at the start of a line where it reads
+     * as a stray vertical stroke rather than a separator.
+     */
     @media (width < 40rem) {
         .sk-nav-rail {
             margin-left: 0.5rem;

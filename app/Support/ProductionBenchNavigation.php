@@ -27,10 +27,12 @@ final class ProductionBenchNavigation
     /**
      * Node shape: `key`, `route`, `label`, `aria`, `icon`, `group`, `end`, `divider`, `children`.
      *
-     * `end` pins a top-level tab to the trailing edge of the row; `divider` draws
-     * a rule before the following tab. Both are layout flags consumed by
-     * `navigation-items.blade.php`, so the partial never hard-codes "the last
-     * item" or "the first item" positionally.
+     * `end` marks a top-level tab as a utility and draws a rule before it;
+     * `divider` draws a rule before the following tab. Both are layout flags
+     * consumed by `navigation-items.blade.php`, so the partial never hard-codes
+     * "the last item" or "the first item" positionally. Neither moves an item:
+     * the tab keeps its place in the reading order and the rule is what sets it
+     * apart (plan §9, override O3).
      *
      * @return list<NavNode>
      */

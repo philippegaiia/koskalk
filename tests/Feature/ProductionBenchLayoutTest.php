@@ -182,7 +182,7 @@ it('renders a nested second row for every branch destination', function (string 
         ->toContain('data-level="2"');
 })->with(['inventory', 'production', 'tasks', 'flash', 'calendar', 'purchasing', 'production-setup']);
 
-it('keeps the dashboard first and pins settings to the trailing edge of the top level row', function (): void {
+it('keeps the dashboard first and sets settings apart at the end of the top level row', function (): void {
     $html = Blade::render('<x-production-bench.page><span>Content</span></x-production-bench.page>');
 
     $dashboardHref = 'href="'.route('production-bench.home').'"';
@@ -195,15 +195,29 @@ it('keeps the dashboard first and pins settings to the trailing edge of the top 
         ->toContain('data-nav-end="true"');
 });
 
-it('lets the top level row span its width so the trailing edge pin has space to act on', function (): void {
+it('stacks one nav cluster per line and gives each group label a line of its own', function (): void {
     $css = (string) file_get_contents(resource_path('css/app.css'));
 
-    // `margin-inline-start: auto` on `[data-nav-end]` only pushes Settings right
-    // if the cluster it sits in spans the row. Left content-sized, the cluster
-    // leaves the slack in `.sk-nav-row` where the auto margin cannot reach it,
-    // and Settings sits inline beside Purchasing. Asserted against the
-    // stylesheet because PHPUnit cannot compute layout.
-    expect($css)->toMatch("/\.sk-nav-row\[data-level='1'\] > \.sk-nav-cluster \{[^}]*flex: 1 1 auto;/");
+    // Two clusters sharing a row read as one run of chips, because the only
+    // thing between them is a gap. Stacking the row puts the boundary in
+    // position instead, and `flex-basis: 100%` on the label is what stops a
+    // stacked cluster's items from starting at an offset set by its label's
+    // translation. Asserted against the stylesheet because PHPUnit cannot
+    // compute layout.
+    expect($css)
+        ->toMatch("/\.sk-nav-row \{[^}]*flex-direction: column;/")
+        ->and($css)
+        ->toMatch("/\.sk-nav-cluster > \.sk-nav-group-label \{[^}]*flex: 1 0 100%;/");
+});
+
+it('does not draw a rule under the whole navigation', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // Whichever row renders last already carries its own edge: the level-1 tabs
+    // have a 2px underline and the level-2 rail is a bordered panel. A rule on
+    // the container sits directly under one of them and reads as a double line.
+    expect(Str::of($css)->after('.sk-nav {')->before('}')->toString())
+        ->not->toContain('border-bottom');
 });
 
 it('declares durable navigation state in every production bench Livewire view', function (): void {

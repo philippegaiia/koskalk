@@ -85,7 +85,7 @@ purchasing                           → Purchasing               (level 1, grou
 ├── quotations                       → Quotation requests       (level 2)
 ├── orders                           → Purchase orders          (level 2)
 └── receipts                         → Receipts                 (level 2)
-production-setup                     → Settings                 (level 1, group, right-aligned)
+production-setup                     → Settings                 (level 1, group, behind a rule)
 ├── ── Production ──                                            (level 2 sub-heading)
 │   ├── numbering                    → Numbering                (level 2)
 │   ├── presets                      → Batch sizes              (level 2)
@@ -167,12 +167,13 @@ Every item at every level uses the identical leading slot: `<svg class="sk-nav-i
 
 Icons needed (inline SVG, no new dependency): house, boxes, factory, list-checks, bolt, calendar-days, sliders, cart, tag, truck, receipt, users, wrench.
 
-### 3.4 Spacing, grouping, and the right-aligned Settings tab
+### 3.4 Spacing, grouping, and the ruled-off Settings tab
 
 - Level 1: `gap-x-1` between items. A `border-l border-[var(--color-line)]` divider with `ml-2 pl-2` after **Dashboard**, separating the landing page from the workflow sections.
-- **Settings is pushed to the far right with `ml-auto`**, behind its own divider. It is a utility destination, not a workflow step; parking it at the end of the row is a hierarchy signal in itself and leaves room beside it for future utilities.
+- **Settings is ruled off with a `border-l` but keeps its place in the reading order.** It is a utility destination rather than a workflow step, and the rule is enough to say so. **O3 in §9 removes the original `ml-auto`: the owner judged the trailing edge worse than the natural position.**
 - Level 2: `gap-1` between chips, `flex-wrap` so long translations wrap instead of overflowing.
-- Vertical rhythm: level 1 → level 2 `mt-3`.
+- **Clusters stack, one per line, and each group label takes a line of its own.** Two clusters sharing a row read as a single run of chips separated only by a gap; stacking puts the boundary in position instead. The label's `flex-basis: 100%` is what forces the wrap, and it also keeps every stacked cluster's items on the same left edge rather than offset by the length of its heading.
+- Vertical rhythm: level 1 → level 2 `mt-3`; `row-gap-2` between stacked clusters.
 
 ### 3.5 Restrained tone
 
@@ -200,7 +201,7 @@ This keeps the Soapkraft north star — "tonal layering first, restrained colour
 
 - Level 1 drops from 8 items to 5, fitting comfortably in 74rem even with a 20-character first label. **`overflow-x-auto` stays forbidden** on `navigation.blade.php` — the test must keep passing.
 - Level 2 uses `flex-wrap` and may grow to two rows on narrow viewports.
-- Below `sm`, halve the indent (`ml-2 pl-3`) and drop the `ml-auto` on Settings so it wraps naturally.
+- Below `sm`, halve the indent (`ml-2 pl-3`) and drop Settings' leading rule so it wraps without a stray vertical stroke at the start of a line.
 
 ---
 
@@ -308,7 +309,7 @@ Note that `settings-index.blade.php:4` renders `<p class="sk-eyebrow">{{ __('pro
   - `['production-setup', 'numbering']` → **2 rows, not 3** (Settings is now level 1)
   - `['inventory', 'stock']` → count 1, not 2
 - [x] 19. Add assertions that the level-2 row renders for **all five** level-1 destinations — previously only three sections had one, and Tasks / Flash planner / Calendar had none. This is the core "no more disappearing hierarchy" guarantee. → `renders a nested second row for every branch destination`, over all seven branch keys.
-- [x] 20. Add an assertion that Settings is the last level-1 item and carries `ml-auto` or the equivalent `.sk-nav-item--end` class. → `keeps the dashboard first and pins settings to the trailing edge of the top level row`, asserting `data-nav-end` (the layout flag that resolved into CSS `margin-inline-start: auto` + `border-left`).
+- [x] 20. Add an assertion that Settings is the last level-1 item and carries the layout flag that sets it apart. → **`keeps the dashboard first and sets settings apart at the end of the top level row`**, asserting `data-nav-end`. The test originally asserted `data-nav-end` "resolved into CSS `margin-inline-start: auto` + `border-left`"; **§9 O3 removed the auto margin, so only the rule remains.** Renamed accordingly — the name should describe the behaviour, not the mechanism that happened to implement it on the day.
 - [x] 21. Keep the existing assertions that `navigation.blade.php` contains no `overflow-x-auto` and no `-mb-px`. The `aria-current="page"` half of that assertion moved to `navigation-items.blade.php` and was retargeted.
 - [x] 22. Run the full suite: `php artisan test --compact`. ~~(Expect the one pre-existing failure in `UserIngredientAuthoringTest`.)~~ **The pre-existing failure set turned out to be larger than the plan claimed** — see "Verification results" below.
 - [x] 23. Run `vendor/bin/pint --dirty --format agent`. **Passed.**
@@ -390,7 +391,7 @@ Verified after import — `de` now reads `Dashboard` (was `Start`), `Einstellung
 ## 7. Definition of done
 
 - Every Production Bench page shows its full ancestry: the level-1 group and its level-2 children.
-- Level 1 has five items, ending with a right-aligned Settings tab.
+- Level 1 has five items, ending with a Settings tab that is set apart by a rule rather than by position.
 - A first-time viewer can name the parent of any child without hovering or clicking, and can see that the bench has settings.
 - Adding an "Inventory" or "Purchasing" group to Settings is a config-only change with no view or CSS edits.
 - The five level-1 items are visually identical to each other in weight, size, and icon treatment; so are all level-2 items. No item is styled by hand.
@@ -438,6 +439,13 @@ free space was outside the cluster where an auto margin cannot reach it. Fixed
 with `.sk-nav-row[data-level='1'] > .sk-nav-cluster { flex: 1 1 auto; }`, scoped
 to level 1 so the two Settings sub-groups keep their natural gap.
 
+**Superseded by O3 in §9.** The fix worked and Settings did reach the trailing
+edge; having seen it, the owner preferred the original inline position. The
+`flex: 1 1 auto` rule and the auto margin are both gone. The diagnosis above is
+still correct and still worth keeping — it is the reason the flag now has to be
+honest about what it does, and it is the trap to avoid if a trailing-edge pin is
+ever asked for again.
+
 ### C6 — §3.1 understates the cost of a third tier
 
 > Keep a dormant `[data-level='3']` selector so a future third tier is a three-line
@@ -473,3 +481,67 @@ declaration or abandoning the grouping:
     color: var(--color-ink-strong);
 }
 ```
+
+---
+
+## 9. Owner overrides after seeing it rendered (2026-08-29)
+
+Three changes, all made by looking at the built UI rather than by reading the
+plan. Each one reverts or amends a decision recorded above; where they conflict,
+**this section wins.**
+
+### O1 — `.sk-nav` no longer has a bottom border
+
+§3.2 specified `border-b` on the container, carried over from the original
+markup. Rendered, it sat directly under whichever row renders last — the
+level-1 tabs' 2px underline when no second row shows, the level-2 rail's own
+border when one does — and read as a double line in both cases.
+
+Removed. The page wrapper's `space-y-6` is what separates the navigation from
+the content; the accent underline is what marks the active tab, and it needs no
+baseline under it.
+
+Pinned by `ProductionBenchLayoutTest::does not draw a rule under the whole
+navigation`, asserted against `.sk-nav { … }` in `app.css`.
+
+### O2 — nav clusters stack vertically
+
+§3.4 let clusters share a row. On a normal display they did, and the two
+Settings sub-groups became one run of chips separated only by a gap — the
+grouping the sub-headings were added to make visible was the thing that
+disappeared.
+
+`.sk-nav-row` is now `flex-direction: column`, so each cluster owns a line. A
+cluster's group label takes a line of its own via `flex: 1 0 100%` on
+`.sk-nav-cluster > .sk-nav-group-label`: too wide to share a line, so the items
+wrap underneath it.
+
+That second half is not cosmetic. With the label left inline, a stacked
+cluster's items start at whatever offset its heading's translation happens to
+be, so "Production workflow" and "Resources" would indent their chips
+differently. Forcing the wrap keeps every cluster's items on one left edge.
+
+Note the label trick, not a wrapper element: the items are direct children of
+`.sk-nav-cluster`, so a column layout on the cluster would have stacked them
+too. This way the markup is untouched.
+
+Pinned by `ProductionBenchLayoutTest::stacks one nav cluster per line and gives
+each group label a line of its own`.
+
+### O3 — Settings is ruled off, not pushed right
+
+§3.4 pinned Settings to the trailing edge with `ml-auto`, and C5 in §8 fixed the
+flex chain so the pin actually worked. It worked, and the owner preferred the
+original position: five items with one parked alone at the far right reads as
+more important than the four workflow sections it sits beside, which is the
+opposite of "Settings is a utility".
+
+`margin-inline-start: auto` and the `.sk-nav-row[data-level='1'] >
+.sk-nav-cluster { flex: 1 1 auto; }` rule that fed it are both removed. What
+remains of `data-nav-end` is the `border-l` separator, in the natural reading
+order next to Purchasing.
+
+The flag keeps its name: it still marks the last top-level tab. Its docblock in
+`ProductionBenchNavigation::tree()` and its CSS comment now describe it as
+drawing a rule rather than as moving the item, because the previous wording is
+what made C5 look like a defect worth fixing.

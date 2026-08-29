@@ -3,7 +3,8 @@
         "opencode",
         "codex",
         "claude_code",
-        "antigravity"
+        "antigravity",
+        "pi"
     ],
     "cloud": false,
     "guidelines": true,
@@ -13,16 +14,18 @@
         "filament/filament",
         "laraveldaily/filacheck",
         "fruitcake/laravel-debugbar",
-        "spatie/laravel-medialibrary"
+        "spatie/laravel-medialibrary",
+        "albertoarena/laravel-truss"
     ],
     "sail": false,
     "skills": [
         "infer-conventions",
         "cashier-paddle-development",
         "laravel-best-practices",
-        "pest-testing",
+        "testing-best-practices",
         "tailwindcss-development",
         "medialibrary-development",
+        "truss-schema",
         "debug-using-debugbar"
     ]
 }

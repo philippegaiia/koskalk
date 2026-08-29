@@ -364,8 +364,10 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 # Test Enforcement
 
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+- Test every code change by adding or updating a test.
+- Run the affected tests and ensure they pass.
+- Test the changed behavior and its important failure modes, but do not add tests beyond them.
+- Read the `testing-best-practices` skill before writing tests.
 
 === laravel/core rules ===
 
@@ -406,12 +408,19 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 === pest/core rules ===
 
-## Pest
+# Pest
 
-- This project uses Pest for testing. Create tests: `php artisan make:test --pest {name}`.
-- The `{name}` argument should not include the test suite directory. Use `php artisan make:test --pest SomeFeatureTest` instead of `php artisan make:test --pest Feature/SomeFeatureTest`.
-- Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
-- Do NOT delete tests without approval.
+- This project uses Pest. Create tests with `php artisan make:test --pest {name}`.
+- Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
+- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
+- Do not delete tests or test files without approval. They are part of the application.
+
+## Running Tests
+
+- Run the narrowest set of tests that covers the change. Pass a file path or `--filter=testName` to `php artisan test --compact`.
+- Rerun a test after each change to it.
+- Run `vendor/bin/pest` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
+- After the feature tests pass, ask the user to run the complete suite with `php artisan test --compact`.
 
 === filament/filament/core rules ===
 
@@ -655,6 +664,43 @@ livewire(ListUsers::class)
 
 - `spatie/laravel-medialibrary` associates files with Eloquent models, with support for collections, conversions, and responsive images.
 - Always activate the `medialibrary-development` skill when working with media uploads, conversions, collections, responsive images, or any code that uses the `HasMedia` interface or `InteractsWithMedia` trait.
+
+=== albertoarena/laravel-truss/truss rules ===
+
+# Laravel Truss
+
+Truss reads this application's live database structure: tables, columns, types,
+indexes, and foreign keys. It is read only and never queries a row.
+
+Structure only, never data.
+
+Ground a schema task in the real structure instead of reading migration files:
+
+    php artisan truss:export --format=llm --compact
+
+On a large schema, take one table and its foreign-key neighbourhood instead of
+the whole thing:
+
+    php artisan truss:export --format=llm --focus=users --depth=1
+
+Before writing a migration, check the structure for problems (missing primary
+keys, unindexed foreign keys, risky column types):
+
+    php artisan truss:doctor
+
+After running one, confirm what it actually changed:
+
+    php artisan truss:diff
+
+Tables and columns may carry business meaning, declared in config or read from
+database comments. That meaning is included in exports by default.
+
+Narrow any export with `--connection=`, `--tables=`, `--exclude=`.
+
+If you can run tinker but not shell commands:
+`Truss::snapshot()->focus('users')->compact()->toLlm()`.
+
+Truss never returns row data. Do not reach for it to inspect records.
 
 === laraveldaily/filacheck/core rules ===
 

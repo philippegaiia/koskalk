@@ -15,8 +15,17 @@
 
     /* Paper + ink (warm apothecary defaults — re-skin every shell) */
     --color-surface: oklch(96.4% 0.016 128);
+    /* Same job as --color-panel-muted, named for the surface family. Used by the
+       production detail table head and its group rows. */
+    --color-surface-muted: var(--color-panel-muted);
     --color-sidebar: oklch(95.3% 0.010 87);
     --color-panel: oklch(98.5% 0.006 85);
+    /* Table header / row-hover tint. Was referenced ~40 times across the
+       production bench (table heads, hover rows, nested blocks) but never
+       defined, so every one of them computed to `transparent`. Lightness matches
+       --color-field-muted, the tint the ingredients table head uses; the hue
+       follows the panel family so it sits between panel and panel-strong. */
+    --color-panel-muted: oklch(96.4% 0.010 85);
     --color-panel-strong: oklch(93.4% 0.020 84);
     --color-field: oklch(99.4% 0.003 91);
     --color-field-muted: oklch(96.4% 0.010 94);
@@ -33,6 +42,11 @@
     --color-ink: oklch(30.0% 0.012 75);
     --color-ink-strong: oklch(20.5% 0.008 70);
     --color-ink-soft: oklch(46.5% 0.014 75);
+    /* One step lighter than soft: field help text, captions, locked-input labels.
+       Never defined until now, and `color` is an inherited property — so all 47
+       uses fell back to the parent's ink and read at full body darkness. This is
+       the one line to darken if the 10px help text proves too faint. */
+    --color-ink-muted: oklch(58.0% 0.012 75);
 
     --color-ink-sidebar: oklch(25.7% 0.010 89);
     --color-ink-sidebar-soft: oklch(51.2% 0.015 82);
@@ -102,6 +116,13 @@
     --color-cream-dark: oklch(82.5% 0.034 88);
     --color-amber: oklch(62.0% 0.118 58);
     --color-amber-light: oklch(80.0% 0.090 70);
+
+    /* Raised surfaces — a panel reads as lifted by shadow, never by an outline.
+       `.sk-card`, `.sk-nav-rail` and the `shadow-card` utility all resolve to
+       this, so retuning the elevation moves every panel in the app together. */
+    --shadow-card:
+        0 1px 2px rgba(60, 50, 30, 0.04),
+        0 12px 24px rgba(60, 50, 30, 0.07);
 }
 
 /* Public-safe Soapkraft primitives. Filament overrides live in filament-soapkraft.css. */

@@ -15,7 +15,7 @@
         </header>
 
         @if ($mode === 'materials')
-            <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+            <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="overflow-hidden sk-card">
                 <div class="flex flex-col gap-1 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between">
                     <h2 id="inventory-materials-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.materials_title') }}</h2>
                     <p class="text-xs text-[var(--color-ink-muted)]">
@@ -90,7 +90,7 @@
                 <x-table-pagination :paginator="$materials" :per-page-label="__('production_bench.inventory.materials_title')" />
             </section>
         @else
-            <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+            <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden sk-card">
                 <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-baseline gap-3">
                         <h2 id="inventory-positions-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.stock_positions') }}</h2>

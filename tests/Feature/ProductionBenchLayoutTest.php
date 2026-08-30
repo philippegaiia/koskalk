@@ -207,10 +207,97 @@ it('does not draw a rule under the whole navigation', function (): void {
     $css = (string) file_get_contents(resource_path('css/app.css'));
 
     // Whichever row renders last already carries its own edge: the level-1 tabs
-    // have a 2px underline and the level-2 rail is a bordered panel. A rule on
-    // the container sits directly under one of them and reads as a double line.
+    // have a 2px underline and the level-2 rail is a raised panel. A rule on the
+    // container sits directly under one of them and reads as a double line.
     expect(Str::of($css)->after('.sk-nav {')->before('}')->toString())
         ->not->toContain('border-bottom');
+});
+
+it('shares the content left edge instead of indenting the navigation', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // The navigation sits inside the same `max-w-app` wrapper as the content, so
+    // any inline-start offset on a row pulls its left edge inboard while its
+    // right edge stays flush — the menu then reads as right-aligned. The rail is
+    // a raised panel; the shadow and the panel fill carry the recess, not an
+    // offset. Asserted against the stylesheet because PHPUnit cannot compute
+    // layout.
+    preg_match_all('/\.sk-nav-rail\s*\{([^}]*)\}/', $css, $railBlocks);
+
+    expect(implode(' ', $railBlocks[1] ?? []))
+        ->not->toContain('margin-inline-start')
+        // Level-1 tabs carry their own `padding-inline`; padding on the row would
+        // double-indent them off the content edge.
+        ->and($css)
+        ->not->toMatch("/\.sk-nav-row\[data-level='1'\] \{[^}]*padding-inline/");
+});
+
+it('raises the navigation drawer and the table panels by shadow, not by a border', function (): void {
+    $css = (string) file_get_contents(resource_path('css/app.css'));
+
+    // Every other surface in the app is lifted off the page by shadow rather
+    // than outlined, and a 1px rule around a full-width strip reads as a
+    // hairline box instead of a panel (owner override O6). The rail keeps its
+    // start padding — that is now what sets the level-2 tabs inboard of the
+    // level-1 tabs above them, a job the 2px start border used to do.
+    preg_match_all('/\.sk-nav-rail\s*\{([^}]*)\}/', $css, $railBlocks);
+    $rail = implode(' ', $railBlocks[1] ?? []);
+
+    expect($rail)
+        ->toContain('box-shadow: var(--shadow-card)')
+        ->not->toContain('border:')
+        ->not->toContain('border-inline-start-width')
+        // The nesting cue, not an offset: it survives the border's removal.
+        ->toContain('padding-inline: 1.125rem 0.75rem');
+
+    // The table panels borrow `.sk-card` wholesale, so they must not re-add an
+    // outline of their own — internal `border-b` / `divide-y` dividers are
+    // separate and stay. Scoped to the old table-shell pattern on purpose: the
+    // flash planner's celebration banner keeps its accent border, which is a
+    // signal rather than a panel edge.
+    $outlinedPanels = [];
+
+    foreach (productionBenchViews() as $view) {
+        if (str_contains(
+            (string) file_get_contents($view),
+            'rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]',
+        )) {
+            $outlinedPanels[] = basename($view);
+        }
+    }
+
+    expect($outlinedPanels)->toBe([]);
+});
+
+it('defines every colour token the production bench views reference', function (): void {
+    // `--color-panel-muted` was used ~40 times across the production bench —
+    // table heads, row hovers, nested blocks — but was never defined anywhere in
+    // the project's history. `background-color: var(--undefined)` is invalid at
+    // computed-value time, so every one of those panels silently rendered
+    // transparent. There is no build step to catch it, so pin it here.
+    $stylesheets = implode("\n", array_map(
+        static fn (string $path): string => (string) file_get_contents($path),
+        [
+            resource_path('css/app.css'),
+            resource_path('css/public.css'),
+            resource_path('css/shared/soapkraft.css'),
+            resource_path('css/shared/filament-soapkraft.css'),
+        ],
+    ));
+
+    $undefined = [];
+
+    foreach (productionBenchViews() as $view) {
+        preg_match_all('/var\(--(color-[a-z0-9-]+)\)/', (string) file_get_contents($view), $matches);
+
+        foreach (array_unique($matches[1]) as $token) {
+            if (! str_contains($stylesheets, '--'.$token.':')) {
+                $undefined[$token][] = basename($view);
+            }
+        }
+    }
+
+    expect($undefined)->toBe([]);
 });
 
 it('declares durable navigation state in every production bench Livewire view', function (): void {
@@ -284,3 +371,19 @@ it('uses one consistent full-width inner across all production bench pages', fun
         ->not->toContain('$compact')
         ->not->toContain('max-w-5xl');
 });
+
+/**
+ * Every production bench Livewire view, one and two directories deep.
+ *
+ * File-scoped: `glob()` does not treat `**` as recursive, so the two patterns
+ * are matched separately rather than trusting one to walk the tree.
+ */
+function productionBenchViews(): array
+{
+    $base = resource_path('views/livewire/production-bench');
+
+    return array_merge(
+        glob($base.'/*.blade.php') ?: [],
+        glob($base.'/*/*.blade.php') ?: [],
+    );
+}

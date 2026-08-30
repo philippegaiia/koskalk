@@ -37,7 +37,7 @@
         </section>
 
         @if ($supplierId)
-            <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+            <section class="overflow-hidden sk-card">
                 <div class="border-b border-[var(--color-line)] px-5 py-4"><h2 class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.procurement.purchase_formats') }}</h2></div>
                 <div class="divide-y divide-[var(--color-line)]">
                     @forelse ($listings as $listing)

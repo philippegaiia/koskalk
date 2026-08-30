@@ -15,7 +15,7 @@
                 <a href="{{ route('production-bench.purchasing.listings.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.listing.add') }}</a>
             @endif
         </header>
-        <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+        <section class="overflow-hidden sk-card">
             <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
                 {{ $this->filtersForm }}
             </div>

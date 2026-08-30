@@ -63,14 +63,61 @@ Both bit me on 2026-08-29 while attributing suite failures to a branch.
   uniform `0` across eight commits and I reported it as a finding ("the file never contained this").
   Sanity-check a suspiciously uniform zero, or print a sentinel, before trusting it.
 
-## CSS fixes need `npm run build` — the suite cannot catch a stale bundle
+## CSS workflow: owner runs `npm run dev`; do NOT run `npm run build` unprompted
 
-`public/build` is gitignored, and the design-polish contract tests read
-`resource_path('css/app.css')` — the **source**, never the compiled output. So a CSS-only fix can
-be fully green in CI while the app still ships the old value. Confirmed on 2026-08-29: the 1px
-focus fix passed the suite, but the built bundle still carried `outline:2px` until `npm run build`
-was run manually. **After any change under `resources/css/`, rebuild.** Old orphaned bundles also
-linger on disk (Vite here does not appear to empty `buildDirectory`).
+`package.json` has `dev: vite` and `build: vite build`. The owner develops against the **dev
+server**, which serves from source with HMR — a CSS edit is visible on reload with no build step.
+**Do not run `npm run build` after a CSS change** unless asked, or unless the point is specifically
+to refresh the production artifact.
+
+Corrected 2026-08-29: I twice treated a stale `public/build` as a defect ("the app still ships
+2px") and rebuilt to close a "gap". It was not one. The owner never loads `public/build` locally,
+so the stale bundle was invisible and irrelevant — unnecessary work, reported as a finding it did
+not deserve.
+
+Related facts, still true:
+- `public/build` is gitignored and is the **deploy** artifact. It goes stale during local branch
+  work; that is normal. Do not report it as a bug again.
+- The design-polish contract tests read `resource_path('css/app.css')` — the **source**, never the
+  bundle. The suite is green whether or not `public/build` is current. Only inspect the bundle when
+  the question is what *production* will actually ship.
+- Old orphaned bundles linger on disk (Vite does not appear to empty `buildDirectory`).
+
+## Surfaces are lifted by shadow, never outlined
+
+A panel reads as raised through elevation, not a rule around it: **`.sk-card` has no `border`.**
+The reference implementation is the ingredients page (`sk-card` wrapper; internal `border-b` /
+`border-t` / `divide-y` dividers only — the border is wrong on the *outer* box alone).
+
+- The shadow lives in the `--shadow-card` token in the `soapkraft.css` `@theme` block, read by
+  `.sk-card`, `.sk-nav-rail` and the generated `shadow-card` utility. Do not retype the literal.
+- Two sibling utilities exist for elements that already carry their own border/radius:
+  `.sk-card-elevation` and `.sk-card-elevation-subtle`, both in `soapkraft.css`.
+- Owner override O6 (2026-08-30) converted the production bench nav rail and all 11 table shells
+  from `rounded-2xl border … bg-[var(--color-panel)]` to `sk-card`. This is O1's rule from the
+  other direction: O1 removed a container border that duplicated its child's edge; O6 removes
+  them because the app does not draw panels that way at all.
+- **Do not symmetrise `.sk-nav-rail`'s `padding-inline: 1.125rem 0.75rem`.** The 0.375rem start
+  excess is the nesting signal — it sets the level-2 tabs inboard of the level-1 tabs above them.
+  It was incidental while a 2px start border sat beside it; O6 removed the border, so the padding
+  is now load-bearing.
+
+## Undefined CSS custom properties fail silently — no build step catches them
+
+`--color-panel-muted`, `--color-ink-muted` and `--color-surface-muted` were each used dozens of
+times across the production bench while **never being defined**, in any stylesheet or commit.
+
+- A `var()` that does not resolve makes the declaration *invalid at computed-value time*. For
+  non-inherited properties (`background-color`) that falls back to the **initial** value, so the
+  background silently goes transparent.
+- For **inherited** properties (`color`) it falls back to `inherit` — the text does not vanish, it
+  silently takes the parent's colour. That is why 47 elements looked merely "too dark" instead of
+  obviously broken. Expect this asymmetry when diagnosing.
+- Nothing in the toolchain flags it: Tailwind emits `var(--x)` verbatim and Vite does not resolve
+  custom properties.
+- Guard: `ProductionBenchLayoutTest::defines every colour token the production bench views
+  reference` reads every `var(--color-*)` out of the production bench views and asserts the name is
+  defined in one of the four stylesheets. It found two of the three on its first run.
 
 ## Filament actions hide markup from static contract tests
 
@@ -97,6 +144,10 @@ Triage lives in `docs/superpowers/plans/2026-08-29-test-suite-failures-triage.md
   over a literal, as `IngredientEnrichmentProposalEditingTest` and `PromoteIngredientIntakeItemTest` do.
 - **Superseded tests linger.** `b603f798` removed rich-editor uploads and added
   `RecipeContentMediaContractTest`, but never deleted the old `MediaStorageTest` case.
-- **Some tests never passed.** `WorkflowActionConsistencyTest` has asserted a primary button in
-  `inventory-index.blade.php` since 2026-08-02; that file never had one. Confirm with
-  `git log --all --oneline -S '<string>' -- <path>` before assuming a regression.
+- **A test that "never passed" is a rare thing — prove it.** I claimed
+  `WorkflowActionConsistencyTest` had never passed because `inventory-index.blade.php` "never had"
+  a `sk-btn sk-btn-primary`. It did: the test passed 2026-08-02 → 2026-08-20, when `cf8efead`
+  swapped the literal button for the Filament `addStockAction`. My per-commit counts were all
+  bogus (see the zsh `:r` trap above). Before asserting a test never passed, confirm the
+  measurement works on a commit where you *know* the value, and prefer
+  `git log --all --oneline -S '<string>' -- <path>` to find the commit that changed it.

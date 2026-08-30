@@ -2,6 +2,7 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\Contracts\IngredientGuidanceResearchClient;
 use App\Data\IngredientGapResearchResponse;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -12,7 +13,7 @@ use JsonException;
 use RuntimeException;
 use Throwable;
 
-class OpenAiIngredientGapResearchClient
+class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchClient
 {
     /**
      * @param  array<string, mixed>  $facts

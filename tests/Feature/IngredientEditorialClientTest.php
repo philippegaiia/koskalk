@@ -1,10 +1,16 @@
 <?php
 
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceResearchClient;
 use App\Services\IngredientEnrichment\IngredientEnrichmentEditorialPrompt;
 use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+
+it('binds guidance research to the OpenAI web-search client', function (): void {
+    expect(app(IngredientGuidanceResearchClient::class))
+        ->toBeInstanceOf(OpenAiIngredientGapResearchClient::class);
+});
 
 it('sends deterministic facts to a strict editorial-only response request', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');

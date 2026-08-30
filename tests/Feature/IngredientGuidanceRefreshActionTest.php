@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceChangePlanner;
+use App\Services\IngredientEnrichment\IngredientGuidanceEvidencePolicy;
 use App\Services\IngredientTranslationSourceFingerprint;
 use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Actions\Testing\TestAction;
@@ -347,7 +348,8 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
     expect($item->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($batch->status)->toBe(IngredientEnrichmentBatchStatus::Applied)
         ->and($batch->items()->where('status', IngredientEnrichmentItemStatus::Approved)->count())->toBe(0)
-        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe($newEvidence);
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
+        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($newEvidence));
 });
 
 it('keeps English guidance read-only in localization-only review batches', function (): void {

@@ -4,6 +4,8 @@ use App\Actions\IngredientEnrichment\RetryIngredientEnrichmentFailures;
 use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceLocalizationClient;
+use App\Contracts\IngredientGuidanceResearchClient;
+use App\Data\IngredientGapResearchResponse;
 use App\Data\IngredientGuidanceAuthoringResponse;
 use App\Data\IngredientGuidanceLocalizationResponse;
 use App\Data\IngredientSourceStageResult;
@@ -19,6 +21,7 @@ use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientEnrichmentStageStore;
 use App\Services\IngredientEnrichment\IngredientGuidanceContextBuilder;
+use App\Services\IngredientEnrichment\IngredientGuidanceEvidencePolicy;
 use App\Services\IngredientEnrichment\IngredientGuidanceRefreshProcessor;
 use App\Services\IngredientEnrichment\IngredientGuidanceRefreshResultValidator;
 use App\Services\IngredientEnrichment\IngredientGuidanceStageRunner;
@@ -35,11 +38,52 @@ beforeEach(function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     config()->set('ingredient-enrichment.direct_ai.enabled', true);
     config()->set('ingredient-enrichment.openai.api_key', 'test-only');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
     Bus::fake();
 });
 
-it('queues a guidance refresh and calls authoring and localization without research', function (): void {
-    $calls = ['author' => 0, 'localize' => 0];
+it('queues a guidance refresh and calls fresh research, authoring, and localization', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [[
+                    'field' => 'proposal.info_markdown',
+                    'source_name' => 'Supplier technical data sheet',
+                    'source_url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'summary' => 'This product grade is recommended at 1–10% in cosmetic formulations.',
+                    'claim_type' => 'usage',
+                    'source_kind' => 'supplier_technical',
+                    'scope' => 'product_grade',
+                    'evidence_kind' => 'formulation_recommendation',
+                    'usage_application' => 'cosmetics',
+                    'recommended_min_percent' => '1',
+                    'recommended_max_percent' => '10',
+                    'percentage_basis' => 'total_formula',
+                ]],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-research',
+                requestId: 'req-research',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'title' => 'Supplier technical data sheet',
+                ]],
+            );
+        }
+    });
     app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
     {
         /** @param array<string,int> $calls */
@@ -115,13 +159,15 @@ it('queues a guidance refresh and calls authoring and localization without resea
     app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
     $item->refresh();
 
-    expect($calls)->toBe(['author' => 1, 'localize' => 1])
+    expect($calls)->toBe(['research' => 1, 'author' => 1, 'localize' => 1])
         ->and($item->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and($item->result['mode'])->toBe(IngredientEnrichmentBatchMode::GuidanceRefresh->value)
-        ->and($item->input_tokens)->toBe(44)
-        ->and($item->output_tokens)->toBe(66)
-        ->and($item->web_search_calls)->toBe(0)
-        ->and($item->plan['decisions'])->toHaveCount(7);
+        ->and($item->input_tokens)->toBe(51)
+        ->and($item->output_tokens)->toBe(74)
+        ->and($item->web_search_calls)->toBe(1)
+        ->and(data_get($item->research_stages, 'ai_guidance_research.status'))->toBe('completed')
+        ->and($item->result['guidance_evidence'][0]['source_kind'])->toBe('supplier_technical')
+        ->and($item->plan['decisions'])->toHaveCount(8);
 
     $stages = $item->research_stages;
     expect(data_get($stages, 'ai_guidance_authoring.data.stage_context.provider_configuration'))
@@ -148,6 +194,142 @@ it('queues a guidance refresh and calls authoring and localization without resea
             'required_headings' => config('ingredient-enrichment.guidance.required_headings'),
             'localized_headings' => config('ingredient-enrichment.guidance.localized_headings'),
         ]);
+});
+
+it('reuses a completed research stage when authoring is retried', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [],
+                warnings: ['No material-specific source was accepted.'],
+                unresolvedQuestions: ['Which application range is appropriate for this grade?'],
+                responseId: 'resp-research-retry',
+                requestId: 'req-research-retry',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [],
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+            if ($this->calls['author'] === 1) {
+                throw new RuntimeException('temporary authoring failure');
+            }
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-retry-research',
+                requestId: 'req-guidance-retry-research',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->values()->all(),
+                responseId: 'resp-localization-retry-research',
+                requestId: 'req-localization-retry-research',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+        ->toThrow(RuntimeException::class, 'temporary authoring failure');
+
+    expect($calls)->toBe(['research' => 1, 'author' => 1, 'localize' => 0])
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed');
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($fixture['admin'], $fixture['batch']);
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    expect($calls)->toBe(['research' => 1, 'author' => 2, 'localize' => 1])
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed');
+});
+
+it('stops a guidance refresh at a failed research stage', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+            throw new RuntimeException('temporary research failure');
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->calls['author']++;
+            throw new RuntimeException('authoring must not run after research failure');
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+            throw new RuntimeException('localization must not run after research failure');
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
+        ->toThrow(RuntimeException::class, 'temporary research failure');
+
+    expect($calls)->toBe(['research' => 1, 'author' => 0, 'localize' => 0])
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('failed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring'))->toBeNull()
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization'))->toBeNull();
 });
 
 it('rejects a completed authoring cache whose item provenance changed', function (): void {
@@ -288,7 +470,47 @@ it('rejects a completed localization cache whose upstream guidance changed', fun
 });
 
 it('recomputes guidance stages when effective provider configuration changes', function (): void {
-    $calls = ['author' => 0, 'localize' => 0];
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [[
+                    'field' => 'proposal.info_markdown',
+                    'source_name' => 'Supplier technical data',
+                    'source_url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'summary' => 'The product grade is used as a fluid emollient oil.',
+                    'claim_type' => 'formulation_role',
+                    'source_kind' => 'supplier_technical',
+                    'scope' => 'product_grade',
+                    'evidence_kind' => 'fact',
+                    'usage_application' => 'not_applicable',
+                    'recommended_min_percent' => null,
+                    'recommended_max_percent' => null,
+                    'percentage_basis' => 'not_applicable',
+                ]],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-guidance-provider-config-research',
+                requestId: 'req-guidance-provider-config-research',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'title' => 'Supplier technical data',
+                ]],
+            );
+        }
+    });
     app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
     {
         /** @param array<string,int> $calls */
@@ -334,18 +556,21 @@ it('recomputes guidance stages when effective provider configuration changes', f
     $fixture = guidanceResumeFixture();
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
-    config()->set('ingredient-enrichment.openai.model', 'gpt-configuration-updated');
+    config()->set('ingredient-enrichment.openai.guidance_research.prompt_version', 'ingredient-guidance-research-v3');
     $fixture['item']->update(['status' => IngredientEnrichmentItemStatus::Failed]);
 
-    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
-        ->toThrow(LogicException::class);
-
-    expect($calls)->toBe(['author' => 1, 'localize' => 1]);
-
-    app(RetryIngredientEnrichmentFailures::class)->handle($fixture['admin'], $fixture['batch']);
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
-    expect($calls)->toBe(['author' => 2, 'localize' => 2])
+    expect($calls)->toBe(['research' => 2, 'author' => 2, 'localize' => 2])
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
+
+    config()->set('ingredient-enrichment.openai.guidance_prompt_version', 'ingredient-guidance-v3');
+    $fixture['item']->refresh();
+    $fixture['item']->update(['status' => IngredientEnrichmentItemStatus::Failed]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    expect($calls)->toBe(['research' => 2, 'author' => 3, 'localize' => 3])
         ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
 });
 
@@ -417,8 +642,20 @@ it('invalidates downstream guidance caches when a queued retry recomputes author
 });
 
 it('localizes only outdated locales and never calls English authoring', function (): void {
-    $calls = ['author' => 0, 'localize' => 0];
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
     $requestedLocales = [];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+            throw new RuntimeException('research must not run during localization-only refresh');
+        }
+    });
     app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
     {
         public function __construct(private array &$calls) {}
@@ -494,7 +731,7 @@ it('localizes only outdated locales and never calls English authoring', function
     app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
     app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
 
-    expect($calls)->toBe(['author' => 0, 'localize' => 2])
+    expect($calls)->toBe(['research' => 0, 'author' => 0, 'localize' => 2])
         ->and($requestedLocales)->toBe([['fr'], ['fr']])
         ->and(data_get($item->fresh()->snapshot, 'guidance_stage_context.localization.expected_locales'))->toBe(['fr'])
         ->and($item->fresh()->result['translations'])->toHaveCount(1)
@@ -695,6 +932,7 @@ it('uses the runner frozen localization context after a translation update race'
             parent::__construct(
                 app(IngredientEnrichmentStageStore::class),
                 app(IngredientGuidanceRefreshResultValidator::class),
+                app(IngredientGuidanceEvidencePolicy::class),
                 app(IngredientEnrichmentSnapshotBuilder::class),
                 app(IngredientTranslationSourceFingerprint::class),
                 app(LocalizedGuidanceHeadings::class),
@@ -884,7 +1122,7 @@ it('resumes a validation failure without repeating completed guidance providers'
         }
     });
 
-    $validator = new class(app(IngredientEnrichmentSnapshotBuilder::class)) extends IngredientGuidanceRefreshResultValidator
+    $validator = new class(app(IngredientEnrichmentSnapshotBuilder::class), app(IngredientGuidanceEvidencePolicy::class)) extends IngredientGuidanceRefreshResultValidator
     {
         public int $calls = 0;
 

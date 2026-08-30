@@ -11,6 +11,7 @@ class IngredientGuidanceContextBuilder
 {
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
     ) {}
 
     /**
@@ -33,6 +34,7 @@ class IngredientGuidanceContextBuilder
             'source_fingerprint' => $this->snapshots->fingerprint($ingredient),
             'current' => $snapshot,
             'guidance_evidence' => $evidence,
+            'prior_guidance_evidence' => $evidence,
             'warnings' => $warnings,
             'requested_output' => [
                 'guidance' => config('ingredient-enrichment.guidance'),
@@ -40,13 +42,15 @@ class IngredientGuidanceContextBuilder
         ];
     }
 
-    /** @return list<array{source_name:string,source_url:string,summary:string,source_tier:string,retrieved_at:string}> */
+    /** @return list<array<string,mixed>> */
     private function persistedEvidence(Ingredient $ingredient): array
     {
-        return $this->normalizeEvidence(data_get($ingredient->source_data, 'enrichment.guidance.evidence', []));
+        return $this->guidanceEvidencePolicy->normalizePersisted(
+            data_get($ingredient->source_data, 'enrichment.guidance.evidence', []),
+        );
     }
 
-    /** @return list<array{source_name:string,source_url:string,summary:string,source_tier:string,retrieved_at:string}> */
+    /** @return list<array<string,mixed>> */
     private function legacyBatchEvidence(Ingredient $ingredient): array
     {
         $items = IngredientEnrichmentBatchItem::query()
@@ -57,41 +61,17 @@ class IngredientGuidanceContextBuilder
             ->get(['research_stages', 'applied_at']);
 
         foreach ($items as $item) {
-            $candidateEvidence = data_get($item->research_stages, 'ai_guidance_research.data.candidate_evidence', []);
-            $evidence = $this->normalizeEvidence($candidateEvidence, $item->applied_at);
+            $candidateEvidence = data_get($item->research_stages, 'ai_guidance_research.data.guidance_evidence')
+                ?? data_get($item->research_stages, 'ai_guidance_research.data.candidate_evidence', []);
+            $evidence = $this->guidanceEvidencePolicy->normalizePersisted(
+                $candidateEvidence,
+                $item->applied_at instanceof CarbonImmutable ? $item->applied_at : null,
+            );
             if ($evidence !== []) {
                 return $evidence;
             }
         }
 
         return [];
-    }
-
-    /**
-     * @return list<array{source_name:string,source_url:string,summary:string,source_tier:string,retrieved_at:string}>
-     */
-    private function normalizeEvidence(mixed $rows, ?CarbonImmutable $fallbackRetrievedAt = null): array
-    {
-        return collect(is_array($rows) ? $rows : [])
-            ->filter(fn (mixed $row): bool => is_array($row)
-                && ($row['field'] ?? 'proposal.info_markdown') === 'proposal.info_markdown'
-                && is_string($row['source_name'] ?? null)
-                && is_string($row['source_url'] ?? null)
-                && is_string($row['summary'] ?? null))
-            ->map(fn (array $row): array => [
-                'source_name' => trim((string) $row['source_name']),
-                'source_url' => trim((string) $row['source_url']),
-                'summary' => trim((string) $row['summary']),
-                'source_tier' => 'editorial',
-                'retrieved_at' => is_string($row['retrieved_at'] ?? null)
-                    ? trim($row['retrieved_at'])
-                    : ($fallbackRetrievedAt?->toIso8601String() ?? CarbonImmutable::now()->toIso8601String()),
-            ])
-            ->filter(fn (array $row): bool => $row['source_name'] !== ''
-                && $row['source_url'] !== ''
-                && $row['summary'] !== '')
-            ->unique('source_url')
-            ->values()
-            ->all();
     }
 }

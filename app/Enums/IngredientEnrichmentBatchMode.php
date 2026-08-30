@@ -21,6 +21,9 @@ enum IngredientEnrichmentBatchMode: string
     {
         return match ($this) {
             self::GuidanceRefresh => [
+                ...((bool) config('ingredient-enrichment.openai.guidance_research.enabled', true)
+                    ? [IngredientEnrichmentResearchStage::AiGuidanceResearch]
+                    : []),
                 IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
                 IngredientEnrichmentResearchStage::AiGuidanceLocalization,
                 IngredientEnrichmentResearchStage::Validation,

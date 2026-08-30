@@ -18,6 +18,7 @@ class IngredientGuidanceStageRunner
     public function __construct(
         private readonly IngredientEnrichmentStageStore $stages,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
         private readonly IngredientTranslationSourceFingerprint $translationFingerprint,
         private readonly LocalizedGuidanceHeadings $headings,
@@ -44,12 +45,15 @@ class IngredientGuidanceStageRunner
                 $stored = $this->stages->stages($item)[$stage->value] ?? null;
 
                 if (! is_array($stored) || ($stored['status'] ?? null) !== 'completed') {
-                    return ['result' => null, 'context' => $context];
+                    return ['result' => null, 'context' => $context, 'invalidate' => false];
                 }
 
                 $storedResult = IngredientSourceStageResult::fromArray($stored);
                 if ($storedResult->stage !== $stage) {
                     throw new LogicException("Unexpected enrichment stage {$storedResult->stage->value}.");
+                }
+                if ($this->stageContextProviderConfigurationChanged($storedResult, $context)) {
+                    return ['result' => null, 'context' => $context, 'invalidate' => true];
                 }
                 $storedResult = $this->validateResult(
                     $storedResult,
@@ -58,10 +62,14 @@ class IngredientGuidanceStageRunner
                     requireStageContext: true,
                 );
 
-                return ['result' => $storedResult, 'context' => $context];
+                return ['result' => $storedResult, 'context' => $context, 'invalidate' => false];
             }, attempts: 5);
             $stored = $execution['result'];
             $context = $execution['context'];
+
+            if ($execution['invalidate']) {
+                $this->stages->invalidateFrom($itemId, $stage);
+            }
 
             if ($stored instanceof IngredientSourceStageResult) {
                 return $stored;
@@ -110,6 +118,7 @@ class IngredientGuidanceStageRunner
      *     expected_locales: list<string>,
      *     soapmaking_relevant: bool,
      *     input_fingerprint: string,
+     *     research_dependency_fingerprint: string,
      *     authoring_dependency_fingerprint: string,
      *     localization_dependency_fingerprint: string,
      *     validation_dependency_fingerprint: string,
@@ -124,6 +133,7 @@ class IngredientGuidanceStageRunner
         bool $requireStageContext = false,
     ): IngredientSourceStageResult {
         if ($requireStageContext && in_array($result->stage, [
+            IngredientEnrichmentResearchStage::AiGuidanceResearch,
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
             IngredientEnrichmentResearchStage::AiGuidanceLocalization,
             IngredientEnrichmentResearchStage::Validation,
@@ -136,12 +146,81 @@ class IngredientGuidanceStageRunner
         }
 
         match ($result->stage) {
+            IngredientEnrichmentResearchStage::AiGuidanceResearch => $this->validateResearch($result->data),
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring => $this->validateAuthoring($result->data),
             IngredientEnrichmentResearchStage::AiGuidanceLocalization => $this->validateLocalization($result->data, $context),
             default => null,
         };
 
         return $result;
+    }
+
+    /** @param array<string,mixed> $data */
+    private function validateResearch(array $data): void
+    {
+        $this->validateExactKeys($data, [
+            'performed',
+            'candidate_evidence',
+            'guidance_evidence',
+            'warnings',
+            'unresolved_questions',
+            'sources',
+            'provider_response_id',
+            'provider_request_id',
+            'provider_model',
+            'input_tokens',
+            'output_tokens',
+            'web_search_calls',
+            'stage_context',
+        ], 'Guidance research stage data');
+
+        if (! is_bool($data['performed'] ?? null)) {
+            throw new LogicException('Guidance research stage data has an invalid performed flag.');
+        }
+        foreach (['candidate_evidence', 'guidance_evidence', 'sources'] as $field) {
+            if (! is_array($data[$field] ?? null) || ! array_is_list($data[$field])) {
+                throw new LogicException("Guidance research stage data is missing {$field}.");
+            }
+        }
+        $this->validateStringList($data, 'warnings', 'Guidance research stage data');
+        $this->validateStringList($data, 'unresolved_questions', 'Guidance research stage data');
+        foreach ($data['sources'] as $index => $source) {
+            if (! is_array($source)) {
+                throw new LogicException("Guidance research stage source {$index} is invalid.");
+            }
+            $this->validateExactKeys($source, ['url', 'title'], "Guidance research stage source {$index}");
+            if (! is_string($source['url'] ?? null) || trim($source['url']) === ''
+                || ! is_string($source['title'] ?? null) || trim($source['title']) === '') {
+                throw new LogicException("Guidance research stage source {$index} is invalid.");
+            }
+        }
+        $this->validateProviderAccounting($data, 'Guidance research stage data');
+        foreach (['web_search_calls'] as $field) {
+            if (! is_int($data[$field] ?? null) || $data[$field] < 0) {
+                throw new LogicException("Guidance research stage data is missing {$field}.");
+            }
+        }
+
+        $candidates = $this->guidanceEvidencePolicy->validateCandidates(
+            $data['candidate_evidence'],
+            $data['sources'],
+        );
+        if ($candidates !== $data['candidate_evidence']) {
+            throw new LogicException('Guidance research stage data contains non-canonical evidence.');
+        }
+        foreach ($data['guidance_evidence'] as $index => $row) {
+            if (! is_array($row)) {
+                throw new LogicException("Guidance research stage evidence {$index} is invalid.");
+            }
+            $this->validateExactKeys($row, [
+                'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+                'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
+                'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
+            ], "Guidance research stage evidence {$index}");
+        }
+        if (count($data['candidate_evidence']) !== count($data['guidance_evidence'])) {
+            throw new LogicException('Guidance research stage evidence does not match candidate evidence.');
+        }
     }
 
     /** @param array<string,mixed> $data */
@@ -321,16 +400,19 @@ class IngredientGuidanceStageRunner
             'expected_locales' => $expectedLocales,
             'soapmaking_relevant' => $this->soapmakingRelevant($item, $ingredient, $mode),
             'input_fingerprint' => $this->inputFingerprint($item),
+            'research_dependency_fingerprint' => $this->researchDependencyFingerprint($item),
             'authoring_dependency_fingerprint' => $this->authoringDependencyFingerprint($item),
             'localization_dependency_fingerprint' => $this->localizationDependencyFingerprint($item, $ingredient, $mode),
             'validation_dependency_fingerprint' => $this->validationDependencyFingerprint($item),
             'provider_configurations' => [
                 IngredientEnrichmentResearchStage::AiGuidanceAuthoring->value => $this->providerConfiguration(IngredientEnrichmentResearchStage::AiGuidanceAuthoring, $batch),
+                IngredientEnrichmentResearchStage::AiGuidanceResearch->value => $this->providerConfiguration(IngredientEnrichmentResearchStage::AiGuidanceResearch, $batch),
                 IngredientEnrichmentResearchStage::AiGuidanceLocalization->value => $this->providerConfiguration(IngredientEnrichmentResearchStage::AiGuidanceLocalization, $batch),
                 IngredientEnrichmentResearchStage::Validation->value => $this->providerConfiguration(IngredientEnrichmentResearchStage::Validation, $batch),
             ],
             'provider_configuration_fingerprints' => [
                 IngredientEnrichmentResearchStage::AiGuidanceAuthoring->value => $this->providerConfigurationFingerprint(IngredientEnrichmentResearchStage::AiGuidanceAuthoring, $batch),
+                IngredientEnrichmentResearchStage::AiGuidanceResearch->value => $this->providerConfigurationFingerprint(IngredientEnrichmentResearchStage::AiGuidanceResearch, $batch),
                 IngredientEnrichmentResearchStage::AiGuidanceLocalization->value => $this->providerConfigurationFingerprint(IngredientEnrichmentResearchStage::AiGuidanceLocalization, $batch),
                 IngredientEnrichmentResearchStage::Validation->value => $this->providerConfigurationFingerprint(IngredientEnrichmentResearchStage::Validation, $batch),
             ],
@@ -362,6 +444,25 @@ class IngredientGuidanceStageRunner
         }
     }
 
+    /** @param array<string,mixed> $context */
+    private function stageContextProviderConfigurationChanged(
+        IngredientSourceStageResult $result,
+        array $context,
+    ): bool {
+        $storedContext = $result->data['stage_context'] ?? null;
+        if (! is_array($storedContext)) {
+            return false;
+        }
+        $expectedContext = $this->stageContext($result->stage, $context);
+        foreach (['provider_configuration', 'provider_configuration_fingerprint'] as $field) {
+            unset($storedContext[$field], $expectedContext[$field]);
+        }
+
+        return $this->canonicalize($storedContext) === $this->canonicalize($expectedContext)
+            && ($result->data['stage_context']['provider_configuration_fingerprint'] ?? null)
+                !== ($this->stageContext($result->stage, $context)['provider_configuration_fingerprint'] ?? null);
+    }
+
     /**
      * @param  array{
      *     mode: IngredientEnrichmentBatchMode,
@@ -381,6 +482,7 @@ class IngredientGuidanceStageRunner
     private function withStageContext(IngredientSourceStageResult $result, array $context): IngredientSourceStageResult
     {
         if (! in_array($result->stage, [
+            IngredientEnrichmentResearchStage::AiGuidanceResearch,
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
             IngredientEnrichmentResearchStage::AiGuidanceLocalization,
             IngredientEnrichmentResearchStage::Validation,
@@ -427,6 +529,7 @@ class IngredientGuidanceStageRunner
             'source_fingerprint' => $context['source_fingerprint'],
             'input_fingerprint' => $context['input_fingerprint'],
             'dependency_fingerprint' => match ($stage) {
+                IngredientEnrichmentResearchStage::AiGuidanceResearch => $context['research_dependency_fingerprint'],
                 IngredientEnrichmentResearchStage::AiGuidanceAuthoring => $context['authoring_dependency_fingerprint'],
                 IngredientEnrichmentResearchStage::AiGuidanceLocalization => $context['localization_dependency_fingerprint'],
                 default => $context['validation_dependency_fingerprint'],
@@ -541,6 +644,14 @@ class IngredientGuidanceStageRunner
 
     private function authoringDependencyFingerprint(IngredientEnrichmentBatchItem $item): string
     {
+        return hash('sha256', $this->snapshots->canonicalJson([
+            'input' => $this->inputFingerprint($item),
+            'research' => data_get($item->research_stages, 'ai_guidance_research.data'),
+        ]));
+    }
+
+    private function researchDependencyFingerprint(IngredientEnrichmentBatchItem $item): string
+    {
         return $this->inputFingerprint($item);
     }
 
@@ -569,6 +680,7 @@ class IngredientGuidanceStageRunner
         $stages = is_array($item->research_stages) ? $item->research_stages : [];
 
         return hash('sha256', $this->snapshots->canonicalJson([
+            'research' => data_get($stages, 'ai_guidance_research.data'),
             'authoring' => data_get($stages, 'ai_guidance_authoring.data'),
             'localization' => data_get($stages, 'ai_guidance_localization.data'),
         ]));
@@ -599,6 +711,17 @@ class IngredientGuidanceStageRunner
             'batch_prompt_version' => (string) ($batch?->prompt_version ?? ''),
             'batch_schema_version' => (int) ($batch?->schema_version ?? 0),
         ];
+        if ($stage === IngredientEnrichmentResearchStage::AiGuidanceResearch) {
+            $configuration['guidance_research_enabled'] = (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true);
+            $configuration['guidance_research_prompt_version'] = (string) config('ingredient-enrichment.openai.guidance_research.prompt_version');
+            $configuration['guidance_research_blocked_domains'] = config('ingredient-enrichment.openai.guidance_research.blocked_domains', []);
+            $configuration['guidance_research_claim_types'] = config('ingredient-enrichment.openai.guidance_research.allowed_claim_types', []);
+            $configuration['guidance_research_source_kinds'] = config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds', []);
+            $configuration['guidance_research_scopes'] = config('ingredient-enrichment.openai.guidance_research.allowed_scopes', []);
+            $configuration['guidance_research_evidence_kinds'] = config('ingredient-enrichment.openai.guidance_research.allowed_evidence_kinds', []);
+            $configuration['guidance_research_applications'] = config('ingredient-enrichment.openai.guidance_research.allowed_usage_applications', []);
+            $configuration['guidance_research_percentage_bases'] = config('ingredient-enrichment.openai.guidance_research.allowed_percentage_bases', []);
+        }
         if (in_array($stage, [
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
             IngredientEnrichmentResearchStage::Validation,

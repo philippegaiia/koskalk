@@ -73,7 +73,7 @@ it('researches, validates, plans, and persists a proposal without changing the i
     (new ResearchIngredientEnrichment($item->id))->handle(app(ResearchIngredientEnrichmentItem::class));
 
     $item->refresh();
-    expect($item->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+    expect($item->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and($item->attempt_count)->toBe(1)
         ->and($item->result['proposal']['inci_name'])->toBe('Prunus armeniaca kernel oil')
         ->and($item->plan['changed'])->toBeTrue()

@@ -160,6 +160,8 @@ class IngredientGuidanceDraftRenderer
                 $this->invalid();
             }
 
+            $this->validateEvidenceBoundaries($claim, $row, $context);
+
             if ($claim['claim_type'] === 'usage') {
                 if (($row['evidence_kind'] ?? null) !== 'formulation_recommendation'
                     || ($row['usage_application'] ?? null) !== $claim['usage_application']
@@ -171,6 +173,90 @@ class IngredientGuidanceDraftRenderer
                 $this->invalid();
             }
         }
+    }
+
+    /**
+     * Keep evidence-linked claims bounded to what the source can support.
+     *
+     * @param  array<string, mixed>  $claim
+     * @param  array<string, mixed>  $evidence
+     * @param  array<string, mixed>  $context
+     */
+    private function validateEvidenceBoundaries(array $claim, array $evidence, array $context): void
+    {
+        $text = mb_strtolower((string) ($claim['text'] ?? ''));
+        $claimType = (string) ($claim['claim_type'] ?? '');
+
+        if ($claimType !== 'solubility' && $this->isGenericWaterSolubilityClaim($text)) {
+            $this->invalid();
+        }
+
+        if ($this->hasUnresolvedQuestionForClaim($claimType, $context['unresolved_questions'] ?? [])) {
+            $this->invalid();
+        }
+
+        if (($evidence['evidence_kind'] ?? null) === 'experimental_observation'
+            && ! $this->hasBoundedEvidenceQualifier($text)) {
+            $this->invalid();
+        }
+
+        if ($this->isUniversalEmulsifierClaim($text)) {
+            $this->invalid();
+        }
+    }
+
+    private function isGenericWaterSolubilityClaim(string $text): bool
+    {
+        return preg_match('/\b(?:not\s+soluble|insoluble|immiscible)\b.{0,60}\bwater\b/u', $text) === 1
+            || preg_match('/\b(?:not\s+water[-\s]?soluble|water[-\s]?insoluble|water[-\s]?immiscible)\b/u', $text) === 1
+            || preg_match('/\bwater\b.{0,60}\b(?:not\s+soluble|insoluble|immiscible)\b/u', $text) === 1;
+    }
+
+    private function isUniversalEmulsifierClaim(string $text): bool
+    {
+        return preg_match('/\b(?:universal|always|never)\b.{0,80}\b(?:emulsif\w*|emulsion|dispersion)\b/u', $text) === 1
+            || preg_match('/\b(?:emulsif\w*|emulsion|dispersion)\b.{0,80}\b(?:universal|always|never)\b/u', $text) === 1
+            || preg_match('/\b(?:requires?|needs?|must\s+use)\b.{0,60}\b(?:an?\s+)?(?:universal\s+)?emulsif\w*\b/u', $text) === 1;
+    }
+
+    private function hasBoundedEvidenceQualifier(string $text): bool
+    {
+        return preg_match('/\b(?:reported|observed|experiment(?:al)?|study|tested|under\b|product[-\s]?grade|specific\s+grade|cited)\b/u', $text) === 1;
+    }
+
+    private function hasUnresolvedQuestionForClaim(string $claimType, mixed $questions): bool
+    {
+        if (! is_array($questions) || $questions === []) {
+            return false;
+        }
+
+        $keywords = match ($claimType) {
+            'dispersion' => ['dispers', 'emulsion', 'emulsifier', 'pickering'],
+            'processing' => ['process', 'phase', 'temperat', 'heat', 'incorporat'],
+            'solubility' => ['solub', 'water', 'aqueous', 'dissolv'],
+            'soapmaking' => ['soap', 'saponif', 'fatty acid', 'bar'],
+            'usage' => ['use level', 'percentage', 'range', 'application'],
+            default => [],
+        };
+
+        if ($keywords === []) {
+            return false;
+        }
+
+        foreach ($questions as $question) {
+            if (! is_string($question)) {
+                continue;
+            }
+
+            $normalized = mb_strtolower($question);
+            foreach ($keywords as $keyword) {
+                if (str_contains($normalized, $keyword)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */

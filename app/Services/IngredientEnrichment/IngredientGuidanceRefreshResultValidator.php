@@ -11,6 +11,7 @@ class IngredientGuidanceRefreshResultValidator
 {
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
     ) {}
 
     /**
@@ -261,7 +262,7 @@ class IngredientGuidanceRefreshResultValidator
         }
     }
 
-    /** @param array<string,list<string>> $errors @return list<array<string,string>> */
+    /** @param array<string,list<string>> $errors @return list<array<string,mixed>> */
     private function normalizeEvidence(mixed $rows, array &$errors): array
     {
         if (! is_array($rows)) {
@@ -269,15 +270,25 @@ class IngredientGuidanceRefreshResultValidator
 
             return [];
         }
-        $normalized = [];
         foreach ($rows as $index => $row) {
             $path = "guidance_evidence.{$index}";
             if (! is_array($row)) {
                 $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_evidence_object'));
-
-                continue;
             }
-            $this->validateExactKeys($row, ['source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at'], $path, $errors);
+        }
+
+        $normalized = $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        $allowedSourceKinds = [
+            ...config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds', []),
+            'legacy_editorial',
+        ];
+        foreach ($normalized as $index => $row) {
+            $path = "guidance_evidence.{$index}";
+            $this->validateExactKeys($row, [
+                'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+                'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
+                'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
+            ], $path, $errors);
             foreach (['source_name', 'source_url', 'summary', 'retrieved_at'] as $field) {
                 if (! is_string($row[$field] ?? null) || trim($row[$field]) === '') {
                     $this->error($errors, "{$path}.{$field}", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
@@ -292,25 +303,94 @@ class IngredientGuidanceRefreshResultValidator
             if (! $this->isIsoDateTime($row['retrieved_at'] ?? null)) {
                 $this->error($errors, "{$path}.retrieved_at", (string) __('ingredient_enrichment.validation.guidance_evidence_date'));
             }
-            $normalized[] = [
-                'source_name' => trim((string) ($row['source_name'] ?? '')),
-                'source_url' => trim((string) ($row['source_url'] ?? '')),
-                'summary' => trim((string) ($row['summary'] ?? '')),
-                'source_tier' => 'editorial',
-                'retrieved_at' => trim((string) ($row['retrieved_at'] ?? '')),
-            ];
+            if (! is_string($row['claim_type'] ?? null)
+                || ! in_array($row['claim_type'], config('ingredient-enrichment.openai.guidance_research.allowed_claim_types', []), true)) {
+                $this->error($errors, "{$path}.claim_type", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+            if (! is_string($row['source_kind'] ?? null) || ! in_array($row['source_kind'], $allowedSourceKinds, true)) {
+                $this->error($errors, "{$path}.source_kind", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+            if (! is_string($row['scope'] ?? null)
+                || ! in_array($row['scope'], config('ingredient-enrichment.openai.guidance_research.allowed_scopes', []), true)) {
+                $this->error($errors, "{$path}.scope", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+            if (! is_string($row['evidence_kind'] ?? null)
+                || ! in_array($row['evidence_kind'], config('ingredient-enrichment.openai.guidance_research.allowed_evidence_kinds', []), true)) {
+                $this->error($errors, "{$path}.evidence_kind", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+            if (! is_string($row['usage_application'] ?? null)
+                || ! in_array($row['usage_application'], config('ingredient-enrichment.openai.guidance_research.allowed_usage_applications', []), true)) {
+                $this->error($errors, "{$path}.usage_application", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+            if (! is_string($row['percentage_basis'] ?? null)
+                || ! in_array($row['percentage_basis'], config('ingredient-enrichment.openai.guidance_research.allowed_percentage_bases', []), true)) {
+                $this->error($errors, "{$path}.percentage_basis", (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+            $this->validateEvidencePercentages($row, $path, $errors);
         }
 
         return $normalized;
     }
 
-    /** @param array<string,list<string>> $errors @return array{guidance:string,localization:string} */
+    /** @param array<string,mixed> $row @param array<string,list<string>> $errors */
+    private function validateEvidencePercentages(array $row, string $path, array &$errors): void
+    {
+        $isUsage = ($row['claim_type'] ?? null) === 'usage';
+        $minimum = $row['recommended_min_percent'] ?? null;
+        $maximum = $row['recommended_max_percent'] ?? null;
+        $application = $row['usage_application'] ?? null;
+        $basis = $row['percentage_basis'] ?? null;
+        if (! $isUsage) {
+            if ($application !== 'not_applicable' || $minimum !== null || $maximum !== null || $basis !== 'not_applicable') {
+                $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+
+            return;
+        }
+        $recommendationKinds = ['manufacturer_technical', 'supplier_technical', 'professional_reference', 'specialist_reference'];
+        if (($row['evidence_kind'] ?? null) !== 'formulation_recommendation'
+            || ! in_array($row['source_kind'] ?? null, $recommendationKinds, true)
+            || ! in_array($application, ['cosmetics', 'soapmaking'], true)
+            || ($application === 'cosmetics' && ! in_array($basis, ['total_formula', 'oil_phase'], true))
+            || ($application === 'soapmaking' && $basis !== 'soap_oils')
+            || ($minimum === null && $maximum === null)) {
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+        }
+        foreach ([$minimum, $maximum] as $value) {
+            if ($value !== null && (! is_string($value) || preg_match('/^(?:0|[1-9]\d*)(?:\.\d+)?$/', $value) !== 1
+                || $this->compareDecimals($value, '0') < 0 || $this->compareDecimals($value, '100') > 0)) {
+                $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+            }
+        }
+        if (is_string($minimum) && is_string($maximum) && $this->compareDecimals($minimum, $maximum) > 0) {
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_evidence_field'));
+        }
+    }
+
+    private function compareDecimals(string $left, string $right): int
+    {
+        [$leftInteger, $leftFraction] = array_pad(explode('.', $left, 2), 2, '');
+        [$rightInteger, $rightFraction] = array_pad(explode('.', $right, 2), 2, '');
+        $leftInteger = ltrim($leftInteger, '0') ?: '0';
+        $rightInteger = ltrim($rightInteger, '0') ?: '0';
+        if (strlen($leftInteger) !== strlen($rightInteger)) {
+            return strlen($leftInteger) <=> strlen($rightInteger);
+        }
+        if ($leftInteger !== $rightInteger) {
+            return strcmp($leftInteger, $rightInteger) <=> 0;
+        }
+        $length = max(strlen($leftFraction), strlen($rightFraction));
+
+        return strcmp(str_pad($leftFraction, $length, '0'), str_pad($rightFraction, $length, '0')) <=> 0;
+    }
+
+    /** @param array<string,list<string>> $errors @return array{guidance:string,localization:string,research:string} */
     private function normalizePromptVersions(mixed $versions, array &$errors): array
     {
         if (! is_array($versions)) {
             $this->error($errors, 'prompt_versions', (string) __('ingredient_enrichment.validation.guidance_prompt_versions'));
 
-            return ['guidance' => '', 'localization' => ''];
+            return ['guidance' => '', 'localization' => '', 'research' => ''];
         }
         foreach (['guidance', 'localization'] as $field) {
             if (! is_string($versions[$field] ?? null) || trim($versions[$field]) === '') {
@@ -321,6 +401,7 @@ class IngredientGuidanceRefreshResultValidator
         return [
             'guidance' => trim((string) ($versions['guidance'] ?? '')),
             'localization' => trim((string) ($versions['localization'] ?? '')),
+            'research' => trim((string) ($versions['research'] ?? '')),
         ];
     }
 

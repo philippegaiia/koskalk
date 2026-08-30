@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceChangePlanner;
+use App\Services\IngredientEnrichment\IngredientGuidanceEvidencePolicy;
 use App\Services\IngredientEnrichment\IngredientGuidanceProposalReviewService;
 use App\Services\IngredientTranslationService;
 use App\Services\IngredientTranslationSourceFingerprint;
@@ -70,6 +71,7 @@ it('edits and applies guidance without changing approved identity fields', funct
         ->and($ingredient->info_markdown)->toBe(trim(guidanceApplyText('Edited')))
         ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))->toBe(trim(guidanceApplyTranslationText('Révisé')))
         ->and($ingredient->translations()->where('locale', 'fr')->value('origin'))->toBe(IngredientTranslationOrigin::ReviewerEdited)
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))->toBe('ingredient-guidance-research-v2')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))->toBe('COSMILE Europe');
 });
 
@@ -90,7 +92,7 @@ it('keeps a workspace override unchanged while applying reviewed platform guidan
     $override = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $ingredient->id,
-        'guidance_markdown' => 'Workspace-authored guidance',
+        'guidance_html' => '<p>Workspace-authored guidance</p>',
     ]);
     $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
     $batch = IngredientEnrichmentBatch::factory()->create([
@@ -116,7 +118,7 @@ it('keeps a workspace override unchanged while applying reviewed platform guidan
     expect($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Edited')))
         ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))
         ->toBe(trim(guidanceApplyTranslationText('Révisé')))
-        ->and($override->fresh()->guidance_markdown)->toBe('Workspace-authored guidance');
+        ->and($override->fresh()->guidance_html)->toBe('<p>Workspace-authored guidance</p>');
 });
 
 it('leaves unedited locales unchanged and outdated when English guidance is edited', function (): void {
@@ -542,7 +544,8 @@ it('persists approved guidance evidence when prose is identical', function (): v
     $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
 
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
-        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe($secondEvidence)
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
+        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($secondEvidence))
         ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied)
         ->and($item->fresh()->applied_by_user_id)->toBe($admin->id)
@@ -633,6 +636,7 @@ function guidanceResult(Ingredient $ingredient, string $sourceFingerprint): arra
         'prompt_versions' => [
             'guidance' => 'ingredient-guidance-v1',
             'localization' => 'ingredient-guidance-localization-v1',
+            'research' => 'ingredient-guidance-research-v2',
         ],
         'warnings' => [],
         'unresolved_questions' => [],
@@ -666,6 +670,7 @@ function guidanceResultWithLocales(
         'prompt_versions' => [
             'guidance' => 'ingredient-guidance-v1',
             'localization' => 'ingredient-guidance-localization-v1',
+            'research' => 'ingredient-guidance-research-v2',
         ],
         'warnings' => [],
         'unresolved_questions' => [],

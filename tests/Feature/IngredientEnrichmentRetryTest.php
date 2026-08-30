@@ -226,6 +226,7 @@ it('uses nested guidance unresolved questions as the guidance retry boundary', f
         'snapshot' => $snapshot,
         'source_fingerprint' => $snapshot['source_fingerprint'],
         'research_stages' => [
+            'ai_guidance_research' => ['status' => 'completed'],
             'ai_guidance_authoring' => [
                 'stage' => 'ai_guidance_authoring',
                 'status' => 'completed',
@@ -250,7 +251,7 @@ it('uses nested guidance unresolved questions as the guidance retry boundary', f
     app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
-        ->and(array_keys($item->fresh()->research_stages))->toBe([]);
+        ->and(array_keys($item->fresh()->research_stages))->toBe(['ai_guidance_research']);
     Bus::assertBatched(fn (PendingBatch $pending): bool => collect($pending->jobs)
         ->contains(fn (mixed $job): bool => $job instanceof GenerateIngredientGuidanceRefresh));
 });
@@ -273,6 +274,7 @@ it('uses nested validation result unresolved questions as the guidance retry bou
         'snapshot' => $snapshot,
         'source_fingerprint' => $snapshot['source_fingerprint'],
         'research_stages' => [
+            'ai_guidance_research' => ['status' => 'completed'],
             'ai_guidance_authoring' => ['status' => 'completed'],
             'ai_guidance_localization' => ['status' => 'completed'],
             'validation' => [
@@ -296,6 +298,7 @@ it('uses nested validation result unresolved questions as the guidance retry bou
 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
         ->and(array_keys($item->fresh()->research_stages))->toBe([
+            'ai_guidance_research',
             'ai_guidance_authoring',
             'ai_guidance_localization',
         ]);
@@ -304,7 +307,10 @@ it('uses nested validation result unresolved questions as the guidance retry bou
 });
 
 it('defines guidance stage order from the persisted batch mode', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+
     expect(IngredientEnrichmentBatchMode::GuidanceRefresh->guidanceStages())->toBe([
+        IngredientEnrichmentResearchStage::AiGuidanceResearch,
         IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
         IngredientEnrichmentResearchStage::AiGuidanceLocalization,
         IngredientEnrichmentResearchStage::Validation,

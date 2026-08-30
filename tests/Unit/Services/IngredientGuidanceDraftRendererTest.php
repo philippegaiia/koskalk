@@ -180,6 +180,78 @@ it('rejects a solubility claim supported only by fatty-acid evidence', function 
     ]), guidanceContext()))->toThrow(RuntimeException::class);
 });
 
+it('rejects generic water claims and universal emulsifier advice from bounded experiments', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'] = [
+        [
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'scientific',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ],
+        [
+            'claim_type' => 'dispersion',
+            'source_kind' => 'scientific',
+            'scope' => 'product_grade',
+            'evidence_kind' => 'experimental_observation',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ],
+    ];
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [guidanceClaim([
+            'text' => 'It is not soluble in water.',
+            'claim_type' => 'formulation_role',
+            'evidence_indexes' => [0],
+        ])],
+    ]), $context))->toThrow(RuntimeException::class)
+        ->and(fn (): array => guidanceRenderer()->render(guidanceDraft([
+            'formulation_use' => [guidanceClaim([
+                'text' => 'It requires a universal emulsifier.',
+                'claim_type' => 'dispersion',
+                'evidence_indexes' => [1],
+            ])],
+        ]), $context))->toThrow(RuntimeException::class)
+        ->and(guidanceRenderer()->render(guidanceDraft([
+            'formulation_use' => [guidanceClaim([
+                'text' => 'A Pickering-emulsion experiment with this product grade observed dispersion under the tested conditions.',
+                'claim_type' => 'dispersion',
+                'evidence_indexes' => [1],
+            ])],
+        ]), $context)['info_markdown'])
+        ->toContain('under the tested conditions');
+});
+
+it('rejects claims when the matching research question remains unresolved', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'] = [[
+        'claim_type' => 'solubility',
+        'source_kind' => 'scientific',
+        'scope' => 'material',
+        'evidence_kind' => 'fact',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ]];
+    $context['unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [guidanceClaim([
+            'text' => 'The material is soluble in water.',
+            'claim_type' => 'solubility',
+            'evidence_indexes' => [0],
+        ])],
+    ]), $context))->toThrow(RuntimeException::class);
+});
+
 /** @param array<string, mixed> $overrides @return array<string, mixed> */
 function guidanceClaim(array $overrides = []): array
 {

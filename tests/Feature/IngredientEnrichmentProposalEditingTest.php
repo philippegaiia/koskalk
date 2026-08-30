@@ -58,7 +58,7 @@ it('edits an allow-listed proposal while preserving the original research audit'
         ])
         ->and($edited->edited_by_user_id)->toBe($admin->id)
         ->and($edited->edited_at)->not->toBeNull()
-        ->and($edited->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($edited->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(collect($edited->result['value_provenance'])->firstWhere('field', 'proposal.display_name')['kind'])->toBe('reviewer_supplied')
         ->and(collect($edited->result['value_provenance'])->firstWhere('field', 'proposal.info_markdown')['kind'])->toBe('reviewer_supplied')
         ->and($ingredient->fresh()->display_name)->toBe('Argan oil');

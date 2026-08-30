@@ -141,6 +141,10 @@ class ApplyIngredientGuidanceRefresh
                     if (! $mode->isLocalizationOnly()) {
                         $guidance['guidance_prompt_version'] = (string) ($normalized['prompt_versions']['guidance']
                             ?? config('ingredient-enrichment.openai.guidance_prompt_version'));
+                        $researchPromptVersion = trim((string) ($normalized['prompt_versions']['research'] ?? ''));
+                        if ($researchPromptVersion !== '') {
+                            $guidance['research_prompt_version'] = $researchPromptVersion;
+                        }
                     }
                     $guidance['localization_prompt_version'] = $localizationPromptVersion;
                     $guidance['approved_at'] = $item->approved_at?->toIso8601String() ?? CarbonImmutable::now()->toIso8601String();
@@ -148,6 +152,7 @@ class ApplyIngredientGuidanceRefresh
                     $changed = $changed
                         || $beforeEvidence !== $afterEvidence
                         || ($beforeGuidance['guidance_prompt_version'] ?? null) !== ($guidance['guidance_prompt_version'] ?? null)
+                        || ($beforeGuidance['research_prompt_version'] ?? null) !== ($guidance['research_prompt_version'] ?? null)
                         || ($beforeGuidance['localization_prompt_version'] ?? null) !== ($guidance['localization_prompt_version'] ?? null);
                     data_set($sourceData, 'enrichment.guidance', $guidance);
                     $ingredient->source_data = $sourceData;

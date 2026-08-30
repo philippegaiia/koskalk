@@ -129,6 +129,45 @@ it('accepts the bounded result contract for a non-colourant', function (): void 
         ->and($report['normalized']['proposal']['display_name'])->toBe('Contract Ingredient');
 });
 
+it('accepts classified guidance evidence and preserves its recommendation metadata', function (): void {
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);
+    }
+
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-CLASSIFIED-GUIDANCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $result = enrichmentResult($ingredient->catalog_key);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['guidance_evidence'] = [[
+        'source_name' => 'Example supplier',
+        'source_url' => 'https://supplier.example/technical/ingredient.pdf',
+        'summary' => 'This exact product grade is recommended at 1–10% in cosmetic formulas.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-30T00:00:00+00:00',
+        'claim_type' => 'usage',
+        'source_kind' => 'supplier_technical',
+        'scope' => 'product_grade',
+        'evidence_kind' => 'formulation_recommendation',
+        'usage_application' => 'cosmetics',
+        'recommended_min_percent' => '1',
+        'recommended_max_percent' => '10',
+        'percentage_basis' => 'total_formula',
+    ]];
+
+    $report = app(IngredientEnrichmentResultValidator::class)->validate($result, $ingredient);
+
+    expect($report['valid'])->toBeTrue()
+        ->and($report['normalized']['guidance_evidence'][0])->toMatchArray([
+            'claim_type' => 'usage',
+            'scope' => 'product_grade',
+            'recommended_min_percent' => '1',
+            'recommended_max_percent' => '10',
+            'percentage_basis' => 'total_formula',
+        ]);
+});
+
 it('does not allow field confidence to exceed correlated evidence confidence', function (): void {
     $ingredient = Ingredient::factory()->create([
         'catalog_key' => 'ADM-CONFIDENCE-CEILING',

@@ -77,7 +77,7 @@ it('reports malformed and duplicate rows while still planning unrelated valid ro
     ]).PHP_EOL);
 
     $this->artisan('ingredients:enrichment:import', ['path' => $path])
-        ->expectsOutputToContain('Totals: applied 0, planned 2, unchanged 0, skipped 0, warned 2, failed 2.')
+        ->expectsOutputToContain('Totals: applied 0, planned 2, unchanged 0, skipped 0, warned 0, failed 2.')
         ->assertExitCode(1);
 
     expect($first->refresh()->display_name)->toBe($first->getRawOriginal('display_name'))
@@ -404,8 +404,10 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->toMatch('/^[a-f0-9]{64}$/')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))
         ->toBe('COSMILE Europe')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))
+        ->toBe('ingredient-guidance-research-v2')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
-        ->toBe('ingredient-guidance-v1');
+        ->toBe('ingredient-guidance-v2');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,

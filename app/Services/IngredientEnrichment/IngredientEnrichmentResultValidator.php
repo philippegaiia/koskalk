@@ -20,6 +20,7 @@ class IngredientEnrichmentResultValidator
 {
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
     ) {}
 
     /**
@@ -125,9 +126,7 @@ class IngredientEnrichmentResultValidator
         ]);
         $this->validateFieldConfidence($fieldConfidence, $errors);
         $this->validateEvidence($evidence, $errors);
-        $guidanceEvidence = $this->normalizeRows($result['guidance_evidence'] ?? null, [
-            'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
-        ]);
+        $guidanceEvidence = $this->normalizeGuidanceEvidence($result['guidance_evidence'] ?? null, $errors);
         $this->validateGuidanceEvidence($guidanceEvidence, $errors);
         $this->validateFieldConfidenceAgainstEvidence($fieldConfidence, $evidence, $errors);
         $this->validateRegulatoryFindings($regulatoryFindings, $errors);
@@ -749,10 +748,17 @@ class IngredientEnrichmentResultValidator
      */
     private function validateGuidanceEvidence(array $rows, array &$errors): void
     {
+        $allowedSourceKinds = [
+            ...config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds', []),
+            'legacy_editorial',
+        ];
+
         foreach ($rows as $index => $row) {
             $path = "guidance_evidence.{$index}";
             $this->validateExactKeys($row, [
                 'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+                'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
+                'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
             ], $path, $errors);
             if (! is_string($row['source_name'] ?? null) || trim($row['source_name']) === '') {
                 $this->error($errors, "{$path}.source_name", $this->message('source_name'));
@@ -769,7 +775,137 @@ class IngredientEnrichmentResultValidator
             if (! $this->isIsoDateTime($row['retrieved_at'] ?? null)) {
                 $this->error($errors, "{$path}.retrieved_at", $this->message('date_time_format'));
             }
+
+            if (! is_string($row['claim_type'] ?? null)
+                || ! in_array($row['claim_type'], config('ingredient-enrichment.openai.guidance_research.allowed_claim_types', []), true)) {
+                $this->error($errors, "{$path}.claim_type", $this->message('guidance_evidence_claim_type'));
+            }
+            if (! is_string($row['source_kind'] ?? null) || ! in_array($row['source_kind'], $allowedSourceKinds, true)) {
+                $this->error($errors, "{$path}.source_kind", $this->message('guidance_evidence_source_kind'));
+            }
+            if (! is_string($row['scope'] ?? null)
+                || ! in_array($row['scope'], config('ingredient-enrichment.openai.guidance_research.allowed_scopes', []), true)) {
+                $this->error($errors, "{$path}.scope", $this->message('guidance_evidence_scope'));
+            }
+            if (! is_string($row['evidence_kind'] ?? null)
+                || ! in_array($row['evidence_kind'], config('ingredient-enrichment.openai.guidance_research.allowed_evidence_kinds', []), true)) {
+                $this->error($errors, "{$path}.evidence_kind", $this->message('guidance_evidence_kind'));
+            }
+            if (! is_string($row['usage_application'] ?? null)
+                || ! in_array($row['usage_application'], config('ingredient-enrichment.openai.guidance_research.allowed_usage_applications', []), true)) {
+                $this->error($errors, "{$path}.usage_application", $this->message('guidance_evidence_application'));
+            }
+            if (! is_string($row['percentage_basis'] ?? null)
+                || ! in_array($row['percentage_basis'], config('ingredient-enrichment.openai.guidance_research.allowed_percentage_bases', []), true)) {
+                $this->error($errors, "{$path}.percentage_basis", $this->message('guidance_evidence_basis'));
+            }
+
+            $this->validateGuidanceEvidencePercentages($row, $path, $errors);
         }
+    }
+
+    /**
+     * @param  array<string, list<string>>  $errors
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeGuidanceEvidence(mixed $rows, array &$errors): array
+    {
+        if ($rows === null) {
+            return [];
+        }
+
+        if (! is_array($rows)) {
+            $this->error($errors, 'guidance_evidence', $this->message('guidance_evidence_array'));
+
+            return [];
+        }
+
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                $this->error($errors, "guidance_evidence.{$index}", $this->message('guidance_evidence_object'));
+            }
+        }
+
+        return $this->guidanceEvidencePolicy->normalizePersisted($rows);
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  array<string, list<string>>  $errors
+     */
+    private function validateGuidanceEvidencePercentages(array $row, string $path, array &$errors): void
+    {
+        $isUsage = ($row['claim_type'] ?? null) === 'usage';
+        $minimum = $row['recommended_min_percent'] ?? null;
+        $maximum = $row['recommended_max_percent'] ?? null;
+        $application = $row['usage_application'] ?? null;
+        $basis = $row['percentage_basis'] ?? null;
+
+        if (! $isUsage) {
+            if ($application !== 'not_applicable') {
+                $this->error($errors, "{$path}.usage_application", $this->message('guidance_evidence_application'));
+            }
+            if ($minimum !== null || $maximum !== null) {
+                $this->error($errors, "{$path}.recommended_min_percent", $this->message('guidance_evidence_percent'));
+            }
+            if ($basis !== 'not_applicable') {
+                $this->error($errors, "{$path}.percentage_basis", $this->message('guidance_evidence_basis'));
+            }
+
+            return;
+        }
+
+        $recommendationKinds = [
+            'manufacturer_technical',
+            'supplier_technical',
+            'professional_reference',
+            'specialist_reference',
+        ];
+        if (($row['evidence_kind'] ?? null) !== 'formulation_recommendation'
+            || ! in_array($row['source_kind'] ?? null, $recommendationKinds, true)
+            || ! in_array($application, ['cosmetics', 'soapmaking'], true)
+            || ($application === 'cosmetics' && ! in_array($basis, ['total_formula', 'oil_phase'], true))
+            || ($application === 'soapmaking' && $basis !== 'soap_oils')
+            || ($minimum === null && $maximum === null)) {
+            $this->error($errors, "{$path}.claim_type", $this->message('guidance_evidence_percent'));
+        }
+
+        foreach (['recommended_min_percent' => $minimum, 'recommended_max_percent' => $maximum] as $field => $value) {
+            if ($value !== null && ! $this->isGuidancePercent($value)) {
+                $this->error($errors, "{$path}.{$field}", $this->message('guidance_evidence_percent'));
+            }
+        }
+
+        if ($minimum !== null && $maximum !== null && $this->compareGuidanceDecimals($minimum, $maximum) > 0) {
+            $this->error($errors, "{$path}.recommended_min_percent", $this->message('guidance_evidence_percent'));
+        }
+    }
+
+    private function isGuidancePercent(mixed $value): bool
+    {
+        return is_string($value)
+            && preg_match('/^(?:0|[1-9]\d*)(?:\.\d+)?$/', $value) === 1
+            && $this->compareGuidanceDecimals($value, '0') >= 0
+            && $this->compareGuidanceDecimals($value, '100') <= 0;
+    }
+
+    private function compareGuidanceDecimals(string $left, string $right): int
+    {
+        [$leftInteger, $leftFraction] = array_pad(explode('.', $left, 2), 2, '');
+        [$rightInteger, $rightFraction] = array_pad(explode('.', $right, 2), 2, '');
+        $leftInteger = ltrim($leftInteger, '0') ?: '0';
+        $rightInteger = ltrim($rightInteger, '0') ?: '0';
+
+        if (strlen($leftInteger) !== strlen($rightInteger)) {
+            return strlen($leftInteger) <=> strlen($rightInteger);
+        }
+        if ($leftInteger !== $rightInteger) {
+            return strcmp($leftInteger, $rightInteger) <=> 0;
+        }
+
+        $length = max(strlen($leftFraction), strlen($rightFraction));
+
+        return strcmp(str_pad($leftFraction, $length, '0'), str_pad($rightFraction, $length, '0')) <=> 0;
     }
 
     /**

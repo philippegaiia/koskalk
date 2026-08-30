@@ -82,7 +82,11 @@ class IngredientGuidanceEvidencePolicy
                 $summary = trim((string) ($row['summary'] ?? ''));
 
                 if ($sourceName === '' || $sourceUrl === '' || $summary === '') {
-                    return null;
+                    return $row;
+                }
+
+                if ($this->hasSomeClassifications($row) && ! $this->hasAllClassifications($row)) {
+                    return $row;
                 }
 
                 $retrievedAt = is_string($row['retrieved_at'] ?? null)
@@ -96,7 +100,9 @@ class IngredientGuidanceEvidencePolicy
                     'source_name' => $sourceName,
                     'source_url' => $sourceUrl,
                     'summary' => $summary,
-                    'source_tier' => 'editorial',
+                    'source_tier' => is_string($row['source_tier'] ?? null)
+                        ? trim($row['source_tier'])
+                        : 'editorial',
                     'retrieved_at' => $retrievedAt,
                     'claim_type' => $hasClassifications ? $row['claim_type'] : 'origin',
                     'source_kind' => $hasClassifications ? $row['source_kind'] : 'legacy_editorial',
@@ -333,6 +339,20 @@ class IngredientGuidanceEvidencePolicy
             && array_key_exists('recommended_min_percent', $row)
             && array_key_exists('recommended_max_percent', $row)
             && array_key_exists('percentage_basis', $row);
+    }
+
+    private function hasSomeClassifications(array $row): bool
+    {
+        return collect([
+            'claim_type',
+            'source_kind',
+            'scope',
+            'evidence_kind',
+            'usage_application',
+            'recommended_min_percent',
+            'recommended_max_percent',
+            'percentage_basis',
+        ])->contains(fn (string $key): bool => array_key_exists($key, $row));
     }
 
     private function invalidResponse(): never

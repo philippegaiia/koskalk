@@ -5,6 +5,7 @@ namespace App\Services\IngredientEnrichment;
 use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceLocalizationClient;
+use App\Contracts\IngredientGuidanceResearchClient;
 use App\Data\IngredientEnrichmentPipelineResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientCategory;
@@ -14,6 +15,7 @@ use App\Services\IngredientEnrichment\Sources\CosingCheckerClient;
 use App\Services\IngredientEnrichment\Sources\EurLexGlossaryClient;
 use App\Services\IngredientEnrichment\Sources\FdaColourAdditiveClient;
 use App\Services\IngredientEnrichment\Sources\OpenFdaSubstanceClient;
+use Carbon\CarbonImmutable;
 use Throwable;
 
 class IngredientEnrichmentPipeline
@@ -30,7 +32,8 @@ class IngredientEnrichmentPipeline
         private readonly IngredientEditorialClient $editorial,
         private readonly IngredientGuidanceAuthoringClient $guidanceAuthoring,
         private readonly IngredientGuidanceLocalizationClient $guidanceLocalization,
-        private readonly OpenAiIngredientGapResearchClient $gapResearch,
+        private readonly IngredientGuidanceResearchClient $guidanceResearchClient,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
         private readonly LocalizedGuidanceHeadings $localizedGuidanceHeadings,
     ) {}
 
@@ -118,14 +121,23 @@ class IngredientEnrichmentPipeline
                     );
                 }
 
-                $response = $this->gapResearch->research($editorialFacts);
+                $response = $this->guidanceResearchClient->research($editorialFacts);
+                $candidateEvidence = $this->guidanceEvidencePolicy->validateCandidates(
+                    $response->candidateEvidence,
+                    $response->sources,
+                );
+                $guidanceEvidence = $this->guidanceEvidencePolicy->toPersisted(
+                    $candidateEvidence,
+                    CarbonImmutable::now(),
+                );
 
                 return new IngredientSourceStageResult(
                     stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
                     status: 'completed',
                     data: [
                         'performed' => true,
-                        'candidate_evidence' => $response->candidateEvidence,
+                        'candidate_evidence' => $candidateEvidence,
+                        'guidance_evidence' => $guidanceEvidence,
                         'warnings' => $response->warnings,
                         'unresolved_questions' => $response->unresolvedQuestions,
                         'sources' => $response->sources,
@@ -392,6 +404,7 @@ class IngredientEnrichmentPipeline
         return [
             'performed' => false,
             'candidate_evidence' => [],
+            'guidance_evidence' => [],
             'warnings' => [],
             'unresolved_questions' => [],
             'sources' => [],
@@ -405,29 +418,15 @@ class IngredientEnrichmentPipeline
     }
 
     /**
-     * @return list<array{source_name: string, source_url: string, summary: string, source_tier: string, retrieved_at: string}>
+     * @return list<array<string, mixed>>
      */
     private function guidanceEvidence(IngredientSourceStageResult $guidanceResearch): array
     {
-        return collect($guidanceResearch->data['candidate_evidence'] ?? [])
-            ->filter(fn (mixed $row): bool => is_array($row)
-                && ($row['field'] ?? null) === 'proposal.info_markdown'
-                && is_string($row['source_name'] ?? null)
-                && is_string($row['source_url'] ?? null)
-                && is_string($row['summary'] ?? null))
-            ->map(fn (array $row): array => [
-                'source_name' => trim((string) $row['source_name']),
-                'source_url' => trim((string) $row['source_url']),
-                'summary' => trim((string) $row['summary']),
-                'source_tier' => 'editorial',
-                'retrieved_at' => (string) ($row['retrieved_at'] ?? now()->toImmutable()->toIso8601String()),
-            ])
-            ->filter(fn (array $row): bool => $row['source_name'] !== ''
-                && $row['source_url'] !== ''
-                && $row['summary'] !== '')
-            ->unique('source_url')
-            ->values()
-            ->all();
+        $rows = $guidanceResearch->data['guidance_evidence']
+            ?? $guidanceResearch->data['candidate_evidence']
+            ?? [];
+
+        return $this->guidanceEvidencePolicy->normalizePersisted($rows);
     }
 
     /** @param array<string, mixed> $record @return array<string, mixed> */

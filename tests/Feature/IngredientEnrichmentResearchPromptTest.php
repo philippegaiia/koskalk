@@ -83,9 +83,11 @@ it('configures direct batches and an official web search domain allow list safel
         ]);
 });
 
-it('allows every guidance research domain through the editorial evidence tier', function (): void {
-    $guidanceResearchDomains = config('ingredient-enrichment.openai.gap_research.allowed_domains');
-    $editorialEvidenceDomains = config('ingredient-enrichment.source_hosts_by_tier.editorial');
-
-    expect(array_diff($guidanceResearchDomains, $editorialEvidenceDomains))->toBe([]);
+it('keeps guidance research policy separate from the official metadata domain allow list', function (): void {
+    expect(config('ingredient-enrichment.openai.gap_research'))
+        ->toMatchArray(['enabled' => false])
+        ->and(config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds'))
+        ->toContain('supplier_technical', 'professional_reference', 'specialist_reference')
+        ->and(config('ingredient-enrichment.openai.guidance_research.blocked_domains'))
+        ->toContain('amazon.com', 'reddit.com', 'youtube.com');
 });

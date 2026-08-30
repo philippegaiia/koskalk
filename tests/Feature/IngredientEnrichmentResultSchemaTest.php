@@ -83,6 +83,24 @@ it('describes the exact enrichment validator contract as a strict json schema', 
         ->and(data_get($schema, 'properties.evidence.items.properties.source_tier.enum'))->toBe(
             collect(IngredientSourceTier::cases())->map->value->all(),
         )
+        ->and(data_get($schema, 'properties.guidance_evidence.items.required'))->toBe([
+            'source_name',
+            'source_url',
+            'summary',
+            'source_tier',
+            'retrieved_at',
+            'claim_type',
+            'source_kind',
+            'scope',
+            'evidence_kind',
+            'usage_application',
+            'recommended_min_percent',
+            'recommended_max_percent',
+            'percentage_basis',
+        ])
+        ->and(data_get($schema, 'properties.guidance_evidence.items.properties.claim_type.enum'))->toBe(
+            config('ingredient-enrichment.openai.guidance_research.allowed_claim_types'),
+        )
         ->and(data_get($schema, 'properties.regulatory_findings.items.required'))->toBe([
             'market_code',
             'finding',

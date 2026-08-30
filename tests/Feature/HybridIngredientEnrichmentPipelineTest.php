@@ -1,6 +1,7 @@
 <?php
 
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceResearchClient;
 use App\Data\IngredientEditorialResponse;
 use App\Data\IngredientGapResearchResponse;
 use App\Enums\IngredientCategory;
@@ -10,7 +11,6 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientFunction;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPipeline;
 use App\Services\IngredientEnrichment\IngredientSourceException;
-use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
 use App\Services\IngredientEnrichment\UsIngredientDeclarationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -208,7 +208,7 @@ it('runs restricted guidance research automatically and includes its usage', fun
     cache()->flush();
     fakeHybridIngredientSources('argan');
     $editorial = fakeHybridEditorialClient();
-    $gapResearch = new class extends OpenAiIngredientGapResearchClient
+    $gapResearch = new class implements IngredientGuidanceResearchClient
     {
         public int $calls = 0;
 
@@ -219,9 +219,17 @@ it('runs restricted guidance research automatically and includes its usage', fun
             return new IngredientGapResearchResponse(
                 candidateEvidence: [[
                     'field' => 'proposal.info_markdown',
-                    'source_name' => 'COSMILE Europe',
-                    'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+                    'source_name' => 'Example supplier',
+                    'source_url' => 'https://supplier.example/technical/argan-oil.pdf',
                     'summary' => 'A lightweight fixed oil used as an emollient in skin-care formulations.',
+                    'claim_type' => 'formulation_role',
+                    'source_kind' => 'supplier_technical',
+                    'scope' => 'product_grade',
+                    'evidence_kind' => 'fact',
+                    'usage_application' => 'not_applicable',
+                    'recommended_min_percent' => null,
+                    'recommended_max_percent' => null,
+                    'percentage_basis' => 'not_applicable',
                 ]],
                 warnings: [],
                 unresolvedQuestions: [],
@@ -232,13 +240,13 @@ it('runs restricted guidance research automatically and includes its usage', fun
                 outputTokens: 20,
                 webSearchCalls: 1,
                 sources: [[
-                    'url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
-                    'title' => 'Argania Spinosa Kernel Oil',
+                    'url' => 'https://supplier.example/technical/argan-oil.pdf',
+                    'title' => 'Argan oil technical data',
                 ]],
             );
         }
     };
-    app()->instance(OpenAiIngredientGapResearchClient::class, $gapResearch);
+    app()->instance(IngredientGuidanceResearchClient::class, $gapResearch);
     $item = hybridPipelineItem('argan_gap_oil', 'Argan oil');
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
 
@@ -246,19 +254,29 @@ it('runs restricted guidance research automatically and includes its usage', fun
 
     expect($gapResearch->calls)->toBe(1)
         ->and($editorial->calls)->toBe(1)
-        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.source_name'))->toBe('COSMILE Europe')
+        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.source_name'))->toBe('Example supplier')
         ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.summary'))->toContain('emollient')
         ->and(collect($response->result['evidence'])->contains(
             fn (array $evidence): bool => $evidence['field'] === 'proposal.info_markdown'
-                && $evidence['source_url'] === 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/'
+                && $evidence['source_url'] === 'https://supplier.example/technical/argan-oil.pdf'
                 && $evidence['source_tier'] === 'editorial',
         ))->toBeTrue()
+        ->and(data_get($response->result, 'guidance_evidence.0'))->toMatchArray([
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'supplier_technical',
+            'scope' => 'product_grade',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'percentage_basis' => 'not_applicable',
+        ])
+        ->and(data_get($item->fresh()->research_stages, 'ai_guidance_research.data.guidance_evidence.0.claim_type'))
+        ->toBe('formulation_role')
         ->and($response->inputTokens)->toBe(140)
         ->and($response->outputTokens)->toBe(70)
         ->and($response->webSearchCalls)->toBe(1)
         ->and($response->sources)->toContain([
-            'url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
-            'title' => 'Argania Spinosa Kernel Oil',
+            'url' => 'https://supplier.example/technical/argan-oil.pdf',
+            'title' => 'Argan oil technical data',
         ]);
 });
 
@@ -295,7 +313,7 @@ it('reuses persisted guidance research after editorial generation fails', functi
     cache()->flush();
     fakeHybridIngredientSources('argan');
     $editorial = fakeHybridEditorialClient(failFirst: true);
-    $gapResearch = new class extends OpenAiIngredientGapResearchClient
+    $gapResearch = new class implements IngredientGuidanceResearchClient
     {
         public int $calls = 0;
 
@@ -306,9 +324,17 @@ it('reuses persisted guidance research after editorial generation fails', functi
             return new IngredientGapResearchResponse(
                 candidateEvidence: [[
                     'field' => 'proposal.info_markdown',
-                    'source_name' => 'COSMILE Europe',
-                    'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+                    'source_name' => 'Example supplier',
+                    'source_url' => 'https://supplier.example/technical/argan-oil.pdf',
                     'summary' => 'A lightweight fixed oil used as an emollient in skin-care formulations.',
+                    'claim_type' => 'formulation_role',
+                    'source_kind' => 'supplier_technical',
+                    'scope' => 'product_grade',
+                    'evidence_kind' => 'fact',
+                    'usage_application' => 'not_applicable',
+                    'recommended_min_percent' => null,
+                    'recommended_max_percent' => null,
+                    'percentage_basis' => 'not_applicable',
                 ]],
                 warnings: [],
                 unresolvedQuestions: [],
@@ -319,13 +345,13 @@ it('reuses persisted guidance research after editorial generation fails', functi
                 outputTokens: 20,
                 webSearchCalls: 1,
                 sources: [[
-                    'url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
-                    'title' => 'Argania Spinosa Kernel Oil',
+                    'url' => 'https://supplier.example/technical/argan-oil.pdf',
+                    'title' => 'Argan oil technical data',
                 ]],
             );
         }
     };
-    app()->instance(OpenAiIngredientGapResearchClient::class, $gapResearch);
+    app()->instance(IngredientGuidanceResearchClient::class, $gapResearch);
     $item = hybridPipelineItem('argan_persisted_guidance_oil', 'Argan oil');
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
 

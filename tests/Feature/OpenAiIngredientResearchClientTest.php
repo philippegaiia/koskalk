@@ -140,7 +140,10 @@ it('accepts Kew botanical evidence for editorial guidance', function (): void {
         ],
     ];
 
-    expect(fn () => app(IngredientEnrichmentEvidenceVerifier::class)->verify($result, []))
+    expect(fn () => app(IngredientEnrichmentEvidenceVerifier::class)->verify($result, [[
+        'url' => 'https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:668509-1/general-information',
+        'title' => 'Plants of the World Online — Royal Botanic Gardens, Kew',
+    ]]))
         ->not->toThrow(ValidationException::class);
 });
 

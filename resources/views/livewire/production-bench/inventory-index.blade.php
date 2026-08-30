@@ -15,7 +15,7 @@
         </header>
 
         @if ($mode === 'overview')
-            <section data-inventory-overview aria-labelledby="inventory-overview-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+            <section data-inventory-overview aria-labelledby="inventory-overview-heading" class="overflow-hidden sk-card">
                 <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <h2 id="inventory-overview-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.requirements_title') }}</h2>
                     <a href="{{ route('production-bench.inventory.requirements') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.requirements') }}</a>
@@ -74,7 +74,7 @@
                 </div>
             </section>
         @elseif ($mode === 'requirements')
-            <section aria-labelledby="production-requirements-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+            <section aria-labelledby="production-requirements-heading" class="overflow-hidden sk-card">
                 <div class="flex items-center justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4">
                     <h2 id="production-requirements-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.requirements_title') }}</h2>
                     <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
@@ -115,7 +115,7 @@
                 </div>
             </section>
         @else
-            <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+            <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden sk-card">
                 <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-baseline gap-3">
                         <h2 id="inventory-positions-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.stock_positions') }}</h2>

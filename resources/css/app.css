@@ -64,9 +64,7 @@
     .sk-card {
         border-radius: 0.875rem;
         background: var(--color-panel);
-        box-shadow:
-            0 1px 2px rgba(60, 50, 30, 0.04),
-            0 12px 24px rgba(60, 50, 30, 0.07);
+        box-shadow: var(--shadow-card);
     }
 
     .sk-inset {
@@ -538,25 +536,26 @@
     }
 
     /*
-     * Level 2 — the drawer. Recessed panel, 36px targets.
+     * Level 2 — the drawer. Raised panel, 36px targets.
      *
      * No start indent: the panel is the hierarchy signal, not an offset from the
      * row above it. Indenting it pulled the drawer's left edge 1rem inboard of
      * the content while its right edge stayed flush, so the navigation read as
-     * right-aligned (owner override O5). The start border and panel fill carry
-     * the recess on their own.
+     * right-aligned (owner override O5).
+     *
+     * No border either (O6): every other surface in the app is lifted by shadow
+     * rather than outlined, and a thin rule around a full-width strip read as a
+     * hairline box rather than a panel. The start padding is now what carries
+     * the nesting — it sets the level-2 tabs 0.375rem inboard of the level-1
+     * tabs above them, which the 2px start border used to do.
      */
     .sk-nav-rail {
         margin-block-start: 0.75rem;
         padding-block: 0.5rem;
         padding-inline: 1.125rem 0.75rem;
-        border: 1px solid var(--color-line);
-        border-inline-start-width: 2px;
-        border-start-start-radius: 0.25rem;
-        border-start-end-radius: 0.75rem;
-        border-end-end-radius: 0.75rem;
-        border-end-start-radius: 0.25rem;
+        border-radius: 0.875rem;
         background: var(--color-panel);
+        box-shadow: var(--shadow-card);
     }
 
     .sk-nav-item[data-level='2'] {

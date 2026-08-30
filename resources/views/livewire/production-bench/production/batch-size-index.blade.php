@@ -19,7 +19,7 @@
             <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
         @endif
 
-        <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] shadow-sm">
+        <section class="overflow-hidden sk-card">
             <div class="grid gap-3 border-b border-[var(--color-line)] bg-[var(--color-panel-muted)] p-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
                 <label class="text-sm">
                     <span class="font-medium">{{ __('production_bench.common.search') }}</span>

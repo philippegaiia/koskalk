@@ -493,7 +493,7 @@ declaration or abandoning the grouping:
 
 ## 9. Owner overrides after seeing it rendered (2026-08-29)
 
-Three changes, all made by looking at the built UI rather than by reading the
+Four changes, all made by looking at the built UI rather than by reading the
 plan. Each one reverts or amends a decision recorded above; where they conflict,
 **this section wins.**
 
@@ -612,11 +612,18 @@ stretches to the remaining width: its right edge stayed flush at 1184px while it
 left edge moved 16px inboard. That asymmetry is exactly "aligned on the right but
 not on the left".
 
-Both are removed. The drawer keeps its `margin-block-start`, its 2px start
-border, its panel fill and its radii — **the panel is the recess, not the
-offset** — so the level-2 tier still reads as nested without being pushed off the
-content edge. The small-screen override that reclaimed part of the indent drops
-its margin and keeps only its tighter leading padding.
+Both are removed. The drawer keeps its `margin-block-start`, its panel fill and
+its own radii — **the panel is the recess, not the offset** — so the level-2 tier
+still reads as nested without being pushed off the content edge. The small-screen
+override that reclaimed part of the indent drops its margin and keeps only its
+tighter leading padding.
+
+**O6 in §9 then removes the border this paragraph credited with carrying the
+recess.** What survives O6 is the `padding-inline: 1.125rem 0.75rem`: the start
+side is 0.375rem deeper than the end, which sets the level-2 tabs inboard of the
+level-1 tabs above them. That indent was incidental when a 2px start border sat
+beside it; with the border gone it is the nesting signal, which is why O5's
+suggested symmetrisation is **retracted** rather than merely deferred.
 
 Pinned by `ProductionBenchLayoutTest::shares the content left edge instead of
 indenting the navigation`, which asserts no `margin-inline-start` in any
@@ -628,3 +635,64 @@ container border that double-lined a child's own edge. The rule both times is
 that **an outer box must not add an edge its child already draws** — here the row
 duplicated the tabs' padding, and the rail added a start offset to a box that was
 already full-bleed.
+
+### O6 — the navigation drawer and the tables are raised by shadow, not outlined
+
+Alignment fixed, the owner's next verdict: no border around the navigation or the
+tables, give them the shadow everything else has, using the `/ingredients` page
+as the reference.
+
+That reference is `.sk-card`: `background: var(--color-panel)`, `border-radius:
+0.875rem`, and a shadow — **and no border at all**. The production bench tables
+were wrapped in `rounded-2xl border border-[var(--color-line)]
+bg-[var(--color-panel)]`, i.e. a card drawn the wrong way round: an outline
+instead of an elevation.
+
+Changes:
+
+- `.sk-nav-rail` loses `border`, `border-inline-start-width: 2px` and the four
+  asymmetric radii that existed to make that 2px edge meet the corners. It takes
+  the `.sk-card` radius and `box-shadow: var(--shadow-card)` instead.
+- The eleven table shells in `resources/views/livewire/production-bench/` now
+  carry `overflow-hidden sk-card`. Two of them also carried a `shadow-sm`, which
+  is redundant and goes. Internal `border-b` / `border-t` / `divide-y` dividers
+  are untouched — the ingredients page draws its header rule and row separators
+  the same way, so the border was only ever wrong on the *outer* box.
+- The shadow literal is now `--shadow-card` in the `soapkraft.css` `@theme`
+  block, read by `.sk-card`, `.sk-nav-rail` and the generated `shadow-card`
+  utility. Previously a shadow only survived by being retyped.
+
+This is O1's rule from the other direction. O1 removed a container border because
+it duplicated an edge its child already drew; O6 removes container borders
+because the app does not draw panels that way at all. **A panel is lifted by
+shadow or bounded by a rule, not both.**
+
+Pinned by `ProductionBenchLayoutTest::raises the navigation drawer and the table
+panels by shadow, not by a border`.
+
+#### A dead colour token found on the way
+
+Making the tables match `/ingredients` exposed why they still looked wrong after
+the border was gone: the production bench table heads set
+`bg-[var(--color-panel-muted)]`, and **`--color-panel-muted` has never been
+defined** — not in any stylesheet, not in any commit. `background-color:
+var(--undefined)` is invalid at computed-value time, so 36 usages rendered
+transparent.
+
+The guard test added alongside O6 (`defines every colour token the production
+bench views reference`) found two more on its first run:
+
+| Token | Uses | Effect while undefined |
+| --- | --- | --- |
+| `--color-panel-muted` | 36 | table heads, hover rows, nested blocks → transparent |
+| `--color-ink-muted` | 47 | `color` inherits, so field help text, captions and locked-input labels rendered at full body darkness |
+| `--color-surface-muted` | 4 | production detail table head and group rows → transparent |
+
+All three are now defined. Note the second row: because `color` is an inherited
+property, an undefined colour token does not vanish — it silently inherits, which
+is why 47 elements looked merely "too dark" rather than obviously broken.
+
+**No build step catches this class of bug.** Tailwind emits `var(--whatever)`
+verbatim and Vite does not resolve custom properties, so the only defence is the
+guard test. It reads every `var(--color-*)` in the production bench views and
+asserts each name is defined in one of the four stylesheets.

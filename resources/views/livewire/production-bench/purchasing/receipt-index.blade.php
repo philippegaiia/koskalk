@@ -28,7 +28,7 @@
             @endif
         </section>
     @else
-        <section aria-labelledby="receipt-list-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+        <section aria-labelledby="receipt-list-heading" class="overflow-hidden sk-card">
             <h2 id="receipt-list-heading" class="sr-only">{{ __('production_bench.receipt.plural') }}</h2>
             <div class="overflow-x-auto" data-receipt-responsive-table>
                 <table class="w-full min-w-[900px] text-left text-sm">

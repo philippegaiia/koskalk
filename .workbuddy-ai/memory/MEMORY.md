@@ -83,6 +83,42 @@ Related facts, still true:
   the question is what *production* will actually ship.
 - Old orphaned bundles linger on disk (Vite does not appear to empty `buildDirectory`).
 
+## Surfaces are lifted by shadow, never outlined
+
+A panel reads as raised through elevation, not a rule around it: **`.sk-card` has no `border`.**
+The reference implementation is the ingredients page (`sk-card` wrapper; internal `border-b` /
+`border-t` / `divide-y` dividers only — the border is wrong on the *outer* box alone).
+
+- The shadow lives in the `--shadow-card` token in the `soapkraft.css` `@theme` block, read by
+  `.sk-card`, `.sk-nav-rail` and the generated `shadow-card` utility. Do not retype the literal.
+- Two sibling utilities exist for elements that already carry their own border/radius:
+  `.sk-card-elevation` and `.sk-card-elevation-subtle`, both in `soapkraft.css`.
+- Owner override O6 (2026-08-30) converted the production bench nav rail and all 11 table shells
+  from `rounded-2xl border … bg-[var(--color-panel)]` to `sk-card`. This is O1's rule from the
+  other direction: O1 removed a container border that duplicated its child's edge; O6 removes
+  them because the app does not draw panels that way at all.
+- **Do not symmetrise `.sk-nav-rail`'s `padding-inline: 1.125rem 0.75rem`.** The 0.375rem start
+  excess is the nesting signal — it sets the level-2 tabs inboard of the level-1 tabs above them.
+  It was incidental while a 2px start border sat beside it; O6 removed the border, so the padding
+  is now load-bearing.
+
+## Undefined CSS custom properties fail silently — no build step catches them
+
+`--color-panel-muted`, `--color-ink-muted` and `--color-surface-muted` were each used dozens of
+times across the production bench while **never being defined**, in any stylesheet or commit.
+
+- A `var()` that does not resolve makes the declaration *invalid at computed-value time*. For
+  non-inherited properties (`background-color`) that falls back to the **initial** value, so the
+  background silently goes transparent.
+- For **inherited** properties (`color`) it falls back to `inherit` — the text does not vanish, it
+  silently takes the parent's colour. That is why 47 elements looked merely "too dark" instead of
+  obviously broken. Expect this asymmetry when diagnosing.
+- Nothing in the toolchain flags it: Tailwind emits `var(--x)` verbatim and Vite does not resolve
+  custom properties.
+- Guard: `ProductionBenchLayoutTest::defines every colour token the production bench views
+  reference` reads every `var(--color-*)` out of the production bench views and asserts the name is
+  defined in one of the four stylesheets. It found two of the three on its first run.
+
 ## Filament actions hide markup from static contract tests
 
 `resources/views/livewire/production-bench/inventory-index.blade.php:125` renders

@@ -55,7 +55,7 @@
             <section class="sk-card p-5"><h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.notes') }}</h2><p class="mt-4 whitespace-pre-line text-sm leading-6">{{ $supplier->notes }}</p></section>
         @endif
 
-        <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+        <section class="overflow-hidden sk-card">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] p-5 sm:flex-row sm:items-end sm:justify-between">
                 <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.listing.listings') }}</h2>
                 <label class="space-y-1"><span class="text-sm font-medium">{{ __('production_bench.common.status') }}</span><select wire:model.live="listingStatus" class="sk-input"><option value="active">{{ __('production_bench.common.active') }}</option><option value="all">{{ __('production_bench.common.all') }}</option><option value="inactive">{{ __('production_bench.common.inactive') }}</option></select></label>

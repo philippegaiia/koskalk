@@ -8,13 +8,16 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use JsonException;
 use RuntimeException;
 use Throwable;
 
 class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchClient
 {
+    public function __construct(
+        private readonly IngredientGuidanceEvidencePolicy $evidencePolicy,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $facts
      *
@@ -52,9 +55,6 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
                     'input' => $this->input($facts),
                     'tools' => [[
                         'type' => 'web_search',
-                        'filters' => [
-                            'allowed_domains' => config('ingredient-enrichment.openai.gap_research.allowed_domains'),
-                        ],
                     ]],
                     'include' => ['web_search_call.action.sources'],
                     'text' => [
@@ -102,8 +102,6 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
             throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
         }
 
-        $this->assertCandidateEvidenceIsAllowed($result['candidate_evidence']);
-
         $searchCalls = collect($payload['output'] ?? [])
             ->where('type', 'web_search_call');
         $sources = $searchCalls
@@ -116,9 +114,13 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
             ->unique('url')
             ->values()
             ->all();
+        $candidateEvidence = $this->evidencePolicy->validateCandidates(
+            $result['candidate_evidence'],
+            $sources,
+        );
 
         return new IngredientGapResearchResponse(
-            candidateEvidence: $result['candidate_evidence'],
+            candidateEvidence: $candidateEvidence,
             warnings: $result['warnings'],
             unresolvedQuestions: $result['unresolved_questions'],
             responseId: (string) ($payload['id'] ?? ''),
@@ -134,11 +136,15 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
     private function instructions(): string
     {
         return <<<'PROMPT'
-You perform an exceptional, source-restricted gap-research pass for a cosmetic-ingredient catalogue. Return candidate evidence only. The supplied deterministic facts remain authoritative and must not be changed.
+You perform a broad but disciplined guidance-research pass for a cosmetic-ingredient catalogue. Return candidate evidence only. The supplied deterministic facts remain authoritative and must not be changed.
 
-Use web search only to collect concise, practical formulation and soapmaking facts that are missing from the deterministic editorial context. Prioritize the exact material identity and look for material type or origin, physical form, formulation role, phase or dispersion, solubility, handling, stability, compatibility, and qualitative soapmaking behavior. Omit unsupported topics and therapeutic claims. You must not establish legal declarations, authorization, identifiers, INCI names, COSING functions, or regulatory conclusions. COSMILE Europe may be cited only for individually paraphrased introductory guidance; it cannot support any legal or identity field.
+Search the open web for concise, material-specific formulation and soapmaking facts that are missing from the deterministic editorial context. Prioritize manufacturer technical sheets and application notes, supplier technical product pages, peer-reviewed or institutional scientific sources, regulatory references used only editorially, professional formulation references, and recognized specialist references. Reject marketplaces, social or community content, generic blogs, AI-generated or SEO pages, search-result snippets, and unsourced marketing.
 
-Every candidate evidence row must contain `field` set to `proposal.info_markdown`, a source name, the exact consulted source URL, and a concise paraphrased summary of the useful fact. Never copy long passages. If the gap remains unresolved, return an empty candidate_evidence array and state the specific question. Return only the strict JSON object.
+Classify each finding as a material-wide fact or a product-grade observation. A product-grade recommendation must remain qualified to that grade. Classify experimental observations separately and never turn them into general recommendations. A recommended percentage is allowed only when the exact source explicitly presents it as formulation guidance from a manufacturer, supplier, professional, or specialist source. Record the correct application (`cosmetics` or `soapmaking`), lower and upper bounds without guessing or converting, and the percentage basis (`total_formula`, `oil_phase`, or `soap_oils`). Keep conflicting ranges as separate rows. If one source gives separate cosmetics and soapmaking ranges, return separate rows. Reported-use and experimental concentrations are not recommendations.
+
+Omit category-obvious filler unless the exact material has a non-obvious practical consequence. You must not establish legal declarations, authorization, identifiers, INCI names, COSING functions, or regulatory conclusions. COSMILE Europe may be cited only for individually paraphrased introductory guidance; it cannot support any legal or identity field.
+
+Every candidate evidence row must contain `field` set to `proposal.info_markdown`, a source name, the exact consulted source URL, a concise paraphrased summary, and the required classification fields. Never copy long passages. If the gap remains unresolved, return an empty candidate_evidence array and state the specific question. Return only the strict JSON object.
 PROMPT;
     }
 
@@ -167,8 +173,47 @@ PROMPT;
                 'source_name' => ['type' => 'string'],
                 'source_url' => ['type' => 'string'],
                 'summary' => ['type' => 'string'],
+                'claim_type' => [
+                    'type' => 'string',
+                    'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_claim_types'),
+                ],
+                'source_kind' => [
+                    'type' => 'string',
+                    'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds'),
+                ],
+                'scope' => [
+                    'type' => 'string',
+                    'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_scopes'),
+                ],
+                'evidence_kind' => [
+                    'type' => 'string',
+                    'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_evidence_kinds'),
+                ],
+                'usage_application' => [
+                    'type' => 'string',
+                    'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_usage_applications'),
+                ],
+                'recommended_min_percent' => ['type' => ['string', 'null']],
+                'recommended_max_percent' => ['type' => ['string', 'null']],
+                'percentage_basis' => [
+                    'type' => 'string',
+                    'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_percentage_bases'),
+                ],
             ],
-            'required' => ['field', 'source_name', 'source_url', 'summary'],
+            'required' => [
+                'field',
+                'source_name',
+                'source_url',
+                'summary',
+                'claim_type',
+                'source_kind',
+                'scope',
+                'evidence_kind',
+                'usage_application',
+                'recommended_min_percent',
+                'recommended_max_percent',
+                'percentage_basis',
+            ],
             'additionalProperties' => false,
         ];
 
@@ -182,33 +227,6 @@ PROMPT;
             'required' => ['candidate_evidence', 'warnings', 'unresolved_questions'],
             'additionalProperties' => false,
         ];
-    }
-
-    /** @param list<mixed> $candidateEvidence */
-    private function assertCandidateEvidenceIsAllowed(array $candidateEvidence): void
-    {
-        foreach ($candidateEvidence as $candidate) {
-            if (! is_array($candidate)
-                || ! is_string($candidate['field'] ?? null)
-                || ! is_string($candidate['source_url'] ?? null)
-                || ! is_string($candidate['summary'] ?? null)
-                || trim($candidate['summary']) === '') {
-                throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
-            }
-
-            $host = Str::lower((string) parse_url($candidate['source_url'], PHP_URL_HOST));
-            if (Str::endsWith($host, 'cosmileeurope.eu')
-                && Str::startsWith($candidate['field'], [
-                    'proposal.inci_name',
-                    'proposal.aliases',
-                    'proposal.identifiers',
-                    'proposal.cosing_functions',
-                    'proposal.market_labels',
-                    'regulatory_findings',
-                ])) {
-                throw new RuntimeException(__('ingredient_enrichment_admin.validation.cosmile_legal_field'));
-            }
-        }
     }
 
     /**

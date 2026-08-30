@@ -1,0 +1,349 @@
+<?php
+
+namespace App\Services\IngredientEnrichment;
+
+use Carbon\CarbonImmutable;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
+
+class IngredientGuidanceEvidencePolicy
+{
+    /**
+     * @param  list<array<string, mixed>>  $candidates
+     * @param  list<array{url: string, title: string}>  $consultedSources
+     * @return list<array<string, mixed>>
+     */
+    public function validateCandidates(array $candidates, array $consultedSources): array
+    {
+        $consultedUrls = collect($consultedSources)
+            ->map(fn (mixed $source): ?string => is_array($source)
+                ? $this->canonicalUrl($source['url'] ?? null)
+                : null)
+            ->filter()
+            ->mapWithKeys(fn (string $url): array => [$url => true])
+            ->all();
+
+        return collect($candidates)
+            ->map(function (mixed $candidate, int $index) use ($consultedUrls): array {
+                if (! is_array($candidate)) {
+                    $this->invalidResponse();
+                }
+
+                return $this->validateCandidate($candidate, $index, $consultedUrls);
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $candidates
+     * @return list<array<string, mixed>>
+     */
+    public function toPersisted(array $candidates, CarbonImmutable $retrievedAt): array
+    {
+        return collect($candidates)
+            ->map(fn (array $candidate): array => [
+                'source_name' => trim((string) $candidate['source_name']),
+                'source_url' => trim((string) $candidate['source_url']),
+                'summary' => trim((string) $candidate['summary']),
+                'source_tier' => 'editorial',
+                'retrieved_at' => $retrievedAt->toIso8601String(),
+                'claim_type' => $candidate['claim_type'],
+                'source_kind' => $candidate['source_kind'],
+                'scope' => $candidate['scope'],
+                'evidence_kind' => $candidate['evidence_kind'],
+                'usage_application' => $candidate['usage_application'],
+                'recommended_min_percent' => $candidate['recommended_min_percent'],
+                'recommended_max_percent' => $candidate['recommended_max_percent'],
+                'percentage_basis' => $candidate['percentage_basis'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Normalize both the current classified rows and the legacy five-key rows.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function normalizePersisted(mixed $rows, ?CarbonImmutable $fallbackRetrievedAt = null): array
+    {
+        if (! is_array($rows)) {
+            return [];
+        }
+
+        $fallback = ($fallbackRetrievedAt ?? CarbonImmutable::now())->toIso8601String();
+
+        return collect($rows)
+            ->filter(fn (mixed $row): bool => is_array($row))
+            ->map(function (array $row) use ($fallback): ?array {
+                $sourceName = trim((string) ($row['source_name'] ?? ''));
+                $sourceUrl = trim((string) ($row['source_url'] ?? ''));
+                $summary = trim((string) ($row['summary'] ?? ''));
+
+                if ($sourceName === '' || $sourceUrl === '' || $summary === '') {
+                    return null;
+                }
+
+                $retrievedAt = is_string($row['retrieved_at'] ?? null)
+                    && trim($row['retrieved_at']) !== ''
+                    ? trim($row['retrieved_at'])
+                    : $fallback;
+
+                $hasClassifications = $this->hasAllClassifications($row);
+
+                return [
+                    'source_name' => $sourceName,
+                    'source_url' => $sourceUrl,
+                    'summary' => $summary,
+                    'source_tier' => 'editorial',
+                    'retrieved_at' => $retrievedAt,
+                    'claim_type' => $hasClassifications ? $row['claim_type'] : 'origin',
+                    'source_kind' => $hasClassifications ? $row['source_kind'] : 'legacy_editorial',
+                    'scope' => $hasClassifications ? $row['scope'] : 'material',
+                    'evidence_kind' => $hasClassifications ? $row['evidence_kind'] : 'fact',
+                    'usage_application' => $hasClassifications ? $row['usage_application'] : 'not_applicable',
+                    'recommended_min_percent' => $hasClassifications ? $row['recommended_min_percent'] : null,
+                    'recommended_max_percent' => $hasClassifications ? $row['recommended_max_percent'] : null,
+                    'percentage_basis' => $hasClassifications ? $row['percentage_basis'] : 'not_applicable',
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $candidate
+     * @param  array<string, bool>  $consultedUrls
+     * @return array<string, mixed>
+     */
+    private function validateCandidate(array $candidate, int $index, array $consultedUrls): array
+    {
+        $expectedKeys = [
+            'field', 'source_name', 'source_url', 'summary', 'claim_type', 'source_kind',
+            'scope', 'evidence_kind', 'usage_application', 'recommended_min_percent',
+            'recommended_max_percent', 'percentage_basis',
+        ];
+
+        if (array_diff($expectedKeys, array_keys($candidate)) !== []
+            || array_diff(array_keys($candidate), $expectedKeys) !== []) {
+            $this->invalidResponse();
+        }
+
+        $field = is_string($candidate['field'] ?? null) ? trim($candidate['field']) : '';
+        $sourceName = is_string($candidate['source_name'] ?? null) ? trim($candidate['source_name']) : '';
+        $sourceUrl = is_string($candidate['source_url'] ?? null) ? trim($candidate['source_url']) : '';
+        $summary = is_string($candidate['summary'] ?? null) ? trim($candidate['summary']) : '';
+
+        if ($this->isCosmileUrl($sourceUrl) && $this->isLegalOrIdentityField($field)) {
+            throw new RuntimeException(__('ingredient_enrichment_admin.validation.cosmile_legal_field'));
+        }
+
+        if ($field !== 'proposal.info_markdown') {
+            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+        }
+
+        if ($sourceName === '' || $summary === '') {
+            $this->invalidResponse();
+        }
+
+        $canonicalUrl = $this->canonicalUrl($sourceUrl);
+        if ($canonicalUrl === null) {
+            $this->invalidResponse();
+        }
+
+        $host = strtolower((string) parse_url($sourceUrl, PHP_URL_HOST));
+        if ($this->isBlockedHost($host)) {
+            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+        }
+
+        if (! isset($consultedUrls[$canonicalUrl])) {
+            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.unconsulted_source'));
+        }
+
+        foreach ([
+            'claim_type' => 'allowed_claim_types',
+            'source_kind' => 'allowed_source_kinds',
+            'scope' => 'allowed_scopes',
+            'evidence_kind' => 'allowed_evidence_kinds',
+            'usage_application' => 'allowed_usage_applications',
+            'percentage_basis' => 'allowed_percentage_bases',
+        ] as $fieldName => $configKey) {
+            if (! is_string($candidate[$fieldName] ?? null)
+                || ! in_array($candidate[$fieldName], config("ingredient-enrichment.openai.guidance_research.{$configKey}", []), true)) {
+                $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+            }
+        }
+
+        $this->validatePercentageEvidence($candidate, $index);
+
+        return [
+            'field' => $field,
+            'source_name' => $sourceName,
+            'source_url' => $sourceUrl,
+            'summary' => $summary,
+            'claim_type' => $candidate['claim_type'],
+            'source_kind' => $candidate['source_kind'],
+            'scope' => $candidate['scope'],
+            'evidence_kind' => $candidate['evidence_kind'],
+            'usage_application' => $candidate['usage_application'],
+            'recommended_min_percent' => $candidate['recommended_min_percent'],
+            'recommended_max_percent' => $candidate['recommended_max_percent'],
+            'percentage_basis' => $candidate['percentage_basis'],
+        ];
+    }
+
+    /** @param array<string, mixed> $candidate */
+    private function validatePercentageEvidence(array $candidate, int $index): void
+    {
+        $claimType = $candidate['claim_type'];
+        $isUsage = $claimType === 'usage';
+        $min = $candidate['recommended_min_percent'];
+        $max = $candidate['recommended_max_percent'];
+        $application = $candidate['usage_application'];
+        $basis = $candidate['percentage_basis'];
+
+        if (! $isUsage) {
+            if ($application !== 'not_applicable' || $min !== null || $max !== null || $basis !== 'not_applicable') {
+                $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+            }
+
+            return;
+        }
+
+        $recommendationKinds = [
+            'manufacturer_technical',
+            'supplier_technical',
+            'professional_reference',
+            'specialist_reference',
+        ];
+
+        if ($candidate['evidence_kind'] !== 'formulation_recommendation'
+            || ! in_array($candidate['source_kind'], $recommendationKinds, true)
+            || ! in_array($application, ['cosmetics', 'soapmaking'], true)
+            || ($application === 'cosmetics' && ! in_array($basis, ['total_formula', 'oil_phase'], true))
+            || ($application === 'soapmaking' && $basis !== 'soap_oils')
+            || ($min === null && $max === null)) {
+            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+        }
+
+        foreach (['recommended_min_percent' => $min, 'recommended_max_percent' => $max] as $bound => $value) {
+            if ($value !== null && ! $this->isValidDecimalBound($value)) {
+                $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+            }
+        }
+
+        if ($min !== null && $max !== null && $this->compareDecimals($min, $max) > 0) {
+            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+        }
+    }
+
+    private function isValidDecimalBound(mixed $value): bool
+    {
+        if (! is_string($value) || ! preg_match('/^(?:0|[1-9]\d*)(?:\.\d+)?$/', $value)) {
+            return false;
+        }
+
+        return $this->compareDecimals($value, '0') >= 0
+            && $this->compareDecimals($value, '100') <= 0;
+    }
+
+    private function compareDecimals(string $left, string $right): int
+    {
+        [$leftInteger, $leftFraction] = array_pad(explode('.', $left, 2), 2, '');
+        [$rightInteger, $rightFraction] = array_pad(explode('.', $right, 2), 2, '');
+        $leftInteger = ltrim($leftInteger, '0') ?: '0';
+        $rightInteger = ltrim($rightInteger, '0') ?: '0';
+
+        if (strlen($leftInteger) !== strlen($rightInteger)) {
+            return strlen($leftInteger) <=> strlen($rightInteger);
+        }
+
+        if ($leftInteger !== $rightInteger) {
+            return strcmp($leftInteger, $rightInteger) <=> 0;
+        }
+
+        $length = max(strlen($leftFraction), strlen($rightFraction));
+        $leftFraction = str_pad($leftFraction, $length, '0');
+        $rightFraction = str_pad($rightFraction, $length, '0');
+
+        return strcmp($leftFraction, $rightFraction) <=> 0;
+    }
+
+    private function canonicalUrl(mixed $url): ?string
+    {
+        if (! is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+            return null;
+        }
+
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+        $path = (string) ($parts['path'] ?? '/');
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+        }
+
+        return $scheme.'://'.$host.$port.$path
+            .(isset($parts['query']) ? '?'.$parts['query'] : '');
+    }
+
+    private function isBlockedHost(string $host): bool
+    {
+        foreach (config('ingredient-enrichment.openai.guidance_research.blocked_domains', []) as $domain) {
+            $domain = strtolower((string) $domain);
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isCosmileUrl(string $url): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return $host === 'cosmileeurope.eu' || str_ends_with($host, '.cosmileeurope.eu');
+    }
+
+    private function isLegalOrIdentityField(string $field): bool
+    {
+        return $field === 'proposal.inci_name'
+            || str_starts_with($field, 'proposal.aliases.')
+            || str_starts_with($field, 'proposal.identifiers.')
+            || str_starts_with($field, 'proposal.cosing_functions.')
+            || str_starts_with($field, 'proposal.market_labels.')
+            || str_starts_with($field, 'regulatory_findings.');
+    }
+
+    private function hasAllClassifications(array $row): bool
+    {
+        return array_key_exists('claim_type', $row)
+            && array_key_exists('source_kind', $row)
+            && array_key_exists('scope', $row)
+            && array_key_exists('evidence_kind', $row)
+            && array_key_exists('usage_application', $row)
+            && array_key_exists('recommended_min_percent', $row)
+            && array_key_exists('recommended_max_percent', $row)
+            && array_key_exists('percentage_basis', $row);
+    }
+
+    private function invalidResponse(): never
+    {
+        throw new RuntimeException(__('ingredient_enrichment_admin.validation.invalid_response'));
+    }
+
+    private function policyViolation(int $index, string $message): never
+    {
+        throw ValidationException::withMessages([
+            "candidate_evidence.{$index}" => $message,
+        ]);
+    }
+}

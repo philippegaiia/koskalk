@@ -6,6 +6,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentEditorialPrompt;
 use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 it('binds guidance research to the OpenAI web-search client', function (): void {
     expect(app(IngredientGuidanceResearchClient::class))
@@ -113,7 +114,7 @@ it('redacts an unparseable provider error body after transient retries', functio
     Http::assertSentCount(3);
 });
 
-it('uses source-restricted web search only in an explicitly enabled gap-research call', function (): void {
+it('uses broad web search only in an explicitly enabled guidance-research call', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     config()->set('ingredient-enrichment.openai.gap_research.enabled', true);
     Http::preventStrayRequests();
@@ -124,10 +125,10 @@ it('uses source-restricted web search only in an explicitly enabled gap-research
             'model' => 'gpt-5.6-terra-2026-08-01',
             'output' => [
                 [
-                    'type' => 'web_search_call',
+                'type' => 'web_search_call',
                     'action' => ['sources' => [[
-                        'url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
-                        'title' => 'Argania Spinosa Kernel Oil',
+                        'url' => 'https://supplier.example/technical/argan-oil.pdf',
+                        'title' => 'Argan oil technical data',
                     ]]],
                 ],
                 [
@@ -137,9 +138,17 @@ it('uses source-restricted web search only in an explicitly enabled gap-research
                         'text' => json_encode([
                             'candidate_evidence' => [[
                                 'field' => 'proposal.info_markdown',
-                                'source_name' => 'COSMILE Europe',
-                                'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+                                'source_name' => 'Example supplier',
+                                'source_url' => 'https://supplier.example/technical/argan-oil.pdf',
                                 'summary' => 'A lightweight fixed oil used as an emollient in skin-care formulations.',
+                                'claim_type' => 'formulation_role',
+                                'source_kind' => 'supplier_technical',
+                                'scope' => 'product_grade',
+                                'evidence_kind' => 'fact',
+                                'usage_application' => 'not_applicable',
+                                'recommended_min_percent' => null,
+                                'recommended_max_percent' => null,
+                                'percentage_basis' => 'not_applicable',
                             ]],
                             'warnings' => [],
                             'unresolved_questions' => [],
@@ -155,8 +164,8 @@ it('uses source-restricted web search only in an explicitly enabled gap-research
 
     expect($response->webSearchCalls)->toBe(1)
         ->and($response->sources)->toBe([[
-            'url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
-            'title' => 'Argania Spinosa Kernel Oil',
+            'url' => 'https://supplier.example/technical/argan-oil.pdf',
+            'title' => 'Argan oil technical data',
         ]]);
 
     Http::assertSent(function (Request $request): bool {
@@ -164,13 +173,11 @@ it('uses source-restricted web search only in an explicitly enabled gap-research
 
         return $data['tools'][0] === [
             'type' => 'web_search',
-            'filters' => [
-                'allowed_domains' => config('ingredient-enrichment.openai.gap_research.allowed_domains'),
-            ],
         ]
             && $data['include'] === ['web_search_call.action.sources']
             && str_contains((string) $data['instructions'], 'candidate evidence only')
-            && str_contains((string) $data['instructions'], 'practical formulation and soapmaking facts')
+            && str_contains((string) $data['instructions'], 'Search the open web')
+            && str_contains((string) $data['instructions'], 'manufacturer technical sheets')
             && str_contains((string) $data['instructions'], 'must not establish legal declarations');
     });
 });
@@ -186,6 +193,102 @@ it('does not permit an implicit gap-research request when the feature is disable
         ->toThrow(RuntimeException::class, 'disabled');
 
     Http::assertNothingSent();
+});
+
+it('rejects a guidance citation that was not among the consulted web sources', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'id' => 'resp_gap_unconsulted',
+            'status' => 'completed',
+            'output' => [
+                [
+                    'type' => 'web_search_call',
+                    'action' => ['sources' => [[
+                        'url' => 'https://supplier.example/technical/argan-oil.pdf',
+                        'title' => 'Argan oil technical data',
+                    ]]],
+                ],
+                [
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode([
+                            'candidate_evidence' => [[
+                                'field' => 'proposal.info_markdown',
+                                'source_name' => 'Fabricated source',
+                                'source_url' => 'https://other.example/argan-oil',
+                                'summary' => 'A fabricated citation.',
+                                'claim_type' => 'formulation_role',
+                                'source_kind' => 'specialist_reference',
+                                'scope' => 'material',
+                                'evidence_kind' => 'fact',
+                                'usage_application' => 'not_applicable',
+                                'recommended_min_percent' => null,
+                                'recommended_max_percent' => null,
+                                'percentage_basis' => 'not_applicable',
+                            ]],
+                            'warnings' => [],
+                            'unresolved_questions' => [],
+                        ], JSON_THROW_ON_ERROR),
+                    ]],
+                ],
+            ],
+        ]),
+    ]);
+
+    expect(fn (): mixed => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
+        ->toThrow(ValidationException::class);
+});
+
+it('rejects a blocked guidance source even when the provider consulted it', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'id' => 'resp_gap_blocked',
+            'status' => 'completed',
+            'output' => [
+                [
+                    'type' => 'web_search_call',
+                    'action' => ['sources' => [[
+                        'url' => 'https://www.reddit.com/r/formulation/comments/example',
+                        'title' => 'Community post',
+                    ]]],
+                ],
+                [
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode([
+                            'candidate_evidence' => [[
+                                'field' => 'proposal.info_markdown',
+                                'source_name' => 'Community post',
+                                'source_url' => 'https://www.reddit.com/r/formulation/comments/example',
+                                'summary' => 'An unsourced community recommendation.',
+                                'claim_type' => 'formulation_role',
+                                'source_kind' => 'specialist_reference',
+                                'scope' => 'material',
+                                'evidence_kind' => 'fact',
+                                'usage_application' => 'not_applicable',
+                                'recommended_min_percent' => null,
+                                'recommended_max_percent' => null,
+                                'percentage_basis' => 'not_applicable',
+                            ]],
+                            'warnings' => [],
+                            'unresolved_questions' => [],
+                        ], JSON_THROW_ON_ERROR),
+                    ]],
+                ],
+            ],
+        ]),
+    ]);
+
+    expect(fn (): mixed => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
+        ->toThrow(ValidationException::class);
 });
 
 it('rejects COSMILE candidate evidence for an identity or declaration field', function (): void {
@@ -206,6 +309,14 @@ it('rejects COSMILE candidate evidence for an identity or declaration field', fu
                             'source_name' => 'COSMILE Europe',
                             'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
                             'summary' => 'An identity claim that is not allowed from this source.',
+                            'claim_type' => 'origin',
+                            'source_kind' => 'regulatory_reference',
+                            'scope' => 'material',
+                            'evidence_kind' => 'fact',
+                            'usage_application' => 'not_applicable',
+                            'recommended_min_percent' => null,
+                            'recommended_max_percent' => null,
+                            'percentage_basis' => 'not_applicable',
                         ]],
                         'warnings' => [],
                         'unresolved_questions' => [],

@@ -20,6 +20,29 @@ class IngredientGuidanceEvidencePolicy
     ];
 
     /**
+     * Check a guidance citation against the pages consulted for the research request.
+     *
+     * Guidance research deliberately permits a broader set of non-blocked sources than
+     * identity research, but it must still be limited to pages actually consulted.
+     *
+     * @param  list<array{url: string, title: string}>  $consultedSources
+     */
+    public function allowsCitationUrl(string $url, array $consultedSources): bool
+    {
+        $canonicalUrl = $this->canonicalUrl($url);
+        if ($canonicalUrl === null) {
+            return false;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        if ($this->isBlockedHost($host)) {
+            return false;
+        }
+
+        return isset($this->consultedUrlMap($consultedSources)[$canonicalUrl]);
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $candidates
      * @param  list<array{url: string, title: string}>  $consultedSources
      * @return list<array<string, mixed>>

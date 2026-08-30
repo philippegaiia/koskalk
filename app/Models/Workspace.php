@@ -75,6 +75,11 @@ class Workspace extends Model
         return $this->hasMany(CurrentMaterialPrice::class);
     }
 
+    public function materialSettings(): HasMany
+    {
+        return $this->hasMany(WorkspaceMaterialSetting::class);
+    }
+
     public function ingredientCodes(): HasMany
     {
         return $this->hasMany(WorkspaceIngredientCode::class);

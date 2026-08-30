@@ -209,6 +209,11 @@ class Ingredient extends Model
         return $this->hasMany(CurrentMaterialPrice::class);
     }
 
+    public function workspaceSettings(): HasMany
+    {
+        return $this->hasMany(WorkspaceMaterialSetting::class);
+    }
+
     public function workspaceCodes(): HasMany
     {
         return $this->hasMany(WorkspaceIngredientCode::class);

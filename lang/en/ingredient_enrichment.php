@@ -171,6 +171,8 @@ return [
         'subcategory_incompatible' => 'The proposed subcategory is incompatible with the preserved category and will also be preserved.',
         'unresolved' => 'Unresolved: :question',
         'guidance_evidence_missing' => 'No persisted guidance evidence is available; refresh evidence before making source-backed guidance claims.',
+        'guidance_evidence_rejected' => ':count researched evidence item was rejected because it did not meet the evidence rules.|:count researched evidence items were rejected because they did not meet the evidence rules.',
+        'guidance_evidence_none_accepted' => 'No researched evidence passed validation; the proposed guidance uses catalogue facts only.',
     ],
     'replacement' => [
         'unknown' => 'Unknown enrichment replacement field [:field].',

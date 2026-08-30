@@ -122,14 +122,30 @@ class IngredientEnrichmentPipeline
                 }
 
                 $response = $this->guidanceResearchClient->research($editorialFacts);
-                $candidateEvidence = $this->guidanceEvidencePolicy->validateCandidates(
+                $validation = $this->guidanceEvidencePolicy->partitionCandidates(
                     $response->candidateEvidence,
                     $response->sources,
                 );
+                $candidateEvidence = $validation->accepted;
                 $guidanceEvidence = $this->guidanceEvidencePolicy->toPersisted(
                     $candidateEvidence,
                     CarbonImmutable::now(),
                 );
+                $warnings = collect($response->warnings)
+                    ->when($validation->rejected !== [], fn ($warnings) => $warnings->push(
+                        trans_choice(
+                            'ingredient_enrichment.warnings.guidance_evidence_rejected',
+                            count($validation->rejected),
+                            ['count' => count($validation->rejected)],
+                        ),
+                    ))
+                    ->when($candidateEvidence === [], fn ($warnings) => $warnings->push(
+                        __('ingredient_enrichment.warnings.guidance_evidence_none_accepted'),
+                    ))
+                    ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
+                    ->unique()
+                    ->values()
+                    ->all();
 
                 return new IngredientSourceStageResult(
                     stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
@@ -138,7 +154,8 @@ class IngredientEnrichmentPipeline
                         'performed' => true,
                         'candidate_evidence' => $candidateEvidence,
                         'guidance_evidence' => $guidanceEvidence,
-                        'warnings' => $response->warnings,
+                        'rejected_evidence' => $validation->rejected,
+                        'warnings' => $warnings,
                         'unresolved_questions' => $response->unresolvedQuestions,
                         'sources' => $response->sources,
                         'provider_response_id' => $response->responseId,
@@ -360,7 +377,18 @@ class IngredientEnrichmentPipeline
                     'url' => (string) $evidence['source_url'],
                     'title' => (string) ($evidence['source_name'] ?? $evidence['source_url']),
                 ])
-                ->merge($guidanceResearch->data['sources'] ?? [])
+                ->merge(collect($guidanceResearch->data['sources'] ?? [])
+                    ->filter(fn (mixed $source): bool => is_array($source)
+                        && is_string($source['url'] ?? null)
+                        && collect($guidanceResearch->data['guidance_evidence'] ?? [])
+                            ->contains(fn (mixed $evidence): bool => is_array($evidence)
+                                && ($evidence['source_url'] ?? null) === $source['url']))
+                    ->map(fn (array $source): array => [
+                        'url' => (string) $source['url'],
+                        'title' => (string) ($source['title'] ?? $source['url']),
+                    ])
+                    ->values()
+                    ->all())
                 ->unique('url')
                 ->values()
                 ->all(),
@@ -405,6 +433,7 @@ class IngredientEnrichmentPipeline
             'performed' => false,
             'candidate_evidence' => [],
             'guidance_evidence' => [],
+            'rejected_evidence' => [],
             'warnings' => [],
             'unresolved_questions' => [],
             'sources' => [],

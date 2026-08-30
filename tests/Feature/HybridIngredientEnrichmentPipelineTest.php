@@ -280,6 +280,87 @@ it('runs restricted guidance research automatically and includes its usage', fun
         ]);
 });
 
+it('keeps full enrichment reviewable when guidance evidence is mixed', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    $editorial = fakeHybridEditorialClient();
+    $gapResearch = new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [
+                    [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => 'Example supplier',
+                        'source_url' => 'https://supplier.example/technical/argan-oil.pdf',
+                        'summary' => 'A lightweight fixed oil used as an emollient in skin-care formulations.',
+                        'claim_type' => 'formulation_role',
+                        'source_kind' => 'supplier_technical',
+                        'scope' => 'product_grade',
+                        'evidence_kind' => 'fact',
+                        'usage_application' => 'not_applicable',
+                        'recommended_min_percent' => null,
+                        'recommended_max_percent' => null,
+                        'percentage_basis' => 'not_applicable',
+                    ],
+                    [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => 'Unconsulted source',
+                        'source_url' => 'https://other.example/argan-oil',
+                        'summary' => 'This row must not reach editorial authoring.',
+                        'claim_type' => 'formulation_role',
+                        'source_kind' => 'specialist_reference',
+                        'scope' => 'material',
+                        'evidence_kind' => 'fact',
+                        'usage_application' => 'not_applicable',
+                        'recommended_min_percent' => null,
+                        'recommended_max_percent' => null,
+                        'percentage_basis' => 'not_applicable',
+                    ],
+                ],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-gap-mixed',
+                requestId: 'req-gap-mixed',
+                model: 'gpt-test',
+                inputTokens: 40,
+                outputTokens: 20,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://supplier.example/technical/argan-oil.pdf',
+                    'title' => 'Argan oil technical data',
+                ]],
+            );
+        }
+    };
+    app()->instance(IngredientGuidanceResearchClient::class, $gapResearch);
+    $item = hybridPipelineItem('argan_mixed_guidance_oil', 'Argan oil');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+    $freshItem = $item->fresh();
+
+    expect(data_get($editorial->facts, 'gap_research.candidate_evidence'))->toHaveCount(1)
+        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.source_url'))
+        ->toBe('https://supplier.example/technical/argan-oil.pdf')
+        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.1'))->toBeNull()
+        ->and(data_get($freshItem->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
+            ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
+        ])
+        ->and($response->result['guidance_evidence'])->toHaveCount(1)
+        ->and($response->sources)->toContain([
+            'url' => 'https://supplier.example/technical/argan-oil.pdf',
+            'title' => 'Argan oil technical data',
+        ])
+        ->and(collect($response->sources)->pluck('url')->all())
+        ->not->toContain('https://other.example/argan-oil')
+        ->and($response->result['warnings'])->toContain(
+            '1 researched evidence item was rejected because it did not meet the evidence rules.',
+        );
+});
+
 it('passes trusted soap chemistry through to the editorial facts', function (): void {
     seedHybridCosingFunctions();
     cache()->flush();

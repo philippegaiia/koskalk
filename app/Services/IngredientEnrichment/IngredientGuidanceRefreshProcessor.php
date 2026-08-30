@@ -281,6 +281,7 @@ class IngredientGuidanceRefreshProcessor
                             'performed' => false,
                             'candidate_evidence' => [],
                             'guidance_evidence' => [],
+                            'rejected_evidence' => [],
                             'warnings' => [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
                             'unresolved_questions' => [],
                             'sources' => [],
@@ -299,18 +300,26 @@ class IngredientGuidanceRefreshProcessor
                     ...$context,
                     'guidance_research_prompt_version' => $stageContext['provider_configuration']['guidance_research_prompt_version'] ?? null,
                 ]);
-                $candidateEvidence = $this->guidanceEvidencePolicy->validateCandidates(
+                $validation = $this->guidanceEvidencePolicy->partitionCandidates(
                     $response->candidateEvidence,
                     $response->sources,
                 );
+                $candidateEvidence = $validation->accepted;
                 $guidanceEvidence = $this->guidanceEvidencePolicy->toPersisted(
                     $candidateEvidence,
                     CarbonImmutable::now(),
                 );
                 $warnings = collect($response->warnings)
-                    ->merge($guidanceEvidence === []
-                        ? [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')]
-                        : [])
+                    ->when($validation->rejected !== [], fn ($warnings) => $warnings->push(
+                        trans_choice(
+                            'ingredient_enrichment.warnings.guidance_evidence_rejected',
+                            count($validation->rejected),
+                            ['count' => count($validation->rejected)],
+                        ),
+                    ))
+                    ->when($candidateEvidence === [], fn ($warnings) => $warnings->push(
+                        __('ingredient_enrichment.warnings.guidance_evidence_none_accepted'),
+                    ))
                     ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
                     ->unique()
                     ->values()
@@ -323,6 +332,7 @@ class IngredientGuidanceRefreshProcessor
                         'performed' => true,
                         'candidate_evidence' => $candidateEvidence,
                         'guidance_evidence' => $guidanceEvidence,
+                        'rejected_evidence' => $validation->rejected,
                         'warnings' => $warnings,
                         'unresolved_questions' => $response->unresolvedQuestions,
                         'sources' => $response->sources,

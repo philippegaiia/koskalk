@@ -9,6 +9,16 @@ use RuntimeException;
 
 class IngredientGuidanceEvidencePolicy
 {
+    public const array REJECTION_CODES = [
+        'invalid_shape',
+        'invalid_field',
+        'invalid_url',
+        'blocked_domain',
+        'unconsulted_url',
+        'invalid_classification',
+        'invalid_usage_metadata',
+    ];
+
     /**
      * @param  list<array<string, mixed>>  $candidates
      * @param  list<array{url: string, title: string}>  $consultedSources

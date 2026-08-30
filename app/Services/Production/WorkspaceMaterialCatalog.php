@@ -6,8 +6,10 @@ use App\Enums\ProductionRunStatus;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
+use App\Models\StockLot;
 use App\Models\SupplierListing;
 use App\Models\Workspace;
+use App\Models\WorkspaceMaterialSetting;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -34,11 +36,13 @@ class WorkspaceMaterialCatalog
     {
         $demandedKeys = $this->demandedKeys($workspace);
         $listedKeys = $this->listedKeys($workspace);
+        $lotKeys = $this->lotKeys($workspace);
+        $settingKeys = $this->settingKeys($workspace);
 
         $ingredientIds = [];
         $packagingItemIds = [];
 
-        foreach ([...$demandedKeys, ...$listedKeys] as $key) {
+        foreach ([...$demandedKeys, ...$listedKeys, ...$lotKeys, ...$settingKeys] as $key) {
             if (str_starts_with($key, 'ingredient:')) {
                 $ingredientIds[] = (int) substr($key, strlen('ingredient:'));
             } elseif (str_starts_with($key, 'packaging:')) {
@@ -64,7 +68,7 @@ class WorkspaceMaterialCatalog
             ->get()
             ->keyBy(fn (PackagingItem $item): string => 'packaging:'.$item->id);
 
-        return collect([...$demandedKeys, ...$listedKeys])
+        return collect([...$demandedKeys, ...$listedKeys, ...$lotKeys, ...$settingKeys])
             ->unique()
             ->values()
             ->map(function (string $key) use ($ingredients, $packagingItems, $demandedKeys, $listedKeys): ?array {
@@ -137,6 +141,48 @@ class WorkspaceMaterialCatalog
         return [
             ...$this->prefixKeys($listings('ingredient_id'), 'ingredient'),
             ...$this->prefixKeys($listings('packaging_item_id'), 'packaging'),
+        ];
+    }
+
+    /**
+     * Subjects with an existing stock lot remain visible even after the
+     * supplier listing that created them has been retired.
+     *
+     * @return list<string>
+     */
+    private function lotKeys(Workspace $workspace): array
+    {
+        $lots = fn (string $column): array => StockLot::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereNotNull($column)
+            ->distinct()
+            ->pluck($column)
+            ->all();
+
+        return [
+            ...$this->prefixKeys($lots('ingredient_id'), 'ingredient'),
+            ...$this->prefixKeys($lots('packaging_item_id'), 'packaging'),
+        ];
+    }
+
+    /**
+     * A safety-buffer setting is itself evidence that the workspace tracks a
+     * material, even before a listing, lot, or planned run exists.
+     *
+     * @return list<string>
+     */
+    private function settingKeys(Workspace $workspace): array
+    {
+        $settings = fn (string $column): array => WorkspaceMaterialSetting::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereNotNull($column)
+            ->distinct()
+            ->pluck($column)
+            ->all();
+
+        return [
+            ...$this->prefixKeys($settings('ingredient_id'), 'ingredient'),
+            ...$this->prefixKeys($settings('packaging_item_id'), 'packaging'),
         ];
     }
 

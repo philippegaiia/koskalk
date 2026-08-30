@@ -84,16 +84,24 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
             ]
             && data_get($data, 'text.format.schema.additionalProperties') === false
             && array_keys($properties) === ['overview', 'formulation_use', 'soapmaking', 'warnings', 'unresolved_questions']
-            && data_get($properties, 'overview.items.additionalProperties') === false
-            && data_get($properties, 'overview.items.required') === [
+            && data_get($properties, 'overview.items.anyOf.0.additionalProperties') === false
+            && data_get($properties, 'overview.items.anyOf.0.required') === [
                 'text', 'claim_type', 'support_type', 'evidence_indexes', 'fact_paths', 'usage_application',
             ]
+            && data_get($properties, 'overview.items.anyOf.0.properties.claim_type.enum') === collect(config('ingredient-enrichment.openai.guidance_research.allowed_claim_types'))
+                ->reject(fn (string $claimType): bool => $claimType === 'usage')
+                ->values()
+                ->all()
+            && data_get($properties, 'overview.items.anyOf.0.properties.usage_application.enum') === ['not_applicable']
+            && data_get($properties, 'overview.items.anyOf.1.properties.claim_type.enum') === ['usage']
+            && data_get($properties, 'overview.items.anyOf.1.properties.usage_application.enum') === ['cosmetics', 'soapmaking']
             && str_contains((string) $data['instructions'], 'Do not repeat the INCI')
             && str_contains((string) $data['instructions'], 'material-specific formulation decision')
             && str_contains((string) $data['instructions'], 'one sentence per claim')
             && str_contains((string) $data['instructions'], '160 words maximum')
             && str_contains((string) $data['instructions'], 'Typical use level')
             && str_contains((string) $data['instructions'], 'approved structured usage fact')
+            && str_contains((string) $data['instructions'], 'For every non-usage claim, set `usage_application=not_applicable`')
             && str_contains((string) $data['instructions'], 'not a regulatory or safety limit')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });

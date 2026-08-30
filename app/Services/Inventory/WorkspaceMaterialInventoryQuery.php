@@ -63,6 +63,15 @@ class WorkspaceMaterialInventoryQuery
         ];
     }
 
+    public function tracks(Workspace $workspace, Ingredient|PackagingItem $subject): bool
+    {
+        $type = $subject instanceof Ingredient ? 'ingredient' : 'packaging';
+
+        return $this->query($workspace, ['type' => $type])
+            ->where('tracked_materials.subject_id', $subject->id)
+            ->exists();
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -326,7 +335,7 @@ class WorkspaceMaterialInventoryQuery
         $type = in_array($filters['type'] ?? 'all', ['all', 'ingredient', 'packaging'], true)
             ? (string) ($filters['type'] ?? 'all')
             : 'all';
-        $stockState = in_array($filters['stock_state'] ?? 'all', ['all', 'negative_forecast', 'below_buffer', 'quarantined'], true)
+        $stockState = in_array($filters['stock_state'] ?? 'all', ['all', 'negative_forecast', 'below_buffer', 'quarantined', 'incoming'], true)
             ? (string) ($filters['stock_state'] ?? 'all')
             : 'all';
         $demand = in_array($filters['demand'] ?? 'all', ['all', 'planned', 'unplanned'], true)
@@ -360,6 +369,8 @@ class WorkspaceMaterialInventoryQuery
                 ->whereRaw("{$available} < material_settings.buffer_quantity");
         } elseif ($stockState === 'quarantined') {
             $query->whereRaw('COALESCE(material_lot_totals.quarantined, 0) > 0');
+        } elseif ($stockState === 'incoming') {
+            $query->whereRaw('COALESCE(material_incoming_totals.incoming, 0) > 0');
         }
 
         $search = trim((string) ($filters['search'] ?? ''));

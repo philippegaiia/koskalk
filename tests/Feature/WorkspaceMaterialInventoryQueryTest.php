@@ -11,6 +11,7 @@ use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\StockReservation;
 use App\Models\SupportedLocale;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
@@ -92,6 +93,45 @@ it('searches inci aliases translations and workspace material codes', function (
         ->and($query->paginate($workspace, ['search' => 'botanical alias'])->total())->toBe(1)
         ->and($query->paginate($workspace, ['search' => 'nom traduit'])->total())->toBe(1)
         ->and($query->paginate($workspace, ['search' => 'code-search'])->total())->toBe(1);
+});
+
+it('keeps reserved and quarantined quantities inside physical stock but out of available stock', function (): void {
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Reserved oil']);
+    $releasedLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    $quarantinedLot = StockLot::factory()->for($workspace)->for($ingredient)->create();
+
+    StockMovement::factory()->for($releasedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '1000.000000000',
+    ]);
+    StockMovement::factory()->for($quarantinedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '250.000000000',
+    ]);
+
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::Draft,
+    ]);
+    $requirement = ProductionRequirement::factory()
+        ->for($production, 'productionRun')
+        ->for($ingredient)
+        ->create();
+    StockReservation::factory()->create([
+        'workspace_id' => $workspace->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $releasedLot->id,
+        'quantity' => '200.000000000',
+        'created_by_user_id' => $workspace->owner_user_id,
+    ]);
+
+    $row = app(WorkspaceMaterialInventoryQuery::class)->paginate($workspace)->first();
+
+    expect($row['physical'])->toBe('1250.000000000')
+        ->and($row['quarantined'])->toBe('250.000000000')
+        ->and($row['reserved'])->toBe('200.000000000')
+        ->and($row['available'])->toBe('800.000000000');
 });
 
 it('filters by taxonomy and negative forecast', function (): void {

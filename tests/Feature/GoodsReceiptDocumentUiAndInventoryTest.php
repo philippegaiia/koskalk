@@ -245,6 +245,7 @@ it('links receipt-origin inventory rows to their receipt with stable provenance 
     $this->actingAs($owner);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
         ->assertSeeHtml('id="lot-'.$lot->public_id.'"')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.receipts.show', $receipt).'"')
         ->assertSee('Document supplier')

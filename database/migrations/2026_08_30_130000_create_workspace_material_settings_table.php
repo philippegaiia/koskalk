@@ -15,6 +15,10 @@ return new class extends Migration
             $table->foreignId('ingredient_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('packaging_item_id')->nullable()->constrained()->cascadeOnDelete();
             $table->decimal('buffer_quantity', 20, 9);
+            $table->unique(['workspace_id', 'ingredient_id'], 'workspace_material_settings_workspace_ingredient_unique');
+            $table->unique(['workspace_id', 'packaging_item_id'], 'workspace_material_settings_workspace_packaging_unique');
+            $table->index('ingredient_id', 'workspace_material_settings_ingredient_index');
+            $table->index('packaging_item_id', 'workspace_material_settings_packaging_index');
             $table->timestamps();
         });
 
@@ -56,8 +60,6 @@ return new class extends Migration
             SQL);
         }
 
-        DB::statement('CREATE UNIQUE INDEX workspace_material_settings_workspace_ingredient_unique ON workspace_material_settings (workspace_id, ingredient_id) WHERE ingredient_id IS NOT NULL');
-        DB::statement('CREATE UNIQUE INDEX workspace_material_settings_workspace_packaging_unique ON workspace_material_settings (workspace_id, packaging_item_id) WHERE packaging_item_id IS NOT NULL');
     }
 
     public function down(): void

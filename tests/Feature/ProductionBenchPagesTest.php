@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockMovementType;
 use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
@@ -51,8 +53,8 @@ it('uses factual production bench copy', function (): void {
     $this->get(route('production-bench.inventory'))
         ->assertOk()
         ->assertSee('Inventory')
-        ->assertSee('Materials')
-        ->assertSee('Every material this workspace tracks')
+        ->assertSee('Stock by material')
+        ->assertSee('Compare physical stock with what is available')
         ->assertDontSee('what production can actually use')
         ->assertDontSee('What is here, and what is usable.');
 });
@@ -113,7 +115,7 @@ it('keeps manual stock entry out of the material view', function (): void {
         ->assertDontSee('Opening stock')
         ->assertDontSee('Add stock manually')
         ->assertDontSee('Stock positions')
-        ->assertSee('Materials')
+        ->assertSee('Stock by material')
         ->assertSee('Available')
         ->assertDontSee('Add a lot already on your shelves')
         ->assertDontSee('No lots yet. Add the stock already on your shelves above.');
@@ -143,19 +145,19 @@ it('offers two inventory sections for material positions and lot stock', functio
     $this->actingAs($user)
         ->get(route('production-bench.inventory.stock'))
         ->assertOk()
-        ->assertSee('Stock')
+        ->assertSee('Lot register')
         ->assertDontSee('Opening stock')
         ->assertSee('Add stock manually')
-        ->assertSee('Stock positions')
-        ->assertSee('Materials');
+        ->assertSee('Physical')
+        ->assertSee('Stock by material');
 
     $this->get(route('production-bench.inventory'))
         ->assertOk()
-        ->assertSee('Materials')
+        ->assertSee('Stock by material')
         ->assertSee('Required')
         ->assertSee('Reserved')
         ->assertSee('Forecast')
-        ->assertSee('Stock');
+        ->assertSee('Lot register');
 });
 
 it('redirects the retired material requirements page to the material view', function (): void {
@@ -186,7 +188,7 @@ it('narrows the material view to shortages only', function (): void {
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
-        ->set('filters.scope', 'shortages')
+        ->set('stockState', 'negative_forecast')
         ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
             && $materials->first()['name'] === 'Short oil')
         ->assertSee('Short oil')
@@ -202,10 +204,10 @@ it('narrows the material view to materials with and without planned demand', fun
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
-        ->set('filters.scope', 'unplanned')
+        ->set('demandFilter', 'unplanned')
         ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
             && $materials->first()['name'] === 'Listed oil')
-        ->set('filters.scope', 'planned')
+        ->set('demandFilter', 'planned')
         ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 2);
 });
 
@@ -245,8 +247,9 @@ it('counts the material summary tiles from the filtered rows', function (): void
             'incoming' => 0,
             'quarantined' => 0,
             'unplanned' => 1,
+            'below_buffer' => 0,
         ])
-        ->set('filters.scope', 'shortages')
+        ->set('stockState', 'negative_forecast')
         ->assertViewHas('inventorySummary', fn (array $summary): bool => $summary['materials'] === 1
             && $summary['shortages'] === 1
             && $summary['unplanned'] === 0);
@@ -261,6 +264,7 @@ it('paginates the stock lot register', function (): void {
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
         ->assertViewHas('lots', fn ($lots): bool => $lots instanceof LengthAwarePaginator
             && $lots->count() === 25
             && $lots->total() === 26);
@@ -278,11 +282,72 @@ it('filters the stock lot register by material and status', function (): void {
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->set('filters.search', 'Olive')
-        ->set('filters.status', 'quarantined')
+        ->set('lotScope', 'all')
+        ->set('search', 'Olive')
+        ->set('lotStatus', 'quarantined')
         ->assertSee('Olive oil')
         ->assertDontSee('Coconut oil')
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1);
+});
+
+it('filters the lot register by scope supplier origin dates and expiry', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+    ]);
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Local Oils']);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    $openLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'supplier_listing_id' => $listing->id,
+        'origin' => StockLotOrigin::PurchaseReceipt,
+        'stocked_at' => today()->subDays(3),
+        'expires_at' => today()->addDays(30),
+    ]);
+    StockMovement::factory()->for($openLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '10',
+    ]);
+    $expiredLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'origin' => StockLotOrigin::OpeningBalance,
+        'stocked_at' => today()->subDays(20),
+        'expires_at' => today()->subDay(),
+    ]);
+    StockMovement::factory()->for($expiredLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5',
+    ]);
+    StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'origin' => StockLotOrigin::OpeningBalance,
+        'stocked_at' => today(),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2)
+        ->set('lotExpiry', 'active')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->set('lotExpiry', 'expired')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->set('lotExpiry', 'all')
+        ->set('lotScope', 'exhausted')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->set('lotScope', 'all')
+        ->set('lotSupplier', $supplier->public_id)
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->set('lotOrigin', StockLotOrigin::PurchaseReceipt->value)
+        ->set('lotStockedFrom', today()->subDays(4)->toDateString())
+        ->set('lotStockedUntil', today()->subDays(2)->toDateString())
+        ->set('lotExpiry', 'all')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->set('search', 'OLEA EUROPAEA')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->assertSee('Local Oils');
 });
 
 it('keeps subject forecasts out of the lot register', function (): void {

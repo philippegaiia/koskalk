@@ -158,6 +158,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
             Route::view('/inventory/stock', 'production-bench.inventory-stock')->name('inventory.stock');
+            Route::view('/inventory/materials/ingredients/{ingredient}', 'production-bench.inventory-material-detail', ['subjectType' => 'ingredient'])->name('inventory.material.ingredient');
+            Route::view('/inventory/materials/packaging/{packagingItem}', 'production-bench.inventory-material-detail', ['subjectType' => 'packaging'])->name('inventory.material.packaging');
             // Materials now covers both demanded and listed-only materials, so
             // the requirements page is gone. The URL survives as a redirect so
             // bookmarks and older links still land somewhere useful.

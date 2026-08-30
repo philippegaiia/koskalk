@@ -6,7 +6,6 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentEditorialPrompt;
 use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
 
 it('binds guidance research to the OpenAI web-search client', function (): void {
     expect(app(IngredientGuidanceResearchClient::class))
@@ -125,7 +124,7 @@ it('uses broad web search only in an explicitly enabled guidance-research call',
             'model' => 'gpt-5.6-terra-2026-08-01',
             'output' => [
                 [
-                'type' => 'web_search_call',
+                    'type' => 'web_search_call',
                     'action' => ['sources' => [[
                         'url' => 'https://supplier.example/technical/argan-oil.pdf',
                         'title' => 'Argan oil technical data',
@@ -175,9 +174,11 @@ it('uses broad web search only in an explicitly enabled guidance-research call',
             'type' => 'web_search',
         ]
             && $data['include'] === ['web_search_call.action.sources']
+            && data_get($data, 'text.format.schema.properties.candidate_evidence.items.properties.field.enum') === ['proposal.info_markdown']
             && str_contains((string) $data['instructions'], 'candidate evidence only')
             && str_contains((string) $data['instructions'], 'Search the open web')
             && str_contains((string) $data['instructions'], 'manufacturer technical sheets')
+            && str_contains((string) $data['instructions'], 'For non-usage claims')
             && str_contains((string) $data['instructions'], 'must not establish legal declarations');
     });
 });
@@ -195,7 +196,7 @@ it('does not permit an implicit gap-research request when the feature is disable
     Http::assertNothingSent();
 });
 
-it('rejects a guidance citation that was not among the consulted web sources', function (): void {
+it('returns guidance candidates without applying the evidence policy in transport', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     Http::preventStrayRequests();
@@ -239,11 +240,17 @@ it('rejects a guidance citation that was not among the consulted web sources', f
         ]),
     ]);
 
-    expect(fn (): mixed => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
-        ->toThrow(ValidationException::class);
+    $response = app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts());
+
+    expect($response->candidateEvidence)->toHaveCount(1)
+        ->and($response->candidateEvidence[0]['source_url'])->toBe('https://other.example/argan-oil')
+        ->and($response->sources)->toBe([[
+            'url' => 'https://supplier.example/technical/argan-oil.pdf',
+            'title' => 'Argan oil technical data',
+        ]]);
 });
 
-it('rejects a blocked guidance source even when the provider consulted it', function (): void {
+it('returns blocked guidance candidates without applying the evidence policy in transport', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     Http::preventStrayRequests();
@@ -287,11 +294,14 @@ it('rejects a blocked guidance source even when the provider consulted it', func
         ]),
     ]);
 
-    expect(fn (): mixed => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
-        ->toThrow(ValidationException::class);
+    $response = app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts());
+
+    expect($response->candidateEvidence)->toHaveCount(1)
+        ->and($response->candidateEvidence[0]['source_url'])
+        ->toBe('https://www.reddit.com/r/formulation/comments/example');
 });
 
-it('rejects COSMILE candidate evidence for an identity or declaration field', function (): void {
+it('does not apply identity evidence policy inside the guidance transport', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     config()->set('ingredient-enrichment.openai.gap_research.enabled', true);
     Http::preventStrayRequests();
@@ -326,8 +336,10 @@ it('rejects COSMILE candidate evidence for an identity or declaration field', fu
         ]),
     ]);
 
-    expect(fn () => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
-        ->toThrow(RuntimeException::class, 'cannot support identity or declaration fields');
+    $response = app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts());
+
+    expect($response->candidateEvidence)->toHaveCount(1)
+        ->and($response->candidateEvidence[0]['field'])->toBe('proposal.inci_name');
 });
 
 it('keeps metadata editorial separate from guidance localization', function (): void {

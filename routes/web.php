@@ -158,7 +158,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
             Route::view('/inventory/stock', 'production-bench.inventory-stock')->name('inventory.stock');
-            Route::view('/inventory/requirements', 'production-bench.inventory-requirements')->name('inventory.requirements');
+            // Materials now covers both demanded and listed-only materials, so
+            // the requirements page is gone. The URL survives as a redirect so
+            // bookmarks and older links still land somewhere useful.
+            Route::redirect('/inventory/requirements', '/dashboard/production-bench/inventory')->name('inventory.requirements');
             Route::view('/production', 'production-bench.production.index')->name('production.index');
             Route::view('/production/new', 'production-bench.production.create')->name('production.create');
             // The tab lands on Numbering now, not on the page that rendered every

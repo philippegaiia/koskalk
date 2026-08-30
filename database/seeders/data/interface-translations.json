@@ -16476,18 +16476,6 @@
     },
     {
       "group": "production_bench",
-      "key": "inventory.help",
-      "text": {
-        "de": "Physisch umfasst Bestände in Quarantäne. Verfügbar schließt Quarantäne und reservierte Bestände aus. Negative Bestände sind zulässig. Die Bereiche zeigen Bestand, Reservierungen, offene Lieferungen und den Bedarf geplanter Produktionen.",
-        "es": "El stock físico incluye el stock en cuarentena. El disponible excluye el stock en cuarentena y reservado. Se permiten saldos negativos. Las secciones muestran el stock, las reservas, las entradas y las necesidades de producción.",
-        "fr": "Le stock physique inclut le stock en quarantaine. Le disponible exclut le stock en quarantaine et réservé. Les soldes négatifs sont autorisés. Les sections présentent le stock, les réservations, les arrivages et les besoins de production.",
-        "it": "Il fisico include le scorte in quarantena. Il disponibile esclude le scorte in quarantena e riservate. Sono ammessi saldi negativi. Le sezioni mostrano scorte, prenotazioni, arrivi e fabbisogni di produzione.",
-        "nl": "Fysiek omvat voorraad in quarantaine. Beschikbaar sluit quarantaine en gereserveerde voorraad uit. Negatieve saldi zijn toegestaan. De secties tonen voorraad, reserveringen, inkomende leveringen en productiebehoeften.",
-        "pt_BR": "O estoque físico inclui o estoque em quarentena. O disponível exclui o estoque em quarentena e reservado. Saldos negativos são permitidos. Use as seções abaixo para ver o que está disponível, reservado, chegando e o que a produção planejada precisará."
-      }
-    },
-    {
-      "group": "production_bench",
       "key": "inventory.incoming",
       "text": {
         "de": "Eingang",
@@ -16572,14 +16560,62 @@
     },
     {
       "group": "production_bench",
-      "key": "inventory.no_forecast",
+      "key": "inventory.material",
       "text": {
-        "de": "Derzeit werden keine Zutaten oder Verpackungen erfasst.",
-        "es": "Actualmente no hay ingredientes ni envases registrados.",
-        "fr": "Aucun ingrédient ni emballage n’est actuellement suivi.",
-        "it": "Al momento non sono tracciati ingredienti o imballaggi.",
-        "nl": "Er worden momenteel geen ingrediënten of verpakkingen bijgehouden.",
-        "pt_BR": "Nenhum ingrediente ou embalagem é acompanhado no momento."
+        "de": "Material",
+        "es": "Material",
+        "fr": "Matière",
+        "it": "Materiale",
+        "nl": "Materiaal",
+        "pt_BR": "Material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.materials",
+      "text": {
+        "de": "Materialien",
+        "es": "Materiales",
+        "fr": "Matières",
+        "it": "Materiali",
+        "nl": "Materialen",
+        "pt_BR": "Materiais"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.materials_count",
+      "text": {
+        "de": "{0} Keine Materialien|{1} :count Material|[2,*] :count Materialien",
+        "es": "{0} Sin materiales|{1} :count material|[2,*] :count materiales",
+        "fr": "{0} Aucune matière|{1} :count matière|[2,*] :count matières",
+        "it": "{0} Nessun materiale|{1} :count materiale|[2,*] :count materiali",
+        "nl": "{0} Geen materialen|{1} :count materiaal|[2,*] :count materialen",
+        "pt_BR": "{0} Nenhum material|{1} :count material|[2,*] :count materiais"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.materials_help",
+      "text": {
+        "de": "Alle Materialien dieses Arbeitsbereichs mit dem Bedarf geplanter Produktionen, dem vorhandenen Bestand, den Eingängen und den Fehlmengen. Ein Material wird erfasst, wenn eine geplante Produktion es benötigt oder wenn für es ein Lieferantenartikel hinterlegt ist. So erscheint alles, was Sie kaufen können, bevor eine Produktion es braucht.",
+        "es": "Todos los materiales de este espacio de trabajo, con lo que necesitan las producciones planificadas, lo disponible, lo que entra y lo que falta. Un material se registra cuando lo pide una producción planificada o cuando existe una referencia de proveedor para él, así que todo lo que puedes comprar aparece antes de que una producción lo necesite.",
+        "fr": "Toutes les matières suivies par cet espace de travail, avec les besoins des productions planifiées, le stock disponible, les entrées et les manquants. Une matière est suivie lorsqu’une production planifiée la demande ou lorsqu’une référence fournisseur existe pour elle : tout ce que vous pouvez acheter apparaît donc avant qu’une production n’en ait besoin.",
+        "it": "Tutti i materiali tracciati in questo spazio di lavoro, con ciò che serve alle produzioni pianificate, la giacenza, ciò che è in arrivo e ciò che manca. Un materiale è tracciato quando lo richiede una produzione pianificata o quando esiste un articolo fornitore per esso: così tutto ciò che puoi acquistare appare prima che una produzione ne abbia bisogno.",
+        "nl": "Alle materialen van deze werkruimte, met wat geplande producties nodig hebben, wat op voorraad is, wat binnenkomt en wat tekortschiet. Een materiaal wordt gevolgd wanneer een geplande productie het vraagt of wanneer er een leveranciersartikel voor bestaat, zodat alles wat je kunt kopen verschijnt voordat een productie het nodig heeft.",
+        "pt_BR": "Todos os materiais deste espaço de trabalho, com o que as produções planejadas precisam, o que está disponível, o que está entrando e o que falta. Um material é rastreado quando uma produção planejada o solicita ou quando existe uma oferta de fornecedor para ele, então tudo o que você pode comprar aparece antes de uma produção precisar dele."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.materials_title",
+      "text": {
+        "de": "Materialien",
+        "es": "Materiales",
+        "fr": "Matières",
+        "it": "Materiali",
+        "nl": "Materialen",
+        "pt_BR": "Materiais"
       }
     },
     {
@@ -16592,6 +16628,42 @@
         "it": "Nessun articolo a stock.",
         "nl": "Geen voorraaditems.",
         "pt_BR": "Nenhum item de estoque."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.no_materials",
+      "text": {
+        "de": "Dieser Arbeitsbereich verfolgt noch keine Materialien. Ein Material erscheint, sobald eine geplante Produktion es benötigt oder sobald Sie einen Lieferantenartikel dafür anlegen.",
+        "es": "Este espacio de trabajo todavía no registra ningún material. Un material aparece cuando lo necesita una producción planificada o cuando añades una referencia de proveedor para él.",
+        "fr": "Cet espace de travail ne suit encore aucune matière. Une matière apparaît dès qu’une production planifiée en a besoin ou dès que vous ajoutez une référence fournisseur pour elle.",
+        "it": "Questo spazio di lavoro non traccia ancora alcun materiale. Un materiale appare quando una produzione pianificata ne ha bisogno o quando aggiungi un articolo fornitore per esso.",
+        "nl": "Deze werkruimte volgt nog geen materialen. Een materiaal verschijnt zodra een geplande productie het nodig heeft of zodra je een leveranciersartikel toevoegt.",
+        "pt_BR": "Este espaço de trabalho ainda não rastreia nenhum material. Um material aparece quando uma produção planejada precisa dele ou quando você adiciona uma oferta de fornecedor para ele."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.no_materials_match",
+      "text": {
+        "de": "Keine Materialien entsprechen der aktuellen Suche oder dem Filter.",
+        "es": "Ningún material coincide con la búsqueda o el filtro actual.",
+        "fr": "Aucune matière ne correspond à la recherche ou au filtre actuel.",
+        "it": "Nessun materiale corrisponde alla ricerca o al filtro attuale.",
+        "nl": "Geen materialen komen overeen met de huidige zoekopdracht of het filter.",
+        "pt_BR": "Nenhum material corresponde à pesquisa ou ao filtro atual."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.no_planned_demand",
+      "text": {
+        "de": "Kein geplanter Bedarf",
+        "es": "Sin demanda planificada",
+        "fr": "Aucun besoin planifié",
+        "it": "Nessun fabbisogno pianificato",
+        "nl": "Geen geplande behoefte",
+        "pt_BR": "Sem demanda planejada"
       }
     },
     {
@@ -16620,18 +16692,6 @@
     },
     {
       "group": "production_bench",
-      "key": "inventory.overview",
-      "text": {
-        "de": "Übersicht",
-        "es": "Resumen",
-        "fr": "Vue d’ensemble",
-        "it": "Panoramica",
-        "nl": "Overzicht",
-        "pt_BR": "Visão geral"
-      }
-    },
-    {
-      "group": "production_bench",
       "key": "inventory.physical",
       "text": {
         "de": "Physisch",
@@ -16652,30 +16712,6 @@
         "it": "Prezzo / :unit",
         "nl": "Prijs / :unit",
         "pt_BR": "Preço / :unit"
-      }
-    },
-    {
-      "group": "production_bench",
-      "key": "inventory.production_forecast",
-      "text": {
-        "de": "Produktionsprognose",
-        "es": "Previsión de producción",
-        "fr": "Prévision de production",
-        "it": "Previsione di produzione",
-        "nl": "Productieprognose",
-        "pt_BR": "Previsão de produção"
-      }
-    },
-    {
-      "group": "production_bench",
-      "key": "inventory.production_forecast_help",
-      "text": {
-        "de": "Verfügbarer und eingehender Bestand nach dem Bedarf geplanter Produktionen. Es werden weder Bestände reserviert noch bewegt.",
-        "es": "Stock disponible y entrante después de la demanda de las producciones planificadas. No se reserva ni mueve stock.",
-        "fr": "Stock disponible et entrant après la demande des productions planifiées. Aucun stock n’est réservé ni déplacé.",
-        "it": "Scorte disponibili e in arrivo dopo la domanda delle produzioni pianificate. Non viene riservata né spostata alcuna scorta.",
-        "nl": "Beschikbare en inkomende voorraad na de vraag van geplande producties. Er wordt geen voorraad gereserveerd of verplaatst.",
-        "pt_BR": "Estoque disponível e de entrada após a demanda da produção planejada. Isso não reserva nem movimenta estoque."
       }
     },
     {
@@ -16764,42 +16800,6 @@
     },
     {
       "group": "production_bench",
-      "key": "inventory.requirements",
-      "text": {
-        "de": "Materialbedarf",
-        "es": "Necesidades",
-        "fr": "Besoins en matières",
-        "it": "Fabbisogno materiali",
-        "nl": "Materiaalbehoefte",
-        "pt_BR": "Necessidades"
-      }
-    },
-    {
-      "group": "production_bench",
-      "key": "inventory.requirements_help",
-      "text": {
-        "de": "Zeigt den Materialbedarf geplanter Produktionen zusammen mit Bestand, Reservierungen, offenen Bestellungen und der daraus entstehenden Prognose.",
-        "es": "Muestra el material necesario para las producciones planificadas junto con el stock, las reservas, los pedidos pendientes y la previsión resultante.",
-        "fr": "Affiche les matières nécessaires aux productions planifiées avec le stock, les réservations, les commandes en attente et la prévision obtenue.",
-        "it": "Mostra i materiali necessari per le produzioni pianificate insieme a scorte, prenotazioni, ordini in arrivo e previsione risultante.",
-        "nl": "Toont wat geplande producties nodig hebben naast voorraad, reserveringen, openstaande bestellingen en de resulterende prognose.",
-        "pt_BR": "Veja o material necessário pelas produções planejadas junto do estoque, reservas, pedidos de compra de entrada e da previsão resultante."
-      }
-    },
-    {
-      "group": "production_bench",
-      "key": "inventory.requirements_title",
-      "text": {
-        "de": "Materialbedarf",
-        "es": "Necesidades de material",
-        "fr": "Besoins en matières",
-        "it": "Fabbisogno materiali",
-        "nl": "Materiaalbehoefte",
-        "pt_BR": "Necessidades de materiais"
-      }
-    },
-    {
-      "group": "production_bench",
       "key": "inventory.reserved",
       "text": {
         "de": "Reserviert",
@@ -16808,6 +16808,66 @@
         "it": "Riservato",
         "nl": "Gereserveerd",
         "pt_BR": "Reservado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.scope",
+      "text": {
+        "de": "Anzeige",
+        "es": "Mostrar",
+        "fr": "Afficher",
+        "it": "Mostra",
+        "nl": "Weergeven",
+        "pt_BR": "Exibir"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.scope_all",
+      "text": {
+        "de": "Alle Materialien",
+        "es": "Todos los materiales",
+        "fr": "Toutes les matières",
+        "it": "Tutti i materiali",
+        "nl": "Alle materialen",
+        "pt_BR": "Todos os materiais"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.scope_planned",
+      "text": {
+        "de": "Mit geplantem Bedarf",
+        "es": "Con demanda planificada",
+        "fr": "Avec besoins planifiés",
+        "it": "Con fabbisogno pianificato",
+        "nl": "Met geplande behoefte",
+        "pt_BR": "Com demanda planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.scope_shortages",
+      "text": {
+        "de": "Nur Fehlmengen",
+        "es": "Solo faltantes",
+        "fr": "Uniquement les manquants",
+        "it": "Solo carenze",
+        "nl": "Alleen tekorten",
+        "pt_BR": "Somente faltas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.scope_unplanned",
+      "text": {
+        "de": "Ohne geplanten Bedarf",
+        "es": "Sin demanda planificada",
+        "fr": "Sans besoins planifiés",
+        "it": "Senza fabbisogno pianificato",
+        "nl": "Zonder geplande behoefte",
+        "pt_BR": "Sem demanda planejada"
       }
     },
     {
@@ -16952,6 +17012,18 @@
         "it": "Articolo di magazzino sconosciuto",
         "nl": "Onbekend voorraaditem",
         "pt_BR": "Item de estoque desconhecido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.without_demand_count",
+      "text": {
+        "de": "{0} Keine ohne Bedarf|{1} :count ohne geplanten Bedarf|[2,*] :count ohne geplanten Bedarf",
+        "es": "{0} Ninguno sin demanda|{1} :count sin demanda planificada|[2,*] :count sin demanda planificada",
+        "fr": "{0} Aucun sans besoin|{1} :count sans besoin planifié|[2,*] :count sans besoins planifiés",
+        "it": "{0} Nessuno senza fabbisogno|{1} :count senza fabbisogno pianificato|[2,*] :count senza fabbisogno pianificato",
+        "nl": "{0} Geen zonder behoefte|{1} :count zonder geplande behoefte|[2,*] :count zonder geplande behoefte",
+        "pt_BR": "{0} Nenhum sem demanda|{1} :count sem demanda planejada|[2,*] :count sem demanda planejada"
       }
     },
     {

@@ -41,13 +41,13 @@ it('uses one stable page shell across production bench routes', function (): voi
     }
 });
 
-it('keeps the inventory overview navigation visibly selected across live updates', function (): void {
+it('keeps the material view navigation visibly selected across live updates', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
     $this->actingAs($user);
 
-    // The overview is the exact destination, so it is the only `page`. Its
+    // Materials is the exact destination, so it is the only `page`. Its
     // parent tab shares the same href and is marked as a `branch` instead.
     $assertInventoryNavigationIsActive = function (string $html): void {
         expect(substr_count($html, 'aria-current="page"'))->toBe(1)
@@ -57,7 +57,7 @@ it('keeps the inventory overview navigation visibly selected across live updates
             ->and($html)
             ->toContain('class="sk-nav-item is-branch"');
     };
-    $component = Livewire::test(InventoryIndex::class, ['mode' => 'overview']);
+    $component = Livewire::test(InventoryIndex::class, ['mode' => 'materials']);
 
     $assertInventoryNavigationIsActive($component->html());
 
@@ -81,9 +81,8 @@ it('marks exactly one navigation entry current on every production bench page', 
         ->toContain('aria-current="page"');
 })->with([
     'dashboard' => ['production-bench.home', 'production-bench.home'],
-    'inventory overview' => ['production-bench.inventory', 'production-bench.inventory'],
+    'inventory materials' => ['production-bench.inventory', 'production-bench.inventory'],
     'inventory stock' => ['production-bench.inventory.stock', 'production-bench.inventory.stock'],
-    'inventory requirements' => ['production-bench.inventory.requirements', 'production-bench.inventory.requirements'],
     'production runs' => ['production-bench.production.index', 'production-bench.production.index'],
     'tasks' => ['production-bench.production.tasks', 'production-bench.production.tasks'],
     'flash planner' => ['production-bench.production.flash', 'production-bench.production.flash'],
@@ -124,7 +123,7 @@ it('renders explicit production bench navigation state without relying on the re
 
     // Exactly one link is the page itself. Every ancestor is a branch, so the
     // parent tab and the child entry are never both announced as "page". Where
-    // parent and child share an href (Inventory overview, Production runs,
+    // parent and child share an href (Materials, Production runs,
     // Purchasing suppliers) the level 1 tab renders first, so `after` reads the
     // branch and `afterLast` reads the current entry.
     expect(substr_count($html, 'aria-current="page"'))->toBe(1)
@@ -137,9 +136,8 @@ it('renders explicit production bench navigation state without relying on the re
     }
 })->with([
     'dashboard' => ['home', null, 'production-bench.home', null],
-    'inventory overview' => ['inventory', 'overview', 'production-bench.inventory', 'production-bench.inventory'],
+    'inventory materials' => ['inventory', 'materials', 'production-bench.inventory', 'production-bench.inventory'],
     'inventory stock' => ['inventory', 'stock', 'production-bench.inventory.stock', 'production-bench.inventory'],
-    'inventory requirements' => ['inventory', 'requirements', 'production-bench.inventory.requirements', 'production-bench.inventory'],
     'production runs' => ['production', 'runs', 'production-bench.production.index', 'production-bench.production.index'],
     'production default' => ['production', null, 'production-bench.production.index', 'production-bench.production.index'],
     'tasks' => ['tasks', null, 'production-bench.production.tasks', 'production-bench.production.index'],
@@ -152,7 +150,7 @@ it('renders explicit production bench navigation state without relying on the re
     'purchasing receipts' => ['purchasing', 'receipts', 'production-bench.purchasing.receipts', 'production-bench.purchasing.suppliers'],
     // The Settings tab shares its href with Numbering, its first child, so
     // `subnavigation` null resolves to Numbering and the tab is a branch —
-    // the same shape as Inventory overview and Production runs.
+    // the same shape as Materials and Production runs.
     'setup default' => ['production-setup', null, 'production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
     'setup numbering' => ['production-setup', 'numbering', 'production-bench.production.settings.numbering', 'production-bench.production.settings.numbering'],
     'setup presets' => ['production-setup', 'presets', 'production-bench.production.settings.presets', 'production-bench.production.settings.numbering'],

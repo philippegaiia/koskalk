@@ -33,7 +33,7 @@
                                 <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $line->supplierListing->purchase_format }}</p>
                                 <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                                     <a href="{{ route('production-bench.purchasing.supplier', $receipt->supplier).'#listing-'.$line->supplierListing->public_id }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.listing_link') }}</a>
-                                    <a href="{{ route('production-bench.inventory', ['lot' => $line->stockLot->public_id]).'#lot-'.$line->stockLot->public_id }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.inventory_link') }}</a>
+                                    <a href="{{ route('production-bench.inventory.stock').'#lot-'.$line->stockLot->public_id }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.inventory_link') }}</a>
                                 </div>
                             </div>
                             @if ($line->purchaseOrderLine)

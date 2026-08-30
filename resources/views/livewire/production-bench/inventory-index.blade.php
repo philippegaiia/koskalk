@@ -10,25 +10,29 @@
         @endif
 
         <header>
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_title') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_title') : __('production_bench.navigation.inventory')) }}</h1>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.help')) }}</p>
+            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_title') : __('production_bench.inventory.materials_title') }}</h1>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : __('production_bench.inventory.materials_help') }}</p>
         </header>
 
-        @if ($mode === 'overview')
-            <section data-inventory-overview aria-labelledby="inventory-overview-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
-                <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 id="inventory-overview-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.requirements_title') }}</h2>
-                    <a href="{{ route('production-bench.inventory.requirements') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.requirements') }}</a>
+        @if ($mode === 'materials')
+            <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+                <div class="flex flex-col gap-1 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between">
+                    <h2 id="inventory-materials-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.materials_title') }}</h2>
+                    <p class="text-xs text-[var(--color-ink-muted)]">
+                        {{ trans_choice('production_bench.inventory.materials_count', $materials->total()) }}
+                        · {{ trans_choice('production_bench.inventory.without_demand_count', $inventorySummary['unplanned']) }}
+                    </p>
                 </div>
 
+                {{--
+                    Every tile counts materials, not lots, so the tiles and the
+                    table below always describe the same set — including when a
+                    search or a scope filter narrows it.
+                --}}
                 <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] border-b border-[var(--color-line)] sm:grid-cols-4 sm:divide-y-0">
                     <div class="px-5 py-3">
-                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.stock') }}</dt>
-                        <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['lots'] }}</dd>
-                    </div>
-                    <div class="px-5 py-3">
-                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.quarantined') }}</dt>
-                        <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['quarantined'] }}</dd>
+                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.materials') }}</dt>
+                        <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['materials'] }}</dd>
                     </div>
                     <div class="px-5 py-3">
                         <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.production.shortage') }}</dt>
@@ -38,52 +42,21 @@
                         <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.incoming') }}</dt>
                         <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $inventorySummary['incoming'] }}</dd>
                     </div>
+                    <div class="px-5 py-3">
+                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.quarantined') }}</dt>
+                        <dd class="numeric mt-1 text-lg font-semibold {{ $inventorySummary['quarantined'] > 0 ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $inventorySummary['quarantined'] }}</dd>
+                    </div>
                 </dl>
 
+                <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                    {{ $this->filtersForm }}
+                </div>
+
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[720px] text-left text-sm">
+                    <table class="w-full min-w-[880px] text-left text-sm">
                         <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
                             <tr>
-                                <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.required') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
-                                <th class="px-5 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[var(--color-line)]">
-                            @forelse ($overviewShortages as $row)
-                                @php($subject = $row['subject'])
-                                @php($materialCode = $subject instanceof \App\Models\PackagingItem ? $subject->material_code : null)
-                                <tr>
-                                    <td class="px-5 py-3">
-                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
-                                        @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
-                                        <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
-                                    </td>
-                                    <td class="numeric px-4 py-3 text-right">{{ $row['required'] }}</td>
-                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>
-                                    <td class="numeric px-4 py-3 text-right">{{ $row['positions']['incoming'] }}</td>
-                                    <td class="numeric px-5 py-3 text-right font-semibold text-[var(--color-danger-strong)]">{{ $row['positions']['forecast'] }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        @elseif ($mode === 'requirements')
-            <section aria-labelledby="production-requirements-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
-                <div class="flex items-center justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4">
-                    <h2 id="production-requirements-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.requirements_title') }}</h2>
-                    <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[820px] text-left text-sm">
-                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-                            <tr>
-                                <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                                <th class="px-5 py-3">{{ __('production_bench.inventory.material') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.required') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
@@ -92,14 +65,15 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
-                            @forelse ($forecast as $row)
-                                @php($subject = $row['subject'])
-                                @php($materialCode = $subject instanceof \App\Models\PackagingItem ? $subject->material_code : null)
-                                <tr class="{{ $row['is_shortage'] ? 'bg-[var(--color-danger-soft)]/40' : '' }}">
+                            @forelse ($materials as $row)
+                                <tr wire:key="inventory-material-{{ $row['key'] }}" class="{{ $row['is_shortage'] ? 'bg-[var(--color-danger-soft)]/40' : '' }}">
                                     <td class="px-5 py-3">
-                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
-                                        @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
+                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $row['name'] }}</p>
+                                        @if ($row['material_code'])<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $row['material_code'] }}</p>@endif
                                         <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
+                                        @unless ($row['has_demand'])
+                                            <p class="mt-1"><span class="rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_planned_demand') }}</span></p>
+                                        @endunless
                                     </td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['required'] }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['reserved'] }}</td>
@@ -108,11 +82,12 @@
                                     <td class="numeric px-5 py-3 text-right font-semibold {{ $row['is_shortage'] ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $row['positions']['forecast'] }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
+                                <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $materialFiltersActive ? __('production_bench.inventory.no_materials_match') : __('production_bench.inventory.no_materials') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+                <x-table-pagination :paginator="$materials" :per-page-label="__('production_bench.inventory.materials_title')" />
             </section>
         @else
             <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">

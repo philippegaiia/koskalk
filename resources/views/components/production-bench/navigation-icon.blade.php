@@ -10,9 +10,8 @@
 @php($paths = match ($name) {
     'dashboard' => '<path d="M3 10.6 12 3.4l9 7.2"/><path d="M5.4 9.6V20.6h13.2V9.6"/><path d="M9.8 20.6v-5.2h4.4v5.2"/>',
     'inventory' => '<path d="M12 3.2 3 7.6v8.8L12 20.8l9-4.4V7.6z"/><path d="m3 7.6 9 4.4 9-4.4M12 12v8.8"/>',
-    'overview' => '<rect x="3.4" y="3.4" width="7.4" height="7.4" rx="1.6"/><rect x="13.2" y="3.4" width="7.4" height="7.4" rx="1.6"/><rect x="3.4" y="13.2" width="7.4" height="7.4" rx="1.6"/><rect x="13.2" y="13.2" width="7.4" height="7.4" rx="1.6"/>',
+    'materials' => '<rect x="4.8" y="4.6" width="14.4" height="16" rx="2.2"/><path d="M9.4 4.6V3.2h5.2v1.4"/><path d="M8.8 10h6.4M8.8 14h6.4M8.8 17.6h3.4"/>',
     'stock' => '<path d="M12 3.4 3.4 7.7 12 12l8.6-4.3z"/><path d="m3.4 12.4 8.6 4.3 8.6-4.3"/><path d="m3.4 16.8 8.6 4.3 8.6-4.3"/>',
-    'requirements' => '<rect x="4.8" y="4.6" width="14.4" height="16" rx="2.2"/><path d="M9.4 4.6V3.2h5.2v1.4"/><path d="M8.8 10h6.4M8.8 14h6.4M8.8 17.6h3.4"/>',
     'production' => '<path d="M3.2 20.8V9.6l6 3.7V9.6l6 3.7V9.6l5.6 3.4v7.8z"/><path d="M6.6 16.8h2.2M10.8 16.8h2.2M15 16.8h2.2"/>',
     'runs' => '<path d="M8.4 6.4h12M8.4 12h12M8.4 17.6h12"/><path d="M3.8 6.4h.01M3.8 12h.01M3.8 17.6h.01"/>',
     'tasks' => '<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3"/><path d="m8.2 12.4 2.7 2.7 5-5.4"/>',

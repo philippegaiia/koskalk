@@ -18,7 +18,6 @@ use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -52,8 +51,8 @@ it('uses factual production bench copy', function (): void {
     $this->get(route('production-bench.inventory'))
         ->assertOk()
         ->assertSee('Inventory')
-        ->assertSee('Physical includes quarantined stock.')
-        ->assertSee('Negative balances are allowed.')
+        ->assertSee('Materials')
+        ->assertSee('Every material this workspace tracks')
         ->assertDontSee('what production can actually use')
         ->assertDontSee('What is here, and what is usable.');
 });
@@ -102,7 +101,7 @@ it('activates and later preserves a read only bench', function (): void {
     expect(app(ProductionBenchAccess::class)->isReadOnly($workspace))->toBeTrue();
 });
 
-it('keeps manual stock entry out of the inventory overview', function (): void {
+it('keeps manual stock entry out of the material view', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
@@ -114,7 +113,7 @@ it('keeps manual stock entry out of the inventory overview', function (): void {
         ->assertDontSee('Opening stock')
         ->assertDontSee('Add stock manually')
         ->assertDontSee('Stock positions')
-        ->assertSee('Material requirements')
+        ->assertSee('Materials')
         ->assertSee('Available')
         ->assertDontSee('Add a lot already on your shelves')
         ->assertDontSee('No lots yet. Add the stock already on your shelves above.');
@@ -136,7 +135,7 @@ it('keeps manual stock entry out of the inventory overview', function (): void {
         ->assertDontSeeHtml('class="flex flex-wrap gap-3"');
 });
 
-it('offers clear inventory sections for stock and material requirements', function (): void {
+it('offers two inventory sections for material positions and lot stock', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
@@ -148,50 +147,109 @@ it('offers clear inventory sections for stock and material requirements', functi
         ->assertDontSee('Opening stock')
         ->assertSee('Add stock manually')
         ->assertSee('Stock positions')
-        ->assertSee('Requirements');
+        ->assertSee('Materials');
 
-    $this->get(route('production-bench.inventory.requirements'))
+    $this->get(route('production-bench.inventory'))
         ->assertOk()
-        ->assertSee('Requirements')
+        ->assertSee('Materials')
         ->assertSee('Required')
         ->assertSee('Reserved')
+        ->assertSee('Forecast')
         ->assertSee('Stock');
 });
 
-it('keeps the inventory overview focused on projected shortages', function (): void {
+it('redirects the retired material requirements page to the material view', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
-    $coveredIngredient = Ingredient::factory()->create(['display_name' => 'Covered oil']);
-    $shortIngredient = Ingredient::factory()->create(['display_name' => 'Short oil']);
-    $production = ProductionRun::factory()->for($workspace)->create([
-        'status' => ProductionRunStatus::Scheduled,
-    ]);
 
-    ProductionRequirement::factory()->for($production)->for($coveredIngredient)->create([
-        'required_mass_grams' => '100.000000000',
-        'sort_order' => 1,
-    ]);
-    ProductionRequirement::factory()->for($production)->for($shortIngredient)->create([
-        'required_mass_grams' => '500.000000000',
-        'sort_order' => 2,
-    ]);
+    $this->actingAs($user)
+        ->get(route('production-bench.inventory.requirements'))
+        ->assertRedirectToRoute('production-bench.inventory');
+});
 
-    $coveredLot = StockLot::factory()->for($workspace)->for($coveredIngredient)->released()->create();
-    StockMovement::factory()->for($coveredLot, 'stockLot')->create([
-        'quantity_delta' => '1000.000000000',
-    ]);
+it('sorts material shortages first in the material view', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
 
     $this->actingAs($user);
 
-    Livewire::test(InventoryIndex::class, ['mode' => 'overview'])
-        ->assertViewHas('overviewShortages', function ($shortages) use ($shortIngredient): bool {
-            return $shortages instanceof Collection
-                && $shortages->count() === 1
-                && $shortages->first()['subject']->is($shortIngredient);
-        })
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 2
+            && $materials->first()['name'] === 'Short oil')
+        ->assertSee('Short oil')
+        ->assertSee('Covered oil');
+});
+
+it('narrows the material view to shortages only', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->set('filters.scope', 'shortages')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['name'] === 'Short oil')
         ->assertSee('Short oil')
         ->assertDontSee('Covered oil');
+});
+
+it('narrows the material view to materials with and without planned demand', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = plannedShortageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $unplanned = Ingredient::factory()->create(['display_name' => 'Listed oil']);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($unplanned)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->set('filters.scope', 'unplanned')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['name'] === 'Listed oil')
+        ->set('filters.scope', 'planned')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 2);
+});
+
+it('paginates the material table', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+
+    foreach (range(1, 26) as $index) {
+        $ingredient = Ingredient::factory()->create(['display_name' => 'Listed oil '.$index]);
+        SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    }
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertViewHas('materials', fn ($materials): bool => $materials instanceof LengthAwarePaginator
+            && $materials->count() === 25
+            && $materials->total() === 26);
+});
+
+it('counts the material summary tiles from the filtered rows', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = plannedShortageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $unplanned = Ingredient::factory()->create(['display_name' => 'Listed oil']);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($unplanned)->create();
+
+    $this->actingAs($user);
+
+    // The tiles and the table read the same filtered set, so the counts stay
+    // in step when a scope narrows the table.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertViewHas('inventorySummary', fn (array $summary): bool => $summary === [
+            'materials' => 3,
+            'shortages' => 1,
+            'incoming' => 0,
+            'quarantined' => 0,
+            'unplanned' => 1,
+        ])
+        ->set('filters.scope', 'shortages')
+        ->assertViewHas('inventorySummary', fn (array $summary): bool => $summary['materials'] === 1
+            && $summary['shortages'] === 1
+            && $summary['unplanned'] === 0);
 });
 
 it('paginates the stock lot register', function (): void {
@@ -240,31 +298,22 @@ it('keeps subject forecasts out of the lot register', function (): void {
         ->assertDontSee(__('production_bench.inventory.forecast'));
 });
 
-it('prioritizes material shortages in the requirements view', function (): void {
+it('lists a material the workspace can buy before any run asks for it', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
-    $coveredIngredient = Ingredient::factory()->create(['display_name' => 'Covered oil']);
-    $shortIngredient = Ingredient::factory()->create(['display_name' => 'Short oil']);
-    $production = ProductionRun::factory()->for($workspace)->create([
-        'status' => ProductionRunStatus::Scheduled,
-    ]);
-    ProductionRequirement::factory()->for($production)->for($coveredIngredient)->create([
-        'required_mass_grams' => '100.000000000',
-        'sort_order' => 1,
-    ]);
-    ProductionRequirement::factory()->for($production)->for($shortIngredient)->create([
-        'required_mass_grams' => '500.000000000',
-        'sort_order' => 2,
-    ]);
-    $coveredLot = StockLot::factory()->for($workspace)->for($coveredIngredient)->released()->create();
-    StockMovement::factory()->for($coveredLot, 'stockLot')->create([
-        'quantity_delta' => '1000.000000000',
-    ]);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listed = Ingredient::factory()->create(['display_name' => 'Listed oil']);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($listed)->create();
     $this->actingAs($user);
 
-    Livewire::test(InventoryIndex::class, ['mode' => 'requirements'])
-        ->assertViewHas('forecast', fn ($forecast): bool => $forecast->first()['subject']->is($shortIngredient));
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['name'] === 'Listed oil'
+            && $materials->first()['has_demand'] === false
+            && $materials->first()['has_listing'] === true)
+        ->assertSee('Listed oil')
+        ->assertSee('No planned demand');
 });
 
 it('uses unit-of-measure wording for legacy packaging listing validation', function (): void {
@@ -300,3 +349,42 @@ it('uses unit-of-measure wording for legacy packaging listing validation', funct
         ])
         ->and(SupplierListing::query()->count())->toBe(0);
 });
+
+/**
+ * An active bench with two planned ingredients: one covered by stock and one
+ * short, so the material view has something to order and something to filter.
+ *
+ * @return array{user: User, workspace: Workspace, coveredIngredient: Ingredient, shortIngredient: Ingredient}
+ */
+function plannedShortageWorkspace(): array
+{
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $coveredIngredient = Ingredient::factory()->create(['display_name' => 'Covered oil']);
+    $shortIngredient = Ingredient::factory()->create(['display_name' => 'Short oil']);
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::Scheduled,
+    ]);
+
+    ProductionRequirement::factory()->for($production)->for($coveredIngredient)->create([
+        'required_mass_grams' => '100.000000000',
+        'sort_order' => 1,
+    ]);
+    ProductionRequirement::factory()->for($production)->for($shortIngredient)->create([
+        'required_mass_grams' => '500.000000000',
+        'sort_order' => 2,
+    ]);
+
+    $coveredLot = StockLot::factory()->for($workspace)->for($coveredIngredient)->released()->create();
+    StockMovement::factory()->for($coveredLot, 'stockLot')->create([
+        'quantity_delta' => '1000.000000000',
+    ]);
+
+    return [
+        'user' => $user,
+        'workspace' => $workspace,
+        'coveredIngredient' => $coveredIngredient,
+        'shortIngredient' => $shortIngredient,
+    ];
+}

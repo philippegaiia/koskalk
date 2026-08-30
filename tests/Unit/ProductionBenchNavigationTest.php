@@ -18,10 +18,9 @@ it('resolves every navigation state the production bench views pass', function (
     expect($resolved['path'])->toBe($expectedPath);
 })->with([
     'home' => ['home', null, ['home']],
-    'inventory overview' => ['inventory', 'overview', ['inventory', 'overview']],
+    'inventory materials' => ['inventory', 'materials', ['inventory', 'materials']],
     'inventory stock' => ['inventory', 'stock', ['inventory', 'stock']],
-    'inventory requirements' => ['inventory', 'requirements', ['inventory', 'requirements']],
-    'inventory defaults to its first child' => ['inventory', null, ['inventory', 'overview']],
+    'inventory defaults to its first child' => ['inventory', null, ['inventory', 'materials']],
     'production workflow' => ['production', null, ['production', 'runs']],
     'tasks resolves through the production group' => ['tasks', null, ['production', 'tasks']],
     'flash planner resolves through the production group' => ['flash', null, ['production', 'flash']],

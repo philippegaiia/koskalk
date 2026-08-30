@@ -101,7 +101,7 @@ it('does not include another workspace in planned demand', function (): void {
         ->toBe('0.000000000');
 });
 
-it('shows subject-level production forecast in the inventory view', function (): void {
+it('shows subject-level production forecast in the material view', function (): void {
     $fixture = productionForecastFixture();
     $lot = StockLot::factory()->released()->for($fixture['workspace'])->create([
         'ingredient_id' => $fixture['ingredient']->id,
@@ -120,13 +120,10 @@ it('shows subject-level production forecast in the inventory view', function ():
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(InventoryIndex::class)
-        ->assertSee('Material requirements')
-        ->assertDontSee('Olive oil');
-
-    Livewire::actingAs($fixture['owner'])->test(InventoryIndex::class, ['mode' => 'requirements'])
-        ->assertSee('Material requirements')
+        ->assertSee('Materials')
         ->assertSee('Required')
         ->assertSee('Reserved')
+        ->assertSee('Olive oil')
         ->assertSee('0.40')
         ->assertSee('0.60');
 });
@@ -150,7 +147,7 @@ it('renders negative ingredient forecasts when planned demand exceeds available 
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(InventoryIndex::class)
-        ->assertSee('Material requirements')
+        ->assertSee('Materials')
         ->assertSee('-0.50');
 });
 

@@ -5,22 +5,22 @@ namespace App\Livewire\ProductionBench;
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
-use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotStatus;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
-use App\Models\ProductionRequirement;
 use App\Models\StockLot;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
+use App\Services\Production\WorkspaceMaterialCatalog;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
+use App\Services\WorkspaceIngredientCodeService;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
 use Filament\Actions\Action;
@@ -41,6 +41,9 @@ use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -57,6 +60,15 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     private const int OPTION_LIMIT = 30;
 
+    /**
+     * The two grains the module exposes: materials and the lots that hold them.
+     * The material view carries both planned demand and listed-only materials,
+     * which is what the earlier requirement/stock/overview split could not do.
+     */
+    private const array MODES = ['materials', 'stock'];
+
+    private const array MATERIAL_SCOPES = ['all', 'shortages', 'planned', 'unplanned'];
+
     private CreateOpeningStockLot $createOpeningStockLot;
 
     private CurrencyCatalog $currencyCatalog;
@@ -65,10 +77,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     private ProductionBenchAccess $productionBenchAccess;
 
+    private WorkspaceIngredientCodeService $ingredientCodes;
+
     /** @var array<string, mixed> */
     public array $filters = [];
 
-    public string $mode = 'overview';
+    public string $mode = 'materials';
 
     public int $perPage = 25;
 
@@ -81,20 +95,21 @@ class InventoryIndex extends Component implements HasActions, HasForms
         CurrencyCatalog $currencyCatalog,
         MassConverter $massConverter,
         ProductionBenchAccess $productionBenchAccess,
+        WorkspaceIngredientCodeService $ingredientCodes,
     ): void {
         $this->createOpeningStockLot = $createOpeningStockLot;
         $this->currencyCatalog = $currencyCatalog;
         $this->massConverter = $massConverter;
         $this->productionBenchAccess = $productionBenchAccess;
+        $this->ingredientCodes = $ingredientCodes;
     }
 
-    public function mount(string $mode = 'overview'): void
+    public function mount(string $mode = 'materials'): void
     {
-        $this->mode = in_array($mode, ['overview', 'stock', 'requirements'], true)
-            ? $mode
-            : 'overview';
+        $this->mode = in_array($mode, self::MODES, true) ? $mode : 'materials';
         $this->filtersForm->fill([
             'search' => '',
+            'scope' => 'all',
             'status' => 'all',
         ]);
     }
@@ -109,7 +124,22 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->label(__('production_bench.common.search'))
                             ->type('search')
                             ->live(debounce: 300)
-                            ->afterStateUpdated(fn () => $this->resetPage('stock-lots')),
+                            ->afterStateUpdated(function (): void {
+                                $this->resetPage('materials');
+                                $this->resetPage('stock-lots');
+                            }),
+                        Select::make('scope')
+                            ->label(__('production_bench.inventory.scope'))
+                            ->options([
+                                'all' => __('production_bench.inventory.scope_all'),
+                                'shortages' => __('production_bench.inventory.scope_shortages'),
+                                'planned' => __('production_bench.inventory.scope_planned'),
+                                'unplanned' => __('production_bench.inventory.scope_unplanned'),
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->visible(fn (): bool => $this->mode === 'materials')
+                            ->afterStateUpdated(fn () => $this->resetPage('materials')),
                         Select::make('status')
                             ->label(__('production_bench.common.status'))
                             ->options([
@@ -119,6 +149,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ])
                             ->native(false)
                             ->live()
+                            ->visible(fn (): bool => $this->mode === 'stock')
                             ->afterStateUpdated(fn () => $this->resetPage('stock-lots')),
                     ]),
             ])
@@ -128,6 +159,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     public function updatedPerPage(): void
     {
         $this->perPage = $this->normalizedPerPage();
+        $this->resetPage('materials');
         $this->resetPage('stock-lots');
     }
 
@@ -259,126 +291,200 @@ class InventoryIndex extends Component implements HasActions, HasForms
         ProductionBenchAccess $access,
         StockPositionService $positions,
         MassConverter $massConverter,
+        WorkspaceMaterialCatalog $catalog,
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
-        $lots = collect();
 
-        if ($this->mode === 'stock') {
-            $search = trim((string) ($this->filters['search'] ?? ''));
-            $searchTerm = '%'.Str::lower($search).'%';
-            $translationLocales = Ingredient::translationLocaleCandidates();
-            $status = in_array($this->filters['status'] ?? null, ['all', StockLotStatus::Released->value, StockLotStatus::Quarantined->value], true)
-                ? (string) $this->filters['status']
-                : 'all';
-            $stockLots = StockLot::query()
-                ->where('workspace_id', $workspace->id)
-                ->with([
-                    'ingredient.translations',
-                    'packagingItem',
-                    'goodsReceiptLine.goodsReceipt.supplier',
-                ])
-                ->withSum('movements', 'quantity_delta')
-                ->withSum([
-                    'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
-                ], 'quantity')
-                ->when($status !== 'all', fn (Builder $query): Builder => $query->where('status', $status))
-                ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
-                    $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
-                        $searchQuery
-                            ->whereRaw('LOWER(internal_lot_code) LIKE ?', [$searchTerm])
-                            ->orWhereRaw('LOWER(supplier_batch_number) LIKE ?', [$searchTerm])
-                            ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
-                                $ingredientQuery->where(function (Builder $ingredientNameQuery) use ($searchTerm, $translationLocales): void {
-                                    $ingredientNameQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+        // Materials and lots are two grains of the same stock. No view needs
+        // both, so only the active mode pays for its queries.
+        $materialRows = $this->mode === 'materials'
+            ? $this->materialRows($workspace, $catalog, $positions, $massConverter, $displayUnit)
+            : collect();
 
-                                    if ($translationLocales !== []) {
-                                        $ingredientNameQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
-                                            $translationQuery
-                                                ->whereIn('locale', $translationLocales)
-                                                ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
-                                        });
-                                    }
-                                });
-                            })
-                            ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
-                                ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                                ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]));
-                    });
-                })
-                ->latest('stocked_at')
-                ->latest('id')
-                ->paginate($this->normalizedPerPage(), ['*'], 'stock-lots');
+        return view('livewire.production-bench.inventory-index', [
+            'workspace' => $workspace,
+            'isActive' => $access->isActive($workspace),
+            'isReadOnly' => $access->isReadOnly($workspace),
+            'lots' => $this->mode === 'stock'
+                ? $this->stockLots($workspace, $positions, $massConverter, $displayUnit)
+                : collect(),
+            'materials' => $this->paginate($materialRows, 'materials'),
+            'inventorySummary' => $this->materialSummary($materialRows),
+            'materialFiltersActive' => $this->materialFiltersActive(),
+            'displayUnit' => $displayUnit,
+        ]);
+    }
 
-            $lots = $stockLots->through(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
-                $stock = $positions->forLotWithLoadedMovementSum($lot);
+    /**
+     * The lot register: one row per physical batch, with its own positions.
+     */
+    private function stockLots(
+        Workspace $workspace,
+        StockPositionService $positions,
+        MassConverter $massConverter,
+        string $displayUnit,
+    ): LengthAwarePaginator {
+        $search = trim((string) ($this->filters['search'] ?? ''));
+        $searchTerm = '%'.Str::lower($search).'%';
+        $translationLocales = Ingredient::translationLocaleCandidates();
+        $status = in_array($this->filters['status'] ?? null, ['all', StockLotStatus::Released->value, StockLotStatus::Quarantined->value], true)
+            ? (string) $this->filters['status']
+            : 'all';
 
-                return [
-                    'lot' => $lot,
-                    'positions' => collect($stock)
-                        ->only(['physical', 'quarantined', 'reserved', 'available'])
-                        ->map(
-                            fn (string $quantity): string => $lot->ingredient_id !== null
-                                ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
-                                : number_format((float) $quantity, 0),
-                        )
-                        ->all(),
-                ];
-            });
+        $stockLots = StockLot::query()
+            ->where('workspace_id', $workspace->id)
+            ->with([
+                'ingredient.translations',
+                'packagingItem',
+                'goodsReceiptLine.goodsReceipt.supplier',
+            ])
+            ->withSum('movements', 'quantity_delta')
+            ->withSum([
+                'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
+            ], 'quantity')
+            ->when($status !== 'all', fn (Builder $query): Builder => $query->where('status', $status))
+            ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
+                $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
+                    $searchQuery
+                        ->whereRaw('LOWER(internal_lot_code) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(supplier_batch_number) LIKE ?', [$searchTerm])
+                        ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
+                            $ingredientQuery->where(function (Builder $ingredientNameQuery) use ($searchTerm, $translationLocales): void {
+                                $ingredientNameQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+
+                                if ($translationLocales !== []) {
+                                    $ingredientNameQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
+                                        $translationQuery
+                                            ->whereIn('locale', $translationLocales)
+                                            ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+                                    });
+                                }
+                            });
+                        })
+                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
+                            ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]));
+                });
+            })
+            ->latest('stocked_at')
+            ->latest('id')
+            ->paginate($this->normalizedPerPage(), ['*'], 'stock-lots');
+
+        return $stockLots->through(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
+            $stock = $positions->forLotWithLoadedMovementSum($lot);
+
+            return [
+                'lot' => $lot,
+                'positions' => collect($stock)
+                    ->only(['physical', 'quarantined', 'reserved', 'available'])
+                    ->map(
+                        fn (string $quantity): string => $lot->ingredient_id !== null
+                            ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
+                            : number_format((float) $quantity, 0),
+                    )
+                    ->all(),
+            ];
+        });
+    }
+
+    /**
+     * Every tracked material, filtered and ordered, before pagination.
+     *
+     * Tracked means planned production asks for it or the workspace holds a
+     * supplier listing for it, so a material the workspace can buy shows up
+     * long before a run actually demands it.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function materialRows(
+        Workspace $workspace,
+        WorkspaceMaterialCatalog $catalog,
+        StockPositionService $positions,
+        MassConverter $massConverter,
+        string $displayUnit,
+    ): Collection {
+        $materials = $catalog->materials($workspace);
+
+        if ($materials->isEmpty()) {
+            return collect();
         }
 
-        $forecastSubjects = collect();
+        $codes = $this->ingredientCodes->codesFor(
+            $workspace,
+            $materials
+                ->pluck('subject')
+                ->filter(fn (mixed $subject): bool => $subject instanceof Ingredient)
+                ->map(fn (Ingredient $ingredient): int => $ingredient->id)
+                ->values()
+                ->all(),
+        );
 
-        if ($this->mode !== 'stock') {
-            ProductionRequirement::query()
-                ->whereHas('productionRun', function (Builder $query) use ($workspace): void {
-                    $query
-                        ->where('workspace_id', $workspace->id)
-                        ->whereIn('status', [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved]);
-                })
-                ->with(['ingredient.translations', 'packagingItem'])
-                ->get()
-                ->each(function (ProductionRequirement $requirement) use ($forecastSubjects): void {
-                    if ($requirement->ingredient_id !== null && $requirement->ingredient !== null) {
-                        $forecastSubjects->put('ingredient:'.$requirement->ingredient_id, $requirement->ingredient);
-                    }
+        $search = Str::lower(trim((string) ($this->filters['search'] ?? '')));
+        $scope = in_array($this->filters['scope'] ?? null, self::MATERIAL_SCOPES, true)
+            ? (string) $this->filters['scope']
+            : 'all';
 
-                    if ($requirement->packaging_item_id !== null && $requirement->packagingItem !== null) {
-                        $forecastSubjects->put('packaging:'.$requirement->packaging_item_id, $requirement->packagingItem);
-                    }
-                });
+        $rows = $materials
+            ->map(function (array $material) use ($codes, $displayUnit): array {
+                $subject = $material['subject'];
+
+                return [
+                    'key' => $material['key'],
+                    'subject' => $subject,
+                    'name' => $this->subjectName($subject),
+                    'material_code' => $subject instanceof Ingredient
+                        ? ($codes[$subject->id] ?? null)
+                        : $subject->material_code,
+                    'display_unit' => $subject instanceof Ingredient
+                        ? $displayUnit
+                        : __('production_bench.inventory.units'),
+                    'has_demand' => $material['has_demand'],
+                    'has_listing' => $material['has_listing'],
+                ];
+            })
+            ->when($search !== '', fn (Collection $rows): Collection => $rows->filter(
+                fn (array $row): bool => str_contains(Str::lower($row['name']), $search)
+                    || str_contains(Str::lower((string) $row['material_code']), $search),
+            ))
+            // Narrowing by demand needs no stock positions, so it runs first and
+            // spares the position queries everything it filters out.
+            ->when(in_array($scope, ['planned', 'unplanned'], true), fn (Collection $rows): Collection => $rows->filter(
+                fn (array $row): bool => $row['has_demand'] === ($scope === 'planned'),
+            ))
+            ->values();
+
+        if ($rows->isEmpty()) {
+            return collect();
         }
 
         $positionsByKey = $positions->forWorkspaceSubjects(
             workspace: $workspace,
-            subjectKeys: $forecastSubjects->keys()->values()->all(),
+            subjectKeys: $rows->pluck('key')->all(),
         );
-        $forecast = $forecastSubjects
-            ->map(function (Ingredient|PackagingItem $subject) use ($positionsByKey, $massConverter, $displayUnit): array {
-                $key = $subject instanceof Ingredient
-                    ? 'ingredient:'.$subject->id
-                    : 'packaging:'.$subject->id;
-                $stock = $positionsByKey[$key] ?? [
+
+        return $rows
+            ->map(function (array $row) use ($positionsByKey, $massConverter, $displayUnit): array {
+                $subject = $row['subject'];
+                $stock = $positionsByKey[$row['key']] ?? [
                     'reserved' => '0.000000000',
                     'available' => '0.000000000',
                     'incoming' => '0.000000000',
                     'forecast' => '0.000000000',
+                    'quarantined' => '0.000000000',
                 ];
                 $format = fn (string $quantity): string => $subject instanceof Ingredient
                     ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
                     : number_format((float) $quantity, 0);
-                $required = bcsub(
-                    bcadd($stock['available'], $stock['incoming'], 9),
-                    $stock['forecast'],
-                    9,
-                );
 
                 return [
-                    'subject' => $subject,
-                    'display_unit' => $subject instanceof Ingredient ? $displayUnit : __('production_bench.inventory.units'),
+                    ...$row,
                     'is_shortage' => bccomp($stock['forecast'], '0', 9) < 0,
                     'has_incoming' => bccomp($stock['incoming'], '0', 9) > 0,
-                    'required' => $format($required),
+                    'has_quarantined' => bccomp($stock['quarantined'], '0', 9) > 0,
+                    'required' => $format(
+                        bcsub(bcadd($stock['available'], $stock['incoming'], 9), $stock['forecast'], 9),
+                    ),
                     'positions' => [
                         'reserved' => $format($stock['reserved']),
                         'available' => $format($stock['available']),
@@ -387,40 +493,76 @@ class InventoryIndex extends Component implements HasActions, HasForms
                     ],
                 ];
             })
+            ->when($scope === 'shortages', fn (Collection $rows): Collection => $rows->filter(
+                fn (array $row): bool => $row['is_shortage'],
+            ))
+            // Shortages first, then materials a run actually asks for, so the
+            // listed-only materials this view adds sit below everything that
+            // needs a decision today.
             ->sort(function (array $left, array $right): int {
                 if ($left['is_shortage'] !== $right['is_shortage']) {
                     return $left['is_shortage'] ? -1 : 1;
                 }
 
-                return strnatcasecmp($this->subjectName($left['subject']), $this->subjectName($right['subject']));
+                if ($left['has_demand'] !== $right['has_demand']) {
+                    return $left['has_demand'] ? -1 : 1;
+                }
+
+                return strnatcasecmp((string) $left['name'], (string) $right['name']);
             })
             ->values();
-        $overviewShortages = $forecast
-            ->where('is_shortage', true)
-            ->values();
-        $stockLotCounts = $this->mode === 'overview'
-            ? StockLot::query()
-                ->where('workspace_id', $workspace->id)
-                ->selectRaw('status, count(*) as total')
-                ->groupBy('status')
-                ->pluck('total', 'status')
-            : collect();
+    }
 
-        return view('livewire.production-bench.inventory-index', [
-            'workspace' => $workspace,
-            'isActive' => $access->isActive($workspace),
-            'isReadOnly' => $access->isReadOnly($workspace),
-            'lots' => $lots,
-            'forecast' => $forecast,
-            'overviewShortages' => $overviewShortages,
-            'inventorySummary' => [
-                'lots' => $stockLotCounts->sum(),
-                'quarantined' => (int) ($stockLotCounts[StockLotStatus::Quarantined->value] ?? 0),
-                'shortages' => $overviewShortages->count(),
-                'incoming' => $forecast->where('has_incoming', true)->count(),
+    /**
+     * Paginate an already-filtered collection. The ordering above is derived,
+     * so it cannot be pushed into SQL.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     */
+    private function paginate(Collection $rows, string $pageName): LengthAwarePaginator
+    {
+        $perPage = $this->normalizedPerPage();
+        $page = max(1, (int) $this->getPage($pageName));
+
+        return new LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values()->all(),
+            $rows->count(),
+            $perPage,
+            $page,
+            [
+                'path' => Paginator::resolveCurrentPath(),
+                'pageName' => $pageName,
             ],
-            'displayUnit' => $displayUnit,
-        ]);
+        );
+    }
+
+    /**
+     * Whether the material table is narrowed, which is what decides whether an
+     * empty table means "nothing tracked" or "nothing matches".
+     */
+    private function materialFiltersActive(): bool
+    {
+        return trim((string) ($this->filters['search'] ?? '')) !== ''
+            || (in_array($this->filters['scope'] ?? null, self::MATERIAL_SCOPES, true)
+                && (string) $this->filters['scope'] !== 'all');
+    }
+
+    /**
+     * Tile counts taken from the filtered rows, so the tiles and the table
+     * always describe the same set of materials.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return array{materials: int, shortages: int, incoming: int, quarantined: int, unplanned: int}
+     */
+    private function materialSummary(Collection $rows): array
+    {
+        return [
+            'materials' => $rows->count(),
+            'shortages' => $rows->where('is_shortage', true)->count(),
+            'incoming' => $rows->where('has_incoming', true)->count(),
+            'quarantined' => $rows->where('has_quarantined', true)->count(),
+            'unplanned' => $rows->where('has_demand', false)->count(),
+        ];
     }
 
     private function lot(int $lotId): StockLot
@@ -438,7 +580,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     private function subjectName(Ingredient|PackagingItem $subject): string
     {
         return $subject instanceof Ingredient
-            ? $subject->localizedDisplayName()
+            ? (string) $subject->localizedDisplayName()
             : $subject->name;
     }
 

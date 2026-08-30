@@ -18,6 +18,59 @@ it('accepts consulted broad-source evidence and preserves its classifications', 
     expect($accepted)->toBe([$candidate]);
 });
 
+it('partitions valid guidance evidence from rejected candidates', function (): void {
+    $valid = guidanceEvidenceCandidate();
+    $unconsulted = guidanceEvidenceCandidate([
+        'source_url' => 'https://unconsulted.example/apricot-oil',
+    ]);
+    $invalidUsage = guidanceEvidenceCandidate([
+        'claim_type' => 'usage',
+        'usage_application' => 'not_applicable',
+    ]);
+
+    $result = guidanceEvidencePolicy()->partitionCandidates(
+        [$valid, $unconsulted, $invalidUsage],
+        [['url' => $valid['source_url'], 'title' => 'Supplier technical data']],
+    );
+
+    expect($result->accepted)->toBe([$valid])
+        ->and($result->rejected)->toMatchArray([
+            ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'unconsulted.example'],
+            ['index' => 2, 'code' => 'invalid_usage_metadata', 'host' => 'supplier.example'],
+        ]);
+});
+
+it('records precise rejection codes without retaining evidence content', function (): void {
+    $cases = [
+        'invalid_shape' => 'not-an-array',
+        'invalid_field' => guidanceEvidenceCandidate(['field' => 'proposal.inci_name']),
+        'invalid_url' => guidanceEvidenceCandidate(['source_url' => 'not-a-url']),
+        'blocked_domain' => guidanceEvidenceCandidate(['source_url' => 'https://amazon.com/apricot-oil']),
+        'unconsulted_url' => guidanceEvidenceCandidate(['source_url' => 'https://other.example/apricot-oil']),
+        'invalid_classification' => guidanceEvidenceCandidate(['claim_type' => 'not-configured']),
+        'invalid_usage_metadata' => guidanceEvidenceCandidate(['usage_application' => 'not_applicable']),
+    ];
+
+    foreach ($cases as $code => $candidate) {
+        $consultedSources = [['url' => guidanceEvidenceCandidate()['source_url'], 'title' => 'Source']];
+
+        $result = guidanceEvidencePolicy()->partitionCandidates([$candidate], $consultedSources);
+
+        expect($result->accepted)->toBe([])
+            ->and($result->rejected)->toBe([
+                [
+                    'index' => 0,
+                    'code' => $code,
+                    'host' => is_array($candidate)
+                        ? parse_url($candidate['source_url'], PHP_URL_HOST)
+                        : null,
+                ],
+            ])
+            ->and(json_encode($result->rejected))->not->toContain('summary')
+            ->and(json_encode($result->rejected))->not->toContain('apricot-oil');
+    }
+});
+
 it('rejects guidance evidence outside the approved field and closed vocabularies', function (): void {
     $cases = [
         ['field' => 'proposal.inci_name'],
@@ -47,7 +100,7 @@ it('rejects malformed or empty guidance evidence as invalid provider output', fu
         expect(fn (): array => guidanceEvidencePolicy()->validateCandidates([$candidate], [[
             'url' => $candidate['source_url'],
             'title' => 'Source',
-        ]]))->toThrow(RuntimeException::class);
+        ]]))->toThrow(ValidationException::class);
     }
 });
 

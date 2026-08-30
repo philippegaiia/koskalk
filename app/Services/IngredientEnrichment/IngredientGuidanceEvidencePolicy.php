@@ -2,6 +2,7 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\Data\IngredientGuidanceEvidenceValidationResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -15,24 +16,46 @@ class IngredientGuidanceEvidencePolicy
      */
     public function validateCandidates(array $candidates, array $consultedSources): array
     {
-        $consultedUrls = collect($consultedSources)
-            ->map(fn (mixed $source): ?string => is_array($source)
-                ? $this->canonicalUrl($source['url'] ?? null)
-                : null)
-            ->filter()
-            ->mapWithKeys(fn (string $url): array => [$url => true])
-            ->all();
+        $validation = $this->partitionCandidates($candidates, $consultedSources);
 
-        return collect($candidates)
-            ->map(function (mixed $candidate, int $index) use ($consultedUrls): array {
-                if (! is_array($candidate)) {
-                    $this->invalidResponse();
-                }
+        if ($validation->rejected !== []) {
+            $rejection = $validation->rejected[0];
+            $this->policyViolation(
+                $rejection['index'],
+                $this->rejectionMessage($rejection['code']),
+            );
+        }
 
-                return $this->validateCandidate($candidate, $index, $consultedUrls);
-            })
-            ->values()
-            ->all();
+        return $validation->accepted;
+    }
+
+    /**
+     * Validate each candidate independently, retaining only rows that satisfy the guidance evidence policy.
+     *
+     * @param  list<array<string, mixed>>  $candidates
+     * @param  list<array{url: string, title: string}>  $consultedSources
+     */
+    public function partitionCandidates(array $candidates, array $consultedSources): IngredientGuidanceEvidenceValidationResult
+    {
+        if (! array_is_list($candidates)) {
+            $this->invalidResponse();
+        }
+
+        $consultedUrls = $this->consultedUrlMap($consultedSources);
+        $accepted = [];
+        $rejected = [];
+
+        foreach ($candidates as $index => $candidate) {
+            $evaluation = $this->evaluateCandidate($candidate, $index, $consultedUrls);
+
+            if ($evaluation['accepted'] !== null) {
+                $accepted[] = $evaluation['accepted'];
+            } else {
+                $rejected[] = $evaluation['rejection'];
+            }
+        }
+
+        return new IngredientGuidanceEvidenceValidationResult($accepted, $rejected);
     }
 
     /**
@@ -120,21 +143,25 @@ class IngredientGuidanceEvidencePolicy
     }
 
     /**
-     * @param  array<string, mixed>  $candidate
      * @param  array<string, bool>  $consultedUrls
-     * @return array<string, mixed>
+     * @return array{
+     *     accepted:array<string,mixed>|null,
+     *     rejection:array{index:int,code:string,host:?string}|null
+     * }
      */
-    private function validateCandidate(array $candidate, int $index, array $consultedUrls): array
+    private function evaluateCandidate(mixed $candidate, int $index, array $consultedUrls): array
     {
+        $host = $this->candidateHost($candidate);
         $expectedKeys = [
             'field', 'source_name', 'source_url', 'summary', 'claim_type', 'source_kind',
             'scope', 'evidence_kind', 'usage_application', 'recommended_min_percent',
             'recommended_max_percent', 'percentage_basis',
         ];
 
-        if (array_diff($expectedKeys, array_keys($candidate)) !== []
+        if (! is_array($candidate)
+            || array_diff($expectedKeys, array_keys($candidate)) !== []
             || array_diff(array_keys($candidate), $expectedKeys) !== []) {
-            $this->invalidResponse();
+            return $this->rejected($index, 'invalid_shape', $host);
         }
 
         $field = is_string($candidate['field'] ?? null) ? trim($candidate['field']) : '';
@@ -142,30 +169,25 @@ class IngredientGuidanceEvidencePolicy
         $sourceUrl = is_string($candidate['source_url'] ?? null) ? trim($candidate['source_url']) : '';
         $summary = is_string($candidate['summary'] ?? null) ? trim($candidate['summary']) : '';
 
-        if ($this->isCosmileUrl($sourceUrl) && $this->isLegalOrIdentityField($field)) {
-            throw new RuntimeException(__('ingredient_enrichment_admin.validation.cosmile_legal_field'));
-        }
-
         if ($field !== 'proposal.info_markdown') {
-            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+            return $this->rejected($index, 'invalid_field', $host);
         }
 
         if ($sourceName === '' || $summary === '') {
-            $this->invalidResponse();
+            return $this->rejected($index, 'invalid_shape', $host);
         }
 
         $canonicalUrl = $this->canonicalUrl($sourceUrl);
         if ($canonicalUrl === null) {
-            $this->invalidResponse();
+            return $this->rejected($index, 'invalid_url', $host);
         }
 
-        $host = strtolower((string) parse_url($sourceUrl, PHP_URL_HOST));
-        if ($this->isBlockedHost($host)) {
-            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+        if ($this->isBlockedHost($host ?? '')) {
+            return $this->rejected($index, 'blocked_domain', $host);
         }
 
         if (! isset($consultedUrls[$canonicalUrl])) {
-            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.unconsulted_source'));
+            return $this->rejected($index, 'unconsulted_url', $host);
         }
 
         foreach ([
@@ -178,30 +200,35 @@ class IngredientGuidanceEvidencePolicy
         ] as $fieldName => $configKey) {
             if (! is_string($candidate[$fieldName] ?? null)
                 || ! in_array($candidate[$fieldName], config("ingredient-enrichment.openai.guidance_research.{$configKey}", []), true)) {
-                $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+                return $this->rejected($index, 'invalid_classification', $host);
             }
         }
 
-        $this->validatePercentageEvidence($candidate, $index);
+        if (! $this->hasValidPercentageEvidence($candidate)) {
+            return $this->rejected($index, 'invalid_usage_metadata', $host);
+        }
 
         return [
-            'field' => $field,
-            'source_name' => $sourceName,
-            'source_url' => $sourceUrl,
-            'summary' => $summary,
-            'claim_type' => $candidate['claim_type'],
-            'source_kind' => $candidate['source_kind'],
-            'scope' => $candidate['scope'],
-            'evidence_kind' => $candidate['evidence_kind'],
-            'usage_application' => $candidate['usage_application'],
-            'recommended_min_percent' => $candidate['recommended_min_percent'],
-            'recommended_max_percent' => $candidate['recommended_max_percent'],
-            'percentage_basis' => $candidate['percentage_basis'],
+            'accepted' => [
+                'field' => $field,
+                'source_name' => $sourceName,
+                'source_url' => $sourceUrl,
+                'summary' => $summary,
+                'claim_type' => $candidate['claim_type'],
+                'source_kind' => $candidate['source_kind'],
+                'scope' => $candidate['scope'],
+                'evidence_kind' => $candidate['evidence_kind'],
+                'usage_application' => $candidate['usage_application'],
+                'recommended_min_percent' => $candidate['recommended_min_percent'],
+                'recommended_max_percent' => $candidate['recommended_max_percent'],
+                'percentage_basis' => $candidate['percentage_basis'],
+            ],
+            'rejection' => null,
         ];
     }
 
     /** @param array<string, mixed> $candidate */
-    private function validatePercentageEvidence(array $candidate, int $index): void
+    private function hasValidPercentageEvidence(array $candidate): bool
     {
         $claimType = $candidate['claim_type'];
         $isUsage = $claimType === 'usage';
@@ -211,11 +238,10 @@ class IngredientGuidanceEvidencePolicy
         $basis = $candidate['percentage_basis'];
 
         if (! $isUsage) {
-            if ($application !== 'not_applicable' || $min !== null || $max !== null || $basis !== 'not_applicable') {
-                $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
-            }
-
-            return;
+            return $application === 'not_applicable'
+                && $min === null
+                && $max === null
+                && $basis === 'not_applicable';
         }
 
         $recommendationKinds = [
@@ -231,18 +257,16 @@ class IngredientGuidanceEvidencePolicy
             || ($application === 'cosmetics' && ! in_array($basis, ['total_formula', 'oil_phase'], true))
             || ($application === 'soapmaking' && $basis !== 'soap_oils')
             || ($min === null && $max === null)) {
-            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+            return false;
         }
 
-        foreach (['recommended_min_percent' => $min, 'recommended_max_percent' => $max] as $bound => $value) {
+        foreach ([$min, $max] as $value) {
             if ($value !== null && ! $this->isValidDecimalBound($value)) {
-                $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
+                return false;
             }
         }
 
-        if ($min !== null && $max !== null && $this->compareDecimals($min, $max) > 0) {
-            $this->policyViolation($index, __('ingredient_enrichment_admin.validation.disallowed_source'));
-        }
+        return $min === null || $max === null || $this->compareDecimals($min, $max) <= 0;
     }
 
     private function isValidDecimalBound(mixed $value): bool
@@ -275,6 +299,64 @@ class IngredientGuidanceEvidencePolicy
         $rightFraction = str_pad($rightFraction, $length, '0');
 
         return strcmp($leftFraction, $rightFraction) <=> 0;
+    }
+
+    /**
+     * @param  list<array{url: string, title: string}>  $consultedSources
+     * @return array<string, bool>
+     */
+    private function consultedUrlMap(array $consultedSources): array
+    {
+        return collect($consultedSources)
+            ->map(fn (mixed $source): ?string => is_array($source)
+                ? $this->canonicalUrl($source['url'] ?? null)
+                : null)
+            ->filter()
+            ->mapWithKeys(fn (string $url): array => [$url => true])
+            ->all();
+    }
+
+    private function candidateHost(mixed $candidate): ?string
+    {
+        if (! is_array($candidate) || ! is_string($candidate['source_url'] ?? null)) {
+            return null;
+        }
+
+        $host = parse_url(trim($candidate['source_url']), PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? strtolower($host) : null;
+    }
+
+    /**
+     * @return array{
+     *     accepted:null,
+     *     rejection:array{index:int,code:string,host:?string}
+     * }
+     */
+    private function rejected(int $index, string $code, ?string $host): array
+    {
+        return [
+            'accepted' => null,
+            'rejection' => [
+                'index' => $index,
+                'code' => $code,
+                'host' => $host,
+            ],
+        ];
+    }
+
+    private function rejectionMessage(string $code): string
+    {
+        return match ($code) {
+            'invalid_shape' => __('ingredient_enrichment_admin.validation.guidance_evidence_invalid_shape'),
+            'invalid_field' => __('ingredient_enrichment_admin.validation.guidance_evidence_invalid_field'),
+            'invalid_url' => __('ingredient_enrichment_admin.validation.guidance_evidence_invalid_url'),
+            'blocked_domain' => __('ingredient_enrichment_admin.validation.guidance_evidence_blocked_domain'),
+            'unconsulted_url' => __('ingredient_enrichment_admin.validation.guidance_evidence_unconsulted_url'),
+            'invalid_classification' => __('ingredient_enrichment_admin.validation.guidance_evidence_invalid_classification'),
+            'invalid_usage_metadata' => __('ingredient_enrichment_admin.validation.guidance_evidence_invalid_usage_metadata'),
+            default => __('ingredient_enrichment_admin.validation.disallowed_source'),
+        };
     }
 
     private function canonicalUrl(mixed $url): ?string

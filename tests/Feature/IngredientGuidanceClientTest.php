@@ -6,7 +6,7 @@ use App\Services\IngredientEnrichment\OpenAiStructuredOutputTransport;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
-it('authors concise guidance with a strict no-web response contract', function (): void {
+it('authors evidence-linked guidance with a strict no-web response contract', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     Http::preventStrayRequests();
     Http::fake([
@@ -19,7 +19,23 @@ it('authors concise guidance with a strict no-web response contract', function (
                 'content' => [[
                     'type' => 'output_text',
                     'text' => json_encode([
-                        'info_markdown' => "## Overview\n\nA concise overview.\n\n## Formulation use\n\nA material-specific use.",
+                        'overview' => [[
+                            'text' => 'A concise overview.',
+                            'claim_type' => 'origin',
+                            'support_type' => 'fact',
+                            'evidence_indexes' => [],
+                            'fact_paths' => ['current.canonical.display_name'],
+                            'usage_application' => 'not_applicable',
+                        ]],
+                        'formulation_use' => [[
+                            'text' => 'A material-specific use.',
+                            'claim_type' => 'formulation_role',
+                            'support_type' => 'evidence',
+                            'evidence_indexes' => [0],
+                            'fact_paths' => [],
+                            'usage_application' => 'not_applicable',
+                        ]],
+                        'soapmaking' => [],
                         'warnings' => [],
                         'unresolved_questions' => [],
                     ], JSON_THROW_ON_ERROR),
@@ -31,7 +47,16 @@ it('authors concise guidance with a strict no-web response contract', function (
 
     $response = app(IngredientGuidanceAuthoringClient::class)->author([
         'current' => ['canonical' => ['display_name' => 'Argan oil']],
-        'guidance_evidence' => [],
+        'guidance_evidence' => [[
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'supplier_technical',
+            'scope' => 'product_grade',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ]],
     ]);
 
     expect($response->guidance['info_markdown'])->toContain('## Overview')
@@ -54,17 +79,71 @@ it('authors concise guidance with a strict no-web response contract', function (
             && data_get($data, 'text.format.type') === 'json_schema'
             && data_get($data, 'text.format.name') === 'ingredient_guidance'
             && data_get($data, 'text.format.strict') === true
-            && data_get($data, 'text.format.schema.required') === ['info_markdown', 'warnings', 'unresolved_questions']
+            && data_get($data, 'text.format.schema.required') === [
+                'overview', 'formulation_use', 'soapmaking', 'warnings', 'unresolved_questions',
+            ]
             && data_get($data, 'text.format.schema.additionalProperties') === false
-            && array_keys($properties) === ['info_markdown', 'warnings', 'unresolved_questions']
+            && array_keys($properties) === ['overview', 'formulation_use', 'soapmaking', 'warnings', 'unresolved_questions']
+            && data_get($properties, 'overview.items.additionalProperties') === false
+            && data_get($properties, 'overview.items.required') === [
+                'text', 'claim_type', 'support_type', 'evidence_indexes', 'fact_paths', 'usage_application',
+            ]
             && str_contains((string) $data['instructions'], 'Do not repeat the INCI')
             && str_contains((string) $data['instructions'], 'material-specific formulation decision')
-            && str_contains((string) $data['instructions'], '80 to 160 words')
+            && str_contains((string) $data['instructions'], 'one sentence per claim')
+            && str_contains((string) $data['instructions'], '160 words maximum')
             && str_contains((string) $data['instructions'], 'Typical use level')
             && str_contains((string) $data['instructions'], 'approved structured usage fact')
             && str_contains((string) $data['instructions'], 'not a regulatory or safety limit')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });
+});
+
+it('rejects an unsupported guidance claim before returning authoring output', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'id' => 'resp_guidance_invalid',
+            'status' => 'completed',
+            'model' => 'gpt-5.6-terra-2026-08-01',
+            'output' => [[
+                'type' => 'message',
+                'content' => [[
+                    'type' => 'output_text',
+                    'text' => json_encode([
+                        'overview' => [],
+                        'formulation_use' => [[
+                            'text' => 'A claim with no supporting evidence.',
+                            'claim_type' => 'solubility',
+                            'support_type' => 'evidence',
+                            'evidence_indexes' => [0],
+                            'fact_paths' => [],
+                            'usage_application' => 'not_applicable',
+                        ]],
+                        'soapmaking' => [],
+                        'warnings' => [],
+                        'unresolved_questions' => [],
+                    ], JSON_THROW_ON_ERROR),
+                ]],
+            ]],
+            'usage' => ['input_tokens' => 21, 'output_tokens' => 13],
+        ], 200, ['x-request-id' => 'req_guidance_invalid']),
+    ]);
+
+    expect(fn (): mixed => app(IngredientGuidanceAuthoringClient::class)->author([
+        'current' => ['canonical' => ['display_name' => 'Argan oil']],
+        'guidance_evidence' => [[
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'supplier_technical',
+            'scope' => 'product_grade',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ]],
+    ]))->toThrow(RuntimeException::class);
 });
 
 it('fails safely before sending when the structured output api key is missing', function (): void {

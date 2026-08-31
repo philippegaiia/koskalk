@@ -110,3 +110,25 @@ it('does not depend on plan limits or team size', function (): void {
     expect($entitlement->status)->toBe(ProductionBenchEntitlementStatus::Active)
         ->and(app(ProductionBenchAccess::class)->isActive($workspace))->toBeTrue();
 });
+
+it('allows every workspace role to read production bench data', function (WorkspaceMemberRole $role): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $actor = $role === WorkspaceMemberRole::Owner ? $owner : User::factory()->create();
+
+    if ($role !== WorkspaceMemberRole::Owner) {
+        WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => $role]);
+    }
+
+    app(ProductionBenchAccess::class)->assertReadable($actor, $workspace);
+
+    expect(true)->toBeTrue();
+})->with(WorkspaceMemberRole::cases());
+
+it('rejects production bench reads from outside the workspace', function (): void {
+    $workspace = Workspace::factory()->create();
+    $outsider = User::factory()->create();
+
+    expect(fn () => app(ProductionBenchAccess::class)->assertReadable($outsider, $workspace))
+        ->toThrow(AuthorizationException::class);
+});

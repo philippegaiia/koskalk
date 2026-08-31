@@ -9,12 +9,36 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Inventory\MaterialActivityService;
 use App\Services\ProductionBenchAccess;
+use App\Enums\WorkspaceMemberRole;
+use App\Models\WorkspaceMember;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
+
+if (! function_exists('inventoryReadActor')) {
+    /**
+     * Returns a user who is a member of the workspace, creating an owner when
+     * the workspace has no members yet. Used to satisfy the actor-first
+     * signature of the inventory read services under test.
+     */
+    function inventoryReadActor(Workspace $workspace): User
+    {
+        $member = $workspace->users()->first();
+
+        if ($member instanceof User) {
+            return $member;
+        }
+
+        $actor = User::factory()->create();
+        WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => WorkspaceMemberRole::Owner]);
+
+        return $actor;
+    }
+}
 
 it('reconciles receipts production consumption and other movement groups', function (): void {
     $workspace = productionBenchWorkspaceForActivity();
@@ -29,7 +53,7 @@ it('reconciles receipts production consumption and other movement groups', funct
     createActivityMovement($workspace, $lot, StockMovementType::Damaged, '-25', '2026-08-11 08:00:00');
     createActivityMovement($workspace, $lot, StockMovementType::StockCountAdjustment, '10', '2026-08-12 08:00:00');
 
-    $activity = app(MaterialActivityService::class)->forPeriod($workspace, $ingredient, $periodStart, $periodEnd);
+    $activity = app(MaterialActivityService::class)->forPeriod(inventoryReadActor($workspace), $workspace, $ingredient, $periodStart, $periodEnd);
 
     expect($activity['opening_physical'])->toBe('1000.000000000')
         ->and($activity['closing_physical'])->toBe('1360.000000000')
@@ -40,7 +64,7 @@ it('reconciles receipts production consumption and other movement groups', funct
         ->and($activity['net_change'])->toBe('360.000000000')
         ->and($activity['reconciliation_delta'])->toBe('0.000000000');
 
-    $movements = app(MaterialActivityService::class)->paginateMovements($workspace, $ingredient, $periodStart, $periodEnd);
+    $movements = app(MaterialActivityService::class)->paginateMovements(inventoryReadActor($workspace), $workspace, $ingredient, $periodStart, $periodEnd);
 
     expect($movements->total())->toBe(4)
         ->and($movements->pluck('group')->all())->toBe(['adjustments', 'other_outbound', 'production_consumed', 'received']);
@@ -66,7 +90,7 @@ it('paginates period movement rows while reconciliation still covers every movem
     $service = app(MaterialActivityService::class);
 
     request()->merge(['activity' => 2]);
-    $secondPage = $service->paginateMovements($workspace, $ingredient, $periodStart, $periodEnd, 25, 'activity');
+    $secondPage = $service->paginateMovements(inventoryReadActor($workspace), $workspace, $ingredient, $periodStart, $periodEnd, 25, 'activity');
 
     expect($secondPage->total())->toBe(30)
         ->and($secondPage)->toHaveCount(5)
@@ -77,7 +101,7 @@ it('paginates period movement rows while reconciliation still covers every movem
         ->and($secondPage->first()['group'])->toBe('received');
 
     // Totals are summed over all 30 movements, not just the current page.
-    $activity = $service->forPeriod($workspace, $ingredient, $periodStart, $periodEnd);
+    $activity = $service->forPeriod(inventoryReadActor($workspace), $workspace, $ingredient, $periodStart, $periodEnd);
     expect($activity['received'])->toBe('300.000000000')
         ->and($activity['reconciliation_delta'])->toBe('0.000000000');
 });
@@ -89,6 +113,7 @@ it('includes consumption posted by an aborted production as production consumpti
     createActivityMovement($workspace, $lot, StockMovementType::ProductionConsumption, '-50', '2026-08-15 08:00:00');
 
     $activity = app(MaterialActivityService::class)->forPeriod(
+        inventoryReadActor($workspace),
         $workspace,
         $ingredient,
         CarbonImmutable::parse('2026-08-01'),
@@ -117,7 +142,7 @@ it('bounds open lots to the ten soonest to expire', function (): void {
         createActivityMovement($workspace, $lot, StockMovementType::OpeningBalance, '100', '2026-01-15 08:00:00');
     }
 
-    $openLots = app(MaterialActivityService::class)->openLots($workspace, $ingredient);
+    $openLots = app(MaterialActivityService::class)->openLots(inventoryReadActor($workspace), $workspace, $ingredient);
 
     expect($openLots)->toHaveCount(10)
         ->and($openLots->pluck('id')->all())->toBe(collect($lots)->take(10)->pluck('id')->all());
@@ -151,7 +176,7 @@ it('orders open lots first-expiring first with unexpiring lots last', function (
         createActivityMovement($workspace, $lot, StockMovementType::OpeningBalance, '100', '2026-01-15 08:00:00');
     }
 
-    $openLots = app(MaterialActivityService::class)->openLots($workspace, $ingredient);
+    $openLots = app(MaterialActivityService::class)->openLots(inventoryReadActor($workspace), $workspace, $ingredient);
 
     expect($openLots->pluck('id')->all())->toBe([
         $sameExpiryOlder->id,
@@ -195,7 +220,7 @@ it('keeps zero-balance lots that still carry an active reservation open', functi
     ]);
     createActivityMovement($workspace, $inStock, StockMovementType::OpeningBalance, '7', '2026-01-15 08:00:00');
 
-    expect(app(MaterialActivityService::class)->openLots($workspace, $ingredient)->pluck('id')->all())
+    expect(app(MaterialActivityService::class)->openLots(inventoryReadActor($workspace), $workspace, $ingredient)->pluck('id')->all())
         ->toBe([$reserved->id, $inStock->id]);
 });
 
@@ -220,6 +245,7 @@ it('aggregates period totals in bounded database groups', function (): void {
     DB::enableQueryLog();
 
     $summary = app(MaterialActivityService::class)->forPeriod(
+        inventoryReadActor($workspace),
         $workspace,
         $ingredient,
         CarbonImmutable::parse('2026-01-01')->startOfDay(),
@@ -259,6 +285,7 @@ it('keeps opposite-signed movements of one type in their own groups', function (
     createActivityMovement($workspace, $lot, StockMovementType::StockCountAdjustment, '5', '2026-05-01 08:00:00');
 
     $summary = app(MaterialActivityService::class)->forPeriod(
+        inventoryReadActor($workspace),
         $workspace,
         $ingredient,
         CarbonImmutable::parse('2026-01-01')->startOfDay(),
@@ -284,6 +311,7 @@ it('survives a period total that sqlite renders in scientific notation', functio
     }
 
     $summary = app(MaterialActivityService::class)->forPeriod(
+        inventoryReadActor($workspace),
         $workspace,
         $ingredient,
         CarbonImmutable::parse('2026-01-01')->startOfDay(),
@@ -328,8 +356,8 @@ it('reconciles a high-cardinality history from bounded groups', function (): voi
     $from = CarbonImmutable::parse('2026-01-01')->startOfDay();
     $to = CarbonImmutable::parse('2026-12-31')->endOfDay();
 
-    $summary = $service->forPeriod($workspace, $ingredient, $from, $to);
-    $page = $service->paginateMovements($workspace, $ingredient, $from, $to, 25, 'activity');
+    $summary = $service->forPeriod(inventoryReadActor($workspace), $workspace, $ingredient, $from, $to);
+    $page = $service->paginateMovements(inventoryReadActor($workspace), $workspace, $ingredient, $from, $to, 25, 'activity');
 
     expect($page->total())->toBe(120)
         ->and($page->count())->toBe(25)
@@ -361,3 +389,17 @@ function createActivityMovement(Workspace $workspace, StockLot $lot, StockMoveme
         'occurred_at' => $occurredAt,
     ]);
 }
+
+it('rejects activity reads from a user outside the workspace', function (): void {
+    $workspace = productionBenchWorkspaceForActivity();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $outsider = User::factory()->create();
+
+    expect(fn () => app(MaterialActivityService::class)->forPeriod(
+        $outsider,
+        $workspace,
+        $ingredient,
+        CarbonImmutable::parse('2026-08-01 00:00:00'),
+        CarbonImmutable::parse('2026-08-31 23:59:59'),
+    ))->toThrow(AuthorizationException::class);
+});

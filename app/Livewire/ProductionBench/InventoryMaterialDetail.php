@@ -254,7 +254,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $this->displayUnit();
-        $rawPosition = $activityService->currentPosition($workspace, $this->subject());
+        $rawPosition = $activityService->currentPosition($this->user(), $workspace, $this->subject());
         $rawPosition['required'] = bcsub(
             bcadd($rawPosition['available'], $rawPosition['incoming'], 9),
             $rawPosition['forecast'],
@@ -280,12 +280,13 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             && bccomp($rawPosition['available'], (string) $setting->buffer_quantity, 9) < 0;
         $period = $this->periodDates();
         $periodActivity = $this->presentActivity(
-            $activityService->forPeriod($workspace, $this->subject(), $period['from'], $period['to']),
+            $activityService->forPeriod($this->user(), $workspace, $this->subject(), $period['from'], $period['to']),
             $massConverter,
             $displayUnit,
         );
         $movements = $this->presentMovementPage(
             $activityService->paginateMovements(
+                $this->user(),
                 $workspace,
                 $this->subject(),
                 $period['from'],
@@ -296,7 +297,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             $massConverter,
             $displayUnit,
         );
-        $openLots = $activityService->openLots($workspace, $this->subject())
+        $openLots = $activityService->openLots($this->user(), $workspace, $this->subject())
             ->map(fn (StockLot $lot): array => [
                 'lot' => $lot,
                 'positions' => collect($positions->forLotWithLoadedMovementSum($lot))
@@ -307,6 +308,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
         $supplierListings = $supplierListingQuery
             ->paginate(
+                $this->user(),
                 $workspace,
                 $this->subject(),
                 $this->normalizedSupplierListingsPerPage(),
@@ -435,7 +437,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                 ->where('public_id', $this->packagingPublicId)
                 ->firstOrFail();
 
-            abort_unless(app(WorkspaceMaterialInventoryQuery::class)->tracks($workspace, $packaging), 404);
+            abort_unless(app(WorkspaceMaterialInventoryQuery::class)->tracks($this->user(), $workspace, $packaging), 404);
 
             return $packaging;
         }
@@ -445,7 +447,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->firstOrFail();
 
         abort_unless($ingredient->isAccessibleBy($this->user()), 404);
-        abort_unless(app(WorkspaceMaterialInventoryQuery::class)->tracks($workspace, $ingredient), 404);
+        abort_unless(app(WorkspaceMaterialInventoryQuery::class)->tracks($this->user(), $workspace, $ingredient), 404);
 
         return $ingredient;
     }

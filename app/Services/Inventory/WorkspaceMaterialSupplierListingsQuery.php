@@ -5,10 +5,12 @@ namespace App\Services\Inventory;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\SupplierListing;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use App\Services\ProductionBenchAccess;
 
 /**
  * The purchasing catalogue half of a material: every supplier listing that can
@@ -20,13 +22,18 @@ final class WorkspaceMaterialSupplierListingsQuery
 {
     private const array ALLOWED_PER_PAGE = [10, 25, 50];
 
+    public function __construct(private readonly ProductionBenchAccess $access) {}
+
     public function paginate(
+        User $actor,
         Workspace $workspace,
         Ingredient|PackagingItem $subject,
         int $perPage = 10,
         string $pageName = 'supplier-listings',
         ?int $page = null,
     ): LengthAwarePaginator {
+        $this->access->assertReadable($actor, $workspace);
+
         $perPage = in_array($perPage, self::ALLOWED_PER_PAGE, true) ? $perPage : 10;
 
         return SupplierListing::query()

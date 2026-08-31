@@ -479,7 +479,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
      */
     public function lotMaterialSearchResults(string $search, WorkspaceMaterialInventoryQuery $inventoryQuery): array
     {
-        return $inventoryQuery->materialOptions($this->workspace(), trim($search), self::OPTION_LIMIT);
+        return $inventoryQuery->materialOptions($this->user(), $this->workspace(), trim($search), self::OPTION_LIMIT);
     }
 
     /**
@@ -499,7 +499,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             return null;
         }
 
-        $subject = $inventoryQuery->resolveMaterialOption($this->workspace(), $type, $publicId);
+        $subject = $inventoryQuery->resolveMaterialOption($this->user(), $this->workspace(), $type, $publicId);
 
         return $subject instanceof Ingredient
             ? (string) $subject->localizedDisplayName()
@@ -525,7 +525,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
         abort_unless(in_array($type, ['ingredient', 'packaging'], true), 422);
 
-        $subject = $inventoryQuery->resolveMaterialOption($this->workspace(), $type, $publicId);
+        $subject = $inventoryQuery->resolveMaterialOption($this->user(), $this->workspace(), $type, $publicId);
 
         abort_unless($subject instanceof Ingredient || $subject instanceof PackagingItem, 404);
 
@@ -696,7 +696,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
         $materialFilters = $this->materialFilters();
         $materialPage = $this->mode === 'materials'
-            ? $inventoryQuery->paginate($workspace, $materialFilters, $this->normalizedPerPage(), 'materials')
+            ? $inventoryQuery->paginate($this->user(), $workspace, $materialFilters, $this->normalizedPerPage(), 'materials')
             : null;
 
         if ($materialPage instanceof LengthAwarePaginator) {
@@ -712,7 +712,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 : collect(),
             'materials' => $materialPage,
             'inventorySummary' => $this->mode === 'materials'
-                ? $inventoryQuery->summary($workspace, $materialFilters)
+                ? $inventoryQuery->summary($this->user(), $workspace, $materialFilters)
                 : [],
             'materialFiltersActive' => $this->materialFiltersActive(),
             'categoryOptions' => IngredientCategory::options(),

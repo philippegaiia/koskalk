@@ -10,25 +10,32 @@ use App\Enums\StockLotStatus;
 use App\Enums\StockReservationStatus;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\ProductionBenchAccess;
 
 class WorkspaceMaterialInventoryQuery
 {
     private const string Zero = '0.000000000';
 
+    public function __construct(private readonly ProductionBenchAccess $access) {}
+
     /**
      * @param  array<string, mixed>  $filters
      */
     public function paginate(
+        User $actor,
         Workspace $workspace,
         array $filters = [],
         int $perPage = 25,
         string $pageName = 'materials',
     ): LengthAwarePaginator {
+        $this->access->assertReadable($actor, $workspace);
+
         $perPage = in_array($perPage, [25, 50, 100], true) ? $perPage : 25;
         $query = $this->query($workspace, $filters);
 
@@ -44,8 +51,10 @@ class WorkspaceMaterialInventoryQuery
      * @param  array<string, mixed>  $filters
      * @return array{materials: int, shortages: int, incoming: int, quarantined: int, unplanned: int, below_buffer: int}
      */
-    public function summary(Workspace $workspace, array $filters = []): array
+    public function summary(User $actor, Workspace $workspace, array $filters = []): array
     {
+        $this->access->assertReadable($actor, $workspace);
+
         $summary = DB::query()
             ->fromSub($this->query($workspace, $filters), 'material_rows')
             ->selectRaw('COUNT(*) AS materials')
@@ -66,8 +75,10 @@ class WorkspaceMaterialInventoryQuery
         ];
     }
 
-    public function tracks(Workspace $workspace, Ingredient|PackagingItem $subject): bool
+    public function tracks(User $actor, Workspace $workspace, Ingredient|PackagingItem $subject): bool
     {
+        $this->access->assertReadable($actor, $workspace);
+
         $type = $subject instanceof Ingredient ? 'ingredient' : 'packaging';
 
         return $this->query($workspace, ['type' => $type])
@@ -85,8 +96,10 @@ class WorkspaceMaterialInventoryQuery
      *
      * @return array<string, string>
      */
-    public function materialOptions(Workspace $workspace, string $search = '', int $limit = 30): array
+    public function materialOptions(User $actor, Workspace $workspace, string $search = '', int $limit = 30): array
     {
+        $this->access->assertReadable($actor, $workspace);
+
         $rows = $this->query($workspace, [
             'search' => $search,
             'sort' => 'name',
@@ -121,10 +134,13 @@ class WorkspaceMaterialInventoryQuery
      * workspace-owned and are matched directly.
      */
     public function resolveMaterialOption(
+        User $actor,
         Workspace $workspace,
         string $type,
         string $publicId,
     ): Ingredient|PackagingItem|null {
+        $this->access->assertReadable($actor, $workspace);
+
         // `public_id` is a uuid column: on PostgreSQL comparing it to a
         // non-uuid string is an "invalid input syntax for type uuid" error, not
         // an empty result, so the shape is checked before the query.
@@ -141,7 +157,7 @@ class WorkspaceMaterialInventoryQuery
 
         $ingredient = Ingredient::query()->where('public_id', $publicId)->first();
 
-        return $ingredient instanceof Ingredient && $this->tracks($workspace, $ingredient)
+        return $ingredient instanceof Ingredient && $this->tracks($actor, $workspace, $ingredient)
             ? $ingredient
             : null;
     }

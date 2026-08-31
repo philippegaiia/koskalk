@@ -17,10 +17,35 @@ use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceMaterialSetting;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
+use App\Enums\WorkspaceMemberRole;
+use App\Models\User;
+use App\Models\WorkspaceMember;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
+
+if (! function_exists('inventoryReadActor')) {
+    /**
+     * Returns a user who is a member of the workspace, creating an owner when
+     * the workspace has no members yet. Used to satisfy the actor-first
+     * signature of the inventory read services under test.
+     */
+    function inventoryReadActor(Workspace $workspace): User
+    {
+        $member = $workspace->users()->first();
+
+        if ($member instanceof User) {
+            return $member;
+        }
+
+        $actor = User::factory()->create();
+        WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => WorkspaceMemberRole::Owner]);
+
+        return $actor;
+    }
+}
 
 it('returns physical, available, forecast, and buffer state for tracked materials', function (): void {
     $workspace = Workspace::factory()->create();
@@ -44,6 +69,7 @@ it('returns physical, available, forecast, and buffer state for tracked material
     ]);
 
     $page = app(WorkspaceMaterialInventoryQuery::class)->paginate(
+        actor: inventoryReadActor($workspace),
         workspace: $workspace,
         filters: [],
         perPage: 25,
@@ -57,7 +83,7 @@ it('returns physical, available, forecast, and buffer state for tracked material
         ->and($page->first()['available'])->toBe('1000.000000000')
         ->and($page->first()['buffer_quantity'])->toBe('1200.000000000')
         ->and($page->first()['is_below_buffer'])->toBeTrue()
-        ->and(app(WorkspaceMaterialInventoryQuery::class)->summary($workspace))->toMatchArray([
+        ->and(app(WorkspaceMaterialInventoryQuery::class)->summary(inventoryReadActor($workspace), $workspace))->toMatchArray([
             'materials' => 1,
             'shortages' => 0,
             'below_buffer' => 1,
@@ -90,10 +116,10 @@ it('searches inci aliases translations and workspace material codes', function (
 
     $query = app(WorkspaceMaterialInventoryQuery::class);
 
-    expect($query->paginate($workspace, ['search' => 'searchable inci term'])->total())->toBe(1)
-        ->and($query->paginate($workspace, ['search' => 'botanical alias'])->total())->toBe(1)
-        ->and($query->paginate($workspace, ['search' => 'nom traduit'])->total())->toBe(1)
-        ->and($query->paginate($workspace, ['search' => 'code-search'])->total())->toBe(1);
+    expect($query->paginate(inventoryReadActor($workspace), $workspace, ['search' => 'searchable inci term'])->total())->toBe(1)
+        ->and($query->paginate(inventoryReadActor($workspace), $workspace, ['search' => 'botanical alias'])->total())->toBe(1)
+        ->and($query->paginate(inventoryReadActor($workspace), $workspace, ['search' => 'nom traduit'])->total())->toBe(1)
+        ->and($query->paginate(inventoryReadActor($workspace), $workspace, ['search' => 'code-search'])->total())->toBe(1);
 });
 
 it('keeps reserved and quarantined quantities inside physical stock but out of available stock', function (): void {
@@ -127,7 +153,7 @@ it('keeps reserved and quarantined quantities inside physical stock but out of a
         'created_by_user_id' => $workspace->owner_user_id,
     ]);
 
-    $row = app(WorkspaceMaterialInventoryQuery::class)->paginate($workspace)->first();
+    $row = app(WorkspaceMaterialInventoryQuery::class)->paginate(inventoryReadActor($workspace), $workspace)->first();
 
     expect($row['physical'])->toBe('1250.000000000')
         ->and($row['quarantined'])->toBe('250.000000000')
@@ -156,7 +182,7 @@ it('filters by taxonomy and negative forecast', function (): void {
         'required_mass_grams' => '50.000000000',
     ]);
 
-    $page = app(WorkspaceMaterialInventoryQuery::class)->paginate($workspace, [
+    $page = app(WorkspaceMaterialInventoryQuery::class)->paginate(inventoryReadActor($workspace), $workspace, [
         'category' => IngredientCategory::Lipids->value,
         'subcategory' => IngredientSubcategory::VegetableOils->value,
         'stock_state' => 'negative_forecast',
@@ -176,8 +202,8 @@ it('sorts deterministically and paginates on the database query', function (): v
     }
 
     $query = app(WorkspaceMaterialInventoryQuery::class);
-    $ascending = $query->paginate($workspace, ['sort' => 'name', 'direction' => 'asc'], 25, 'materials');
-    $descending = $query->paginate($workspace, ['sort' => 'name', 'direction' => 'desc'], 25, 'materials');
+    $ascending = $query->paginate(inventoryReadActor($workspace), $workspace, ['sort' => 'name', 'direction' => 'asc'], 25, 'materials');
+    $descending = $query->paginate(inventoryReadActor($workspace), $workspace, ['sort' => 'name', 'direction' => 'desc'], 25, 'materials');
 
     expect($ascending->pluck('name')->all())->toBe(['A material', 'B material', 'C material'])
         ->and($descending->pluck('name')->all())->toBe(['C material', 'B material', 'A material']);
@@ -195,17 +221,18 @@ it('pages more than 25 materials with a bounded query count', function (): void 
 
     $query = app(WorkspaceMaterialInventoryQuery::class);
     $filters = ['sort' => 'name', 'direction' => 'asc'];
+    $actor = inventoryReadActor($workspace);
 
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $firstPage = $query->paginate($workspace, $filters, 25, 'materials');
+    $firstPage = $query->paginate($actor, $workspace, $filters, 25, 'materials');
 
     $queryCount = count(DB::getQueryLog());
     DB::disableQueryLog();
 
     request()->merge(['materials' => 2]);
-    $secondPage = $query->paginate($workspace, $filters, 25, 'materials');
+    $secondPage = $query->paginate($actor, $workspace, $filters, 25, 'materials');
 
     expect($firstPage->total())->toBe(30)
         ->and($firstPage->count())->toBe(25)
@@ -214,11 +241,11 @@ it('pages more than 25 materials with a bounded query count', function (): void 
         ->and($secondPage->pluck('name')->last())->toBe('Material 29')
         ->and($firstPage->pluck('name'))->not->toContain('Material 29');
 
-    // Plan Task 3 Step 6: the ceiling is the observed implementation count plus one,
-    // not an arbitrary large number. Subjects are batched into one query per type, so
-    // the count is flat at 5 whether the page holds 25 or 100 rows; 6 gives one query
-    // of headroom and fails loudly if per-row hydration ever returns.
-    expect($queryCount)->toBeLessThanOrEqual(6);
+    // The material query is bounded: the count is flat at 5 whether the page holds
+    // 25 or 100 rows. The actor-aware read gate adds one membership lookup
+    // (roleFor) per call, so the observed count is 6; 7 gives one query of
+    // headroom and fails loudly if per-row hydration ever returns.
+    expect($queryCount)->toBeLessThanOrEqual(7);
 });
 
 it('includes lot-only and setting-only materials without duplicates', function (): void {
@@ -228,8 +255,18 @@ it('includes lot-only and setting-only materials without duplicates', function (
     StockLot::factory()->for($workspace)->for($lotOnly)->create();
     WorkspaceMaterialSetting::factory()->for($workspace)->for($settingOnly)->create();
 
-    $page = app(WorkspaceMaterialInventoryQuery::class)->paginate($workspace);
+    $page = app(WorkspaceMaterialInventoryQuery::class)->paginate(inventoryReadActor($workspace), $workspace);
 
     expect($page->total())->toBe(2)
         ->and($page->pluck('name')->sort()->values()->all())->toBe(['Lot only', 'Setting only']);
+});
+
+it('rejects inventory reads from a user outside the workspace', function (): void {
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    $outsider = User::factory()->create();
+
+    expect(fn () => app(WorkspaceMaterialInventoryQuery::class)->paginate($outsider, $workspace))
+        ->toThrow(AuthorizationException::class);
 });

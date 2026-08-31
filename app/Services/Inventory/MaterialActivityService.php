@@ -10,7 +10,9 @@ use App\Models\PackagingItem;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,7 +38,10 @@ class MaterialActivityService
      */
     private const string SignBucket = 'CASE WHEN quantity_delta < 0 THEN 1 ELSE 0 END';
 
-    public function __construct(private readonly StockPositionService $positions) {}
+    public function __construct(
+        private readonly StockPositionService $positions,
+        private readonly ProductionBenchAccess $access,
+    ) {}
 
     /**
      * The reconciliation summary for a period. The totals are summed over every
@@ -56,11 +61,14 @@ class MaterialActivityService
      * }
      */
     public function forPeriod(
+        User $actor,
         Workspace $workspace,
         Ingredient|PackagingItem $subject,
         CarbonImmutable $from,
         CarbonImmutable $to,
     ): array {
+        $this->access->assertReadable($actor, $workspace);
+
         $lotIds = $this->lotIdQuery($workspace, $subject);
         $openingPhysical = $this->physicalAt($workspace, $lotIds, '<', $from);
         $closingPhysical = $this->physicalAt($workspace, $lotIds, '<=', $to);
@@ -92,6 +100,7 @@ class MaterialActivityService
      * @return LengthAwarePaginator<int, array{movement: StockMovement, group: string, quantity_delta: string}>
      */
     public function paginateMovements(
+        User $actor,
         Workspace $workspace,
         Ingredient|PackagingItem $subject,
         CarbonImmutable $from,
@@ -99,6 +108,8 @@ class MaterialActivityService
         int $perPage = 25,
         string $pageName = 'activity',
     ): LengthAwarePaginator {
+        $this->access->assertReadable($actor, $workspace);
+
         $page = $this->movementQuery($workspace, $this->lotIdQuery($workspace, $subject), $from, $to)
             ->paginate(max(1, $perPage), ['*'], $pageName);
 
@@ -118,8 +129,10 @@ class MaterialActivityService
     /**
      * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
      */
-    public function currentPosition(Workspace $workspace, Ingredient|PackagingItem $subject): array
+    public function currentPosition(User $actor, Workspace $workspace, Ingredient|PackagingItem $subject): array
     {
+        $this->access->assertReadable($actor, $workspace);
+
         return $this->positions->forWorkspaceSubject($workspace, $subject);
     }
 
@@ -131,8 +144,10 @@ class MaterialActivityService
      *
      * @return Collection<int, StockLot>
      */
-    public function openLots(Workspace $workspace, Ingredient|PackagingItem $subject): Collection
+    public function openLots(User $actor, Workspace $workspace, Ingredient|PackagingItem $subject): Collection
     {
+        $this->access->assertReadable($actor, $workspace);
+
         return StockLot::query()
             ->whereIn('id', $this->lotIdQuery($workspace, $subject))
             ->with([

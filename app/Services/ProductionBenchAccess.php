@@ -61,6 +61,21 @@ class ProductionBenchAccess
         ]);
     }
 
+    /**
+     * Read authorization for Production Bench data is workspace membership.
+     *
+     * Any role that can reach the workspace may read: owner, admin, editor, and
+     * viewer all pass. A cancelled/read-only workspace keeps its members, so it
+     * remains browsable. Only a user with no membership in the workspace is
+     * rejected. Mutation gates stay owned by assertWritable()/assertCanConfigure().
+     */
+    public function assertReadable(User $actor, Workspace $workspace): void
+    {
+        if ($workspace->roleFor($actor) === null) {
+            throw new AuthorizationException;
+        }
+    }
+
     public function assertCanConfigure(User $actor, Workspace $workspace): void
     {
         $this->assertWritable($actor, $workspace);

@@ -557,9 +557,6 @@ class WorkspaceMaterialInventoryQuery
     }
 
     /**
-     * @param  array<string, Ingredient|PackagingItem>  $subjects
-     */
-    /**
      * Loads every subject on the page in one query per subject type rather than one
      * query per row, so the count stays flat as the page size grows.
      *

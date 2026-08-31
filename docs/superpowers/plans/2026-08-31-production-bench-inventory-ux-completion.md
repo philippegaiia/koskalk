@@ -685,11 +685,11 @@ git commit -m "refactor: render inventory filters with filament"
 - Test: `tests/Feature/WorkspaceMaterialSettingTest.php`
 - Test: `tests/Feature/ProductionBenchPagesTest.php`
 
-- [ ] **Step 1: Add a below-buffer visual-state assertion**
+- [x] **Step 1: Add a below-buffer visual-state assertion**
 
 Create a material below its configured buffer but without negative forecast. Assert the row contains the established warning-soft background and the text badge.
 
-- [ ] **Step 2: Run the test and verify the red state**
+- [x] **Step 2: Run the test and verify the red state**
 
 Run:
 
@@ -699,11 +699,11 @@ php artisan test --compact tests/Feature/ProductionBenchPagesTest.php --filter='
 
 Expected: FAIL because only shortage rows currently receive a background.
 
-- [ ] **Step 3: Apply independent semantic row states**
+- [x] **Step 3: Apply independent semantic row states**
 
 Use danger-soft for negative forecast and warning-soft for below-buffer-only rows. Danger takes precedence when both are true. Keep the text badge so color is never the only signal.
 
-- [ ] **Step 4: Make the settings lock conforming**
+- [x] **Step 4: Make the settings lock conforming**
 
 Change the locked lookup to:
 
@@ -717,11 +717,11 @@ $existing = WorkspaceMaterialSetting::query()
 
 Retain `assertWritable()` inside the transaction and `attempts: 5`.
 
-- [ ] **Step 5: Remove the duplicated adjacent PHPDoc block**
+- [x] **Step 5: Remove the duplicated adjacent PHPDoc block**
 
 Keep one complete array-shape declaration above the corresponding method in `WorkspaceMaterialInventoryQuery`.
 
-- [ ] **Step 6: Run the focused tests**
+- [x] **Step 6: Run the focused tests**
 
 Run:
 
@@ -731,7 +731,7 @@ php artisan test --compact tests/Feature/WorkspaceMaterialSettingTest.php tests/
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit the standards slice**
+- [x] **Step 7: Commit the standards slice**
 
 ```bash
 git add app/Services/Inventory/WorkspaceMaterialSettings.php app/Services/Inventory/WorkspaceMaterialInventoryQuery.php resources/views/livewire/production-bench/inventory-index.blade.php tests/Feature/WorkspaceMaterialSettingTest.php tests/Feature/ProductionBenchPagesTest.php

@@ -21,6 +21,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMaterialSetting;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -398,6 +399,62 @@ it('activates and clears the negative forecast filter from the shortage summary 
         ->call('toggleShortageFilter')
         ->assertSet('stockState', 'all')
         ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 2);
+});
+
+it('gives a below buffer row its own warning state', function (): void {
+    ['user' => $user] = belowBufferWorkspace();
+
+    $this->actingAs($user);
+
+    // Below buffer and negative forecast are different facts: this row has
+    // 1000 g against a 1200 g buffer and no demand at all, so the forecast
+    // stays positive and only the buffer state is true.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['is_below_buffer'] === true
+            && $materials->first()['is_shortage'] === false)
+        // The row tint carries the `/40` modifier, which the text badge does
+        // not, so this cannot be satisfied by the badge alone.
+        ->assertSeeHtml('bg-[var(--color-warning-soft)]/40')
+        ->assertDontSeeHtml('bg-[var(--color-danger-soft)]/40')
+        // Colour is never the only signal.
+        ->assertSee('Below buffer');
+});
+
+it('keeps danger precedence when a row is both a shortage and below buffer', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = belowBufferWorkspace();
+
+    $deepIngredient = Ingredient::factory()->create(['display_name' => 'Deep oil']);
+    WorkspaceMaterialSetting::factory()->for($workspace)->for($deepIngredient)->create([
+        'buffer_quantity' => '1200.000000000',
+    ]);
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::Scheduled,
+    ]);
+    ProductionRequirement::factory()->for($production)->for($deepIngredient)->create([
+        'required_mass_grams' => '2000.000000000',
+        'sort_order' => 1,
+    ]);
+    $lot = StockLot::factory()->for($workspace)->for($deepIngredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'quantity_delta' => '1000.000000000',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->set('stockState', 'negative_forecast')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['name'] === 'Deep oil'
+            // 1000 g available against 1200 g of buffer and 2000 g demanded:
+            // both states are true at once.
+            && $materials->first()['is_shortage'] === true
+            && $materials->first()['is_below_buffer'] === true)
+        ->assertSeeHtml('bg-[var(--color-danger-soft)]/40')
+        // Danger wins the row; the buffer is still reported in text.
+        ->assertDontSeeHtml('bg-[var(--color-warning-soft)]/40')
+        ->assertSee('Below buffer')
+        ->assertSee('Negative forecast');
 });
 
 it('narrows the material view to materials with and without planned demand', function (): void {
@@ -867,6 +924,33 @@ it('normalizes tampered lot date filters on update', function (): void {
         ->set('lotStockedUntil', '2026-02-30')
         ->assertSet('lotStockedUntil', '');
 });
+
+/**
+ * One ingredient sitting below its configured buffer with no demand, so the
+ * buffer state is true while the forecast stays positive.
+ */
+function belowBufferWorkspace(): array
+{
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Buffer oil']);
+    WorkspaceMaterialSetting::factory()->for($workspace)->for($ingredient)->create([
+        'buffer_quantity' => '1200.000000000',
+    ]);
+
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'quantity_delta' => '1000.000000000',
+    ]);
+
+    return [
+        'user' => $user,
+        'workspace' => $workspace,
+        'ingredient' => $ingredient,
+    ];
+}
 
 function plannedShortageWorkspace(): array
 {

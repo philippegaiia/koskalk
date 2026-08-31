@@ -39,6 +39,7 @@ class WorkspaceMaterialSettings
             $this->access->assertWritable($actor, $workspace);
 
             $existing = WorkspaceMaterialSetting::query()
+                ->withoutGlobalScopes()
                 ->where($keys)
                 ->lockForUpdate()
                 ->first();

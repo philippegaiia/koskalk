@@ -95,7 +95,17 @@
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @forelse ($materials as $row)
-                                <tr wire:key="inventory-material-{{ $row['key'] }}" class="{{ $row['is_shortage'] ? 'bg-[var(--color-danger-soft)]/40' : '' }}">
+                                {{-- Below buffer is its own fact rather than a weaker shortage, so it
+                                     gets its own tint. Shortage wins when both hold, because a row
+                                     that cannot cover planned demand is the more urgent of the two.
+                                     Either way the tint only reinforces a text badge. --}}
+                                <tr
+                                    wire:key="inventory-material-{{ $row['key'] }}"
+                                    @class([
+                                        'bg-[var(--color-danger-soft)]/40' => $row['is_shortage'],
+                                        'bg-[var(--color-warning-soft)]/40' => $row['is_below_buffer'] && ! $row['is_shortage'],
+                                    ])
+                                >
                                     <td class="px-5 py-3">
                                         {{-- A table row cannot be wrapped in an anchor, so the whole identity cell
                                              is one block link instead of just the name. --}}

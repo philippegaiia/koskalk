@@ -595,11 +595,11 @@ git commit -m "perf: bound material activity reconciliation"
 - Test: `tests/Feature/ProductionBenchPagesTest.php`
 - Test: `tests/Feature/ProductionBenchInventoryMaterialDetailTest.php`
 
-- [ ] **Step 1: Write failing form-state tests**
+- [x] **Step 1: Write failing form-state tests**
 
 Use Livewire to change search, sort, category, dependent subcategory, Lot scope, Lot material, period preset, and custom dates. Assert the same URL-bound public properties and filtered results as before. These tests protect behavior while the rendering substrate changes.
 
-- [ ] **Step 2: Run the focused tests and record the baseline**
+- [x] **Step 2: Run the focused tests and record the baseline**
 
 Run:
 
@@ -609,7 +609,7 @@ php artisan test --compact tests/Feature/ProductionBenchPagesTest.php tests/Feat
 
 Expected: existing behavior tests PASS; new schema-presence assertions FAIL.
 
-- [ ] **Step 3: Add `materialFiltersForm()` and `lotFiltersForm()`**
+- [x] **Step 3: Add `materialFiltersForm()` and `lotFiltersForm()`**
 
 Follow the established `SupplierListingIndex` pattern with `TextInput`, `Select`, `DatePicker`, `Grid`, `live()`, and reset-page callbacks. Keep the existing URL-bound properties as the canonical state paths so bookmarked URLs do not change.
 
@@ -632,7 +632,7 @@ Lot form fields:
 
 Every live field must reset only the relevant named paginator.
 
-- [ ] **Step 4: Render the named schemas in Blade**
+- [x] **Step 4: Render the named schemas in Blade**
 
 Replace handwritten input/select blocks with:
 
@@ -648,15 +648,15 @@ and:
 
 Keep applied-filter chips outside the schemas because they are navigation shortcuts, not input fields.
 
-- [ ] **Step 5: Add `activityFiltersForm()` to material detail**
+- [x] **Step 5: Add `activityFiltersForm()` to material detail**
 
 Use a non-native period `Select` and two conditional `DatePicker` fields. Preserve the existing `period`, `from`, and `to` URL aliases and custom-period validation. Reset only the `activity` paginator when period state changes.
 
-- [ ] **Step 6: Render and test the period schema**
+- [x] **Step 6: Render and test the period schema**
 
 Replace the handwritten period inputs with `{{ $this->activityFiltersForm }}`. Assert 30-day, 365-day, and custom states still update totals without changing current position.
 
-- [ ] **Step 7: Run tests and Filament compatibility checks**
+- [x] **Step 7: Run tests and Filament compatibility checks**
 
 Run:
 
@@ -667,7 +667,7 @@ vendor/bin/filacheck --fix
 
 Expected: tests PASS; Filacheck reports no unresolved issues.
 
-- [ ] **Step 8: Commit the form-substrate slice**
+- [x] **Step 8: Commit the form-substrate slice**
 
 ```bash
 git add app/Livewire/ProductionBench/InventoryIndex.php app/Livewire/ProductionBench/InventoryMaterialDetail.php resources/views/livewire/production-bench/inventory-index.blade.php resources/views/livewire/production-bench/inventory-material-detail.blade.php tests/Feature/ProductionBenchPagesTest.php tests/Feature/ProductionBenchInventoryMaterialDetailTest.php

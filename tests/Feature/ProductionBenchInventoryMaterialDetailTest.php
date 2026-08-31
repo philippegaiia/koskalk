@@ -223,6 +223,81 @@ it('changes activity periods without changing the current position', function ()
             && $activity['reconciliation_ok'] === true);
 });
 
+it('renders the period controls from a filament schema', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Rose water']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+        'occurred_at' => now()->subDays(5),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertSeeHtml('for="activityFiltersForm.period"')
+        // The custom dates are only meaningful once "custom" is selected, so
+        // the schema has to render them conditionally rather than always.
+        ->assertDontSeeHtml('for="activityFiltersForm.from"')
+        ->set('periodPreset', 'custom')
+        ->assertSeeHtml('for="activityFiltersForm.from"')
+        ->assertSeeHtml('for="activityFiltersForm.to"');
+});
+
+it('keeps the custom period validation and the activity page through the schema', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Rose water']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+
+    foreach (range(1, 30) as $n) {
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $workspace->id,
+            'type' => StockMovementType::PurchaseReceipt,
+            'quantity_delta' => '10',
+            'occurred_at' => now()->subDays(2)->addHours($n),
+        ]);
+    }
+
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::PurchaseReceipt,
+        'quantity_delta' => '40',
+        'occurred_at' => now()->subDays(200),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        // 30 x 10 g landed in the last two days; the 40 g movement is 200 days
+        // old and only enters the 365-day window.
+        ->assertViewHas('activity', fn (array $activity): bool => $activity['received'] === '0.30')
+        ->call('gotoPage', 2, 'activity')
+        ->assertViewHas('movements', fn (LengthAwarePaginator $page): bool => $page->currentPage() === 2)
+        // Widening the period has to reset the activity paginator back to the
+        // first page, which is what updatedPeriodPreset() already does.
+        ->set('periodPreset', '365')
+        ->assertViewHas('movements', fn (LengthAwarePaginator $page): bool => $page->currentPage() === 1)
+        ->assertViewHas('activity', fn (array $activity): bool => $activity['received'] === '0.34')
+        // Choosing "custom" with no dates yet is the incomplete state the
+        // validation hook has always rejected.
+        ->set('periodPreset', 'custom')
+        ->assertHasErrors(['customFrom'])
+        ->set('customFrom', today()->subDays(10)->toDateString())
+        ->set('customTo', today()->subDays(20)->toDateString())
+        ->assertHasErrors(['customFrom'])
+        ->set('customTo', today()->toDateString())
+        ->assertHasNoErrors()
+        ->assertViewHas('activity', fn (array $activity): bool => $activity['received'] === '0.30');
+});
+
 it('paginates the period activity rows while reconciliation covers every movement', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create();

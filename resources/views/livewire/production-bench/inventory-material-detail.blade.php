@@ -154,28 +154,9 @@
                 <h2 id="activity-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.period_activity') }}</h2>
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.period_activity_help') }}</p>
             </div>
-            <div class="flex flex-col gap-3 border-b border-[var(--color-line)] p-4 sm:flex-row sm:items-end">
-                <label class="sk-field sm:max-w-xs">
-                    <span>{{ __('production_bench.inventory.period') }}</span>
-                    <select wire:model.live="periodPreset" class="sk-select-control">
-                        <option value="30">{{ __('production_bench.inventory.last_30_days') }}</option>
-                        <option value="365">{{ __('production_bench.inventory.last_365_days') }}</option>
-                        <option value="custom">{{ __('production_bench.inventory.custom_period') }}</option>
-                    </select>
-                </label>
-                @if ($periodPreset === 'custom')
-                    <label class="sk-field">
-                        <span>{{ __('production_bench.inventory.from') }}</span>
-                        <input wire:model.live="customFrom" type="date" class="sk-field-control" aria-invalid="{{ $errors->has('customFrom') ? 'true' : 'false' }}" />
-                        @error('customFrom')<span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
-                    </label>
-                    <label class="sk-field">
-                        <span>{{ __('production_bench.inventory.to') }}</span>
-                        <input wire:model.live="customTo" type="date" class="sk-field-control" aria-invalid="{{ $errors->has('customTo') ? 'true' : 'false' }}" />
-                        @error('customTo')<span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
-                    </label>
-                @endif
-                <p class="text-xs text-[var(--color-ink-soft)]">{{ $periodLabel }}</p>
+            <div class="border-b border-[var(--color-line)] p-4">
+                {{ $this->activityFiltersForm }}
+                <p class="mt-3 text-xs text-[var(--color-ink-soft)]">{{ $periodLabel }}</p>
             </div>
             <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] sm:grid-cols-4 lg:grid-cols-8 lg:divide-y-0">
                 @foreach (['opening_physical', 'received', 'production_consumed', 'other_inbound', 'other_outbound', 'adjustments', 'net_change', 'closing_physical'] as $key)

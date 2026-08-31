@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockMovementType;
@@ -551,6 +553,116 @@ it('filters the lot register by scope supplier origin dates and expiry', functio
         ->set('search', 'OLEA EUROPAEA')
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
         ->assertSee('Local Oils');
+});
+
+it('renders the material filter controls from a filament schema', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+
+    // The `for` attribute carries the schema name, so these ids only exist
+    // while the controls are rendered by materialFiltersForm() rather than by
+    // handwritten markup.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('for="materialFiltersForm.search"')
+        ->assertSeeHtml('for="materialFiltersForm.sort"')
+        ->assertSeeHtml('for="materialFiltersForm.materialType"')
+        ->assertSeeHtml('for="materialFiltersForm.stockState"')
+        ->assertSeeHtml('for="materialFiltersForm.demandFilter"')
+        ->assertSeeHtml('for="materialFiltersForm.categoryFilter"')
+        ->assertSeeHtml('for="materialFiltersForm.subcategoryFilter"')
+        // Priority ordering has no direction to invert, so the control stays
+        // hidden until a sort that can be reversed is chosen.
+        ->assertDontSeeHtml('for="materialFiltersForm.direction"')
+        ->set('sort', 'name')
+        ->assertSeeHtml('for="materialFiltersForm.direction"');
+});
+
+it('renders the lot register filter controls from a filament schema', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('for="lotFiltersForm.lotScope"')
+        ->assertSeeHtml('for="lotFiltersForm.lotStatus"')
+        ->assertSeeHtml('for="lotFiltersForm.lotSupplier"')
+        ->assertSeeHtml('for="lotFiltersForm.lotOrigin"')
+        ->assertSeeHtml('for="lotFiltersForm.lotStockedFrom"')
+        ->assertSeeHtml('for="lotFiltersForm.lotStockedUntil"')
+        ->assertSeeHtml('for="lotFiltersForm.lotExpiry"')
+        ->assertSeeHtml('for="lotFiltersForm.lotSort"');
+});
+
+it('constrains the subcategory options to the chosen category', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        // No category means no subcategory to choose from.
+        ->assertViewHas('subcategoryOptions', fn (array $options): bool => $options === [])
+        ->set('categoryFilter', IngredientCategory::Lipids->value)
+        ->assertViewHas(
+            'subcategoryOptions',
+            fn (array $options): bool => array_key_exists(IngredientSubcategory::VegetableOils->value, $options)
+                && ! array_key_exists(IngredientSubcategory::Anionic->value, $options),
+        )
+        ->set('subcategoryFilter', IngredientSubcategory::VegetableOils->value)
+        ->assertSet('subcategoryFilter', IngredientSubcategory::VegetableOils->value)
+        // A subcategory from the old category cannot survive the category
+        // changing underneath it.
+        ->set('categoryFilter', IngredientCategory::Surfactants->value)
+        ->assertSet('subcategoryFilter', '')
+        ->assertViewHas(
+            'subcategoryOptions',
+            fn (array $options): bool => array_key_exists(IngredientSubcategory::Anionic->value, $options)
+                && ! array_key_exists(IngredientSubcategory::VegetableOils->value, $options),
+        );
+});
+
+it('keeps the url bound properties canonical while filtering through the schemas', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Shea butter']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '10',
+    ]);
+    $exhausted = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($exhausted, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5',
+    ]);
+    StockMovement::factory()->for($exhausted, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::ProductionConsumption,
+        'quantity_delta' => '-5',
+    ]);
+
+    $this->actingAs($user);
+
+    // The schemas must drive these exact properties, not a nested state array,
+    // so a bookmarked URL keeps filtering exactly as it did before.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSet('lotScope', 'open')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->set('lotScope', 'all')
+        ->assertSet('lotScope', 'all')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2)
+        ->set('search', 'Shea butter')
+        ->assertSet('search', 'Shea butter')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2);
 });
 
 it('keeps reserved zero-balance lots in the default open scope', function (): void {

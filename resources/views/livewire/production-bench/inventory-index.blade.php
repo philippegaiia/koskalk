@@ -58,96 +58,15 @@
                     </div>
                 </dl>
 
-                <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4" x-data="{ filtersOpen: false }">
-                    <div class="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
-                        <label class="sk-field min-w-0 flex-1 lg:min-w-80">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.common.search') }}</span>
-                            <input wire:model.live.debounce.300ms="search" type="search" placeholder="{{ __('production_bench.common.search') }}" class="sk-field-control" aria-describedby="inventory-search-help" />
-                        </label>
-                        <label class="sk-field shrink-0">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.sort') }}</span>
-                            <select wire:model.live="sort" class="sk-select-control">
-                                <option value="priority">{{ __('production_bench.inventory.sort_priority') }}</option>
-                                <option value="name">{{ __('production_bench.inventory.sort_name') }}</option>
-                                <option value="physical">{{ __('production_bench.inventory.sort_physical') }}</option>
-                                <option value="available">{{ __('production_bench.inventory.sort_available') }}</option>
-                                <option value="forecast">{{ __('production_bench.inventory.sort_forecast') }}</option>
-                            </select>
-                        </label>
-                        @if ($sort !== 'priority')
-                            <label class="sk-field shrink-0">
-                                <span class="sr-only">{{ __('production_bench.inventory.sort') }}</span>
-                                <select wire:model.live="direction" class="sk-select-control" aria-label="{{ __('production_bench.inventory.sort') }}">
-                                    <option value="asc">{{ __('production_bench.inventory.direction_asc') }}</option>
-                                    <option value="desc">{{ __('production_bench.inventory.direction_desc') }}</option>
-                                </select>
-                            </label>
-                        @endif
-                        <button type="button" @click="filtersOpen = !filtersOpen" :aria-expanded="filtersOpen.toString()" class="sk-btn sk-btn-outline shrink-0">
-                            {{ __('production_bench.inventory.filters') }}
-                            <span aria-hidden="true" class="text-xs" x-text="filtersOpen ? '⌃' : '⌄'"></span>
-                        </button>
-                        @if ($materialFiltersActive)
-                            <button type="button" wire:click="clearMaterialFilters" class="sk-btn sk-btn-ghost shrink-0">{{ __('production_bench.inventory.clear_filters') }}</button>
-                        @endif
-                    </div>
+                <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                    {{ $this->materialFiltersForm }}
                     <p id="inventory-search-help" class="mt-2 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.search_help') }}</p>
 
-                    <div x-cloak x-show="filtersOpen" x-transition class="mt-4 grid gap-4 border-t border-[var(--color-line)] pt-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.filter_material_type') }}</span>
-                            <select wire:model.live="materialType" class="sk-select-control">
-                                <option value="all">{{ __('production_bench.inventory.filter_all') }}</option>
-                                <option value="ingredient">{{ __('production_bench.inventory.filter_ingredients') }}</option>
-                                <option value="packaging">{{ __('production_bench.inventory.filter_packaging') }}</option>
-                            </select>
-                        </label>
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.filter_stock_state') }}</span>
-                            <select wire:model.live="stockState" class="sk-select-control">
-                                <option value="all">{{ __('production_bench.inventory.filter_all') }}</option>
-                                <option value="negative_forecast">{{ __('production_bench.inventory.filter_negative_forecast') }}</option>
-                                <option value="below_buffer">{{ __('production_bench.inventory.filter_below_buffer') }}</option>
-                                <option value="quarantined">{{ __('production_bench.inventory.filter_quarantined') }}</option>
-                                <option value="incoming">{{ __('production_bench.inventory.filter_incoming') }}</option>
-                            </select>
-                        </label>
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.filter_demand') }}</span>
-                            <select wire:model.live="demandFilter" class="sk-select-control">
-                                <option value="all">{{ __('production_bench.inventory.filter_all') }}</option>
-                                <option value="planned">{{ __('production_bench.inventory.filter_with_demand') }}</option>
-                                <option value="unplanned">{{ __('production_bench.inventory.filter_without_demand') }}</option>
-                            </select>
-                        </label>
-                        <div>
-                            <x-search-combobox
-                                id="inventory-category-filter"
-                                :label="__('production_bench.inventory.filter_category')"
-                                :options="$categoryOptionsForCombobox"
-                                :selected-id="$categoryFilter !== '' ? $categoryFilter : null"
-                                :selected-label="$categoryOptions[$categoryFilter] ?? null"
-                                :placeholder="__('production_bench.inventory.filter_category_placeholder')"
-                                :empty-message="__('production_bench.inventory.filter_no_options')"
-                                x-on:search-combobox-selected="$wire.set('categoryFilter', String($event.detail.id))"
-                                x-on:search-combobox-cleared="$wire.set('categoryFilter', '')"
-                            />
+                    @if ($materialFiltersActive)
+                        <div class="mt-3">
+                            <button type="button" wire:click="clearMaterialFilters" class="sk-btn sk-btn-ghost">{{ __('production_bench.inventory.clear_filters') }}</button>
                         </div>
-                        <div>
-                            <x-search-combobox
-                                id="inventory-subcategory-filter"
-                                :label="__('production_bench.inventory.filter_subcategory')"
-                                :options="$subcategoryOptionsForCombobox"
-                                :selected-id="$subcategoryFilter !== '' ? $subcategoryFilter : null"
-                                :selected-label="$subcategoryOptions[$subcategoryFilter] ?? null"
-                                :placeholder="$categoryFilter === '' ? __('production_bench.inventory.filter_category_placeholder') : __('production_bench.inventory.filter_subcategory_placeholder')"
-                                :empty-message="__('production_bench.inventory.filter_no_options')"
-                                :disabled="$categoryFilter === ''"
-                                x-on:search-combobox-selected="$wire.set('subcategoryFilter', String($event.detail.id))"
-                                x-on:search-combobox-cleared="$wire.set('subcategoryFilter', '')"
-                            />
-                        </div>
-                    </div>
+                    @endif
 
                     @if ($materialFiltersActive)
                         <div class="mt-3 flex flex-wrap gap-2" aria-label="{{ __('production_bench.inventory.filters') }}">
@@ -235,77 +154,8 @@
                     @endif
                 </div>
                 <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
-                    <div class="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center">
-                        <label class="sk-field min-w-0 flex-1 xl:min-w-80">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.common.search') }}</span>
-                            <input wire:model.live.debounce.300ms="search" type="search" placeholder="{{ __('production_bench.common.search') }}" class="sk-field-control" aria-describedby="lot-register-search-help" />
-                        </label>
-                        <label class="sk-field shrink-0">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_scope') }}</span>
-                            <select wire:model.live="lotScope" class="sk-select-control">
-                                <option value="open">{{ __('production_bench.inventory.lot_scope_open') }}</option>
-                                <option value="exhausted">{{ __('production_bench.inventory.lot_scope_exhausted') }}</option>
-                                <option value="all">{{ __('production_bench.inventory.lot_scope_all') }}</option>
-                            </select>
-                        </label>
-                        <label class="sk-field shrink-0">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.common.status') }}</span>
-                            <select wire:model.live="lotStatus" class="sk-select-control">
-                                <option value="all">{{ __('production_bench.inventory.filter_all') }}</option>
-                                <option value="released">{{ __('production_bench.inventory.released') }}</option>
-                                <option value="quarantined">{{ __('production_bench.inventory.quarantined') }}</option>
-                            </select>
-                        </label>
-                        <label class="sk-field shrink-0">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_supplier') }}</span>
-                            <select wire:model.live="lotSupplier" class="sk-select-control">
-                                <option value="">{{ __('production_bench.inventory.lot_supplier_filter') }}</option>
-                                @foreach ($lotSupplierOptions as $supplierId => $supplierName)
-                                    <option value="{{ $supplierId }}">{{ $supplierName }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="sk-field shrink-0">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_origin') }}</span>
-                            <select wire:model.live="lotOrigin" class="sk-select-control">
-                                <option value="">{{ __('production_bench.inventory.lot_origin_all') }}</option>
-                                @foreach ($lotOriginOptions as $originId => $originName)
-                                    <option value="{{ $originId }}">{{ $originName }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                    </div>
-                    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_stocked_from') }}</span>
-                            <input wire:model.live="lotStockedFrom" type="date" class="sk-field-control" />
-                        </label>
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_stocked_until') }}</span>
-                            <input wire:model.live="lotStockedUntil" type="date" class="sk-field-control" />
-                        </label>
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_expiry') }}</span>
-                            <select wire:model.live="lotExpiry" class="sk-select-control">
-                                <option value="all">{{ __('production_bench.inventory.lot_expiry_all') }}</option>
-                                <option value="active">{{ __('production_bench.inventory.lot_expiry_active') }}</option>
-                                <option value="expired">{{ __('production_bench.inventory.lot_expiry_expired') }}</option>
-                                <option value="none">{{ __('production_bench.inventory.lot_expiry_none') }}</option>
-                            </select>
-                        </label>
-                        <label class="sk-field">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_sort') }}</span>
-                            <select wire:model.live="lotSort" class="sk-select-control">
-                                <option value="newest">{{ __('production_bench.inventory.lot_sort_newest') }}</option>
-                                <option value="oldest">{{ __('production_bench.inventory.lot_sort_oldest') }}</option>
-                                <option value="code">{{ __('production_bench.inventory.lot_sort_code') }}</option>
-                            </select>
-                        </label>
-                    </div>
+                    {{ $this->lotFiltersForm }}
                     <p id="lot-register-search-help" class="mt-2 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_register_search_help') }}</p>
-                    <div class="mt-3 xl:max-w-sm">
-                        {{ $this->lotFiltersForm }}
-                    </div>
                     @if ($lotMaterialLabel)
                         <div class="mt-3 flex flex-wrap items-center gap-2">
                             <span class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.lot_material') }}: {{ $lotMaterialLabel }}</span>

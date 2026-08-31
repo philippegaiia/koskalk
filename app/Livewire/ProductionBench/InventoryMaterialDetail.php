@@ -28,8 +28,13 @@ use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Locked;
@@ -143,6 +148,63 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     {
         $this->supplierListingsPerPage = $this->normalizedSupplierListingsPerPage();
         $this->resetPage('supplier-listings');
+    }
+
+    /**
+     * Period controls for the activity section.
+     *
+     * Each field keeps its plan name as its key — `period`, `from`, `to` — while
+     * binding to the URL-bound property through an explicit state path, so a
+     * bookmarked `?period=365&from=…&to=…` link keeps resolving to the same
+     * view. The `updated*()` hooks stay the only place period side effects are
+     * applied (validation and the activity paginator reset), which is why the
+     * fields carry no `afterStateUpdated()` of their own: the hook fires off
+     * the root property the schema writes to.
+     *
+     * `period` is deliberately rendered as a non-native select so the date
+     * pickers that follow it share the module's own control styling rather than
+     * the platform control, matching the rest of the Production Bench.
+     */
+    public function activityFiltersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['sm' => 2, 'lg' => 4])
+                    ->schema([
+                        Select::make('period')
+                            ->key('period')
+                            ->statePath('periodPreset')
+                            ->label(__('production_bench.inventory.period'))
+                            ->options([
+                                '30' => __('production_bench.inventory.last_30_days'),
+                                '365' => __('production_bench.inventory.last_365_days'),
+                                'custom' => __('production_bench.inventory.custom_period'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        // Both dates are meaningless outside a custom period,
+                        // so they follow the preset rather than sitting in the
+                        // form disabled.
+                        DatePicker::make('from')
+                            ->key('from')
+                            ->statePath('customFrom')
+                            ->label(__('production_bench.inventory.from'))
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->weekStartsOnMonday()
+                            ->visible(fn (Get $get): bool => $get('periodPreset') === 'custom')
+                            ->live(),
+                        DatePicker::make('to')
+                            ->key('to')
+                            ->statePath('customTo')
+                            ->label(__('production_bench.inventory.to'))
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->weekStartsOnMonday()
+                            ->visible(fn (Get $get): bool => $get('periodPreset') === 'custom')
+                            ->live(),
+                    ]),
+            ]);
     }
 
     /**

@@ -167,25 +167,201 @@ class InventoryIndex extends Component implements HasActions, HasForms
     }
 
     /**
-     * Lot register filter schema. It currently carries only the material
-     * combobox because that is the one control a plain `<select>` cannot
-     * express: the catalogue is too large to render as options.
+     * Material view filter schema.
+     *
+     * Deliberately without a `statePath()`: the fields bind straight to the
+     * URL-bound properties, so a bookmarked inventory URL keeps filtering
+     * exactly as it did when these were handwritten inputs. Moving them into a
+     * nested state array would silently retire every shared link.
+     *
+     * The `updated*()` hooks below stay the single source of truth for the
+     * side effects — each one resets only the paginator it belongs to and, for
+     * the category, clears the subcategory that depends on it.
+     */
+    public function materialFiltersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['sm' => 2, 'xl' => 4])
+                    ->schema([
+                        TextInput::make('search')
+                            ->label(__('production_bench.common.search'))
+                            ->type('search')
+                            ->placeholder(__('production_bench.common.search'))
+                            ->live(debounce: 300)
+                            ->columnSpanFull(),
+                        Select::make('sort')
+                            ->label(__('production_bench.inventory.sort'))
+                            ->options([
+                                'priority' => __('production_bench.inventory.sort_priority'),
+                                'name' => __('production_bench.inventory.sort_name'),
+                                'physical' => __('production_bench.inventory.sort_physical'),
+                                'available' => __('production_bench.inventory.sort_available'),
+                                'forecast' => __('production_bench.inventory.sort_forecast'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        // Direction only means something once the rows are
+                        // ordered by a value rather than by priority.
+                        Select::make('direction')
+                            ->label(__('production_bench.inventory.sort'))
+                            ->options([
+                                'asc' => __('production_bench.inventory.direction_asc'),
+                                'desc' => __('production_bench.inventory.direction_desc'),
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->visible(fn (Get $get): bool => $get('sort') !== 'priority'),
+                        Select::make('materialType')
+                            ->label(__('production_bench.inventory.filter_material_type'))
+                            ->options([
+                                'all' => __('production_bench.inventory.filter_all'),
+                                'ingredient' => __('production_bench.inventory.filter_ingredients'),
+                                'packaging' => __('production_bench.inventory.filter_packaging'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('stockState')
+                            ->label(__('production_bench.inventory.filter_stock_state'))
+                            ->options([
+                                'all' => __('production_bench.inventory.filter_all'),
+                                'negative_forecast' => __('production_bench.inventory.filter_negative_forecast'),
+                                'below_buffer' => __('production_bench.inventory.filter_below_buffer'),
+                                'quarantined' => __('production_bench.inventory.filter_quarantined'),
+                                'incoming' => __('production_bench.inventory.filter_incoming'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('demandFilter')
+                            ->label(__('production_bench.inventory.filter_demand'))
+                            ->options([
+                                'all' => __('production_bench.inventory.filter_all'),
+                                'planned' => __('production_bench.inventory.filter_with_demand'),
+                                'unplanned' => __('production_bench.inventory.filter_without_demand'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('categoryFilter')
+                            ->label(__('production_bench.inventory.filter_category'))
+                            ->placeholder(__('production_bench.inventory.filter_category_placeholder'))
+                            ->options(IngredientCategory::options())
+                            ->searchable()
+                            ->native(false)
+                            ->live(),
+                        Select::make('subcategoryFilter')
+                            ->label(__('production_bench.inventory.filter_subcategory'))
+                            ->placeholder(fn (Get $get): string => blank($get('categoryFilter'))
+                                ? __('production_bench.inventory.filter_category_placeholder')
+                                : __('production_bench.inventory.filter_subcategory_placeholder'))
+                            // Dependent by design: the options are the
+                            // subcategories of the chosen category, and the
+                            // control stays unusable until one is chosen.
+                            ->options(fn (Get $get): array => IngredientSubcategory::optionsFor($get('categoryFilter')))
+                            ->searchable()
+                            ->native(false)
+                            ->disabled(fn (Get $get): bool => blank($get('categoryFilter')))
+                            ->live(),
+                    ]),
+            ]);
+    }
+
+    /**
+     * Lot register filter schema.
+     *
+     * Like the material schema this binds to the URL-bound properties rather
+     * than to a nested array. The one exception is the material combobox,
+     * which is a derived control over the catalogue rather than a filter in its
+     * own right and keeps living under `lotFilters`; it names both its state
+     * path and its key so the rendered id is unchanged.
      */
     public function lotFiltersForm(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Select::make('lotMaterialSelection')
-                    ->label(__('production_bench.inventory.lot_material'))
-                    ->placeholder(__('production_bench.inventory.lot_material_filter'))
-                    ->searchable()
-                    ->native(false)
-                    ->getSearchResultsUsing(fn (string $search, WorkspaceMaterialInventoryQuery $inventoryQuery): array => $this->lotMaterialSearchResults($search, $inventoryQuery))
-                    ->getOptionLabelUsing(fn (mixed $value, WorkspaceMaterialInventoryQuery $inventoryQuery): ?string => $this->lotMaterialSelectionLabel(is_string($value) ? $value : null, $inventoryQuery))
-                    ->live()
-                    ->afterStateUpdated(fn (?string $state, WorkspaceMaterialInventoryQuery $inventoryQuery) => $this->selectLotMaterial($state, $inventoryQuery)),
-            ])
-            ->statePath('lotFilters');
+                Grid::make(['sm' => 2, 'xl' => 5])
+                    ->schema([
+                        TextInput::make('search')
+                            ->label(__('production_bench.common.search'))
+                            ->type('search')
+                            ->placeholder(__('production_bench.common.search'))
+                            ->live(debounce: 300)
+                            ->columnSpanFull(),
+                        Select::make('lotScope')
+                            ->label(__('production_bench.inventory.lot_scope'))
+                            ->options([
+                                'open' => __('production_bench.inventory.lot_scope_open'),
+                                'exhausted' => __('production_bench.inventory.lot_scope_exhausted'),
+                                'all' => __('production_bench.inventory.lot_scope_all'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('lotStatus')
+                            ->label(__('production_bench.common.status'))
+                            ->options([
+                                'all' => __('production_bench.inventory.filter_all'),
+                                StockLotStatus::Released->value => __('production_bench.inventory.released'),
+                                StockLotStatus::Quarantined->value => __('production_bench.inventory.quarantined'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('lotSupplier')
+                            ->label(__('production_bench.inventory.lot_supplier'))
+                            ->placeholder(__('production_bench.inventory.lot_supplier_filter'))
+                            ->options(fn (): array => $this->lotSupplierOptions($this->workspace()))
+                            ->searchable()
+                            ->native(false)
+                            ->live(),
+                        Select::make('lotOrigin')
+                            ->label(__('production_bench.inventory.lot_origin'))
+                            ->placeholder(__('production_bench.inventory.lot_origin_all'))
+                            ->options(fn (): array => $this->lotOriginOptions())
+                            ->native(false)
+                            ->live(),
+                        DatePicker::make('lotStockedFrom')
+                            ->label(__('production_bench.inventory.lot_stocked_from'))
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->weekStartsOnMonday()
+                            ->live(),
+                        DatePicker::make('lotStockedUntil')
+                            ->label(__('production_bench.inventory.lot_stocked_until'))
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->weekStartsOnMonday()
+                            ->live(),
+                        Select::make('lotExpiry')
+                            ->label(__('production_bench.inventory.lot_expiry'))
+                            ->options([
+                                'all' => __('production_bench.inventory.lot_expiry_all'),
+                                'active' => __('production_bench.inventory.lot_expiry_active'),
+                                'expired' => __('production_bench.inventory.lot_expiry_expired'),
+                                'none' => __('production_bench.inventory.lot_expiry_none'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('lotSort')
+                            ->label(__('production_bench.inventory.lot_sort'))
+                            ->options([
+                                'newest' => __('production_bench.inventory.lot_sort_newest'),
+                                'oldest' => __('production_bench.inventory.lot_sort_oldest'),
+                                'code' => __('production_bench.inventory.lot_sort_code'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        Select::make('lotMaterialSelection')
+                            ->key('lotMaterialSelection')
+                            ->statePath('lotFilters.lotMaterialSelection')
+                            ->label(__('production_bench.inventory.lot_material'))
+                            ->placeholder(__('production_bench.inventory.lot_material_filter'))
+                            ->searchable()
+                            ->native(false)
+                            ->getSearchResultsUsing(fn (string $search, WorkspaceMaterialInventoryQuery $inventoryQuery): array => $this->lotMaterialSearchResults($search, $inventoryQuery))
+                            ->getOptionLabelUsing(fn (mixed $value, WorkspaceMaterialInventoryQuery $inventoryQuery): ?string => $this->lotMaterialSelectionLabel(is_string($value) ? $value : null, $inventoryQuery))
+                            ->live()
+                            ->afterStateUpdated(fn (?string $state, WorkspaceMaterialInventoryQuery $inventoryQuery) => $this->selectLotMaterial($state, $inventoryQuery))
+                            ->columnSpanFull(),
+                    ]),
+            ]);
     }
 
     public function updatedSearch(): void

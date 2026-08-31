@@ -839,7 +839,7 @@ php artisan test --compact
 
 Do not merge to `main` until that result and visual acceptance are confirmed.
 
-### Acceptance evidence (recorded 2026-08-31, review-remediation branch)
+### Baseline acceptance evidence (recorded 2026-08-31, review-remediation branch)
 
 **Affected suite** — `php -d memory_limit=512M vendor/bin/pest --compact` over the 10
 inventory / entitlement / translation / navigation files
@@ -851,12 +851,13 @@ inventory / entitlement / translation / navigation files
 
 > **Tests: 203 passed (29005 assertions)** — Duration 10.68s.
 
-**Explicit-memory complete suite** — `php -d memory_limit=512M vendor/bin/pest --compact`:
+**Historical explicit-memory complete suite** — php -d memory_limit=512M vendor/bin/pest --compact:
 
 > **Tests: 2777 passed, 25 skipped (49586 assertions)** — Duration 121.52s.
 
-The canonical `php artisan test --compact` is bounded by the local 128M PHP config and must
-be confirmed by CI or the project owner before merge.
+At that baseline, the canonical php artisan test --compact was bounded by the local 128M
+PHP configuration and remained an owner/CI merge gate. The final correction-pass
+verification is recorded below.
 
 **Tooling:**
 
@@ -869,7 +870,7 @@ be confirmed by CI or the project owner before merge.
   `WorkspaceMaterialSupplierListingsQuery`, and `ProductionBenchAccess` are present in
   `graphify-out/graph.json`.
 
-**Authenticated application acceptance:**
+**Authenticated application acceptance at the baseline:**
 
 - Translation sync used the project's established command
   `php artisan translations:catalogue:import --mode=preserve-existing` (the empty-shell
@@ -888,14 +889,48 @@ be confirmed by CI or the project owner before merge.
   cancelled; outsider rejected with `AuthorizationException`) are each covered by passing
   automated tests.
 
-**Residual (not performed by the agent in a live browser):** Steps 2–5 of the acceptance
-plan are covered by the automated suites above rather than a manual click-through. Purely
-visual checks (pixel-level semantic colours, live keyboard toggle of the Filters disclosure)
-were not exercised in a real browser session by the agent; the underlying behaviour is
-asserted by tests.
+**Historical residual:** Steps 2–5 of the acceptance plan were covered by the automated
+suites rather than a manual click-through at that point. The final correction-pass
+browser journey is recorded below.
 
 **Integration gate:** this branch remains unmerged to `main`. Integration requires owner/CI
 confirmation of the canonical complete suite in its supported environment.
+
+### Final review-correction evidence (recorded 2026-08-31, HEAD 22a7624a)
+
+**Verification suites:**
+
+- Affected inventory / entitlement / translation / navigation suite: **218 passed,
+  31,335 assertions**.
+- Canonical php artisan test --compact: **2,786 passed, 25 skipped, 51,857 assertions**
+  in 140.12s.
+- CLI PHP memory limit: **1,024M**.
+- Translation catalogue import:
+  php artisan translations:catalogue:import --mode=authoritative --no-interaction
+  — 2,889 rows processed (105 updated, 2,784 unchanged).
+- Truss migration diff: workspace_material_settings.public_id is a non-null UUID with
+  a unique index.
+
+**Authenticated preview journey** — http://koskalk-inventory-ux.test/dashboard/production-bench/inventory:
+
+- French Stock par matière renders the physical, available, reserved, quarantine,
+  incoming, required, and forecast columns; material identity links open ingredient and
+  packaging detail pages.
+- The material detail page shows supplier names in Lots ouverts and the Voir tous les lots
+  link routes to the filtered Registre des lots.
+- The lot register preserves the material filter and displays supplier names (for example,
+  Actibio) alongside each lot.
+- The collapsed Filtres disclosure expands to Type de matériau, État du stock, Demande
+  planifiée, and searchable Catégorie / Sous-catégorie comboboxes.
+- Prévision négative is a durable state=negative_forecast filter; it returned nine rows
+  with the visible light-danger badge.
+- Mouvements de la période defaults to 30 derniers jours and offers 365 derniers jours;
+  selecting 365 updated the date range to 2025-09-01 – 2026-08-31 while retaining Reçu
+  and Consommé en production totals.
+- Browser console warnings and errors: none observed.
+
+The branch remains unmerged to main; integration still requires the owner’s chosen
+handoff path.
 
 ---
 

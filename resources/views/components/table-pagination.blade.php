@@ -1,6 +1,11 @@
 @props([
     'paginator',
     'perPageLabel' => 'Rows per page',
+    // A page can carry more than one paginator, and each one has its own
+    // allow-list. Binding them all to `perPage` would make one control rewrite
+    // the other's page size, so the model and the options are both injectable.
+    'perPageModel' => 'perPage',
+    'perPageOptions' => [25, 50, 100],
 ])
 
 @php
@@ -17,10 +22,10 @@
 <div {{ $attributes->class(['flex flex-col gap-3 border-t border-[var(--color-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between']) }}>
     <label class="flex items-center gap-2 text-xs font-medium text-[var(--color-ink-soft)]">
         <span>{{ __('table.pagination.rows_per_page') }}</span>
-        <select wire:model.live="perPage" class="sk-pagination-select h-9 w-20 shrink-0 rounded-lg border border-transparent bg-transparent py-1.5 pl-2.5 text-sm text-[var(--color-ink-strong)] outline-[var(--color-active)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]" aria-label="{{ $perPageLabel }}">
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
+        <select wire:model.live="{{ $perPageModel }}" class="sk-pagination-select h-9 w-20 shrink-0 rounded-lg border border-transparent bg-transparent py-1.5 pl-2.5 text-sm text-[var(--color-ink-strong)] outline-[var(--color-active)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]" aria-label="{{ $perPageLabel }}">
+            @foreach ($perPageOptions as $perPageOption)
+                <option value="{{ $perPageOption }}">{{ $perPageOption }}</option>
+            @endforeach
         </select>
     </label>
 

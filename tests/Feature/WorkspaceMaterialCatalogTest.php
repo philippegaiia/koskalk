@@ -7,10 +7,12 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
+use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMaterialSetting;
 use App\Services\Production\WorkspaceMaterialCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -104,6 +106,30 @@ it('excludes another workspace packaging item and listing', function (): void {
     ]);
 
     expect(app(WorkspaceMaterialCatalog::class)->materials($workspace))->toBeEmpty();
+});
+
+it('includes a material whose only evidence is a stock lot', function (): void {
+    ['workspace' => $workspace, 'ingredient' => $ingredient] = materialCatalogFixture();
+    StockLot::factory()->for($workspace)->for($ingredient)->create();
+
+    $materials = app(WorkspaceMaterialCatalog::class)->materials($workspace);
+
+    expect($materials)->toHaveCount(1)
+        ->and($materials->first()['key'])->toBe('ingredient:'.$ingredient->id)
+        ->and($materials->first()['has_demand'])->toBeFalse()
+        ->and($materials->first()['has_listing'])->toBeFalse();
+});
+
+it('includes a material whose only evidence is a buffer setting', function (): void {
+    ['workspace' => $workspace, 'ingredient' => $ingredient] = materialCatalogFixture();
+    WorkspaceMaterialSetting::factory()->for($workspace)->for($ingredient)->create();
+
+    $materials = app(WorkspaceMaterialCatalog::class)->materials($workspace);
+
+    expect($materials)->toHaveCount(1)
+        ->and($materials->first()['key'])->toBe('ingredient:'.$ingredient->id)
+        ->and($materials->first()['has_demand'])->toBeFalse()
+        ->and($materials->first()['has_listing'])->toBeFalse();
 });
 
 /**

@@ -16368,6 +16368,234 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.above_buffer_detail",
+      "text": {
+        "de": "Konfigurierter Puffer:",
+        "es": "Búfer configurado:",
+        "fr": "Stock tampon configuré :",
+        "it": "Buffer configurato:",
+        "nl": "Geconfigureerde buffer:",
+        "pt_BR": "Buffer configurado:"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_group",
+      "text": {
+        "de": "Gruppe",
+        "es": "Grupo",
+        "fr": "Groupe",
+        "it": "Gruppo",
+        "nl": "Groep",
+        "pt_BR": "Grupo"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_group_adjustments",
+      "text": {
+        "de": "Anpassungen",
+        "es": "Ajustes",
+        "fr": "Ajustements",
+        "it": "Rettifiche",
+        "nl": "Aanpassingen",
+        "pt_BR": "Ajustes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_group_other_inbound",
+      "text": {
+        "de": "Sonstige Eingänge",
+        "es": "Otras entradas",
+        "fr": "Autres entrées",
+        "it": "Altri ingressi",
+        "nl": "Overige inkomende",
+        "pt_BR": "Outras entradas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_group_other_outbound",
+      "text": {
+        "de": "Sonstige Abgänge",
+        "es": "Otras salidas",
+        "fr": "Autres sorties",
+        "it": "Altre uscite",
+        "nl": "Overige uitgaande",
+        "pt_BR": "Outras saídas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_group_production_consumed",
+      "text": {
+        "de": "In Produktion verbraucht",
+        "es": "Consumido en producción",
+        "fr": "Consommé en production",
+        "it": "Consumato in produzione",
+        "nl": "Verbruikt in productie",
+        "pt_BR": "Consumido na produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_group_received",
+      "text": {
+        "de": "Eingegangen",
+        "es": "Recibido",
+        "fr": "Reçu",
+        "it": "Ricevuto",
+        "nl": "Ontvangen",
+        "pt_BR": "Recebido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type",
+      "text": {
+        "de": "Bewegung",
+        "es": "Movimiento",
+        "fr": "Mouvement",
+        "it": "Movimento",
+        "nl": "Beweging",
+        "pt_BR": "Movimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_damaged",
+      "text": {
+        "de": "Beschädigt",
+        "es": "Dañado",
+        "fr": "Endommagé",
+        "it": "Danneggiato",
+        "nl": "Beschadigd",
+        "pt_BR": "Danificado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_internal_use",
+      "text": {
+        "de": "Interne Verwendung",
+        "es": "Uso interno",
+        "fr": "Usage interne",
+        "it": "Uso interno",
+        "nl": "Intern gebruik",
+        "pt_BR": "Uso interno"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_opening_balance",
+      "text": {
+        "de": "Anfangsbestand",
+        "es": "Saldo inicial",
+        "fr": "Solde initial",
+        "it": "Saldo iniziale",
+        "nl": "Beginsaldo",
+        "pt_BR": "Saldo inicial"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_production_consumption",
+      "text": {
+        "de": "Produktionsverbrauch",
+        "es": "Consumo de producción",
+        "fr": "Consommation de production",
+        "it": "Consumo di produzione",
+        "nl": "Productieverbruik",
+        "pt_BR": "Consumo de produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_production_correction",
+      "text": {
+        "de": "Produktionskorrektur",
+        "es": "Corrección de producción",
+        "fr": "Correction de production",
+        "it": "Correzione di produzione",
+        "nl": "Productiecorrectie",
+        "pt_BR": "Correção de produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_production_output",
+      "text": {
+        "de": "Produktionsausgang",
+        "es": "Producción terminada",
+        "fr": "Sortie de production",
+        "it": "Uscita di produzione",
+        "nl": "Productie-uitvoer",
+        "pt_BR": "Saída de produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_purchase_receipt",
+      "text": {
+        "de": "Wareneingang",
+        "es": "Recepción de compra",
+        "fr": "Réception d’achat",
+        "it": "Ricezione d’acquisto",
+        "nl": "Inkoopontvangst",
+        "pt_BR": "Recebimento de compra"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_receipt_reversal",
+      "text": {
+        "de": "Stornierung des Wareneingangs",
+        "es": "Reversión de recepción",
+        "fr": "Annulation de réception",
+        "it": "Storno ricezione",
+        "nl": "Terugboeking ontvangst",
+        "pt_BR": "Estorno de recebimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_sample",
+      "text": {
+        "de": "Probe",
+        "es": "Muestra",
+        "fr": "Échantillon",
+        "it": "Campione",
+        "nl": "Monster",
+        "pt_BR": "Amostra"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_shipment",
+      "text": {
+        "de": "Versand",
+        "es": "Envío",
+        "fr": "Expédition",
+        "it": "Spedizione",
+        "nl": "Verzending",
+        "pt_BR": "Remessa"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_stock_count_adjustment",
+      "text": {
+        "de": "Bestandszählkorrektur",
+        "es": "Ajuste de inventario",
+        "fr": "Ajustement d’inventaire",
+        "it": "Rettifica inventario",
+        "nl": "Voorraadtelcorrectie",
+        "pt_BR": "Ajuste de contagem de estoque"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.add_lot",
       "text": {
         "de": "Bestandsartikel hinzufügen",
@@ -16416,6 +16644,30 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.adjustments",
+      "text": {
+        "de": "Anpassungen",
+        "es": "Ajustes",
+        "fr": "Ajustements",
+        "it": "Rettifiche",
+        "nl": "Aanpassingen",
+        "pt_BR": "Ajustes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.applied_filter",
+      "text": {
+        "de": "Filter: :value",
+        "es": "Filtro: :value",
+        "fr": "Filtre : :value",
+        "it": "Filtro: :value",
+        "nl": "Filter: :value",
+        "pt_BR": "Filtro: :value"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.available",
       "text": {
         "de": "Verfügbar",
@@ -16428,6 +16680,90 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.below_buffer",
+      "text": {
+        "de": "Unter Puffer",
+        "es": "Por debajo del buffer",
+        "fr": "En dessous du buffer",
+        "it": "Sotto scorta",
+        "nl": "Onder buffer",
+        "pt_BR": "Abaixo do buffer"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.below_buffer_detail",
+      "text": {
+        "de": "Verfügbar liegt unter dem konfigurierten Puffer von",
+        "es": "Disponible está por debajo del búfer configurado de",
+        "fr": "Disponible sous le stock tampon configuré de",
+        "it": "Disponibile sotto il buffer configurato di",
+        "nl": "Beschikbaar ligt onder de ingestelde buffer van",
+        "pt_BR": "Disponível abaixo do buffer configurado de"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.buffer_empty_clears",
+      "text": {
+        "de": "Leer lassen, um den konfigurierten Puffer zu entfernen.",
+        "es": "Déjelo vacío para eliminar el búfer configurado.",
+        "fr": "Laissez vide pour supprimer le stock tampon configuré.",
+        "it": "Lascia vuoto per rimuovere il buffer configurato.",
+        "nl": "Laat leeg om de ingestelde buffer te verwijderen.",
+        "pt_BR": "Deixe vazio para remover o buffer configurado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.buffer_none",
+      "text": {
+        "de": "Kein Puffer konfiguriert",
+        "es": "No hay búfer configurado",
+        "fr": "Aucun stock tampon configuré",
+        "it": "Nessun buffer configurato",
+        "nl": "Geen buffer ingesteld",
+        "pt_BR": "Nenhum buffer configurado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.buffer_saved",
+      "text": {
+        "de": "Pufferbestand gespeichert.",
+        "es": "Stock tampon guardado.",
+        "fr": "Stock tampon enregistré.",
+        "it": "Scorta tampone salvata.",
+        "nl": "Buffer opgeslagen.",
+        "pt_BR": "Buffer salvo."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.buffer_stock",
+      "text": {
+        "de": "Pufferbestand",
+        "es": "Stock de reserva",
+        "fr": "Stock tampon",
+        "it": "Scorta di sicurezza",
+        "nl": "Buffervoorraad",
+        "pt_BR": "Estoque de reserva"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.buffer_stock_help",
+      "text": {
+        "de": "Halten Sie diese verfügbare Menge als Sicherheitspuffer vor. Sie wird unabhängig von der Produktionsprognose mit „Verfügbar“ verglichen.",
+        "es": "Mantenga esta cantidad disponible como búfer de seguridad. Se compara con la cantidad disponible, por separado de la previsión de producción.",
+        "fr": "Conservez cette quantité disponible comme stock de sécurité. Elle est comparée au stock disponible, indépendamment de la prévision de production.",
+        "it": "Conserva questa quantità disponibile come scorta di sicurezza. Viene confrontata con la quantità disponibile, separatamente dalla previsione di produzione.",
+        "nl": "Houd deze beschikbare hoeveelheid aan als veiligheidsbuffer. Deze wordt los van de productieprognose met Beschikbaar vergeleken.",
+        "pt_BR": "Mantenha esta quantidade disponível como buffer de segurança. Ela é comparada com a quantidade disponível, separadamente da previsão de produção."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.choose",
       "text": {
         "de": "Auswählen…",
@@ -16436,6 +16772,42 @@
         "it": "Scegli…",
         "nl": "Kiezen…",
         "pt_BR": "Escolher…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.clear_buffer",
+      "text": {
+        "de": "Puffer löschen",
+        "es": "Borrar búfer",
+        "fr": "Supprimer le stock tampon",
+        "it": "Cancella buffer",
+        "nl": "Buffer wissen",
+        "pt_BR": "Limpar buffer"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.clear_filters",
+      "text": {
+        "de": "Filter löschen",
+        "es": "Borrar filtros",
+        "fr": "Effacer les filtres",
+        "it": "Cancella filtri",
+        "nl": "Filters wissen",
+        "pt_BR": "Limpar filtros"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.closing_physical",
+      "text": {
+        "de": "Physischer Endbestand",
+        "es": "Saldo físico final",
+        "fr": "Stock physique final",
+        "it": "Giacenza fisica finale",
+        "nl": "Fysieke eindstand",
+        "pt_BR": "Saldo físico final"
       }
     },
     {
@@ -16464,6 +16836,90 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.current_position",
+      "text": {
+        "de": "Aktuelle Position",
+        "es": "Posición actual",
+        "fr": "Position actuelle",
+        "it": "Posizione attuale",
+        "nl": "Huidige positie",
+        "pt_BR": "Posição atual"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.current_position_help",
+      "text": {
+        "de": "Aktuelle Bestandsposition in :unit. Physisch umfasst reservierte oder unter Quarantäne stehende Bestände; verfügbar ist der sofort zuweisbare Bestand.",
+        "es": "Posición actual del registro en :unit. Físico incluye stock reservado o en cuarentena; disponible es lo que puede asignarse ahora.",
+        "fr": "Position actuelle du registre en :unit. Le stock physique inclut les quantités réservées ou en quarantaine ; le stock disponible peut être affecté immédiatement.",
+        "it": "Posizione attuale del registro in :unit. Il fisico include le scorte riservate o in quarantena; il disponibile è ciò che può essere assegnato ora.",
+        "nl": "Huidige registerpositie in :unit. Fysiek omvat gereserveerde of in quarantaine geplaatste voorraad; Beschikbaar kan nu worden toegewezen.",
+        "pt_BR": "Posição atual do registro em :unit. Físico inclui estoque reservado ou em quarentena; disponível é o que pode ser alocado agora."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.custom_period",
+      "text": {
+        "de": "Benutzerdefinierter Zeitraum",
+        "es": "Periodo personalizado",
+        "fr": "Période personnalisée",
+        "it": "Periodo personalizzato",
+        "nl": "Aangepaste periode",
+        "pt_BR": "Período personalizado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.date",
+      "text": {
+        "de": "Datum",
+        "es": "Fecha",
+        "fr": "Date",
+        "it": "Data",
+        "nl": "Datum",
+        "pt_BR": "Data"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.direction_asc",
+      "text": {
+        "de": "Aufsteigend",
+        "es": "Ascendente",
+        "fr": "Croissant",
+        "it": "Crescente",
+        "nl": "Oplopend",
+        "pt_BR": "Crescente"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.direction_desc",
+      "text": {
+        "de": "Absteigend",
+        "es": "Descendente",
+        "fr": "Décroissant",
+        "it": "Decrescente",
+        "nl": "Aflopend",
+        "pt_BR": "Decrescente"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.edit_buffer",
+      "text": {
+        "de": "Puffer bearbeiten",
+        "es": "Editar búfer",
+        "fr": "Modifier le stock tampon",
+        "it": "Modifica buffer",
+        "nl": "Buffer bewerken",
+        "pt_BR": "Editar buffer"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.expires_on",
       "text": {
         "de": "Ablaufdatum",
@@ -16476,6 +16932,222 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.filter_all",
+      "text": {
+        "de": "Alle",
+        "es": "Todos",
+        "fr": "Tous",
+        "it": "Tutti",
+        "nl": "Alle",
+        "pt_BR": "Todos"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_below_buffer",
+      "text": {
+        "de": "Unter dem Puffer",
+        "es": "Por debajo del búfer",
+        "fr": "Sous le stock tampon",
+        "it": "Sotto il buffer",
+        "nl": "Onder buffer",
+        "pt_BR": "Abaixo do buffer"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_category",
+      "text": {
+        "de": "Kategorie",
+        "es": "Categoría",
+        "fr": "Catégorie",
+        "it": "Categoria",
+        "nl": "Categorie",
+        "pt_BR": "Categoria"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_category_placeholder",
+      "text": {
+        "de": "Kategorien suchen…",
+        "es": "Buscar categorías…",
+        "fr": "Rechercher une catégorie…",
+        "it": "Cerca categorie…",
+        "nl": "Categorieën zoeken…",
+        "pt_BR": "Pesquisar categorias…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_demand",
+      "text": {
+        "de": "Geplante Nachfrage",
+        "es": "Demanda planificada",
+        "fr": "Demande planifiée",
+        "it": "Domanda pianificata",
+        "nl": "Geplande vraag",
+        "pt_BR": "Demanda planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_incoming",
+      "text": {
+        "de": "Eingehender Bestand",
+        "es": "Stock entrante",
+        "fr": "Stock entrant",
+        "it": "Scorte in entrata",
+        "nl": "Inkomende voorraad",
+        "pt_BR": "Estoque recebido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_ingredients",
+      "text": {
+        "de": "Zutaten",
+        "es": "Ingredientes",
+        "fr": "Ingrédients",
+        "it": "Ingredienti",
+        "nl": "Ingrediënten",
+        "pt_BR": "Ingredientes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_material_type",
+      "text": {
+        "de": "Materialtyp",
+        "es": "Tipo de material",
+        "fr": "Type de matériau",
+        "it": "Tipo di materia",
+        "nl": "Materiaalsoort",
+        "pt_BR": "Tipo de material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_negative_forecast",
+      "text": {
+        "de": "Negative Prognose",
+        "es": "Previsión negativa",
+        "fr": "Prévision négative",
+        "it": "Previsione negativa",
+        "nl": "Negatieve prognose",
+        "pt_BR": "Previsão negativa"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_no_options",
+      "text": {
+        "de": "Keine passenden Optionen",
+        "es": "Sin opciones coincidentes",
+        "fr": "Aucune option correspondante",
+        "it": "Nessuna opzione corrispondente",
+        "nl": "Geen overeenkomende opties",
+        "pt_BR": "Nenhuma opção correspondente"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_packaging",
+      "text": {
+        "de": "Verpackung",
+        "es": "Envases",
+        "fr": "Emballages",
+        "it": "Imballaggi",
+        "nl": "Verpakkingen",
+        "pt_BR": "Embalagens"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_quarantined",
+      "text": {
+        "de": "Bestand in Quarantäne",
+        "es": "Stock en cuarentena",
+        "fr": "Stock en quarantaine",
+        "it": "Scorte in quarantena",
+        "nl": "Voorraad in quarantaine",
+        "pt_BR": "Estoque em quarentena"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_stock_state",
+      "text": {
+        "de": "Bestandsstatus",
+        "es": "Estado del stock",
+        "fr": "État du stock",
+        "it": "Stato dello stock",
+        "nl": "Voorraadstatus",
+        "pt_BR": "Estado do estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_subcategory",
+      "text": {
+        "de": "Unterkategorie",
+        "es": "Subcategoría",
+        "fr": "Sous-catégorie",
+        "it": "Sottocategoria",
+        "nl": "Subcategorie",
+        "pt_BR": "Subcategoria"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_subcategory_placeholder",
+      "text": {
+        "de": "Unterkategorien suchen…",
+        "es": "Buscar subcategorías…",
+        "fr": "Rechercher une sous-catégorie…",
+        "it": "Cerca sottocategorie…",
+        "nl": "Subcategorieën zoeken…",
+        "pt_BR": "Pesquisar subcategorias…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_with_demand",
+      "text": {
+        "de": "Mit geplantem Bedarf",
+        "es": "Con demanda planificada",
+        "fr": "Avec besoins planifiés",
+        "it": "Con fabbisogno pianificato",
+        "nl": "Met geplande behoefte",
+        "pt_BR": "Com demanda planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filter_without_demand",
+      "text": {
+        "de": "Ohne geplanten Bedarf",
+        "es": "Sin demanda planificada",
+        "fr": "Sans besoins planifiés",
+        "it": "Senza fabbisogno pianificato",
+        "nl": "Zonder geplande behoefte",
+        "pt_BR": "Sem demanda planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.filters",
+      "text": {
+        "de": "Filter",
+        "es": "Filtros",
+        "fr": "Filtres",
+        "it": "Filtri",
+        "nl": "Filters",
+        "pt_BR": "Filtros"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.forecast",
       "text": {
         "de": "Prognose",
@@ -16484,6 +17156,18 @@
         "it": "Previsione",
         "nl": "Prognose",
         "pt_BR": "Previsão"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.from",
+      "text": {
+        "de": "Von",
+        "es": "Desde",
+        "fr": "Du",
+        "it": "Da",
+        "nl": "Van",
+        "pt_BR": "De"
       }
     },
     {
@@ -16530,7 +17214,7 @@
         "es": "artículo",
         "fr": "article",
         "it": "articolo",
-        "nl": "item",
+        "nl": "artikel",
         "pt_BR": "item"
       }
     },
@@ -16548,6 +17232,30 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.last_30_days",
+      "text": {
+        "de": "Letzte 30 Tage",
+        "es": "Últimos 30 días",
+        "fr": "30 derniers jours",
+        "it": "Ultimi 30 giorni",
+        "nl": "Afgelopen 30 dagen",
+        "pt_BR": "Últimos 30 dias"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.last_365_days",
+      "text": {
+        "de": "Letzte 365 Tage",
+        "es": "Últimos 365 días",
+        "fr": "365 derniers jours",
+        "it": "Ultimi 365 giorni",
+        "nl": "Afgelopen 365 dagen",
+        "pt_BR": "Últimos 365 dias"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.lot_created",
       "text": {
         "de": "Bestandsartikel :code erstellt.",
@@ -16560,14 +17268,326 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.lot_date_basis",
+      "text": {
+        "de": "Lose filtern nach",
+        "es": "Filtrar lotes por",
+        "fr": "Filtrer les lots par",
+        "it": "Filtra lotti per",
+        "nl": "Lots filteren op",
+        "pt_BR": "Filtrar lotes por"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_basis_received",
+      "text": {
+        "de": "Eingangsdatum",
+        "es": "Fecha de recepción",
+        "fr": "Date de réception",
+        "it": "Data di ricezione",
+        "nl": "Ontvangstdatum",
+        "pt_BR": "Data de recebimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_basis_stocked",
+      "text": {
+        "de": "Eingelagerungsdatum",
+        "es": "Fecha de almacenamiento",
+        "fr": "Date de stockage",
+        "it": "Data di stoccaggio",
+        "nl": "Voorraaddatum",
+        "pt_BR": "Data de armazenamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_from",
+      "text": {
+        "de": "Von",
+        "es": "Desde",
+        "fr": "Du",
+        "it": "Dal",
+        "nl": "Van",
+        "pt_BR": "De"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_until",
+      "text": {
+        "de": "Bis",
+        "es": "Hasta",
+        "fr": "Au",
+        "it": "Al",
+        "nl": "Tot",
+        "pt_BR": "Até"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_expiry",
+      "text": {
+        "de": "Ablauf",
+        "es": "Caducidad",
+        "fr": "Expiration",
+        "it": "Scadenza",
+        "nl": "Vervaldatum",
+        "pt_BR": "Validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_expiry_active",
+      "text": {
+        "de": "Mit zukünftigem Ablauf",
+        "es": "Con caducidad futura",
+        "fr": "Avec expiration future",
+        "it": "Con scadenza futura",
+        "nl": "Met toekomstige vervaldatum",
+        "pt_BR": "Com validade futura"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_expiry_all",
+      "text": {
+        "de": "Alle Ablaufzustände",
+        "es": "Todos los estados de caducidad",
+        "fr": "Tous les états d’expiration",
+        "it": "Tutti gli stati di scadenza",
+        "nl": "Alle vervalstatussen",
+        "pt_BR": "Todos os estados de validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_expiry_expired",
+      "text": {
+        "de": "Abgelaufen",
+        "es": "Caducado",
+        "fr": "Expiré",
+        "it": "Scaduto",
+        "nl": "Verlopen",
+        "pt_BR": "Vencido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_expiry_none",
+      "text": {
+        "de": "Kein Ablaufdatum",
+        "es": "Sin fecha de caducidad",
+        "fr": "Sans date d’expiration",
+        "it": "Nessuna data di scadenza",
+        "nl": "Geen vervaldatum",
+        "pt_BR": "Sem data de validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_material",
+      "text": {
+        "de": "Material",
+        "es": "Material",
+        "fr": "Matière",
+        "it": "Materiale",
+        "nl": "Materiaal",
+        "pt_BR": "Material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_material_filter",
+      "text": {
+        "de": "Alle Materialien",
+        "es": "Todos los materiales",
+        "fr": "Toutes les matières",
+        "it": "Tutti i materiali",
+        "nl": "Alle materialen",
+        "pt_BR": "Todos os materiais"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_origin",
+      "text": {
+        "de": "Herkunft",
+        "es": "Origen",
+        "fr": "Origine",
+        "it": "Origine",
+        "nl": "Herkomst",
+        "pt_BR": "Origem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_origin_all",
+      "text": {
+        "de": "Alle Ursprünge",
+        "es": "Todos los orígenes",
+        "fr": "Toutes les origines",
+        "it": "Tutte le origini",
+        "nl": "Alle herkomsten",
+        "pt_BR": "Todas as origens"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_register",
+      "text": {
+        "de": "Chargenregister",
+        "es": "Registro de lotes",
+        "fr": "Registre des lots",
+        "it": "Registro dei lotti",
+        "nl": "Lotregister",
+        "pt_BR": "Registro de lotes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_register_search_help",
+      "text": {
+        "de": "Suche nach Chargencodes, Lieferantenchargen, Materialien, Lieferanten, SKUs oder Lieferantenartikelnamen.",
+        "es": "Busca códigos de lote, lotes de proveedor, materiales, proveedores, SKU o nombres de artículos de proveedor.",
+        "fr": "Recherchez des codes de lot, des lots fournisseur, des matériaux, des fournisseurs, des SKU ou des noms d'articles fournisseur.",
+        "it": "Cerca codici lotto, lotti fornitore, materiali, fornitori, SKU o nomi di articoli fornitore.",
+        "nl": "Zoek lotcodes, leveranciersloten, materialen, leveranciers, SKU's of namen van leveranciersartikelen.",
+        "pt_BR": "Pesquise códigos de lote, lotes de fornecedor, materiais, fornecedores, SKU ou nomes de itens de fornecedor."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_scope",
+      "text": {
+        "de": "Chargenumfang",
+        "es": "Alcance del lote",
+        "fr": "Périmètre des lots",
+        "it": "Ambito dei lotti",
+        "nl": "Lotbereik",
+        "pt_BR": "Escopo do lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_scope_all",
+      "text": {
+        "de": "Alle Lose",
+        "es": "Todos los lotes",
+        "fr": "Tous les lots",
+        "it": "Tutti i lotti",
+        "nl": "Alle partijen",
+        "pt_BR": "Todos os lotes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_scope_exhausted",
+      "text": {
+        "de": "Aufgebrauchte Lose",
+        "es": "Lotes agotados",
+        "fr": "Lots épuisés",
+        "it": "Lotti esauriti",
+        "nl": "Uitgeputte partijen",
+        "pt_BR": "Lotes esgotados"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_scope_open",
+      "text": {
+        "de": "Offene Lose",
+        "es": "Lotes abiertos",
+        "fr": "Lots ouverts",
+        "it": "Lotti aperti",
+        "nl": "Open partijen",
+        "pt_BR": "Lotes abertos"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_sort",
+      "text": {
+        "de": "Chargen sortieren",
+        "es": "Ordenar lotes",
+        "fr": "Trier les lots",
+        "it": "Ordina lotti",
+        "nl": "Partijen sorteren",
+        "pt_BR": "Ordenar lotes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_sort_code",
+      "text": {
+        "de": "Chargencode",
+        "es": "Código de lote",
+        "fr": "Code du lot",
+        "it": "Codice lotto",
+        "nl": "Partijcode",
+        "pt_BR": "Código do lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_sort_newest",
+      "text": {
+        "de": "Neueste zuerst",
+        "es": "Más nuevos primero",
+        "fr": "Les plus récents d’abord",
+        "it": "Più recenti prima",
+        "nl": "Nieuwste eerst",
+        "pt_BR": "Mais recentes primeiro"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_sort_oldest",
+      "text": {
+        "de": "Älteste zuerst",
+        "es": "Más antiguos primero",
+        "fr": "Les plus anciens d’abord",
+        "it": "Più vecchi prima",
+        "nl": "Oudste eerst",
+        "pt_BR": "Mais antigos primeiro"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_supplier",
+      "text": {
+        "de": "Lieferant",
+        "es": "Proveedor",
+        "fr": "Fournisseur",
+        "it": "Fornitore",
+        "nl": "Leverancier",
+        "pt_BR": "Fornecedor"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_supplier_filter",
+      "text": {
+        "de": "Alle Lieferanten",
+        "es": "Todos los proveedores",
+        "fr": "Tous les fournisseurs",
+        "it": "Tutti i fornitori",
+        "nl": "Alle leveranciers",
+        "pt_BR": "Todos os fornecedores"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.mass_shown",
       "text": {
-        "de": "Masse in :unit",
-        "es": "Masa mostrada en :unit",
-        "fr": "Masse affichée en :unit",
-        "it": "Massa mostrata in :unit",
-        "nl": "Massa weergegeven in :unit",
-        "pt_BR": "Massa exibida em :unit"
+        "de": "Masse in :unit; Verpackungen werden in Einheiten angezeigt.",
+        "es": "Masa mostrada en :unit; el embalaje se muestra en unidades.",
+        "fr": "Masse affichée en :unit ; les emballages sont affichés en unités.",
+        "it": "Massa mostrata in :unit; il packaging è mostrato in unità.",
+        "nl": "Massa weergegeven in :unit; verpakkingen worden in eenheden getoond.",
+        "pt_BR": "Massa exibida em :unit; embalagens são mostradas em unidades."
       }
     },
     {
@@ -16610,24 +17630,36 @@
       "group": "production_bench",
       "key": "inventory.materials_help",
       "text": {
-        "de": "Alle Materialien dieses Arbeitsbereichs mit dem Bedarf geplanter Produktionen, dem vorhandenen Bestand, den Eingängen und den Fehlmengen. Ein Material wird erfasst, wenn eine geplante Produktion es benötigt oder wenn für es ein Lieferantenartikel hinterlegt ist. So erscheint alles, was Sie kaufen können, bevor eine Produktion es braucht.",
-        "es": "Todos los materiales de este espacio de trabajo, con lo que necesitan las producciones planificadas, lo disponible, lo que entra y lo que falta. Un material se registra cuando lo pide una producción planificada o cuando existe una referencia de proveedor para él, así que todo lo que puedes comprar aparece antes de que una producción lo necesite.",
-        "fr": "Toutes les matières suivies par cet espace de travail, avec les besoins des productions planifiées, le stock disponible, les entrées et les manquants. Une matière est suivie lorsqu’une production planifiée la demande ou lorsqu’une référence fournisseur existe pour elle : tout ce que vous pouvez acheter apparaît donc avant qu’une production n’en ait besoin.",
-        "it": "Tutti i materiali tracciati in questo spazio di lavoro, con ciò che serve alle produzioni pianificate, la giacenza, ciò che è in arrivo e ciò che manca. Un materiale è tracciato quando lo richiede una produzione pianificata o quando esiste un articolo fornitore per esso: così tutto ciò che puoi acquistare appare prima che una produzione ne abbia bisogno.",
-        "nl": "Alle materialen van deze werkruimte, met wat geplande producties nodig hebben, wat op voorraad is, wat binnenkomt en wat tekortschiet. Een materiaal wordt gevolgd wanneer een geplande productie het vraagt of wanneer er een leveranciersartikel voor bestaat, zodat alles wat je kunt kopen verschijnt voordat een productie het nodig heeft.",
-        "pt_BR": "Todos os materiais deste espaço de trabalho, com o que as produções planejadas precisam, o que está disponível, o que está entrando e o que falta. Um material é rastreado quando uma produção planejada o solicita ou quando existe uma oferta de fornecedor para ele, então tudo o que você pode comprar aparece antes de uma produção precisar dele."
+        "de": "Vergleichen Sie den physischen Bestand mit verfügbaren, reservierten, gesperrten, eingehenden, benötigten und prognostizierten Mengen für jedes erfasste Material.",
+        "es": "Compara el stock físico con las cantidades disponibles, reservadas, en cuarentena, entrantes, necesarias y previstas de cada material seguido.",
+        "fr": "Comparez le stock physique aux quantités disponibles, réservées, en quarantaine, entrantes, requises et prévisionnelles de chaque matière suivie.",
+        "it": "Confronta la giacenza fisica con le quantità disponibili, riservate, in quarantena, in arrivo, necessarie e previste per ogni materiale tracciato.",
+        "nl": "Vergelijk de fysieke voorraad met beschikbare, gereserveerde, geblokkeerde, inkomende, benodigde en voorspelde hoeveelheden voor elk gevolgd materiaal.",
+        "pt_BR": "Compare o estoque físico com as quantidades disponíveis, reservadas, em quarentena, entrando, necessárias e previstas de cada material rastreado."
       }
     },
     {
       "group": "production_bench",
       "key": "inventory.materials_title",
       "text": {
-        "de": "Materialien",
-        "es": "Materiales",
-        "fr": "Matières",
-        "it": "Materiali",
-        "nl": "Materialen",
-        "pt_BR": "Materiais"
+        "de": "Bestand nach Material",
+        "es": "Stock por material",
+        "fr": "Stock par matière",
+        "it": "Scorte per materia",
+        "nl": "Voorraad per materiaal",
+        "pt_BR": "Estoque por material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.net_change",
+      "text": {
+        "de": "Nettoveränderung",
+        "es": "Variación neta",
+        "fr": "Variation nette",
+        "it": "Variazione netta",
+        "nl": "Nettowijziging",
+        "pt_BR": "Variação líquida"
       }
     },
     {
@@ -16640,6 +17672,18 @@
         "it": "Nessun articolo a stock.",
         "nl": "Geen voorraaditems.",
         "pt_BR": "Nenhum item de estoque."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.no_material_activity",
+      "text": {
+        "de": "Keine Bestandsbewegungen in diesem Zeitraum.",
+        "es": "No hay movimientos de stock en este periodo.",
+        "fr": "Aucun mouvement de stock sur cette période.",
+        "it": "Nessun movimento di magazzino in questo periodo.",
+        "nl": "Geen voorraadbewegingen in deze periode.",
+        "pt_BR": "Nenhuma movimentação de estoque neste período."
       }
     },
     {
@@ -16668,6 +17712,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.no_open_lots",
+      "text": {
+        "de": "Keine offenen Lose für dieses Material.",
+        "es": "No hay lotes abiertos para este material.",
+        "fr": "Aucun lot ouvert pour cette matière.",
+        "it": "Nessun lotto aperto per questo materiale.",
+        "nl": "Geen open partijen voor dit materiaal.",
+        "pt_BR": "Nenhum lote aberto para este material."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.no_planned_demand",
       "text": {
         "de": "Kein geplanter Bedarf",
@@ -16676,6 +17732,66 @@
         "it": "Nessun fabbisogno pianificato",
         "nl": "Geen geplande behoefte",
         "pt_BR": "Sem demanda planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.no_supplier_listings",
+      "text": {
+        "de": "Für dieses Material ist noch kein Lieferantenartikel konfiguriert.",
+        "es": "Aún no hay una referencia de proveedor configurada para este material.",
+        "fr": "Aucune référence fournisseur n’est encore configurée pour cette matière.",
+        "it": "Non è ancora configurato alcun articolo fornitore per questo materiale.",
+        "nl": "Er is nog geen leveranciersartikel voor dit materiaal ingesteld.",
+        "pt_BR": "Nenhuma referência de fornecedor foi configurada para este material."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.open_lots",
+      "text": {
+        "de": "Offene Chargen",
+        "es": "Lotes abiertos",
+        "fr": "Lots ouverts",
+        "it": "Lotti aperti",
+        "nl": "Openstaande partijen",
+        "pt_BR": "Lotes abertos"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.open_lots_help",
+      "text": {
+        "de": "Lose mit einem physischen Saldo ungleich null, einschließlich Quarantäne- und negativer Ausnahmesalden.",
+        "es": "Lotes con saldo físico distinto de cero, incluidos cuarentena y saldos de excepción negativos.",
+        "fr": "Lots dont le solde physique n’est pas nul, y compris les lots en quarantaine et les soldes d’exception négatifs.",
+        "it": "Lotti con saldo fisico diverso da zero, inclusi quelli in quarantena e i saldi negativi eccezionali.",
+        "nl": "Partijen met een fysieke balans die niet nul is, inclusief quarantaine en negatieve uitzonderingssaldi.",
+        "pt_BR": "Lotes com saldo físico diferente de zero, incluindo quarentena e saldos de exceção negativos."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.open_material_detail",
+      "text": {
+        "de": "Materialinventar-Detail öffnen",
+        "es": "Abrir el detalle de inventario del material",
+        "fr": "Ouvrir le détail d’inventaire du matériau",
+        "it": "Apri i dettagli di inventario del materiale",
+        "nl": "Materiaalinventarisdetail openen",
+        "pt_BR": "Abrir detalhes de inventário do material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.opening_physical",
+      "text": {
+        "de": "Physischer Anfangsbestand",
+        "es": "Saldo físico inicial",
+        "fr": "Stock physique initial",
+        "it": "Giacenza fisica iniziale",
+        "nl": "Fysieke beginstand",
+        "pt_BR": "Saldo físico inicial"
       }
     },
     {
@@ -16704,6 +17820,150 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.origin_adjustment",
+      "text": {
+        "de": "Anpassung",
+        "es": "Ajuste",
+        "fr": "Ajustement",
+        "it": "Rettifica",
+        "nl": "Aanpassing",
+        "pt_BR": "Ajuste"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.origin_opening_balance",
+      "text": {
+        "de": "Anfangsbestand",
+        "es": "Saldo inicial",
+        "fr": "Solde initial",
+        "it": "Saldo iniziale",
+        "nl": "Beginsaldo",
+        "pt_BR": "Saldo inicial"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.origin_production_output",
+      "text": {
+        "de": "Produktionsausgang",
+        "es": "Producción terminada",
+        "fr": "Sortie de production",
+        "it": "Uscita di produzione",
+        "nl": "Productie-uitvoer",
+        "pt_BR": "Saída de produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.origin_purchase_receipt",
+      "text": {
+        "de": "Wareneingang",
+        "es": "Recepción de compra",
+        "fr": "Réception d’achat",
+        "it": "Ricezione d’acquisto",
+        "nl": "Inkoopontvangst",
+        "pt_BR": "Recebimento de compra"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.other_inbound",
+      "text": {
+        "de": "Sonstige Eingänge",
+        "es": "Otras entradas",
+        "fr": "Autres entrées",
+        "it": "Altri ingressi",
+        "nl": "Overige inkomende",
+        "pt_BR": "Outras entradas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.other_outbound",
+      "text": {
+        "de": "Sonstige Abgänge",
+        "es": "Otras salidas",
+        "fr": "Autres sorties",
+        "it": "Altre uscite",
+        "nl": "Overige uitgaande",
+        "pt_BR": "Outras saídas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.period",
+      "text": {
+        "de": "Zeitraum",
+        "es": "Periodo",
+        "fr": "Période",
+        "it": "Periodo",
+        "nl": "Periode",
+        "pt_BR": "Período"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.period_activity",
+      "text": {
+        "de": "Periodenaktivität",
+        "es": "Actividad del periodo",
+        "fr": "Mouvements de la période",
+        "it": "Movimenti del periodo",
+        "nl": "Periodeactiviteit",
+        "pt_BR": "Movimentações do período"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.period_activity_help",
+      "text": {
+        "de": "Erhaltene, verbrauchte und sonstige Bewegungen gleichen die physische Bestandsänderung im ausgewählten Zeitraum ab.",
+        "es": "Los grupos de movimientos recibidos, consumidos y otros concilian la variación del stock físico del periodo seleccionado.",
+        "fr": "Les groupes de mouvements reçus, consommés et autres rapprochent la variation du stock physique sur la période sélectionnée.",
+        "it": "I gruppi di movimenti ricevuti, consumati e altri riconciliano la variazione delle scorte fisiche nel periodo selezionato.",
+        "nl": "Ontvangen, verbruikte en overige bewegingen verklaren de wijziging van de fysieke voorraad in de gekozen periode.",
+        "pt_BR": "Os grupos de movimentos recebidos, consumidos e outros conciliam a variação do estoque físico no período selecionado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.period_date_invalid",
+      "text": {
+        "de": "Verwenden Sie ein gültiges Datum.",
+        "es": "Use una fecha válida.",
+        "fr": "Utilisez une date valide.",
+        "it": "Usa una data valida.",
+        "nl": "Gebruik een geldige datum.",
+        "pt_BR": "Use uma data válida."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.period_date_order",
+      "text": {
+        "de": "Das Startdatum muss am oder vor dem Enddatum liegen.",
+        "es": "La fecha de inicio debe ser anterior o igual a la fecha final.",
+        "fr": "La date de début doit être antérieure ou égale à la date de fin.",
+        "it": "La data iniziale deve essere precedente o uguale alla data finale.",
+        "nl": "De startdatum moet op of vóór de einddatum liggen.",
+        "pt_BR": "A data inicial deve ser anterior ou igual à data final."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.period_date_required",
+      "text": {
+        "de": "Wählen Sie ein Start- und Enddatum.",
+        "es": "Elija una fecha de inicio y una fecha final.",
+        "fr": "Choisissez une date de début et une date de fin.",
+        "it": "Scegli una data iniziale e una finale.",
+        "nl": "Kies een begin- en einddatum.",
+        "pt_BR": "Escolha uma data inicial e uma data final."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.physical",
       "text": {
         "de": "Physisch",
@@ -16728,6 +17988,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.production_consumed",
+      "text": {
+        "de": "In Produktion verbraucht",
+        "es": "Consumido en producción",
+        "fr": "Consommé en production",
+        "it": "Consumato in produzione",
+        "nl": "Verbruikt in productie",
+        "pt_BR": "Consumido na produção"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.quantity",
       "text": {
         "de": "Menge",
@@ -16736,6 +18008,18 @@
         "it": "Quantità",
         "nl": "Hoeveelheid",
         "pt_BR": "Quantidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.quantity_delta",
+      "text": {
+        "de": "Mengenänderung",
+        "es": "Cambio de cantidad",
+        "fr": "Variation de quantité",
+        "it": "Variazione quantità",
+        "nl": "Hoeveelheidswijziging",
+        "pt_BR": "Alteração de quantidade"
       }
     },
     {
@@ -16772,6 +18056,66 @@
         "it": "Ricezione",
         "nl": "Ontvangst",
         "pt_BR": "Recebimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.received",
+      "text": {
+        "de": "Eingegangen",
+        "es": "Recibido",
+        "fr": "Reçu",
+        "it": "Ricevuto",
+        "nl": "Ontvangen",
+        "pt_BR": "Recebido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.reconciliation",
+      "text": {
+        "de": "Physischer Bestandsabgleich",
+        "es": "Conciliación física de stock",
+        "fr": "Rapprochement du stock physique",
+        "it": "Riconciliazione fisica",
+        "nl": "Fysieke voorraadreconciliatie",
+        "pt_BR": "Conciliação física do estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.reconciliation_delta",
+      "text": {
+        "de": "Abweichung beim Abgleich: :delta",
+        "es": "Diferencia de conciliación: :delta",
+        "fr": "Écart de rapprochement : :delta",
+        "it": "Differenza di riconciliazione: :delta",
+        "nl": "Verschil bij afstemming: :delta",
+        "pt_BR": "Diferença de conciliação: :delta"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.related_supplier_listings",
+      "text": {
+        "de": "Lieferantenangebote",
+        "es": "Listados de proveedores",
+        "fr": "Listes de fournisseurs",
+        "it": "Listini fornitore",
+        "nl": "Leveranciersaanbiedingen",
+        "pt_BR": "Listagens de fornecedores"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.related_supplier_listings_help",
+      "text": {
+        "de": "Einkaufsartikel, mit denen dieses Material nachbestellt werden kann, einschließlich inaktiver Artikel. Sie werden unabhängig vom vorhandenen Bestand angezeigt.",
+        "es": "Referencias de compra que pueden reponer este material, incluidas las inactivas. Se muestran haya o no stock.",
+        "fr": "Références d’achat permettant de réapprovisionner cette matière, y compris les références inactives. Elles s’affichent même sans stock détenu.",
+        "it": "Articoli di acquisto che possono rifornire questo materiale, inclusi quelli inattivi. Sono mostrati anche senza scorte.",
+        "nl": "Inkoopartikelen die dit materiaal kunnen aanvullen, ook inactieve. Ze worden getoond ongeacht of er voorraad is.",
+        "pt_BR": "Referências de compra que podem repor este material, incluindo as inativas. Elas aparecem mesmo sem estoque."
       }
     },
     {
@@ -16820,6 +18164,18 @@
         "it": "Riservato",
         "nl": "Gereserveerd",
         "pt_BR": "Reservado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.save_buffer",
+      "text": {
+        "de": "Puffer speichern",
+        "es": "Guardar búfer",
+        "fr": "Enregistrer le stock tampon",
+        "it": "Salva buffer",
+        "nl": "Buffer opslaan",
+        "pt_BR": "Salvar buffer"
       }
     },
     {
@@ -16884,6 +18240,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.search_help",
+      "text": {
+        "de": "Namen, INCI-Begriffe, Aliase, Materialcodes, Verpackungen oder Lieferantenreferenzen durchsuchen.",
+        "es": "Buscar nombres, términos INCI, alias, códigos de material, envases o referencias de proveedores.",
+        "fr": "Rechercher les noms, termes INCI, alias, codes matière, emballages ou références fournisseur.",
+        "it": "Cerca nomi, termini INCI, alias, codici materiale, imballaggi o riferimenti fornitore.",
+        "nl": "Zoek op namen, INCI-termen, aliassen, materiaalcodes, verpakkingen of leveranciersreferenties.",
+        "pt_BR": "Pesquisar nomes, termos INCI, aliases, códigos de material, embalagens ou referências de fornecedores."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.search_supplier_listing",
       "text": {
         "de": "Nach Material, Lieferant, SKU oder Einkaufsformat suchen…",
@@ -16892,6 +18260,102 @@
         "it": "Cerca per materiale, fornitore, SKU o formato di acquisto…",
         "nl": "Zoek op materiaal, leverancier, SKU of inkoopformaat…",
         "pt_BR": "Busque por material, fornecedor, SKU ou formato de compra…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sort",
+      "text": {
+        "de": "Sortieren",
+        "es": "Ordenar",
+        "fr": "Trier",
+        "it": "Ordina",
+        "nl": "Sorteren",
+        "pt_BR": "Ordenar"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sort_available",
+      "text": {
+        "de": "Verfügbare Menge",
+        "es": "Cantidad disponible",
+        "fr": "Quantité disponible",
+        "it": "Quantità disponibile",
+        "nl": "Beschikbare hoeveelheid",
+        "pt_BR": "Quantidade disponível"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sort_forecast",
+      "text": {
+        "de": "Prognostizierte Menge",
+        "es": "Cantidad prevista",
+        "fr": "Quantité prévisionnelle",
+        "it": "Quantità prevista",
+        "nl": "Prognosehoeveelheid",
+        "pt_BR": "Quantidade prevista"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sort_name",
+      "text": {
+        "de": "Materialname",
+        "es": "Nombre del material",
+        "fr": "Nom de la matière",
+        "it": "Nome del materiale",
+        "nl": "Materiaalnaam",
+        "pt_BR": "Nome do material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sort_physical",
+      "text": {
+        "de": "Physische Menge",
+        "es": "Cantidad física",
+        "fr": "Quantité physique",
+        "it": "Quantità fisica",
+        "nl": "Fysieke hoeveelheid",
+        "pt_BR": "Quantidade física"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sort_priority",
+      "text": {
+        "de": "Operative Priorität",
+        "es": "Prioridad operativa",
+        "fr": "Priorité opérationnelle",
+        "it": "Priorità operativa",
+        "nl": "Operationele prioriteit",
+        "pt_BR": "Prioridade operacional"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.source",
+      "text": {
+        "de": "Quelle",
+        "es": "Fuente",
+        "fr": "Source",
+        "it": "Fonte",
+        "nl": "Bron",
+        "pt_BR": "Fonte"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.source_not_available",
+      "text": {
+        "de": "Kein Quellenlink",
+        "es": "Sin enlace a la fuente",
+        "fr": "Aucun lien vers la source",
+        "it": "Nessun link alla fonte",
+        "nl": "Geen bronlink",
+        "pt_BR": "Sem link para a fonte"
       }
     },
     {
@@ -16908,14 +18372,26 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.stock_by_material",
+      "text": {
+        "de": "Bestand nach Material",
+        "es": "Stock por material",
+        "fr": "Stock par matière",
+        "it": "Giacenza per materia",
+        "nl": "Voorraad per materiaal",
+        "pt_BR": "Estoque por material"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.stock_help",
       "text": {
-        "de": "Erfassen Sie den Anfangsbestand und prüfen Sie jedes Bestandsobjekt mit physischen, reservierten und verfügbaren Mengen.",
-        "es": "Registra el stock inicial y revisa cada artículo con sus cantidades físicas, reservadas y disponibles.",
-        "fr": "Enregistrez le stock initial et consultez chaque article avec ses quantités physiques, réservées et disponibles.",
-        "it": "Registra le scorte iniziali e controlla ogni articolo con quantità fisiche, riservate e disponibili.",
-        "nl": "Leg beginvoorraad vast en bekijk elk voorraaditem met fysieke, gereserveerde en beschikbare hoeveelheden.",
-        "pt_BR": "Registre o estoque inicial e revise cada item com suas quantidades física, reservada e disponível."
+        "de": "Prüfen Sie die physischen Chargen hinter den Materialbeständen. Offene Chargen werden zuerst angezeigt; aufgebrauchte Historie bleibt verfügbar, wenn Sie sie benötigen.",
+        "es": "Revisa los lotes físicos detrás de los saldos de materiales. Los lotes abiertos aparecen primero; el historial agotado sigue disponible cuando lo necesitas.",
+        "fr": "Consultez les lots physiques derrière les soldes matière. Les lots ouverts sont affichés en premier ; l’historique épuisé reste disponible lorsque vous en avez besoin.",
+        "it": "Consulta i lotti fisici alla base dei saldi dei materiali. I lotti aperti vengono mostrati per primi; lo storico esaurito resta disponibile quando serve.",
+        "nl": "Bekijk de fysieke partijen achter de materiaalsaldi. Open partijen staan eerst; uitgeputte historie blijft beschikbaar wanneer nodig.",
+        "pt_BR": "Revise os lotes físicos por trás dos saldos de materiais. Os lotes abertos aparecem primeiro; o histórico esgotado continua disponível quando necessário."
       }
     },
     {
@@ -16934,12 +18410,12 @@
       "group": "production_bench",
       "key": "inventory.stock_title",
       "text": {
-        "de": "Bestand",
-        "es": "Stock",
-        "fr": "Stock",
-        "it": "Scorte",
-        "nl": "Voorraad",
-        "pt_BR": "Estoque"
+        "de": "Chargenregister",
+        "es": "Registro de lotes",
+        "fr": "Registre des lots",
+        "it": "Registro dei lotti",
+        "nl": "Partijregister",
+        "pt_BR": "Registro de lotes"
       }
     },
     {
@@ -16992,6 +18468,30 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.supplier_unknown",
+      "text": {
+        "de": "Lieferant nicht erfasst",
+        "es": "Proveedor no registrado",
+        "fr": "Fournisseur non renseigné",
+        "it": "Fornitore non registrato",
+        "nl": "Leverancier niet geregistreerd",
+        "pt_BR": "Fornecedor não registrado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.to",
+      "text": {
+        "de": "Bis",
+        "es": "Hasta",
+        "fr": "Au",
+        "it": "A",
+        "nl": "Tot",
+        "pt_BR": "Até"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.unit",
       "text": {
         "de": "Einheit",
@@ -17024,6 +18524,90 @@
         "it": "Articolo di magazzino sconosciuto",
         "nl": "Onbekend voorraaditem",
         "pt_BR": "Item de estoque desconhecido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.buffer_forbidden",
+      "text": {
+        "de": "Dieses Material ist im ausgewählten Arbeitsbereich nicht verfügbar.",
+        "es": "Este material no está disponible en el espacio de trabajo seleccionado.",
+        "fr": "Cette matière n’est pas disponible dans l’espace de travail sélectionné.",
+        "it": "Questo materiale non è disponibile nello spazio di lavoro selezionato.",
+        "nl": "Dit materiaal is niet beschikbaar in de geselecteerde werkruimte.",
+        "pt_BR": "Este material não está disponível no espaço de trabalho selecionado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.buffer_invalid",
+      "text": {
+        "de": "Geben Sie eine gültige nichtnegative Menge ein.",
+        "es": "Introduzca una cantidad válida no negativa.",
+        "fr": "Saisissez une quantité valide et non négative.",
+        "it": "Inserisci una quantità valida non negativa.",
+        "nl": "Voer een geldige, niet-negatieve hoeveelheid in.",
+        "pt_BR": "Informe uma quantidade válida não negativa."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.buffer_overflow",
+      "text": {
+        "de": "Diese Menge ist zu groß zum Speichern. Geben Sie einen kleineren Puffer ein.",
+        "es": "Esa cantidad es demasiado grande para guardarla. Introduzca un búfer menor.",
+        "fr": "Cette quantité est trop grande pour être enregistrée. Saisissez un stock tampon plus petit.",
+        "it": "La quantità è troppo grande per essere salvata. Inserisci un buffer più piccolo.",
+        "nl": "Deze hoeveelheid is te groot om op te slaan. Voer een kleinere buffer in.",
+        "pt_BR": "Essa quantidade é grande demais para armazenar. Informe um buffer menor."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.buffer_precision",
+      "text": {
+        "de": "Verwenden Sie bis zu 11 Ziffern vor dem Dezimaltrennzeichen und 9 Nachkommastellen.",
+        "es": "Use hasta 11 dígitos antes del separador decimal y 9 decimales.",
+        "fr": "Utilisez jusqu’à 11 chiffres avant la virgule et 9 décimales.",
+        "it": "Usa fino a 11 cifre prima del separatore decimale e 9 decimali.",
+        "nl": "Gebruik maximaal 11 cijfers voor het decimaalteken en 9 decimalen.",
+        "pt_BR": "Use até 11 dígitos antes do separador decimal e 9 casas decimais."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.buffer_required",
+      "text": {
+        "de": "Geben Sie eine Puffermenge ein oder leeren Sie das Feld.",
+        "es": "Introduzca una cantidad de búfer o borre el campo.",
+        "fr": "Saisissez une quantité de stock tampon ou effacez le champ.",
+        "it": "Inserisci una quantità di buffer o svuota il campo.",
+        "nl": "Voer een buffervoorraad in of maak het veld leeg.",
+        "pt_BR": "Informe uma quantidade de buffer ou limpe o campo."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.view_all_lots",
+      "text": {
+        "de": "Alle Lose anzeigen",
+        "es": "Ver todos los lotes",
+        "fr": "Voir tous les lots",
+        "it": "Visualizza tutti i lotti",
+        "nl": "Alle partijen bekijken",
+        "pt_BR": "Ver todos os lotes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.view_material",
+      "text": {
+        "de": "Materialdetails anzeigen",
+        "es": "Ver detalles del material",
+        "fr": "Voir les détails de la matière",
+        "it": "Visualizza dettagli materiale",
+        "nl": "Materiaaldetails bekijken",
+        "pt_BR": "Ver detalhes do material"
       }
     },
     {

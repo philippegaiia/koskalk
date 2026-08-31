@@ -85,6 +85,11 @@ class PackagingItem extends Model
         return $this->hasOne(CurrentMaterialPrice::class);
     }
 
+    public function materialSetting(): HasOne
+    {
+        return $this->hasOne(WorkspaceMaterialSetting::class);
+    }
+
     protected function casts(): array
     {
         return [

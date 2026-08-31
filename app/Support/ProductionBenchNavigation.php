@@ -64,8 +64,11 @@ final class ProductionBenchNavigation
                     // the workspace tracks — demanded or merely listed — so the
                     // separate requirements page had nothing left to say and
                     // its route now redirects here.
-                    self::leaf('materials', 'production-bench.inventory', 'production_bench.inventory.materials', 'materials'),
-                    self::leaf('stock', 'production-bench.inventory.stock', 'production_bench.inventory.stock', 'stock'),
+                    self::leaf('materials', 'production-bench.inventory', 'production_bench.inventory.stock_by_material', 'materials', null, [
+                        'production-bench.inventory.material.ingredient',
+                        'production-bench.inventory.material.packaging',
+                    ]),
+                    self::leaf('stock', 'production-bench.inventory.stock', 'production_bench.inventory.lot_register', 'stock'),
                 ],
             ],
             [

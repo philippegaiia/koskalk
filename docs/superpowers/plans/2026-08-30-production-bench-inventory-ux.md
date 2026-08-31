@@ -533,9 +533,25 @@ protected function queryString(): array
 
 Reset the `materials` page after every material filter or sort update. When category changes, clear subcategory unless `IngredientSubcategory::tryFrom()` belongs to the selected category.
 
+**Amended 2026-08-30 — the `filters.*` shape above was not used.** Durable state binds to flat
+`#[Url]` properties instead. Dotted `queryString()` keys do work on Livewire 4.4.2, but neither that
+nor any nested-key form is documented: the Livewire 4 `url` and `attribute-url` pages document
+`#[Url]` and `queryString()` only on flat properties. Shareable URLs should not rest on an
+implementation detail. The aliases are unchanged: `q`, `type`, `state`, `demand`, `category`,
+`subcategory`, `sort`, `direction`.
+
 - [ ] **Step 4: Implement the compact filters UI**
 
-Keep Search and Sort visible. Put Type, Stock state, Demand, Category, and Subcategory behind one Filters action/panel. Use searchable, non-native Filament Select fields for category and subcategory; make subcategory options depend on `IngredientSubcategory::optionsFor($get('category'))` and disable it until category is filled. Render active state as removable chips.
+Keep Search and Sort visible. Put Type, Stock state, Demand, Category, and Subcategory behind one Filters action/panel. Render active state as removable chips.
+
+**Amended 2026-08-30 (owner decision) — category and subcategory use `<x-search-combobox>`, not Filament Selects.** The line originally read "Use searchable, non-native Filament Select fields for category and subcategory; make subcategory options depend on `IngredientSubcategory::optionsFor($get('category'))` and disable it until category is filled." Superseded because:
+
+- Design spec line 77 asks for "searchable comboboxes **or** compact state controls". The shared combobox is option one, and the spec is the authority on intent.
+- `x-search-combobox` — used in 6 views, including the sibling `ingredients-index` — already delivers every listed behaviour: searchable, non-native, subcategory options derived from `IngredientSubcategory::optionsFor($this->categoryFilter)`, disabled until a category is chosen, and removable chips.
+- `.ai/rules/forms.md` scopes Filament to "public form UI" and "public Livewire editors". A filter panel has no submit, validation, or persistence, so it falls outside that scope. `IngredientEditor` is the case the rule does cover.
+- The measured cost was ~60 lines plus a new CSS bridge: `->searchable()` forces the non-native JS select (`Select.php:1838`), which `filament-soapkraft.css` does not bridge, and a Filament `Select` writes `null` for "no selection", which forces the backing properties nullable.
+
+Retained requirement: subcategory options depend on the chosen category, and the subcategory control stays disabled until a category is filled.
 
 - [ ] **Step 5: Preserve the table and add the exact columns**
 

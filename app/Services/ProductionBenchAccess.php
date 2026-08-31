@@ -44,6 +44,15 @@ class ProductionBenchAccess
             ->exists();
     }
 
+    public function canWrite(User $actor, Workspace $workspace): bool
+    {
+        return in_array($workspace->roleFor($actor), [
+            WorkspaceMemberRole::Owner,
+            WorkspaceMemberRole::Admin,
+            WorkspaceMemberRole::Editor,
+        ], true) && $this->isActive($workspace);
+    }
+
     public function assertWritable(User $actor, Workspace $workspace): void
     {
         $this->assertCanManage($actor, $workspace);

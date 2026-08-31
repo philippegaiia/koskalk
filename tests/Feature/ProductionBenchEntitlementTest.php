@@ -77,6 +77,40 @@ it('allows editors to manage production bench but rejects viewers', function ():
     $access->resume($viewer, $workspace);
 })->throws(AuthorizationException::class);
 
+it('exposes an actor-aware production bench write capability', function (): void {
+    $owner = User::factory()->create();
+    $admin = User::factory()->create();
+    $editor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $outsider = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($admin)->create([
+        'role' => WorkspaceMemberRole::Admin,
+    ]);
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $access = app(ProductionBenchAccess::class);
+    $access->activate($owner, $workspace);
+
+    expect($access->canWrite($owner, $workspace))->toBeTrue()
+        ->and($access->canWrite($admin, $workspace))->toBeTrue()
+        ->and($access->canWrite($editor, $workspace))->toBeTrue()
+        ->and($access->canWrite($viewer, $workspace))->toBeFalse()
+        ->and($access->canWrite($outsider, $workspace))->toBeFalse();
+
+    $access->cancel($owner, $workspace);
+
+    expect($access->canWrite($owner, $workspace))->toBeFalse()
+        ->and($access->canWrite($admin, $workspace))->toBeFalse()
+        ->and($access->canWrite($editor, $workspace))->toBeFalse();
+});
+
 it('blocks production mutations while the add-on is cancelled', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

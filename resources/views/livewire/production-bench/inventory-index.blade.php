@@ -180,7 +180,7 @@
                         <h2 id="inventory-positions-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.lot_register') }}</h2>
                         <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
                     </div>
-                    @if (! $isReadOnly)
+                    @if ($canWriteInventory)
                         {{ $this->addStockAction }}
                     @endif
                 </div>
@@ -249,7 +249,7 @@
                                         <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
                                     @endforeach
                                     <td class="px-5 py-3 text-right">
-                                        @if (! $isReadOnly)
+                                        @if ($canWriteInventory)
                                             <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
                                         @endif
                                     </td>

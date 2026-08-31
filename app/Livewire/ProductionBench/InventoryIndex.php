@@ -748,6 +748,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'workspace' => $workspace,
             'isActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'canWriteInventory' => $this->canAddStock(),
             'lots' => $this->mode === 'stock'
                 ? $this->stockLots($workspace, $positions, $massConverter, $displayUnit)
                 : collect(),
@@ -1222,8 +1223,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     {
         $workspace = $this->workspace();
 
-        return $this->productionBenchAccess->isActive($workspace)
-            && ! $this->productionBenchAccess->isReadOnly($workspace);
+        return $this->productionBenchAccess->canWrite($this->user(), $workspace);
     }
 
     /** @return array<string, string> */

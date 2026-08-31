@@ -2,6 +2,7 @@
 
 use App\Enums\MassDisplaySystem;
 use App\Enums\StockMovementType;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\InventoryMaterialDetail;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
@@ -15,6 +16,7 @@ use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
+use App\Models\WorkspaceMember;
 use App\Services\ProductionBenchAccess;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -515,6 +517,25 @@ it('hides buffer actions for a read-only bench', function (): void {
     StockLot::factory()->for($workspace)->for($ingredient)->create();
     app(ProductionBenchAccess::class)->cancel($user, $workspace);
     $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertActionHidden('editBuffer')
+        ->assertActionHidden('clearBuffer');
+});
+
+it('hides buffer actions from an active viewer', function (): void {
+    ['user' => $owner, 'workspace' => $workspace] = materialDetailWorkspace();
+    $viewer = User::factory()->create();
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $ingredient = Ingredient::factory()->create();
+    StockLot::factory()->for($workspace)->for($ingredient)->create();
+    WorkspaceMaterialSetting::factory()->for($workspace)->for($ingredient)->create();
+    $this->actingAs($viewer);
 
     Livewire::test(InventoryMaterialDetail::class, [
         'subject' => $ingredient->public_id,

@@ -7,6 +7,7 @@ use App\Enums\StockLotOrigin;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
@@ -26,6 +27,7 @@ use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
+use App\Models\WorkspaceMember;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use Database\Seeders\SupportedLocaleSeeder;
@@ -148,6 +150,35 @@ it('keeps manual stock entry out of the material view', function (): void {
         ->assertOk()
         ->assertDontSeeHtml('<h1')
         ->assertDontSeeHtml('class="flex flex-wrap gap-3"');
+});
+
+it('keeps inventory mutation controls hidden from active viewers', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Viewer oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '1000.000000000',
+    ]);
+
+    $this->actingAs($viewer);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSee('Viewer oil')
+        ->assertDontSee(__('production_bench.inventory.add_stock_manually'));
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSee('Viewer oil')
+        ->assertDontSee(__('production_bench.inventory.add_stock_manually'))
+        ->assertDontSeeHtml('wire:click="quarantine(')
+        ->assertDontSeeHtml('wire:click="release(');
 });
 
 it('offers two inventory sections for material positions and lot stock', function (): void {

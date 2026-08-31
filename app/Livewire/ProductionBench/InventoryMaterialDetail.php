@@ -221,7 +221,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->modalDescription(__('production_bench.inventory.buffer_stock_help'))
             ->modalSubmitActionLabel(__('production_bench.inventory.save_buffer'))
             ->modalCancelActionLabel(__('production_bench.common.cancel'))
-            ->visible(fn (): bool => ! app(ProductionBenchAccess::class)->isReadOnly($this->workspace()))
+            ->visible(fn (): bool => app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace()))
             ->fillForm(fn (): array => [
                 'buffer_quantity' => $this->displayBufferQuantity($this->currentBufferGrams()),
             ])
@@ -240,7 +240,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->label(__('production_bench.inventory.clear_buffer'))
             ->color('danger')
             ->visible(fn (): bool => $this->currentBufferGrams() !== null
-                && ! app(ProductionBenchAccess::class)->isReadOnly($this->workspace()))
+                && app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace()))
             ->action(fn () => $this->saveBufferFromModal(['buffer_quantity' => null]));
     }
 

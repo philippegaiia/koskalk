@@ -464,6 +464,17 @@ it('narrows the material view to shortages only', function (): void {
         ->assertDontSee('Covered oil');
 });
 
+it('shows negative forecast as a visible row badge', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('data-negative-forecast-badge')
+        ->assertSee(__('production_bench.inventory.filter_negative_forecast'))
+        ->assertDontSeeHtml('class="sr-only">'.__('production_bench.inventory.filter_negative_forecast'));
+});
+
 it('activates and clears the negative forecast filter from the shortage summary tile', function (): void {
     ['user' => $user] = plannedShortageWorkspace();
 

@@ -159,8 +159,14 @@
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['incoming'] }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['required'] }}</td>
                                     <td class="numeric px-5 py-3 text-right font-semibold {{ $row['is_shortage'] ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">
-                                        {{ $row['positions']['forecast'] }}
-                                        @if ($row['is_shortage'])<span class="sr-only">{{ __('production_bench.inventory.filter_negative_forecast') }}</span>@endif
+                                        <div class="flex flex-col items-end gap-1">
+                                            <span>{{ $row['positions']['forecast'] }}</span>
+                                            @if ($row['is_shortage'])
+                                                <span data-negative-forecast-badge class="inline-flex rounded-full bg-[var(--color-danger-soft)] px-2 py-0.5 text-xs font-medium text-[var(--color-danger-strong)]">
+                                                    {{ __('production_bench.inventory.filter_negative_forecast') }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty

@@ -29,14 +29,14 @@ class WorkspaceMaterialSettings
         ];
 
         return DB::transaction(function () use ($actor, $workspace, $bufferQuantity, $keys): ?WorkspaceMaterialSetting {
-            // .ai/rules/app.md: re-assert access inside the transaction. The action
-            // checks before calling, but the entitlement can be cancelled between
-            // that check and this write. ProductionBenchAccess reads entitlement
-            // rows rather than workspace attributes, so asserting here sees the
-            // current state. No workspace row lock is taken: this is a single-row
-            // upsert already serialised by lockForUpdate() below, and locking the
-            // workspace would serialise every buffer edit in the workspace.
-            $this->access->assertWritable($actor, $workspace);
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->findOrFail($workspace->id);
+
+            // Re-assert against the row locked by this transaction. Production
+            // Bench entitlement changes take the same workspace lock first, so a
+            // cancellation and a buffer write cannot pass authorization concurrently.
+            $this->access->assertWritable($actor, $lockedWorkspace);
 
             $existing = WorkspaceMaterialSetting::query()
                 ->withoutGlobalScopes()

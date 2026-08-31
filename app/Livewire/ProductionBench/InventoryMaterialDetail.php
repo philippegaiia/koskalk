@@ -12,14 +12,17 @@ use App\Models\PackagingItem;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
 use App\Services\Inventory\MaterialActivityService;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
+use App\Services\Inventory\WorkspaceMaterialSupplierListingsQuery;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
+use App\Services\SupplierListingPricePresentation;
 use App\Support\LocalizedDecimalInput;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -42,6 +45,8 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
+
+    private const array ALLOWED_SUPPLIER_LISTINGS_PER_PAGE = [10, 25, 50];
 
     #[Url(as: 'period', except: '30')]
     public string $periodPreset = '30';
@@ -68,6 +73,12 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     public ?string $packagingPublicId = null;
 
     public int $perPage = 25;
+
+    /**
+     * The supplier listings are a second paginator on this page, so they carry
+     * their own page size rather than sharing the activity one.
+     */
+    public int $supplierListingsPerPage = 10;
 
     private Ingredient|PackagingItem|null $resolvedSubject = null;
 
@@ -128,6 +139,12 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         $this->resetPage('activity');
     }
 
+    public function updatedSupplierListingsPerPage(): void
+    {
+        $this->supplierListingsPerPage = $this->normalizedSupplierListingsPerPage();
+        $this->resetPage('supplier-listings');
+    }
+
     /**
      * Buffer editing goes through a Filament action modal with a localized
      * decimal field, per the plan, rather than a raw input on the page. Saving
@@ -170,6 +187,8 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         MassConverter $massConverter,
         ProductionBenchAccess $access,
         StockPositionService $positions,
+        WorkspaceMaterialSupplierListingsQuery $supplierListingQuery,
+        SupplierListingPricePresentation $pricePresentation,
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $this->displayUnit();
@@ -224,6 +243,20 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                     ->all(),
             ]);
 
+        $supplierListings = $supplierListingQuery
+            ->paginate(
+                $workspace,
+                $this->subject(),
+                $this->normalizedSupplierListingsPerPage(),
+                'supplier-listings',
+            )
+            ->through(fn (SupplierListing $listing): array => [
+                'listing' => $listing,
+                // Prices are presented by the same service the Purchasing
+                // catalogue uses, so a listing reads identically in both places.
+                'price' => $pricePresentation->present($listing, $workspace),
+            ]);
+
         return view('livewire.production-bench.inventory-material-detail', [
             'workspace' => $workspace,
             'isActive' => $access->isActive($workspace),
@@ -240,6 +273,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             'bufferBelow' => $bufferBelow,
             'bufferConfigured' => $setting instanceof WorkspaceMaterialSetting,
             'openLots' => $openLots,
+            'supplierListings' => $supplierListings,
             'activity' => $periodActivity,
             'movements' => $movements,
             'periodFrom' => $period['from'],
@@ -565,6 +599,13 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     private function normalizedPerPage(): int
     {
         return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
+    }
+
+    private function normalizedSupplierListingsPerPage(): int
+    {
+        return in_array($this->supplierListingsPerPage, self::ALLOWED_SUPPLIER_LISTINGS_PER_PAGE, true)
+            ? $this->supplierListingsPerPage
+            : 10;
     }
 
     private function user(): User

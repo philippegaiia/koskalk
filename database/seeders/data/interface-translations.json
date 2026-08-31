@@ -17688,6 +17688,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.no_supplier_listings",
+      "text": {
+        "de": "No supplier listing is configured for this material yet.",
+        "es": "No supplier listing is configured for this material yet.",
+        "fr": "No supplier listing is configured for this material yet.",
+        "it": "No supplier listing is configured for this material yet.",
+        "nl": "No supplier listing is configured for this material yet.",
+        "pt_BR": "No supplier listing is configured for this material yet."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.open_lots",
       "text": {
         "de": "Open lots",
@@ -18032,6 +18044,30 @@
         "it": "Reconciliation difference: :delta",
         "nl": "Reconciliation difference: :delta",
         "pt_BR": "Reconciliation difference: :delta"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.related_supplier_listings",
+      "text": {
+        "de": "Supplier listings",
+        "es": "Supplier listings",
+        "fr": "Supplier listings",
+        "it": "Supplier listings",
+        "nl": "Supplier listings",
+        "pt_BR": "Supplier listings"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.related_supplier_listings_help",
+      "text": {
+        "de": "Purchasing listings that can replenish this material, including inactive ones. Listings are shown whether or not stock is held.",
+        "es": "Purchasing listings that can replenish this material, including inactive ones. Listings are shown whether or not stock is held.",
+        "fr": "Purchasing listings that can replenish this material, including inactive ones. Listings are shown whether or not stock is held.",
+        "it": "Purchasing listings that can replenish this material, including inactive ones. Listings are shown whether or not stock is held.",
+        "nl": "Purchasing listings that can replenish this material, including inactive ones. Listings are shown whether or not stock is held.",
+        "pt_BR": "Purchasing listings that can replenish this material, including inactive ones. Listings are shown whether or not stock is held."
       }
     },
     {

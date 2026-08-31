@@ -57,6 +57,142 @@ it('renders a tracked ingredient detail with current position and lot navigation
             && $position['available'] === '1.00');
 });
 
+it('lists the purchasing listings that can replenish the material', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    // A supplier listing is what makes the material tracked here, so this
+    // material has a purchasing catalogue and no stock at all.
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Shea butter']);
+    $alpha = Supplier::factory()->for($workspace)->create(['name' => 'Alpha Oils']);
+    $beta = Supplier::factory()->for($workspace)->create(['name' => 'Beta Supply']);
+
+    SupplierListing::factory()->for($workspace)->for($alpha)->for($ingredient)->create([
+        'supplier_sku' => 'SKU-ALPHA',
+        'supplier_item_name' => 'Raw shea butter',
+        'purchase_format' => 'Drum of 25 kg',
+        'is_active' => true,
+    ]);
+    SupplierListing::factory()->for($workspace)->for($beta)->for($ingredient)->create([
+        'supplier_sku' => 'SKU-BETA',
+        'supplier_item_name' => 'Refined shea butter',
+        'purchase_format' => 'Box of 12 kg',
+        'is_active' => false,
+    ]);
+
+    // Ingredients are a global catalogue, so the foreign listing shares this
+    // subject. Only the workspace scoping keeps it out.
+    $foreignWorkspace = Workspace::factory()->for(User::factory(), 'owner')->create();
+    SupplierListing::factory()
+        ->for($foreignWorkspace)
+        ->for(Supplier::factory()->for($foreignWorkspace)->create(['name' => 'Foreign Oils']))
+        ->for($ingredient)
+        ->create(['supplier_sku' => 'SKU-FOREIGN']);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertSee(__('production_bench.inventory.related_supplier_listings'))
+        ->assertSee('Alpha Oils')
+        ->assertSee('SKU-ALPHA')
+        ->assertSee('Raw shea butter')
+        ->assertSee('Drum of 25 kg')
+        ->assertSee(route('production-bench.purchasing.supplier', $alpha), false)
+        ->assertSee('Beta Supply')
+        ->assertSee('SKU-BETA')
+        ->assertSee('Refined shea butter')
+        ->assertSee('Box of 12 kg')
+        ->assertSee(route('production-bench.purchasing.supplier', $beta), false)
+        // "Active" is a substring of "Inactive", so the badge is matched with
+        // its closing tag; otherwise the assertion could never fail.
+        ->assertSeeHtml('>'.__('production_bench.common.active').'</span>')
+        ->assertSee(__('production_bench.common.inactive'))
+        ->assertDontSee('Foreign Oils')
+        ->assertDontSee('SKU-FOREIGN')
+        // No stock exists, so the listing section has to stand on its own.
+        ->assertSee(__('production_bench.inventory.no_open_lots'));
+});
+
+it('explains a missing supplier listing without implying that stock is missing', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Cocoa butter']);
+    // Tracked by its buffer alone: no lot and no listing.
+    WorkspaceMaterialSetting::factory()->for($workspace)->for($ingredient)->create([
+        'buffer_quantity' => '1200.000000000',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertSee(__('production_bench.inventory.related_supplier_listings'))
+        ->assertSee(__('production_bench.inventory.no_supplier_listings'))
+        ->assertSee(__('production_bench.inventory.no_open_lots'));
+
+    // The empty state has to describe the purchasing catalogue. Reusing the
+    // stock wording here would read as "this material has no stock".
+    expect(__('production_bench.inventory.no_supplier_listings'))
+        ->not->toBe(__('production_bench.inventory.no_open_lots'));
+});
+
+it('paginates supplier listings independently of the period activity', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create();
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Alpha Oils']);
+
+    foreach (range(1, 12) as $n) {
+        SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+            'supplier_sku' => 'SKU-'.$n,
+        ]);
+    }
+
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+
+    foreach (range(1, 30) as $n) {
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $workspace->id,
+            'type' => StockMovementType::PurchaseReceipt,
+            'quantity_delta' => '10',
+            'occurred_at' => now()->subDays(2)->addHours($n),
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertViewHas('supplierListings', fn (LengthAwarePaginator $page): bool => $page->total() === 12
+            && $page->count() === 10
+            && $page->lastPage() === 2)
+        // Each paginator has to drive its own page size; a shared control would
+        // let one section silently rewrite the other's.
+        ->assertSeeHtml('wire:model.live="supplierListingsPerPage"')
+        ->assertSeeHtml('wire:model.live="perPage"')
+        ->call('gotoPage', 2, 'supplier-listings')
+        ->assertViewHas('supplierListings', fn (LengthAwarePaginator $page): bool => $page->currentPage() === 2
+            && $page->count() === 2)
+        // Two paginators share the page, so each has to keep its own position.
+        ->assertViewHas('movements', fn (LengthAwarePaginator $page): bool => $page->currentPage() === 1
+            && $page->count() === 25)
+        ->set('supplierListingsPerPage', 25)
+        ->assertViewHas('supplierListings', fn (LengthAwarePaginator $page): bool => $page->currentPage() === 1
+            && $page->count() === 12)
+        ->assertViewHas('movements', fn (LengthAwarePaginator $page): bool => $page->count() === 25)
+        ->set('perPage', 50)
+        ->assertViewHas('movements', fn (LengthAwarePaginator $page): bool => $page->count() === 30)
+        ->assertViewHas('supplierListings', fn (LengthAwarePaginator $page): bool => $page->count() === 12)
+        // A page size that is not offered falls back to the default rather than
+        // being handed to the paginator.
+        ->set('supplierListingsPerPage', 7)
+        ->assertSet('supplierListingsPerPage', 10)
+        ->assertViewHas('supplierListings', fn (LengthAwarePaginator $page): bool => $page->count() === 10);
+});
+
 it('changes activity periods without changing the current position', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Rose water']);

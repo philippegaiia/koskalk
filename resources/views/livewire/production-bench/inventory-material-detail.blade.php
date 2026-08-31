@@ -98,6 +98,57 @@
             </div>
         </section>
 
+        <section class="sk-card overflow-hidden" aria-labelledby="supplier-listings-heading">
+            <div class="border-b border-[var(--color-line)] px-5 py-4">
+                <h2 id="supplier-listings-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.related_supplier_listings') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.related_supplier_listings_help') }}</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[860px] text-left text-sm">
+                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                        <tr>
+                            <th class="px-5 py-3">{{ __('production_bench.supplier.singular') }}</th>
+                            <th class="px-4 py-3">{{ __('production_bench.listing.supplier_item_name') }}</th>
+                            <th class="px-4 py-3">{{ __('production_bench.listing.purchase_format') }}</th>
+                            <th class="px-4 py-3 text-right">{{ __('production_bench.listing.net_quantity') }}</th>
+                            <th class="px-4 py-3 text-right">{{ __('production_bench.listing.latest_price') }}</th>
+                            <th class="px-5 py-3">{{ __('production_bench.common.status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--color-line)]">
+                        @forelse ($supplierListings as $row)
+                            @php($listing = $row['listing'])
+                            <tr wire:key="material-supplier-listing-{{ $listing->id }}">
+                                <td class="px-5 py-4">
+                                    <a href="{{ route('production-bench.purchasing.supplier', $listing->supplier) }}" wire:navigate class="font-medium text-[var(--color-ink-strong)] hover:text-[var(--color-accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ $listing->supplier->name }}</a>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <p class="text-[var(--color-ink-strong)]">{{ $listing->supplier_item_name }}</p>
+                                    @if ($listing->supplier_sku)<p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $listing->supplier_sku }}</p>@endif
+                                </td>
+                                <td class="px-4 py-4 text-[var(--color-ink-soft)]">{{ $listing->purchase_format }}</td>
+                                <td class="numeric px-4 py-4 text-right">{{ rtrim(rtrim((string) $listing->net_quantity, '0'), '.') }} {{ $listing->net_unit }}</td>
+                                <td class="px-4 py-4 text-right">
+                                    <p class="text-xs font-medium text-[var(--color-ink-soft)]">{{ $row['price']['basis_label'] }}</p>
+                                    <p class="numeric mt-1">{{ $row['price']['entered_price'] }}</p>
+                                    <p class="numeric text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.listing.derived', ['price' => $row['price']['derived_price']]) }}</p>
+                                </td>
+                                <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $listing->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $listing->is_active ? __('production_bench.common.active') : __('production_bench.common.inactive') }}</span></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_supplier_listings') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <x-table-pagination
+                :paginator="$supplierListings"
+                :per-page-label="__('production_bench.inventory.related_supplier_listings')"
+                per-page-model="supplierListingsPerPage"
+                :per-page-options="[10, 25, 50]"
+            />
+        </section>
+
         <section class="sk-card overflow-hidden" aria-labelledby="activity-heading">
             <div class="border-b border-[var(--color-line)] px-5 py-4">
                 <h2 id="activity-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.period_activity') }}</h2>

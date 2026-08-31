@@ -18,6 +18,7 @@ use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceMaterialSetting;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -180,6 +181,44 @@ it('sorts deterministically and paginates on the database query', function (): v
 
     expect($ascending->pluck('name')->all())->toBe(['A material', 'B material', 'C material'])
         ->and($descending->pluck('name')->all())->toBe(['C material', 'B material', 'A material']);
+});
+
+it('pages more than 25 materials with a bounded query count', function (): void {
+    $workspace = Workspace::factory()->create();
+
+    for ($index = 0; $index < 30; $index++) {
+        $ingredient = Ingredient::factory()->create([
+            'display_name' => 'Material '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        ]);
+        StockLot::factory()->for($workspace)->for($ingredient)->create();
+    }
+
+    $query = app(WorkspaceMaterialInventoryQuery::class);
+    $filters = ['sort' => 'name', 'direction' => 'asc'];
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $firstPage = $query->paginate($workspace, $filters, 25, 'materials');
+
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    request()->merge(['materials' => 2]);
+    $secondPage = $query->paginate($workspace, $filters, 25, 'materials');
+
+    expect($firstPage->total())->toBe(30)
+        ->and($firstPage->count())->toBe(25)
+        ->and($secondPage->count())->toBe(5)
+        ->and($firstPage->pluck('name')->first())->toBe('Material 00')
+        ->and($secondPage->pluck('name')->last())->toBe('Material 29')
+        ->and($firstPage->pluck('name'))->not->toContain('Material 29');
+
+    // Plan Task 3 Step 6: the ceiling is the observed implementation count plus one,
+    // not an arbitrary large number. Subjects are batched into one query per type, so
+    // the count is flat at 5 whether the page holds 25 or 100 rows; 6 gives one query
+    // of headroom and fails loudly if per-row hydration ever returns.
+    expect($queryCount)->toBeLessThanOrEqual(6);
 });
 
 it('includes lot-only and setting-only materials without duplicates', function (): void {

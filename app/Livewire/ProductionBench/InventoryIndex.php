@@ -230,11 +230,15 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     public function updatedLotStockedFrom(): void
     {
+        // Lot dates reach whereDate() without an allow-list, so they are the one
+        // filter that must be re-validated on update, not only at mount.
+        $this->lotStockedFrom = $this->normalizeLotDate($this->lotStockedFrom);
         $this->resetPage('stock-lots');
     }
 
     public function updatedLotStockedUntil(): void
     {
+        $this->lotStockedUntil = $this->normalizeLotDate($this->lotStockedUntil);
         $this->resetPage('stock-lots');
     }
 
@@ -246,6 +250,19 @@ class InventoryIndex extends Component implements HasActions, HasForms
     public function updatedLotSort(): void
     {
         $this->resetPage('stock-lots');
+    }
+
+    /**
+     * The shortage tile is a shortcut into the same state the filter panel
+     * exposes: the design calls for the negative-forecast summary to be able to
+     * activate that filter directly. Toggling rather than only applying keeps
+     * the tile usable as an "off" switch once the filter is on, which matters
+     * because the tile stays visible while the filter narrows the table.
+     */
+    public function toggleShortageFilter(): void
+    {
+        $this->stockState = $this->stockState === 'negative_forecast' ? 'all' : 'negative_forecast';
+        $this->resetPage('materials');
     }
 
     public function clearMaterialFilters(): void
@@ -467,7 +484,8 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ], 'quantity')
             ->when($status !== 'all', fn (Builder $query): Builder => $query->where('status', $status))
             ->when($origin !== '', fn (Builder $query): Builder => $query->where('origin', $origin))
-            ->when($scope === 'open', fn (Builder $query): Builder => $query->whereRaw("{$physical} <> 0"))
+            ->when($scope === 'open', fn (Builder $query): Builder => $query
+                ->whereRaw("({$physical} <> 0 OR {$activeReserved} <> 0)"))
             ->when($scope === 'exhausted', fn (Builder $query): Builder => $query
                 ->whereRaw("{$physical} = 0")
                 ->whereRaw("{$activeReserved} = 0"))

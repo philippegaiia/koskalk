@@ -20,14 +20,28 @@ use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
+use App\Support\LocalizedDecimalInput;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Illuminate\Contracts\View\View;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
-class InventoryMaterialDetail extends Component
+class InventoryMaterialDetail extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithAppNotifications;
+    use InteractsWithForms;
+    use WithPagination;
+
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
     #[Url(as: 'period', except: '30')]
     public string $periodPreset = '30';
@@ -38,31 +52,54 @@ class InventoryMaterialDetail extends Component
     #[Url(as: 'to', except: '')]
     public string $customTo = '';
 
-    public string|Ingredient|PackagingItem $subject;
-
+    /**
+     * The route-bound subject is reduced to locked identifiers, so a later Livewire
+     * request cannot redirect it to another material. The model is re-resolved from
+     * these on every request, which also re-runs the workspace and tracked-material
+     * guards that previously ran only in mount().
+     */
+    #[Locked]
     public string $subjectType = 'ingredient';
 
-    public string $bufferQuantity = '';
+    #[Locked]
+    public ?string $ingredientPublicId = null;
+
+    #[Locked]
+    public ?string $packagingPublicId = null;
+
+    public int $perPage = 25;
+
+    private Ingredient|PackagingItem|null $resolvedSubject = null;
+
+    private bool $subjectResolved = false;
 
     public function mount(string|Ingredient|PackagingItem $subject, string $subjectType = 'ingredient'): void
     {
-        $this->subjectType = in_array($subjectType, ['ingredient', 'packaging'], true) ? $subjectType : 'ingredient';
-        $this->subject = $this->resolveSubject($subject);
+        // A model carries its own type; a bare public identifier needs the caller to
+        // say which subject it refers to.
+        $this->subjectType = $subject instanceof Ingredient ? 'ingredient'
+            : ($subject instanceof PackagingItem ? 'packaging'
+                : (in_array($subjectType, ['ingredient', 'packaging'], true) ? $subjectType : 'ingredient'));
+
+        $publicId = $subject instanceof Ingredient || $subject instanceof PackagingItem
+            ? $subject->public_id
+            : (string) $subject;
+
+        $this->ingredientPublicId = $this->subjectType === 'ingredient' ? $publicId : null;
+        $this->packagingPublicId = $this->subjectType === 'packaging' ? $publicId : null;
+
+        // Resolve once here so the initial page load still 404s on an inaccessible
+        // or untracked material, before any state is rendered.
+        $this->subject();
+
         $this->normalizePeriodState();
-        $this->bufferQuantity = (string) (WorkspaceMaterialSetting::query()
-            ->where('workspace_id', $this->workspace()->id)
-            ->when(
-                $this->subject instanceof Ingredient,
-                fn ($query) => $query->where('ingredient_id', $this->subject->id),
-                fn ($query) => $query->where('packaging_item_id', $this->subject->id),
-            )
-            ->value('buffer_quantity') ?? '');
     }
 
     public function updatedPeriodPreset(): void
     {
         $this->normalizePeriodState();
         $this->validateCustomPeriod();
+        $this->resetPage('activity');
     }
 
     public function updatedCustomFrom(): void
@@ -72,6 +109,7 @@ class InventoryMaterialDetail extends Component
         }
 
         $this->validateCustomPeriod();
+        $this->resetPage('activity');
     }
 
     public function updatedCustomTo(): void
@@ -81,20 +119,50 @@ class InventoryMaterialDetail extends Component
         }
 
         $this->validateCustomPeriod();
+        $this->resetPage('activity');
     }
 
-    public function saveBuffer(SaveMaterialBuffer $saveMaterialBuffer): void
+    public function updatedPerPage(): void
     {
-        $value = trim($this->bufferQuantity);
-        $setting = $saveMaterialBuffer->handle(
-            actor: $this->user(),
-            workspace: $this->workspace(),
-            subject: $this->subject,
-            bufferQuantity: $value === '' ? null : $value,
-        );
+        $this->perPage = $this->normalizedPerPage();
+        $this->resetPage('activity');
+    }
 
-        $this->bufferQuantity = (string) ($setting?->buffer_quantity ?? '');
-        $this->showAppNotification(__('production_bench.inventory.buffer_saved'));
+    /**
+     * Buffer editing goes through a Filament action modal with a localized
+     * decimal field, per the plan, rather than a raw input on the page. Saving
+     * an empty quantity clears the buffer; the explicit clear action does the
+     * same without opening the form.
+     */
+    public function editBufferAction(): Action
+    {
+        return Action::make('editBuffer')
+            ->label(__('production_bench.inventory.edit_buffer'))
+            ->modalHeading(__('production_bench.inventory.buffer_stock'))
+            ->modalDescription(__('production_bench.inventory.buffer_stock_help'))
+            ->modalSubmitActionLabel(__('production_bench.inventory.save_buffer'))
+            ->modalCancelActionLabel(__('production_bench.common.cancel'))
+            ->visible(fn (): bool => ! app(ProductionBenchAccess::class)->isReadOnly($this->workspace()))
+            ->fillForm(fn (): array => [
+                'buffer_quantity' => $this->displayBufferQuantity($this->currentBufferGrams()),
+            ])
+            ->schema([
+                LocalizedDecimalInput::make('buffer_quantity')
+                    ->label(__('production_bench.inventory.buffer_stock'))
+                    ->helperText(__('production_bench.inventory.buffer_empty_clears'))
+                    ->minValue(0),
+            ])
+            ->action(fn (array $data) => $this->saveBufferFromModal($data));
+    }
+
+    public function clearBufferAction(): Action
+    {
+        return Action::make('clearBuffer')
+            ->label(__('production_bench.inventory.clear_buffer'))
+            ->color('danger')
+            ->visible(fn (): bool => $this->currentBufferGrams() !== null
+                && ! app(ProductionBenchAccess::class)->isReadOnly($this->workspace()))
+            ->action(fn () => $this->saveBufferFromModal(['buffer_quantity' => null]));
     }
 
     public function render(
@@ -104,10 +172,8 @@ class InventoryMaterialDetail extends Component
         StockPositionService $positions,
     ): View {
         $workspace = $this->workspace();
-        $displayUnit = $this->subject instanceof PackagingItem
-            ? __('production_bench.inventory.units')
-            : $workspace->mass_display_system->priceUnit()->value;
-        $rawPosition = $activityService->currentPosition($workspace, $this->subject);
+        $displayUnit = $this->displayUnit();
+        $rawPosition = $activityService->currentPosition($workspace, $this->subject());
         $rawPosition['required'] = bcsub(
             bcadd($rawPosition['available'], $rawPosition['incoming'], 9),
             $rawPosition['forecast'],
@@ -121,9 +187,9 @@ class InventoryMaterialDetail extends Component
         $setting = WorkspaceMaterialSetting::query()
             ->where('workspace_id', $workspace->id)
             ->when(
-                $this->subject instanceof Ingredient,
-                fn ($query) => $query->where('ingredient_id', $this->subject->id),
-                fn ($query) => $query->where('packaging_item_id', $this->subject->id),
+                $this->subject() instanceof Ingredient,
+                fn ($query) => $query->where('ingredient_id', $this->subject()->id),
+                fn ($query) => $query->where('packaging_item_id', $this->subject()->id),
             )
             ->first();
         $buffer = $setting?->buffer_quantity === null
@@ -133,11 +199,23 @@ class InventoryMaterialDetail extends Component
             && bccomp($rawPosition['available'], (string) $setting->buffer_quantity, 9) < 0;
         $period = $this->periodDates();
         $periodActivity = $this->presentActivity(
-            $activityService->forPeriod($workspace, $this->subject, $period['from'], $period['to']),
+            $activityService->forPeriod($workspace, $this->subject(), $period['from'], $period['to']),
             $massConverter,
             $displayUnit,
         );
-        $openLots = $activityService->openLots($workspace, $this->subject)
+        $movements = $this->presentMovementPage(
+            $activityService->paginateMovements(
+                $workspace,
+                $this->subject(),
+                $period['from'],
+                $period['to'],
+                $this->normalizedPerPage(),
+                'activity',
+            ),
+            $massConverter,
+            $displayUnit,
+        );
+        $openLots = $activityService->openLots($workspace, $this->subject())
             ->map(fn (StockLot $lot): array => [
                 'lot' => $lot,
                 'positions' => collect($positions->forLotWithLoadedMovementSum($lot))
@@ -151,24 +229,25 @@ class InventoryMaterialDetail extends Component
             'isActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'displayUnit' => $displayUnit,
-            'materialName' => $this->subject instanceof Ingredient
-                ? (string) $this->subject->localizedDisplayName()
-                : $this->subject->name,
-            'materialCode' => $this->subject instanceof Ingredient
-                ? $workspace->ingredientCodes()->where('ingredient_id', $this->subject->id)->value('material_code')
-                : $this->subject->material_code,
+            'materialName' => $this->subject() instanceof Ingredient
+                ? (string) $this->subject()->localizedDisplayName()
+                : $this->subject()->name,
+            'materialCode' => $this->subject() instanceof Ingredient
+                ? $workspace->ingredientCodes()->where('ingredient_id', $this->subject()->id)->value('material_code')
+                : $this->subject()->material_code,
             'position' => $position,
             'buffer' => $buffer,
             'bufferBelow' => $bufferBelow,
             'bufferConfigured' => $setting instanceof WorkspaceMaterialSetting,
             'openLots' => $openLots,
             'activity' => $periodActivity,
+            'movements' => $movements,
             'periodFrom' => $period['from'],
             'periodTo' => $period['to'],
             'periodLabel' => $this->periodLabel($period),
             'lotRegisterUrl' => route('production-bench.inventory.stock', [
-                'material' => $this->subject->public_id,
-                'material_type' => $this->subject instanceof Ingredient ? 'ingredient' : 'packaging',
+                'material' => $this->subject()->public_id,
+                'material_type' => $this->subject() instanceof Ingredient ? 'ingredient' : 'packaging',
                 'lot_scope' => 'all',
             ]),
         ]);
@@ -176,26 +255,51 @@ class InventoryMaterialDetail extends Component
 
     public function sourceUrl(StockMovement $movement): ?string
     {
-        $source = $movement->source;
-
-        return match (true) {
-            $source instanceof ProductionRun => route('production-bench.production.show', $source),
-            $source instanceof GoodsReceiptLine && $source->goodsReceipt instanceof GoodsReceipt => route('production-bench.purchasing.receipts.show', $source->goodsReceipt),
-            $source instanceof GoodsReceipt => route('production-bench.purchasing.receipts.show', $source),
-            default => null,
-        };
+        return $this->sourceLink($movement)['url'] ?? null;
     }
 
     public function sourceLabel(StockMovement $movement): ?string
     {
+        return $this->sourceLink($movement)['label'] ?? null;
+    }
+
+    /**
+     * Resolves the linked source record for a movement. The source is a morphTo,
+     * so nothing in the schema ties it to the movement's workspace: an
+     * out-of-workspace record would otherwise print its identifier here and link
+     * to a route that 404s at the destination, because both detail components
+     * scope their query by workspace. Plan step 5 asks for no URL and a neutral
+     * label for every other source type or inaccessible record, and the view
+     * already renders `source_not_available` when either half is null.
+     *
+     * @return array{url: string, label: string}|null
+     */
+    private function sourceLink(StockMovement $movement): ?array
+    {
+        $workspaceId = $this->workspace()->id;
         $source = $movement->source;
 
-        return match (true) {
-            $source instanceof ProductionRun => $source->displayIdentifier(),
-            $source instanceof GoodsReceiptLine && $source->goodsReceipt instanceof GoodsReceipt => $source->goodsReceipt->delivery_reference ?: $source->goodsReceipt->public_id,
-            $source instanceof GoodsReceipt => $source->delivery_reference ?: $source->public_id,
+        if ($source instanceof ProductionRun && (int) $source->workspace_id === $workspaceId) {
+            return [
+                'url' => route('production-bench.production.show', $source),
+                'label' => $source->displayIdentifier(),
+            ];
+        }
+
+        $receipt = match (true) {
+            $source instanceof GoodsReceipt => $source,
+            $source instanceof GoodsReceiptLine => $source->goodsReceipt,
             default => null,
         };
+
+        if ($receipt instanceof GoodsReceipt && (int) $receipt->workspace_id === $workspaceId) {
+            return [
+                'url' => route('production-bench.purchasing.receipts.show', $receipt),
+                'label' => $receipt->delivery_reference ?: $receipt->public_id,
+            ];
+        }
+
+        return null;
     }
 
     public function movementTypeLabel(StockMovementType|string $type): string
@@ -210,14 +314,29 @@ class InventoryMaterialDetail extends Component
         return __('production_bench.inventory.activity_group_'.$group);
     }
 
-    private function resolveSubject(string|Ingredient|PackagingItem $subject): Ingredient|PackagingItem
+    /**
+     * Re-resolves the subject from the locked identifiers on every request. Private
+     * properties are not part of the Livewire payload, so this cache is per-request
+     * and the guards below re-run on every mutation.
+     */
+    private function subject(): Ingredient|PackagingItem
+    {
+        if (! $this->subjectResolved) {
+            $this->resolvedSubject = $this->resolveSubject();
+            $this->subjectResolved = true;
+        }
+
+        return $this->resolvedSubject;
+    }
+
+    private function resolveSubject(): Ingredient|PackagingItem
     {
         $workspace = $this->workspace();
 
         if ($this->subjectType === 'packaging') {
             $packaging = PackagingItem::query()
                 ->where('workspace_id', $workspace->id)
-                ->where('public_id', $subject instanceof PackagingItem ? $subject->public_id : $subject)
+                ->where('public_id', $this->packagingPublicId)
                 ->firstOrFail();
 
             abort_unless(app(WorkspaceMaterialInventoryQuery::class)->tracks($workspace, $packaging), 404);
@@ -226,7 +345,7 @@ class InventoryMaterialDetail extends Component
         }
 
         $ingredient = Ingredient::query()
-            ->where('public_id', $subject instanceof Ingredient ? $subject->public_id : $subject)
+            ->where('public_id', $this->ingredientPublicId)
             ->firstOrFail();
 
         abort_unless($ingredient->isAccessibleBy($this->user()), 404);
@@ -338,9 +457,66 @@ class InventoryMaterialDetail extends Component
 
     private function formatQuantity(string $quantity, MassConverter $massConverter, string $displayUnit): string
     {
-        return $this->subject instanceof Ingredient
+        return $this->subject() instanceof Ingredient
             ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
             : number_format((float) $quantity, 0);
+    }
+
+    private function displayUnit(): string
+    {
+        return $this->subject() instanceof PackagingItem
+            ? __('production_bench.inventory.units')
+            : $this->workspace()->mass_display_system->priceUnit()->value;
+    }
+
+    /**
+     * The only write path for the buffer: both buffer actions funnel here, and
+     * the method calls nothing but SaveMaterialBuffer, per the plan.
+     *
+     * @param  array{buffer_quantity?: mixed}  $data
+     */
+    private function saveBufferFromModal(array $data): void
+    {
+        $value = $data['buffer_quantity'] ?? null;
+
+        app(SaveMaterialBuffer::class)->handle(
+            actor: $this->user(),
+            workspace: $this->workspace(),
+            subject: $this->subject(),
+            bufferQuantity: $value === null ? null : (string) $value,
+        );
+
+        $this->showAppNotification(__('production_bench.inventory.buffer_saved'));
+    }
+
+    private function currentBufferGrams(): ?string
+    {
+        return WorkspaceMaterialSetting::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->when(
+                $this->subject() instanceof Ingredient,
+                fn ($query) => $query->where('ingredient_id', $this->subject()->id),
+                fn ($query) => $query->where('packaging_item_id', $this->subject()->id),
+            )
+            ->value('buffer_quantity');
+    }
+
+    /**
+     * Converts a stored canonical-gram buffer into the workspace display unit for
+     * the editable input. Packaging is unit-less and is shown exactly as stored.
+     *
+     * Unlike formatQuantity(), this returns a machine-readable decimal rather than
+     * a formatted string, because the value seeds a form field.
+     */
+    private function displayBufferQuantity(?string $grams): string
+    {
+        if ($grams === null) {
+            return '';
+        }
+
+        return $this->subject() instanceof Ingredient
+            ? app(MassConverter::class)->fromGramsSigned($grams, $this->displayUnit())
+            : $grams;
     }
 
     /** @param array<string, mixed> $activity */
@@ -348,23 +524,34 @@ class InventoryMaterialDetail extends Component
     {
         $reconciliationDelta = (string) $activity['reconciliation_delta'];
 
-        foreach ([
-            'opening_physical',
-            'closing_physical',
-            'received',
-            'production_consumed',
-            'other_inbound',
-            'other_outbound',
-            'adjustments',
-            'net_change',
-            'reconciliation_delta',
-        ] as $key) {
-            $activity[$key] = $this->formatQuantity((string) $activity[$key], $massConverter, $displayUnit);
-        }
+        $activity = collect($activity)
+            ->map(fn (mixed $value, string $key): mixed => in_array($key, [
+                'opening_physical',
+                'closing_physical',
+                'received',
+                'production_consumed',
+                'other_inbound',
+                'other_outbound',
+                'adjustments',
+                'net_change',
+                'reconciliation_delta',
+            ], true)
+                ? $this->formatQuantity((string) $value, $massConverter, $displayUnit)
+                : $value)
+            ->all();
 
         $activity['reconciliation_ok'] = bccomp($reconciliationDelta, '0', 9) === 0;
 
-        $activity['movements'] = $activity['movements']->map(function (array $entry) use ($massConverter, $displayUnit): array {
+        return $activity;
+    }
+
+    /**
+     * @param  LengthAwarePaginator<int, array{movement: StockMovement, group: string, quantity_delta: string}>  $page
+     * @return LengthAwarePaginator<int, array{movement: StockMovement, group: string, quantity_delta: string}>
+     */
+    private function presentMovementPage(LengthAwarePaginator $page, MassConverter $massConverter, string $displayUnit): LengthAwarePaginator
+    {
+        return $page->through(function (array $entry) use ($massConverter, $displayUnit): array {
             $entry['quantity_delta'] = $this->formatQuantity(
                 (string) $entry['quantity_delta'],
                 $massConverter,
@@ -373,8 +560,11 @@ class InventoryMaterialDetail extends Component
 
             return $entry;
         });
+    }
 
-        return $activity;
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
     }
 
     private function user(): User

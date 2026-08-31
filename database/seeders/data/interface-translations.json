@@ -16692,6 +16692,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.buffer_empty_clears",
+      "text": {
+        "de": "Leave empty to remove the configured buffer.",
+        "es": "Leave empty to remove the configured buffer.",
+        "fr": "Leave empty to remove the configured buffer.",
+        "it": "Leave empty to remove the configured buffer.",
+        "nl": "Leave empty to remove the configured buffer.",
+        "pt_BR": "Leave empty to remove the configured buffer."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.buffer_none",
       "text": {
         "de": "No buffer configured",
@@ -16748,6 +16760,18 @@
         "it": "Scegli…",
         "nl": "Kiezen…",
         "pt_BR": "Escolher…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.clear_buffer",
+      "text": {
+        "de": "Clear buffer",
+        "es": "Clear buffer",
+        "fr": "Clear buffer",
+        "it": "Clear buffer",
+        "nl": "Clear buffer",
+        "pt_BR": "Clear buffer"
       }
     },
     {
@@ -16868,6 +16892,18 @@
         "it": "Descending",
         "nl": "Descending",
         "pt_BR": "Descending"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.edit_buffer",
+      "text": {
+        "de": "Edit buffer",
+        "es": "Edit buffer",
+        "fr": "Edit buffer",
+        "it": "Edit buffer",
+        "nl": "Edit buffer",
+        "pt_BR": "Edit buffer"
       }
     },
     {
@@ -18416,6 +18452,18 @@
         "it": "Enter a valid non-negative quantity.",
         "nl": "Enter a valid non-negative quantity.",
         "pt_BR": "Enter a valid non-negative quantity."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.buffer_overflow",
+      "text": {
+        "de": "That quantity is too large to store. Enter a smaller buffer.",
+        "es": "That quantity is too large to store. Enter a smaller buffer.",
+        "fr": "That quantity is too large to store. Enter a smaller buffer.",
+        "it": "That quantity is too large to store. Enter a smaller buffer.",
+        "nl": "That quantity is too large to store. Enter a smaller buffer.",
+        "pt_BR": "That quantity is too large to store. Enter a smaller buffer."
       }
     },
     {

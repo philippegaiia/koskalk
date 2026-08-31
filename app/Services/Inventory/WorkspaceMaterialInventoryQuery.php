@@ -32,9 +32,12 @@ class WorkspaceMaterialInventoryQuery
         $perPage = in_array($perPage, [25, 50, 100], true) ? $perPage : 25;
         $query = $this->query($workspace, $filters);
 
-        return $query
-            ->paginate($perPage, ['*'], $pageName)
-            ->through(fn (object $row): array => $this->hydrateRow($row, $workspace) ?? []);
+        $page = $query->paginate($perPage, ['*'], $pageName);
+        $subjects = $this->loadSubjects($page->getCollection(), $workspace);
+
+        return $page->through(
+            fn (object $row): array => $this->hydrateRow($row, $workspace, $subjects) ?? [],
+        );
     }
 
     /**
@@ -482,11 +485,57 @@ class WorkspaceMaterialInventoryQuery
             ->orderBy('tracked_materials.subject_id');
     }
 
-    private function hydrateRow(object $row, Workspace $workspace): ?array
+    /**
+     * @param  array<string, Ingredient|PackagingItem>  $subjects
+     */
+    /**
+     * Loads every subject on the page in one query per subject type rather than one
+     * query per row, so the count stays flat as the page size grows.
+     *
+     * Only translations are eager-loaded: the visible name comes from
+     * localizedDisplayName(), which reads the translations relation alone.
+     *
+     * @param  iterable<object>  $rows
+     * @return array<string, Ingredient|PackagingItem>
+     */
+    private function loadSubjects(iterable $rows, Workspace $workspace): array
     {
-        $subject = $row->subject_type === 'ingredient'
-            ? Ingredient::query()->with(['translations', 'aliases', 'identifiers'])->find((int) $row->subject_id)
-            : PackagingItem::query()->where('workspace_id', $workspace->id)->find((int) $row->subject_id);
+        $subjectIds = collect($rows)
+            ->map(fn (object $row): array => [
+                'type' => (string) $row->subject_type,
+                'id' => (int) $row->subject_id,
+            ]);
+
+        $idsOfType = fn (string $type): array => $subjectIds
+            ->filter(fn (array $subject): bool => $subject['type'] === $type)
+            ->pluck('id')
+            ->all();
+
+        $ingredients = Ingredient::query()
+            ->with('translations')
+            ->whereIn('id', $idsOfType('ingredient'))
+            ->get()
+            ->mapWithKeys(fn (Ingredient $ingredient): array => [
+                'ingredient:'.$ingredient->id => $ingredient,
+            ]);
+
+        $packaging = PackagingItem::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereIn('id', $idsOfType('packaging'))
+            ->get()
+            ->mapWithKeys(fn (PackagingItem $item): array => [
+                'packaging:'.$item->id => $item,
+            ]);
+
+        return $ingredients->all() + $packaging->all();
+    }
+
+    /**
+     * @param  array<string, Ingredient|PackagingItem>  $subjects
+     */
+    private function hydrateRow(object $row, Workspace $workspace, array $subjects = []): ?array
+    {
+        $subject = $subjects[$row->subject_type.':'.$row->subject_id] ?? null;
 
         if (! $subject instanceof Ingredient && ! $subject instanceof PackagingItem) {
             return null;

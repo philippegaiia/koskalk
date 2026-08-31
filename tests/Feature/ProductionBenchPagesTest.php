@@ -3,6 +3,7 @@
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockMovementType;
+use App\Enums\StockReservationStatus;
 use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
@@ -12,6 +13,7 @@ use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\StockReservation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -160,6 +162,23 @@ it('offers two inventory sections for material positions and lot stock', functio
         ->assertSee('Lot register');
 });
 
+it('gives each inventory page a translated browser title of its own', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    // Both pages share one Livewire component, so the browser title is the only
+    // thing that tells them apart in history and in a tab strip.
+    $this->actingAs($user)
+        ->get(route('production-bench.inventory'))
+        ->assertOk()
+        ->assertSee('<title>'.__('production_bench.inventory.stock_by_material').' · '.config('app.name').'</title>', false);
+
+    $this->get(route('production-bench.inventory.stock'))
+        ->assertOk()
+        ->assertSee('<title>'.__('production_bench.inventory.lot_register').' · '.config('app.name').'</title>', false);
+});
+
 it('redirects the retired material requirements page to the material view', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
@@ -193,6 +212,25 @@ it('narrows the material view to shortages only', function (): void {
             && $materials->first()['name'] === 'Short oil')
         ->assertSee('Short oil')
         ->assertDontSee('Covered oil');
+});
+
+it('activates and clears the negative forecast filter from the shortage summary tile', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    // The summary tile is the shortcut into the same state the filter panel
+    // exposes, so it has to move stockState and not just repaint the count.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSet('stockState', 'all')
+        ->call('toggleShortageFilter')
+        ->assertSet('stockState', 'negative_forecast')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['name'] === 'Short oil')
+        ->assertDontSee('Covered oil')
+        ->call('toggleShortageFilter')
+        ->assertSet('stockState', 'all')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 2);
 });
 
 it('narrows the material view to materials with and without planned demand', function (): void {
@@ -350,6 +388,54 @@ it('filters the lot register by scope supplier origin dates and expiry', functio
         ->assertSee('Local Oils');
 });
 
+it('keeps reserved zero-balance lots in the default open scope', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create();
+
+    // Net-zero movements: the lot is physically empty.
+    $reservedLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($reservedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5',
+    ]);
+    StockMovement::factory()->for($reservedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::ProductionConsumption,
+        'quantity_delta' => '-5',
+    ]);
+    StockReservation::factory()->for($workspace)->for($reservedLot, 'stockLot')->create([
+        'quantity' => '2.000000000',
+        'status' => StockReservationStatus::Active,
+    ]);
+
+    // Net-zero movements and nothing reserved: genuinely exhausted.
+    $exhaustedLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($exhaustedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '3',
+    ]);
+    StockMovement::factory()->for($exhaustedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::ProductionConsumption,
+        'quantity_delta' => '-3',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1
+            && $lots->first()['lot']->id === $reservedLot->id)
+        ->set('lotScope', 'exhausted')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1
+            && $lots->first()['lot']->id === $exhaustedLot->id)
+        ->set('lotScope', 'all')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2);
+});
+
 it('keeps subject forecasts out of the lot register', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
@@ -421,6 +507,90 @@ it('uses unit-of-measure wording for legacy packaging listing validation', funct
  *
  * @return array{user: User, workspace: Workspace, coveredIngredient: Ingredient, shortIngredient: Ingredient}
  */
+it('normalizes tampered filter query-string values to safe defaults', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+
+    Livewire::withQueryParams([
+        'type' => 'bogus',
+        'state' => 'bogus',
+        'demand' => 'bogus',
+        'category' => 'bogus',
+        'subcategory' => 'bogus',
+        'sort' => 'bogus',
+        'direction' => 'bogus',
+        'material_type' => 'bogus',
+        'lot_scope' => 'bogus',
+        'status' => 'bogus',
+        'origin' => 'bogus',
+        'stocked_from' => 'not-a-date',
+        'stocked_until' => '2026-02-30',
+        'expiry' => 'bogus',
+        'lot_sort' => 'bogus',
+    ])->test(InventoryIndex::class)
+        ->assertSet('materialType', 'all')
+        ->assertSet('stockState', 'all')
+        ->assertSet('demandFilter', 'all')
+        ->assertSet('categoryFilter', '')
+        ->assertSet('subcategoryFilter', '')
+        ->assertSet('sort', 'priority')
+        ->assertSet('direction', 'asc')
+        ->assertSet('lotMaterialType', '')
+        ->assertSet('lotScope', 'open')
+        ->assertSet('lotStatus', 'all')
+        ->assertSet('lotOrigin', '')
+        ->assertSet('lotStockedFrom', '')
+        ->assertSet('lotStockedUntil', '')
+        ->assertSet('lotExpiry', 'all')
+        ->assertSet('lotSort', 'newest');
+});
+
+it('ignores tampered mid-session filter values instead of erroring', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    // The query layer allow-lists every filter, so an injected value behaves as
+    // the neutral default instead of filtering, erroring, or leaking.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->set('stockState', 'bogus-injected')
+        ->assertSee('Covered oil')
+        ->assertSee('Short oil')
+        ->set('stockState', 'negative_forecast')
+        ->assertDontSee('Covered oil')
+        ->assertSee('Short oil')
+        ->set('stockState', 'bogus-injected')
+        ->set('categoryFilter', 'bogus')
+        ->set('subcategoryFilter', 'bogus')
+        ->set('sort', 'bogus')
+        ->set('direction', 'bogus')
+        ->assertSee('Covered oil')
+        ->assertSee('Short oil')
+        ->set('perPage', 1000)
+        ->assertViewHas('materials', fn ($materials): bool => $materials->perPage() === 25);
+});
+
+it('normalizes tampered lot date filters on update', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create();
+    StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+
+    $this->actingAs($user);
+
+    // Lot dates are the only filter values that reach SQL (whereDate) without an
+    // allow-list; an unparseable value must never reach the query.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotStockedFrom', 'not-a-date')
+        ->assertSet('lotStockedFrom', '')
+        ->set('lotStockedUntil', '2026-02-30')
+        ->assertSet('lotStockedUntil', '');
+});
+
 function plannedShortageWorkspace(): array
 {
     $user = User::factory()->create();

@@ -45,13 +45,10 @@
                         </p>
                     @endif
                 </div>
-                <form wire:submit="saveBuffer" class="flex w-full max-w-md items-end gap-2 lg:w-auto">
-                    <label class="sk-field min-w-0 flex-1">
-                        <span>{{ __('production_bench.inventory.buffer_stock') }} ({{ $displayUnit }})</span>
-                        <input wire:model="bufferQuantity" type="text" inputmode="decimal" placeholder="{{ __('production_bench.inventory.buffer_none') }}" class="sk-field-control numeric" @disabled($isReadOnly) />
-                    </label>
-                    <button type="submit" class="sk-btn sk-btn-primary shrink-0" @disabled($isReadOnly)>{{ __('production_bench.inventory.save_buffer') }}</button>
-                </form>
+                <div class="flex shrink-0 items-center gap-2">
+                    {{ $this->editBufferAction }}
+                    {{ $this->clearBufferAction }}
+                </div>
             </div>
         </section>
 
@@ -154,7 +151,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
-                        @forelse ($activity['movements'] as $entry)
+                        @forelse ($movements as $entry)
                             @php($movement = $entry['movement'])
                             @php($sourceUrl = $this->sourceUrl($movement))
                             @php($sourceLabel = $this->sourceLabel($movement))
@@ -171,6 +168,9 @@
                     </tbody>
                 </table>
             </div>
+            <x-table-pagination :paginator="$movements" :per-page-label="__('production_bench.inventory.period_activity')" />
         </section>
     @endif
+
+    <x-filament-actions::modals />
 </x-production-bench.page>

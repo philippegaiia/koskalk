@@ -31,7 +31,22 @@
                     </div>
                     <div class="px-5 py-3">
                         <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.production.shortage') }}</dt>
-                        <dd class="numeric mt-1 text-lg font-semibold {{ $inventorySummary['shortages'] > 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $inventorySummary['shortages'] }}</dd>
+                        <dd class="mt-1">
+                            {{-- The tile is a shortcut into the same state the filter panel offers, so it
+                                 toggles stockState rather than only reporting the count. --}}
+                            <button
+                                type="button"
+                                wire:click="toggleShortageFilter"
+                                data-inventory-shortage-filter
+                                aria-pressed="{{ $stockState === 'negative_forecast' ? 'true' : 'false' }}"
+                                aria-label="{{ __('production_bench.inventory.filter_negative_forecast') }}"
+                                @class([
+                                    'numeric text-lg font-semibold rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
+                                    'text-[var(--color-danger-strong)] hover:underline' => $inventorySummary['shortages'] > 0,
+                                    'text-[var(--color-ink-strong)]' => $inventorySummary['shortages'] === 0,
+                                ])
+                            >{{ $inventorySummary['shortages'] }}</button>
+                        </dd>
                     </div>
                     <div class="px-5 py-3">
                         <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.incoming') }}</dt>

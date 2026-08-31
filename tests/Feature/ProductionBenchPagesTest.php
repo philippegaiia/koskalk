@@ -11,6 +11,8 @@ use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\Ingredient;
+use App\Models\GoodsReceipt;
+use App\Models\GoodsReceiptLine;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
@@ -606,8 +608,9 @@ it('filters the lot register by scope supplier origin dates and expiry', functio
         ->set('lotSupplier', $supplier->public_id)
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
         ->set('lotOrigin', StockLotOrigin::PurchaseReceipt->value)
-        ->set('lotStockedFrom', today()->subDays(4)->toDateString())
-        ->set('lotStockedUntil', today()->subDays(2)->toDateString())
+        ->set('lotDateBasis', 'stocked')
+        ->set('lotDateFrom', today()->subDays(4)->toDateString())
+        ->set('lotDateUntil', today()->subDays(2)->toDateString())
         ->set('lotExpiry', 'all')
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
         ->set('search', 'OLEA EUROPAEA')
@@ -684,10 +687,86 @@ it('renders the lot register filter controls from a filament schema', function (
         ->assertSeeHtml('for="lotFiltersForm.lotStatus"')
         ->assertSeeHtml('for="lotFiltersForm.lotSupplier"')
         ->assertSeeHtml('for="lotFiltersForm.lotOrigin"')
-        ->assertSeeHtml('for="lotFiltersForm.lotStockedFrom"')
-        ->assertSeeHtml('for="lotFiltersForm.lotStockedUntil"')
+        ->assertSeeHtml('for="lotFiltersForm.lotDateBasis"')
+        ->assertSeeHtml('for="lotFiltersForm.lotDateFrom"')
+        ->assertSeeHtml('for="lotFiltersForm.lotDateUntil"')
         ->assertSeeHtml('for="lotFiltersForm.lotExpiry"')
         ->assertSeeHtml('for="lotFiltersForm.lotSort"');
+});
+
+it('filters the lot register by receipt date, not only by stocked date', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+
+    // Two purchase-receipt lots sharing the same stocked_at, but whose goods
+    // receipts landed on opposite sides of the selected window.
+    $inRangeLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'internal_lot_code' => 'RECEIVED-IN-RANGE',
+        'stocked_at' => '2026-08-10',
+    ]);
+    $outOfRangeLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'internal_lot_code' => 'RECEIVED-OUTSIDE-RANGE',
+        'stocked_at' => '2026-08-10',
+    ]);
+    $inReceipt = GoodsReceipt::factory()->for($workspace)->for($supplier)->direct()->create(['received_at' => '2026-08-15']);
+    $outReceipt = GoodsReceipt::factory()->for($workspace)->for($supplier)->direct()->create(['received_at' => '2026-08-01']);
+    GoodsReceiptLine::factory()->direct()->for($inReceipt)->for($listing, 'supplierListing')->create(['stock_lot_id' => $inRangeLot->id]);
+    GoodsReceiptLine::factory()->direct()->for($outReceipt)->for($listing, 'supplierListing')->create(['stock_lot_id' => $outOfRangeLot->id]);
+
+    // A manual opening-balance lot has no goods receipt at all, so it must
+    // never satisfy a receipt-date filter.
+    StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'internal_lot_code' => 'MANUAL-NO-RECEIPT',
+        'stocked_at' => '2026-08-25',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
+        ->set('lotDateBasis', 'received')
+        ->set('lotDateFrom', '2026-08-10')
+        ->set('lotDateUntil', '2026-08-20')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1)
+        ->assertSee('RECEIVED-IN-RANGE')
+        ->assertDontSee('RECEIVED-OUTSIDE-RANGE')
+        ->assertDontSee('MANUAL-NO-RECEIPT')
+        // Switching the basis to stocked_at brings both purchase lots into the
+        // same window (they share stocked_at = 2026-08-10) while the manual lot
+        // stays outside because its stocked_at is 2026-08-25.
+        ->set('lotDateBasis', 'stocked')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2)
+        ->assertSee('RECEIVED-IN-RANGE')
+        ->assertSee('RECEIVED-OUTSIDE-RANGE')
+        ->assertDontSee('MANUAL-NO-RECEIPT');
+});
+
+it('renders the lot register date-basis controls and hydrates them from the url', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('for="lotFiltersForm.lotDateBasis"')
+        ->assertSeeHtml('for="lotFiltersForm.lotDateFrom"')
+        ->assertSeeHtml('for="lotFiltersForm.lotDateUntil"');
+
+    // The url aliases hydrate the three properties without the stocked-only
+    // framing the old controls used.
+    Livewire::withQueryParams([
+        'date_basis' => 'received',
+        'date_from' => '2026-08-10',
+        'date_until' => '2026-08-20',
+    ])->test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSet('lotDateBasis', 'received')
+        ->assertSet('lotDateFrom', '2026-08-10')
+        ->assertSet('lotDateUntil', '2026-08-20');
 });
 
 it('constrains the subcategory options to the chosen category', function (): void {
@@ -895,8 +974,9 @@ it('normalizes tampered filter query-string values to safe defaults', function (
         'lot_scope' => 'bogus',
         'status' => 'bogus',
         'origin' => 'bogus',
-        'stocked_from' => 'not-a-date',
-        'stocked_until' => '2026-02-30',
+        'date_basis' => 'bogus',
+        'date_from' => 'not-a-date',
+        'date_until' => '2026-02-30',
         'expiry' => 'bogus',
         'lot_sort' => 'bogus',
     ])->test(InventoryIndex::class)
@@ -911,8 +991,9 @@ it('normalizes tampered filter query-string values to safe defaults', function (
         ->assertSet('lotScope', 'open')
         ->assertSet('lotStatus', 'all')
         ->assertSet('lotOrigin', '')
-        ->assertSet('lotStockedFrom', '')
-        ->assertSet('lotStockedUntil', '')
+        ->assertSet('lotDateBasis', 'stocked')
+        ->assertSet('lotDateFrom', '')
+        ->assertSet('lotDateUntil', '')
         ->assertSet('lotExpiry', 'all')
         ->assertSet('lotSort', 'newest');
 });
@@ -954,10 +1035,10 @@ it('normalizes tampered lot date filters on update', function (): void {
     // Lot dates are the only filter values that reach SQL (whereDate) without an
     // allow-list; an unparseable value must never reach the query.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->set('lotStockedFrom', 'not-a-date')
-        ->assertSet('lotStockedFrom', '')
-        ->set('lotStockedUntil', '2026-02-30')
-        ->assertSet('lotStockedUntil', '');
+        ->set('lotDateFrom', 'not-a-date')
+        ->assertSet('lotDateFrom', '')
+        ->set('lotDateUntil', '2026-02-30')
+        ->assertSet('lotDateUntil', '');
 });
 
 /**

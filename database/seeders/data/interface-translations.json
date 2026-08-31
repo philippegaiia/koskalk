@@ -17256,6 +17256,66 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.lot_date_basis",
+      "text": {
+        "de": "Lose filtern nach",
+        "es": "Filtrar lotes por",
+        "fr": "Filtrer les lots par",
+        "it": "Filtra lotti per",
+        "nl": "Lots filteren op",
+        "pt_BR": "Filtrar lotes por"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_basis_received",
+      "text": {
+        "de": "Eingangsdatum",
+        "es": "Fecha de recepción",
+        "fr": "Date de réception",
+        "it": "Data di ricezione",
+        "nl": "Ontvangstdatum",
+        "pt_BR": "Data de recebimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_basis_stocked",
+      "text": {
+        "de": "Eingelagerungsdatum",
+        "es": "Fecha de almacenamiento",
+        "fr": "Date de stockage",
+        "it": "Data di stoccaggio",
+        "nl": "Voorraaddatum",
+        "pt_BR": "Data de armazenamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_from",
+      "text": {
+        "de": "Von",
+        "es": "Desde",
+        "fr": "Du",
+        "it": "Dal",
+        "nl": "Van",
+        "pt_BR": "De"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.lot_date_until",
+      "text": {
+        "de": "Bis",
+        "es": "Hasta",
+        "fr": "Au",
+        "it": "Al",
+        "nl": "Tot",
+        "pt_BR": "Até"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.lot_expiry",
       "text": {
         "de": "Ablauf",
@@ -17480,30 +17540,6 @@
         "it": "Più vecchi prima",
         "nl": "Oudste eerst",
         "pt_BR": "Mais antigos primeiro"
-      }
-    },
-    {
-      "group": "production_bench",
-      "key": "inventory.lot_stocked_from",
-      "text": {
-        "de": "Eingelagert ab",
-        "es": "Almacenado desde",
-        "fr": "Stocké à partir du",
-        "it": "Stoccato dal",
-        "nl": "Op voorraad vanaf",
-        "pt_BR": "Armazenado desde"
-      }
-    },
-    {
-      "group": "production_bench",
-      "key": "inventory.lot_stocked_until",
-      "text": {
-        "de": "Eingelagert bis",
-        "es": "Almacenado hasta",
-        "fr": "Stocké jusqu’au",
-        "it": "Stoccato fino al",
-        "nl": "Op voorraad tot",
-        "pt_BR": "Armazenado até"
       }
     },
     {

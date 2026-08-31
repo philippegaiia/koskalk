@@ -120,11 +120,14 @@ class InventoryIndex extends Component implements HasActions, HasForms
     #[Url(as: 'origin', except: '')]
     public string $lotOrigin = '';
 
-    #[Url(as: 'stocked_from', except: '')]
-    public string $lotStockedFrom = '';
+    #[Url(as: 'date_basis', except: 'stocked')]
+    public string $lotDateBasis = 'stocked';
 
-    #[Url(as: 'stocked_until', except: '')]
-    public string $lotStockedUntil = '';
+    #[Url(as: 'date_from', except: '')]
+    public string $lotDateFrom = '';
+
+    #[Url(as: 'date_until', except: '')]
+    public string $lotDateUntil = '';
 
     #[Url(as: 'expiry', except: 'all')]
     public string $lotExpiry = 'all';
@@ -339,14 +342,22 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->options(fn (): array => $this->lotOriginOptions())
                             ->native(false)
                             ->live(),
-                        DatePicker::make('lotStockedFrom')
-                            ->label(__('production_bench.inventory.lot_stocked_from'))
+                        Select::make('lotDateBasis')
+                            ->label(__('production_bench.inventory.lot_date_basis'))
+                            ->options([
+                                'stocked' => __('production_bench.inventory.lot_date_basis_stocked'),
+                                'received' => __('production_bench.inventory.lot_date_basis_received'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                        DatePicker::make('lotDateFrom')
+                            ->label(__('production_bench.inventory.lot_date_from'))
                             ->native(false)
                             ->closeOnDateSelection()
                             ->weekStartsOnMonday()
                             ->live(),
-                        DatePicker::make('lotStockedUntil')
-                            ->label(__('production_bench.inventory.lot_stocked_until'))
+                        DatePicker::make('lotDateUntil')
+                            ->label(__('production_bench.inventory.lot_date_until'))
                             ->native(false)
                             ->closeOnDateSelection()
                             ->weekStartsOnMonday()
@@ -457,17 +468,25 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->resetPage('stock-lots');
     }
 
-    public function updatedLotStockedFrom(): void
+    public function updatedLotDateBasis(): void
     {
-        // Lot dates reach whereDate() without an allow-list, so they are the one
-        // filter that must be re-validated on update, not only at mount.
-        $this->lotStockedFrom = $this->normalizeLotDate($this->lotStockedFrom);
+        $this->lotDateBasis = in_array($this->lotDateBasis, ['stocked', 'received'], true)
+            ? $this->lotDateBasis
+            : 'stocked';
         $this->resetPage('stock-lots');
     }
 
-    public function updatedLotStockedUntil(): void
+    public function updatedLotDateFrom(): void
     {
-        $this->lotStockedUntil = $this->normalizeLotDate($this->lotStockedUntil);
+        // Lot dates reach whereDate() without an allow-list, so they are the one
+        // filter that must be re-validated on update, not only at mount.
+        $this->lotDateFrom = $this->normalizeLotDate($this->lotDateFrom);
+        $this->resetPage('stock-lots');
+    }
+
+    public function updatedLotDateUntil(): void
+    {
+        $this->lotDateUntil = $this->normalizeLotDate($this->lotDateUntil);
         $this->resetPage('stock-lots');
     }
 
@@ -788,8 +807,25 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ->when($scope === 'exhausted', fn (Builder $query): Builder => $query
                 ->whereRaw("{$physical} = 0")
                 ->whereRaw("{$activeReserved} = 0"))
-            ->when($this->lotStockedFrom !== '', fn (Builder $query): Builder => $query->whereDate('stocked_at', '>=', $this->lotStockedFrom))
-            ->when($this->lotStockedUntil !== '', fn (Builder $query): Builder => $query->whereDate('stocked_at', '<=', $this->lotStockedUntil))
+            ->when(
+                $this->lotDateBasis === 'stocked' && $this->lotDateFrom !== '',
+                fn (Builder $query): Builder => $query->whereDate('stocked_at', '>=', $this->lotDateFrom),
+            )
+            ->when(
+                $this->lotDateBasis === 'stocked' && $this->lotDateUntil !== '',
+                fn (Builder $query): Builder => $query->whereDate('stocked_at', '<=', $this->lotDateUntil),
+            )
+            ->when(
+                $this->lotDateBasis === 'received' && ($this->lotDateFrom !== '' || $this->lotDateUntil !== ''),
+                fn (Builder $query): Builder => $query->whereHas(
+                    'goodsReceiptLine.goodsReceipt',
+                    function (Builder $receiptQuery): void {
+                        $receiptQuery
+                            ->when($this->lotDateFrom !== '', fn (Builder $query): Builder => $query->whereDate('received_at', '>=', $this->lotDateFrom))
+                            ->when($this->lotDateUntil !== '', fn (Builder $query): Builder => $query->whereDate('received_at', '<=', $this->lotDateUntil));
+                    },
+                ),
+            )
             ->when($this->lotExpiry === 'active', fn (Builder $query): Builder => $query->whereNotNull('expires_at')->whereDate('expires_at', '>=', today()))
             ->when($this->lotExpiry === 'expired', fn (Builder $query): Builder => $query->whereNotNull('expires_at')->whereDate('expires_at', '<', today()))
             ->when($this->lotExpiry === 'none', fn (Builder $query): Builder => $query->whereNull('expires_at'))
@@ -1006,8 +1042,11 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ? $this->lotStatus
             : 'all';
         $this->lotOrigin = array_key_exists($this->lotOrigin, $this->lotOriginOptions()) ? $this->lotOrigin : '';
-        $this->lotStockedFrom = $this->normalizeLotDate($this->lotStockedFrom);
-        $this->lotStockedUntil = $this->normalizeLotDate($this->lotStockedUntil);
+        $this->lotDateBasis = in_array($this->lotDateBasis, ['stocked', 'received'], true)
+            ? $this->lotDateBasis
+            : 'stocked';
+        $this->lotDateFrom = $this->normalizeLotDate($this->lotDateFrom);
+        $this->lotDateUntil = $this->normalizeLotDate($this->lotDateUntil);
         $this->lotExpiry = in_array($this->lotExpiry, ['all', 'active', 'expired', 'none'], true) ? $this->lotExpiry : 'all';
         $this->lotSort = in_array($this->lotSort, ['newest', 'oldest', 'code'], true) ? $this->lotSort : 'newest';
     }

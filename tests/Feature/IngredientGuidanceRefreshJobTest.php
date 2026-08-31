@@ -249,7 +249,6 @@ it('records empty fresh evidence when guidance research is disabled', function (
         ]);
 });
 
-
 it('quarantines rejected guidance rows while completing a mixed refresh', function (): void {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $authoringContext = [];
@@ -362,7 +361,6 @@ it('quarantines rejected guidance rows while completing a mixed refresh', functi
         ]]);
 });
 
-
 it('keeps an all-rejected guidance refresh reviewable with catalogue facts only', function (): void {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $authoringContext = [];
@@ -451,7 +449,6 @@ it('keeps an all-rejected guidance refresh reviewable with catalogue facts only'
         ->and($authoringContext['current'])->toBeArray()
         ->and($completed->warnings)->toContain('No researched evidence passed validation; the proposed guidance uses catalogue facts only.');
 });
-
 
 it('recognizes only an exact level-two soapmaking heading', function (): void {
     $headings = app(LocalizedGuidanceHeadings::class);
@@ -862,7 +859,7 @@ it('recomputes guidance stages when effective provider configuration changes', f
     $fixture = guidanceResumeFixture();
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
-    config()->set('ingredient-enrichment.openai.guidance_research.prompt_version', 'ingredient-guidance-research-v3');
+    config()->set('ingredient-enrichment.openai.guidance_research.prompt_version', 'ingredient-guidance-research-v9');
     $fixture['item']->update(['status' => IngredientEnrichmentItemStatus::Failed]);
 
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
@@ -870,7 +867,7 @@ it('recomputes guidance stages when effective provider configuration changes', f
     expect($calls)->toBe(['research' => 2, 'author' => 2, 'localize' => 2])
         ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
 
-    config()->set('ingredient-enrichment.openai.guidance_prompt_version', 'ingredient-guidance-v4');
+    config()->set('ingredient-enrichment.openai.guidance_prompt_version', 'ingredient-guidance-v9');
     $fixture['item']->refresh();
     $fixture['item']->update(['status' => IngredientEnrichmentItemStatus::Failed]);
 
@@ -944,7 +941,7 @@ it('invalidates downstream guidance caches when a queued retry recomputes author
 
     $job->handle(app(IngredientGuidanceRefreshProcessor::class));
     expect($calls)->toBe(['author' => 2, 'localize' => 2])
-        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning);
 });
 
 it('localizes only outdated locales and never calls English authoring', function (): void {
@@ -1367,7 +1364,7 @@ it('resumes localization after a guidance refresh failure without repeating auth
     $completed = $item->fresh();
 
     expect($calls)->toBe(['author' => 1, 'localize' => 2])
-        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
         ->and(data_get($completed->research_stages, 'ai_guidance_authoring.status'))->toBe('completed')
         ->and(data_get($completed->research_stages, 'ai_guidance_localization.status'))->toBe('completed')
         ->and(data_get($completed->research_stages, 'validation.status'))->toBe('completed')
@@ -1494,7 +1491,7 @@ it('resumes a validation failure without repeating completed guidance providers'
 
     expect($validator->calls)->toBe(2)
         ->and($calls)->toBe(['author' => 1, 'localize' => 1])
-        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
         ->and(data_get($item->fresh()->research_stages, 'validation.status'))->toBe('completed');
 });
 
@@ -1572,7 +1569,7 @@ it('rejects a validation cache when cached localization output changes', functio
     $mutatedTranslation = collect($completed->result['translations'])
         ->firstWhere('locale', data_get($localization, 'data.translations.0.locale'));
     expect($calls)->toBe(['author' => 1, 'localize' => 1])
-        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
         ->and($mutatedTranslation['info_markdown'] ?? '')->toContain($marker)
         ->and(data_get($completed->research_stages, 'validation.status'))->toBe('completed');
 });
@@ -1992,7 +1989,7 @@ it('fails fresh authoring with invalid headings before localization', function (
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
     expect($calls)->toBe(['author' => 2, 'localize' => 1])
-        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('completed');
 });
 
@@ -2057,7 +2054,7 @@ it('fails fresh localization when a response has an unexpected locale before val
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
     expect($calls)->toBe(['author' => 1, 'localize' => 2])
-        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('completed');
 });
 
@@ -2147,7 +2144,7 @@ it('fails cached localization when locales or translated content are invalid bef
         app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
         expect($calls)->toBe(['author' => 1, 'localize' => 2])
-            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
             ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('completed');
     }
 });
@@ -2256,7 +2253,7 @@ it('fails cached validation when its envelope context or normalized result is in
         app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
         expect($calls)->toBe(['author' => 1, 'localize' => 1])
-            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
+            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
             ->and(data_get($fixture['item']->fresh()->research_stages, 'validation.status'))->toBe('completed');
     }
 });

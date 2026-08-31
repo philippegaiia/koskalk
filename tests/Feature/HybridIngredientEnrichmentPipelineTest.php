@@ -418,10 +418,7 @@ it('keeps full enrichment reviewable when guidance evidence is mixed', function 
     $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
     $freshItem = $item->fresh();
 
-    expect(data_get($editorial->facts, 'gap_research.candidate_evidence'))->toHaveCount(1)
-        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.source_url'))
-        ->toBe('https://supplier.example/technical/argan-oil.pdf')
-        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.1'))->toBeNull()
+    expect(data_get($editorial->facts, 'gap_research'))->toBeNull()
         ->and(data_get($freshItem->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
             ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
         ])

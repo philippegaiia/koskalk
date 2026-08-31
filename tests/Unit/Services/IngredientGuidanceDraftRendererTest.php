@@ -29,23 +29,26 @@ it('renders supported claims under deterministic guidance headings', function ()
         ->not->toContain('## Soapmaking');
 });
 
-it('rejects claims containing headings, newlines, or multiple sentences', function (): void {
+it('omits claims containing headings, newlines, or multiple sentences', function (): void {
     foreach ([
         '## Overview A claim.',
         "A claim with\nwrapped text.",
         'First sentence. Second sentence.',
     ] as $text) {
-        expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        $result = guidanceRenderer()->render(guidanceDraft([
             'overview' => [guidanceClaim([
                 'text' => $text,
                 'support_type' => 'fact',
                 'fact_paths' => ['current.canonical.display_name'],
             ])],
-        ]), guidanceContext()))->toThrow(RuntimeException::class);
+        ]), guidanceContext());
+
+        expect($result['info_markdown'])->not->toContain(trim($text))
+            ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
     }
 });
 
-it('requires evidence indexes to exist and match the claim type', function (): void {
+it('omits claims whose evidence indexes do not exist or do not match the claim type', function (): void {
     $missingIndex = guidanceClaim([
         'claim_type' => 'formulation_role',
         'support_type' => 'evidence',
@@ -57,15 +60,20 @@ it('requires evidence indexes to exist and match the claim type', function (): v
         'evidence_indexes' => [0],
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $missingResult = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$missingIndex],
-    ]), guidanceContext()))->toThrow(RuntimeException::class)
-        ->and(fn (): array => guidanceRenderer()->render(guidanceDraft([
-            'formulation_use' => [$mismatched],
-        ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+    $mismatchedResult = guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$mismatched],
+    ]), guidanceContext());
+
+    expect($missingResult['info_markdown'])->not->toContain('A material-specific formulation observation.')
+        ->and($missingResult['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.')
+        ->and($mismatchedResult['info_markdown'])->not->toContain('A material-specific formulation observation.')
+        ->and($mismatchedResult['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('allows only present deterministic facts for fact-supported claims', function (): void {
+it('omits fact-supported claims that cite a path outside the trusted catalogue', function (): void {
     $valid = guidanceClaim([
         'claim_type' => 'physical_form',
         'support_type' => 'fact',
@@ -77,13 +85,14 @@ it('allows only present deterministic facts for fact-supported claims', function
         'fact_paths' => ['untrusted.notes'],
     ]);
 
-    expect(guidanceRenderer()->render(guidanceDraft(['overview' => [$valid]]), guidanceContext()))
-        ->toHaveKey('info_markdown')
-        ->and(fn (): array => guidanceRenderer()->render(guidanceDraft(['overview' => [$invalid]]), guidanceContext()))
-        ->toThrow(RuntimeException::class);
+    $result = guidanceRenderer()->render(guidanceDraft(['overview' => [$valid, $invalid]]), guidanceContext());
+
+    expect($result['info_markdown'])->toContain('A material-specific formulation observation.')
+        ->and($result['info_markdown'])->not->toContain('untrusted')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('requires evidence for formulation-use claims and explicit evidence for usage percentages', function (): void {
+it('omits formulation-use claims without evidence and usage claims without explicit evidence', function (): void {
     $factFormulationClaim = guidanceClaim([
         'claim_type' => 'solubility',
         'support_type' => 'fact',
@@ -96,12 +105,15 @@ it('requires evidence for formulation-use claims and explicit evidence for usage
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $factResult = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$factFormulationClaim],
-    ]), guidanceContext()))->toThrow(RuntimeException::class)
-        ->and(fn (): array => guidanceRenderer()->render(guidanceDraft([
-            'formulation_use' => [$invalidUsage],
-        ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+    $usageResult = guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$invalidUsage],
+    ]), guidanceContext());
+
+    expect($factResult['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.')
+        ->and($usageResult['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
 it('keeps cosmetics and soapmaking usage claims in their respective sections', function (): void {
@@ -125,12 +137,13 @@ it('keeps cosmetics and soapmaking usage claims in their respective sections', f
         'soapmaking' => [$soapmaking],
     ]), guidanceContext())['info_markdown'])
         ->toContain('## Soapmaking')
-        ->and(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        ->and(guidanceRenderer()->render(guidanceDraft([
             'formulation_use' => [$soapmaking],
-        ]), guidanceContext()))->toThrow(RuntimeException::class);
+        ]), guidanceContext())['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('rejects usage prose whose percentage differs from the cited recommendation', function (): void {
+it('omits usage prose whose percentage differs from the cited recommendation', function (): void {
     $claim = guidanceClaim([
         'text' => 'A supplier recommends this product grade at 2–20% of the total formula.',
         'claim_type' => 'usage',
@@ -139,12 +152,15 @@ it('rejects usage prose whose percentage differs from the cited recommendation',
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$claim],
-    ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->not->toContain('2–20%')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('requires usage prose to preserve the evidence scope and percentage basis', function (): void {
+it('omits usage prose that drops the evidence scope or percentage basis', function (): void {
     $claim = guidanceClaim([
         'text' => 'A supplier recommends this material at 1–10%.',
         'claim_type' => 'usage',
@@ -153,12 +169,15 @@ it('requires usage prose to preserve the evidence scope and percentage basis', f
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$claim],
-    ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->not->toContain('1–10%')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('requires usage prose to state the cited application', function (): void {
+it('omits usage prose that drops the cited application', function (): void {
     $claim = guidanceClaim([
         'text' => 'A supplier recommends this product grade at 1–10% of the total formula.',
         'claim_type' => 'usage',
@@ -167,12 +186,15 @@ it('requires usage prose to state the cited application', function (): void {
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$claim],
-    ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->not->toContain('1–10%')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('requires usage prose to attribute the recommendation to the cited source kind', function (): void {
+it('omits usage prose that attributes the recommendation to the wrong source kind', function (): void {
     $claim = guidanceClaim([
         'text' => 'A manufacturer recommends this product grade at 1–10% of the total formula for cosmetics; the supplier does not.',
         'claim_type' => 'usage',
@@ -181,12 +203,15 @@ it('requires usage prose to attribute the recommendation to the cited source kin
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$claim],
-    ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->not->toContain('the supplier does not')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
-it('preserves the direction of one-sided usage recommendation bounds', function (): void {
+it('omits wrong-direction one-sided usage recommendation bounds and keeps the correct direction', function (): void {
     $context = guidanceContext();
     $context['guidance_evidence'][1]['recommended_max_percent'] = null;
     $minimumClaim = guidanceClaim([
@@ -197,9 +222,11 @@ it('preserves the direction of one-sided usage recommendation bounds', function 
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $omitted = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$minimumClaim],
-    ]), $context))->toThrow(RuntimeException::class);
+    ]), $context);
+    expect($omitted['info_markdown'])->not->toContain('up to 1%')
+        ->and($omitted['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 
     $validMinimumClaim = [
         ...$minimumClaim,
@@ -219,9 +246,11 @@ it('preserves the direction of one-sided usage recommendation bounds', function 
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $omittedMaximum = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$maximumClaim],
-    ]), $context))->toThrow(RuntimeException::class);
+    ]), $context);
+    expect($omittedMaximum['info_markdown'])->not->toContain('at least 10%')
+        ->and($omittedMaximum['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 
     $validMaximumClaim = [
         ...$maximumClaim,
@@ -232,7 +261,7 @@ it('preserves the direction of one-sided usage recommendation bounds', function 
     ]), $context)['info_markdown'])->toContain('up to 10%');
 });
 
-it('rejects a usage sentence that silently combines multiple recommendations', function (): void {
+it('omits a usage sentence that silently combines multiple recommendations', function (): void {
     $context = guidanceContext();
     $context['guidance_evidence'][] = [
         ...$context['guidance_evidence'][1],
@@ -247,9 +276,12 @@ it('rejects a usage sentence that silently combines multiple recommendations', f
         'usage_application' => 'cosmetics',
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$claim],
-    ]), $context))->toThrow(RuntimeException::class);
+    ]), $context);
+
+    expect($result['info_markdown'])->not->toContain('1–15%')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
 it('accepts trusted soap chemistry facts and omits an empty soapmaking section', function (): void {
@@ -277,13 +309,10 @@ it('accepts concise guidance below the former minimum and rejects guidance above
         'overview' => [guidanceClaim(['text' => 'A pressed kernel oil.'])],
     ]), guidanceContext());
 
-    $longText = trim(str_repeat('Material-specific evidence supports careful formulation. ', 35));
     $long = guidanceDraft([
-        'overview' => [guidanceClaim([
-            'text' => $longText,
-            'support_type' => 'fact',
-            'fact_paths' => ['current.canonical.display_name'],
-        ])],
+        'overview' => collect(range(1, 40))
+            ->map(fn (): array => guidanceClaim(['text' => 'A material-specific formulation observation.']))
+            ->all(),
     ]);
 
     expect($short['info_markdown'])->toContain('A pressed kernel oil.')
@@ -291,16 +320,19 @@ it('accepts concise guidance below the former minimum and rejects guidance above
         ->toThrow(RuntimeException::class);
 });
 
-it('rejects a solubility claim supported only by fatty-acid evidence', function (): void {
+it('omits a solubility claim supported only by fatty-acid evidence', function (): void {
     $claim = guidanceClaim([
         'claim_type' => 'solubility',
         'support_type' => 'evidence',
         'evidence_indexes' => [0],
     ]);
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [$claim],
-    ]), guidanceContext()))->toThrow(RuntimeException::class);
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->not->toContain('A material-specific formulation observation.')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
 it('rejects generic water claims and universal emulsifier advice from bounded experiments', function (): void {
@@ -328,20 +360,22 @@ it('rejects generic water claims and universal emulsifier advice from bounded ex
         ],
     ];
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    expect(guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [guidanceClaim([
             'text' => 'It is not soluble in water.',
             'claim_type' => 'formulation_role',
             'evidence_indexes' => [0],
         ])],
-    ]), $context))->toThrow(RuntimeException::class)
-        ->and(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    ]), $context)['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.')
+        ->and(guidanceRenderer()->render(guidanceDraft([
             'formulation_use' => [guidanceClaim([
                 'text' => 'It requires a universal emulsifier.',
                 'claim_type' => 'dispersion',
                 'evidence_indexes' => [1],
             ])],
-        ]), $context))->toThrow(RuntimeException::class)
+        ]), $context)['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.')
         ->and(guidanceRenderer()->render(guidanceDraft([
             'formulation_use' => [guidanceClaim([
                 'text' => 'A Pickering-emulsion experiment with this product grade observed dispersion under the tested conditions.',
@@ -352,7 +386,7 @@ it('rejects generic water claims and universal emulsifier advice from bounded ex
         ->toContain('under the tested conditions');
 });
 
-it('rejects claims when the matching research question remains unresolved', function (): void {
+it('does not veto evidence-backed claims when the matching research question remains unresolved', function (): void {
     $context = guidanceContext();
     $context['guidance_evidence'] = [[
         'claim_type' => 'solubility',
@@ -366,13 +400,31 @@ it('rejects claims when the matching research question remains unresolved', func
     ]];
     $context['guidance_unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
 
-    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+    $result = guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [guidanceClaim([
             'text' => 'The material is soluble in water.',
             'claim_type' => 'solubility',
             'evidence_indexes' => [0],
         ])],
-    ]), $context))->toThrow(RuntimeException::class);
+    ]), $context);
+
+    expect($result['info_markdown'])->toContain('soluble in water');
+});
+
+it('keeps fact-only claims grounded in trusted catalogue paths even when a research question overlaps', function (): void {
+    $context = guidanceContext();
+    $context['guidance_unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [guidanceClaim([
+            'text' => 'A pressed kernel oil from a single plant source.',
+            'claim_type' => 'origin',
+            'support_type' => 'fact',
+            'fact_paths' => ['proposal.display_name'],
+        ])],
+    ]), $context);
+
+    expect($result['info_markdown'])->toContain('pressed kernel oil');
 });
 
 it('does not block supported soapmaking guidance for unresolved soap declaration names', function (): void {

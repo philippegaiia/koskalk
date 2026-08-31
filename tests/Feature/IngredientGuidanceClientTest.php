@@ -109,7 +109,7 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
     });
 });
 
-it('rejects an unsupported guidance claim before returning authoring output', function (): void {
+it('omits an unsupported guidance claim before returning authoring output', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     Http::preventStrayRequests();
     Http::fake([
@@ -141,7 +141,7 @@ it('rejects an unsupported guidance claim before returning authoring output', fu
         ], 200, ['x-request-id' => 'req_guidance_invalid']),
     ]);
 
-    expect(fn (): mixed => app(IngredientGuidanceAuthoringClient::class)->author([
+    $response = app(IngredientGuidanceAuthoringClient::class)->author([
         'current' => ['canonical' => ['display_name' => 'Argan oil']],
         'guidance_evidence' => [[
             'claim_type' => 'formulation_role',
@@ -153,7 +153,10 @@ it('rejects an unsupported guidance claim before returning authoring output', fu
             'recommended_max_percent' => null,
             'percentage_basis' => 'not_applicable',
         ]],
-    ]))->toThrow(RuntimeException::class);
+    ]);
+
+    expect($response->guidance['info_markdown'])->not->toContain('A claim with no supporting evidence.')
+        ->and($response->guidance['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
 it('fails safely before sending when the structured output api key is missing', function (): void {

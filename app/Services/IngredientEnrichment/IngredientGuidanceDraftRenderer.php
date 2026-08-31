@@ -22,6 +22,7 @@ class IngredientGuidanceDraftRenderer
             'soapmaking' => (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
         ];
         $blocks = [];
+        $skippedClaims = 0;
 
         foreach ($sections as $section => $heading) {
             $claims = $draft[$section];
@@ -39,7 +40,14 @@ class IngredientGuidanceDraftRenderer
                     $this->invalid();
                 }
 
-                $texts[] = $this->validateClaim($claim, $section, $index, $context);
+                $text = $this->validateClaim($claim, $section, $index, $context);
+                if ($text === null) {
+                    $skippedClaims++;
+
+                    continue;
+                }
+
+                $texts[] = $text;
             }
 
             $blocks[] = '## '.$heading.($texts === [] ? '' : "\n\n".implode(' ', $texts));
@@ -51,9 +59,14 @@ class IngredientGuidanceDraftRenderer
             $this->invalid();
         }
 
+        $warnings = $this->stringList($draft['warnings']);
+        if ($skippedClaims > 0) {
+            $warnings[] = (string) __('ingredient_enrichment.warnings.guidance_claim_omitted');
+        }
+
         return [
             'info_markdown' => $markdown,
-            'warnings' => $this->stringList($draft['warnings']),
+            'warnings' => $warnings,
             'unresolved_questions' => $this->stringList($draft['unresolved_questions']),
         ];
     }
@@ -79,7 +92,7 @@ class IngredientGuidanceDraftRenderer
      * @param  array<string, mixed>  $claim
      * @param  array<string, mixed>  $context
      */
-    private function validateClaim(array $claim, string $section, int|string $index, array $context): string
+    private function validateClaim(array $claim, string $section, int|string $index, array $context): ?string
     {
         $expected = ['text', 'claim_type', 'support_type', 'evidence_indexes', 'fact_paths', 'usage_application'];
         if (array_diff($expected, array_keys($claim)) !== []
@@ -106,83 +119,91 @@ class IngredientGuidanceDraftRenderer
             || ! in_array($usageApplication, config('ingredient-enrichment.openai.guidance_research.allowed_usage_applications', []), true)
             || ! is_array($evidenceIndexes)
             || ! is_array($factPaths)) {
-            $this->invalid();
+            return null;
         }
 
         if ($claimType === 'usage') {
             if (($section === 'formulation_use' && $usageApplication !== 'cosmetics')
                 || ($section === 'soapmaking' && $usageApplication !== 'soapmaking')
                 || ! in_array($section, ['formulation_use', 'soapmaking'], true)) {
-                $this->invalid();
+                return null;
             }
         } elseif ($usageApplication !== 'not_applicable') {
-            $this->invalid();
+            return null;
         }
 
         if ($section === 'formulation_use' && $supportType !== 'evidence') {
-            $this->invalid();
+            return null;
         }
 
         if ($section === 'soapmaking' && $claimType !== 'soapmaking' && $claimType !== 'usage') {
-            $this->invalid();
+            return null;
         }
 
         if ($supportType === 'evidence') {
-            $this->validateEvidenceSupport($claim, $context);
-        } else {
-            $this->validateFactSupport($claim, $section, $context);
+            if (! $this->validateEvidenceSupport($claim, $context)) {
+                return null;
+            }
+        } elseif (! $this->validateFactSupport($claim, $section, $context)) {
+            return null;
         }
 
         if ($section === 'soapmaking'
             && $supportType === 'fact'
             && $claimType !== 'soapmaking') {
-            $this->invalid();
+            return null;
         }
 
         return $text;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */
-    private function validateEvidenceSupport(array $claim, array $context): void
+    private function validateEvidenceSupport(array $claim, array $context): bool
     {
         if ($claim['fact_paths'] !== [] || $claim['evidence_indexes'] === []) {
-            $this->invalid();
+            return false;
         }
 
         $evidence = is_array($context['guidance_evidence'] ?? null) ? $context['guidance_evidence'] : [];
         foreach ($claim['evidence_indexes'] as $index) {
             if (! is_int($index) || ! array_key_exists($index, $evidence) || ! is_array($evidence[$index])) {
-                $this->invalid();
+                return false;
             }
 
             $row = $evidence[$index];
             if (($row['claim_type'] ?? null) !== $claim['claim_type']) {
-                $this->invalid();
+                return false;
             }
 
-            $this->validateEvidenceBoundaries($claim, $row, $context);
+            if (! $this->validateEvidenceBoundaries($claim, $row, $context)) {
+                return false;
+            }
 
             if ($claim['claim_type'] === 'usage') {
                 if (($row['evidence_kind'] ?? null) !== 'formulation_recommendation'
                     || ($row['usage_application'] ?? null) !== $claim['usage_application']
                     || ($row['recommended_min_percent'] ?? null) === null && ($row['recommended_max_percent'] ?? null) === null
                     || ($row['percentage_basis'] ?? 'not_applicable') === 'not_applicable') {
-                    $this->invalid();
+                    return false;
                 }
 
                 if (count($claim['evidence_indexes']) !== 1) {
-                    $this->invalid();
+                    return false;
                 }
 
-                $this->validateUsageClaimText($claim, $row);
+                if (! $this->validateUsageClaimText($claim, $row)) {
+                    return false;
+                }
             } elseif (($row['usage_application'] ?? 'not_applicable') !== 'not_applicable') {
-                $this->invalid();
+                return false;
             }
         }
+
+        return true;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $evidence */
-    private function validateUsageClaimText(array $claim, array $evidence): void
+    private function validateUsageClaimText(array $claim, array $evidence): bool
     {
         $text = mb_strtolower((string) $claim['text']);
         $sourceLabel = match ($evidence['source_kind'] ?? null) {
@@ -198,12 +219,12 @@ class IngredientGuidanceDraftRenderer
             : '/(?:\b(?:a|the)\s+'.preg_quote($sourceLabel, '/').'\s+recommends\b'
                 .'|\brecommended\s+by\s+(?:a|the)\s+'.preg_quote($sourceLabel, '/').'\b)/u';
         if ($sourceAttributionPattern === null || preg_match($sourceAttributionPattern, $text) !== 1) {
-            $this->invalid();
+            return false;
         }
 
         if (($evidence['scope'] ?? null) === 'product_grade'
             && preg_match('/\b(?:product|specific|cited)\s+grade\b/u', $text) !== 1) {
-            $this->invalid();
+            return false;
         }
 
         $applicationPattern = match ($evidence['usage_application'] ?? null) {
@@ -212,7 +233,7 @@ class IngredientGuidanceDraftRenderer
             default => null,
         };
         if ($applicationPattern === null || preg_match($applicationPattern, $text) !== 1) {
-            $this->invalid();
+            return false;
         }
 
         $basisPattern = match ($evidence['percentage_basis'] ?? null) {
@@ -222,7 +243,7 @@ class IngredientGuidanceDraftRenderer
             default => null,
         };
         if ($basisPattern === null || preg_match($basisPattern, $text) !== 1) {
-            $this->invalid();
+            return false;
         }
 
         $minimum = $evidence['recommended_min_percent'] ?? null;
@@ -232,31 +253,33 @@ class IngredientGuidanceDraftRenderer
                 .'\s*(?:%\s*)?(?:-|–|—|to)\s*'
                 .$this->percentagePattern($maximum).'\s*(?:%|percent)(?![\p{L}\p{N}])/u';
             if (preg_match($rangePattern, $text) !== 1) {
-                $this->invalid();
+                return false;
             }
 
-            return;
+            return true;
         }
 
         if (is_string($minimum)) {
             $minimumPattern = '/\b(?:at\s+least|minimum(?:\s+of)?|from)\s+'
                 .$this->percentagePattern($minimum).'\s*(?:%|percent)(?![\p{L}\p{N}])/u';
             if (preg_match($minimumPattern, $text) !== 1) {
-                $this->invalid();
+                return false;
             }
 
-            return;
+            return true;
         }
 
         if (! is_string($maximum)) {
-            $this->invalid();
+            return false;
         }
 
         $maximumPattern = '/\b(?:up\s+to|at\s+most|maximum(?:\s+of)?)\s+'
             .$this->percentagePattern($maximum).'\s*(?:%|percent)(?![\p{L}\p{N}])/u';
         if (preg_match($maximumPattern, $text) !== 1) {
-            $this->invalid();
+            return false;
         }
+
+        return true;
     }
 
     private function percentagePattern(string $value): string
@@ -278,27 +301,25 @@ class IngredientGuidanceDraftRenderer
      * @param  array<string, mixed>  $evidence
      * @param  array<string, mixed>  $context
      */
-    private function validateEvidenceBoundaries(array $claim, array $evidence, array $context): void
+    private function validateEvidenceBoundaries(array $claim, array $evidence, array $context): bool
     {
         $text = mb_strtolower((string) ($claim['text'] ?? ''));
         $claimType = (string) ($claim['claim_type'] ?? '');
 
         if ($claimType !== 'solubility' && $this->isGenericWaterSolubilityClaim($text)) {
-            $this->invalid();
-        }
-
-        if ($this->hasUnresolvedQuestionForClaim($claimType, $context['guidance_unresolved_questions'] ?? [])) {
-            $this->invalid();
+            return false;
         }
 
         if (($evidence['evidence_kind'] ?? null) === 'experimental_observation'
             && ! $this->hasBoundedEvidenceQualifier($text)) {
-            $this->invalid();
+            return false;
         }
 
         if ($this->isUniversalEmulsifierClaim($text)) {
-            $this->invalid();
+            return false;
         }
+
+        return true;
     }
 
     private function isGenericWaterSolubilityClaim(string $text): bool
@@ -320,55 +341,22 @@ class IngredientGuidanceDraftRenderer
         return preg_match('/\b(?:reported|observed|experiment(?:al)?|study|tested|under\b|product[-\s]?grade|specific\s+grade|cited)\b/u', $text) === 1;
     }
 
-    private function hasUnresolvedQuestionForClaim(string $claimType, mixed $questions): bool
-    {
-        if (! is_array($questions) || $questions === []) {
-            return false;
-        }
-
-        $keywords = match ($claimType) {
-            'dispersion' => ['dispers', 'emulsion', 'emulsifier', 'pickering'],
-            'processing' => ['process', 'phase', 'temperat', 'heat', 'incorporat'],
-            'solubility' => ['solub', 'water', 'aqueous', 'dissolv'],
-            'soapmaking' => ['soap', 'saponif', 'fatty acid', 'bar'],
-            'usage' => ['use level', 'percentage', 'range', 'application'],
-            default => [],
-        };
-
-        if ($keywords === []) {
-            return false;
-        }
-
-        foreach ($questions as $question) {
-            if (! is_string($question)) {
-                continue;
-            }
-
-            $normalized = mb_strtolower($question);
-            foreach ($keywords as $keyword) {
-                if (str_contains($normalized, $keyword)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */
-    private function validateFactSupport(array $claim, string $section, array $context): void
+    private function validateFactSupport(array $claim, string $section, array $context): bool
     {
         if ($claim['evidence_indexes'] !== [] || $claim['fact_paths'] === []) {
-            $this->invalid();
+            return false;
         }
 
         foreach ($claim['fact_paths'] as $path) {
             if (! is_string($path)
                 || ! $this->isAllowedFactPath($path, $section)
                 || ! Arr::has($context, $path)) {
-                $this->invalid();
+                return false;
             }
         }
+
+        return true;
     }
 
     private function isAllowedFactPath(string $path, string $section): bool

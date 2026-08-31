@@ -48,14 +48,14 @@
 - Review: every path returned by `git status --short`
 - Test: existing inventory-focused Pest tests
 
-- [ ] **Step 1: Commit this plan separately**
+- [x] **Step 1: Commit this plan separately**
 
 ```bash
 git add docs/superpowers/plans/2026-08-31-production-bench-inventory-ux-completion.md
 git commit -m "docs: plan inventory ux completion"
 ```
 
-- [ ] **Step 2: Inspect every pre-existing dirty change**
+- [x] **Step 2: Inspect every pre-existing dirty change**
 
 ```bash
 git status --short
@@ -66,7 +66,7 @@ git diff
 
 Expected: the remaining changes are the 18 inventory counter-review files already present before this completion plan. Stop if any unrelated user change appears.
 
-- [ ] **Step 3: Verify the existing counter-review baseline**
+- [x] **Step 3: Verify the existing counter-review baseline**
 
 ```bash
 php artisan test --compact \
@@ -80,14 +80,14 @@ php artisan test --compact \
 
 Expected: all baseline tests PASS before adding new behavior.
 
-- [ ] **Step 4: Commit the existing counter-review fixes without altering them**
+- [x] **Step 4: Commit the existing counter-review fixes without altering them**
 
 ```bash
 git add app/Actions/Inventory/SaveMaterialBuffer.php app/Livewire/ProductionBench/InventoryIndex.php app/Livewire/ProductionBench/InventoryMaterialDetail.php app/Services/Inventory/MaterialActivityService.php app/Services/Inventory/WorkspaceMaterialInventoryQuery.php app/Services/Inventory/WorkspaceMaterialSettings.php database/seeders/data/interface-translations.json docs/superpowers/plans/2026-08-30-production-bench-inventory-ux.md lang/en/production_bench.php resources/views/livewire/production-bench/inventory-index.blade.php resources/views/livewire/production-bench/inventory-material-detail.blade.php resources/views/production-bench/inventory-stock.blade.php resources/views/production-bench/inventory.blade.php tests/Feature/MaterialActivityServiceTest.php tests/Feature/ProductionBenchInventoryMaterialDetailTest.php tests/Feature/ProductionBenchPagesTest.php tests/Feature/WorkspaceMaterialInventoryQueryTest.php tests/Feature/WorkspaceMaterialSettingTest.php
 git commit -m "fix: address inventory ux review findings"
 ```
 
-- [ ] **Step 5: Confirm a clean implementation baseline**
+- [x] **Step 5: Confirm a clean implementation baseline**
 
 ```bash
 git status --short
@@ -107,7 +107,7 @@ Expected: no output.
 - Test: `tests/Feature/ProductionBenchPagesTest.php`
 - Test: `tests/Feature/ProductionBenchInventoryMaterialDetailTest.php`
 
-- [ ] **Step 1: Add a failing Stock by material navigation test**
+- [x] **Step 1: Add a failing Stock by material navigation test**
 
 Add a test that creates a tracked ingredient and packaging item, renders `InventoryIndex` in `materials` mode, and asserts both named detail URLs are present in the rendered HTML. Make an authenticated GET request to each URL and assert the correct material name is rendered.
 
@@ -136,7 +136,7 @@ it('links every material identity to its accessible detail page', function (): v
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the red state**
+- [x] **Step 2: Run the test and verify the red state**
 
 Run:
 
@@ -146,7 +146,7 @@ php artisan test --compact tests/Feature/ProductionBenchPagesTest.php --filter='
 
 Expected: FAIL because the new explicit affordance copy is absent.
 
-- [ ] **Step 3: Add `detail_url` to every material presentation row**
+- [x] **Step 3: Add `detail_url` to every material presentation row**
 
 In `formatMaterialPage()`, derive the named route from the already-hydrated subject and attach it to the row. Keep route construction out of Blade.
 
@@ -156,7 +156,7 @@ $row['detail_url'] = $row['subject'] instanceof Ingredient
     : route('production-bench.inventory.material.packaging', $row['subject']);
 ```
 
-- [ ] **Step 4: Turn the complete identity cell into the link**
+- [x] **Step 4: Turn the complete identity cell into the link**
 
 Replace the name-only anchor with one block anchor containing name, code, unit, badges, and a trailing arrow. Use existing accent, focus, danger, and warning tokens. Do not make `<tr>` itself a link and do not add a ninth table column.
 
@@ -184,11 +184,11 @@ Replace the name-only anchor with one block anchor containing name, code, unit, 
 </a>
 ```
 
-- [ ] **Step 5: Add translation keys**
+- [x] **Step 5: Add translation keys**
 
 Add `inventory.open_material_detail` with English source text `Open material inventory detail` to both translation sources.
 
-- [ ] **Step 6: Run the navigation tests**
+- [x] **Step 6: Run the navigation tests**
 
 Run:
 
@@ -198,7 +198,7 @@ php artisan test --compact tests/Feature/ProductionBenchPagesTest.php tests/Feat
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit the navigation slice**
+- [x] **Step 7: Commit the navigation slice**
 
 ```bash
 git add app/Livewire/ProductionBench/InventoryIndex.php resources/views/livewire/production-bench/inventory-index.blade.php lang/en/production_bench.php database/seeders/data/interface-translations.json tests/Feature/ProductionBenchPagesTest.php tests/Feature/ProductionBenchInventoryMaterialDetailTest.php
@@ -214,7 +214,7 @@ git commit -m "fix: make inventory materials reliably navigable"
 - Modify: `resources/views/livewire/production-bench/inventory-index.blade.php`
 - Test: `tests/Feature/ProductionBenchPagesTest.php`
 
-- [ ] **Step 1: Write a failing material-selection test**
+- [x] **Step 1: Write a failing material-selection test**
 
 Create two ingredients with lots. Call a new `selectLotMaterial()` method using `ingredient:<public_id>`, assert the URL-bound type and ID properties, and assert only the selected ingredient's lot remains.
 
@@ -241,7 +241,7 @@ it('selects a material explicitly in the lot register and links it to detail', f
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the red state**
+- [x] **Step 2: Run the test and verify the red state**
 
 Run:
 
@@ -251,7 +251,7 @@ php artisan test --compact tests/Feature/ProductionBenchPagesTest.php --filter='
 
 Expected: FAIL because `selectLotMaterial()` does not exist and the lot material name is plain text.
 
-- [ ] **Step 3: Add bounded material search methods**
+- [x] **Step 3: Add bounded material search methods**
 
 Add a 30-result server search that returns compound option IDs. Scope packaging to the workspace. Limit ingredients to tracked workspace materials by using `WorkspaceMaterialInventoryQuery` rather than exposing the global catalogue indiscriminately.
 
@@ -316,7 +316,7 @@ public function materialOptions(Workspace $workspace, string $search = '', int $
 
 `resolveLotMaterial()` must return only an ingredient tracked by the current workspace or a packaging item belonging to it. A forged foreign public ID must result in 404 and must not change the filter.
 
-- [ ] **Step 4: Add a searchable Filament `Select` to the Lot register filter schema**
+- [x] **Step 4: Add a searchable Filament `Select` to the Lot register filter schema**
 
 Use a non-native searchable select with `getSearchResultsUsing()`, `getOptionLabelUsing()`, and `afterStateUpdated()` calling `selectLotMaterial()`. Keep `lotMaterial` and `lotMaterialType` as the durable URL state.
 
@@ -331,15 +331,15 @@ Select::make('lotMaterialSelection')
     ->afterStateUpdated(fn (?string $state) => $this->selectLotMaterial($state));
 ```
 
-- [ ] **Step 5: Link each Lot register material identity**
+- [x] **Step 5: Link each Lot register material identity**
 
 Build the detail URL from `$lot->ingredient` or `$lot->packagingItem` and wrap only the subject name in a named-route anchor. Preserve receipt links and Release/Quarantine buttons.
 
-- [ ] **Step 6: Add hostile and cross-workspace selection tests**
+- [x] **Step 6: Add hostile and cross-workspace selection tests**
 
 Test a packaging public ID from another workspace and an invalid compound key. Assert 404 or validation failure and unchanged visible results.
 
-- [ ] **Step 7: Run the Lot register tests**
+- [x] **Step 7: Run the Lot register tests**
 
 Run:
 
@@ -349,7 +349,7 @@ php artisan test --compact tests/Feature/ProductionBenchPagesTest.php
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit the Lot register slice**
+- [x] **Step 8: Commit the Lot register slice**
 
 ```bash
 git add app/Livewire/ProductionBench/InventoryIndex.php app/Services/Inventory/WorkspaceMaterialInventoryQuery.php resources/views/livewire/production-bench/inventory-index.blade.php tests/Feature/ProductionBenchPagesTest.php
@@ -369,7 +369,7 @@ git commit -m "feat: select and open materials from lot register"
 - Modify: `database/seeders/data/interface-translations.json`
 - Test: `tests/Feature/ProductionBenchInventoryMaterialDetailTest.php`
 
-- [ ] **Step 1: Write the failing query-service tests**
+- [x] **Step 1: Write the failing query-service tests**
 
 Cover active and inactive listings for the selected subject, ingredient and packaging subjects, active-first ordering, supplier-name ordering, pagination, and exclusion of another workspace's listing.
 
@@ -390,7 +390,7 @@ it('paginates only supplier listings for the workspace material', function (): v
 });
 ```
 
-- [ ] **Step 2: Run the service test and verify the red state**
+- [x] **Step 2: Run the service test and verify the red state**
 
 Run:
 
@@ -400,7 +400,7 @@ php artisan test --compact tests/Feature/WorkspaceMaterialSupplierListingsQueryT
 
 Expected: FAIL because the query service does not exist.
 
-- [ ] **Step 3: Implement the focused query service**
+- [x] **Step 3: Implement the focused query service**
 
 ```php
 final class WorkspaceMaterialSupplierListingsQuery
@@ -432,15 +432,15 @@ final class WorkspaceMaterialSupplierListingsQuery
 }
 ```
 
-- [ ] **Step 4: Write the failing detail-page test**
+- [x] **Step 4: Write the failing detail-page test**
 
 Use a listing-only tracked ingredient with no stock lot. Assert its supplier name, SKU, supplier item name, purchase format, active/inactive state, and supplier-detail URL are visible. Assert a foreign-workspace listing is absent.
 
-- [ ] **Step 5: Wire the paginator into `InventoryMaterialDetail`**
+- [x] **Step 5: Wire the paginator into `InventoryMaterialDetail`**
 
 Inject the new query service and `SupplierListingPricePresentation`. Transform each row to `{listing, price}` using the established Purchasing presentation service. Use a separate `supplierListingsPerPage` allow-listed to `[10, 25, 50]` and page name `supplier-listings`.
 
-- [ ] **Step 6: Render a separate Supplier listings section**
+- [x] **Step 6: Render a separate Supplier listings section**
 
 Place it after Open lots and before Period activity. Columns:
 
@@ -452,11 +452,11 @@ Place it after Open lots and before Period activity. Columns:
 
 The empty state must say that no purchasing listings are configured and must not imply that stock is empty.
 
-- [ ] **Step 7: Add translation keys**
+- [x] **Step 7: Add translation keys**
 
 Add `inventory.related_supplier_listings`, `inventory.related_supplier_listings_help`, and `inventory.no_supplier_listings` to both translation sources.
 
-- [ ] **Step 8: Run supplier-listing and detail tests**
+- [x] **Step 8: Run supplier-listing and detail tests**
 
 Run:
 
@@ -466,7 +466,7 @@ php artisan test --compact tests/Feature/WorkspaceMaterialSupplierListingsQueryT
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit the supplier-listing slice**
+- [x] **Step 9: Commit the supplier-listing slice**
 
 ```bash
 git add app/Services/Inventory/WorkspaceMaterialSupplierListingsQuery.php app/Livewire/ProductionBench/InventoryMaterialDetail.php resources/views/livewire/production-bench/inventory-material-detail.blade.php lang/en/production_bench.php database/seeders/data/interface-translations.json tests/Feature/WorkspaceMaterialSupplierListingsQueryTest.php tests/Feature/ProductionBenchInventoryMaterialDetailTest.php
@@ -481,7 +481,7 @@ git commit -m "feat: show supplier listings on material inventory detail"
 - Modify: `app/Services/Inventory/MaterialActivityService.php`
 - Test: `tests/Feature/MaterialActivityServiceTest.php`
 
-- [ ] **Step 1: Write a failing query-shape regression test**
+- [x] **Step 1: Write a failing query-shape regression test**
 
 Create movements with positive and negative deltas for multiple movement types. Listen to database queries during `forPeriod()`. Assert totals remain exact and no query selects every raw `type, quantity_delta` row without aggregation.
 
@@ -503,7 +503,7 @@ it('aggregates period totals in bounded database groups', function (): void {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the red state**
+- [x] **Step 2: Run the test and verify the red state**
 
 Run:
 
@@ -513,7 +513,7 @@ php artisan test --compact tests/Feature/MaterialActivityServiceTest.php --filte
 
 Expected: FAIL because `groupTotals()` currently calls `get(['type', 'quantity_delta'])` for every movement.
 
-- [ ] **Step 3: Replace lot ID arrays with a reusable subquery**
+- [x] **Step 3: Replace lot ID arrays with a reusable subquery**
 
 Return a query selecting `stock_lots.id` and pass it directly to `whereIn()`. Do not call `pluck()`.
 
@@ -533,7 +533,7 @@ private function lotIdQuery(Workspace $workspace, Ingredient|PackagingItem $subj
 
 Use this subquery in `physicalAt()`, `movementQuery()`, `groupTotals()`, and `openLots()`.
 
-- [ ] **Step 4: Aggregate by movement type and sign in SQL**
+- [x] **Step 4: Aggregate by movement type and sign in SQL**
 
 Group by `type` and a portable `CASE` sign bucket so corrections with the same type but opposite signs remain classified correctly. The result set is bounded to at most twice the enum case count.
 
@@ -562,11 +562,11 @@ DB::table('stock_movements')
 
 Pass the subject or the lot-ID subquery into the helpers rather than materializing IDs.
 
-- [ ] **Step 5: Add a high-cardinality correctness test**
+- [x] **Step 5: Add a high-cardinality correctness test**
 
 Create more than one activity page and enough lots to expose accidental `pluck()` or non-paginated model hydration. Assert the activity paginator contains only the configured page size while reconciliation covers all movements.
 
-- [ ] **Step 6: Run the service and detail tests**
+- [x] **Step 6: Run the service and detail tests**
 
 Run:
 
@@ -576,7 +576,7 @@ php artisan test --compact tests/Feature/MaterialActivityServiceTest.php tests/F
 
 Expected: PASS on SQLite. The generated query must also remain valid PostgreSQL SQL.
 
-- [ ] **Step 7: Commit the activity slice**
+- [x] **Step 7: Commit the activity slice**
 
 ```bash
 git add app/Services/Inventory/MaterialActivityService.php tests/Feature/MaterialActivityServiceTest.php tests/Feature/ProductionBenchInventoryMaterialDetailTest.php

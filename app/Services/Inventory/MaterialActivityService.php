@@ -28,6 +28,14 @@ class MaterialActivityService
      */
     private const int OpenLotLimit = 10;
 
+    /**
+     * Splits a movement type into its inbound and outbound halves in SQL.
+     *
+     * A bare CASE rather than SIGN(), which SQLite only gained in 3.36 and the
+     * deployment cannot be assumed to have.
+     */
+    private const string SignBucket = 'CASE WHEN quantity_delta < 0 THEN 1 ELSE 0 END';
+
     public function __construct(private readonly StockPositionService $positions) {}
 
     /**
@@ -53,7 +61,7 @@ class MaterialActivityService
         CarbonImmutable $from,
         CarbonImmutable $to,
     ): array {
-        $lotIds = $this->lotIds($workspace, $subject);
+        $lotIds = $this->lotIdQuery($workspace, $subject);
         $openingPhysical = $this->physicalAt($workspace, $lotIds, '<', $from);
         $closingPhysical = $this->physicalAt($workspace, $lotIds, '<=', $to);
         $totals = $this->groupTotals($workspace, $lotIds, $from, $to);
@@ -91,9 +99,7 @@ class MaterialActivityService
         int $perPage = 25,
         string $pageName = 'activity',
     ): LengthAwarePaginator {
-        $lotIds = $this->lotIds($workspace, $subject);
-
-        $page = $this->movementQuery($workspace, $lotIds, $from, $to)
+        $page = $this->movementQuery($workspace, $this->lotIdQuery($workspace, $subject), $from, $to)
             ->paginate(max(1, $perPage), ['*'], $pageName);
 
         $page->getCollection()->loadMorph('source', [
@@ -127,10 +133,8 @@ class MaterialActivityService
      */
     public function openLots(Workspace $workspace, Ingredient|PackagingItem $subject): Collection
     {
-        $lotIds = $this->lotIds($workspace, $subject);
-
         return StockLot::query()
-            ->whereIn('id', $lotIds)
+            ->whereIn('id', $this->lotIdQuery($workspace, $subject))
             ->with([
                 'ingredient.translations',
                 'packagingItem',
@@ -155,31 +159,36 @@ class MaterialActivityService
             ->get();
     }
 
-    /** @param  list<int>  $lotIds */
-    private function physicalAt(Workspace $workspace, array $lotIds, string $operator, CarbonImmutable $at): string
+    /** @param  Builder<StockLot>  $lotIds */
+    private function physicalAt(Workspace $workspace, Builder $lotIds, string $operator, CarbonImmutable $at): string
     {
-        if ($lotIds === []) {
-            return self::Zero;
-        }
-
         $value = DB::table('stock_movements')
             ->where('workspace_id', $workspace->id)
             ->whereIn('stock_lot_id', $lotIds)
             ->where('occurred_at', $operator, $at)
             ->sum('quantity_delta');
 
-        return bcadd((string) $value, '0', 9);
+        return $this->decimalFromSql($value);
     }
 
     /**
-     * Sums every period movement into its display group. Only the type and the
-     * delta are selected, so the reconciliation stays exact without hydrating a
-     * model per movement.
+     * Sums a period's movements into their display groups inside the database.
      *
-     * @param  list<int>  $lotIds
+     * Grouped by type and by sign rather than by the display group, so the
+     * statement does not restate groupFor()'s classification and cannot drift
+     * away from it. The sign bucket matters because a correction type can carry
+     * both directions: a stock count of -5 and +5 lands in `adjustments` twice
+     * and must net to zero, while a production consumption reversal is a
+     * positive movement that belongs to `other_inbound`, not to
+     * `production_consumed`. Grouping by type alone would merge those.
+     *
+     * The result set is therefore bounded by twice the movement-type count no
+     * matter how long the material's history is.
+     *
+     * @param  Builder<StockLot>  $lotIds
      * @return array{received: string, production_consumed: string, other_inbound: string, other_outbound: string, adjustments: string}
      */
-    private function groupTotals(Workspace $workspace, array $lotIds, CarbonImmutable $from, CarbonImmutable $to): array
+    private function groupTotals(Workspace $workspace, Builder $lotIds, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $totals = [
             'received' => self::Zero,
@@ -189,29 +198,34 @@ class MaterialActivityService
             'adjustments' => self::Zero,
         ];
 
-        if ($lotIds === []) {
-            return $totals;
-        }
-
         DB::table('stock_movements')
             ->where('workspace_id', $workspace->id)
             ->whereIn('stock_lot_id', $lotIds)
             ->whereBetween('occurred_at', [$from, $to])
-            ->get(['type', 'quantity_delta'])
+            ->selectRaw('type, '.self::SignBucket.' AS is_negative, SUM(quantity_delta) AS total')
+            // The bucket expression is repeated rather than grouped by the
+            // alias: alias resolution in GROUP BY is not portable.
+            ->groupByRaw('type, '.self::SignBucket)
+            ->get()
             ->each(function (object $row) use (&$totals): void {
-                $delta = bcadd((string) $row->quantity_delta, '0', 9);
-                $group = $this->groupFor($row->type, $delta);
+                $group = $this->groupForSign($row->type, (int) $row->is_negative === 1);
+                $total = $this->decimalFromSql($row->total);
 
+                // Each row is sign-homogeneous, so the outbound groups hold a
+                // negative total and are reported as a positive magnitude.
                 $totals[$group] = in_array($group, ['production_consumed', 'other_outbound'], true)
-                    ? bcadd($totals[$group], bccomp($delta, '0', 9) < 0 ? bcmul($delta, '-1', 9) : '0', 9)
-                    : bcadd($totals[$group], $delta, 9);
+                    ? bcadd($totals[$group], bcmul($total, '-1', 9), 9)
+                    : bcadd($totals[$group], $total, 9);
             });
 
         return $totals;
     }
 
-    /** @param  list<int>  $lotIds  @return Builder<StockMovement> */
-    private function movementQuery(Workspace $workspace, array $lotIds, CarbonImmutable $from, CarbonImmutable $to): Builder
+    /**
+     * @param  Builder<StockLot>  $lotIds
+     * @return Builder<StockMovement>
+     */
+    private function movementQuery(Workspace $workspace, Builder $lotIds, CarbonImmutable $from, CarbonImmutable $to): Builder
     {
         return StockMovement::query()
             ->where('workspace_id', $workspace->id)
@@ -226,26 +240,43 @@ class MaterialActivityService
             ->orderByDesc('id');
     }
 
-    /** @param  list<int>  $lotIds */
-    private function lotIds(Workspace $workspace, Ingredient|PackagingItem $subject): array
+    /**
+     * The subject's lots as a subquery rather than as an array of IDs.
+     *
+     * Materialising the IDs meant reading every lot of a long-lived material
+     * into PHP before a single movement could be aggregated, and each caller
+     * then shipped the whole list back as bindings. Handing the query straight
+     * to `whereIn()` keeps the lot resolution inside the database.
+     *
+     * @return Builder<StockLot>
+     */
+    private function lotIdQuery(Workspace $workspace, Ingredient|PackagingItem $subject): Builder
     {
         return StockLot::query()
+            ->select('stock_lots.id')
             ->where('workspace_id', $workspace->id)
             ->when(
                 $subject instanceof Ingredient,
                 fn (Builder $query): Builder => $query->where('ingredient_id', $subject->id),
                 fn (Builder $query): Builder => $query->where('packaging_item_id', $subject->id),
-            )
-            ->pluck('id')
-            ->map(fn (mixed $id): int => (int) $id)
-            ->all();
+            );
     }
 
     private function groupFor(StockMovementType|string|null $type, string $delta): string
     {
+        return $this->groupForSign($type, bccomp($delta, '0', 9) < 0);
+    }
+
+    /**
+     * The single definition of the display grouping, shared by the paginated
+     * rows (which know an exact delta) and by the SQL aggregate (which only
+     * knows the row's sign).
+     */
+    private function groupForSign(StockMovementType|string|null $type, bool $isNegative): string
+    {
         $type = $type instanceof StockMovementType ? $type : StockMovementType::tryFrom((string) $type);
 
-        if ($type === StockMovementType::ProductionConsumption && bccomp($delta, '0', 9) < 0) {
+        if ($type === StockMovementType::ProductionConsumption && $isNegative) {
             return 'production_consumed';
         }
 
@@ -257,6 +288,25 @@ class MaterialActivityService
             return 'adjustments';
         }
 
-        return bccomp($delta, '0', 9) >= 0 ? 'other_inbound' : 'other_outbound';
+        return $isNegative ? 'other_outbound' : 'other_inbound';
+    }
+
+    /**
+     * Brings a SQL aggregate back to the column's fixed scale.
+     *
+     * PostgreSQL returns `numeric` as an exact decimal string and is used
+     * as-is. SQLite has no decimal type — the column is NUMERIC-affine, so
+     * SUM() yields a float whose string cast is scientific notation ("3.0E-9")
+     * that BCMath rejects with a ValueError, and which drops the fraction
+     * entirely once the total grows ("90000000"). Formatting at the stored
+     * scale before BCMath sees it keeps the value well-formed.
+     */
+    private function decimalFromSql(mixed $value): string
+    {
+        // bcadd also folds a negative zero, which sprintf would keep, back to
+        // a plain zero.
+        return is_string($value)
+            ? bcadd($value, '0', 9)
+            : bcadd(sprintf('%.9F', (float) $value), '0', 9);
     }
 }

@@ -11,6 +11,8 @@ use App\Services\Inventory\MaterialActivityService;
 use App\Services\ProductionBenchAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -195,6 +197,150 @@ it('keeps zero-balance lots that still carry an active reservation open', functi
 
     expect(app(MaterialActivityService::class)->openLots($workspace, $ingredient)->pluck('id')->all())
         ->toBe([$reserved->id, $inStock->id]);
+});
+
+it('aggregates period totals in bounded database groups', function (): void {
+    $workspace = productionBenchWorkspaceForActivity();
+    $ingredient = Ingredient::factory()->create();
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+
+    createActivityMovement($workspace, $lot, StockMovementType::OpeningBalance, '1000', '2025-12-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::PurchaseReceipt, '500', '2026-03-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::ReceiptReversal, '-50', '2026-04-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::ProductionConsumption, '-125.5', '2026-05-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::ProductionCorrection, '25.5', '2026-06-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::Damaged, '-25', '2026-07-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::Damaged, '10', '2026-08-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::StockCountAdjustment, '3', '2026-09-01 08:00:00');
+
+    // The query log rather than DB::listen(): a listener has to be detached
+    // again, and unsetEventDispatcher() leaves the shared connection without a
+    // dispatcher for RefreshDatabase's teardown to restore.
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $summary = app(MaterialActivityService::class)->forPeriod(
+        $workspace,
+        $ingredient,
+        CarbonImmutable::parse('2026-01-01')->startOfDay(),
+        CarbonImmutable::parse('2026-12-31')->endOfDay(),
+    );
+
+    $queries = collect(DB::getQueryLog())
+        ->map(fn (array $query): string => Str::lower($query['query']));
+
+    DB::flushQueryLog();
+
+    expect($summary['received'])->toBe('450.000000000')
+        ->and($summary['production_consumed'])->toBe('125.500000000')
+        ->and($summary['other_outbound'])->toBe('25.000000000')
+        ->and($summary['other_inbound'])->toBe('10.000000000')
+        ->and($summary['adjustments'])->toBe('28.500000000')
+        ->and($summary['net_change'])->toBe('338.000000000')
+        ->and($summary['reconciliation_delta'])->toBe('0.000000000')
+        // The reconciliation must be produced by an aggregate, not by pulling
+        // every movement row into PHP.
+        ->and($queries->contains(fn (string $sql): bool => str_contains($sql, 'group by')
+            && str_contains($sql, 'quantity_delta')))->toBeTrue();
+});
+
+it('keeps opposite-signed movements of one type in their own groups', function (): void {
+    $workspace = productionBenchWorkspaceForActivity();
+    $ingredient = Ingredient::factory()->create();
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+
+    // Same type, opposite signs: a sign-blind aggregate would net these to zero
+    // and drop the outbound side of the reconciliation. The opening receipt
+    // only exists to keep the period non-empty.
+    createActivityMovement($workspace, $lot, StockMovementType::PurchaseReceipt, '100', '2026-01-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::Damaged, '-30', '2026-02-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::Damaged, '30', '2026-03-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::StockCountAdjustment, '-5', '2026-04-01 08:00:00');
+    createActivityMovement($workspace, $lot, StockMovementType::StockCountAdjustment, '5', '2026-05-01 08:00:00');
+
+    $summary = app(MaterialActivityService::class)->forPeriod(
+        $workspace,
+        $ingredient,
+        CarbonImmutable::parse('2026-01-01')->startOfDay(),
+        CarbonImmutable::parse('2026-12-31')->endOfDay(),
+    );
+
+    expect($summary['other_outbound'])->toBe('30.000000000')
+        ->and($summary['other_inbound'])->toBe('30.000000000')
+        ->and($summary['adjustments'])->toBe('0.000000000')
+        ->and($summary['reconciliation_delta'])->toBe('0.000000000');
+});
+
+it('survives a period total that sqlite renders in scientific notation', function (): void {
+    $workspace = productionBenchWorkspaceForActivity();
+    $ingredient = Ingredient::factory()->create();
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+
+    // SQLite has no decimal type, so SUM() returns a float. PHP renders floats
+    // below 1e-4 in scientific notation ("3.0E-9") and BCMath rejects that
+    // outright with a ValueError. The service has to normalise before summing.
+    foreach (['0.000000001', '0.000000002'] as $n => $delta) {
+        createActivityMovement($workspace, $lot, StockMovementType::PurchaseReceipt, $delta, '2026-0'.($n + 1).'-01 08:00:00');
+    }
+
+    $summary = app(MaterialActivityService::class)->forPeriod(
+        $workspace,
+        $ingredient,
+        CarbonImmutable::parse('2026-01-01')->startOfDay(),
+        CarbonImmutable::parse('2026-12-31')->endOfDay(),
+    );
+
+    expect($summary['received'])->toBe('0.000000003')
+        ->and($summary['reconciliation_delta'])->toBe('0.000000000');
+});
+
+it('reconciles a high-cardinality history from bounded groups', function (): void {
+    $workspace = productionBenchWorkspaceForActivity();
+    $ingredient = Ingredient::factory()->create();
+    $lots = StockLot::factory()->count(5)->for($workspace)->for($ingredient)->released()->create();
+
+    $expectedNetChange = '0.000000000';
+    $expectedReceived = '0.000000000';
+
+    foreach ($lots as $index => $lot) {
+        foreach (range(1, 24) as $n) {
+            $delta = (string) (($index + 1) * $n);
+            $isConsumption = $n % 3 === 0;
+
+            createActivityMovement(
+                $workspace,
+                $lot,
+                $isConsumption ? StockMovementType::ProductionConsumption : StockMovementType::PurchaseReceipt,
+                $isConsumption ? '-'.$delta : $delta,
+                sprintf('2026-%02d-01 08:00:00', (($n - 1) % 12) + 1),
+            );
+
+            $expectedNetChange = $isConsumption
+                ? bcsub($expectedNetChange, $delta, 9)
+                : bcadd($expectedNetChange, $delta, 9);
+            $expectedReceived = $isConsumption
+                ? $expectedReceived
+                : bcadd($expectedReceived, $delta, 9);
+        }
+    }
+
+    $service = app(MaterialActivityService::class);
+    $from = CarbonImmutable::parse('2026-01-01')->startOfDay();
+    $to = CarbonImmutable::parse('2026-12-31')->endOfDay();
+
+    $summary = $service->forPeriod($workspace, $ingredient, $from, $to);
+    $page = $service->paginateMovements($workspace, $ingredient, $from, $to, 25, 'activity');
+
+    expect($page->total())->toBe(120)
+        ->and($page->count())->toBe(25)
+        ->and($page->lastPage())->toBe(5)
+        // The totals cover all 120 movements across 5 lots, not the visible
+        // page of 25.
+        ->and($summary['received'])->toBe($expectedReceived)
+        ->and($summary['net_change'])->toBe($expectedNetChange)
+        ->and($summary['opening_physical'])->toBe('0.000000000')
+        ->and($summary['closing_physical'])->toBe($expectedNetChange)
+        ->and($summary['reconciliation_delta'])->toBe('0.000000000');
 });
 
 function productionBenchWorkspaceForActivity(): Workspace

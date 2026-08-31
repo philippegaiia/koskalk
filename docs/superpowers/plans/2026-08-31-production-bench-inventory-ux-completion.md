@@ -788,11 +788,16 @@ Expected: PASS.
 
 - [x] **Step 5: Refresh the code graph**
 
+> `graphify-out/` is **intentionally gitignored** and is rebuilt automatically by
+> the `graphify watch` post-commit hook on every commit — it must **not** be
+> committed and `graphify update .` must **not** be run manually. Verify the
+> local graph instead:
+
 ```bash
-graphify update .
+rg -n "WorkspaceMaterialSupplierListingsQuery|MaterialActivityService" graphify-out/graph.json
 ```
 
-Expected: the new supplier-listing query service and updated inventory relationships appear in `graphify-out/`.
+Expected: both services appear in the locally rebuilt `graphify-out/graph.json`.
 
 - [x] **Step 6: Inspect the final branch state**
 
@@ -804,12 +809,11 @@ git log --oneline --decorate -10
 
 Expected: no whitespace errors; only intentional generated graph changes remain uncommitted before the final commit.
 
-- [x] **Step 7: Commit verification artifacts**
+- [x] **Step 7: Do not commit the code graph**
 
-```bash
-git add graphify-out
-git commit -m "chore: refresh inventory code graph"
-```
+`graphify-out/` is gitignored and refreshed by the post-commit hook. There is
+**no** graph commit — attempting `git add graphify-out` would stage an ignored
+artifact and is intentionally omitted.
 
 - [x] **Step 8: Perform actual-app acceptance, not mockup acceptance**
 
@@ -834,6 +838,64 @@ php artisan test --compact
 ```
 
 Do not merge to `main` until that result and visual acceptance are confirmed.
+
+### Acceptance evidence (recorded 2026-08-31, review-remediation branch)
+
+**Affected suite** — `php -d memory_limit=512M vendor/bin/pest --compact` over the 10
+inventory / entitlement / translation / navigation files
+(`ProductionBenchEntitlementTest`, `MaterialActivityServiceTest`,
+`ProductionBenchInventoryMaterialDetailTest`, `ProductionBenchPagesTest`,
+`WorkspaceMaterialCatalogTest`, `WorkspaceMaterialInventoryQueryTest`,
+`WorkspaceMaterialSettingTest`, `WorkspaceMaterialSupplierListingsQueryTest`,
+`InterfaceTranslationCatalogueTest`, `ProductionBenchNavigationTest`):
+
+> **Tests: 203 passed (29005 assertions)** — Duration 10.68s.
+
+**Explicit-memory complete suite** — `php -d memory_limit=512M vendor/bin/pest --compact`:
+
+> **Tests: 2777 passed, 25 skipped (49586 assertions)** — Duration 121.52s.
+
+The canonical `php artisan test --compact` is bounded by the local 128M PHP config and must
+be confirmed by CI or the project owner before merge.
+
+**Tooling:**
+
+- Pint (`--dirty`): passed. Only the four PHP files modified by this remediation were
+  touched; two import-ordering issues in the two test files were fixed. Unrelated branch
+  files were left intact intentionally.
+- Filacheck (`--fix`): **All 17 rules passed.**
+- Code graph: `graphify-out/` is gitignored and rebuilt by the post-commit hook (no commit).
+  `rg` confirms `WorkspaceMaterialInventoryQuery`, `MaterialActivityService`,
+  `WorkspaceMaterialSupplierListingsQuery`, and `ProductionBenchAccess` are present in
+  `graphify-out/graph.json`.
+
+**Authenticated application acceptance:**
+
+- Translation sync used the project's established command
+  `php artisan translations:catalogue:import --mode=preserve-existing` (the empty-shell
+  `translations:sync` only creates key rows with no text and was rejected). Verified live in
+  the preview PostgreSQL database `koskalk_restore_20260722_023001`, table `language_lines`,
+  group `production_bench`: every sampled `production_bench.inventory.*` key resolves to a
+  genuine French (`fr`) value with no English fallback — e.g. `stock_by_material` →
+  "Stock par matière", `open_lots` → "Lots ouverts", `current_position` → "Position
+  actuelle", `lot_date_basis_received` → "Date de réception", `lot_date_from` → "Du".
+  Preview reachable (HTTP 302).
+- The French rendered journey is proven by automated tests
+  (`ProductionBenchPagesTest` and `ProductionBenchInventoryMaterialDetailTest` French smoke
+  tests assert French headings present and English headings absent).
+- Receipt-date vs stocked-date semantics, Open-lots material identity, the collapsed-filter
+  disclosure, and the actor-aware read-membership matrix (owner/admin/editor/viewer plus
+  cancelled; outsider rejected with `AuthorizationException`) are each covered by passing
+  automated tests.
+
+**Residual (not performed by the agent in a live browser):** Steps 2–5 of the acceptance
+plan are covered by the automated suites above rather than a manual click-through. Purely
+visual checks (pixel-level semantic colours, live keyboard toggle of the Filters disclosure)
+were not exercised in a real browser session by the agent; the underlying behaviour is
+asserted by tests.
+
+**Integration gate:** this branch remains unmerged to `main`. Integration requires owner/CI
+confirmation of the canonical complete suite in its supported environment.
 
 ---
 

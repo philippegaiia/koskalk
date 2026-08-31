@@ -196,6 +196,67 @@ it('queues a guidance refresh and calls fresh research, authoring, and localizat
         ]);
 });
 
+it('records empty fresh evidence when guidance research is disabled', function (): void {
+    app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            throw new RuntimeException('disabled research must not call the provider');
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-disabled-research',
+                requestId: 'req-guidance-disabled-research',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class implements IngredientGuidanceLocalizationClient
+    {
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->values()->all(),
+                responseId: 'resp-localization-disabled-research',
+                requestId: 'req-localization-disabled-research',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+    $fixture = guidanceResumeFixture();
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    $item = $fixture['item']->fresh();
+    expect(data_get($item->research_stages, 'ai_guidance_research.data.performed'))->toBeFalse()
+        ->and($item->result['guidance_evidence'])->toBe([])
+        ->and(collect($item->plan['decisions'])->firstWhere('field', 'guidance.evidence'))
+        ->toMatchArray([
+            'decision' => 'replace',
+            'proposed' => [],
+        ]);
+});
+
+it('recognizes only an exact level-two soapmaking heading', function (): void {
+    $headings = app(LocalizedGuidanceHeadings::class);
+
+    expect($headings->hasExactHeading("## Overview\nText.\n\n## Soapmaking\nText.", 'Soapmaking'))->toBeTrue()
+        ->and($headings->hasExactHeading("## Overview\nText mentions ## Soapmaking inline.", 'Soapmaking'))->toBeFalse()
+        ->and($headings->hasExactHeading("## Overview\nText.\n\n### Soapmaking\nText.", 'Soapmaking'))->toBeFalse();
+});
+
 it('reuses a completed research stage when authoring is retried', function (): void {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
@@ -280,6 +341,8 @@ it('reuses a completed research stage when authoring is retried', function (): v
 
     expect($calls)->toBe(['research' => 1, 'author' => 2, 'localize' => 1])
         ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($fixture['item']->fresh()->result['unresolved_questions'])
+        ->toContain('Which application range is appropriate for this grade?')
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed');
 });
 
@@ -564,7 +627,7 @@ it('recomputes guidance stages when effective provider configuration changes', f
     expect($calls)->toBe(['research' => 2, 'author' => 2, 'localize' => 2])
         ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
 
-    config()->set('ingredient-enrichment.openai.guidance_prompt_version', 'ingredient-guidance-v3');
+    config()->set('ingredient-enrichment.openai.guidance_prompt_version', 'ingredient-guidance-v4');
     $fixture['item']->refresh();
     $fixture['item']->update(['status' => IngredientEnrichmentItemStatus::Failed]);
 
@@ -1052,7 +1115,10 @@ it('resumes localization after a guidance refresh failure without repeating auth
     app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
-        ->and(array_keys($item->fresh()->research_stages))->toBe(['ai_guidance_authoring']);
+        ->and(array_keys($item->fresh()->research_stages))->toBe([
+            'ai_guidance_research',
+            'ai_guidance_authoring',
+        ]);
 
     app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
     $completed = $item->fresh();
@@ -1068,7 +1134,7 @@ it('resumes localization after a guidance refresh failure without repeating auth
         ->and($completed->provider_model)->toBe('gpt-test')
         ->and($completed->input_tokens)->toBe(44)
         ->and($completed->output_tokens)->toBe(66)
-        ->and($completed->sources[0]['url'])->toBe('https://cosmileeurope.eu/example');
+        ->and($completed->sources)->toBe([]);
 });
 
 it('does not store a localization-only flag on the guidance job', function (): void {
@@ -1313,8 +1379,10 @@ it('fails a corrupt completed authoring stage and retries authoring from that st
     });
 
     $fixture = guidanceResumeFixture();
+    $researchStages = completedDisabledResearchStages($fixture['item']);
     $fixture['item']->update([
         'research_stages' => [
+            ...$researchStages,
             'ai_guidance_authoring' => storedGuidanceStage('ai_guidance_authoring', [
                 'guidance' => ['warnings' => [], 'unresolved_questions' => []],
                 'provider_response_id' => 'stored-guidance',
@@ -1387,8 +1455,10 @@ it('fails an ambiguous completed localization stage before retrying its upstream
     });
 
     $fixture = guidanceResumeFixture();
+    $researchStages = completedDisabledResearchStages($fixture['item']);
     $fixture['item']->update([
         'research_stages' => [
+            ...$researchStages,
             'ai_guidance_authoring' => storedGuidanceStage('ai_guidance_authoring', [
                 'guidance' => ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
                 'provider_response_id' => 'stored-guidance',
@@ -1468,8 +1538,10 @@ it('fails a completed authoring stage with malformed accounting instead of dropp
     });
 
     $fixture = guidanceResumeFixture();
+    $researchStages = completedDisabledResearchStages($fixture['item']);
     $fixture['item']->update([
         'research_stages' => [
+            ...$researchStages,
             'ai_guidance_authoring' => storedGuidanceStage('ai_guidance_authoring', [
                 'guidance' => ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
                 'provider_response_id' => 'stored-guidance',
@@ -1581,6 +1653,7 @@ it('fails cached authoring when guidance headings or shape are invalid', functio
     foreach ($mutations as $mutate) {
         $calls = ['author' => 0, 'localize' => 0];
         $fixture = guidanceResumeFixture();
+        $researchStages = completedDisabledResearchStages($fixture['item']);
         $guidance = $mutate([
             'info_markdown' => guidanceText(),
             'warnings' => [],
@@ -1588,6 +1661,7 @@ it('fails cached authoring when guidance headings or shape are invalid', functio
         ]);
         $fixture['item']->update([
             'research_stages' => [
+                ...$researchStages,
                 'ai_guidance_authoring' => storedGuidanceStage('ai_guidance_authoring', [
                     'guidance' => $guidance,
                     'provider_response_id' => 'stored-guidance',
@@ -1997,6 +2071,35 @@ function storedGuidanceStage(string $stage, array $data): array
         'unresolved_questions' => [],
         'source_calls' => 0,
     ];
+}
+
+/** @return array<string,mixed> */
+function completedDisabledResearchStages(IngredientEnrichmentBatchItem $item): array
+{
+    app(IngredientGuidanceStageRunner::class)->run(
+        $item->id,
+        IngredientEnrichmentResearchStage::AiGuidanceResearch,
+        fn (): IngredientSourceStageResult => new IngredientSourceStageResult(
+            stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
+            status: 'completed',
+            data: [
+                'performed' => false,
+                'candidate_evidence' => [],
+                'guidance_evidence' => [],
+                'warnings' => [],
+                'unresolved_questions' => [],
+                'sources' => [],
+                'provider_response_id' => '',
+                'provider_request_id' => '',
+                'provider_model' => '',
+                'input_tokens' => 0,
+                'output_tokens' => 0,
+                'web_search_calls' => 0,
+            ],
+        ),
+    );
+
+    return $item->fresh()->research_stages;
 }
 
 function guidanceText(): string

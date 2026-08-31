@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\IngredientEnrichment\ApplyApprovedIngredientGuidanceRefresh;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
@@ -153,6 +154,23 @@ it('uses focused guidance fields for guidance batch review actions', function ()
         ->mountAction(TestAction::make('approve')->table($item))
         ->assertMountedActionModalSee('Identity, taxonomy, identifiers, names, and declarations are not included.')
         ->assertFormFieldDoesNotExist('replace_fields');
+});
+
+it('shows the ingredient name alongside its catalog code in enrichment items', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Apricot kernel oil',
+        'catalog_key' => 'OB13',
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()
+        ->for($batch, 'batch')
+        ->for($ingredient)
+        ->create(['catalog_key' => 'OB13']);
+
+    expect(app(IngredientEnrichmentReviewPresenter::class)->subjectLabel($item))
+        ->toBe('Apricot kernel oil (OB13)');
 });
 
 it('renders guidance evidence as translated read-only review evidence', function (): void {
@@ -350,6 +368,64 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         ->and($batch->items()->where('status', IngredientEnrichmentItemStatus::Approved)->count())->toBe(0)
         ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
         ->toBe(app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($newEvidence));
+});
+
+it('clears stale evidence when an approved fresh guidance result has no accepted sources', function (): void {
+    $admin = User::factory()->admin()->create();
+    $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";
+    $oldEvidence = [[
+        'source_name' => 'Previous guidance source',
+        'source_url' => 'https://example.test/previous',
+        'summary' => 'Previously reviewed evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $oldEvidence]]],
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'requested_by_user_id' => $admin->id,
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $item = IngredientEnrichmentBatchItem::factory()
+        ->for($batch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Approved,
+            'source_fingerprint' => $sourceFingerprint,
+            'approved_by_user_id' => $admin->id,
+            'approved_at' => now(),
+            'result' => [
+                'format' => 'soapkraft-ingredient-guidance-refresh-result',
+                'schema_version' => 1,
+                'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh->value,
+                'subject_public_id' => (string) $ingredient->public_id,
+                'source_fingerprint' => $sourceFingerprint,
+                'info_markdown' => $english,
+                'translations' => [],
+                'guidance_evidence' => [],
+                'prompt_versions' => [
+                    'research' => 'ingredient-guidance-research-v2',
+                    'guidance' => 'ingredient-guidance-v3',
+                    'localization' => 'ingredient-guidance-localization-v1',
+                ],
+                'warnings' => [],
+                'unresolved_questions' => [],
+            ],
+        ]);
+
+    $totals = app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $batch);
+
+    expect($totals['applied'])->toBe(1)
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe([])
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.research_prompt_version'))
+        ->toBe('ingredient-guidance-research-v2');
 });
 
 it('keeps English guidance read-only in localization-only review batches', function (): void {

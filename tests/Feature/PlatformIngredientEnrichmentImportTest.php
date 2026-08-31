@@ -312,6 +312,39 @@ it('plans changed guidance evidence during full enrichment', function (): void {
         ]);
 });
 
+it('plans and applies removal of stale guidance evidence after empty fresh research', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $oldEvidence = [[
+        'source_name' => 'Previous source',
+        'source_url' => 'https://example.test/previous',
+        'summary' => 'Evidence from the previous generation.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EVIDENCE-CLEAR',
+        'category' => IngredientCategory::Other,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $oldEvidence]]],
+    ]);
+    $result = importResult($ingredient);
+    $result['guidance_evidence'] = [];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result);
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result);
+
+    expect(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))
+        ->toMatchArray([
+            'decision' => 'replace',
+            'current' => $oldEvidence,
+            'proposed' => [],
+        ])
+        ->and($applied['status'])->toBe('applied')
+        ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.evidence'))->toBe([])
+        ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.research_prompt_version'))
+        ->toBe('ingredient-guidance-research-v2');
+});
+
 it('applies successive evidence-only updates with the same source fingerprint', function (): void {
     $ingredient = Ingredient::factory()->create([
         'catalog_key' => 'ADM-EVIDENCE-REPLAY',
@@ -407,7 +440,7 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))
         ->toBe('ingredient-guidance-research-v2')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
-        ->toBe('ingredient-guidance-v2');
+        ->toBe('ingredient-guidance-v3');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,

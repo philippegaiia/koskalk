@@ -7272,18 +7272,6 @@
     },
     {
       "group": "ingredients",
-      "key": "editor.validation.workspace_guidance_html",
-      "text": {
-        "de": "Verwende Markdown statt rohem HTML.",
-        "es": "Usa Markdown en lugar de HTML sin formato.",
-        "fr": "Utilisez Markdown plutôt que du HTML brut.",
-        "it": "Usa Markdown invece dell’HTML non elaborato.",
-        "nl": "Gebruik Markdown in plaats van onbewerkte HTML.",
-        "pt_BR": "Use Markdown em vez de HTML bruto."
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "editor.validation.workspace_guidance_max",
       "text": {
         "de": "Zutatenhinweise dürfen höchstens :max Zeichen enthalten.",
@@ -7292,6 +7280,18 @@
         "it": "Le indicazioni sull’ingrediente non possono superare :max caratteri.",
         "nl": "Ingrediëntrichtlijnen mogen niet langer zijn dan :max tekens.",
         "pt_BR": "As orientações do ingrediente não podem exceder :max caracteres."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.workspace_guidance_missing",
+      "text": {
+        "de": "Es sind keine Arbeitsbereichshinweise zum Wiederherstellen verfügbar.",
+        "es": "No hay ninguna guía del espacio de trabajo disponible para restaurar.",
+        "fr": "Aucun conseil de l’espace de travail n’est disponible pour être restauré.",
+        "it": "Non sono disponibili indicazioni dello spazio di lavoro da ripristinare.",
+        "nl": "Er zijn geen werkruimterichtlijnen beschikbaar om te herstellen.",
+        "pt_BR": "Não há orientações do espaço de trabalho disponíveis para restaurar."
       }
     },
     {
@@ -7316,18 +7316,6 @@
         "it": "Annulla",
         "nl": "Annuleren",
         "pt_BR": "Cancelar"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.workspace_guidance.count",
-      "text": {
-        "de": ":count/:max Zeichen",
-        "es": ":count/:max caracteres",
-        "fr": ":count/:max caractères",
-        "it": ":count/:max caratteri",
-        "nl": ":count/:max tekens",
-        "pt_BR": ":count/:max caracteres"
       }
     },
     {
@@ -7382,24 +7370,12 @@
       "group": "ingredients",
       "key": "editor.workspace_guidance.helper",
       "text": {
-        "de": "Verwende die Plattformhinweise oder ersetze sie für alle in diesem Arbeitsbereich.",
-        "es": "Usa la guía de la plataforma o sustitúyela para todos en este espacio de trabajo.",
-        "fr": "Utilisez les conseils de la plateforme ou remplacez-les pour tout le monde dans cet espace de travail.",
-        "it": "Usa le indicazioni della piattaforma oppure sostituiscile per tutti in questo spazio di lavoro.",
-        "nl": "Gebruik de platformrichtlijnen of vervang ze voor iedereen in deze werkruimte.",
-        "pt_BR": "Use as orientações da plataforma ou substitua-as para todos neste espaço de trabalho."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.workspace_guidance.override_badge",
-      "text": {
-        "de": "Arbeitsbereichshinweise",
-        "es": "Guía del espacio de trabajo",
-        "fr": "Conseils de l’espace de travail",
-        "it": "Indicazioni dello spazio di lavoro",
-        "nl": "Werkruimterichtlijnen",
-        "pt_BR": "Orientações do espaço de trabalho"
+        "de": "Verwende die Plattformhinweise oder verfasse mit den Formatierungswerkzeugen eine Version für den Arbeitsbereich. Maximal :max Zeichen.",
+        "es": "Usa la guía de la plataforma o escribe una versión para el espacio de trabajo con las herramientas de formato. Hasta :max caracteres.",
+        "fr": "Utilisez les conseils de la plateforme ou rédigez une version pour l’espace de travail avec les outils de mise en forme. Jusqu’à :max caractères.",
+        "it": "Usa le indicazioni della piattaforma oppure scrivi una versione per lo spazio di lavoro con gli strumenti di formattazione. Fino a :max caratteri.",
+        "nl": "Gebruik de platformrichtlijnen of schrijf met de opmaakknoppen een versie voor de werkruimte. Maximaal :max tekens.",
+        "pt_BR": "Use as orientações da plataforma ou escreva uma versão para o espaço de trabalho com as ferramentas de formatação. Até :max caracteres."
       }
     },
     {
@@ -7416,6 +7392,30 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.workspace_guidance.platform_confirm",
+      "text": {
+        "de": "Die aktuellen Plattformhinweise für diesen Arbeitsbereich verwenden? Die Arbeitsbereichshinweise bleiben erhalten und können später wiederhergestellt werden.",
+        "es": "¿Usar la guía actual de la plataforma para este espacio de trabajo? La guía del espacio de trabajo se conservará y podrá restaurarse más adelante.",
+        "fr": "Utiliser les conseils actuels de la plateforme pour cet espace de travail ? Les conseils de l’espace de travail seront conservés et pourront être restaurés plus tard.",
+        "it": "Usare le indicazioni attuali della piattaforma per questo spazio di lavoro? Le indicazioni dello spazio di lavoro saranno conservate e potranno essere ripristinate in seguito.",
+        "nl": "De huidige platformrichtlijnen voor deze werkruimte gebruiken? De werkruimterichtlijnen blijven bewaard en kunnen later worden hersteld.",
+        "pt_BR": "Usar as orientações atuais da plataforma para este espaço de trabalho? As orientações do espaço de trabalho serão mantidas e poderão ser restauradas depois."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.platform_selected",
+      "text": {
+        "de": "Plattformhinweise ausgewählt.",
+        "es": "Se ha seleccionado la guía de la plataforma.",
+        "fr": "Conseils de la plateforme sélectionnés.",
+        "it": "Indicazioni della piattaforma selezionate.",
+        "nl": "Platformrichtlijnen geselecteerd.",
+        "pt_BR": "Orientações da plataforma selecionadas."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.workspace_guidance.read_only",
       "text": {
         "de": "Nur Arbeitsbereichsinhaber, Administratoren und Redakteure können diese Hinweise ändern.",
@@ -7424,42 +7424,6 @@
         "it": "Solo i proprietari, gli amministratori e gli editori dello spazio di lavoro possono modificare queste indicazioni.",
         "nl": "Alleen werkruimte-eigenaren, beheerders en editors kunnen deze richtlijnen wijzigen.",
         "pt_BR": "Somente proprietários, administradores e editores do espaço de trabalho podem alterar estas orientações."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.workspace_guidance.reset",
-      "text": {
-        "de": "Plattformhinweise verwenden",
-        "es": "Usar la guía de la plataforma",
-        "fr": "Utiliser les conseils de la plateforme",
-        "it": "Usa le indicazioni della piattaforma",
-        "nl": "Platformrichtlijnen gebruiken",
-        "pt_BR": "Usar orientações da plataforma"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.workspace_guidance.reset_confirm",
-      "text": {
-        "de": "Arbeitsbereichshinweise entfernen und die aktuellen Plattformhinweise verwenden?",
-        "es": "¿Eliminar la guía del espacio de trabajo y usar la guía actual de la plataforma?",
-        "fr": "Supprimer les conseils de l’espace de travail et utiliser les conseils actuels de la plateforme ?",
-        "it": "Rimuovere le indicazioni dello spazio di lavoro e usare quelle attuali della piattaforma?",
-        "nl": "De werkruimterichtlijnen verwijderen en de huidige platformrichtlijnen gebruiken?",
-        "pt_BR": "Remover as orientações do espaço de trabalho e usar as orientações atuais da plataforma?"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.workspace_guidance.reset_done",
-      "text": {
-        "de": "Plattformhinweise wiederhergestellt.",
-        "es": "Se ha restaurado la guía de la plataforma.",
-        "fr": "Conseils de la plateforme restaurés.",
-        "it": "Indicazioni della piattaforma ripristinate.",
-        "nl": "Platformrichtlijnen hersteld.",
-        "pt_BR": "Orientações da plataforma restauradas."
       }
     },
     {
@@ -7484,6 +7448,54 @@
         "it": "Indicazioni dello spazio di lavoro salvate.",
         "nl": "Werkruimterichtlijnen opgeslagen.",
         "pt_BR": "Orientações do espaço de trabalho salvas."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.use_platform",
+      "text": {
+        "de": "Plattformhinweise verwenden",
+        "es": "Usar la guía de la plataforma",
+        "fr": "Utiliser les conseils de la plateforme",
+        "it": "Usa le indicazioni della piattaforma",
+        "nl": "Platformrichtlijnen gebruiken",
+        "pt_BR": "Usar orientações da plataforma"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.use_workspace",
+      "text": {
+        "de": "Arbeitsbereichshinweise verwenden",
+        "es": "Usar la guía del espacio de trabajo",
+        "fr": "Utiliser les conseils de l’espace de travail",
+        "it": "Usa le indicazioni dello spazio di lavoro",
+        "nl": "Werkruimterichtlijnen gebruiken",
+        "pt_BR": "Usar orientações do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.workspace_badge",
+      "text": {
+        "de": "Arbeitsbereichshinweise",
+        "es": "Guía del espacio de trabajo",
+        "fr": "Conseils de l’espace de travail",
+        "it": "Indicazioni dello spazio di lavoro",
+        "nl": "Werkruimterichtlijnen",
+        "pt_BR": "Orientações do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.workspace_selected",
+      "text": {
+        "de": "Arbeitsbereichshinweise ausgewählt.",
+        "es": "Se ha seleccionado la guía del espacio de trabajo.",
+        "fr": "Conseils de l’espace de travail sélectionnés.",
+        "it": "Indicazioni dello spazio di lavoro selezionate.",
+        "nl": "Werkruimterichtlijnen geselecteerd.",
+        "pt_BR": "Orientações do espaço de trabalho selecionadas."
       }
     },
     {

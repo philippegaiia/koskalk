@@ -27,7 +27,8 @@ class WorkspaceIngredientGuidanceFactory extends Factory
                 'workspace_id' => null,
                 'is_active' => true,
             ]),
-            'guidance_markdown' => "## Overview\n\n".fake()->paragraph(),
+            'guidance_html' => '<p>'.fake()->paragraph().'</p>',
+            'is_active' => true,
             'created_by_user_id' => null,
             'updated_by_user_id' => null,
         ];

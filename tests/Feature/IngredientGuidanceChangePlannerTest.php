@@ -151,6 +151,59 @@ it('plans guidance evidence changes even when guidance text is unchanged', funct
         ]);
 });
 
+it('plans removal when fresh guidance research accepts no evidence', function (): void {
+    $english = guidancePlannerText('Current');
+    $currentEvidence = [[
+        'source_name' => 'Previous source',
+        'source_url' => 'https://example.test/previous',
+        'summary' => 'Evidence from the previous generation.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $currentEvidence]]],
+    ]);
+
+    $plan = app(IngredientGuidanceChangePlanner::class)->plan(
+        $ingredient,
+        guidancePlannerResult($ingredient, $english),
+        IngredientEnrichmentBatchMode::GuidanceRefresh,
+    );
+
+    expect($plan['changed'])->toBeTrue()
+        ->and(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))
+        ->toMatchArray([
+            'decision' => 'replace',
+            'current' => $currentEvidence,
+            'proposed' => [],
+        ]);
+});
+
+it('preserves current evidence when localization-only returns no evidence', function (): void {
+    $english = guidancePlannerText('Current');
+    $currentEvidence = [[
+        'source_name' => 'Previous source',
+        'source_url' => 'https://example.test/previous',
+        'summary' => 'Evidence from the previous generation.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $currentEvidence]]],
+    ]);
+
+    $plan = app(IngredientGuidanceChangePlanner::class)->plan(
+        $ingredient,
+        guidancePlannerResult($ingredient, $english),
+        IngredientEnrichmentBatchMode::GuidanceLocalization,
+    );
+
+    expect(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))->toBeNull()
+        ->and($plan['effective']['guidance_evidence'])->toBe($currentEvidence);
+});
+
 /** @return array<string, mixed> */
 function guidancePlannerResult(
     Ingredient $ingredient,

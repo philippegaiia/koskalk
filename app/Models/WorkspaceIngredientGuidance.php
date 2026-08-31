@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'workspace_id',
     'ingredient_id',
-    'guidance_markdown',
+    'guidance_html',
+    'is_active',
     'created_by_user_id',
     'updated_by_user_id',
 ])]
@@ -19,6 +20,13 @@ class WorkspaceIngredientGuidance extends Model
 {
     /** @use HasFactory<WorkspaceIngredientGuidanceFactory> */
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     public function workspace(): BelongsTo
     {

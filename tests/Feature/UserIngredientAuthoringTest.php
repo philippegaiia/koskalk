@@ -259,7 +259,7 @@ it('does not let a workspace viewer save a platform material code', function ():
     expect(WorkspaceIngredientCode::query()->where('ingredient_id', $platform->id)->exists())->toBeFalse();
 });
 
-it('lets an editor customize and reset localized platform guidance', function (): void {
+it('lets an editor customize and switch between localized platform and workspace guidance', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
     $owner = User::factory()->create();
@@ -287,7 +287,7 @@ it('lets an editor customize and reset localized platform guidance', function ()
 
     $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
         ->assertSeeText('Conseils de la plateforme')
-        ->assertSet('workspaceGuidanceMarkdown', null)
+        ->assertSee('sk-rich-content', escape: false)
         ->assertSet('isEditingWorkspaceGuidance', false)
         ->assertSeeText('Customize guidance')
         ->assertDontSeeText('Edit guidance')
@@ -300,11 +300,9 @@ it('lets an editor customize and reset localized platform guidance', function ()
 
     $component
         ->call('startWorkspaceGuidanceCustomization')
-        ->assertSet('workspaceGuidanceMarkdown', 'Conseils de la plateforme')
         ->assertSet('isEditingWorkspaceGuidance', true)
-        ->assertSee('id="workspace-guidance-markdown"', escape: false)
-        ->assertSee('maxlength="2000"', escape: false)
-        ->assertSee('Array.from(value ?? \'\').length', escape: false)
+        ->tap(fn ($test) => expect($test->instance()->workspaceGuidanceForm->getState()['html'])->toBe('<p>Conseils de la plateforme</p>'))
+        ->assertSee('fi-fo-rich-editor', escape: false)
         ->assertSeeText('Save guidance')
         ->assertSeeText('Cancel');
 
@@ -314,10 +312,9 @@ it('lets an editor customize and reset localized platform guidance', function ()
         ->exists())->toBeFalse();
 
     $component
-        ->set('workspaceGuidanceMarkdown', '  Workspace-authored guidance  ')
+        ->set('workspaceGuidance.html', '<p>Workspace-authored guidance</p>')
         ->call('saveWorkspaceGuidance')
         ->assertHasNoErrors()
-        ->assertSet('workspaceGuidanceMarkdown', 'Workspace-authored guidance')
         ->assertSet('isEditingWorkspaceGuidance', false)
         ->assertSeeText('Workspace-authored guidance')
         ->assertSeeText('Workspace guidance')
@@ -329,7 +326,7 @@ it('lets an editor customize and reset localized platform guidance', function ()
     expect(WorkspaceIngredientGuidance::query()
         ->where('workspace_id', $workspace->id)
         ->where('ingredient_id', $platform->id)
-        ->value('guidance_markdown'))->toBe('Workspace-authored guidance');
+        ->value('guidance_html'))->toBe('<p>Workspace-authored guidance</p>');
 
     $editor->update(['locale' => 'en']);
     app()->setLocale('en');
@@ -338,24 +335,45 @@ it('lets an editor customize and reset localized platform guidance', function ()
     $englishComponent = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
 
     $englishComponent
-        ->assertSet('workspaceGuidanceMarkdown', 'Workspace-authored guidance')
+        ->assertSet('workspaceGuidance.html', function (mixed $value): bool {
+            return is_array($value);
+        })
         ->assertSeeText('Workspace-authored guidance')
         ->assertSeeText('Edit guidance')
         ->assertSeeText('Use platform guidance')
-        ->assertSee('wire:confirm="Remove the workspace guidance and use the current platform guidance?"', escape: false)
-        ->call('resetWorkspaceGuidance')
-        ->assertSet('workspaceGuidanceMarkdown', null)
+        ->assertSee('wire:confirm="Use the current platform guidance for this workspace? Your workspace guidance will be kept and can be restored later."', escape: false)
+        ->call('usePlatformGuidance')
         ->assertSet('isEditingWorkspaceGuidance', false)
         ->assertSeeText('Platform guidance in English')
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'
-                && $payload['message'] === 'Platform guidance restored.';
+                && $payload['message'] === 'Platform guidance selected.';
         });
 
     expect(WorkspaceIngredientGuidance::query()
         ->where('workspace_id', $workspace->id)
         ->where('ingredient_id', $platform->id)
-        ->exists())->toBeFalse();
+        ->first())
+        ->not->toBeNull()
+        ->and(WorkspaceIngredientGuidance::query()
+            ->where('workspace_id', $workspace->id)
+            ->where('ingredient_id', $platform->id)
+            ->value('is_active'))->toBeFalse();
+
+    $englishComponent
+        ->call('startWorkspaceGuidanceCustomization')
+        ->tap(fn ($test) => expect($test->instance()->workspaceGuidanceForm->getState()['html'])->toBe('<p>Workspace-authored guidance</p>'))
+        ->call('useWorkspaceGuidance')
+        ->assertSeeText('Workspace-authored guidance')
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && $payload['message'] === 'Workspace guidance selected.';
+        });
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $platform->id)
+        ->value('is_active'))->toBeTrue();
 
     app()->setLocale('en');
 });
@@ -384,11 +402,11 @@ it('keeps workspace guidance read-only for viewers', function (): void {
         ->assertDontSeeText('Edit guidance')
         ->assertDontSeeText('Use platform guidance')
         ->call('startWorkspaceGuidanceCustomization')
-        ->assertHasErrors(['workspaceGuidanceMarkdown'])
+        ->assertHasErrors(['workspaceGuidance.html'])
         ->call('saveWorkspaceGuidance')
-        ->assertHasErrors(['workspaceGuidanceMarkdown'])
-        ->call('resetWorkspaceGuidance')
-        ->assertHasErrors(['workspaceGuidanceMarkdown']);
+        ->assertHasErrors(['workspaceGuidance.html'])
+        ->call('usePlatformGuidance')
+        ->assertHasErrors(['workspaceGuidance.html']);
 
     expect(WorkspaceIngredientGuidance::query()
         ->where('workspace_id', $workspace->id)
@@ -396,7 +414,7 @@ it('keeps workspace guidance read-only for viewers', function (): void {
         ->exists())->toBeFalse();
 });
 
-it('keeps workspace-owned ingredient guidance in its existing editor', function (): void {
+it('stores optional workspace-owned ingredient guidance in the shared rich editor', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create([
@@ -404,22 +422,33 @@ it('keeps workspace-owned ingredient guidance in its existing editor', function 
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Private,
-        'info_markdown' => 'Existing private guidance',
+        'info_markdown' => null,
     ]);
 
     $this->actingAs($owner);
 
-    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->assertDontSeeText('Workspace content')
-        ->set('data.info_markdown', 'Updated private guidance')
+        ->assertSee('fi-fo-rich-editor', escape: false)
+        ->set('data.guidance_html', '<h2>Private guidance</h2><p>Updated private guidance</p>')
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($ingredient->fresh()->info_markdown)->toBe('Updated private guidance')
+    expect($ingredient->fresh()->info_markdown)->toBeNull()
         ->and(WorkspaceIngredientGuidance::query()
             ->where('workspace_id', $workspace->id)
             ->where('ingredient_id', $ingredient->id)
-            ->exists())->toBeFalse();
+            ->value('guidance_html'))->toBe('<h2>Private guidance</h2><p>Updated private guidance</p>');
+
+    $component
+        ->set('data.guidance_html', '<p><br></p>')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->exists())->toBeFalse();
 });
 
 it('lets a workspace manage bounded identity aliases and declared substances', function (): void {

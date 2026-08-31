@@ -18,6 +18,26 @@ it('accepts consulted broad-source evidence and preserves its classifications', 
     expect($accepted)->toBe([$candidate]);
 });
 
+it('partitions accepted evidence from rejected candidates without retaining rejected content', function (): void {
+    $accepted = guidanceEvidenceCandidate();
+    $unconsulted = guidanceEvidenceCandidate([
+        'source_url' => 'https://other.example/apricot-oil',
+    ]);
+
+    $result = guidanceEvidencePolicy()->partitionCandidates(
+        [$accepted, $unconsulted],
+        [['url' => $accepted['source_url'], 'title' => 'Supplier technical data']],
+    );
+
+    expect($result->accepted)->toBe([$accepted])
+        ->and($result->rejected)->toBe([[
+            'index' => 1,
+            'code' => 'unconsulted_url',
+            'host' => 'other.example',
+        ]])
+        ->and(json_encode($result->rejected))->not->toContain('apricot-oil');
+});
+
 it('rejects guidance evidence outside the approved field and closed vocabularies', function (): void {
     $cases = [
         ['field' => 'proposal.inci_name'],
@@ -47,7 +67,7 @@ it('rejects malformed or empty guidance evidence as invalid provider output', fu
         expect(fn (): array => guidanceEvidencePolicy()->validateCandidates([$candidate], [[
             'url' => $candidate['source_url'],
             'title' => 'Source',
-        ]]))->toThrow(RuntimeException::class);
+        ]]))->toThrow(ValidationException::class);
     }
 });
 

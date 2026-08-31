@@ -14,10 +14,6 @@ use Throwable;
 
 class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchClient
 {
-    public function __construct(
-        private readonly IngredientGuidanceEvidencePolicy $evidencePolicy,
-    ) {}
-
     /**
      * @param  array<string, mixed>  $facts
      *
@@ -114,13 +110,9 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
             ->unique('url')
             ->values()
             ->all();
-        $candidateEvidence = $this->evidencePolicy->validateCandidates(
-            $result['candidate_evidence'],
-            $sources,
-        );
 
         return new IngredientGapResearchResponse(
-            candidateEvidence: $candidateEvidence,
+            candidateEvidence: $result['candidate_evidence'],
             warnings: $result['warnings'],
             unresolvedQuestions: $result['unresolved_questions'],
             responseId: (string) ($payload['id'] ?? ''),
@@ -144,7 +136,7 @@ Classify each finding as a material-wide fact or a product-grade observation. A 
 
 Omit category-obvious filler unless the exact material has a non-obvious practical consequence. You must not establish legal declarations, authorization, identifiers, INCI names, COSING functions, or regulatory conclusions. COSMILE Europe may be cited only for individually paraphrased introductory guidance; it cannot support any legal or identity field.
 
-Every candidate evidence row must contain `field` set to `proposal.info_markdown`, a source name, the exact consulted source URL, a concise paraphrased summary, and the required classification fields. Never copy long passages. If the gap remains unresolved, return an empty candidate_evidence array and state the specific question. Return only the strict JSON object.
+Every candidate evidence row must contain `field` set to `proposal.info_markdown`, a source name, the exact consulted source URL, a concise paraphrased summary, and the required classification fields. Never copy long passages. For non-usage claims, set `usage_application` and `percentage_basis` to `not_applicable` and both percentage bounds to null. For usage claims, use `formulation_recommendation`, a recommendation-capable source kind, `cosmetics` or `soapmaking` application, a matching basis, and at least one exact source-provided bound. If the gap remains unresolved, return an empty candidate_evidence array and state the specific question. Return only the strict JSON object.
 PROMPT;
     }
 
@@ -169,7 +161,10 @@ PROMPT;
         $candidateEvidence = [
             'type' => 'object',
             'properties' => [
-                'field' => ['type' => 'string'],
+                'field' => [
+                    'type' => 'string',
+                    'enum' => ['proposal.info_markdown'],
+                ],
                 'source_name' => ['type' => 'string'],
                 'source_url' => ['type' => 'string'],
                 'summary' => ['type' => 'string'],

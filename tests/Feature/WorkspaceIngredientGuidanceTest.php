@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
+use App\Services\WorkspaceIngredientGuidanceContent;
 use App\Services\WorkspaceIngredientGuidanceService;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('stores one audited guidance override per workspace and platform ingredient', function (): void {
+it('stores one audited guidance record per workspace and ingredient', function (): void {
     $creator = User::factory()->create();
     $updater = User::factory()->create();
     $workspace = Workspace::factory()->for($creator, 'owner')->create();
@@ -29,10 +30,11 @@ it('stores one audited guidance override per workspace and platform ingredient',
         'workspace_id' => null,
     ]);
 
-    $override = WorkspaceIngredientGuidance::factory()->create([
+    $guidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $ingredient->id,
-        'guidance_markdown' => '## Overview',
+        'guidance_html' => '<h2>Overview</h2>',
+        'is_active' => false,
         'created_by_user_id' => $creator->id,
         'updated_by_user_id' => $updater->id,
     ]);
@@ -40,19 +42,21 @@ it('stores one audited guidance override per workspace and platform ingredient',
     expect(Schema::hasColumns('workspace_ingredient_guidances', [
         'workspace_id',
         'ingredient_id',
-        'guidance_markdown',
+        'guidance_html',
+        'is_active',
         'created_by_user_id',
         'updated_by_user_id',
     ]))->toBeTrue()
-        ->and($override->workspace->is($workspace))->toBeTrue()
-        ->and($override->ingredient->is($ingredient))->toBeTrue()
-        ->and($override->creator->is($creator))->toBeTrue()
-        ->and($override->updater->is($updater))->toBeTrue()
-        ->and($workspace->ingredientGuidances->contains($override))->toBeTrue()
-        ->and($ingredient->workspaceGuidances->contains($override))->toBeTrue();
+        ->and($guidance->is_active)->toBeFalse()
+        ->and($guidance->workspace->is($workspace))->toBeTrue()
+        ->and($guidance->ingredient->is($ingredient))->toBeTrue()
+        ->and($guidance->creator->is($creator))->toBeTrue()
+        ->and($guidance->updater->is($updater))->toBeTrue()
+        ->and($workspace->ingredientGuidances->contains($guidance))->toBeTrue()
+        ->and($ingredient->workspaceGuidances->contains($guidance))->toBeTrue();
 });
 
-it('rejects duplicate workspace and ingredient guidance overrides', function (): void {
+it('rejects duplicate workspace and ingredient guidance records', function (): void {
     $workspace = Workspace::factory()->create();
     $ingredient = Ingredient::factory()->create();
 
@@ -67,7 +71,7 @@ it('rejects duplicate workspace and ingredient guidance overrides', function ():
     ]))->toThrow(QueryException::class);
 });
 
-it('cascades guidance overrides when their workspace is deleted', function (): void {
+it('cascades guidance when their workspace is deleted', function (): void {
     $workspace = Workspace::factory()->create();
     $override = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
@@ -78,7 +82,7 @@ it('cascades guidance overrides when their workspace is deleted', function (): v
     $this->assertModelMissing($override);
 });
 
-it('cascades guidance overrides when their ingredient is deleted', function (): void {
+it('cascades guidance when their ingredient is deleted', function (): void {
     $ingredient = Ingredient::factory()->create();
     $override = WorkspaceIngredientGuidance::factory()->create([
         'ingredient_id' => $ingredient->id,
@@ -113,7 +117,7 @@ it('nulls only the matching audit attribution when an audit user is deleted', fu
         ->and($override->fresh()->updated_by_user_id)->toBeNull();
 });
 
-it('resolves localized platform guidance until a workspace override exists', function (): void {
+it('resolves localized platform guidance until active workspace guidance exists', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -126,22 +130,22 @@ it('resolves localized platform guidance until a workspace override exists', fun
     ]);
     $service = app(WorkspaceIngredientGuidanceService::class);
 
-    expect($service->effectiveGuidance($workspace, $ingredient, 'fr'))
-        ->toBe('Conseils de la plateforme');
+    expect($service->effectiveHtml($workspace, $ingredient, 'fr'))
+        ->toContain('Conseils de la plateforme');
 
     WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $ingredient->id,
-        'guidance_markdown' => 'Workspace text in any language',
+        'guidance_html' => '<p>Workspace text in any language</p>',
     ]);
 
-    expect($service->effectiveGuidance($workspace, $ingredient, 'fr'))
-        ->toBe('Workspace text in any language')
-        ->and($service->effectiveGuidance($workspace, $ingredient, 'de'))
-        ->toBe('Workspace text in any language');
+    expect($service->effectiveHtml($workspace, $ingredient, 'fr'))
+        ->toBe('<p>Workspace text in any language</p>')
+        ->and($service->effectiveHtml($workspace, $ingredient, 'de'))
+        ->toBe('<p>Workspace text in any language</p>');
 });
 
-it('keeps workspace-owned ingredient guidance independent from workspace overrides', function (): void {
+it('resolves workspace-owned ingredient guidance from the shared workspace table', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create([
@@ -149,20 +153,20 @@ it('keeps workspace-owned ingredient guidance independent from workspace overrid
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Private,
-        'info_markdown' => 'Workspace-owned guidance',
+        'info_markdown' => null,
     ]);
     WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $ingredient->id,
-        'guidance_markdown' => 'Invalid platform override',
+        'guidance_html' => '<p>Workspace-owned guidance</p>',
     ]);
 
     expect(app(WorkspaceIngredientGuidanceService::class)
-        ->effectiveGuidance($workspace, $ingredient, 'fr'))
-        ->toBe('Workspace-owned guidance');
+        ->effectiveHtml($workspace, $ingredient, 'fr'))
+        ->toBe('<p>Workspace-owned guidance</p>');
 });
 
-it('trims and audits an owner-created platform guidance override', function (): void {
+it('sanitizes and audits owner-created workspace guidance', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create();
@@ -171,10 +175,11 @@ it('trims and audits an owner-created platform guidance override', function (): 
         $owner,
         $workspace,
         $ingredient,
-        "  ## Workspace guidance\n",
+        "  <h2>Workspace guidance</h2>\n",
     );
 
-    expect($override->guidance_markdown)->toBe('## Workspace guidance')
+    expect($override->guidance_html)->toBe('<h2>Workspace guidance</h2>')
+        ->and($override->is_active)->toBeTrue()
         ->and($override->created_by_user_id)->toBe($owner->id)
         ->and($override->updated_by_user_id)->toBe($owner->id);
 });
@@ -194,10 +199,11 @@ it('preserves the creator while auditing an editor update', function (): void {
 
     expect($updated->created_by_user_id)->toBe($owner->id)
         ->and($updated->updated_by_user_id)->toBe($editor->id)
-        ->and($updated->guidance_markdown)->toBe('Updated guidance');
+        ->and($updated->guidance_html)->toBe('<p>Updated guidance</p>')
+        ->and($updated->is_active)->toBeTrue();
 });
 
-it('allows an admin to reset workspace guidance', function (): void {
+it('allows an admin to switch to platform guidance without deleting the workspace version', function (): void {
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -210,14 +216,20 @@ it('allows an admin to reset workspace guidance', function (): void {
     $service = app(WorkspaceIngredientGuidanceService::class);
     $override = $service->save($owner, $workspace, $ingredient, 'Workspace guidance');
 
-    $service->reset($admin, $workspace, $ingredient);
+    $service->usePlatform($admin, $workspace, $ingredient);
 
-    $this->assertModelMissing($override);
-    expect($service->effectiveGuidance($workspace, $ingredient, 'en'))
-        ->toBe('Current platform guidance');
+    expect($override->fresh()->is_active)->toBeFalse()
+        ->and($service->effectiveHtml($workspace, $ingredient, 'en'))
+        ->toContain('Current platform guidance');
+
+    $service->useWorkspace($admin, $workspace, $ingredient);
+
+    expect($override->fresh()->is_active)->toBeTrue()
+        ->and($service->effectiveHtml($workspace, $ingredient, 'en'))
+        ->toBe('<p>Workspace guidance</p>');
 });
 
-it('forbids viewers and non-members from saving or resetting guidance', function (): void {
+it('forbids viewers and non-members from saving or switching guidance', function (): void {
     $owner = User::factory()->create();
     $viewer = User::factory()->create();
     $nonMember = User::factory()->create();
@@ -240,13 +252,13 @@ it('forbids viewers and non-members from saving or resetting guidance', function
             $ingredient,
             'Non-member guidance',
         ))->toThrow(AuthorizationException::class)
-        ->and(fn () => $service->reset($viewer, $workspace, $ingredient))
+        ->and(fn () => $service->usePlatform($viewer, $workspace, $ingredient))
         ->toThrow(AuthorizationException::class)
-        ->and(fn () => $service->reset($nonMember, $workspace, $ingredient))
+        ->and(fn () => $service->usePlatform($nonMember, $workspace, $ingredient))
         ->toThrow(AuthorizationException::class);
 });
 
-it('rejects invalid workspace guidance without changing an existing override', function (string $guidance): void {
+it('rejects invalid workspace guidance without changing an existing record', function (string $guidance): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create();
@@ -256,52 +268,53 @@ it('rejects invalid workspace guidance without changing an existing override', f
     expect(fn () => $service->save($owner, $workspace, $ingredient, $guidance))
         ->toThrow(ValidationException::class);
 
-    expect($service->overrideFor($workspace, $ingredient)->guidance_markdown)
-        ->toBe('Existing guidance');
+    expect($service->recordFor($workspace, $ingredient)->guidance_html)
+        ->toBe('<p>Existing guidance</p>');
 })->with([
     'empty after trimming' => '   ',
-    'raw html' => '<script>alert(1)</script>',
-    'too long unicode value' => str_repeat('界', 2001),
+    'empty html' => '<p><br></p>',
+    'too long unicode value' => '<p>'.str_repeat('界', 2001).'</p>',
 ]);
 
-it('accepts the two-thousand-character Unicode boundary and supported Markdown', function (): void {
+it('accepts the two-thousand-character Unicode boundary and supported HTML', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create();
     $service = app(WorkspaceIngredientGuidanceService::class);
 
-    $boundary = $service->save($owner, $workspace, $ingredient, str_repeat('界', 2000));
+    $boundary = $service->save($owner, $workspace, $ingredient, '<p>'.str_repeat('界', 2000).'</p>');
     $markdown = $service->save(
         $owner,
         $workspace,
         $ingredient,
-        "# Heading\n\n- item\n- **emphasis**\n\n[More](https://example.com)",
+        '<h2>Heading</h2><ul><li>item</li></ul><p><strong>emphasis</strong> <a href="https://example.com">More</a></p>',
     );
 
-    expect(mb_strlen($boundary->guidance_markdown))->toBe(2000)
-        ->and($markdown->guidance_markdown)
-        ->toBe("# Heading\n\n- item\n- **emphasis**\n\n[More](https://example.com)");
+    expect(mb_strlen(app(WorkspaceIngredientGuidanceContent::class)->text($boundary->guidance_html)))->toBe(2000)
+        ->and($markdown->guidance_html)
+        ->toBe('<h2>Heading</h2><ul><li>item</li></ul><p><strong>emphasis</strong> <a href="https://example.com">More</a></p>');
 });
 
-it('rejects inactive platform and workspace-owned ingredients for overrides', function (): void {
+it('rejects inactive platform ingredients and cross-workspace private ingredients', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $inactivePlatform = Ingredient::factory()->create(['is_active' => false]);
+    $otherWorkspace = Workspace::factory()->create();
     $workspaceIngredient = Ingredient::factory()->create([
         'owner_type' => OwnerType::Workspace,
-        'owner_id' => $workspace->id,
-        'workspace_id' => $workspace->id,
+        'owner_id' => $otherWorkspace->id,
+        'workspace_id' => $otherWorkspace->id,
         'visibility' => Visibility::Private,
     ]);
     $service = app(WorkspaceIngredientGuidanceService::class);
 
     expect(fn () => $service->save($owner, $workspace, $inactivePlatform, 'Guidance'))
         ->toThrow(ValidationException::class)
-        ->and(fn () => $service->save($owner, $workspace, $workspaceIngredient, 'Guidance'))
+        ->and(fn () => $service->save($owner, $workspace, $workspaceIngredient, '<p>Guidance</p>'))
         ->toThrow(ValidationException::class);
 });
 
-it('restores the latest localized platform guidance after reset', function (): void {
+it('falls back to the latest localized platform guidance while inactive', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -316,8 +329,8 @@ it('restores the latest localized platform guidance after reset', function (): v
     $service->save($owner, $workspace, $ingredient, 'Workspace-authored guidance');
 
     app()->setLocale('fr');
-    $service->reset($owner, $workspace, $ingredient);
+    $service->usePlatform($owner, $workspace, $ingredient);
 
-    expect($service->effectiveGuidance($workspace, $ingredient, app()->getLocale()))
-        ->toBe('Conseils de la plateforme');
+    expect($service->effectiveHtml($workspace, $ingredient, app()->getLocale()))
+        ->toContain('Conseils de la plateforme');
 });

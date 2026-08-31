@@ -106,6 +106,7 @@ it('requires evidence for formulation-use claims and explicit evidence for usage
 
 it('keeps cosmetics and soapmaking usage claims in their respective sections', function (): void {
     $cosmetics = guidanceClaim([
+        'text' => 'A supplier recommends this product grade at 1–10% of the total formula in cosmetics.',
         'claim_type' => 'usage',
         'support_type' => 'evidence',
         'evidence_indexes' => [1],
@@ -127,6 +128,128 @@ it('keeps cosmetics and soapmaking usage claims in their respective sections', f
         ->and(fn (): array => guidanceRenderer()->render(guidanceDraft([
             'formulation_use' => [$soapmaking],
         ]), guidanceContext()))->toThrow(RuntimeException::class);
+});
+
+it('rejects usage prose whose percentage differs from the cited recommendation', function (): void {
+    $claim = guidanceClaim([
+        'text' => 'A supplier recommends this product grade at 2–20% of the total formula.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$claim],
+    ]), guidanceContext()))->toThrow(RuntimeException::class);
+});
+
+it('requires usage prose to preserve the evidence scope and percentage basis', function (): void {
+    $claim = guidanceClaim([
+        'text' => 'A supplier recommends this material at 1–10%.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$claim],
+    ]), guidanceContext()))->toThrow(RuntimeException::class);
+});
+
+it('requires usage prose to state the cited application', function (): void {
+    $claim = guidanceClaim([
+        'text' => 'A supplier recommends this product grade at 1–10% of the total formula.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$claim],
+    ]), guidanceContext()))->toThrow(RuntimeException::class);
+});
+
+it('requires usage prose to attribute the recommendation to the cited source kind', function (): void {
+    $claim = guidanceClaim([
+        'text' => 'A manufacturer recommends this product grade at 1–10% of the total formula for cosmetics; the supplier does not.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$claim],
+    ]), guidanceContext()))->toThrow(RuntimeException::class);
+});
+
+it('preserves the direction of one-sided usage recommendation bounds', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'][1]['recommended_max_percent'] = null;
+    $minimumClaim = guidanceClaim([
+        'text' => 'A supplier recommends this product grade at up to 1% of the total formula for cosmetics.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$minimumClaim],
+    ]), $context))->toThrow(RuntimeException::class);
+
+    $validMinimumClaim = [
+        ...$minimumClaim,
+        'text' => 'A supplier recommends at least 1% of this product grade in the total formula for cosmetics.',
+    ];
+    expect(guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$validMinimumClaim],
+    ]), $context)['info_markdown'])->toContain('at least 1%');
+
+    $context['guidance_evidence'][1]['recommended_min_percent'] = null;
+    $context['guidance_evidence'][1]['recommended_max_percent'] = '10';
+    $maximumClaim = guidanceClaim([
+        'text' => 'A supplier recommends this product grade at at least 10% of the total formula for cosmetics.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$maximumClaim],
+    ]), $context))->toThrow(RuntimeException::class);
+
+    $validMaximumClaim = [
+        ...$maximumClaim,
+        'text' => 'A supplier recommends up to 10% of this product grade in the total formula for cosmetics.',
+    ];
+    expect(guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$validMaximumClaim],
+    ]), $context)['info_markdown'])->toContain('up to 10%');
+});
+
+it('rejects a usage sentence that silently combines multiple recommendations', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'][] = [
+        ...$context['guidance_evidence'][1],
+        'recommended_min_percent' => '5',
+        'recommended_max_percent' => '15',
+    ];
+    $claim = guidanceClaim([
+        'text' => 'Suppliers recommend this product grade at 1–15% of the total formula.',
+        'claim_type' => 'usage',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [1, 3],
+        'usage_application' => 'cosmetics',
+    ]);
+
+    expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$claim],
+    ]), $context))->toThrow(RuntimeException::class);
 });
 
 it('accepts trusted soap chemistry facts and omits an empty soapmaking section', function (): void {
@@ -241,7 +364,7 @@ it('rejects claims when the matching research question remains unresolved', func
         'recommended_max_percent' => null,
         'percentage_basis' => 'not_applicable',
     ]];
-    $context['unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
+    $context['guidance_unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
 
     expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [guidanceClaim([
@@ -250,6 +373,34 @@ it('rejects claims when the matching research question remains unresolved', func
             'evidence_indexes' => [0],
         ])],
     ]), $context))->toThrow(RuntimeException::class);
+});
+
+it('does not block supported soapmaking guidance for unresolved soap declaration names', function (): void {
+    $context = guidanceContext();
+    $context['unresolved_questions'] = [
+        'An official sodium soap INCI name could not be verified for this material.',
+        'An official potassium soap INCI name could not be verified for this material.',
+    ];
+    $context['guidance_evidence'][] = [
+        'claim_type' => 'soapmaking',
+        'source_kind' => 'supplier_technical',
+        'scope' => 'product_grade',
+        'evidence_kind' => 'formulation_recommendation',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ];
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'soapmaking' => [guidanceClaim([
+            'text' => 'For this supplied grade, the supplier describes a softer-feeling bar.',
+            'claim_type' => 'soapmaking',
+            'evidence_indexes' => [3],
+        ])],
+    ]), $context);
+
+    expect($result['info_markdown'])->toContain('## Soapmaking');
 });
 
 /** @param array<string, mixed> $overrides @return array<string, mixed> */

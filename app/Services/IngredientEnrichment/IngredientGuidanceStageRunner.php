@@ -162,6 +162,7 @@ class IngredientGuidanceStageRunner
             'performed',
             'candidate_evidence',
             'guidance_evidence',
+            'rejected_evidence',
             'warnings',
             'unresolved_questions',
             'sources',
@@ -177,9 +178,24 @@ class IngredientGuidanceStageRunner
         if (! is_bool($data['performed'] ?? null)) {
             throw new LogicException('Guidance research stage data has an invalid performed flag.');
         }
-        foreach (['candidate_evidence', 'guidance_evidence', 'sources'] as $field) {
+        // Older completed research stages predate rejection diagnostics.
+        $data['rejected_evidence'] ??= [];
+        foreach (['candidate_evidence', 'guidance_evidence', 'rejected_evidence', 'sources'] as $field) {
             if (! is_array($data[$field] ?? null) || ! array_is_list($data[$field])) {
                 throw new LogicException("Guidance research stage data is missing {$field}.");
+            }
+        }
+        foreach ($data['rejected_evidence'] as $index => $rejection) {
+            if (! is_array($rejection)) {
+                throw new LogicException("Guidance research stage rejection {$index} is invalid.");
+            }
+            $this->validateExactKeys($rejection, ['index', 'code', 'host'], "Guidance research stage rejection {$index}");
+            if (! is_int($rejection['index'] ?? null) || $rejection['index'] < 0
+                || ! is_string($rejection['code'] ?? null)
+                || ! in_array($rejection['code'], IngredientGuidanceEvidencePolicy::REJECTION_CODES, true)
+                || ($rejection['host'] !== null
+                    && (! is_string($rejection['host']) || trim($rejection['host']) === ''))) {
+                throw new LogicException("Guidance research stage rejection {$index} is invalid.");
             }
         }
         $this->validateStringList($data, 'warnings', 'Guidance research stage data');
@@ -772,9 +788,9 @@ class IngredientGuidanceStageRunner
             $englishGuidance = (string) ($ingredient->info_markdown ?? '');
         }
 
-        return str_contains(
+        return $this->headings->hasExactHeading(
             $englishGuidance,
-            '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
+            (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
         );
     }
 

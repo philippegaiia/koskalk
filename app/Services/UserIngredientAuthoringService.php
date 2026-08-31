@@ -25,6 +25,7 @@ class UserIngredientAuthoringService
         protected IngredientFunctionAssignmentService $functionAssignments,
         protected IngredientIdentitySynchronizer $ingredientIdentitySynchronizer,
         protected IngredientAliasLocaleService $ingredientAliasLocaleService,
+        protected WorkspaceIngredientGuidanceService $workspaceIngredientGuidanceService,
     ) {}
 
     /**
@@ -49,7 +50,6 @@ class UserIngredientAuthoringService
             'featured_image_original_name' => null,
             'icon_image_path' => null,
             'icon_image_original_name' => null,
-            'info_markdown' => null,
             'composition_source_notes' => null,
             'allergen_source_notes' => null,
             'function_ids' => [],
@@ -100,9 +100,6 @@ class UserIngredientAuthoringService
             'featured_image_original_name' => $ingredient->featured_image_original_name,
             'icon_image_path' => $ingredient->icon_image_path,
             'icon_image_original_name' => $ingredient->icon_image_original_name,
-            'info_markdown' => $isPlatformIngredient
-                ? $ingredient->localizedInfoMarkdown()
-                : $ingredient->info_markdown,
             'composition_source_notes' => $ingredient->composition_source_notes,
             'allergen_source_notes' => $ingredient->allergen_source_notes,
             'function_ids' => $entryData['function_ids'] ?? [],
@@ -235,7 +232,7 @@ class UserIngredientAuthoringService
             $copy->requires_admin_review = false;
             $copy->display_name = $source->localizedDisplayName($user->locale) ?? $source->display_name;
             $copy->saponification_name = $source->localizedSaponificationName($user->locale) ?? $source->saponification_name;
-            $copy->info_markdown = $source->localizedInfoMarkdown($user->locale) ?? $source->info_markdown;
+            $copy->info_markdown = null;
             $copy->source_data = $this->duplicateSourceData($source);
             $copy->featured_image_path = null;
             $copy->featured_image_original_name = null;
@@ -245,6 +242,17 @@ class UserIngredientAuthoringService
 
             $this->deepCopyRelations($source, $copy);
             $this->ingredientIdentitySynchronizer->sync($copy, $this->localizedIdentityState($source, $user));
+
+            $localizedGuidance = $source->localizedInfoMarkdown($user->locale);
+
+            if (filled($localizedGuidance)) {
+                $this->workspaceIngredientGuidanceService->save(
+                    $user,
+                    $workspace,
+                    $copy,
+                    $this->workspaceIngredientGuidanceService->platformHtml($localizedGuidance),
+                );
+            }
 
             return $copy->fresh([
                 'sapProfile',
@@ -333,7 +341,6 @@ class UserIngredientAuthoringService
             'notes' => $state['notes'] ?? null,
             'featured_image_path' => null,
             'icon_image_path' => null,
-            'info_markdown' => null,
             'function_ids' => [],
             'allergen_entries' => [],
             'components' => [],
@@ -409,7 +416,6 @@ class UserIngredientAuthoringService
                 ? Arr::get($state, 'icon_image_original_name')
                 : null;
         }
-        $ingredient->info_markdown = Arr::get($state, 'info_markdown');
         $ingredient->notes = blank(Arr::get($state, 'notes'))
             ? null
             : trim((string) Arr::get($state, 'notes'));

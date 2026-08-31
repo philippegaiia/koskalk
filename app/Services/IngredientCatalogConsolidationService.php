@@ -253,7 +253,10 @@ class IngredientCatalogConsolidationService
                 continue;
             }
 
-            if ($sourceGuidance->guidance_markdown === $targetGuidance->guidance_markdown) {
+            if (
+                $sourceGuidance->guidance_html === $targetGuidance->guidance_html
+                && $sourceGuidance->is_active === $targetGuidance->is_active
+            ) {
                 $sourceGuidance->delete();
 
                 continue;

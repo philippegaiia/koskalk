@@ -7,6 +7,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
+use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
 use App\Forms\Components\IngredientIdentityFields;
 use App\Forms\Components\MediaAssetPicker;
@@ -28,6 +29,7 @@ use App\Services\IngredientIdentitySynchronizer;
 use App\Services\MediaAssetUsageService;
 use App\Services\UserIngredientAuthoringService;
 use App\Services\WorkspaceIngredientCodeService;
+use App\Services\WorkspaceIngredientGuidanceContent;
 use App\Services\WorkspaceIngredientGuidanceService;
 use App\SoapSap;
 use App\Support\LocalizedDecimalInput;
@@ -36,6 +38,7 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -90,7 +93,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public ?string $workspaceMaterialCode = null;
 
-    public ?string $workspaceGuidanceMarkdown = null;
+    /** @var array{html: ?string} */
+    public array $workspaceGuidance = ['html' => null];
 
     public bool $isEditingWorkspaceGuidance = false;
 
@@ -168,12 +172,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
             : null;
         $state['material_code'] = $materialCode;
         $this->workspaceMaterialCode = $ingredient?->owner_type === null ? $materialCode : null;
-        $override = $ingredient instanceof Ingredient
-            && $ingredient->owner_type === null
+        $guidance = $ingredient instanceof Ingredient
             && $workspace instanceof Workspace
-                ? $workspaceIngredientGuidances->overrideFor($workspace, $ingredient)
+                ? $workspaceIngredientGuidances->recordFor($workspace, $ingredient)
                 : null;
-        $this->workspaceGuidanceMarkdown = $override?->guidance_markdown;
+
+        if ($ingredient instanceof Ingredient && $ingredient->owner_type !== null) {
+            $state['guidance_html'] = $guidance?->guidance_html;
+        }
+
+        $this->workspaceGuidanceForm->fill([
+            'html' => $guidance?->guidance_html,
+        ]);
 
         $this->form->fill($state);
     }
@@ -182,6 +192,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
         UserIngredientAuthoringService $userIngredientAuthoringService,
         MediaAssetUsageService $mediaAssetUsages,
         WorkspaceIngredientCodeService $workspaceIngredientCodes,
+        WorkspaceIngredientGuidanceContent $workspaceIngredientGuidanceContent,
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ) {
         $user = $this->currentUser();
         $wasEditing = $this->isEditing();
@@ -203,13 +215,15 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $iconMediaAssetId = $state['icon_media_asset_id'] ?? null;
         $documentMediaAssetIds = $state['document_media_asset_ids'] ?? [];
         $workspaceMaterialCode = $state['material_code'] ?? null;
+        $workspaceGuidanceHtml = $state['guidance_html'] ?? null;
         unset($state['featured_media_asset_id'], $state['icon_media_asset_id'], $state['document_media_asset_ids']);
         unset($state['material_code']);
+        unset($state['guidance_html']);
         $state['public_id'] = $this->mediaPublicId;
         $currentIngredient = $this->currentIngredient();
 
         try {
-            $ingredient = DB::transaction(function () use ($currentIngredient, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceMaterialCode): Ingredient {
+            $ingredient = DB::transaction(function () use ($currentIngredient, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceIngredientGuidanceContent, $workspaceIngredientGuidances, $workspaceGuidanceHtml, $workspaceMaterialCode): Ingredient {
                 $ingredient = $currentIngredient instanceof Ingredient
                     ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
                     : $userIngredientAuthoringService->create($state, $user);
@@ -217,6 +231,23 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 $workspace = $this->workspaceForIngredientSettings($ingredient);
 
                 if ($workspace instanceof Workspace) {
+                    if ($ingredient->owner_type === OwnerType::Workspace) {
+                        if (filled($workspaceIngredientGuidanceContent->text($workspaceGuidanceHtml))) {
+                            $workspaceIngredientGuidances->save(
+                                $user,
+                                $workspace,
+                                $ingredient,
+                                $workspaceGuidanceHtml,
+                            );
+                        } else {
+                            $workspaceIngredientGuidances->clearWorkspaceOwned(
+                                $user,
+                                $workspace,
+                                $ingredient,
+                            );
+                        }
+                    }
+
                     $workspaceIngredientCodes->synchronize($user, $workspace, $ingredient, $workspaceMaterialCode);
                 }
 
@@ -272,6 +303,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
         $refreshedState['icon_media_asset_id'] = $iconMediaAssetId;
         $refreshedState['document_media_asset_ids'] = $documentMediaAssetIds;
+        $refreshedState['guidance_html'] = $workspace instanceof Workspace
+            && $ingredient->owner_type === OwnerType::Workspace
+                ? $workspaceIngredientGuidances->recordFor($workspace, $ingredient)?->guidance_html
+                : null;
         $this->form->fill($refreshedState);
 
         if (! $wasEditing) {
@@ -330,7 +365,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         if ($context === null || ! $this->canEditWorkspaceGuidance()) {
             $this->addError(
-                'workspaceGuidanceMarkdown',
+                'workspaceGuidance.html',
                 __('ingredients.editor.validation.workspace_guidance_forbidden'),
             );
 
@@ -339,23 +374,30 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         [, $workspace, $ingredient] = $context;
 
-        $this->workspaceGuidanceMarkdown = $workspaceIngredientGuidances
-            ->effectiveGuidance($workspace, $ingredient, app()->getLocale());
+        $this->workspaceGuidanceForm->fill([
+            'html' => $workspaceIngredientGuidances->editableHtml(
+                $workspace,
+                $ingredient,
+                app()->getLocale(),
+            ),
+        ]);
         $this->isEditingWorkspaceGuidance = true;
-        $this->resetErrorBag('workspaceGuidanceMarkdown');
+        $this->resetErrorBag('workspaceGuidance.html');
     }
 
     public function cancelWorkspaceGuidanceCustomization(
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
         $context = $this->workspaceGuidanceWriteContext();
-        $override = $context === null
+        $guidance = $context === null
             ? null
-            : $workspaceIngredientGuidances->overrideFor($context[1], $context[2]);
+            : $workspaceIngredientGuidances->recordFor($context[1], $context[2]);
 
-        $this->workspaceGuidanceMarkdown = $override?->guidance_markdown;
+        $this->workspaceGuidanceForm->fill([
+            'html' => $guidance?->guidance_html,
+        ]);
         $this->isEditingWorkspaceGuidance = false;
-        $this->resetErrorBag('workspaceGuidanceMarkdown');
+        $this->resetErrorBag('workspaceGuidance.html');
     }
 
     public function saveWorkspaceGuidance(
@@ -365,7 +407,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         if ($context === null || ! $this->canEditWorkspaceGuidance()) {
             $this->addError(
-                'workspaceGuidanceMarkdown',
+                'workspaceGuidance.html',
                 __('ingredients.editor.validation.workspace_guidance_forbidden'),
             );
 
@@ -375,11 +417,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
         [$user, $workspace, $ingredient] = $context;
 
         try {
-            $override = $workspaceIngredientGuidances->save(
+            $guidance = $workspaceIngredientGuidances->save(
                 $user,
                 $workspace,
                 $ingredient,
-                $this->workspaceGuidanceMarkdown,
+                $this->workspaceGuidanceForm->getState()['html'] ?? null,
             );
         } catch (ValidationException $exception) {
             $this->addWorkspaceGuidanceValidationErrors($exception);
@@ -387,27 +429,29 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return;
         } catch (AuthorizationException) {
             $this->addError(
-                'workspaceGuidanceMarkdown',
+                'workspaceGuidance.html',
                 __('ingredients.editor.validation.workspace_guidance_forbidden'),
             );
 
             return;
         }
 
-        $this->workspaceGuidanceMarkdown = $override->guidance_markdown;
+        $this->workspaceGuidanceForm->fill([
+            'html' => $guidance->guidance_html,
+        ]);
         $this->isEditingWorkspaceGuidance = false;
-        $this->resetErrorBag('workspaceGuidanceMarkdown');
+        $this->resetErrorBag('workspaceGuidance.html');
         $this->showAppNotification(__('ingredients.editor.workspace_guidance.saved'));
     }
 
-    public function resetWorkspaceGuidance(
+    public function usePlatformGuidance(
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
         $context = $this->workspaceGuidanceWriteContext();
 
         if ($context === null || ! $this->canEditWorkspaceGuidance()) {
             $this->addError(
-                'workspaceGuidanceMarkdown',
+                'workspaceGuidance.html',
                 __('ingredients.editor.validation.workspace_guidance_forbidden'),
             );
 
@@ -417,24 +461,62 @@ class IngredientEditor extends Component implements HasActions, HasForms
         [$user, $workspace, $ingredient] = $context;
 
         try {
-            $workspaceIngredientGuidances->reset($user, $workspace, $ingredient);
+            $workspaceIngredientGuidances->usePlatform($user, $workspace, $ingredient);
         } catch (ValidationException $exception) {
             $this->addWorkspaceGuidanceValidationErrors($exception);
 
             return;
         } catch (AuthorizationException) {
             $this->addError(
-                'workspaceGuidanceMarkdown',
+                'workspaceGuidance.html',
                 __('ingredients.editor.validation.workspace_guidance_forbidden'),
             );
 
             return;
         }
 
-        $this->workspaceGuidanceMarkdown = null;
+        $guidance = $workspaceIngredientGuidances->recordFor($workspace, $ingredient);
+        $this->workspaceGuidanceForm->fill(['html' => $guidance?->guidance_html]);
         $this->isEditingWorkspaceGuidance = false;
-        $this->resetErrorBag('workspaceGuidanceMarkdown');
-        $this->showAppNotification(__('ingredients.editor.workspace_guidance.reset_done'));
+        $this->resetErrorBag('workspaceGuidance.html');
+        $this->showAppNotification(__('ingredients.editor.workspace_guidance.platform_selected'));
+    }
+
+    public function useWorkspaceGuidance(
+        WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
+    ): void {
+        $context = $this->workspaceGuidanceWriteContext();
+
+        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
+            $this->addError(
+                'workspaceGuidance.html',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        [$user, $workspace, $ingredient] = $context;
+
+        try {
+            $guidance = $workspaceIngredientGuidances->useWorkspace($user, $workspace, $ingredient);
+        } catch (ValidationException $exception) {
+            $this->addWorkspaceGuidanceValidationErrors($exception);
+
+            return;
+        } catch (AuthorizationException) {
+            $this->addError(
+                'workspaceGuidance.html',
+                __('ingredients.editor.validation.workspace_guidance_forbidden'),
+            );
+
+            return;
+        }
+
+        $this->workspaceGuidanceForm->fill(['html' => $guidance->guidance_html]);
+        $this->isEditingWorkspaceGuidance = false;
+        $this->resetErrorBag('workspaceGuidance.html');
+        $this->showAppNotification(__('ingredients.editor.workspace_guidance.workspace_selected'));
     }
 
     public function canEditWorkspaceGuidance(): bool
@@ -697,11 +779,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->multiple()
                                             ->maxItems(8)
                                             ->columnSpanFull(),
-                                        Textarea::make('info_markdown')
-                                            ->label(__('ingredients.editor.media.notes'))
-                                            ->helperText(__('ingredients.editor.media.notes_helper'))
-                                            ->rows(4)
-                                            ->maxLength(5000)
+                                        $this->guidanceRichEditor(
+                                            'guidance_html',
+                                            __('ingredients.editor.media.notes'),
+                                            __('ingredients.editor.media.notes_helper'),
+                                        )
+                                            ->visible(fn (): bool => ! $this->isCurrentPlatformIngredient())
                                             ->columnSpanFull(),
                                     ]),
                             ]),
@@ -920,6 +1003,52 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->model($this->currentIngredient() ?? Ingredient::class);
     }
 
+    public function workspaceGuidanceForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                $this->guidanceRichEditor('html'),
+            ])
+            ->statePath('workspaceGuidance');
+    }
+
+    private function guidanceRichEditor(
+        string $name,
+        ?string $label = null,
+        ?string $helper = null,
+    ): RichEditor {
+        return RichEditor::make($name)
+            ->label($label ?? __('ingredients.editor.workspace_guidance.heading'))
+            ->helperText($helper ?? __('ingredients.editor.workspace_guidance.helper', [
+                'max' => WorkspaceIngredientGuidanceService::MAX_LENGTH,
+            ]))
+            ->maxLength(WorkspaceIngredientGuidanceService::MAX_LENGTH)
+            ->extraInputAttributes([
+                'class' => 'min-h-[18rem] [&_.fi-fo-rich-editor-content]:min-h-[16rem]',
+            ])
+            ->toolbarButtons($this->workspaceGuidanceToolbar())
+            ->linkProtocols(['http', 'https']);
+    }
+
+    /**
+     * @return array<int, array<int, string>>
+     */
+    private function workspaceGuidanceToolbar(): array
+    {
+        return [
+            ['bold', 'italic', 'link'],
+            ['paragraph', 'h2', 'h3'],
+            ['bulletList', 'orderedList'],
+            ['undo', 'redo'],
+        ];
+    }
+
+    private function isCurrentPlatformIngredient(): bool
+    {
+        return $this->currentIngredient()?->owner_type === null
+            && $this->currentIngredient()?->exists === true;
+    }
+
     public function render(): View
     {
         $ingredient = $this->currentIngredient();
@@ -928,12 +1057,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $workspaceGuidanceOverride = $ingredient instanceof Ingredient
             && $ingredient->owner_type === null
             && $workspace instanceof Workspace
-                ? app(WorkspaceIngredientGuidanceService::class)->overrideFor($workspace, $ingredient)
+                ? app(WorkspaceIngredientGuidanceService::class)->recordFor($workspace, $ingredient)
                 : null;
         $effectiveWorkspaceGuidance = $ingredient instanceof Ingredient
             && $ingredient->owner_type === null
             && $workspace instanceof Workspace
-                ? app(WorkspaceIngredientGuidanceService::class)->effectiveGuidance(
+                ? app(WorkspaceIngredientGuidanceService::class)->effectiveHtml(
                     $workspace,
                     $ingredient,
                     app()->getLocale(),
@@ -1206,7 +1335,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     {
         foreach ($exception->errors() as $messages) {
             foreach ($messages as $message) {
-                $this->addError('workspaceGuidanceMarkdown', $message);
+                $this->addError('workspaceGuidance.html', $message);
             }
         }
     }

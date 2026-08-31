@@ -182,15 +182,13 @@ class ApplyPlatformIngredientEnrichment
         $guidanceEvidence = is_array($result['guidance_evidence'] ?? null)
             ? $result['guidance_evidence']
             : [];
-        if ($guidanceEvidence !== []) {
-            data_set($sourceData, 'enrichment.guidance', [
-                'evidence' => $guidanceEvidence,
-                'research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
-                'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
-                'localization_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
-                'approved_at' => CarbonImmutable::now()->toIso8601String(),
-            ]);
-        }
+        data_set($sourceData, 'enrichment.guidance', [
+            'evidence' => $guidanceEvidence,
+            'research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
+            'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
+            'localization_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
+            'approved_at' => CarbonImmutable::now()->toIso8601String(),
+        ]);
         $ingredient->source_data = $sourceData;
         $ingredient->requires_admin_review = $promotion ? false : true;
         if ($promotion) {

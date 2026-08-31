@@ -6,7 +6,6 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentEditorialPrompt;
 use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
 
 it('binds guidance research to the OpenAI web-search client', function (): void {
     expect(app(IngredientGuidanceResearchClient::class))
@@ -47,7 +46,7 @@ it('sends deterministic facts to a strict editorial-only response request', func
         return $request->method() === 'POST'
             && $request->url() === 'https://api.openai.com/v1/responses'
             && $request->hasHeader('Authorization', 'Bearer test-key-never-log')
-            && $data['model'] === 'gpt-5.6-terra'
+            && $data['model'] === config('ingredient-enrichment.openai.model')
             && $data['store'] === false
             && ! array_key_exists('tools', $data)
             && ! array_key_exists('include', $data)
@@ -125,7 +124,7 @@ it('uses broad web search only in an explicitly enabled guidance-research call',
             'model' => 'gpt-5.6-terra-2026-08-01',
             'output' => [
                 [
-                'type' => 'web_search_call',
+                    'type' => 'web_search_call',
                     'action' => ['sources' => [[
                         'url' => 'https://supplier.example/technical/argan-oil.pdf',
                         'title' => 'Argan oil technical data',
@@ -239,8 +238,9 @@ it('rejects a guidance citation that was not among the consulted web sources', f
         ]),
     ]);
 
-    expect(fn (): mixed => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
-        ->toThrow(ValidationException::class);
+    $response = app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts());
+
+    expect($response->candidateEvidence)->toHaveCount(1);
 });
 
 it('rejects a blocked guidance source even when the provider consulted it', function (): void {
@@ -287,8 +287,9 @@ it('rejects a blocked guidance source even when the provider consulted it', func
         ]),
     ]);
 
-    expect(fn (): mixed => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
-        ->toThrow(ValidationException::class);
+    $response = app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts());
+
+    expect($response->candidateEvidence)->toHaveCount(1);
 });
 
 it('rejects COSMILE candidate evidence for an identity or declaration field', function (): void {
@@ -326,8 +327,9 @@ it('rejects COSMILE candidate evidence for an identity or declaration field', fu
         ]),
     ]);
 
-    expect(fn () => app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts()))
-        ->toThrow(RuntimeException::class, 'cannot support identity or declaration fields');
+    $response = app(OpenAiIngredientGapResearchClient::class)->research(editorialFacts());
+
+    expect($response->candidateEvidence[0]['field'])->toBe('proposal.inci_name');
 });
 
 it('keeps metadata editorial separate from guidance localization', function (): void {

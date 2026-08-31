@@ -24,6 +24,7 @@ beforeEach(function () {
 it('shows localized platform content while preserving authored workspace names', function (): void {
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
     $user = User::factory()->create(['locale' => 'fr']);
+    Workspace::factory()->for($user, 'owner')->create();
     $platform = Ingredient::factory()->create([
         'display_name' => 'Coconut oil',
         'info_markdown' => 'English guidance',
@@ -40,9 +41,13 @@ it('shows localized platform content while preserving authored workspace names',
     App::setLocale('fr');
     $this->actingAs($user);
 
-    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
         ->assertSet('data.name', 'Huile de coco')
-        ->assertSet('data.info_markdown', 'Conseils en français')
+        ->call('startWorkspaceGuidanceCustomization')
+        ->assertSet('isEditingWorkspaceGuidance', true)
+        ->tap(fn ($test) => expect($test->instance()->workspaceGuidanceForm->getState()['html'])->toBe('<p>Conseils en français</p>'))
         ->assertSeeText('Huile de coco')
         ->assertDontSeeText('Coconut oil');
 });

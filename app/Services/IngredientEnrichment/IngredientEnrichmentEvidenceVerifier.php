@@ -7,6 +7,10 @@ use Illuminate\Validation\ValidationException;
 
 class IngredientEnrichmentEvidenceVerifier
 {
+    public function __construct(
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $result
      * @param  list<array{url: string, title: string}>  $consultedSources
@@ -22,7 +26,11 @@ class IngredientEnrichmentEvidenceVerifier
             $url = $citation['source_url'];
             $tier = IngredientSourceTier::tryFrom($citation['source_tier']);
 
-            if (! $tier instanceof IngredientSourceTier || ! $this->isAllowedUrl($url, $tier)) {
+            $allowed = $citation['field'] === 'proposal.info_markdown'
+                ? $this->guidanceEvidencePolicy->allowsCitationUrl($url, $consultedSources)
+                : $tier instanceof IngredientSourceTier && $this->isAllowedUrl($url, $tier);
+
+            if (! $allowed) {
                 throw ValidationException::withMessages([
                     $path => __('ingredient_enrichment_admin.validation.disallowed_source'),
                 ]);

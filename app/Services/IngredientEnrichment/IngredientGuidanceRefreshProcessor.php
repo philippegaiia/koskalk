@@ -85,7 +85,6 @@ class IngredientGuidanceRefreshProcessor
             $context = is_array($initial['snapshot']) ? $initial['snapshot'] : $this->contexts->build($ingredient);
             $sourceFingerprint = (string) $initial['source_fingerprint'];
             $research = $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
-                && (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true)
                 ? $this->runResearch($itemId, $context)
                 : null;
             $guidanceContext = $research instanceof IngredientSourceStageResult
@@ -97,9 +96,9 @@ class IngredientGuidanceRefreshProcessor
             $englishGuidance = $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
                 ? $this->englishGuidanceFromAuthoring($authoring)
                 : $this->canonicalEnglishGuidance($context, $ingredient);
-            $soapmakingRelevant = str_contains(
+            $soapmakingRelevant = $this->headings->hasExactHeading(
                 $englishGuidance,
-                '## '.config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
+                (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
             );
             $metadataTranslations = $this->metadataTranslations($context);
             $localization = $this->stages->run(
@@ -164,9 +163,12 @@ class IngredientGuidanceRefreshProcessor
                             ->merge(is_array($guidance['warnings'] ?? null) ? $guidance['warnings'] : [])
                             ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
                             ->unique()->values()->all(),
-                        'unresolved_questions' => collect(is_array($guidance['unresolved_questions'] ?? null)
-                            ? $guidance['unresolved_questions']
+                        'unresolved_questions' => collect(is_array($guidanceContext['unresolved_questions'] ?? null)
+                            ? $guidanceContext['unresolved_questions']
                             : [])
+                            ->merge(is_array($guidance['unresolved_questions'] ?? null)
+                                ? $guidance['unresolved_questions']
+                                : [])
                             ->filter(fn (mixed $question): bool => is_string($question) && trim($question) !== '')
                             ->unique()->values()->all(),
                     ];
@@ -281,7 +283,8 @@ class IngredientGuidanceRefreshProcessor
                             'performed' => false,
                             'candidate_evidence' => [],
                             'guidance_evidence' => [],
-                            'warnings' => [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
+                            'rejected_evidence' => [],
+                            'warnings' => [],
                             'unresolved_questions' => [],
                             'sources' => [],
                             'provider_response_id' => '',
@@ -299,18 +302,26 @@ class IngredientGuidanceRefreshProcessor
                     ...$context,
                     'guidance_research_prompt_version' => $stageContext['provider_configuration']['guidance_research_prompt_version'] ?? null,
                 ]);
-                $candidateEvidence = $this->guidanceEvidencePolicy->validateCandidates(
+                $validation = $this->guidanceEvidencePolicy->partitionCandidates(
                     $response->candidateEvidence,
                     $response->sources,
                 );
+                $candidateEvidence = $validation->accepted;
                 $guidanceEvidence = $this->guidanceEvidencePolicy->toPersisted(
                     $candidateEvidence,
                     CarbonImmutable::now(),
                 );
                 $warnings = collect($response->warnings)
-                    ->merge($guidanceEvidence === []
-                        ? [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')]
-                        : [])
+                    ->when($validation->rejected !== [], fn ($warnings) => $warnings->push(
+                        trans_choice(
+                            'ingredient_enrichment.warnings.guidance_evidence_rejected',
+                            count($validation->rejected),
+                            ['count' => count($validation->rejected)],
+                        ),
+                    ))
+                    ->when($candidateEvidence === [], fn ($warnings) => $warnings->push(
+                        __('ingredient_enrichment.warnings.guidance_evidence_none_accepted'),
+                    ))
                     ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
                     ->unique()
                     ->values()
@@ -323,6 +334,7 @@ class IngredientGuidanceRefreshProcessor
                         'performed' => true,
                         'candidate_evidence' => $candidateEvidence,
                         'guidance_evidence' => $guidanceEvidence,
+                        'rejected_evidence' => $validation->rejected,
                         'warnings' => $warnings,
                         'unresolved_questions' => $response->unresolvedQuestions,
                         'sources' => $response->sources,
@@ -355,6 +367,9 @@ class IngredientGuidanceRefreshProcessor
             'guidance_research' => $researchData,
             'guidance_research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
             'warnings' => is_array($researchData['warnings'] ?? null) ? $researchData['warnings'] : [],
+            'guidance_unresolved_questions' => is_array($researchData['unresolved_questions'] ?? null)
+                ? $researchData['unresolved_questions']
+                : [],
             'unresolved_questions' => is_array($researchData['unresolved_questions'] ?? null)
                 ? $researchData['unresolved_questions']
                 : [],

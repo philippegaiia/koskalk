@@ -135,7 +135,7 @@ class ApplyIngredientGuidanceRefresh
                     $sourceData = is_array($ingredient->source_data) ? $ingredient->source_data : [];
                     $guidance = $beforeGuidance;
                     $guidanceEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
-                    if ($guidanceEvidence !== []) {
+                    if (! $mode->isLocalizationOnly() || $guidanceEvidence !== []) {
                         $guidance['evidence'] = $guidanceEvidence;
                     }
                     if (! $mode->isLocalizationOnly()) {

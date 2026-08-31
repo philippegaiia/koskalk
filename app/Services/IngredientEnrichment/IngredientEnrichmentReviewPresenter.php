@@ -16,9 +16,16 @@ class IngredientEnrichmentReviewPresenter
                 ?? __('ingredient_enrichment_admin.review.unnamed_subject');
         }
 
+        $ingredientName = $item->ingredient?->display_name
+            ?? $item->ingredient?->inci_name;
+
+        if (filled($ingredientName)) {
+            return filled($item->catalog_key)
+                ? "{$ingredientName} ({$item->catalog_key})"
+                : $ingredientName;
+        }
+
         return $item->catalog_key
-            ?? $item->ingredient?->display_name
-            ?? $item->ingredient?->inci_name
             ?? __('ingredient_enrichment_admin.review.unnamed_subject');
     }
 

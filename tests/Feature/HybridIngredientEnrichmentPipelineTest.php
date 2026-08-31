@@ -1,9 +1,11 @@
 <?php
 
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceResearchClient;
 use App\Data\IngredientEditorialResponse;
 use App\Data\IngredientGapResearchResponse;
+use App\Data\IngredientGuidanceAuthoringResponse;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Enums\IngredientSubcategory;
@@ -203,7 +205,7 @@ it('resumes from the FDA identity boundary before querying downstream EU sources
         ->and($editorial->calls)->toBe(1);
 });
 
-it('runs restricted guidance research automatically and includes its usage', function (): void {
+it('runs guidance research without exposing broad evidence to metadata editorial work', function (): void {
     seedHybridCosingFunctions();
     cache()->flush();
     fakeHybridIngredientSources('argan');
@@ -254,8 +256,7 @@ it('runs restricted guidance research automatically and includes its usage', fun
 
     expect($gapResearch->calls)->toBe(1)
         ->and($editorial->calls)->toBe(1)
-        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.source_name'))->toBe('Example supplier')
-        ->and(data_get($editorial->facts, 'gap_research.candidate_evidence.0.summary'))->toContain('emollient')
+        ->and(data_get($editorial->facts, 'gap_research'))->toBeNull()
         ->and(collect($response->result['evidence'])->contains(
             fn (array $evidence): bool => $evidence['field'] === 'proposal.info_markdown'
                 && $evidence['source_url'] === 'https://supplier.example/technical/argan-oil.pdf'
@@ -278,6 +279,81 @@ it('runs restricted guidance research automatically and includes its usage', fun
             'url' => 'https://supplier.example/technical/argan-oil.pdf',
             'title' => 'Argan oil technical data',
         ]);
+});
+
+it('aligns soapmaking relevance with the rendered guidance sections', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    fakeHybridEditorialClient([
+        'info_markdown' => "## Overview\nA source-identified plant oil.\n\n## Formulation use\nUsed as an emollient in cosmetic formulations.",
+        'soapmaking_relevant' => true,
+    ]);
+    $item = hybridPipelineItem('argan_without_soap_guidance', 'Argan oil');
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+
+    expect($response->result['proposal']['info_markdown'])->not->toContain('## Soapmaking')
+        ->and($response->result['proposal']['soapmaking_relevant'])->toBeFalse();
+});
+
+it('passes guidance research uncertainty to full-enrichment authoring without exposing it to metadata editorial', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    $editorial = fakeHybridEditorialClient(omitGuidance: true);
+    $researchQuestion = 'Confirm the reported cosmetic usage basis before publishing a recommendation.';
+    app()->instance(IngredientGuidanceResearchClient::class, new class($researchQuestion) implements IngredientGuidanceResearchClient
+    {
+        public function __construct(private readonly string $researchQuestion) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [],
+                warnings: [],
+                unresolvedQuestions: [$this->researchQuestion],
+                responseId: 'resp_gap_question',
+                requestId: 'req_gap_question',
+                model: 'gpt-test',
+                inputTokens: 1,
+                outputTokens: 1,
+                webSearchCalls: 1,
+                sources: [],
+            );
+        }
+    });
+    $authoring = new class implements IngredientGuidanceAuthoringClient
+    {
+        /** @var array<string, mixed> */
+        public array $context = [];
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->context = $context;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: [
+                    'info_markdown' => "## Overview\nA source-identified plant oil.\n\n## Formulation use\nIts supported profile informs formulation selection.",
+                    'warnings' => [],
+                    'unresolved_questions' => [],
+                ],
+                responseId: 'resp_guidance_question',
+                requestId: 'req_guidance_question',
+                model: 'gpt-test',
+                inputTokens: 1,
+                outputTokens: 1,
+            );
+        }
+    };
+    app()->instance(IngredientGuidanceAuthoringClient::class, $authoring);
+    $item = hybridPipelineItem('argan_guidance_question', 'Argan oil');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+
+    app(IngredientEnrichmentPipeline::class)->run($item->id);
+
+    expect(data_get($editorial->facts, 'unresolved_questions'))->not->toContain($researchQuestion)
+        ->and($authoring->context['guidance_unresolved_questions'])->toContain($researchQuestion);
 });
 
 it('passes trusted soap chemistry through to the editorial facts', function (): void {
@@ -401,9 +477,12 @@ function fakeHybridIngredientSources(string $fixture): void
     });
 }
 
-function fakeHybridEditorialClient(array $overrides = [], bool $failFirst = false): IngredientEditorialClient
-{
-    $client = new class($overrides, $failFirst) implements IngredientEditorialClient
+function fakeHybridEditorialClient(
+    array $overrides = [],
+    bool $failFirst = false,
+    bool $omitGuidance = false,
+): IngredientEditorialClient {
+    $client = new class($overrides, $failFirst, $omitGuidance) implements IngredientEditorialClient
     {
         public int $calls = 0;
 
@@ -414,6 +493,7 @@ function fakeHybridEditorialClient(array $overrides = [], bool $failFirst = fals
         public function __construct(
             private readonly array $overrides,
             private readonly bool $failFirst,
+            private readonly bool $omitGuidance,
         ) {}
 
         public function edit(array $facts): IngredientEditorialResponse
@@ -428,24 +508,29 @@ function fakeHybridEditorialClient(array $overrides = [], bool $failFirst = fals
                 ? 'Argan oil'
                 : 'Apricot kernel oil';
 
-            return new IngredientEditorialResponse(
-                editorial: [
+            $editorial = [
+                'display_name' => $displayName,
+                'category' => data_get($facts, 'proposal.category'),
+                'subcategory' => data_get($facts, 'proposal.subcategory'),
+                'saponification_name' => $displayName,
+                'info_markdown' => "## Overview\nA source-identified plant oil.\n\n## Formulation use\nUsed as an emollient in cosmetic formulations.\n\n## Soapmaking\nCan be used as part of the oil blend.",
+                'soapmaking_relevant' => true,
+                'translations' => [[
+                    'locale' => 'fr',
                     'display_name' => $displayName,
-                    'category' => data_get($facts, 'proposal.category'),
-                    'subcategory' => data_get($facts, 'proposal.subcategory'),
                     'saponification_name' => $displayName,
-                    'info_markdown' => "## Overview\nA source-identified plant oil.\n\n## Formulation use\nUsed as an emollient in cosmetic formulations.\n\n## Soapmaking\nCan be used as part of the oil blend.",
-                    'soapmaking_relevant' => true,
-                    'translations' => [[
-                        'locale' => 'fr',
-                        'display_name' => $displayName,
-                        'saponification_name' => $displayName,
-                        'info_markdown' => "## Présentation\nUne huile végétale identifiée.\n\n## Utilisation\nUtilisée comme émollient.\n\n## Savonnerie\nPeut faire partie du mélange huileux.",
-                    ]],
-                    'warnings' => [],
-                    'unresolved_questions' => [],
-                    ...$this->overrides,
-                ],
+                    'info_markdown' => "## Présentation\nUne huile végétale identifiée.\n\n## Utilisation\nUtilisée comme émollient.\n\n## Savonnerie\nPeut faire partie du mélange huileux.",
+                ]],
+                'warnings' => [],
+                'unresolved_questions' => [],
+                ...$this->overrides,
+            ];
+            if ($this->omitGuidance) {
+                unset($editorial['info_markdown']);
+            }
+
+            return new IngredientEditorialResponse(
+                editorial: $editorial,
                 responseId: 'resp_hybrid',
                 requestId: 'req_hybrid',
                 model: 'gpt-test',

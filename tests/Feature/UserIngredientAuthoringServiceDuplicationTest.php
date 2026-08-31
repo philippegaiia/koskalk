@@ -11,6 +11,7 @@ use App\Models\IngredientFunction;
 use App\Models\IngredientTranslation;
 use App\Models\Substance;
 use App\Models\User;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -81,7 +82,18 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect($copy->featured_image_original_name)->toBeNull();
     expect($copy->icon_image_path)->toBeNull();
     expect($copy->icon_image_original_name)->toBeNull();
-    expect($copy->info_markdown)->toBe('A popular essential oil.');
+    expect($copy->info_markdown)->toBeNull();
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $copy->id)
+        ->firstOrFail()
+        ->toArray())
+        ->toMatchArray([
+            'guidance_html' => '<p>A popular essential oil.</p>',
+            'is_active' => true,
+            'created_by_user_id' => $user->id,
+            'updated_by_user_id' => $user->id,
+        ]);
     expect($copy->is_active)->toBeTrue();
     expect($copy->catalog_key)->toStartWith('USR-');
     expect($copy->id)->not->toBe($source->id);
@@ -148,7 +160,7 @@ it('duplicates localized identity and substance data into an independent workspa
 
     expect($copy->display_name)->toBe('Huile de lavande')
         ->and($copy->saponification_name)->toBe('Lavande')
-        ->and($copy->info_markdown)->toBe('Conseils en français')
+        ->and($copy->info_markdown)->toBeNull()
         ->and($copy->translations)->toBeEmpty()
         ->and($copy->identifiers)->toHaveCount(3)
         ->and($copy->identifiers->where('scheme', 'cas')->where('is_primary', true)->value('value'))->toBe('8000-28-0')
@@ -159,6 +171,18 @@ it('duplicates localized identity and substance data into an independent workspa
         ->and($copy->substanceEntries)->toHaveCount(1)
         ->and($copy->substanceEntries->first()->source_notes)->toBe('Supplier declaration')
         ->and($copy->substanceEntries->first()->source_data)->toBe(['document' => 'coa.pdf']);
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $user->fresh()->company()->id)
+        ->where('ingredient_id', $copy->id)
+        ->firstOrFail()
+        ->toArray())
+        ->toMatchArray([
+            'guidance_html' => '<p>Conseils en français</p>',
+            'is_active' => true,
+            'created_by_user_id' => $user->id,
+            'updated_by_user_id' => $user->id,
+        ]);
 
     $copy->identifiers->first()->update(['value' => 'changed']);
     $copy->substanceEntries->first()->update(['concentration_percent' => 0.8]);

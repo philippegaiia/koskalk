@@ -167,7 +167,7 @@ it('moves a source workspace ingredient guidance override to the target during a
     $guidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $source->id,
-        'guidance_markdown' => 'Source guidance',
+        'guidance_html' => '<p>Source guidance</p>',
     ]);
 
     consolidationServiceFor([[
@@ -187,7 +187,7 @@ it('keeps a target-only workspace ingredient guidance override during a catalogu
     $guidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $target->id,
-        'guidance_markdown' => 'Target guidance',
+        'guidance_html' => '<p>Target guidance</p>',
     ]);
 
     consolidationServiceFor([[
@@ -211,12 +211,12 @@ it('deduplicates identical workspace ingredient guidance overrides during a cata
     $sourceGuidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $source->id,
-        'guidance_markdown' => 'Shared guidance',
+        'guidance_html' => '<p>Shared guidance</p>',
     ]);
     $targetGuidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $target->id,
-        'guidance_markdown' => 'Shared guidance',
+        'guidance_html' => '<p>Shared guidance</p>',
     ]);
 
     consolidationServiceFor([[
@@ -237,12 +237,12 @@ it('rolls back a catalogue merge when workspace ingredient guidance overrides co
     $sourceGuidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $source->id,
-        'guidance_markdown' => 'Source guidance',
+        'guidance_html' => '<p>Source guidance</p>',
     ]);
     $targetGuidance = WorkspaceIngredientGuidance::factory()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $target->id,
-        'guidance_markdown' => 'Target guidance',
+        'guidance_html' => '<p>Target guidance</p>',
     ]);
 
     expect(fn () => consolidationServiceFor([[
@@ -255,9 +255,38 @@ it('rolls back a catalogue merge when workspace ingredient guidance overrides co
     expect(Ingredient::query()->whereKey($source->id)->exists())->toBeTrue()
         ->and(Ingredient::query()->whereKey($target->id)->exists())->toBeTrue()
         ->and($sourceGuidance->fresh()->ingredient_id)->toBe($source->id)
-        ->and($sourceGuidance->fresh()->guidance_markdown)->toBe('Source guidance')
+        ->and($sourceGuidance->fresh()->guidance_html)->toBe('<p>Source guidance</p>')
         ->and($targetGuidance->fresh()->ingredient_id)->toBe($target->id)
-        ->and($targetGuidance->fresh()->guidance_markdown)->toBe('Target guidance');
+        ->and($targetGuidance->fresh()->guidance_html)->toBe('<p>Target guidance</p>');
+});
+
+it('treats differing workspace guidance active states as a merge conflict', function (): void {
+    $workspace = Workspace::factory()->create();
+    $source = Ingredient::factory()->create(['catalog_key' => 'EO26', 'owner_type' => null]);
+    $target = Ingredient::factory()->create(['catalog_key' => 'EO25', 'owner_type' => null]);
+    $sourceGuidance = WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'guidance_html' => '<p>Shared guidance</p>',
+        'is_active' => true,
+    ]);
+    $targetGuidance = WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $target->id,
+        'guidance_html' => '<p>Shared guidance</p>',
+        'is_active' => false,
+    ]);
+
+    expect(fn () => consolidationServiceFor([[
+        'action' => 'merge_into',
+        'source_catalog_key' => 'EO26',
+        'target_catalog_key' => 'EO25',
+        'reason' => 'Test-approved duplicate.',
+    ]])->apply())->toThrow(RuntimeException::class, 'workspace ingredient guidance conflict');
+
+    expect(Ingredient::query()->whereKey($source->id)->exists())->toBeTrue()
+        ->and($sourceGuidance->fresh()->ingredient_id)->toBe($source->id)
+        ->and($targetGuidance->fresh()->ingredient_id)->toBe($target->id);
 });
 
 it('rolls back an approved merge when workspace material codes conflict', function (): void {

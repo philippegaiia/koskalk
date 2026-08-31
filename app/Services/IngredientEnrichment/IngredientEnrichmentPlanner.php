@@ -96,7 +96,7 @@ class IngredientEnrichmentPlanner
 
         $proposedGuidanceEvidence = collect($result['guidance_evidence'] ?? [])->values()->all();
         $currentGuidanceEvidence = collect(data_get($ingredient->source_data, 'enrichment.guidance.evidence', []))->values()->all();
-        if ($proposedGuidanceEvidence !== [] && $proposedGuidanceEvidence !== $currentGuidanceEvidence) {
+        if ($proposedGuidanceEvidence !== $currentGuidanceEvidence) {
             $decisions[] = [
                 'field' => 'guidance.evidence',
                 'decision' => $currentGuidanceEvidence === [] ? 'new' : 'replace',

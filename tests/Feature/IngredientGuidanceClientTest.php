@@ -72,7 +72,7 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
         return $request->method() === 'POST'
             && $request->url() === 'https://api.openai.com/v1/responses'
             && $request->hasHeader('Authorization', 'Bearer test-key-never-log')
-            && $data['model'] === 'gpt-5.6-terra'
+            && $data['model'] === config('ingredient-enrichment.openai.model')
             && $data['store'] === false
             && ! array_key_exists('tools', $data)
             && ! array_key_exists('include', $data)
@@ -95,6 +95,8 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
             && str_contains((string) $data['instructions'], 'Typical use level')
             && str_contains((string) $data['instructions'], 'approved structured usage fact')
             && str_contains((string) $data['instructions'], 'not a regulatory or safety limit')
+            && str_contains((string) $data['instructions'], 'controlled phrases')
+            && str_contains((string) $data['instructions'], 'minimum-only bound')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });
 });
@@ -209,7 +211,7 @@ it('normalizes a structured response with provider accounting and identifiers', 
         return $request->method() === 'POST'
             && $request->url() === 'https://api.openai.com/v1/responses'
             && $request->hasHeader('Authorization', 'Bearer test-key-never-log')
-            && $data['model'] === 'gpt-5.6-terra'
+            && $data['model'] === config('ingredient-enrichment.openai.model')
             && $data['reasoning'] === ['effort' => config('ingredient-enrichment.openai.reasoning_effort')]
             && $data['store'] === false
             && ! array_key_exists('tools', $data)

@@ -82,12 +82,15 @@ class IngredientGuidanceChangePlanner
             ->filter(fn (mixed $evidence): bool => is_array($evidence))
             ->values()
             ->all();
-        $evidenceDecision = $proposedEvidence !== [] && $proposedEvidence !== $currentEvidence
+        $effectiveEvidence = $mode->isLocalizationOnly() && $proposedEvidence === []
+            ? $currentEvidence
+            : $proposedEvidence;
+        $evidenceDecision = $effectiveEvidence !== $currentEvidence
             ? [[
                 'field' => 'guidance.evidence',
                 'decision' => $currentEvidence === [] ? 'new' : 'replace',
                 'current' => $currentEvidence,
-                'proposed' => $proposedEvidence,
+                'proposed' => $effectiveEvidence,
             ]]
             : [];
 
@@ -106,7 +109,7 @@ class IngredientGuidanceChangePlanner
             'effective' => [
                 'info_markdown' => $proposedEnglish,
                 'translations' => $proposedTranslations,
-                'guidance_evidence' => $proposedEvidence,
+                'guidance_evidence' => $effectiveEvidence,
             ],
         ];
     }

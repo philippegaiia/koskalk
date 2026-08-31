@@ -169,10 +169,106 @@ class IngredientGuidanceDraftRenderer
                     || ($row['percentage_basis'] ?? 'not_applicable') === 'not_applicable') {
                     $this->invalid();
                 }
+
+                if (count($claim['evidence_indexes']) !== 1) {
+                    $this->invalid();
+                }
+
+                $this->validateUsageClaimText($claim, $row);
             } elseif (($row['usage_application'] ?? 'not_applicable') !== 'not_applicable') {
                 $this->invalid();
             }
         }
+    }
+
+    /** @param array<string, mixed> $claim @param array<string, mixed> $evidence */
+    private function validateUsageClaimText(array $claim, array $evidence): void
+    {
+        $text = mb_strtolower((string) $claim['text']);
+        $sourceLabel = match ($evidence['source_kind'] ?? null) {
+            'manufacturer_technical' => 'manufacturer',
+            'supplier_technical' => 'supplier',
+            'professional_reference' => 'professional',
+            'specialist_reference' => 'specialist',
+            default => null,
+        };
+
+        $sourceAttributionPattern = $sourceLabel === null
+            ? null
+            : '/(?:\b(?:a|the)\s+'.preg_quote($sourceLabel, '/').'\s+recommends\b'
+                .'|\brecommended\s+by\s+(?:a|the)\s+'.preg_quote($sourceLabel, '/').'\b)/u';
+        if ($sourceAttributionPattern === null || preg_match($sourceAttributionPattern, $text) !== 1) {
+            $this->invalid();
+        }
+
+        if (($evidence['scope'] ?? null) === 'product_grade'
+            && preg_match('/\b(?:product|specific|cited)\s+grade\b/u', $text) !== 1) {
+            $this->invalid();
+        }
+
+        $applicationPattern = match ($evidence['usage_application'] ?? null) {
+            'cosmetics' => '/\bcosmetics?\b/u',
+            'soapmaking' => '/\bsoap(?:making|[-\s]making)?\b/u',
+            default => null,
+        };
+        if ($applicationPattern === null || preg_match($applicationPattern, $text) !== 1) {
+            $this->invalid();
+        }
+
+        $basisPattern = match ($evidence['percentage_basis'] ?? null) {
+            'total_formula' => '/\btotal\s+formula\b/u',
+            'oil_phase' => '/\boil\s+phase\b/u',
+            'soap_oils' => '/\b(?:soap[-\s]?oil(?:s)?|oil)\s+blend\b/u',
+            default => null,
+        };
+        if ($basisPattern === null || preg_match($basisPattern, $text) !== 1) {
+            $this->invalid();
+        }
+
+        $minimum = $evidence['recommended_min_percent'] ?? null;
+        $maximum = $evidence['recommended_max_percent'] ?? null;
+        if (is_string($minimum) && is_string($maximum)) {
+            $rangePattern = '/\b'.$this->percentagePattern($minimum)
+                .'\s*(?:%\s*)?(?:-|–|—|to)\s*'
+                .$this->percentagePattern($maximum).'\s*(?:%|percent)(?![\p{L}\p{N}])/u';
+            if (preg_match($rangePattern, $text) !== 1) {
+                $this->invalid();
+            }
+
+            return;
+        }
+
+        if (is_string($minimum)) {
+            $minimumPattern = '/\b(?:at\s+least|minimum(?:\s+of)?|from)\s+'
+                .$this->percentagePattern($minimum).'\s*(?:%|percent)(?![\p{L}\p{N}])/u';
+            if (preg_match($minimumPattern, $text) !== 1) {
+                $this->invalid();
+            }
+
+            return;
+        }
+
+        if (! is_string($maximum)) {
+            $this->invalid();
+        }
+
+        $maximumPattern = '/\b(?:up\s+to|at\s+most|maximum(?:\s+of)?)\s+'
+            .$this->percentagePattern($maximum).'\s*(?:%|percent)(?![\p{L}\p{N}])/u';
+        if (preg_match($maximumPattern, $text) !== 1) {
+            $this->invalid();
+        }
+    }
+
+    private function percentagePattern(string $value): string
+    {
+        [$integer, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+        $integer = ltrim($integer, '0');
+        $integer = $integer === '' ? '0' : $integer;
+        $fraction = rtrim($fraction, '0');
+
+        return preg_quote($integer, '/').($fraction === ''
+            ? '(?:\\.0+)?'
+            : '\\.'.preg_quote($fraction, '/').'0*');
     }
 
     /**
@@ -191,7 +287,7 @@ class IngredientGuidanceDraftRenderer
             $this->invalid();
         }
 
-        if ($this->hasUnresolvedQuestionForClaim($claimType, $context['unresolved_questions'] ?? [])) {
+        if ($this->hasUnresolvedQuestionForClaim($claimType, $context['guidance_unresolved_questions'] ?? [])) {
             $this->invalid();
         }
 

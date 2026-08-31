@@ -4,6 +4,14 @@ namespace App\Services\IngredientEnrichment;
 
 class LocalizedGuidanceHeadings
 {
+    public function hasExactHeading(string $guidance, string $heading): bool
+    {
+        return preg_match(
+            '/^##[ \t]+'.preg_quote(trim($heading), '/').'[ \t]*$/mu',
+            $guidance,
+        ) === 1;
+    }
+
     public function normalize(string $guidance, string $locale, bool $soapmakingRelevant): string
     {
         $headings = data_get(config('ingredient-enrichment.guidance'), "localized_headings.{$locale}");

@@ -26,6 +26,13 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+it('resolves material detail collaborators through Livewire injection', function (): void {
+    $source = file_get_contents(app_path('Livewire/ProductionBench/InventoryMaterialDetail.php'));
+
+    expect($source)->not->toContain('app(')
+        ->and($source)->toContain('public function boot(');
+});
+
 it('renders a tracked ingredient detail with current position and lot navigation', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);

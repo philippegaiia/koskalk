@@ -249,6 +249,210 @@ it('records empty fresh evidence when guidance research is disabled', function (
         ]);
 });
 
+
+it('quarantines rejected guidance rows while completing a mixed refresh', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $authoringContext = [];
+    app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [
+                    [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => 'Supplier technical data sheet',
+                        'source_url' => 'https://supplier.example/technical/olive-oil.pdf',
+                        'summary' => 'This product grade is recommended at 1–10% in cosmetic formulations.',
+                        'claim_type' => 'usage',
+                        'source_kind' => 'supplier_technical',
+                        'scope' => 'product_grade',
+                        'evidence_kind' => 'formulation_recommendation',
+                        'usage_application' => 'cosmetics',
+                        'recommended_min_percent' => '1',
+                        'recommended_max_percent' => '10',
+                        'percentage_basis' => 'total_formula',
+                    ],
+                    [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => 'Unconsulted source',
+                        'source_url' => 'https://other.example/olive-oil',
+                        'summary' => 'This row must not reach authoring.',
+                        'claim_type' => 'formulation_role',
+                        'source_kind' => 'specialist_reference',
+                        'scope' => 'material',
+                        'evidence_kind' => 'fact',
+                        'usage_application' => 'not_applicable',
+                        'recommended_min_percent' => null,
+                        'recommended_max_percent' => null,
+                        'percentage_basis' => 'not_applicable',
+                    ],
+                ],
+                warnings: [],
+                unresolvedQuestions: ['Confirm the supplier usage range before publishing it.'],
+                responseId: 'resp-mixed',
+                requestId: 'req-mixed',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'title' => 'Supplier technical data sheet',
+                ]],
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($authoringContext) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,mixed> $authoringContext */
+        public function __construct(private array &$authoringContext) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->authoringContext = $context;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-mixed',
+                requestId: 'req-guidance-mixed',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class implements IngredientGuidanceLocalizationClient
+    {
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->values()->all(),
+                responseId: 'resp-localization-mixed',
+                requestId: 'req-localization-mixed',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+    $completed = $fixture['item']->fresh();
+
+    expect($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($completed->result['guidance_evidence'])->toHaveCount(1)
+        ->and(data_get($completed->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
+            ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
+        ])
+        ->and($authoringContext['guidance_evidence'])->toHaveCount(1)
+        ->and($authoringContext['guidance_unresolved_questions'])->toBe([
+            'Confirm the supplier usage range before publishing it.',
+        ])
+        ->and(collect($authoringContext['guidance_evidence'])->pluck('source_url')->all())
+        ->toBe(['https://supplier.example/technical/olive-oil.pdf'])
+        ->and($completed->warnings)->toContain('1 researched evidence item was rejected because it did not meet the evidence rules.')
+        ->and($completed->sources)->toBe([[
+            'url' => 'https://supplier.example/technical/olive-oil.pdf',
+            'title' => 'Supplier technical data sheet',
+        ]]);
+});
+
+
+it('keeps an all-rejected guidance refresh reviewable with catalogue facts only', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $authoringContext = [];
+    app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [[
+                    'field' => 'proposal.info_markdown',
+                    'source_name' => 'Blocked community source',
+                    'source_url' => 'https://www.reddit.com/r/formulation/comments/example',
+                    'summary' => 'This row must not reach authoring.',
+                    'claim_type' => 'formulation_role',
+                    'source_kind' => 'specialist_reference',
+                    'scope' => 'material',
+                    'evidence_kind' => 'fact',
+                    'usage_application' => 'not_applicable',
+                    'recommended_min_percent' => null,
+                    'recommended_max_percent' => null,
+                    'percentage_basis' => 'not_applicable',
+                ]],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-all-rejected',
+                requestId: 'req-all-rejected',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://www.reddit.com/r/formulation/comments/example',
+                    'title' => 'Blocked community source',
+                ]],
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($authoringContext) implements IngredientGuidanceAuthoringClient
+    {
+        /** @param array<string,mixed> $authoringContext */
+        public function __construct(private array &$authoringContext) {}
+
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            $this->authoringContext = $context;
+
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-all-rejected',
+                requestId: 'req-guidance-all-rejected',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class implements IngredientGuidanceLocalizationClient
+    {
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->values()->all(),
+                responseId: 'resp-localization-all-rejected',
+                requestId: 'req-localization-all-rejected',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+    $completed = $fixture['item']->fresh();
+
+    expect($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($completed->result['guidance_evidence'])->toBe([])
+        ->and($completed->sources)->toBe([])
+        ->and(data_get($completed->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
+            ['index' => 0, 'code' => 'blocked_domain', 'host' => 'www.reddit.com'],
+        ])
+        ->and($authoringContext['guidance_evidence'])->toBe([])
+        ->and($authoringContext['current'])->toBeArray()
+        ->and($completed->warnings)->toContain('No researched evidence passed validation; the proposed guidance uses catalogue facts only.');
+});
+
+
 it('recognizes only an exact level-two soapmaking heading', function (): void {
     $headings = app(LocalizedGuidanceHeadings::class);
 
@@ -258,6 +462,7 @@ it('recognizes only an exact level-two soapmaking heading', function (): void {
 });
 
 it('reuses a completed research stage when authoring is retried', function (): void {
+
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $calls = ['research' => 0, 'author' => 0, 'localize' => 0];
     app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
@@ -270,8 +475,37 @@ it('reuses a completed research stage when authoring is retried', function (): v
             $this->calls['research']++;
 
             return new IngredientGapResearchResponse(
-                candidateEvidence: [],
-                warnings: ['No material-specific source was accepted.'],
+                candidateEvidence: [
+                    [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => 'Supplier technical data sheet',
+                        'source_url' => 'https://supplier.example/technical/olive-oil.pdf',
+                        'summary' => 'This product grade is recommended at 1–10% in cosmetic formulations.',
+                        'claim_type' => 'usage',
+                        'source_kind' => 'supplier_technical',
+                        'scope' => 'product_grade',
+                        'evidence_kind' => 'formulation_recommendation',
+                        'usage_application' => 'cosmetics',
+                        'recommended_min_percent' => '1',
+                        'recommended_max_percent' => '10',
+                        'percentage_basis' => 'total_formula',
+                    ],
+                    [
+                        'field' => 'proposal.info_markdown',
+                        'source_name' => 'Unconsulted source',
+                        'source_url' => 'https://other.example/olive-oil',
+                        'summary' => 'This row is retained only as rejection diagnostics.',
+                        'claim_type' => 'formulation_role',
+                        'source_kind' => 'specialist_reference',
+                        'scope' => 'material',
+                        'evidence_kind' => 'fact',
+                        'usage_application' => 'not_applicable',
+                        'recommended_min_percent' => null,
+                        'recommended_max_percent' => null,
+                        'percentage_basis' => 'not_applicable',
+                    ],
+                ],
+                warnings: [],
                 unresolvedQuestions: ['Which application range is appropriate for this grade?'],
                 responseId: 'resp-research-retry',
                 requestId: 'req-research-retry',
@@ -279,7 +513,10 @@ it('reuses a completed research stage when authoring is retried', function (): v
                 inputTokens: 7,
                 outputTokens: 8,
                 webSearchCalls: 1,
-                sources: [],
+                sources: [[
+                    'url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'title' => 'Supplier technical data sheet',
+                ]],
             );
         }
     });
@@ -334,6 +571,9 @@ it('reuses a completed research stage when authoring is retried', function (): v
 
     expect($calls)->toBe(['research' => 1, 'author' => 1, 'localize' => 0])
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
+            ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
+        ])
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed');
 
     app(RetryIngredientEnrichmentFailures::class)->handle($fixture['admin'], $fixture['batch']);
@@ -343,7 +583,10 @@ it('reuses a completed research stage when authoring is retried', function (): v
         ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
         ->and($fixture['item']->fresh()->result['unresolved_questions'])
         ->toContain('Which application range is appropriate for this grade?')
-        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed');
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed')
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
+            ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
+        ]);
 });
 
 it('stops a guidance refresh at a failed research stage', function (): void {

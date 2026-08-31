@@ -15,15 +15,34 @@ it('accepts a consulted broad-source citation for guidance', function (): void {
         ]],
     ];
 
+    $verified = false;
+
     app(IngredientEnrichmentEvidenceVerifier::class)->verify($result, [[
         'url' => 'https://supplier.example/technical/apricot-oil.pdf',
         'title' => 'Supplier technical data',
     ]]);
 
-    expect(true)->toBeTrue();
+    $verified = true;
+
+    expect($verified)->toBeTrue();
 });
 
-it('still rejects a blocked guidance citation', function (): void {
+it('rejects an unconsulted broad-source citation for guidance', function (): void {
+    $result = [
+        'evidence' => [[
+            'field' => 'proposal.info_markdown',
+            'source_url' => 'https://supplier.example/technical/apricot-oil.pdf',
+            'source_tier' => 'editorial',
+        ]],
+    ];
+
+    expect(fn () => app(IngredientEnrichmentEvidenceVerifier::class)->verify($result, [[
+        'url' => 'https://other.example/apricot-oil',
+        'title' => 'Other source',
+    ]]))->toThrow(ValidationException::class);
+});
+
+it('rejects a blocked guidance citation even when it was consulted', function (): void {
     $result = [
         'evidence' => [[
             'field' => 'proposal.info_markdown',

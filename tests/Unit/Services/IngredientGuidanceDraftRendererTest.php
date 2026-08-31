@@ -396,6 +396,7 @@ it('does not block supported soapmaking guidance for unresolved soap declaration
         'soapmaking' => [guidanceClaim([
             'text' => 'For this supplied grade, the supplier describes a softer-feeling bar.',
             'claim_type' => 'soapmaking',
+            'support_type' => 'evidence',
             'evidence_indexes' => [3],
         ])],
     ]), $context);

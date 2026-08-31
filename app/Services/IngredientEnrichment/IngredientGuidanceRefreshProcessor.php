@@ -284,7 +284,7 @@ class IngredientGuidanceRefreshProcessor
                             'candidate_evidence' => [],
                             'guidance_evidence' => [],
                             'rejected_evidence' => [],
-                            'warnings' => [],
+                            'warnings' => [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
                             'unresolved_questions' => [],
                             'sources' => [],
                             'provider_response_id' => '',

@@ -303,10 +303,13 @@
                         </label>
                     </div>
                     <p id="lot-register-search-help" class="mt-2 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_register_search_help') }}</p>
+                    <div class="mt-3 xl:max-w-sm">
+                        {{ $this->lotFiltersForm }}
+                    </div>
                     @if ($lotMaterialLabel)
                         <div class="mt-3 flex flex-wrap items-center gap-2">
                             <span class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.lot_material') }}: {{ $lotMaterialLabel }}</span>
-                            <button type="button" wire:click="$set('lotMaterial', '')" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.inventory.clear_filters') }}</button>
+                            <button type="button" wire:click="clearLotMaterial" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.inventory.clear_filters') }}</button>
                         </div>
                     @endif
                 </div>
@@ -333,7 +336,15 @@
                                 @php($materialCode = $lot->packagingItem?->material_code ?? $lot->ingredient?->workspaceCodes?->firstWhere('workspace_id', $workspace->id)?->material_code)
                                 <tr id="lot-{{ $lot->public_id }}" wire:key="stock-lot-{{ $lot->id }}">
                                     <td class="px-5 py-3">
-                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                        @if ($row['detail_url'])
+                                            <a href="{{ $row['detail_url'] }}" wire:navigate class="group -m-1 inline-flex min-h-9 items-center gap-1.5 rounded p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+                                                <span class="font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $lot->subjectName() }}</span>
+                                                <span class="text-[var(--color-ink-soft)] group-hover:text-[var(--color-accent-strong)]" aria-hidden="true">&rarr;</span>
+                                                <span class="sr-only">{{ __('production_bench.inventory.open_material_detail') }}</span>
+                                            </a>
+                                        @else
+                                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                        @endif
                                         @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
                                         <p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p>
                                         @if($lot->expires_at)<p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.expires_on') }}: {{ $lot->expires_at->format('Y-m-d') }}</p>@endif

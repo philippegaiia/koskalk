@@ -40,6 +40,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -133,6 +134,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     public string $mode = 'materials';
 
+    /** @var array<string, mixed> */
+    public array $lotFilters = [];
+
     public int $perPage = 25;
 
     public ?string $statusMessage = null;
@@ -155,6 +159,33 @@ class InventoryIndex extends Component implements HasActions, HasForms
     {
         $this->mode = in_array($mode, self::MODES, true) ? $mode : 'materials';
         $this->normalizeFilterState();
+        $this->lotFilters = [
+            'lotMaterialSelection' => $this->lotMaterial !== ''
+                ? $this->lotMaterialType.':'.$this->lotMaterial
+                : null,
+        ];
+    }
+
+    /**
+     * Lot register filter schema. It currently carries only the material
+     * combobox because that is the one control a plain `<select>` cannot
+     * express: the catalogue is too large to render as options.
+     */
+    public function lotFiltersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Select::make('lotMaterialSelection')
+                    ->label(__('production_bench.inventory.lot_material'))
+                    ->placeholder(__('production_bench.inventory.lot_material_filter'))
+                    ->searchable()
+                    ->native(false)
+                    ->getSearchResultsUsing(fn (string $search, WorkspaceMaterialInventoryQuery $inventoryQuery): array => $this->lotMaterialSearchResults($search, $inventoryQuery))
+                    ->getOptionLabelUsing(fn (mixed $value, WorkspaceMaterialInventoryQuery $inventoryQuery): ?string => $this->lotMaterialSelectionLabel(is_string($value) ? $value : null, $inventoryQuery))
+                    ->live()
+                    ->afterStateUpdated(fn (?string $state, WorkspaceMaterialInventoryQuery $inventoryQuery) => $this->selectLotMaterial($state, $inventoryQuery)),
+            ])
+            ->statePath('lotFilters');
     }
 
     public function updatedSearch(): void
@@ -263,6 +294,76 @@ class InventoryIndex extends Component implements HasActions, HasForms
     {
         $this->stockState = $this->stockState === 'negative_forecast' ? 'all' : 'negative_forecast';
         $this->resetPage('materials');
+    }
+
+    /**
+     * Bounded option source for the Lot register material combobox.
+     *
+     * @return array<string, string>
+     */
+    public function lotMaterialSearchResults(string $search, WorkspaceMaterialInventoryQuery $inventoryQuery): array
+    {
+        return $inventoryQuery->materialOptions($this->workspace(), trim($search), self::OPTION_LIMIT);
+    }
+
+    /**
+     * Label for the currently held combobox value, resolved from the value
+     * itself rather than from component state so a stale selection cannot
+     * render another material's name.
+     */
+    public function lotMaterialSelectionLabel(?string $selection, WorkspaceMaterialInventoryQuery $inventoryQuery): ?string
+    {
+        if (! is_string($selection) || ! str_contains($selection, ':')) {
+            return null;
+        }
+
+        [$type, $publicId] = explode(':', $selection, 2);
+
+        if (! in_array($type, ['ingredient', 'packaging'], true)) {
+            return null;
+        }
+
+        $subject = $inventoryQuery->resolveMaterialOption($this->workspace(), $type, $publicId);
+
+        return $subject instanceof Ingredient
+            ? (string) $subject->localizedDisplayName()
+            : $subject?->name;
+    }
+
+    /**
+     * Applies a compound `type:public_id` selection from the material combobox.
+     *
+     * `lotMaterial` and `lotMaterialType` stay the durable, URL-bound state: the
+     * combobox is only a way to set them, which keeps bookmarked Lot register
+     * URLs working exactly as they did when the filter was driven by a link.
+     */
+    public function selectLotMaterial(?string $selection, WorkspaceMaterialInventoryQuery $inventoryQuery): void
+    {
+        if (! is_string($selection) || ! str_contains($selection, ':')) {
+            $this->clearLotMaterial();
+
+            return;
+        }
+
+        [$type, $publicId] = explode(':', $selection, 2);
+
+        abort_unless(in_array($type, ['ingredient', 'packaging'], true), 422);
+
+        $subject = $inventoryQuery->resolveMaterialOption($this->workspace(), $type, $publicId);
+
+        abort_unless($subject instanceof Ingredient || $subject instanceof PackagingItem, 404);
+
+        $this->lotMaterialType = $type;
+        $this->lotMaterial = $publicId;
+        $this->resetPage('stock-lots');
+    }
+
+    public function clearLotMaterial(): void
+    {
+        $this->lotMaterial = '';
+        $this->lotMaterialType = '';
+        $this->lotFilters['lotMaterialSelection'] = null;
+        $this->resetPage('stock-lots');
     }
 
     public function clearMaterialFilters(): void
@@ -572,6 +673,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
             return [
                 'lot' => $lot,
+                // The register is the second way into a material, so each row
+                // carries its own detail route rather than rebuilding it in Blade.
+                'detail_url' => $this->lotMaterialDetailUrl($lot),
                 'positions' => collect($stock)
                     ->only(['physical', 'quarantined', 'reserved', 'available'])
                     ->map(
@@ -582,6 +686,19 @@ class InventoryIndex extends Component implements HasActions, HasForms
                     ->all(),
             ];
         });
+    }
+
+    /**
+     * Null when the lot is held against a recipe, which has no inventory detail
+     * page of its own.
+     */
+    private function lotMaterialDetailUrl(StockLot $lot): ?string
+    {
+        return match (true) {
+            $lot->ingredient instanceof Ingredient => route('production-bench.inventory.material.ingredient', $lot->ingredient),
+            $lot->packagingItem instanceof PackagingItem => route('production-bench.inventory.material.packaging', $lot->packagingItem),
+            default => null,
+        };
     }
 
     /** @return array<string, mixed> */
@@ -678,6 +795,14 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->lotMaterialType = in_array($this->lotMaterialType, ['', 'ingredient', 'packaging'], true)
             ? $this->lotMaterialType
             : '';
+        // `public_id` is a uuid column, so PostgreSQL rejects a non-uuid value
+        // outright instead of returning no rows. This filter arrives from the
+        // URL, so it is normalized before it can reach any query. An unusable
+        // id also clears the type: the two only ever mean anything together.
+        if (! Str::isUuid($this->lotMaterial)) {
+            $this->lotMaterial = '';
+            $this->lotMaterialType = '';
+        }
         $this->lotScope = in_array($this->lotScope, ['open', 'exhausted', 'all'], true) ? $this->lotScope : 'open';
         $this->lotStatus = in_array($this->lotStatus, ['all', StockLotStatus::Released->value, StockLotStatus::Quarantined->value], true)
             ? $this->lotStatus

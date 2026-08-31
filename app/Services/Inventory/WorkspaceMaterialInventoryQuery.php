@@ -76,6 +76,77 @@ class WorkspaceMaterialInventoryQuery
     }
 
     /**
+     * Bounded option source for material pickers, keyed by a compound
+     * `type:public_id` identifier so a caller can tell the two subject tables
+     * apart without a second lookup.
+     *
+     * The result count is capped rather than paginated: this feeds a type-ahead
+     * combobox, so a caller must never be able to pull the whole catalogue.
+     *
+     * @return array<string, string>
+     */
+    public function materialOptions(Workspace $workspace, string $search = '', int $limit = 30): array
+    {
+        $rows = $this->query($workspace, [
+            'search' => $search,
+            'sort' => 'name',
+            'direction' => 'asc',
+        ])->limit(max(1, min($limit, 50)))->get();
+
+        $subjects = $this->loadSubjects($rows, $workspace);
+
+        return $rows->mapWithKeys(function (object $row) use ($subjects): array {
+            $subject = $subjects[$row->subject_type.':'.$row->subject_id] ?? null;
+
+            // A tracked row whose subject was deleted or belongs to another
+            // workspace has nothing to offer a picker.
+            if (! $subject instanceof Ingredient && ! $subject instanceof PackagingItem) {
+                return [];
+            }
+
+            return [
+                $row->subject_type.':'.$subject->public_id => $subject instanceof Ingredient
+                    ? (string) $subject->localizedDisplayName()
+                    : (string) $subject->name,
+            ];
+        })->all();
+    }
+
+    /**
+     * Resolves a compound `type:public_id` picker selection back to a subject
+     * this workspace may actually filter on.
+     *
+     * Ingredients are global catalogue rows, so membership is established by
+     * asking whether the workspace tracks them at all; packaging items are
+     * workspace-owned and are matched directly.
+     */
+    public function resolveMaterialOption(
+        Workspace $workspace,
+        string $type,
+        string $publicId,
+    ): Ingredient|PackagingItem|null {
+        // `public_id` is a uuid column: on PostgreSQL comparing it to a
+        // non-uuid string is an "invalid input syntax for type uuid" error, not
+        // an empty result, so the shape is checked before the query.
+        if (! Str::isUuid($publicId)) {
+            return null;
+        }
+
+        if ($type === 'packaging') {
+            return PackagingItem::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('public_id', $publicId)
+                ->first();
+        }
+
+        $ingredient = Ingredient::query()->where('public_id', $publicId)->first();
+
+        return $ingredient instanceof Ingredient && $this->tracks($workspace, $ingredient)
+            ? $ingredient
+            : null;
+    }
+
+    /**
      * @param  array<string, mixed>  $filters
      */
     private function query(Workspace $workspace, array $filters): Builder

@@ -25,6 +25,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 uses(RefreshDatabase::class);
 
@@ -209,6 +211,137 @@ it('links every material identity to its accessible detail page', function (): v
         ->assertSee('Olive oil');
     $this->get(route('production-bench.inventory.material.packaging', $packaging))
         ->assertSee('Amber bottle');
+});
+
+it('selects a material explicitly in the lot register and links it to detail', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $coconut = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+    StockLot::factory()->for($workspace)->for($olive)->create();
+    StockLot::factory()->for($workspace)->for($coconut)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
+        // The combobox is a Filament schema component, so assert it is actually
+        // rendered and labelled rather than trusting the method to exist.
+        ->assertSeeHtml('for="lotFiltersForm.lotMaterialSelection"')
+        ->call('selectLotMaterial', 'ingredient:'.$olive->public_id)
+        ->assertSet('lotMaterialType', 'ingredient')
+        ->assertSet('lotMaterial', $olive->public_id)
+        ->assertSee('Olive oil')
+        ->assertDontSee('Coconut oil')
+        ->assertSee(route('production-bench.inventory.material.ingredient', $olive), false);
+});
+
+it('rejects lot register material selections the workspace cannot reach', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $foreignWorkspace = Workspace::factory()->create();
+    $foreignPackaging = PackagingItem::factory()->for($foreignWorkspace)->create(['name' => 'Foreign jar']);
+    $untrackedIngredient = Ingredient::factory()->create(['display_name' => 'Untracked wax']);
+
+    $this->actingAs($user);
+
+    // Livewire renders its own error responses, so the abort only reaches the
+    // test once Laravel stops handling exceptions.
+    $this->withoutExceptionHandling();
+
+    // A packaging item owned by another workspace is not a valid selection.
+    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('selectLotMaterial', 'packaging:'.$foreignPackaging->public_id))
+        ->toThrow(NotFoundHttpException::class);
+
+    // An ingredient the workspace does not track is not a valid selection either.
+    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('selectLotMaterial', 'ingredient:'.$untrackedIngredient->public_id))
+        ->toThrow(NotFoundHttpException::class);
+
+    // A compound key naming a subject type that does not exist is malformed.
+    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('selectLotMaterial', 'recipe:'.$untrackedIngredient->public_id))
+        ->toThrow(HttpException::class);
+});
+
+it('ignores a malformed lot material filter instead of querying with it', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    StockLot::factory()->for($workspace)->for($olive)->create();
+
+    $this->actingAs($user);
+
+    // `public_id` is a uuid column. On PostgreSQL a non-uuid value is not an
+    // empty result, it is an "invalid input syntax for type uuid" failure, so
+    // the filter has to be rejected before it reaches a query.
+    Livewire::withQueryParams(['material' => 'not-a-uuid', 'material_type' => 'ingredient'])
+        ->test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
+        ->assertSet('lotMaterial', '')
+        ->assertSet('lotMaterialType', '')
+        ->assertSee('Olive oil');
+});
+
+it('rejects a malformed compound selection without querying for it', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+    $this->withoutExceptionHandling();
+
+    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('selectLotMaterial', 'ingredient:not-a-uuid'))
+        ->toThrow(NotFoundHttpException::class);
+});
+
+it('never offers another workspace material to the lot register combobox', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $foreignWorkspace = Workspace::factory()->create();
+    $owned = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $foreign = Ingredient::factory()->create(['display_name' => 'Foreign wax']);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($owned)->create();
+    SupplierListing::factory()->for($foreignWorkspace)
+        ->for(Supplier::factory()->for($foreignWorkspace))
+        ->for($foreign)
+        ->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('lotMaterialSearchResults', 'oil')
+        ->assertReturned(['ingredient:'.$owned->public_id => 'Olive oil']);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('lotMaterialSearchResults', 'wax')
+        ->assertReturned([]);
+});
+
+it('clears the lot register material filter when the combobox is emptied', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    StockLot::factory()->for($workspace)->for($olive)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
+        ->call('selectLotMaterial', 'ingredient:'.$olive->public_id)
+        ->assertSet('lotMaterial', $olive->public_id)
+        ->call('selectLotMaterial', null)
+        ->assertSet('lotMaterial', '')
+        ->assertSet('lotMaterialType', '')
+        ->assertSee('Olive oil');
 });
 
 it('redirects the retired material requirements page to the material view', function (): void {

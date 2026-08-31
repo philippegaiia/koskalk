@@ -249,6 +249,13 @@ it('rejects lot register material selections the workspace cannot reach', functi
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $localIngredient = Ingredient::factory()->create(['display_name' => 'Local olive oil']);
+    $localLot = StockLot::factory()->for($workspace)->for($localIngredient)->create();
+    StockMovement::factory()->for($localLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5',
+    ]);
     $foreignWorkspace = Workspace::factory()->create();
     $foreignPackaging = PackagingItem::factory()->for($foreignWorkspace)->create(['name' => 'Foreign jar']);
     $untrackedIngredient = Ingredient::factory()->create(['display_name' => 'Untracked wax']);
@@ -259,20 +266,41 @@ it('rejects lot register material selections the workspace cannot reach', functi
     // test once Laravel stops handling exceptions.
     $this->withoutExceptionHandling();
 
-    // A packaging item owned by another workspace is not a valid selection.
-    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->call('selectLotMaterial', 'packaging:'.$foreignPackaging->public_id))
+    // A valid local material selects cleanly and is reflected in the register.
+    $component = Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->call('selectLotMaterial', 'ingredient:'.$localIngredient->public_id)
+        ->assertSet('lotMaterialType', 'ingredient')
+        ->assertSet('lotMaterial', $localIngredient->public_id)
+        ->assertSee('Local olive oil')
+        ->assertDontSee('Foreign jar');
+
+    // A packaging item owned by another workspace is not a valid selection, and
+    // the previously chosen material survives the rejected attempt.
+    expect(fn () => $component->call('selectLotMaterial', 'packaging:'.$foreignPackaging->public_id))
         ->toThrow(NotFoundHttpException::class);
+    $component
+        ->assertSet('lotMaterialType', 'ingredient')
+        ->assertSet('lotMaterial', $localIngredient->public_id)
+        ->assertSee('Local olive oil')
+        ->assertDontSee('Foreign jar');
 
     // An ingredient the workspace does not track is not a valid selection either.
-    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->call('selectLotMaterial', 'ingredient:'.$untrackedIngredient->public_id))
+    expect(fn () => $component->call('selectLotMaterial', 'ingredient:'.$untrackedIngredient->public_id))
         ->toThrow(NotFoundHttpException::class);
+    $component
+        ->assertSet('lotMaterialType', 'ingredient')
+        ->assertSet('lotMaterial', $localIngredient->public_id)
+        ->assertSee('Local olive oil')
+        ->assertDontSee('Foreign jar');
 
     // A compound key naming a subject type that does not exist is malformed.
-    expect(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->call('selectLotMaterial', 'recipe:'.$untrackedIngredient->public_id))
+    expect(fn () => $component->call('selectLotMaterial', 'recipe:'.$untrackedIngredient->public_id))
         ->toThrow(HttpException::class);
+    $component
+        ->assertSet('lotMaterialType', 'ingredient')
+        ->assertSet('lotMaterial', $localIngredient->public_id)
+        ->assertSee('Local olive oil')
+        ->assertDontSee('Foreign jar');
 });
 
 it('ignores a malformed lot material filter instead of querying with it', function (): void {

@@ -79,7 +79,8 @@
                             @php($supplier = $lot->goodsReceiptLine?->goodsReceipt?->supplier ?? $lot->supplierListing?->supplier)
                             <tr wire:key="material-open-lot-{{ $lot->id }}">
                                 <td class="px-5 py-3">
-                                    <p class="font-mono text-sm text-[var(--color-ink-strong)]">{{ $lot->internal_lot_code }}</p>
+                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                    <p class="mt-0.5 font-mono text-sm text-[var(--color-ink-strong)]">{{ $lot->internal_lot_code }}</p>
                                     @if ($lot->supplier_batch_number)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.supplier_batch') }}: {{ $lot->supplier_batch_number }}</p>@endif
                                     @if ($lot->expires_at)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.expires_on') }}: {{ $lot->expires_at->format('Y-m-d') }}</p>@endif
                                 </td>

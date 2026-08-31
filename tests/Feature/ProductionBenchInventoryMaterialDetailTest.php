@@ -108,6 +108,34 @@ it('renders the material detail headings in French for a French interface locale
         ->assertDontSee('Current position');
 });
 
+it('shows the material name and lot code together in the open lots table', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Audit rosemary oil']);
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Local Oils']);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'supplier_listing_id' => $listing->id,
+        'internal_lot_code' => 'AUDIT-LOT-001',
+        'supplier_batch_number' => 'BATCH-AUDIT',
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+    ]);
+
+    $this->actingAs($user);
+
+    // The open lots first cell carries both the material name and its lot code,
+    // so each row is identifiable without leaving the detail page.
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertSee('Audit rosemary oil')
+        ->assertSee('AUDIT-LOT-001');
+});
+
 it('lists the purchasing listings that can replenish the material', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     // A supplier listing is what makes the material tracked here, so this

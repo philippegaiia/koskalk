@@ -19,11 +19,14 @@ use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
+use App\Models\InterfaceTranslation;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -638,6 +641,35 @@ it('renders the material filter controls from a filament schema', function (): v
         ->assertDontSeeHtml('for="materialFiltersForm.direction"')
         ->set('sort', 'name')
         ->assertSeeHtml('for="materialFiltersForm.direction"');
+});
+
+it('renders the Inventory UX headings in French for a French interface locale', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    app()->setLocale('fr');
+
+    $user = User::factory()->create(['locale' => 'fr']);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $this->actingAs($user);
+
+    foreach ([
+        'inventory.stock_by_material' => 'Stock par matière',
+        'inventory.lot_register' => 'Registre des lots',
+    ] as $key => $fr) {
+        InterfaceTranslation::query()->create([
+            'group' => 'production_bench',
+            'key' => $key,
+            'text' => ['fr' => $fr],
+        ]);
+    }
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSee('Stock par matière')
+        ->assertDontSee('Stock by material');
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSee('Registre des lots');
 });
 
 it('renders the lot register filter controls from a filament schema', function (): void {

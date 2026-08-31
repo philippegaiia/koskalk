@@ -65,6 +65,39 @@ it('commits a complete reviewed translation for every owned interface key', func
     }
 });
 
+it('localizes the high-visibility Inventory UX keys into every supported locale', function (string $key): void {
+    $fullKey = "production_bench.{$key}";
+    $english = app(EnglishTranslationSource::class)->get('production_bench', $key);
+    expect($english)->not->toBe('');
+
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    expect($rows)->toHaveKey($fullKey);
+
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        $value = trim((string) data_get($rows[$fullKey], "text.{$locale}"));
+
+        expect($value, "{$fullKey} [{$locale}]")->not->toBe('')
+            ->and($value, "{$fullKey} [{$locale}] must not be English fallback")->not->toBe($english);
+    }
+})->with([
+    'inventory.stock_by_material',
+    'inventory.lot_register',
+    'inventory.current_position',
+    'inventory.buffer_stock',
+    'inventory.open_lots',
+    'inventory.related_supplier_listings',
+    'inventory.period_activity',
+    'inventory.below_buffer',
+    'inventory.filter_material_type',
+    'inventory.filter_stock_state',
+    'inventory.filter_demand',
+    'inventory.lot_scope',
+    'inventory.lot_register_search_help',
+]);
+
 it('commits reviewed internal material code terminology for packaging workflows', function (): void {
     $source = app(EnglishTranslationSource::class);
     $catalogue = File::json(database_path('seeders/data/interface-translations.json'));

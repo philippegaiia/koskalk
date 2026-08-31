@@ -5,15 +5,18 @@ use App\Enums\StockMovementType;
 use App\Livewire\ProductionBench\InventoryMaterialDetail;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
+use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Models\SupportedLocale;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
 use App\Services\ProductionBenchAccess;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
@@ -55,6 +58,54 @@ it('renders a tracked ingredient detail with current position and lot navigation
             && str_contains($url, 'lot_scope=all'))
         ->assertViewHas('position', fn (array $position): bool => $position['physical'] === '1.00'
             && $position['available'] === '1.00');
+});
+
+it('renders the material detail headings in French for a French interface locale', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    app()->setLocale('fr');
+
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $user->update(['locale' => 'fr']);
+
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Local Oils']);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'supplier_listing_id' => $listing->id,
+        'supplier_batch_number' => 'BATCH-1',
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+    ]);
+    WorkspaceMaterialSetting::factory()->for($workspace)->for($ingredient)->create([
+        'buffer_quantity' => '1200.000000000',
+    ]);
+
+    foreach ([
+        'inventory.current_position' => 'Position actuelle',
+        'inventory.open_lots' => 'Lots ouverts',
+        'inventory.period_activity' => 'Mouvements de la période',
+    ] as $key => $fr) {
+        InterfaceTranslation::query()->create([
+            'group' => 'production_bench',
+            'key' => $key,
+            'text' => ['fr' => $fr],
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertSee('Position actuelle')
+        ->assertSee('Lots ouverts')
+        ->assertSee('Mouvements de la période')
+        ->assertDontSee('Current position');
 });
 
 it('lists the purchasing listings that can replenish the material', function (): void {

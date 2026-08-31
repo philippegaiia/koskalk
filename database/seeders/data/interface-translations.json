@@ -16670,12 +16670,12 @@
       "group": "production_bench",
       "key": "inventory.below_buffer",
       "text": {
-        "de": "Below buffer",
-        "es": "Below buffer",
-        "fr": "Below buffer",
-        "it": "Below buffer",
-        "nl": "Below buffer",
-        "pt_BR": "Below buffer"
+        "de": "Unter Puffer",
+        "es": "Por debajo del buffer",
+        "fr": "En dessous du buffer",
+        "it": "Sotto scorta",
+        "nl": "Onder buffer",
+        "pt_BR": "Abaixo do buffer"
       }
     },
     {
@@ -16730,12 +16730,12 @@
       "group": "production_bench",
       "key": "inventory.buffer_stock",
       "text": {
-        "de": "Buffer stock",
-        "es": "Buffer stock",
-        "fr": "Buffer stock",
-        "it": "Buffer stock",
-        "nl": "Buffer stock",
-        "pt_BR": "Buffer stock"
+        "de": "Pufferbestand",
+        "es": "Stock de reserva",
+        "fr": "Stock tampon",
+        "it": "Scorta di sicurezza",
+        "nl": "Buffervoorraad",
+        "pt_BR": "Estoque de reserva"
       }
     },
     {
@@ -16826,12 +16826,12 @@
       "group": "production_bench",
       "key": "inventory.current_position",
       "text": {
-        "de": "Current position",
-        "es": "Current position",
-        "fr": "Current position",
-        "it": "Current position",
-        "nl": "Current position",
-        "pt_BR": "Current position"
+        "de": "Aktuelle Position",
+        "es": "Posición actual",
+        "fr": "Position actuelle",
+        "it": "Posizione attuale",
+        "nl": "Huidige positie",
+        "pt_BR": "Posição atual"
       }
     },
     {
@@ -16970,12 +16970,12 @@
       "group": "production_bench",
       "key": "inventory.filter_demand",
       "text": {
-        "de": "Planned demand",
-        "es": "Planned demand",
-        "fr": "Planned demand",
-        "it": "Planned demand",
-        "nl": "Planned demand",
-        "pt_BR": "Planned demand"
+        "de": "Geplante Nachfrage",
+        "es": "Demanda planificada",
+        "fr": "Demande planifiée",
+        "it": "Domanda pianificata",
+        "nl": "Geplande vraag",
+        "pt_BR": "Demanda planejada"
       }
     },
     {
@@ -17006,12 +17006,12 @@
       "group": "production_bench",
       "key": "inventory.filter_material_type",
       "text": {
-        "de": "Material type",
-        "es": "Material type",
-        "fr": "Material type",
-        "it": "Material type",
-        "nl": "Material type",
-        "pt_BR": "Material type"
+        "de": "Materialtyp",
+        "es": "Tipo de material",
+        "fr": "Type de matériau",
+        "it": "Tipo di materia",
+        "nl": "Materiaalsoort",
+        "pt_BR": "Tipo de material"
       }
     },
     {
@@ -17066,12 +17066,12 @@
       "group": "production_bench",
       "key": "inventory.filter_stock_state",
       "text": {
-        "de": "Stock state",
-        "es": "Stock state",
-        "fr": "Stock state",
-        "it": "Stock state",
-        "nl": "Stock state",
-        "pt_BR": "Stock state"
+        "de": "Bestandsstatus",
+        "es": "Estado del stock",
+        "fr": "État du stock",
+        "it": "Stato dello stock",
+        "nl": "Voorraadstatus",
+        "pt_BR": "Estado do estoque"
       }
     },
     {
@@ -17370,7 +17370,7 @@
         "es": "Registro de lotes",
         "fr": "Registre des lots",
         "it": "Registro dei lotti",
-        "nl": "Partijregister",
+        "nl": "Lotregister",
         "pt_BR": "Registro de lotes"
       }
     },
@@ -17378,24 +17378,24 @@
       "group": "production_bench",
       "key": "inventory.lot_register_search_help",
       "text": {
-        "de": "Search lot codes, supplier batches, materials, suppliers, SKUs, or supplier item names.",
-        "es": "Search lot codes, supplier batches, materials, suppliers, SKUs, or supplier item names.",
-        "fr": "Search lot codes, supplier batches, materials, suppliers, SKUs, or supplier item names.",
-        "it": "Search lot codes, supplier batches, materials, suppliers, SKUs, or supplier item names.",
-        "nl": "Search lot codes, supplier batches, materials, suppliers, SKUs, or supplier item names.",
-        "pt_BR": "Search lot codes, supplier batches, materials, suppliers, SKUs, or supplier item names."
+        "de": "Suche nach Chargencodes, Lieferantenchargen, Materialien, Lieferanten, SKUs oder Lieferantenartikelnamen.",
+        "es": "Busca códigos de lote, lotes de proveedor, materiales, proveedores, SKU o nombres de artículos de proveedor.",
+        "fr": "Recherchez des codes de lot, des lots fournisseur, des matériaux, des fournisseurs, des SKU ou des noms d'articles fournisseur.",
+        "it": "Cerca codici lotto, lotti fornitore, materiali, fornitori, SKU o nomi di articoli fornitore.",
+        "nl": "Zoek lotcodes, leveranciersloten, materialen, leveranciers, SKU's of namen van leveranciersartikelen.",
+        "pt_BR": "Pesquise códigos de lote, lotes de fornecedor, materiais, fornecedores, SKU ou nomes de itens de fornecedor."
       }
     },
     {
       "group": "production_bench",
       "key": "inventory.lot_scope",
       "text": {
-        "de": "Lot scope",
-        "es": "Lot scope",
-        "fr": "Lot scope",
-        "it": "Lot scope",
-        "nl": "Lot scope",
-        "pt_BR": "Lot scope"
+        "de": "Chargenumfang",
+        "es": "Alcance del lote",
+        "fr": "Périmètre des lots",
+        "it": "Ambito dei lotti",
+        "nl": "Lotbereik",
+        "pt_BR": "Escopo do lote"
       }
     },
     {
@@ -17702,12 +17702,12 @@
       "group": "production_bench",
       "key": "inventory.open_lots",
       "text": {
-        "de": "Open lots",
-        "es": "Open lots",
-        "fr": "Open lots",
-        "it": "Open lots",
-        "nl": "Open lots",
-        "pt_BR": "Open lots"
+        "de": "Offene Chargen",
+        "es": "Lotes abiertos",
+        "fr": "Lots ouverts",
+        "it": "Lotti aperti",
+        "nl": "Openstaande partijen",
+        "pt_BR": "Lotes abertos"
       }
     },
     {
@@ -17858,12 +17858,12 @@
       "group": "production_bench",
       "key": "inventory.period_activity",
       "text": {
-        "de": "Period activity",
-        "es": "Period activity",
-        "fr": "Period activity",
-        "it": "Period activity",
-        "nl": "Period activity",
-        "pt_BR": "Period activity"
+        "de": "Periodenaktivität",
+        "es": "Actividad del periodo",
+        "fr": "Mouvements de la période",
+        "it": "Movimenti del periodo",
+        "nl": "Periodeactiviteit",
+        "pt_BR": "Movimentações do período"
       }
     },
     {
@@ -18050,12 +18050,12 @@
       "group": "production_bench",
       "key": "inventory.related_supplier_listings",
       "text": {
-        "de": "Supplier listings",
-        "es": "Supplier listings",
-        "fr": "Supplier listings",
-        "it": "Supplier listings",
-        "nl": "Supplier listings",
-        "pt_BR": "Supplier listings"
+        "de": "Lieferantenangebote",
+        "es": "Listados de proveedores",
+        "fr": "Listes de fournisseurs",
+        "it": "Listini fornitore",
+        "nl": "Leveranciersaanbiedingen",
+        "pt_BR": "Listagens de fornecedores"
       }
     },
     {
@@ -18329,7 +18329,7 @@
         "de": "Bestand nach Material",
         "es": "Stock por material",
         "fr": "Stock par matière",
-        "it": "Scorte per materia",
+        "it": "Giacenza per materia",
         "nl": "Voorraad per materiaal",
         "pt_BR": "Estoque por material"
       }

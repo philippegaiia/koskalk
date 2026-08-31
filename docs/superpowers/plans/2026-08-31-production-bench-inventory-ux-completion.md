@@ -941,15 +941,15 @@ confirmation of the canonical complete suite in its supported environment.
 - A live browser viewer-session check was not completed in this pass; the viewer behaviour and
   rejected mutations are covered by the automated acceptance tests above.
 
-**Post-correction verification (working tree after `9024f9e7`, pending commit):**
+**Post-correction verification (committed at `814cbc2f`):**
 
 - Affected inventory / entitlement / translation / navigation suite: **214 passed,
   31,313 assertions**.
 - Canonical `php artisan test --compact` with the Herd PHP memory limit (`1024M`): **2,788
   passed, 25 skipped, 51,894 assertions** in 156.79s.
-- The corrective implementation is still uncommitted in the working tree. The new
-  `app/Services/Inventory/InventoryQuantityPresenter.php` file must be included in the commit
-  before this record can be treated as complete.
+- The corrective implementation, including
+  `app/Services/Inventory/InventoryQuantityPresenter.php`, is committed on
+  `codex/production-bench-inventory-ux`.
 
 The branch remains unmerged to main; integration still requires the owner’s chosen
 handoff path.
@@ -966,7 +966,6 @@ handoff path.
 - Activity rows are paginated and summary processing is bounded by movement groups, not movement count.
 - Public inventory inputs render through Filament schemas.
 - Negative forecast and below-buffer states remain visually and semantically distinct.
-- Before final handoff, all current counter-review fixes—including
-  `app/Services/Inventory/InventoryQuantityPresenter.php`—must be committed on
-  `codex/production-bench-inventory-ux`; until then, this criterion remains open and no
-  implementation should be considered complete.
+- All current counter-review fixes—including
+  `app/Services/Inventory/InventoryQuantityPresenter.php`—are committed on
+  `codex/production-bench-inventory-ux`; the branch remains unmerged to `main`.

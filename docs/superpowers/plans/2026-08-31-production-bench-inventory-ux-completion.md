@@ -811,7 +811,7 @@ git add graphify-out
 git commit -m "chore: refresh inventory code graph"
 ```
 
-- [ ] **Step 8: Perform actual-app acceptance, not mockup acceptance**
+- [x] **Step 8: Perform actual-app acceptance, not mockup acceptance**
 
 Open the Laravel application from a checkout serving `codex/production-bench-inventory-ux`. Do not validate against `.superpowers/brainstorm/*.html`.
 
@@ -825,7 +825,7 @@ Verify manually:
 6. Last 30 days, Last 365 days, and custom periods update activity but not current position.
 7. Read-only users see details but no buffer or lot-state mutation actions.
 
-- [ ] **Step 9: Request the complete suite**
+- [x] **Step 9: Request the complete suite**
 
 After the affected suite passes, ask the project owner to run:
 

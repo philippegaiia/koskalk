@@ -620,16 +620,19 @@ it('renders the material filter controls from a filament schema', function (): v
     $this->actingAs($user);
 
     // The `for` attribute carries the schema name, so these ids only exist
-    // while the controls are rendered by materialFiltersForm() rather than by
-    // handwritten markup.
+    // while the controls are rendered by materialFiltersForm() and
+    // materialAdvancedFiltersForm() rather than by handwritten markup.
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertSeeHtml('for="materialFiltersForm.search"')
         ->assertSeeHtml('for="materialFiltersForm.sort"')
-        ->assertSeeHtml('for="materialFiltersForm.materialType"')
-        ->assertSeeHtml('for="materialFiltersForm.stockState"')
-        ->assertSeeHtml('for="materialFiltersForm.demandFilter"')
-        ->assertSeeHtml('for="materialFiltersForm.categoryFilter"')
-        ->assertSeeHtml('for="materialFiltersForm.subcategoryFilter"')
+        ->assertSeeHtml('aria-controls="material-advanced-filters"')
+        ->assertSeeHtml('id="material-advanced-filters"')
+        ->assertSeeHtml('x-show="filtersOpen"')
+        ->assertSeeHtml('for="materialAdvancedFiltersForm.materialType"')
+        ->assertSeeHtml('for="materialAdvancedFiltersForm.stockState"')
+        ->assertSeeHtml('for="materialAdvancedFiltersForm.demandFilter"')
+        ->assertSeeHtml('for="materialAdvancedFiltersForm.categoryFilter"')
+        ->assertSeeHtml('for="materialAdvancedFiltersForm.subcategoryFilter"')
         // Priority ordering has no direction to invert, so the control stays
         // hidden until a sort that can be reversed is chosen.
         ->assertDontSeeHtml('for="materialFiltersForm.direction"')

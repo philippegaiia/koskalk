@@ -58,15 +58,36 @@
                     </div>
                 </dl>
 
-                <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                <div
+                    data-production-bench-filters
+                    x-data="{ filtersOpen: @js($materialFiltersActive) }"
+                    class="border-b border-[var(--color-line)] p-4"
+                >
                     {{ $this->materialFiltersForm }}
-                    <p id="inventory-search-help" class="mt-2 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.search_help') }}</p>
 
-                    @if ($materialFiltersActive)
-                        <div class="mt-3">
-                            <button type="button" wire:click="clearMaterialFilters" class="sk-btn sk-btn-ghost">{{ __('production_bench.inventory.clear_filters') }}</button>
-                        </div>
-                    @endif
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            class="sk-btn sk-btn-ghost"
+                            aria-controls="material-advanced-filters"
+                            x-bind:aria-expanded="filtersOpen.toString()"
+                            x-on:click="filtersOpen = ! filtersOpen"
+                        >
+                            {{ __('production_bench.common.filters') }}
+                        </button>
+
+                        @if ($materialFiltersActive)
+                            <button type="button" wire:click="clearMaterialFilters" class="sk-btn sk-btn-ghost">
+                                {{ __('production_bench.inventory.clear_filters') }}
+                            </button>
+                        @endif
+                    </div>
+
+                    <div id="material-advanced-filters" class="mt-3" x-cloak x-show="filtersOpen">
+                        {{ $this->materialAdvancedFiltersForm }}
+                    </div>
+
+                    <p id="inventory-search-help" class="mt-3 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.search_help') }}</p>
 
                     @if ($materialFiltersActive)
                         <div class="mt-3 flex flex-wrap gap-2" aria-label="{{ __('production_bench.inventory.filters') }}">

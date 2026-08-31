@@ -167,12 +167,18 @@ class InventoryIndex extends Component implements HasActions, HasForms
     }
 
     /**
-     * Material view filter schema.
+     * Material view primary filter schema.
      *
      * Deliberately without a `statePath()`: the fields bind straight to the
      * URL-bound properties, so a bookmarked inventory URL keeps filtering
      * exactly as it did when these were handwritten inputs. Moving them into a
      * nested state array would silently retire every shared link.
+     *
+     * Only Search, Sort, and Direction live here. The five narrowing controls
+     * (type, stock state, planned demand, category, subcategory) moved to
+     * `materialAdvancedFiltersForm()` behind the accessible Filters disclosure,
+     * but they still bind to the very same URL properties — so bookmarked
+     * links that preselect them keep working unchanged.
      *
      * The `updated*()` hooks below stay the single source of truth for the
      * side effects — each one resets only the paginator it belongs to and, for
@@ -182,14 +188,14 @@ class InventoryIndex extends Component implements HasActions, HasForms
     {
         return $schema
             ->components([
-                Grid::make(['sm' => 2, 'xl' => 4])
+                Grid::make(['sm' => 2, 'xl' => 3])
                     ->schema([
                         TextInput::make('search')
                             ->label(__('production_bench.common.search'))
                             ->type('search')
                             ->placeholder(__('production_bench.common.search'))
                             ->live(debounce: 300)
-                            ->columnSpanFull(),
+                            ->columnSpan(['sm' => 2, 'xl' => 1]),
                         Select::make('sort')
                             ->label(__('production_bench.inventory.sort'))
                             ->options([
@@ -212,6 +218,22 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->native(false)
                             ->live()
                             ->visible(fn (Get $get): bool => $get('sort') !== 'priority'),
+                    ]),
+            ]);
+    }
+
+    /**
+     * Material view advanced filter schema — collapsed behind the accessible
+     * Filters disclosure in the view, but bound to the same URL properties as
+     * the primary schema. The five controls are moved here unchanged so their
+     * options, searchability, dependency, and update hooks remain authoritative.
+     */
+    public function materialAdvancedFiltersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['sm' => 2, 'xl' => 3])
+                    ->schema([
                         Select::make('materialType')
                             ->label(__('production_bench.inventory.filter_material_type'))
                             ->options([

@@ -937,6 +937,7 @@ return [
         'materials_count' => '{0} No materials|{1} :count material|[2,*] :count materials',
         'without_demand_count' => '{0} None without demand|{1} :count without planned demand|[2,*] :count without planned demand',
         'no_planned_demand' => 'No planned demand',
+        'open_material_detail' => 'Open material inventory detail',
         'no_materials' => 'This workspace does not track any materials yet. A material appears once planned production needs it or once you add a supplier listing for it.',
         'no_materials_match' => 'No materials match the current search or filter.',
         'stock' => 'Stock',

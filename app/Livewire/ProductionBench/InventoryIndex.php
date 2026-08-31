@@ -635,6 +635,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 ? $displayUnit
                 : __('production_bench.inventory.units');
 
+            // Route construction stays out of Blade so the view never has to know
+            // which subject type it is rendering.
+            $row['detail_url'] = $row['subject'] instanceof Ingredient
+                ? route('production-bench.inventory.material.ingredient', $row['subject'])
+                : route('production-bench.inventory.material.packaging', $row['subject']);
+
             return $row;
         });
     }

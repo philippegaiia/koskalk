@@ -176,22 +176,31 @@
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @forelse ($materials as $row)
-                                @php
-                                    $subjectRoute = $row['subject'] instanceof \App\Models\Ingredient
-                                        ? route('production-bench.inventory.material.ingredient', $row['subject'])
-                                        : route('production-bench.inventory.material.packaging', $row['subject']);
-                                @endphp
                                 <tr wire:key="inventory-material-{{ $row['key'] }}" class="{{ $row['is_shortage'] ? 'bg-[var(--color-danger-soft)]/40' : '' }}">
                                     <td class="px-5 py-3">
-                                        <a href="{{ $subjectRoute }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ $row['name'] }}</a>
-                                        @if ($row['material_code'])<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $row['material_code'] }}</p>@endif
-                                        <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
-                                        @unless ($row['has_demand'])
-                                            <p class="mt-1"><span class="rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_planned_demand') }}</span></p>
-                                        @endunless
-                                        @if ($row['is_below_buffer'])
-                                            <p class="mt-1"><span class="rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.inventory.filter_below_buffer') }}</span></p>
-                                        @endif
+                                        {{-- A table row cannot be wrapped in an anchor, so the whole identity cell
+                                             is one block link instead of just the name. --}}
+                                        <a
+                                            href="{{ $row['detail_url'] }}"
+                                            wire:navigate
+                                            class="group -m-2 flex min-h-11 items-start justify-between gap-3 rounded-lg p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                        >
+                                            <span class="min-w-0">
+                                                <span class="block font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $row['name'] }}</span>
+                                                @if ($row['material_code'])
+                                                    <span class="mt-0.5 block font-mono text-xs text-[var(--color-ink-soft)]">{{ $row['material_code'] }}</span>
+                                                @endif
+                                                <span class="mt-0.5 block text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</span>
+                                                @unless ($row['has_demand'])
+                                                    <span class="mt-1 inline-flex rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_planned_demand') }}</span>
+                                                @endunless
+                                                @if ($row['is_below_buffer'])
+                                                    <span class="mt-1 inline-flex rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.inventory.filter_below_buffer') }}</span>
+                                                @endif
+                                            </span>
+                                            <span class="mt-0.5 shrink-0 text-[var(--color-ink-soft)] group-hover:text-[var(--color-accent-strong)]" aria-hidden="true">&rarr;</span>
+                                            <span class="sr-only">{{ __('production_bench.inventory.open_material_detail') }}</span>
+                                        </a>
                                     </td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['physical'] }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>

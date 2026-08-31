@@ -17712,6 +17712,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.open_material_detail",
+      "text": {
+        "de": "Materialinventar-Detail öffnen",
+        "es": "Abrir el detalle de inventario del material",
+        "fr": "Ouvrir le détail d’inventaire du matériau",
+        "it": "Apri i dettagli di inventario del materiale",
+        "nl": "Materiaalinventarisdetail openen",
+        "pt_BR": "Abrir detalhes de inventário do material"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.opening_physical",
       "text": {
         "de": "Opening physical",

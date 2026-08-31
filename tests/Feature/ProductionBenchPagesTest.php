@@ -4,6 +4,7 @@ use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
+use App\Enums\StockUnitKind;
 use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
@@ -177,6 +178,37 @@ it('gives each inventory page a translated browser title of its own', function (
     $this->get(route('production-bench.inventory.stock'))
         ->assertOk()
         ->assertSee('<title>'.__('production_bench.inventory.lot_register').' · '.config('app.name').'</title>', false);
+});
+
+it('links every material identity to its accessible detail page', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    SupplierListing::factory()->for($workspace)->for($supplier)->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => $packaging->id,
+        'unit_kind' => StockUnitKind::Count,
+        'purchase_format' => 'Box of 100 units',
+        'canonical_quantity_per_purchase_format' => '100',
+        'net_quantity' => '100',
+        'net_unit' => 'count',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSee(route('production-bench.inventory.material.ingredient', $ingredient), false)
+        ->assertSee(route('production-bench.inventory.material.packaging', $packaging), false)
+        ->assertSee(__('production_bench.inventory.open_material_detail'), false);
+
+    $this->get(route('production-bench.inventory.material.ingredient', $ingredient))
+        ->assertSee('Olive oil');
+    $this->get(route('production-bench.inventory.material.packaging', $packaging))
+        ->assertSee('Amber bottle');
 });
 
 it('redirects the retired material requirements page to the material view', function (): void {

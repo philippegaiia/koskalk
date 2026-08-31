@@ -24,6 +24,7 @@ use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
 use App\Services\SupplierListingPricePresentation;
 use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -555,9 +556,18 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
     private function formatQuantity(string $quantity, MassConverter $massConverter, string $displayUnit): string
     {
-        return $this->subject() instanceof Ingredient
-            ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
-            : number_format((float) $quantity, 0);
+        $displayQuantity = $this->subject() instanceof Ingredient
+            ? $massConverter->fromGramsSigned($quantity, $displayUnit)
+            : $quantity;
+
+        $decimals = $this->subject() instanceof Ingredient ? 2 : 0;
+
+        return NumberLocale::formatAdaptiveDecimal(
+            $displayQuantity,
+            minimumDecimals: $decimals,
+            maximumDecimals: $decimals,
+            locale: $this->user()->number_locale,
+        );
     }
 
     private function displayUnit(): string

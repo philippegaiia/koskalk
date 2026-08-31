@@ -915,8 +915,18 @@ class InventoryIndex extends Component implements HasActions, HasForms
                     ->only(['physical', 'quarantined', 'reserved', 'available'])
                     ->map(
                         fn (string $quantity): string => $lot->ingredient_id !== null
-                            ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
-                            : number_format((float) $quantity, 0),
+                            ? NumberLocale::formatAdaptiveDecimal(
+                                $massConverter->fromGramsSigned($quantity, $displayUnit),
+                                minimumDecimals: 2,
+                                maximumDecimals: 2,
+                                locale: $this->user()->number_locale,
+                            )
+                            : NumberLocale::formatAdaptiveDecimal(
+                                $quantity,
+                                minimumDecimals: 0,
+                                maximumDecimals: 0,
+                                locale: $this->user()->number_locale,
+                            ),
                     )
                     ->all(),
             ];
@@ -971,8 +981,18 @@ class InventoryIndex extends Component implements HasActions, HasForms
     {
         return $page->through(function (array $row) use ($massConverter, $displayUnit): array {
             $format = $row['display_unit'] === 'mass'
-                ? fn (string $quantity): string => number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
-                : fn (string $quantity): string => number_format((float) $quantity, 0);
+                ? fn (string $quantity): string => NumberLocale::formatAdaptiveDecimal(
+                    $massConverter->fromGramsSigned($quantity, $displayUnit),
+                    minimumDecimals: 2,
+                    maximumDecimals: 2,
+                    locale: $this->user()->number_locale,
+                )
+                : fn (string $quantity): string => NumberLocale::formatAdaptiveDecimal(
+                    $quantity,
+                    minimumDecimals: 0,
+                    maximumDecimals: 0,
+                    locale: $this->user()->number_locale,
+                );
 
             foreach (['physical', 'available', 'reserved', 'quarantined', 'incoming', 'required', 'forecast'] as $position) {
                 $row['positions'][$position] = $format($row['positions'][$position]);

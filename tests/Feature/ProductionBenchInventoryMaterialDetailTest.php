@@ -62,6 +62,38 @@ it('renders a tracked ingredient detail with current position and lot navigation
             && $position['available'] === '1.00');
 });
 
+it('formats ingredient and packaging quantities with exact localized decimals', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $user->update(['number_locale' => 'fr_FR']);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Precise oil']);
+    $ingredientLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($ingredientLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '59870.000000000',
+    ]);
+    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Precise jars']);
+    $packagingLot = StockLot::factory()->for($workspace)->forPackaging()->create([
+        'packaging_item_id' => $packaging->id,
+    ]);
+    StockMovement::factory()->for($packagingLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '2274.000000000',
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])->assertViewHas('position', fn (array $position): bool => $position['physical'] === '59,87');
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $packaging->public_id,
+        'subjectType' => 'packaging',
+    ])
+        ->assertViewHas('position', fn (array $position): bool => $position['physical'] === '2274')
+        ->assertDontSee('2,274');
+});
+
 it('renders the material detail headings in French for a French interface locale', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);

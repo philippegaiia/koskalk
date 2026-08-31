@@ -74,6 +74,24 @@ it('uses factual production bench copy', function (): void {
         ->assertDontSee('What is here, and what is usable.');
 });
 
+it('formats material quantities with the user number locale without float coercion', function (): void {
+    $user = User::factory()->create(['number_locale' => 'fr_FR']);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Precise oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '59870.000000000',
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertViewHas('materials', fn ($materials): bool => $materials->first()['positions']['physical'] === '59,87')
+        ->assertSee('59,87')
+        ->assertDontSee('59.87');
+});
+
 it('exposes the production bench as a separate authenticated workspace', function (): void {
     $this->get('/dashboard/production-bench')->assertRedirect('/login');
 

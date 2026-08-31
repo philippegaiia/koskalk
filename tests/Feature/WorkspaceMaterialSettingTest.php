@@ -21,6 +21,13 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+it('assigns a public uuid to material settings', function (): void {
+    $setting = WorkspaceMaterialSetting::factory()->create();
+
+    expect($setting->public_id)->toBeUuid()
+        ->and($setting->getRouteKeyName())->toBe('public_id');
+});
+
 it('stores one ingredient buffer per workspace in canonical units', function (): void {
     $workspace = Workspace::factory()->create();
     $ingredient = Ingredient::factory()->create();

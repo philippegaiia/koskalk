@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use Database\Factories\WorkspaceMaterialSettingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +19,8 @@ class WorkspaceMaterialSetting extends Model
 {
     /** @use HasFactory<WorkspaceMaterialSettingFactory> */
     use HasFactory;
+
+    use HasPublicId;
 
     public function workspace(): BelongsTo
     {

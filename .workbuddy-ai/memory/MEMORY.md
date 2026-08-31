@@ -1,153 +1,213 @@
 # Project notes — koskalk
 
-## Reviewing: read the governing spec before calling something a bug
+## Current status: production-bench inventory UX
 
-This repo keeps approved design/spec docs under `docs/superpowers/specs/` and implementation plans
-under `docs/superpowers/plans/`. **The spec is the authority on intent; tests are not.**
+`codex/production-bench-inventory-ux` is merged into local `main` at merge commit `643918a3`.
+The final feature suite passed **2,788 / 25 skipped**, and the merged-main inventory suite passed
+**220 / 0 failed**. The branch is not pushed merely by this local merge.
 
-Learned the hard way on 2026-08-29 reviewing `bd103fb3`: I flagged that an approved `revalidate`
-rewrites a translation's `origin` from `reviewer_edited` to `ai_generated`. That is mandated by the
-approved design (lines 52 and 101 of
-`2026-08-28-ingredient-guidance-refresh-corrections-design.md`), and the per-locale
-`IngredientTranslationWriteIntent` exists precisely to express it. I inferred intent from a test
-covering a *different* case and reported a non-defect as a medium finding.
+Do not attribute the current four full-suite failures to the inventory merge: three are caused by
+the root checkout's local `.env` selecting Luna where the tests pin Terra, and one is a pre-existing
+Composer queue-timeout contract mismatch (`--timeout=0` in first-parent `main`, test expects `300`).
+The feature worktree is intentionally retained because it contains protected untracked notes/plans.
+Manual viewer-role browser acceptance is the only remaining inventory acceptance observation;
+automated authorization and no-write coverage is green.
 
-Rules that follow:
-- Before reporting behavioural findings, locate and read the relevant `docs/superpowers/specs/*.md`.
-- Tests pin behaviour; they do not state intent. Do not over-read one test as a design invariant.
-- Check for spec drift in both directions: code ahead of spec, and spec ahead of code.
+## Reviewing: the spec is the authority on intent, not tests
+
+Approved design docs live in `docs/superpowers/specs/`, plans in `docs/superpowers/plans/`.
+Before reporting any behavioural finding, read the governing spec.
+
+- Tests pin behaviour; they do not state intent. Do not over-read one test as an invariant.
+- Check spec drift in both directions: code ahead of spec, and spec ahead of code.
 - State plainly when a finding is retracted, rather than quietly dropping it.
+- Learned 2026-08-29 reviewing `bd103fb3`: I reported a mandated behaviour (approved
+  `revalidate` rewrites translation `origin` to `ai_generated`) as a defect, having inferred
+  intent from a test covering a different case.
 
-## Ingredient enrichment / translation provenance
+## Reviewing: four traps that each produced a wrong call
 
-- A translation row carries `origin`, `prompt_version`, and `source_fingerprint`.
-- `IngredientTranslationService::sync()` preserves existing metadata for unchanged rows **unless**
-  the write intent sets `refreshMetadata` — then it rewrites fingerprint, origin, and prompt version.
-- `revalidate` (text identical, fingerprint stale) and AI-generated rows both receive AI provenance
-  plus the localization prompt version. Reviewer edits in the current batch get reviewer provenance
-  with a null prompt version.
-- Retaining *historical* human authorship across a later AI revalidation is not modelled. It would
-  need a separate audit field and a design change, not a conditional patch.
+Hard-won across three reviews (`bd103fb3`, production-bench inventory rev 1 and rev 2).
+
+- **An interface assertion is not a usage assertion.** Cleared `InventoryIndex` of "bypasses
+  Filament forms" because it `implements HasForms`. It does — but the branch had deleted the
+  `filtersForm()` the view rendered, replacing it with raw inputs. If the finding is about a
+  view, read the view; if it is about a form, grep the blade for `{{ $this->...Form }}`.
+- **Check the pre-branch version before calling something absent.** `git show <base>:<path>`
+  separates "never had it" from "this branch removed it". The second is a regression and is
+  materially worse than a gap.
+- **Split a compound rule before ruling on it.** `.ai/rules/app.md:22` bundles isolation +
+  `withoutGlobalScopes()->lockForUpdate()` + re-assert access inside transactions. I
+  retracted a finding wholesale because one clause was moot, and wrongly cleared two others.
+  Retract per-clause.
+- **Check whether the thing being guarded is an input to the guard's own predicate.** I
+  proposed adding `tracks()` to `SaveMaterialBuffer`, but `tracks()` is *derived from*
+  settings (`WorkspaceMaterialCatalog::settingKeys()` — a buffer is what makes a material
+  tracked). Self-referential preconditions deadlock.
+- **Plan vs spec:** the spec is the authority on *intent*, but when the plan is explicit and
+  deliberate about a schema detail, the plan wins for implementation (e.g. plan line 162
+  deliberately omits `->nullable()` on `buffer_quantity` while making subject columns
+  nullable). Flag the divergence for the spec, do not file it as a defect.
 
 ## Conventions
 
-- Commit subjects are conventional (`fix:`, `feat:`, `test:`, `refactor:`, `merge:`, `docs:`),
-  lowercase. Plan/design docs go straight onto `main` with a `docs:` subject.
-- A **graphify post-commit hook runs automatically** on every commit and rebuilds `graphify-out/`
-  (~1500 files, a few seconds). Never run `graphify update .` manually — the hook already did it,
-  and it is not a step worth listing in a plan.
-- Work happens in git **worktrees** under `.worktrees/<slug>` on `codex/<slug>` branches, merged to
-  `main`. A worktree can disappear after merge — re-check `git worktree list` before using a path.
-- Only automated quality gate is Pint. No PHPStan/Larastan configured, so unused parameters and
-  similar issues are caught by nothing — mention them in review.
-- Test helpers in Feature tests are often declared at the bottom of the file and are **file-scoped**,
-  not global (e.g. `guidanceResult`, `guidanceApplyText` in `IngredientGuidanceBatchReviewTest.php`).
-  Copy them into a scratch test rather than calling them cross-file.
+- Conventional, lowercase commit subjects (`feat:`, `fix:`, `test:`, `refactor:`, `docs:`).
+  Plan/design docs go straight onto `main` with a `docs:` subject.
+- A **graphify post-commit hook runs automatically** on every commit and rebuilds
+  `graphify-out/`. Never run `graphify update .` manually, and never list it as a plan step.
+- Work happens in git **worktrees** under `.worktrees/<slug>` on `codex/<slug>` branches.
+  A worktree can vanish after merge — re-check `git worktree list` before using a path.
+- Pint is the only automated quality gate; no PHPStan/Larastan. Unused parameters and similar
+  are caught by nothing — raise them in review.
+- Test helpers in Feature tests are declared at the bottom of the file and are **file-scoped**,
+  not global. Copy them into a scratch test rather than calling them cross-file.
 
-## Git forensics: two traps that produced false conclusions
+## `interface-translations.json` must stay sorted by group AND key
 
-Both bit me on 2026-08-29 while attributing suite failures to a branch.
+Adding a key to `database/seeders/data/interface-translations.json` in the wrong position fails six
+tests with `InvalidInterfaceTranslationCatalogue: Catalogue translations must be sorted by group and
+key.` The ordering is `strcmp` over `group.key`, so `validation.buffer_overflow` sorts **before**
+`validation.buffer_precision` — insert alphabetically, never append. New keys also need all six
+locales (de, es, fr, it, nl, pt_BR) or the same test fails.
 
-- **Attribution ranges die at merge.** `git log main..branch -- <file>` run *after* the merge is
-  empty by definition, so every file reports "0 commits". Diff against the **pre-merge** main
-  (`763a6034` for the production-bench merge) instead. An empty result from a post-merge range
-  means nothing.
-- **zsh eats `$var:path`.** `git show $c:config/foo.php` is parsed as a history modifier and
-  explodes (`fatal: ambiguous argument '56726688onfig/...'`). Write `git show ${c}:config/foo.php`.
-  Same class of problem: `grep --include=*.php` fails unquoted in zsh — use the Grep tool.
-- When `git show <rev>:<path>` appears to fail, re-check with `git ls-tree -r --name-only <rev> -- <dir>`
-  before concluding the file is absent. A silent `2>/dev/null` plus a blocked `/tmp` redirect once
-  made me report a file as MISSING that was plainly in the tree.
+## The Herd preview runs PostgreSQL, not SQLite
+
+The test suite runs SQLite, but the Herd-served worktree previews point at a **PostgreSQL** database
+(`koskalk_restore_20260722_023001` as of 2026-08-30). Anything whose behaviour differs by driver —
+`SUM()` over `decimal`, NULL ordering, numeric overflow, alias visibility in `WHERE`, string quoting
+in raw SQL — can only be checked for real on the preview, and a green suite proves nothing about it.
+
+Practical consequences:
+- Write raw SQL with **single quotes** for literals. Double quotes are identifiers in PostgreSQL, so
+  `status = "active"` fails with `SQLSTATE[42703] Undefined column` where SQLite shrugs.
+- The `decimal(20,9)` buffer overflow (#1) is a PostgreSQL-only 500 — verify it on the preview.
+- Preview URL pattern: `http://<worktree-slug>.test`, site symlinks under
+  `~/Library/Application Support/Herd/config/valet/Sites/`. This branch:
+  `http://koskalk-inventory-ux.test`.
+
+## Adding a lang key: two files, not one
+
+A new `production_bench.*` message needs `lang/en/production_bench.php` **and**
+`database/seeders/data/interface-translations.json` (all six locales, correctly sorted). Only the
+English file is read at runtime by `__()`; the catalogue is what the translation test checks.
+
+## Git forensics traps (each produced a false conclusion once)
+
+- **Attribution ranges die at merge.** `git log main..branch -- <file>` is empty by definition
+  after a merge. Diff against pre-merge main instead.
+- **zsh eats `$var:path`.** Write `git show ${c}:config/foo.php`, not `$c:...` — the latter is a
+  history modifier and explodes. Unquoted `grep --include=*.php` fails too; use the Grep tool.
 - **Never let a probe fail silently.** `cmd 2>/dev/null | grep -c X` returning `0` is
-  indistinguishable from `cmd` having failed. The `:r` history-modifier trap above produced a
-  uniform `0` across eight commits and I reported it as a finding ("the file never contained this").
-  Sanity-check a suspiciously uniform zero, or print a sentinel, before trusting it.
+  indistinguishable from `cmd` having failed. Sanity-check a suspiciously uniform zero, or print
+  a sentinel, before trusting it.
+- Before concluding a file is absent, re-check with `git ls-tree -r --name-only <rev> -- <dir>`.
+- Before asserting a test "never passed", confirm the measurement on a commit where you *know*
+  the value, and prefer `git log --all --oneline -S '<string>' -- <path>`.
 
-## CSS workflow: owner runs `npm run dev`; do NOT run `npm run build` unprompted
+## CSS: owner runs `npm run dev`; do NOT run `npm run build` unprompted
 
-`package.json` has `dev: vite` and `build: vite build`. The owner develops against the **dev
-server**, which serves from source with HMR — a CSS edit is visible on reload with no build step.
-**Do not run `npm run build` after a CSS change** unless asked, or unless the point is specifically
-to refresh the production artifact.
+The owner develops against the dev server (HMR from source); a CSS edit is visible on reload
+with no build step. Only build if the point is specifically to refresh the production artifact.
 
-Corrected 2026-08-29: I twice treated a stale `public/build` as a defect ("the app still ships
-2px") and rebuilt to close a "gap". It was not one. The owner never loads `public/build` locally,
-so the stale bundle was invisible and irrelevant — unnecessary work, reported as a finding it did
-not deserve.
-
-Related facts, still true:
 - `public/build` is gitignored and is the **deploy** artifact. It goes stale during local branch
-  work; that is normal. Do not report it as a bug again.
-- The design-polish contract tests read `resource_path('css/app.css')` — the **source**, never the
-  bundle. The suite is green whether or not `public/build` is current. Only inspect the bundle when
-  the question is what *production* will actually ship.
-- Old orphaned bundles linger on disk (Vite does not appear to empty `buildDirectory`).
+  work — that is normal, not a bug. Old orphaned bundles also linger (Vite does not empty the
+  build directory).
+- Design-polish contract tests read `resource_path('css/app.css')` — the **source**, never the
+  bundle. The suite is green whether or not `public/build` is current.
 
-## Surfaces are lifted by shadow, never outlined
+### Surfaces are lifted by shadow, never outlined
 
-A panel reads as raised through elevation, not a rule around it: **`.sk-card` has no `border`.**
-The reference implementation is the ingredients page (`sk-card` wrapper; internal `border-b` /
-`border-t` / `divide-y` dividers only — the border is wrong on the *outer* box alone).
+`.sk-card` has **no `border`**. Internal `border-b` / `border-t` / `divide-y` dividers only —
+an outer border is wrong. Reference implementation: the ingredients page. The shadow lives in the
+`--shadow-card` token in the `soapkraft.css` `@theme` block (do not retype the literal);
+`.sk-card-elevation` / `.sk-card-elevation-subtle` exist for elements already carrying a
+border/radius. Owner override O6 (2026-08-30) migrated the production bench nav rail and all 11
+table shells from `rounded-2xl border … bg-[var(--color-panel)]` to `sk-card`.
+**Do not symmetrise `.sk-nav-rail`'s `padding-inline: 1.125rem 0.75rem`** — the start excess is
+the nesting signal that sets level-2 tabs inboard of level-1.
 
-- The shadow lives in the `--shadow-card` token in the `soapkraft.css` `@theme` block, read by
-  `.sk-card`, `.sk-nav-rail` and the generated `shadow-card` utility. Do not retype the literal.
-- Two sibling utilities exist for elements that already carry their own border/radius:
-  `.sk-card-elevation` and `.sk-card-elevation-subtle`, both in `soapkraft.css`.
-- Owner override O6 (2026-08-30) converted the production bench nav rail and all 11 table shells
-  from `rounded-2xl border … bg-[var(--color-panel)]` to `sk-card`. This is O1's rule from the
-  other direction: O1 removed a container border that duplicated its child's edge; O6 removes
-  them because the app does not draw panels that way at all.
-- **Do not symmetrise `.sk-nav-rail`'s `padding-inline: 1.125rem 0.75rem`.** The 0.375rem start
-  excess is the nesting signal — it sets the level-2 tabs inboard of the level-1 tabs above them.
-  It was incidental while a 2px start border sat beside it; O6 removed the border, so the padding
-  is now load-bearing.
+### Undefined CSS custom properties fail silently
 
-## Undefined CSS custom properties fail silently — no build step catches them
-
-`--color-panel-muted`, `--color-ink-muted` and `--color-surface-muted` were each used dozens of
-times across the production bench while **never being defined**, in any stylesheet or commit.
-
-- A `var()` that does not resolve makes the declaration *invalid at computed-value time*. For
-  non-inherited properties (`background-color`) that falls back to the **initial** value, so the
-  background silently goes transparent.
-- For **inherited** properties (`color`) it falls back to `inherit` — the text does not vanish, it
-  silently takes the parent's colour. That is why 47 elements looked merely "too dark" instead of
-  obviously broken. Expect this asymmetry when diagnosing.
-- Nothing in the toolchain flags it: Tailwind emits `var(--x)` verbatim and Vite does not resolve
-  custom properties.
-- Guard: `ProductionBenchLayoutTest::defines every colour token the production bench views
-  reference` reads every `var(--color-*)` out of the production bench views and asserts the name is
-  defined in one of the four stylesheets. It found two of the three on its first run.
+`--color-panel-muted`, `--color-ink-muted`, `--color-surface-muted` were used dozens of times
+while never being defined. A `var()` that does not resolve makes the declaration invalid at
+computed-value time: non-inherited props (background) fall back to **initial** (transparent);
+inherited props (color) fall back to **inherit**, so text merely looks wrong. Nothing in the
+toolchain flags it — Tailwind emits `var(--x)` verbatim, Vite does not resolve custom properties.
+Guard: `ProductionBenchLayoutTest` reads every `var(--color-*)` out of the production bench views
+and asserts the name is defined in one of the four stylesheets.
 
 ## Filament actions hide markup from static contract tests
 
-`resources/views/livewire/production-bench/inventory-index.blade.php:125` renders
-`{{ $this->addStockAction }}` (defined `InventoryIndex.php:134`). Filament emits the `<button>` at
-runtime, so **no `sk-btn sk-btn-primary` literal exists in the Blade source** even though the page
-has a primary CTA. Static `file_get_contents` contract tests that assert rendered classes break
-whenever a button is migrated to a Filament action — the fix is to assert the action slot
-(`{{ $this->addStockAction }}`), not to conclude the button is missing. Same class of issue for
-any `<x-filament-actions::modals />` page.
+`inventory-index.blade.php` renders `{{ $this->addStockAction }}`; Filament emits the `<button>`
+at runtime, so **no `sk-btn sk-btn-primary` literal exists in the Blade source** even though the
+page has a primary CTA. Static `file_get_contents` contract tests must assert the action slot,
+not the rendered class. Same for any `<x-filament-actions::modals />` page.
 
-## Test suite: standing failures and how they arose
+## Test suite: recurring failure causes
 
-Triage lives in `docs/superpowers/plans/2026-08-29-test-suite-failures-triage.md`. Recurring causes:
+Triage doc: `docs/superpowers/plans/2026-08-29-test-suite-failures-triage.md`.
 
-- **`56726688` (ingredient guidance refresh) caused 4 of the 8 failures** by changing model casts
-  (`mode` → `IngredientEnrichmentBatchMode`) and `config('ingredient-enrichment.schema_version')`
-  3 → 4 without updating tests that pinned the old shapes. Check its blast radius when a test
-  suddenly stops matching.
-- **Schema-gated validation:** `IngredientEnrichmentResultValidator` runs its whole cross-field
-  provenance block only when the payload is on the *current* schema (early `return` when
-  `! $required`). Tests hard-coding an old `schema_version` silently pass strict rules by skipping
-  them — so a "passing" test may prove nothing. Prefer `config('ingredient-enrichment.schema_version')`
-  over a literal, as `IngredientEnrichmentProposalEditingTest` and `PromoteIngredientIntakeItemTest` do.
-- **Superseded tests linger.** `b603f798` removed rich-editor uploads and added
-  `RecipeContentMediaContractTest`, but never deleted the old `MediaStorageTest` case.
-- **A test that "never passed" is a rare thing — prove it.** I claimed
-  `WorkflowActionConsistencyTest` had never passed because `inventory-index.blade.php` "never had"
-  a `sk-btn sk-btn-primary`. It did: the test passed 2026-08-02 → 2026-08-20, when `cf8efead`
-  swapped the literal button for the Filament `addStockAction`. My per-commit counts were all
-  bogus (see the zsh `:r` trap above). Before asserting a test never passed, confirm the
-  measurement works on a commit where you *know* the value, and prefer
-  `git log --all --oneline -S '<string>' -- <path>` to find the commit that changed it.
+- **`56726688`** changed model casts and `config('ingredient-enrichment.schema_version')` 3 → 4
+  without updating tests that pinned the old shapes — caused 4 of 8 failures. Check its blast
+  radius when a test suddenly stops matching.
+- **Schema-gated validation:** `IngredientEnrichmentResultValidator` early-returns its whole
+  cross-field provenance block when the payload is not on the current schema. Tests hard-coding
+  an old `schema_version` silently pass strict rules by skipping them, so a "passing" test may
+  prove nothing. Prefer `config('ingredient-enrichment.schema_version')` over a literal.
+- **Superseded tests linger** — e.g. `MediaStorageTest` survived the `b603f798` removal of
+  rich-editor uploads that added `RecipeContentMediaContractTest`.
+
+## SQLite SUM() is lossy on decimal columns — never push decimal aggregation into SQL
+
+Measured 2026-08-30: SQLite `SUM()` over a `decimal(20,9)` column returns `typeof` = `real`.
+`123456789.123456789 + 0.000000001 + 0.000000001` → `123456789.12345679` against an exact
+`123456789.123456791` — a **1e-9 drift**, exactly the scale the column stores. PostgreSQL's
+`SUM(numeric)` is exact, but the suite and the dev server run SQLite.
+
+Consequence: when a plan says "use bcadd/bcsub/bccomp, never cast quantities to float",
+row-by-row BCMath accumulation in PHP is **not** an inefficiency to be optimised away with
+`SUM(CASE …)` — it is the only implementation that satisfies the line on both drivers. Verified
+as the defence of `MaterialActivityService::groupTotals()`.
+
+Corollary for `decimal(20,9)`: only **11 integer digits** are available. Any quantity entered in
+a display unit and converted to canonical grams must be validated **after** conversion, not
+before. `999999999` kg → 12 integer digits → PG `numeric field overflow` (500); SQLite shrugs,
+so the suite cannot catch it.
+
+## Server-rendered Alpine `x-data` options self-refresh — no `wire:key` or `replaceOptions()` needed
+
+Verified 2026-08-30 in `vendor/livewire/livewire/dist/livewire.js` (Alpine is bundled there; there is
+**no** separate alpinejs package in `node_modules`). Chain, with line numbers:
+
+1. Livewire `patchAttributes` (`:14562-14590`) does `from.setAttribute(name, value)` whenever the
+   value differs. **No skip list for `x-data`** — the only special case is `open` on `<dialog>`.
+2. `_x_ignoreMutationObserver` (`:1216`) is read once and **never set** by Livewire, so Alpine's
+   observer (`:1168`, `attributes: true, attributeOldValue: true`) fires on the morph.
+3. `onAttributesAdded` (`:1813-1815`) re-runs `directives(el, attrs)`.
+4. The `x-data` directive (`:4658`) early-returns only if the expression *string* is unchanged
+   (`:4662`); otherwise it re-evaluates and, because the prior `cleanup` (`:4690-4694`) left
+   `{ reactiveData }` on the element, calls `reconcileData` (`:4674-4676`, `:4702-4714`), which
+   assigns every key — **including `options`** — onto the existing reactive object. Then `init()`
+   re-runs (`:4689`).
+
+So `<x-search-combobox :options="$serverComputed">` refreshes its options on re-render with no
+extra wiring. Side effect: `reconcileData` also resets `query` / `open` / `activeIndex`, so transient
+combobox state clears — usually desirable.
+
+`replaceOptions()` (in `resources/js/search-combobox.js`) and `x-effect` are for **client-side**
+option sources. The only `x-effect` caller, `recipe-workbench/packaging-tab.blade.php:31`, maps an
+Alpine-side `packagingCatalog` array — a different problem. Do not cite it as evidence that
+server-rendered options go stale.
+
+## `.ai/rules` — read the operative clause, not the parenthetical
+
+`.ai/rules/services.md:15` — "Resolve them from the container (method injection into
+Livewire/controllers, constructor injection into Actions) — **never instantiate with `new`**."
+The prohibition is on `new`. `app(SomeService::class)` *is* container resolution and satisfies
+the rule; the parenthetical states a preference, not an exclusive mechanism.
+
+Measured 2026-08-30 across `app/Livewire/**`: **15 of 39** files use `app()` (52 calls total,
+`RecipeWorkbench` 12, `IngredientEditor` 9); only **6 of 39** use `boot()`. The dominant
+injection site is `render()`/`mount()` method injection. Before filing "uses `app()` instead of
+injection" as a violation, count the files it would fail — a rule that fails 15 files including
+the owner's own components is not the house rule.

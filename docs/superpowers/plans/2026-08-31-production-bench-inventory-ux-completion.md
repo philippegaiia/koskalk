@@ -746,7 +746,7 @@ git commit -m "fix: harden inventory ux implementation"
 - Verify all files listed in this plan.
 - Update: `graphify-out/` through the project command.
 
-- [ ] **Step 1: Run the complete affected suite**
+- [x] **Step 1: Run the complete affected suite**
 
 ```bash
 php artisan test --compact \
@@ -762,7 +762,7 @@ php artisan test --compact \
 
 Expected: all tests PASS with zero failures.
 
-- [ ] **Step 2: Format modified PHP**
+- [x] **Step 2: Format modified PHP**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -770,7 +770,7 @@ vendor/bin/pint --dirty --format agent
 
 Expected: exit code 0.
 
-- [ ] **Step 3: Run Filament compatibility analysis**
+- [x] **Step 3: Run Filament compatibility analysis**
 
 ```bash
 vendor/bin/filacheck --fix
@@ -778,7 +778,7 @@ vendor/bin/filacheck --fix
 
 Expected: no unresolved deprecated or incompatible Filament usage.
 
-- [ ] **Step 4: Validate the translation catalogue**
+- [x] **Step 4: Validate the translation catalogue**
 
 ```bash
 php artisan test --compact tests/Feature/InterfaceTranslationCatalogueTest.php
@@ -786,7 +786,7 @@ php artisan test --compact tests/Feature/InterfaceTranslationCatalogueTest.php
 
 Expected: PASS.
 
-- [ ] **Step 5: Refresh the code graph**
+- [x] **Step 5: Refresh the code graph**
 
 ```bash
 graphify update .
@@ -794,7 +794,7 @@ graphify update .
 
 Expected: the new supplier-listing query service and updated inventory relationships appear in `graphify-out/`.
 
-- [ ] **Step 6: Inspect the final branch state**
+- [x] **Step 6: Inspect the final branch state**
 
 ```bash
 git diff --check
@@ -804,7 +804,7 @@ git log --oneline --decorate -10
 
 Expected: no whitespace errors; only intentional generated graph changes remain uncommitted before the final commit.
 
-- [ ] **Step 7: Commit verification artifacts**
+- [x] **Step 7: Commit verification artifacts**
 
 ```bash
 git add graphify-out

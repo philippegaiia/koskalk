@@ -105,22 +105,21 @@ it('does not ship English placeholders for Inventory translations', function ():
         ->filter(fn (array $row): bool => $row['group'] === 'production_bench'
             && str_starts_with($row['key'], 'inventory.'));
     $languageNeutral = [
-        'de:inventory.applied_filter',
-        'de:inventory.material',
-        'de:inventory.optional',
-        'de:inventory.lot_material',
-        'fr:inventory.date',
-        'fr:inventory.source',
-        'fr:inventory.stock',
-        'fr:inventory.lot_material',
-        'nl:inventory.applied_filter',
-        'nl:inventory.filters',
-        'pt_BR:inventory.item',
-        'pt_BR:inventory.material',
-        'pt_BR:inventory.lot_material',
-        'es:inventory.material',
-        'es:inventory.stock',
-        'es:inventory.lot_material',
+        'de:inventory.applied_filter' => 'Filter is the established German loanword.',
+        'de:inventory.material' => 'Material is identical in German.',
+        'de:inventory.optional' => 'Optional is identical in German.',
+        'de:inventory.lot_material' => 'Material is identical in German.',
+        'fr:inventory.date' => 'Date is identical in French.',
+        'fr:inventory.source' => 'Source is identical in French.',
+        'fr:inventory.stock' => 'Stock is the established French loanword.',
+        'nl:inventory.applied_filter' => 'Filter is the established Dutch loanword.',
+        'nl:inventory.filters' => 'Filters is identical in Dutch.',
+        'pt_BR:inventory.item' => 'Item is the established Brazilian Portuguese loanword.',
+        'pt_BR:inventory.material' => 'Material is identical in Brazilian Portuguese.',
+        'pt_BR:inventory.lot_material' => 'Material is identical in Brazilian Portuguese.',
+        'es:inventory.material' => 'Material is identical in Spanish.',
+        'es:inventory.stock' => 'Stock is the established Spanish loanword.',
+        'es:inventory.lot_material' => 'Material is identical in Spanish.',
     ];
 
     foreach ($rows as $row) {
@@ -132,7 +131,7 @@ it('does not ship English placeholders for Inventory translations', function ():
 
             expect($value, $coordinate)->not->toBe('');
 
-            if (! in_array($coordinate, $languageNeutral, true)) {
+            if (! array_key_exists($coordinate, $languageNeutral)) {
                 expect($value, "{$coordinate} must not be English fallback")
                     ->not->toBe($english);
             }

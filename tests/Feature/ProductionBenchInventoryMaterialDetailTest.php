@@ -6,7 +6,6 @@ use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\InventoryMaterialDetail;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
-use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
@@ -26,11 +25,27 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-it('resolves material detail collaborators through Livewire injection', function (): void {
-    $source = file_get_contents(app_path('Livewire/ProductionBench/InventoryMaterialDetail.php'));
+it('keeps material detail collaborators available after a Livewire request', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Injected oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+        'occurred_at' => now()->subDays(5),
+    ]);
 
-    expect($source)->not->toContain('app(')
-        ->and($source)->toContain('public function boot(');
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->set('periodPreset', '365')
+        ->assertSee('Injected oil')
+        ->assertViewHas('position', fn (array $position): bool => $position['physical'] === '1.00')
+        ->assertViewHas('activity', fn (array $activity): bool => $activity['closing_physical'] === '1.00');
 });
 
 it('renders a tracked ingredient detail with current position and lot navigation', function (): void {
@@ -101,6 +116,35 @@ it('formats ingredient and packaging quantities with exact localized decimals', 
         ->assertDontSee('2,274');
 });
 
+it('keeps high precision and negative inventory quantities exact in localized positions', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $user->update(['number_locale' => 'fr_FR']);
+    $boundaryIngredient = Ingredient::factory()->create(['display_name' => 'Boundary oil']);
+    $boundaryLot = StockLot::factory()->for($workspace)->for($boundaryIngredient)->released()->create();
+    StockMovement::factory()->for($boundaryLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '99999999999.995000000',
+    ]);
+    $negativeIngredient = Ingredient::factory()->create(['display_name' => 'Negative oil']);
+    $negativeLot = StockLot::factory()->for($workspace)->for($negativeIngredient)->released()->create();
+    StockMovement::factory()->for($negativeLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '-59870.000000000',
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $boundaryIngredient->public_id,
+        'subjectType' => 'ingredient',
+    ])->assertViewHas('position', fn (array $position): bool => $position['physical'] === '100000000,00');
+
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $negativeIngredient->public_id,
+        'subjectType' => 'ingredient',
+    ])->assertViewHas('position', fn (array $position): bool => $position['physical'] === '-59,87'
+        && $position['available'] === '-59,87');
+});
+
 it('renders the material detail headings in French for a French interface locale', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
@@ -108,6 +152,9 @@ it('renders the material detail headings in French for a French interface locale
 
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $user->update(['locale' => 'fr']);
+    $this->artisan('translations:catalogue:import', [
+        '--mode' => 'authoritative',
+    ])->assertSuccessful();
 
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
     $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Local Oils']);
@@ -125,18 +172,6 @@ it('renders the material detail headings in French for a French interface locale
         'buffer_quantity' => '1200.000000000',
     ]);
 
-    foreach ([
-        'inventory.current_position' => 'Position actuelle',
-        'inventory.open_lots' => 'Lots ouverts',
-        'inventory.period_activity' => 'Mouvements de la période',
-    ] as $key => $fr) {
-        InterfaceTranslation::query()->create([
-            'group' => 'production_bench',
-            'key' => $key,
-            'text' => ['fr' => $fr],
-        ]);
-    }
-
     $this->actingAs($user);
 
     Livewire::test(InventoryMaterialDetail::class, [
@@ -146,7 +181,16 @@ it('renders the material detail headings in French for a French interface locale
         ->assertSee('Position actuelle')
         ->assertSee('Lots ouverts')
         ->assertSee('Mouvements de la période')
-        ->assertDontSee('Current position');
+        ->assertSee('Voir tous les lots')
+        ->assertSee('30 derniers jours')
+        ->assertSee('Consommé en production')
+        ->assertSee('Fournisseur')
+        ->assertDontSeeHtml('>Current position<')
+        ->assertDontSeeHtml('>Open lots<')
+        ->assertDontSeeHtml('>View all lots<')
+        ->assertDontSeeHtml('>Last 30 days<')
+        ->assertDontSeeHtml('>Production consumed<')
+        ->assertDontSeeHtml('>Supplier<');
 });
 
 it('shows the material name and lot code together in the open lots table', function (): void {

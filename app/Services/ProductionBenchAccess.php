@@ -46,11 +46,7 @@ class ProductionBenchAccess
 
     public function canWrite(User $actor, Workspace $workspace): bool
     {
-        return in_array($workspace->roleFor($actor), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-            WorkspaceMemberRole::Editor,
-        ], true) && $this->isActive($workspace);
+        return $this->hasManageRole($actor, $workspace) && $this->isActive($workspace);
     }
 
     public function assertWritable(User $actor, Workspace $workspace): void
@@ -144,12 +140,17 @@ class ProductionBenchAccess
 
     private function assertCanManage(User $actor, Workspace $workspace): void
     {
-        if (! in_array($workspace->roleFor($actor), [
+        if (! $this->hasManageRole($actor, $workspace)) {
+            throw new AuthorizationException;
+        }
+    }
+
+    private function hasManageRole(User $actor, Workspace $workspace): bool
+    {
+        return in_array($workspace->roleFor($actor), [
             WorkspaceMemberRole::Owner,
             WorkspaceMemberRole::Admin,
             WorkspaceMemberRole::Editor,
-        ], true)) {
-            throw new AuthorizationException;
-        }
+        ], true);
     }
 }

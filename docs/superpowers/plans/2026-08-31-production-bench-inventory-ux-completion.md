@@ -929,6 +929,28 @@ confirmation of the canonical complete suite in its supported environment.
   and Consommé en production totals.
 - Browser console warnings and errors: none observed.
 
+**Role acceptance evidence added by the final correction pass:**
+
+- The authenticated owner session exposes the stock-register mutation controls (Ajouter du
+  stock manuellement and Mettre en quarantaine) while preserving the read-only material table.
+- Automated viewer acceptance renders both inventory modes without Add stock, Release,
+  Quarantine, or buffer controls; direct opening-stock, release, and quarantine attempts are
+  rejected with `AuthorizationException` and leave the lot ledger unchanged.
+- The entitlement matrix covers active owner/admin/editor/viewer roles, cancelled viewer
+  read-only access, and outsider rejection.
+- A live browser viewer-session check was not completed in this pass; the viewer behaviour and
+  rejected mutations are covered by the automated acceptance tests above.
+
+**Post-correction verification (working tree after `9024f9e7`, pending commit):**
+
+- Affected inventory / entitlement / translation / navigation suite: **214 passed,
+  31,313 assertions**.
+- Canonical `php artisan test --compact` with the Herd PHP memory limit (`1024M`): **2,788
+  passed, 25 skipped, 51,894 assertions** in 156.79s.
+- The corrective implementation is still uncommitted in the working tree. The new
+  `app/Services/Inventory/InventoryQuantityPresenter.php` file must be included in the commit
+  before this record can be treated as complete.
+
 The branch remains unmerged to main; integration still requires the owner’s chosen
 handoff path.
 
@@ -944,4 +966,7 @@ handoff path.
 - Activity rows are paginated and summary processing is bounded by movement groups, not movement count.
 - Public inventory inputs render through Filament schemas.
 - Negative forecast and below-buffer states remain visually and semantically distinct.
-- All current counter-review fixes are committed on `codex/production-bench-inventory-ux`; no implementation is left only in a dirty worktree.
+- Before final handoff, all current counter-review fixes—including
+  `app/Services/Inventory/InventoryQuantityPresenter.php`—must be committed on
+  `codex/production-bench-inventory-ux`; until then, this criterion remains open and no
+  implementation should be considered complete.

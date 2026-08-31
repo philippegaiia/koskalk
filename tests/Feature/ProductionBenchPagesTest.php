@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\ProductionRunStatus;
@@ -14,7 +15,6 @@ use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\Ingredient;
-use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
@@ -31,6 +31,7 @@ use App\Models\WorkspaceMember;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use Database\Seeders\SupportedLocaleSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -84,11 +85,31 @@ it('formats material quantities with the user number locale without float coerci
         'workspace_id' => $workspace->id,
         'quantity_delta' => '59870.000000000',
     ]);
+    $boundaryIngredient = Ingredient::factory()->create(['display_name' => 'Boundary oil']);
+    $boundaryLot = StockLot::factory()->for($workspace)->for($boundaryIngredient)->released()->create();
+    StockMovement::factory()->for($boundaryLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '99999999999.995000000',
+    ]);
+    $negativeIngredient = Ingredient::factory()->create(['display_name' => 'Negative oil']);
+    $negativeLot = StockLot::factory()->for($workspace)->for($negativeIngredient)->released()->create();
+    StockMovement::factory()->for($negativeLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'quantity_delta' => '-59870.000000000',
+    ]);
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
-        ->assertViewHas('materials', fn ($materials): bool => $materials->first()['positions']['physical'] === '59,87')
+        ->assertViewHas('materials', function ($materials): bool {
+            $positions = $materials->keyBy('name')->map(fn (array $row): string => $row['positions']['physical']);
+
+            return $positions->get('Precise oil') === '59,87'
+                && $positions->get('Boundary oil') === '100000000,00'
+                && $positions->get('Negative oil') === '-59,87';
+        })
         ->assertSee('59,87')
+        ->assertSee('100000000,00')
+        ->assertSee('-59,87')
         ->assertDontSee('59.87');
 });
 
@@ -185,6 +206,8 @@ it('keeps inventory mutation controls hidden from active viewers', function (): 
         'workspace_id' => $workspace->id,
         'quantity_delta' => '1000.000000000',
     ]);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
 
     $this->actingAs($viewer);
 
@@ -196,7 +219,30 @@ it('keeps inventory mutation controls hidden from active viewers', function (): 
         ->assertSee('Viewer oil')
         ->assertDontSee(__('production_bench.inventory.add_stock_manually'))
         ->assertDontSeeHtml('wire:click="quarantine(')
-        ->assertDontSeeHtml('wire:click="release(');
+        ->assertDontSeeHtml('wire:click="release(')
+        ->assertActionHidden('addStock');
+
+    $this->withoutExceptionHandling();
+
+    expect(fn () => app(CreateOpeningStockLot::class)->handle(
+        actor: $viewer,
+        workspace: $workspace,
+        listing: $listing,
+        quantity: '1',
+        unit: 'kg',
+        pricePerCanonicalUnit: '10',
+        currency: 'EUR',
+        idempotencyKey: 'viewer-attempt',
+        stockedAt: today()->toDateString(),
+    ))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])->call('release', $lot->id))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => Livewire::test(InventoryIndex::class, ['mode' => 'stock'])->call('quarantine', $lot->id))
+        ->toThrow(AuthorizationException::class);
+
+    expect($lot->fresh()->status->value)->toBe('released')
+        ->and(StockLot::query()->count())->toBe(1);
 });
 
 it('offers two inventory sections for material positions and lot stock', function (): void {
@@ -469,10 +515,12 @@ it('shows negative forecast as a visible row badge', function (): void {
 
     $this->actingAs($user);
 
-    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+    $component = Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertSeeHtml('data-negative-forecast-badge')
         ->assertSee(__('production_bench.inventory.filter_negative_forecast'))
         ->assertDontSeeHtml('class="sr-only">'.__('production_bench.inventory.filter_negative_forecast'));
+
+    expect(substr_count($component->html(), 'data-negative-forecast-badge'))->toBe(1);
 });
 
 it('activates and clears the negative forecast filter from the shortage summary tile', function (): void {
@@ -744,23 +792,23 @@ it('renders the Inventory UX headings in French for a French interface locale', 
     app(ProductionBenchAccess::class)->activate($user, $workspace);
     $this->actingAs($user);
 
-    foreach ([
-        'inventory.stock_by_material' => 'Stock par matière',
-        'inventory.lot_register' => 'Registre des lots',
-    ] as $key => $fr) {
-        InterfaceTranslation::query()->create([
-            'group' => 'production_bench',
-            'key' => $key,
-            'text' => ['fr' => $fr],
-        ]);
-    }
+    $this->artisan('translations:catalogue:import', [
+        '--mode' => 'authoritative',
+    ])->assertSuccessful();
 
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertSee('Stock par matière')
-        ->assertDontSee('Stock by material');
+        ->assertSee('Trier')
+        ->assertSee('Prévision négative')
+        ->assertSee('Rechercher les noms, termes INCI')
+        ->assertDontSeeHtml('>Stock by material<')
+        ->assertDontSeeHtml('>Negative forecast<');
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->assertSee('Registre des lots');
+        ->assertSee('Registre des lots')
+        ->assertSee('Fournisseur')
+        ->assertDontSeeHtml('>Lot register<')
+        ->assertDontSeeHtml('>Supplier<');
 });
 
 it('renders the lot register filter controls from a filament schema', function (): void {

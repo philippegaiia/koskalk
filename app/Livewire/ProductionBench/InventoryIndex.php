@@ -20,6 +20,7 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrencyCatalog;
+use App\Services\Inventory\InventoryQuantityPresenter;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -77,6 +78,8 @@ class InventoryIndex extends Component implements HasActions, HasForms
     private MassConverter $massConverter;
 
     private ProductionBenchAccess $productionBenchAccess;
+
+    private InventoryQuantityPresenter $quantityPresenter;
 
     #[Url(as: 'q', except: '')]
     public string $search = '';
@@ -149,11 +152,13 @@ class InventoryIndex extends Component implements HasActions, HasForms
     public function boot(
         CreateOpeningStockLot $createOpeningStockLot,
         CurrencyCatalog $currencyCatalog,
+        InventoryQuantityPresenter $quantityPresenter,
         MassConverter $massConverter,
         ProductionBenchAccess $productionBenchAccess,
     ): void {
         $this->createOpeningStockLot = $createOpeningStockLot;
         $this->currencyCatalog = $currencyCatalog;
+        $this->quantityPresenter = $quantityPresenter;
         $this->massConverter = $massConverter;
         $this->productionBenchAccess = $productionBenchAccess;
     }
@@ -730,7 +735,6 @@ class InventoryIndex extends Component implements HasActions, HasForms
     public function render(
         ProductionBenchAccess $access,
         StockPositionService $positions,
-        MassConverter $massConverter,
         WorkspaceMaterialInventoryQuery $inventoryQuery,
     ): View {
         $workspace = $this->workspace();
@@ -741,7 +745,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             : null;
 
         if ($materialPage instanceof LengthAwarePaginator) {
-            $materialPage = $this->formatMaterialPage($materialPage, $massConverter, $displayUnit);
+            $materialPage = $this->formatMaterialPage($materialPage, $displayUnit);
         }
 
         return view('livewire.production-bench.inventory-index', [
@@ -750,7 +754,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'isReadOnly' => $access->isReadOnly($workspace),
             'canWriteInventory' => $this->canAddStock(),
             'lots' => $this->mode === 'stock'
-                ? $this->stockLots($workspace, $positions, $massConverter, $displayUnit)
+                ? $this->stockLots($workspace, $positions, $displayUnit)
                 : collect(),
             'materials' => $materialPage,
             'inventorySummary' => $this->mode === 'materials'
@@ -774,7 +778,6 @@ class InventoryIndex extends Component implements HasActions, HasForms
     private function stockLots(
         Workspace $workspace,
         StockPositionService $positions,
-        MassConverter $massConverter,
         string $displayUnit,
     ): LengthAwarePaginator {
         $search = trim($this->search);
@@ -903,7 +906,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ->when($this->lotSort === 'newest', fn (Builder $query): Builder => $query->latest('stocked_at')->latest('id'))
             ->paginate($this->normalizedPerPage(), ['*'], 'stock-lots');
 
-        return $stockLots->through(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
+        return $stockLots->through(function (StockLot $lot) use ($positions, $displayUnit): array {
             $stock = $positions->forLotWithLoadedMovementSum($lot);
 
             return [
@@ -914,19 +917,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 'positions' => collect($stock)
                     ->only(['physical', 'quarantined', 'reserved', 'available'])
                     ->map(
-                        fn (string $quantity): string => $lot->ingredient_id !== null
-                            ? NumberLocale::formatAdaptiveDecimal(
-                                $massConverter->fromGramsSigned($quantity, $displayUnit),
-                                minimumDecimals: 2,
-                                maximumDecimals: 2,
-                                locale: $this->user()->number_locale,
-                            )
-                            : NumberLocale::formatAdaptiveDecimal(
-                                $quantity,
-                                minimumDecimals: 0,
-                                maximumDecimals: 0,
-                                locale: $this->user()->number_locale,
-                            ),
+                        fn (string $quantity): string => $this->quantityPresenter->present(
+                            $quantity,
+                            $lot->ingredient_id !== null,
+                            $displayUnit,
+                            $this->user()->number_locale,
+                        ),
                     )
                     ->all(),
             ];
@@ -977,22 +973,15 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->resetPage('stock-lots');
     }
 
-    private function formatMaterialPage(LengthAwarePaginator $page, MassConverter $massConverter, string $displayUnit): LengthAwarePaginator
+    private function formatMaterialPage(LengthAwarePaginator $page, string $displayUnit): LengthAwarePaginator
     {
-        return $page->through(function (array $row) use ($massConverter, $displayUnit): array {
-            $format = $row['display_unit'] === 'mass'
-                ? fn (string $quantity): string => NumberLocale::formatAdaptiveDecimal(
-                    $massConverter->fromGramsSigned($quantity, $displayUnit),
-                    minimumDecimals: 2,
-                    maximumDecimals: 2,
-                    locale: $this->user()->number_locale,
-                )
-                : fn (string $quantity): string => NumberLocale::formatAdaptiveDecimal(
-                    $quantity,
-                    minimumDecimals: 0,
-                    maximumDecimals: 0,
-                    locale: $this->user()->number_locale,
-                );
+        return $page->through(function (array $row) use ($displayUnit): array {
+            $format = fn (string $quantity): string => $this->quantityPresenter->present(
+                $quantity,
+                $row['display_unit'] === 'mass',
+                $displayUnit,
+                $this->user()->number_locale,
+            );
 
             foreach (['physical', 'available', 'reserved', 'quarantined', 'incoming', 'required', 'forecast'] as $position) {
                 $row['positions'][$position] = $format($row['positions'][$position]);

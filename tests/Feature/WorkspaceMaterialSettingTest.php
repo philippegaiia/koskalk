@@ -17,6 +17,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -26,6 +27,36 @@ it('assigns a public uuid to material settings', function (): void {
 
     expect($setting->public_id)->toBeUuid()
         ->and($setting->getRouteKeyName())->toBe('public_id');
+});
+
+it('backfills public uuids for material settings that predate the migration', function (): void {
+    $workspace = Workspace::factory()->create();
+    $firstIngredient = Ingredient::factory()->create();
+    $secondIngredient = Ingredient::factory()->create();
+    $migration = require database_path('migrations/2026_08_31_140842_add_public_id_to_workspace_material_settings_table.php');
+
+    $migration->down();
+
+    $legacyAttributes = static fn (int $ingredientId): array => [
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredientId,
+        'packaging_item_id' => null,
+        'buffer_quantity' => '1.000000000',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ];
+    $firstId = DB::table('workspace_material_settings')->insertGetId($legacyAttributes($firstIngredient->id));
+    $secondId = DB::table('workspace_material_settings')->insertGetId($legacyAttributes($secondIngredient->id));
+
+    $migration->up();
+
+    $rows = DB::table('workspace_material_settings')
+        ->whereIn('id', [$firstId, $secondId])
+        ->pluck('public_id');
+
+    expect($rows)->toHaveCount(2)
+        ->and($rows->filter(fn (?string $publicId): bool => is_string($publicId) && Str::isUuid($publicId))->count())->toBe(2)
+        ->and($rows->unique()->count())->toBe(2);
 });
 
 it('stores one ingredient buffer per workspace in canonical units', function (): void {
@@ -177,6 +208,10 @@ it('re-asserts write access inside the buffer transaction', function (): void {
     ))->toThrow(ValidationException::class);
 
     expect(WorkspaceMaterialSetting::query()->count())->toBe(0);
+    $this->assertDatabaseMissing(WorkspaceMaterialSetting::class, [
+        'workspace_id' => $fixture['workspace']->id,
+        'ingredient_id' => $fixture['ingredient']->id,
+    ]);
 });
 
 it('accepts the largest metric buffer that still fits after conversion', function (): void {

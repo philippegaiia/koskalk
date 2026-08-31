@@ -16,6 +16,7 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
+use App\Services\Inventory\InventoryQuantityPresenter;
 use App\Services\Inventory\MaterialActivityService;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use App\Services\Inventory\WorkspaceMaterialSupplierListingsQuery;
@@ -24,7 +25,6 @@ use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
 use App\Services\SupplierListingPricePresentation;
 use App\Support\LocalizedDecimalInput;
-use App\Support\NumberLocale;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -98,12 +98,16 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
     private WorkspaceMaterialInventoryQuery $inventoryQuery;
 
+    private InventoryQuantityPresenter $quantityPresenter;
+
     public function boot(
+        InventoryQuantityPresenter $quantityPresenter,
         MassConverter $massConverter,
         ProductionBenchAccess $productionBenchAccess,
         SaveMaterialBuffer $saveMaterialBuffer,
         WorkspaceMaterialInventoryQuery $inventoryQuery,
     ): void {
+        $this->quantityPresenter = $quantityPresenter;
         $this->massConverter = $massConverter;
         $this->productionBenchAccess = $productionBenchAccess;
         $this->saveMaterialBuffer = $saveMaterialBuffer;
@@ -272,7 +276,6 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         SupplierListingPricePresentation $pricePresentation,
     ): View {
         $workspace = $this->workspace();
-        $massConverter = $this->massConverter;
         $access = $this->productionBenchAccess;
         $displayUnit = $this->displayUnit();
         $rawPosition = $activityService->currentPosition($this->user(), $workspace, $this->subject());
@@ -283,7 +286,6 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         );
         $position = $this->presentPosition(
             $rawPosition,
-            $massConverter,
             $displayUnit,
         );
         $setting = WorkspaceMaterialSetting::query()
@@ -296,13 +298,12 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->first();
         $buffer = $setting?->buffer_quantity === null
             ? null
-            : $this->formatQuantity((string) $setting->buffer_quantity, $massConverter, $displayUnit);
+            : $this->formatQuantity((string) $setting->buffer_quantity, $displayUnit);
         $bufferBelow = $setting?->buffer_quantity !== null
             && bccomp($rawPosition['available'], (string) $setting->buffer_quantity, 9) < 0;
         $period = $this->periodDates();
         $periodActivity = $this->presentActivity(
             $activityService->forPeriod($this->user(), $workspace, $this->subject(), $period['from'], $period['to']),
-            $massConverter,
             $displayUnit,
         );
         $movements = $this->presentMovementPage(
@@ -315,7 +316,6 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                 $this->normalizedPerPage(),
                 'activity',
             ),
-            $massConverter,
             $displayUnit,
         );
         $openLots = $activityService->openLots($this->user(), $workspace, $this->subject())
@@ -323,7 +323,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                 'lot' => $lot,
                 'positions' => collect($positions->forLotWithLoadedMovementSum($lot))
                     ->only(['physical', 'reserved', 'available'])
-                    ->map(fn (string $quantity): string => $this->formatQuantity($quantity, $massConverter, $displayUnit))
+                    ->map(fn (string $quantity): string => $this->formatQuantity($quantity, $displayUnit))
                     ->all(),
             ]);
 
@@ -567,26 +567,20 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     }
 
     /** @param array<string, string> $position */
-    private function presentPosition(array $position, MassConverter $massConverter, string $displayUnit): array
+    private function presentPosition(array $position, string $displayUnit): array
     {
         return collect($position)
-            ->map(fn (string $quantity): string => $this->formatQuantity($quantity, $massConverter, $displayUnit))
+            ->map(fn (string $quantity): string => $this->formatQuantity($quantity, $displayUnit))
             ->all();
     }
 
-    private function formatQuantity(string $quantity, MassConverter $massConverter, string $displayUnit): string
+    private function formatQuantity(string $quantity, string $displayUnit): string
     {
-        $displayQuantity = $this->subject() instanceof Ingredient
-            ? $massConverter->fromGramsSigned($quantity, $displayUnit)
-            : $quantity;
-
-        $decimals = $this->subject() instanceof Ingredient ? 2 : 0;
-
-        return NumberLocale::formatAdaptiveDecimal(
-            $displayQuantity,
-            minimumDecimals: $decimals,
-            maximumDecimals: $decimals,
-            locale: $this->user()->number_locale,
+        return $this->quantityPresenter->present(
+            $quantity,
+            $this->subject() instanceof Ingredient,
+            $displayUnit,
+            $this->user()->number_locale,
         );
     }
 
@@ -648,7 +642,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     }
 
     /** @param array<string, mixed> $activity */
-    private function presentActivity(array $activity, MassConverter $massConverter, string $displayUnit): array
+    private function presentActivity(array $activity, string $displayUnit): array
     {
         $reconciliationDelta = (string) $activity['reconciliation_delta'];
 
@@ -664,7 +658,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                 'net_change',
                 'reconciliation_delta',
             ], true)
-                ? $this->formatQuantity((string) $value, $massConverter, $displayUnit)
+                ? $this->formatQuantity((string) $value, $displayUnit)
                 : $value)
             ->all();
 
@@ -677,12 +671,11 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
      * @param  LengthAwarePaginator<int, array{movement: StockMovement, group: string, quantity_delta: string}>  $page
      * @return LengthAwarePaginator<int, array{movement: StockMovement, group: string, quantity_delta: string}>
      */
-    private function presentMovementPage(LengthAwarePaginator $page, MassConverter $massConverter, string $displayUnit): LengthAwarePaginator
+    private function presentMovementPage(LengthAwarePaginator $page, string $displayUnit): LengthAwarePaginator
     {
-        return $page->through(function (array $entry) use ($massConverter, $displayUnit): array {
+        return $page->through(function (array $entry) use ($displayUnit): array {
             $entry['quantity_delta'] = $this->formatQuantity(
                 (string) $entry['quantity_delta'],
-                $massConverter,
                 $displayUnit,
             );
 

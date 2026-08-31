@@ -108,7 +108,8 @@ it('exposes an actor-aware production bench write capability', function (): void
 
     expect($access->canWrite($owner, $workspace))->toBeFalse()
         ->and($access->canWrite($admin, $workspace))->toBeFalse()
-        ->and($access->canWrite($editor, $workspace))->toBeFalse();
+        ->and($access->canWrite($editor, $workspace))->toBeFalse()
+        ->and($access->canWrite($viewer, $workspace))->toBeFalse();
 });
 
 it('blocks production mutations while the add-on is cancelled', function (): void {

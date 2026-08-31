@@ -98,6 +98,48 @@ it('localizes the high-visibility Inventory UX keys into every supported locale'
     'inventory.lot_register_search_help',
 ]);
 
+it('does not ship English placeholders for Inventory translations', function (): void {
+    $source = app(EnglishTranslationSource::class);
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])
+        ->filter(fn (array $row): bool => $row['group'] === 'production_bench'
+            && str_starts_with($row['key'], 'inventory.'));
+    $languageNeutral = [
+        'de:inventory.applied_filter',
+        'de:inventory.material',
+        'de:inventory.optional',
+        'de:inventory.lot_material',
+        'fr:inventory.date',
+        'fr:inventory.source',
+        'fr:inventory.stock',
+        'fr:inventory.lot_material',
+        'nl:inventory.applied_filter',
+        'nl:inventory.filters',
+        'pt_BR:inventory.item',
+        'pt_BR:inventory.material',
+        'pt_BR:inventory.lot_material',
+        'es:inventory.material',
+        'es:inventory.stock',
+        'es:inventory.lot_material',
+    ];
+
+    foreach ($rows as $row) {
+        $english = $source->get('production_bench', $row['key']);
+
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+            $value = trim((string) data_get($row, "text.{$locale}"));
+            $coordinate = "{$locale}:{$row['key']}";
+
+            expect($value, $coordinate)->not->toBe('');
+
+            if (! in_array($coordinate, $languageNeutral, true)) {
+                expect($value, "{$coordinate} must not be English fallback")
+                    ->not->toBe($english);
+            }
+        }
+    }
+});
+
 it('commits reviewed internal material code terminology for packaging workflows', function (): void {
     $source = app(EnglishTranslationSource::class);
     $catalogue = File::json(database_path('seeders/data/interface-translations.json'));

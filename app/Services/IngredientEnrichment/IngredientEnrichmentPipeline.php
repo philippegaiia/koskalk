@@ -228,6 +228,9 @@ class IngredientEnrichmentPipeline
                 $context = [
                     ...$editorialFacts,
                     'guidance_evidence' => $this->guidanceEvidence($guidanceResearch),
+                    'guidance_unresolved_questions' => is_array($guidanceResearch->data['unresolved_questions'] ?? null)
+                        ? $guidanceResearch->data['unresolved_questions']
+                        : [],
                 ];
                 $response = $this->guidanceAuthoring->author($context);
 

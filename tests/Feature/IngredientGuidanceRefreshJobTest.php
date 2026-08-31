@@ -235,7 +235,7 @@ it('quarantines rejected guidance rows while completing a mixed refresh', functi
                     ],
                 ],
                 warnings: [],
-                unresolvedQuestions: [],
+                unresolvedQuestions: ['Confirm the supplier usage range before publishing it.'],
                 responseId: 'resp-mixed',
                 requestId: 'req-mixed',
                 model: 'gpt-test',
@@ -296,6 +296,9 @@ it('quarantines rejected guidance rows while completing a mixed refresh', functi
             ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
         ])
         ->and($authoringContext['guidance_evidence'])->toHaveCount(1)
+        ->and($authoringContext['guidance_unresolved_questions'])->toBe([
+            'Confirm the supplier usage range before publishing it.',
+        ])
         ->and(collect($authoringContext['guidance_evidence'])->pluck('source_url')->all())
         ->toBe(['https://supplier.example/technical/olive-oil.pdf'])
         ->and($completed->warnings)->toContain('1 researched evidence item was rejected because it did not meet the evidence rules.')

@@ -241,7 +241,7 @@ it('rejects claims when the matching research question remains unresolved', func
         'recommended_max_percent' => null,
         'percentage_basis' => 'not_applicable',
     ]];
-    $context['unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
+    $context['guidance_unresolved_questions'] = ['Confirm the material water solubility before making an aqueous formulation decision.'];
 
     expect(fn (): array => guidanceRenderer()->render(guidanceDraft([
         'formulation_use' => [guidanceClaim([
@@ -250,6 +250,35 @@ it('rejects claims when the matching research question remains unresolved', func
             'evidence_indexes' => [0],
         ])],
     ]), $context))->toThrow(RuntimeException::class);
+});
+
+it('does not block supported soapmaking guidance for unresolved soap declaration names', function (): void {
+    $context = guidanceContext();
+    $context['unresolved_questions'] = [
+        'An official sodium soap INCI name could not be verified for this material.',
+        'An official potassium soap INCI name could not be verified for this material.',
+    ];
+    $context['guidance_evidence'][] = [
+        'claim_type' => 'soapmaking',
+        'source_kind' => 'supplier_technical',
+        'scope' => 'product_grade',
+        'evidence_kind' => 'formulation_recommendation',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ];
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'soapmaking' => [guidanceClaim([
+            'text' => 'For this supplied grade, the supplier describes a softer-feeling bar.',
+            'claim_type' => 'soapmaking',
+            'support_type' => 'evidence',
+            'evidence_indexes' => [3],
+        ])],
+    ]), $context);
+
+    expect($result['info_markdown'])->toContain('## Soapmaking');
 });
 
 /** @param array<string, mixed> $overrides @return array<string, mixed> */

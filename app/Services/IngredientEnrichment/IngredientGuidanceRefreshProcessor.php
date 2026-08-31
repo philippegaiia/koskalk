@@ -365,6 +365,9 @@ class IngredientGuidanceRefreshProcessor
             'guidance_research' => $researchData,
             'guidance_research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
             'warnings' => is_array($researchData['warnings'] ?? null) ? $researchData['warnings'] : [],
+            'guidance_unresolved_questions' => is_array($researchData['unresolved_questions'] ?? null)
+                ? $researchData['unresolved_questions']
+                : [],
             'unresolved_questions' => is_array($researchData['unresolved_questions'] ?? null)
                 ? $researchData['unresolved_questions']
                 : [],

@@ -191,7 +191,7 @@ class IngredientGuidanceDraftRenderer
             $this->invalid();
         }
 
-        if ($this->hasUnresolvedQuestionForClaim($claimType, $context['unresolved_questions'] ?? [])) {
+        if ($this->hasUnresolvedQuestionForClaim($claimType, $context['guidance_unresolved_questions'] ?? [])) {
             $this->invalid();
         }
 

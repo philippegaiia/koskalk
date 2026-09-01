@@ -36,7 +36,7 @@ it('rejects material differences instead of using fuzzy identity matching', func
         ->and($match['conflicts'])->toContain('Material difference: unsaponifiables.');
 });
 
-it('does not erase parenthetical material qualifiers during identity matching', function (): void {
+it('resolves parenthetical plant names to the plain registry record without touching modifiers', function (): void {
     $match = app(IngredientIdentityMatchService::class)->select([
         [
             'inci_name' => 'COCOS NUCIFERA OIL',
@@ -54,8 +54,28 @@ it('does not erase parenthetical material qualifiers during identity matching', 
         'identifiers' => [],
     ]);
 
-    expect($match['candidate'])->toBeNull()
-        ->and($match['conflicts'])->toContain('Material difference: hydrogenated.');
+    expect($match['candidate']['inci_name'])->toBe('COCOS NUCIFERA OIL')
+        ->and($match['candidate']['match_reasons'])->toContain('exact_inci_variant')
+        ->and($match['conflicts'])->toBe([]);
+});
+
+it('accepts the registry seed-oil form for a kernel-oil catalogue name', function (): void {
+    $match = app(IngredientIdentityMatchService::class)->select([
+        [
+            'inci_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'cas' => [],
+            'ec' => [],
+            'unii' => 'WDO4TLS35F',
+        ],
+    ], [
+        'display_name' => 'Marula Oil',
+        'inci_name' => 'Sclerocarya Birrea (Marula) Kernel Oil',
+        'identifiers' => [],
+    ]);
+
+    expect($match['candidate']['inci_name'])->toBe('SCLEROCARYA BIRREA SEED OIL')
+        ->and($match['candidate']['match_reasons'])->toContain('exact_inci_variant')
+        ->and($match['conflicts'])->toBe([]);
 });
 
 it('keeps a single candidate unresolved when the record has no INCI or shared identifier', function (): void {

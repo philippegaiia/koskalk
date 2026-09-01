@@ -123,9 +123,14 @@ class IngredientIdentityMatchService
             ->unique()
             ->values();
 
-        if ($inciName !== '' && $candidateNames->contains($inciName)) {
-            $score = max($score, 100);
-            $reasons[] = 'exact_inci';
+        if ($inciName !== '') {
+            $exact = $candidateNames->contains($inciName);
+            $variant = ! $exact
+                && $candidateNames->contains(fn (string $name): bool => $this->namesMatch($name, $inciName));
+            if ($exact || $variant) {
+                $score = max($score, 100);
+                $reasons[] = $exact ? 'exact_inci' : 'exact_inci_variant';
+            }
         }
 
         $candidateIdentifiers = [
@@ -188,6 +193,24 @@ class IngredientIdentityMatchService
             ->filter(fn (string $token): bool => str_contains($candidate, $token) !== str_contains($current, $token))
             ->values()
             ->all();
+    }
+
+    /**
+     * Accepts registry-name variants of the same material: parenthetical
+     * qualifiers are ignored and kernel/seed are treated as equivalent
+     * (registries index the seed-oil form).
+     */
+    private function namesMatch(string $a, string $b): bool
+    {
+        $canonical = static function (string $value): string {
+            $value = preg_replace('/\s*\([^)]*\)\s*/u', ' ', $value) ?? $value;
+            $value = preg_replace('/\bKernels?\b/i', 'Seed', $value) ?? $value;
+            $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+            return mb_strtolower(trim($value));
+        };
+
+        return $canonical($a) === $canonical($b);
     }
 
     private function formToken(string $normalized): ?string

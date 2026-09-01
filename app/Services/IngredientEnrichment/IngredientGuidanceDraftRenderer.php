@@ -115,6 +115,7 @@ class IngredientGuidanceDraftRenderer
             || preg_match('/[\r\n]/u', $text) === 1
             || str_contains($text, '##')
             || preg_match_all('/[.!?](?=\s|$)/u', $text) > 1
+            || $this->isCatalogueMetaClaim($text)
             || ! is_string($claimType)
             || ! in_array($claimType, config('ingredient-enrichment.openai.guidance_research.allowed_claim_types', []), true)
             || ! is_string($supportType)
@@ -335,6 +336,14 @@ class IngredientGuidanceDraftRenderer
     private function hasBoundedEvidenceQualifier(string $text): bool
     {
         return preg_match('/\b(?:reported|observed|experiment(?:al)?|study|tested|under\b|product[-\s]?grade|specific\s+grade|cited)\b/u', $text) === 1;
+    }
+
+    private function isCatalogueMetaClaim(string $text): bool
+    {
+        $lower = mb_strtolower($text);
+
+        return preg_match('/\b(?:classified|categorized)\s+as\b/u', $lower) === 1
+            || preg_match('/\bwithin\s+the\s+[\w\s-]{1,24}\s+category\b/u', $lower) === 1;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */

@@ -48,6 +48,25 @@ it('omits claims containing headings, newlines, or multiple sentences', function
     }
 });
 
+it('omits claims that state the material catalogue classification in prose', function (): void {
+    foreach ([
+        'This material is classified as a vegetable oil within the lipid category.',
+        'It is categorized as an emollient.',
+    ] as $text) {
+        $result = guidanceRenderer()->render(guidanceDraft([
+            'overview' => [guidanceClaim([
+                'text' => $text,
+                'support_type' => 'fact',
+                'fact_paths' => ['current.canonical.display_name'],
+            ])],
+        ]), guidanceContext());
+
+        expect($result['info_markdown'])->not->toContain('classified as')
+            ->and($result['info_markdown'])->not->toContain('categorized as')
+            ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+    }
+});
+
 it('omits claims whose evidence indexes do not exist or do not match the claim type', function (): void {
     $missingIndex = guidanceClaim([
         'claim_type' => 'formulation_role',

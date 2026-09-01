@@ -75,7 +75,7 @@ it('assembles precise argan facts from deterministic eu and us sources before ed
         ->and($identifiers->get('unii')->all())->toBe(['4V59G5UW9X'])
         ->and(collect($proposal['market_labels'])->firstWhere('market_code', 'eu')['declaration_name'])->toBe('ARGANIA SPINOSA KERNEL OIL')
         ->and(collect($proposal['market_labels'])->firstWhere('market_code', 'us'))->toMatchArray([
-            'declaration_name' => 'ARGAN OIL',
+            'declaration_name' => 'Argan (Argania Spinosa) Oil',
             'confidence' => 'supported',
         ])
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
@@ -105,7 +105,7 @@ it('retains all apricot identifiers and keeps eu and us declarations distinct', 
         ->and($identifiers->get('unii')->all())->toBe(['54JB35T06A'])
         ->and(collect($proposal['market_labels'])->pluck('declaration_name', 'market_code')->all())->toBe([
             'eu' => 'PRUNUS ARMENIACA KERNEL OIL',
-            'us' => 'APRICOT KERNEL OIL',
+            'us' => 'Apricot Kernel (Prunus Armeniaca) Oil',
         ])
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
             'perfuming', 'skin_conditioning',

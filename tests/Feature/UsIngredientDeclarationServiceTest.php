@@ -2,7 +2,7 @@
 
 use App\Services\IngredientEnrichment\UsIngredientDeclarationService;
 
-it('proposes an FDA common name without confusing it with a UNII', function (): void {
+it('proposes the FDA botanical label form for a common oil name', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose([
         'unii' => '4V59G5UW9X',
         'common_name' => 'ARGAN OIL',
@@ -12,9 +12,34 @@ it('proposes an FDA common name without confusing it with a UNII', function (): 
 
     expect($result->data)->toMatchArray([
         'market_code' => 'us',
-        'declaration_name' => 'ARGAN OIL',
+        'declaration_name' => 'Argan (Argania Spinosa) Oil',
         'confidence' => 'supported',
     ])->and($result->evidence[0]['confidence'])->toBe('supported');
+});
+
+it('composes the FDA label form when the registry common name is the latin name', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => '98HPY76U4W',
+            'common_name' => 'ADEPS BOVIS',
+            'inci_names' => ['ADEPS BOVIS', 'TALLOW'],
+            'cas' => ['61789-97-7'],
+        ],
+        displayName: 'Beef Tallow',
+    );
+
+    expect($result->data['declaration_name'])->toBe('Beef (Adeps Bovis) Tallow');
+});
+
+it('composes the FDA label form for seed-oil botanicals', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose([
+        'unii' => 'H3E878020N',
+        'common_name' => 'COTTONSEED OIL',
+        'inci_names' => ['GOSSYPIUM HERBACEUM SEED OIL'],
+        'cas' => ['8001-29-4'],
+    ]);
+
+    expect($result->data['declaration_name'])->toBe('Cottonseed (Gossypium Herbaceum) Oil');
 });
 
 it('uses the FDA sweet almond botanical label example', function (): void {

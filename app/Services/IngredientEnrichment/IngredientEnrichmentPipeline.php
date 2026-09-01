@@ -531,6 +531,7 @@ class IngredientEnrichmentPipeline
             return $this->usDeclarations->propose(
                 candidate: $candidate,
                 verifiedInciName: is_string($verifiedInciName) ? $verifiedInciName : null,
+                displayName: is_string($record['display_name'] ?? null) ? $record['display_name'] : null,
             );
         }
 

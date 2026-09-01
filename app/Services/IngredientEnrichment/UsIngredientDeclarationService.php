@@ -13,6 +13,9 @@ class UsIngredientDeclarationService
         'PRUNUS AMYGDALUS DULCIS OIL' => 'Sweet Almond (Prunus Amygdalus Dulcis) Oil',
     ];
 
+    /** @var list<string> */
+    private const FORM_WORDS = ['oil', 'butter', 'tallow', 'fat', 'wax', 'lard', 'suet', 'ghee'];
+
     /**
      * @param  array{unii?: string|null, common_name?: string|null, inci_names?: list<string>, cas?: list<string>}  candidate
      */
@@ -20,6 +23,7 @@ class UsIngredientDeclarationService
         array $candidate,
         bool $isColourant = false,
         ?string $verifiedInciName = null,
+        ?string $displayName = null,
     ): IngredientSourceStageResult {
         $commonName = trim((string) ($candidate['common_name'] ?? ''));
         if ($commonName === '' || ($isColourant && preg_match('/^CI\s*\d{5}$/i', $commonName) === 1)) {
@@ -47,7 +51,7 @@ class UsIngredientDeclarationService
             status: 'completed',
             data: [
                 'market_code' => 'us',
-                'declaration_name' => $this->harmonizedBotanicalName($commonName, $inciNames),
+                'declaration_name' => $this->harmonizedBotanicalName($commonName, $inciNames, $displayName),
                 'confidence' => 'supported',
             ],
             evidence: [[
@@ -64,7 +68,7 @@ class UsIngredientDeclarationService
     }
 
     /** @param list<string> $inciNames */
-    private function harmonizedBotanicalName(string $commonName, array $inciNames): string
+    private function harmonizedBotanicalName(string $commonName, array $inciNames, ?string $displayName = null): string
     {
         foreach ($inciNames as $inciName) {
             $officialLabelExample = self::FDA_BOTANICAL_LABEL_EXAMPLES[Str::upper(trim($inciName))] ?? null;
@@ -89,6 +93,43 @@ class UsIngredientDeclarationService
                 .Str::title($parts['suffix']);
         }
 
+        $commonIsLatin = $inciNames !== []
+            && mb_strtolower(trim($commonName)) === mb_strtolower(trim((string) $inciNames[0]));
+        $commonPart = $commonIsLatin && is_string($displayName) && trim($displayName) !== ''
+            ? trim($displayName)
+            : $commonName;
+        $latin = $commonIsLatin ? $inciNames[0] : ($inciNames[0] ?? null);
+
+        $composed = $latin === null ? null : $this->composeBotanicalLabel($commonPart, $latin);
+        if ($composed !== null) {
+            return $composed;
+        }
+
         return $commonName;
+    }
+
+    /**
+     * Composes the FDA-style label "Common (Botanical) Form", for example
+     * "Coconut (Cocos Nucifera) Oil" or "Beef (Adeps Bovis) Tallow".
+     */
+    private function composeBotanicalLabel(string $commonName, string $latin): ?string
+    {
+        $words = preg_split('/\s+/u', trim($commonName)) ?: [];
+        if (count($words) < 2 || ! in_array(mb_strtolower((string) end($words)), self::FORM_WORDS, true)) {
+            return null;
+        }
+
+        $noun = implode(' ', array_slice($words, 0, -1));
+        $latinParts = preg_split('/\s+/u', Str::title($latin)) ?: [];
+        while ($latinParts !== []
+            && in_array(mb_strtolower((string) end($latinParts)), [...self::FORM_WORDS, 'seed', 'kernel', 'fruit', 'nut', 'extract', 'meal', 'husk'], true)) {
+            array_pop($latinParts);
+        }
+        $latinBase = implode(' ', $latinParts);
+        if ($latinBase === '') {
+            return null;
+        }
+
+        return Str::title($noun).' ('.$latinBase.') '.Str::title((string) end($words));
     }
 }

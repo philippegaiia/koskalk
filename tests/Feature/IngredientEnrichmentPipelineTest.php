@@ -272,6 +272,7 @@ it('surfaces identity conflicts as warnings and forces low confidence', function
 
     $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
 
-    expect($response->result['confidence'])->toBe('low')
-        ->and($response->result['warnings'])->toContain('Material difference: unsaponifiables.');
+    expect($response->result['identity_unresolved'])->toBeTrue()
+        ->and($response->result['warnings'])->toContain('Material difference: unsaponifiables.')
+        ->and(data_get($item->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('skipped');
 });

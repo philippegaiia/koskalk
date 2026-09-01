@@ -19,6 +19,45 @@ use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
+it('stops before guidance when identity cannot be confirmed against the registries', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('empty');
+    app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            throw new RuntimeException('guidance research must not run when identity is unresolved');
+        }
+    });
+    app()->instance(IngredientEditorialClient::class, new class implements IngredientEditorialClient
+    {
+        public function edit(array $facts): IngredientEditorialResponse
+        {
+            throw new RuntimeException('editorial must not run when identity is unresolved');
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            throw new RuntimeException('authoring must not run when identity is unresolved');
+        }
+    });
+    $item = hybridPipelineItem('unverifiable_kernel_oil', 'Unverifiable Kernel Oil');
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+    $fresh = $item->fresh();
+
+    expect($response->result['identity_unresolved'])->toBeTrue()
+        ->and($response->inputTokens)->toBe(0)
+        ->and($response->webSearchCalls)->toBe(0)
+        ->and(data_get($fresh->research_stages, 'ai_guidance_research.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_authoring.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_localization.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'validation.status'))->toBe('skipped');
+});
+
 it('assembles precise argan facts from deterministic eu and us sources before editorial work', function (): void {
     seedHybridCosingFunctions();
     cache()->flush();

@@ -33,7 +33,57 @@ it('uses the configured enrichment job timeout', function (): void {
 
 it('keeps the default enrichment request timeout below its job window', function (): void {
     expect(config('ingredient-enrichment.openai.timeout_seconds'))->toBe(600)
-        ->and(config('ingredient-enrichment.direct_ai.job_timeout_seconds'))->toBe(900);
+        ->and(config('ingredient-enrichment.direct_ai.job_timeout_seconds'))->toBe(2000);
+});
+
+it('marks an item with the identity-unresolved failure when the pipeline gates before guidance', function (): void {
+    seedResearchLocales();
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'unverifiable_oil',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Unverifiable oil',
+        'inci_name' => null,
+        'info_markdown' => null,
+    ]);
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::Processing,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+    ]);
+    app()->instance(IngredientEnrichmentPipeline::class, new class extends IngredientEnrichmentPipeline
+    {
+        public function __construct() {}
+
+        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        {
+            return new IngredientEnrichmentPipelineResponse([
+                'format' => 'soapkraft-ingredient-enrichment-result',
+                'schema_version' => 2,
+                'identity_unresolved' => true,
+                'proposal' => ['display_name' => 'Unverifiable oil', 'identifiers' => []],
+                'warnings' => [],
+                'unresolved_questions' => ['An EU/INCI identity could not be verified from the available deterministic sources.'],
+            ], [], '', '', '', 0, 0, 0, 0);
+        }
+    });
+
+    (new ResearchIngredientEnrichment($item->id))->handle(app(ResearchIngredientEnrichmentItem::class));
+
+    $item->refresh();
+    expect($item->status)->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->and($item->failure_code)->toBe('identity_unresolved')
+        ->and($item->failure_message)->toContain('Identity could not be confirmed')
+        ->and($item->unresolved_questions)->toContain('An EU/INCI identity could not be verified from the available deterministic sources.')
+        ->and($item->input_tokens)->toBe(0)
+        ->and($item->batch->status)->toBe(IngredientEnrichmentBatchStatus::PartiallyFailed);
 });
 
 it('researches, validates, plans, and persists a proposal without changing the ingredient', function (): void {

@@ -106,6 +106,49 @@ class IngredientEnrichmentPipeline
             'catalog_key' => $input['catalog_key'],
             'vocabulary' => $input['vocabulary'],
         ];
+
+        $identityUnresolved = $usIdentitySelection['candidate'] === null
+            && $euIdentity['candidate'] === null;
+        if ($identityUnresolved) {
+            foreach ([
+                IngredientEnrichmentResearchStage::AiGuidanceResearch,
+                IngredientEnrichmentResearchStage::AiEditorial,
+                IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                IngredientEnrichmentResearchStage::Validation,
+            ] as $stage) {
+                $this->runStage($itemId, $stage, fn (): IngredientSourceStageResult => new IngredientSourceStageResult(
+                    stage: $stage,
+                    status: 'skipped',
+                    data: ['reason' => 'identity_unresolved'],
+                ));
+            }
+
+            return new IngredientEnrichmentPipelineResponse(
+                result: [
+                    'format' => 'soapkraft-ingredient-enrichment-result',
+                    'schema_version' => (int) config('ingredient-enrichment.schema_version'),
+                    'identity_unresolved' => true,
+                    'proposal' => data_get($facts, 'proposal', []),
+                    'warnings' => collect(data_get($facts, 'warnings', []))
+                        ->merge(data_get($facts, 'conflicts', []))
+                        ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
+                        ->unique()
+                        ->values()
+                        ->all(),
+                    'unresolved_questions' => data_get($facts, 'unresolved_questions', []),
+                ],
+                sources: [],
+                providerResponseId: '',
+                providerRequestId: '',
+                providerModel: '',
+                inputTokens: 0,
+                outputTokens: 0,
+                webSearchCalls: 0,
+                structuredSourceCalls: 0,
+            );
+        }
+
         $guidanceResearch = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::AiGuidanceResearch,

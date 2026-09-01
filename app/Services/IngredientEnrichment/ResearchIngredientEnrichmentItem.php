@@ -81,6 +81,11 @@ class ResearchIngredientEnrichmentItem
 
         try {
             $response = $this->pipeline->run($itemId, $allowGapResearch);
+            if (($response->result['identity_unresolved'] ?? false) === true) {
+                $this->markIdentityUnresolved($itemId, $response->result);
+
+                return;
+            }
             if (IngredientEnrichmentBatchItem::query()->whereKey($itemId)->value('ingredient_intake_item_id') !== null) {
                 $this->persistIntakeResult($itemId, $response);
 
@@ -129,6 +134,44 @@ class ResearchIngredientEnrichmentItem
             $this->markFailed($itemId, $exception);
             throw $exception;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     */
+    private function markIdentityUnresolved(int $itemId, array $result): void
+    {
+        DB::transaction(function () use ($itemId, $result): void {
+            $item = IngredientEnrichmentBatchItem::query()->lockForUpdate()->findOrFail($itemId);
+            $item->update([
+                'status' => IngredientEnrichmentItemStatus::Failed,
+                'failure_code' => 'identity_unresolved',
+                'failure_message' => (string) __('ingredient_enrichment.warnings.identity_unresolved'),
+                'result' => $result,
+                'warnings' => collect($result['warnings'] ?? [])
+                    ->merge($result['unresolved_questions'] ?? [])
+                    ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
+                    ->unique()
+                    ->values()
+                    ->all(),
+                'unresolved_questions' => $result['unresolved_questions'] ?? [],
+                'research_completed_at' => now(),
+            ]);
+            if ($item->ingredient_intake_item_id !== null) {
+                $intakeItem = IngredientIntakeItem::query()
+                    ->lockForUpdate()
+                    ->find($item->ingredient_intake_item_id);
+                if ($intakeItem) {
+                    $intakeItem->update([
+                        'status' => IngredientIntakeItemStatus::Failed,
+                        'failure_code' => 'identity_unresolved',
+                        'failure_message' => $item->failure_message,
+                    ]);
+                    $this->batches->refreshIntake($intakeItem->ingredient_intake_batch_id);
+                }
+            }
+            $this->batches->refresh($item->ingredient_enrichment_batch_id);
+        }, attempts: 5);
     }
 
     public function markFailed(int $itemId, Throwable $exception): void

@@ -51,3 +51,15 @@ IngredientEnrichmentPipeline re-runs only stages that are not completed: it does
 
 ## Queue workers must not kill enrichment jobs
 Enrichment jobs run up to their own `direct_ai.job_timeout_seconds` (default 900s, enforced via pcntl with failOnTimeout) and each provider call up to `openai.timeout_seconds` (600s). A `queue:listen`/`queue:work` started without `--timeout` kills the worker process after the default 60s mid-call, orphaning the job (item stuck in `researching`, stale reservation and WithoutOverlapping cache lock). Run the listener with `--timeout=0` (the job's own timeout then governs) or at least above the job timeout; the `composer run dev` script uses `--timeout=0`. If an item is orphaned this way, reset it to failed, delete the stale `cache_locks` rows for `ResearchIngredientEnrichment:<id>`, and requeue or run the pipeline directly.
+
+## Identity search expands variants; the matched registry record stays authoritative
+Identity lookups (CosIng, FDA GSRS) expand search terms only: parenthetical qualifiers are removed and `kernel` converts to `seed` (registries index the seed-oil form). The matcher treats kernel/seed and parenthetical names as the same material when the names otherwise agree, and never fuzzy-matches material modifiers (hydrogenated, unsaponifiables, ...). The matched registry record remains the authority; variants are never stored.
+
+## Identity matching is substance-form aware
+An oil/butter/tallow/fat input must never match a sibling-form record sharing its stem — COTTONSEED OIL is not COTTONSEED ACID, nor an ester derivative, extract, or olein/stearin fraction. Candidates whose primary name carries a different product form are excluded and surface "Identity candidate material form does not match the ingredient." plus the material difference. Form-less registry names (ADEPS BOVIS) stay matchable through identifiers. The owner's rule: for the lipids category, acceptable forms are oil, butter, tallow, and fat.
+
+## Identity must be confirmed before guidance runs
+The enrichment pipeline gates after the deterministic identity stages: when neither FDA GSRS nor CosIng confirms a candidate, the guidance research, editorial, authoring, localization, and validation stages are persisted as `skipped` (reason `identity_unresolved`) and the item ends `Failed` with `failure_code=identity_unresolved` — no model tokens are spent on an unverified material. The item reads as unresolved, never as unchanged. Retrying re-runs identity first.
+
+## US declarations use the Common (Plant Name) Form convention
+The US declaration follows the owner's FDA-label convention: English common name with the plant name in parentheses — `Coconut (Cocos Nucifera) Oil`, `Beef (Adeps Bovis) Tallow`, `Apricot Kernel (Prunus Armeniaca) Oil`. The parenthetical is the proper botanical name taken from the verified INCI with product-part words (oil, seed, kernel, fruit, ...) stripped; the known FDA sweet-almond label example remains the override. When the registry common name is itself the latin name, the catalogue display name supplies the common part.

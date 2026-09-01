@@ -5,11 +5,15 @@ namespace App\Services\IngredientEnrichment\Sources;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Models\IngredientFunction;
+use App\Services\IngredientEnrichment\IngredientIdentitySearchTerms;
 use Illuminate\Support\Collection;
 
 class CosingCheckerClient
 {
-    public function __construct(private readonly CachedIngredientSourceHttpClient $http) {}
+    public function __construct(
+        private readonly CachedIngredientSourceHttpClient $http,
+        private readonly IngredientIdentitySearchTerms $searchTerms,
+    ) {}
 
     /**
      * @param  array{
@@ -198,20 +202,10 @@ class CosingCheckerClient
             $record['display_name'] ?? null,
         ])
             ->filter(fn (mixed $term): bool => is_string($term) && trim($term) !== '')
-            ->flatMap(fn (string $term): array => $this->queryVariants($term))
+            ->flatMap(fn (string $term): array => $this->searchTerms->variants($term))
             ->unique(fn (string $term): string => $this->normalize($term))
             ->values()
             ->all();
-    }
-
-    /** @return list<string> */
-    private function queryVariants(string $term): array
-    {
-        $term = trim($term);
-        $withoutParentheticalName = trim(preg_replace('/\s*\([^)]*\)\s*/u', ' ', $term) ?? $term);
-        $withoutParentheticalName = preg_replace('/\s+/u', ' ', $withoutParentheticalName) ?? $withoutParentheticalName;
-
-        return array_values(array_unique([$withoutParentheticalName, $term]));
     }
 
     /**

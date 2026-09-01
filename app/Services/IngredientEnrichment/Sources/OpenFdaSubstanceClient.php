@@ -4,12 +4,16 @@ namespace App\Services\IngredientEnrichment\Sources;
 
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Services\IngredientEnrichment\IngredientIdentitySearchTerms;
 use App\Services\IngredientEnrichment\IngredientSourceException;
 use Illuminate\Support\Str;
 
 class OpenFdaSubstanceClient
 {
-    public function __construct(private readonly CachedIngredientSourceHttpClient $http) {}
+    public function __construct(
+        private readonly CachedIngredientSourceHttpClient $http,
+        private readonly IngredientIdentitySearchTerms $searchTerms,
+    ) {}
 
     /**
      * @param  array{
@@ -97,6 +101,7 @@ class OpenFdaSubstanceClient
             $record['display_name'] ?? null,
         ])
             ->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->flatMap(fn (string $term): array => $this->searchTerms->variants($term))
             ->map(fn (string $value): string => trim($value))
             ->unique(fn (string $value): string => mb_strtolower($value))
             ->values()

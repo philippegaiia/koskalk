@@ -5,14 +5,26 @@ namespace App\Services\IngredientEnrichment;
 class IngredientIdentityMatchService
 {
     /**
+     * Material product forms that must agree between the input and the
+     * matched registry record. An oil input must not settle for an acid,
+     * extract, ester, or fraction record that merely shares its stem.
+     */
+    private const array FORM_TOKENS = [
+        'oil', 'butter', 'tallow', 'fat', 'wax', 'lard', 'suet', 'ghee',
+        'acid', 'extract', 'esters', 'olein', 'stearin', 'hydrolate',
+        'distillate', 'unsaponifiables', 'meal', 'husk', 'shell', 'flour',
+    ];
+
+    /**
      * @param  list<array<string, mixed>>  $candidates
-     * @param  array{inci_name?: string|null, identifiers?: list<array{value?: string}>}  $record
+     * @param  array{inci_name?: string|null, display_name?: string|null, identifiers?: list<array{value?: string}>}  $record
      * @return array{candidate: array<string, mixed>|null, conflicts: list<string>}
      */
     public function select(array $candidates, array $record): array
     {
         $inciName = $this->normalize((string) ($record['inci_name'] ?? ''));
         $displayName = $this->normalize((string) ($record['display_name'] ?? ''));
+        $inputForm = $this->formToken($this->normalize(trim((string) ($record['display_name'] ?? '').' '.(string) ($record['inci_name'] ?? ''))));
         $identifiers = collect($record['identifiers'] ?? [])
             ->filter(fn (mixed $identifier): bool => is_array($identifier)
                 && is_string($identifier['value'] ?? null)
@@ -29,13 +41,31 @@ class IngredientIdentityMatchService
             ];
         }
 
+        $formExcluded = false;
         $scored = collect($candidates)
-            ->map(fn (array $candidate): array => $this->scoreCandidate($candidate, $inciName, $displayName, $identifiers))
+            ->map(function (array $candidate) use ($inciName, $displayName, $identifiers, $inputForm, &$formExcluded): array {
+                $row = $this->scoreCandidate($candidate, $inciName, $displayName, $identifiers, $inputForm);
+                if (in_array('material_form_mismatch', $row['reasons'], true)) {
+                    $formExcluded = true;
+                }
+
+                return $row;
+            })
             ->filter(fn (array $row): bool => $row['score'] > 0)
             ->sortByDesc('score')
             ->values();
 
         if ($scored->isEmpty()) {
+            if ($formExcluded) {
+                return [
+                    'candidate' => null,
+                    'conflicts' => [
+                        'Identity candidate material form does not match the ingredient.',
+                        ...$this->candidateConflicts($candidates, $inciName),
+                    ],
+                ];
+            }
+
             return [
                 'candidate' => null,
                 'conflicts' => $inciName === '' && $identifiers === []
@@ -70,8 +100,18 @@ class IngredientIdentityMatchService
      * @param  array<string, string>  $identifiers
      * @return array{candidate: array<string, mixed>, score: int, reasons: list<string>}
      */
-    private function scoreCandidate(array $candidate, string $inciName, string $displayName, array $identifiers): array
+    private function scoreCandidate(array $candidate, string $inciName, string $displayName, array $identifiers, ?string $inputForm): array
     {
+        $primaryName = $this->normalize((string) ($candidate['inci_name'] ?? ($candidate['inci_names'][0] ?? null) ?? $candidate['common_name'] ?? ''));
+        $candidateForm = $primaryName === '' ? null : $this->formToken($primaryName);
+        if ($inputForm !== null && $candidateForm !== null && $inputForm !== $candidateForm) {
+            return [
+                'candidate' => $candidate,
+                'score' => 0,
+                'reasons' => ['material_form_mismatch'],
+            ];
+        }
+
         $score = 0;
         $reasons = [];
         $candidateNames = collect([
@@ -127,7 +167,7 @@ class IngredientIdentityMatchService
     {
         $conflicts = [];
         foreach ($candidates as $candidate) {
-            $candidateInci = $this->normalize((string) ($candidate['inci_name'] ?? ''));
+            $candidateInci = $this->normalize((string) ($candidate['inci_name'] ?? ($candidate['inci_names'][0] ?? null) ?? $candidate['common_name'] ?? ''));
             foreach ($this->materialDifferences($candidateInci, $inciName) as $difference) {
                 $conflicts[] = "Material difference: {$difference}.";
             }
@@ -144,10 +184,28 @@ class IngredientIdentityMatchService
         $candidate = $this->normalize($candidate);
         $current = $this->normalize($current);
 
-        return collect(['hydrogenated', 'unsaponifiables', 'extract', 'oil', 'kernel', 'seed', 'leaf', 'root', 'hydrate', 'sodium', 'potassium'])
+        return collect(['hydrogenated', 'unsaponifiables', 'extract', 'oil', 'kernel', 'seed', 'leaf', 'root', 'hydrate', 'acid', 'butter', 'tallow', 'wax', 'sodium', 'potassium'])
             ->filter(fn (string $token): bool => str_contains($candidate, $token) !== str_contains($current, $token))
             ->values()
             ->all();
+    }
+
+    private function formToken(string $normalized): ?string
+    {
+        $found = null;
+        $position = -1;
+
+        foreach (self::FORM_TOKENS as $token) {
+            if (preg_match('/\b'.preg_quote($token, '/').'s?\b/u', $normalized, $match, PREG_OFFSET_CAPTURE) === 1) {
+                $offset = $match[0][1];
+                if ($offset > $position) {
+                    $position = $offset;
+                    $found = $token;
+                }
+            }
+        }
+
+        return $found;
     }
 
     private function normalize(string $value): string

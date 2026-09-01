@@ -98,12 +98,14 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
             && str_contains((string) $data['instructions'], 'Do not repeat the INCI')
             && str_contains((string) $data['instructions'], 'material-specific formulation decision')
             && str_contains((string) $data['instructions'], 'one sentence per claim')
-            && str_contains((string) $data['instructions'], '160 words maximum')
+            && str_contains((string) $data['instructions'], 'configured word and visible-character limits')
             && str_contains((string) $data['instructions'], 'Typical use level')
             && str_contains((string) $data['instructions'], 'approved structured usage fact')
             && str_contains((string) $data['instructions'], 'For every non-usage claim, set `usage_application=not_applicable`')
             && str_contains((string) $data['instructions'], 'not a regulatory or safety limit')
-            && str_contains((string) $data['instructions'], 'controlled phrases')
+            && str_contains((string) $data['instructions'], 'experienced cosmetic formulator')
+            && str_contains((string) $data['instructions'], 'Keep source attribution and evidence-scope labels in structured evidence')
+            && ! str_contains((string) $data['instructions'], 'controlled phrases')
             && str_contains((string) $data['instructions'], 'minimum-only bound')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });

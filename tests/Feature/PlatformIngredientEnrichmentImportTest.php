@@ -342,7 +342,7 @@ it('plans and applies removal of stale guidance evidence after empty fresh resea
         ->and($applied['status'])->toBe('applied')
         ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.evidence'))->toBe([])
         ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.research_prompt_version'))
-        ->toBe('ingredient-guidance-research-v3');
+        ->toBe('ingredient-guidance-research-v5');
 });
 
 it('applies successive evidence-only updates with the same source fingerprint', function (): void {
@@ -438,9 +438,9 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))
         ->toBe('COSMILE Europe')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))
-        ->toBe('ingredient-guidance-research-v3')
+        ->toBe('ingredient-guidance-research-v5')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
-        ->toBe('ingredient-guidance-v5');
+        ->toBe('ingredient-guidance-v6');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,

@@ -84,10 +84,16 @@ it('configures direct batches and an official web search domain allow list safel
 });
 
 it('keeps guidance research policy separate from the official metadata domain allow list', function (): void {
-    expect(config('ingredient-enrichment.openai.gap_research'))
+    expect(config('ingredient-enrichment.guidance'))
+        ->toMatchArray([
+            'maximum_words' => 240,
+            'maximum_characters' => 2000,
+        ])
+        ->and(config('ingredient-enrichment.openai.gap_research'))
         ->toMatchArray(['enabled' => false])
+        ->and(config('ingredient-enrichment.openai.guidance_research.maximum_tool_calls'))->toBe(5)
         ->and(config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds'))
         ->toContain('supplier_technical', 'professional_reference', 'specialist_reference')
         ->and(config('ingredient-enrichment.openai.guidance_research.blocked_domains'))
-        ->toContain('amazon.com', 'reddit.com', 'youtube.com');
+        ->toContain('amazon.com', 'patents.google.com', 'reddit.com', 'youtube.com');
 });

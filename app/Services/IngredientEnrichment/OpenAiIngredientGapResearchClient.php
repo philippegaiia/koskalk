@@ -52,6 +52,7 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
                     'tools' => [[
                         'type' => 'web_search',
                     ]],
+                    'max_tool_calls' => (int) config('ingredient-enrichment.openai.guidance_research.maximum_tool_calls'),
                     'include' => ['web_search_call.action.sources'],
                     'text' => [
                         'format' => [
@@ -128,9 +129,13 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
     private function instructions(): string
     {
         return <<<'PROMPT'
-You perform a broad but disciplined guidance-research pass for a cosmetic-ingredient catalogue. Return candidate evidence only. The supplied deterministic facts remain authoritative and must not be changed.
+You perform a targeted guidance-research pass for a cosmetic-ingredient catalogue. Return candidate evidence only. The supplied deterministic facts and current reviewed guidance remain authoritative inputs and must not be changed.
 
-Search the open web for concise, material-specific formulation and soapmaking facts that are missing from the deterministic editorial context. Prioritize manufacturer technical sheets and application notes, supplier technical product pages, peer-reviewed or institutional scientific sources, regulatory references used only editorially, professional formulation references, and recognized specialist references. Reject marketplaces, social or community content, generic blogs, AI-generated or SEO pages, search-result snippets, and unsourced marketing.
+Optimize for practical usefulness, ingredient relevance, and concise coverage rather than source prestige or completeness. Research only unanswered questions whose answer would materially improve the current guidance. Use the source type that fits the claim: manufacturer and supplier technical material for grade-specific handling or use levels; professional and specialist formulation or soapmaking references for practical behaviour; and scientific or institutional sources only when they directly support a useful material property or consequence. A technically coherent, ingredient-specific specialist or experienced hobbyist reference may support practical formulation or soapmaking guidance. Reject marketplaces, anonymous community posts, generic lifestyle blogs, AI-generated or SEO pages, search-result snippets, and unsourced marketing.
+
+Do not use patents as guidance evidence. Treat isolated narrow studies as low-priority evidence: retain one only when its tested conditions map directly to a useful formulation decision, and keep that observation explicitly bounded to those conditions. Prefer broadly applicable practical guidance over novel processes, experimental systems, or one paper's sample formula.
+
+Prefer material-wide guidance. Retain a product-grade observation only when it supplies an actionable limitation or recommendation that is worth showing with its scope in the evidence record. Omit supplier manufacturing details, generic storage boilerplate, isolated sample-formula processing conditions, experimental recipe scores, and sensory descriptions that do not change a formulation decision. Stop researching once you have enough evidence for a short overview and two or three useful formulation or soapmaking decisions. Returning a few strong rows, or no rows, is better than filling every claim type with marginal facts.
 
 Classify each finding as a material-wide fact or a product-grade observation. A product-grade recommendation must remain qualified to that grade. Classify experimental observations separately and never turn them into general recommendations. A recommended percentage is allowed only when the exact source explicitly presents it as formulation guidance from a manufacturer, supplier, professional, or specialist source. Record the correct application (`cosmetics` or `soapmaking`), lower and upper bounds without guessing or converting, and the percentage basis (`total_formula`, `oil_phase`, or `soap_oils`). Keep conflicting ranges as separate rows. If one source gives separate cosmetics and soapmaking ranges, return separate rows. Reported-use and experimental concentrations are not recommendations.
 

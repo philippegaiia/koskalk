@@ -46,7 +46,8 @@ return [
     ],
     'guidance' => [
         'minimum_words' => 0,
-        'maximum_words' => 160,
+        'maximum_words' => 240,
+        'maximum_characters' => 2000,
         'required_headings' => ['Overview', 'Formulation use'],
         'soapmaking_heading' => 'Soapmaking',
         'localized_headings' => [
@@ -100,7 +101,7 @@ return [
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
-        'guidance_prompt_version' => 'ingredient-guidance-v5',
+        'guidance_prompt_version' => 'ingredient-guidance-v6',
         'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',
@@ -120,7 +121,8 @@ return [
         ],
         'guidance_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_RESEARCH_ENABLED', true),
-            'prompt_version' => 'ingredient-guidance-research-v3',
+            'prompt_version' => 'ingredient-guidance-research-v5',
+            'maximum_tool_calls' => (int) env('INGREDIENT_ENRICHMENT_GUIDANCE_MAX_TOOL_CALLS', 5),
             'blocked_domains' => [
                 'amazon.com',
                 'ebay.com',
@@ -129,10 +131,13 @@ return [
                 'facebook.com',
                 'instagram.com',
                 'pinterest.com',
+                'patents.google.com',
+                'patentscope.wipo.int',
                 'reddit.com',
                 'tiktok.com',
                 'youtube.com',
                 'wikipedia.org',
+                'worldwide.espacenet.com',
             ],
             'allowed_claim_types' => [
                 'origin',

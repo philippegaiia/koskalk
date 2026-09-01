@@ -58,6 +58,10 @@ class IngredientGuidanceDraftRenderer
         if ($maximumWords > 0 && $this->wordCount($markdown) > $maximumWords) {
             $this->invalid();
         }
+        $maximumCharacters = (int) config('ingredient-enrichment.guidance.maximum_characters', 2000);
+        if ($maximumCharacters > 0 && $this->visibleCharacterCount($markdown) > $maximumCharacters) {
+            $this->invalid();
+        }
 
         $warnings = $this->stringList($draft['warnings']);
         if ($skippedClaims > 0) {
@@ -132,7 +136,9 @@ class IngredientGuidanceDraftRenderer
             return null;
         }
 
-        if ($section === 'formulation_use' && $supportType !== 'evidence') {
+        if ($section === 'formulation_use'
+            && $supportType !== 'evidence'
+            && ! ($supportType === 'fact' && $factPaths === ['current.canonical.info_markdown'])) {
             return null;
         }
 
@@ -226,36 +232,6 @@ class IngredientGuidanceDraftRenderer
     private function validateUsageClaimText(array $claim, array $evidence): bool
     {
         $text = mb_strtolower((string) $claim['text']);
-        $sourceLabel = match ($evidence['source_kind'] ?? null) {
-            'manufacturer_technical' => 'manufacturer',
-            'supplier_technical' => 'supplier',
-            'professional_reference' => 'professional',
-            'specialist_reference' => 'specialist',
-            default => null,
-        };
-
-        $sourceAttributionPattern = $sourceLabel === null
-            ? null
-            : '/(?:\b(?:a|the)\s+'.preg_quote($sourceLabel, '/').'\s+recommends\b'
-                .'|\brecommended\s+by\s+(?:a|the)\s+'.preg_quote($sourceLabel, '/').'\b)/u';
-        if ($sourceAttributionPattern === null || preg_match($sourceAttributionPattern, $text) !== 1) {
-            return false;
-        }
-
-        if (($evidence['scope'] ?? null) === 'product_grade'
-            && preg_match('/\b(?:product|specific|cited)\s+grade\b/u', $text) !== 1) {
-            return false;
-        }
-
-        $applicationPattern = match ($evidence['usage_application'] ?? null) {
-            'cosmetics' => '/\bcosmetics?\b/u',
-            'soapmaking' => '/\bsoap(?:making|[-\s]making)?\b/u',
-            default => null,
-        };
-        if ($applicationPattern === null || preg_match($applicationPattern, $text) !== 1) {
-            return false;
-        }
-
         $basisPattern = match ($evidence['percentage_basis'] ?? null) {
             'total_formula' => '/\btotal\s+formula\b/u',
             'oil_phase' => '/\boil\s+phase\b/u',
@@ -374,6 +350,11 @@ class IngredientGuidanceDraftRenderer
                 || ! Arr::has($context, $path)) {
                 return false;
             }
+
+            if ($path === 'current.canonical.info_markdown'
+                && ! $this->currentGuidanceContainsClaim((string) $claim['text'], (string) Arr::get($context, $path))) {
+                return false;
+            }
         }
 
         return true;
@@ -382,11 +363,12 @@ class IngredientGuidanceDraftRenderer
     private function isAllowedFactPath(string $path, string $section): bool
     {
         if ($section === 'formulation_use') {
-            return false;
+            return $path === 'current.canonical.info_markdown';
         }
 
         if ($section === 'soapmaking') {
-            return $path === 'current.soap_chemistry'
+            return $path === 'current.canonical.info_markdown'
+                || $path === 'current.soap_chemistry'
                 || $path === 'editorial_context.trusted_soap_chemistry'
                 || str_starts_with($path, 'current.soap_chemistry.')
                 || str_starts_with($path, 'editorial_context.trusted_soap_chemistry.');
@@ -417,6 +399,28 @@ class IngredientGuidanceDraftRenderer
         preg_match_all('/[\p{L}\p{N}]+(?:[\'’][\p{L}\p{N}]+)*/u', strip_tags($markdown), $matches);
 
         return count($matches[0] ?? []);
+    }
+
+    private function visibleCharacterCount(string $markdown): int
+    {
+        $text = preg_replace('/^#{1,6}\h+/mu', '', strip_tags($markdown)) ?? $markdown;
+        $text = preg_replace('/\[([^\]]+)]\([^)]*\)/u', '$1', $text) ?? $text;
+        $text = preg_replace('/[*_~`]/u', '', $text) ?? $text;
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return mb_strlen(trim($text));
+    }
+
+    private function currentGuidanceContainsClaim(string $claim, string $currentGuidance): bool
+    {
+        $normalize = static function (string $value): string {
+            $value = preg_replace('/^#{1,6}\h+/mu', '', $value) ?? $value;
+            $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+            return mb_strtolower(trim($value));
+        };
+
+        return str_contains($normalize($currentGuidance), $normalize($claim));
     }
 
     private function invalid(): never

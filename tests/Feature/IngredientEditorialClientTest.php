@@ -113,7 +113,7 @@ it('redacts an unparseable provider error body after transient retries', functio
     Http::assertSentCount(3);
 });
 
-it('uses broad web search only in an explicitly enabled guidance-research call', function (): void {
+it('uses bounded practical web search only in an explicitly enabled guidance-research call', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     config()->set('ingredient-enrichment.openai.gap_research.enabled', true);
     Http::preventStrayRequests();
@@ -173,11 +173,15 @@ it('uses broad web search only in an explicitly enabled guidance-research call',
         return $data['tools'][0] === [
             'type' => 'web_search',
         ]
+            && $data['max_tool_calls'] === config('ingredient-enrichment.openai.guidance_research.maximum_tool_calls')
             && $data['include'] === ['web_search_call.action.sources']
             && data_get($data, 'text.format.schema.properties.candidate_evidence.items.properties.field.enum') === ['proposal.info_markdown']
             && str_contains((string) $data['instructions'], 'candidate evidence only')
-            && str_contains((string) $data['instructions'], 'Search the open web')
-            && str_contains((string) $data['instructions'], 'manufacturer technical sheets')
+            && str_contains((string) $data['instructions'], 'practical usefulness')
+            && str_contains((string) $data['instructions'], 'specialist formulation or soapmaking references')
+            && str_contains((string) $data['instructions'], 'Do not use patents')
+            && str_contains((string) $data['instructions'], 'isolated narrow studies')
+            && str_contains((string) $data['instructions'], 'Stop researching')
             && str_contains((string) $data['instructions'], 'For non-usage claims')
             && str_contains((string) $data['instructions'], 'must not establish legal declarations');
     });

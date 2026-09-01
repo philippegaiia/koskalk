@@ -175,6 +175,10 @@ class IngredientGuidanceDraftRenderer
                 return false;
             }
 
+            if ($this->leaksEvidenceCode((string) ($claim['text'] ?? ''), $row)) {
+                return false;
+            }
+
             if (! $this->validateEvidenceBoundaries($claim, $row, $context)) {
                 return false;
             }
@@ -200,6 +204,22 @@ class IngredientGuidanceDraftRenderer
         }
 
         return true;
+    }
+
+    /** @param array<string, mixed> $evidence */
+    private function leaksEvidenceCode(string $text, array $evidence): bool
+    {
+        $sourceName = (string) ($evidence['source_name'] ?? '');
+        preg_match_all('/\b[A-Z]{2,}[0-9][A-Z0-9-]*\b/u', $sourceName, $matches);
+
+        $lowerText = mb_strtolower($text);
+        foreach ($matches[0] as $token) {
+            if (str_contains($lowerText, mb_strtolower($token))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $evidence */

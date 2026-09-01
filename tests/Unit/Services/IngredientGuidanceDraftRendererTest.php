@@ -386,6 +386,34 @@ it('rejects generic water claims and universal emulsifier advice from bounded ex
         ->toContain('under the tested conditions');
 });
 
+it('omits claims that leak an evidence product code into the prose', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'][0]['source_name'] = 'Citróleo Group Buriti Oil Technical Data Sheet (PA3019)';
+    $leaking = guidanceClaim([
+        'text' => 'PA3019 is a reddish, viscous liquid with a characteristic odour.',
+        'claim_type' => 'formulation_role',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [0],
+    ]);
+    $clean = guidanceClaim([
+        'text' => 'A reddish, viscous liquid with a characteristic odour.',
+        'claim_type' => 'formulation_role',
+        'support_type' => 'evidence',
+        'evidence_indexes' => [0],
+    ]);
+
+    $leaked = guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$leaking],
+    ]), $context);
+    $kept = guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [$clean],
+    ]), $context);
+
+    expect($leaked['info_markdown'])->not->toContain('PA3019')
+        ->and($leaked['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.')
+        ->and($kept['info_markdown'])->toContain('A reddish, viscous liquid with a characteristic odour.');
+});
+
 it('does not veto evidence-backed claims when the matching research question remains unresolved', function (): void {
     $context = guidanceContext();
     $context['guidance_evidence'] = [[

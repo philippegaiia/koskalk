@@ -112,6 +112,7 @@ class IngredientGuidanceEvidencePolicy
                 'recommended_min_percent' => $candidate['recommended_min_percent'],
                 'recommended_max_percent' => $candidate['recommended_max_percent'],
                 'percentage_basis' => $candidate['percentage_basis'],
+                'identifiers' => $candidate['identifiers'] ?? ['cas' => [], 'ec' => []],
             ])
             ->values()
             ->all();
@@ -188,7 +189,7 @@ class IngredientGuidanceEvidencePolicy
         $expectedKeys = [
             'field', 'source_name', 'source_url', 'summary', 'claim_type', 'source_kind',
             'scope', 'evidence_kind', 'usage_application', 'recommended_min_percent',
-            'recommended_max_percent', 'percentage_basis',
+            'recommended_max_percent', 'percentage_basis', 'identifiers',
         ];
 
         if (! is_array($candidate)
@@ -241,6 +242,11 @@ class IngredientGuidanceEvidencePolicy
             return $this->rejected($index, 'invalid_usage_metadata', $host);
         }
 
+        $identifiers = $this->normalizedIdentifiers($candidate['identifiers'] ?? null);
+        if ($identifiers === null) {
+            return $this->rejected($index, 'invalid_shape', $host);
+        }
+
         return [
             'accepted' => [
                 'field' => $field,
@@ -255,9 +261,50 @@ class IngredientGuidanceEvidencePolicy
                 'recommended_min_percent' => $candidate['recommended_min_percent'],
                 'recommended_max_percent' => $candidate['recommended_max_percent'],
                 'percentage_basis' => $candidate['percentage_basis'],
+                'identifiers' => $identifiers,
             ],
             'rejection' => null,
         ];
+    }
+
+    /**
+     * Normalizes source-reported identifiers, accepting only well-formed
+     * CAS and EC numbers. Returns null when the shape or a value is invalid.
+     *
+     * @return array{cas: list<string>, ec: list<string>}|null
+     */
+    private function normalizedIdentifiers(mixed $identifiers): ?array
+    {
+        if (! is_array($identifiers)
+            || ! is_array($identifiers['cas'] ?? null) || ! array_is_list($identifiers['cas'])
+            || ! is_array($identifiers['ec'] ?? null) || ! array_is_list($identifiers['ec'])) {
+            return null;
+        }
+
+        $cas = $this->normalizeIdentifierList($identifiers['cas'], '/^\d{2,7}-\d{2}-\d$/u');
+        $ec = $this->normalizeIdentifierList($identifiers['ec'], '/^\d{3}-\d{3}-\d$/u');
+
+        return $cas === null || $ec === null ? null : ['cas' => $cas, 'ec' => $ec];
+    }
+
+    /** @param array<mixed> $values @return list<string>|null */
+    private function normalizeIdentifierList(array $values, string $pattern): ?array
+    {
+        $normalized = [];
+        foreach ($values as $value) {
+            if (! is_string($value)) {
+                return null;
+            }
+
+            $value = trim($value);
+            if ($value === '' || preg_match($pattern, $value) !== 1) {
+                return null;
+            }
+
+            $normalized[] = $value;
+        }
+
+        return $normalized;
     }
 
     /** @param array<string, mixed> $candidate */

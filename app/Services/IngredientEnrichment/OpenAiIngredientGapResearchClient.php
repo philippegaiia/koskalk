@@ -143,7 +143,7 @@ For soap-relevant materials (fats, oils, butters, tallows, and other saponifiabl
 
 Omit category-obvious filler unless the exact material has a non-obvious practical consequence. You must not establish legal declarations, authorization, identifiers, INCI names, COSING functions, or regulatory conclusions. COSMILE Europe may be cited only for individually paraphrased introductory guidance; it cannot support any legal or identity field.
 
-Every candidate evidence row must contain `field` set to `proposal.info_markdown`, a source name, the exact consulted source URL, a concise paraphrased summary, and the required classification fields. Never copy long passages. For non-usage claims, set `usage_application` and `percentage_basis` to `not_applicable` and both percentage bounds to null. For usage claims, use `formulation_recommendation`, a recommendation-capable source kind, `cosmetics` or `soapmaking` application, a matching basis, and at least one exact source-provided bound. If the gap remains unresolved, return an empty candidate_evidence array and state the specific question. Return only the strict JSON object.
+Every candidate evidence row must contain `field` set to `proposal.info_markdown`, a source name, the exact consulted source URL, a concise paraphrased summary, and the required classification fields. Never copy long passages. For non-usage claims, set `usage_application` and `percentage_basis` to `not_applicable` and both percentage bounds to null. For usage claims, use `formulation_recommendation`, a recommendation-capable source kind, `cosmetics` or `soapmaking` application, a matching basis, and at least one exact source-provided bound. In `identifiers`, list CAS or EC numbers only when the consulted source itself explicitly prints them for the material; leave the lists empty otherwise, and never guess, convert, or copy numbers from other sources. If the gap remains unresolved, return an empty candidate_evidence array and state the specific question. Return only the strict JSON object.
 PROMPT;
     }
 
@@ -201,6 +201,15 @@ PROMPT;
                     'type' => 'string',
                     'enum' => config('ingredient-enrichment.openai.guidance_research.allowed_percentage_bases'),
                 ],
+                'identifiers' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'cas' => ['type' => 'array', 'items' => ['type' => 'string']],
+                        'ec' => ['type' => 'array', 'items' => ['type' => 'string']],
+                    ],
+                    'required' => ['cas', 'ec'],
+                    'additionalProperties' => false,
+                ],
             ],
             'required' => [
                 'field',
@@ -215,6 +224,7 @@ PROMPT;
                 'recommended_min_percent',
                 'recommended_max_percent',
                 'percentage_basis',
+                'identifiers',
             ],
             'additionalProperties' => false,
         ];

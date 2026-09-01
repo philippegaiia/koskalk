@@ -10,6 +10,9 @@ use App\Data\IngredientEnrichmentPipelineResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Enums\IngredientEvidenceConfidence;
+use App\Enums\IngredientSourceTier;
+use App\Enums\IngredientValueProvenance;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Services\IngredientEnrichment\Sources\CosingCheckerClient;
 use App\Services\IngredientEnrichment\Sources\EurLexGlossaryClient;
@@ -211,6 +214,9 @@ class IngredientEnrichmentPipeline
                 );
             },
         );
+        if (($guidanceResearch->data['performed'] ?? false) === true) {
+            $facts = $this->mergeCorroboratedIdentifiers($facts, $guidanceResearch->data['guidance_evidence'] ?? []);
+        }
         $editorial = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::AiEditorial,
@@ -467,6 +473,119 @@ class IngredientEnrichmentPipeline
                 + (int) ($guidanceResearch->data['web_search_calls'] ?? 0),
             structuredSourceCalls: collect($completed)->sum(fn (array $stage): int => (int) ($stage['source_calls'] ?? 0)),
         );
+    }
+
+    /**
+     * Adds identifiers reported by at least two independent consulted
+     * research sources to the proposal, with approved-secondary provenance.
+     *
+     * @param  array<string, mixed>  $facts
+     * @param  array<mixed>  $evidence
+     * @return array<string, mixed>
+     */
+    private function mergeCorroboratedIdentifiers(array $facts, array $evidence): array
+    {
+        $claims = collect($evidence)
+            ->filter(fn (mixed $row): bool => is_array($row) && is_array($row['identifiers'] ?? null))
+            ->flatMap(function (array $row): array {
+                $entries = [];
+                foreach (['cas', 'ec'] as $scheme) {
+                    foreach (($row['identifiers'][$scheme] ?? []) as $value) {
+                        if (is_string($value) && $value !== '') {
+                            $entries[] = [
+                                'scheme' => $scheme,
+                                'value' => $value,
+                                'source_url' => (string) ($row['source_url'] ?? ''),
+                                'source_name' => (string) ($row['source_name'] ?? ''),
+                            ];
+                        }
+                    }
+                }
+
+                return $entries;
+            });
+
+        $accepted = $claims
+            ->groupBy(fn (array $entry): string => $entry['scheme'].':'.mb_strtolower($entry['value']))
+            ->filter(fn ($group): bool => $group->pluck('source_url')->filter()->unique()->count() >= 2)
+            ->map(function ($group): array {
+                $first = $group->first();
+
+                return [
+                    'scheme' => $first['scheme'],
+                    'value' => $first['value'],
+                    'source_name' => $first['source_name'],
+                    'source_url' => $first['source_url'],
+                    'source_rows' => $group->values()->all(),
+                    'source_urls' => $group->pluck('source_url')->filter()->unique()->values()->all(),
+                ];
+            })
+            ->values();
+
+        if ($accepted->isEmpty()) {
+            return $facts;
+        }
+
+        $proposal = $facts['proposal'] ?? [];
+        $existingKeys = collect($proposal['identifiers'] ?? [])
+            ->map(fn (array $identifier): string => ($identifier['scheme'] ?? '').':'.mb_strtolower((string) ($identifier['value'] ?? '')))
+            ->flip();
+        $identifiers = $proposal['identifiers'] ?? [];
+        $evidenceRows = $facts['evidence'] ?? [];
+        $provenance = $facts['value_provenance'] ?? [];
+        $fieldConfidence = $facts['field_confidence'] ?? [];
+        $retrievedAt = CarbonImmutable::now()->toIso8601String();
+
+        foreach ($accepted as $entry) {
+            $key = $entry['scheme'].':'.mb_strtolower($entry['value']);
+            if (isset($existingKeys[$key])) {
+                continue;
+            }
+
+            $index = count($identifiers);
+            $identifiers[] = [
+                'scheme' => $entry['scheme'],
+                'value' => $entry['value'],
+                'is_primary' => false,
+                'source_name' => $entry['source_name'],
+                'source_url' => $entry['source_url'],
+                'source_tier' => IngredientSourceTier::ApprovedSecondary->value,
+                'confidence' => IngredientEvidenceConfidence::Supported->value,
+                'source_version' => null,
+                'source_updated_at' => null,
+                'retrieved_at' => $retrievedAt,
+            ];
+            foreach ($entry['source_urls'] as $sourceUrl) {
+                $evidenceRows[] = [
+                    'field' => "proposal.identifiers.{$index}",
+                    'source_name' => (string) (collect($entry['source_rows'])
+                        ->firstWhere('source_url', $sourceUrl)['source_name'] ?? $entry['source_name']),
+                    'source_url' => $sourceUrl,
+                    'source_tier' => IngredientSourceTier::ApprovedSecondary->value,
+                    'confidence' => IngredientEvidenceConfidence::Supported->value,
+                    'source_version' => null,
+                    'source_updated_at' => null,
+                    'retrieved_at' => $retrievedAt,
+                ];
+            }
+            $provenance[] = [
+                'field' => "proposal.identifiers.{$index}",
+                'kind' => IngredientValueProvenance::SourceConfirmed->value,
+                'reasoning' => (string) __('ingredient_enrichment.warnings.technical_identifier_corroborated'),
+                'source_urls' => $entry['source_urls'],
+            ];
+            $fieldConfidence[] = [
+                'field' => "proposal.identifiers.{$index}",
+                'confidence' => IngredientEvidenceConfidence::Supported->value,
+            ];
+        }
+
+        $facts['proposal'] = [...$proposal, 'identifiers' => $identifiers];
+        $facts['evidence'] = $evidenceRows;
+        $facts['value_provenance'] = $provenance;
+        $facts['field_confidence'] = $fieldConfidence;
+
+        return $facts;
     }
 
     /** @return array<string, mixed> */

@@ -19,6 +19,80 @@ use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
+it('adds identifiers corroborated by two independent consulted sources to the proposal', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    fakeHybridEditorialClient();
+    $row = fn (string $url, string $source): array => [
+        'field' => 'proposal.info_markdown',
+        'source_name' => $source,
+        'source_url' => $url,
+        'summary' => 'The supplier sheet lists the material identifiers for this grade.',
+        'claim_type' => 'formulation_role',
+        'source_kind' => 'supplier_technical',
+        'scope' => 'material',
+        'evidence_kind' => 'fact',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+        'identifiers' => ['cas' => ['68956-68-3'], 'ec' => []],
+    ];
+    $singleRow = $row('https://single.example/technical/argan-oil.pdf', 'Single source');
+    $singleRow['identifiers'] = ['cas' => ['99999-99-9'], 'ec' => []];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($row, $singleRow) implements IngredientGuidanceResearchClient
+    {
+        public function __construct(private $row, private $singleRow) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [
+                    ($this->row)('https://supplier-a.example/technical/argan-oil.pdf', 'Supplier A'),
+                    ($this->row)('https://supplier-b.example/technical/argan-oil.pdf', 'Supplier B'),
+                    $this->singleRow,
+                ],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-identifiers',
+                requestId: 'req-identifiers',
+                model: 'gpt-test',
+                inputTokens: 10,
+                outputTokens: 5,
+                webSearchCalls: 1,
+                sources: [
+                    ['url' => 'https://supplier-a.example/technical/argan-oil.pdf', 'title' => 'Supplier A'],
+                    ['url' => 'https://supplier-b.example/technical/argan-oil.pdf', 'title' => 'Supplier B'],
+                    ['url' => 'https://single.example/technical/argan-oil.pdf', 'title' => 'Single'],
+                ],
+            );
+        }
+    });
+    $item = hybridPipelineItem('argan_identifier_corroboration', 'Argan oil');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+    $identifiers = collect($response->result['proposal']['identifiers']);
+
+    $corroborated = $identifiers->firstWhere('value', '68956-68-3');
+    $single = $identifiers->firstWhere('value', '99999-99-9');
+    $index = $identifiers->search($corroborated);
+
+    expect($corroborated)->not->toBeNull()
+        ->and($corroborated['source_tier'])->toBe('approved_secondary')
+        ->and($corroborated['confidence'])->toBe('supported')
+        ->and(collect($response->result['value_provenance'])->firstWhere('field', "proposal.identifiers.{$index}"))
+        ->toMatchArray([
+            'kind' => 'source_confirmed',
+            'source_urls' => [
+                'https://supplier-a.example/technical/argan-oil.pdf',
+                'https://supplier-b.example/technical/argan-oil.pdf',
+            ],
+        ])
+        ->and($single)->toBeNull();
+});
+
 it('stops before guidance when identity cannot be confirmed against the registries', function (): void {
     seedHybridCosingFunctions();
     cache()->flush();
@@ -271,6 +345,7 @@ it('runs guidance research without exposing broad evidence to metadata editorial
                     'recommended_min_percent' => null,
                     'recommended_max_percent' => null,
                     'percentage_basis' => 'not_applicable',
+                    'identifiers' => ['cas' => [], 'ec' => []],
                 ]],
                 warnings: [],
                 unresolvedQuestions: [],
@@ -419,6 +494,7 @@ it('keeps full enrichment reviewable when guidance evidence is mixed', function 
                         'recommended_min_percent' => null,
                         'recommended_max_percent' => null,
                         'percentage_basis' => 'not_applicable',
+                        'identifiers' => ['cas' => [], 'ec' => []],
                     ],
                     [
                         'field' => 'proposal.info_markdown',
@@ -433,6 +509,7 @@ it('keeps full enrichment reviewable when guidance evidence is mixed', function 
                         'recommended_min_percent' => null,
                         'recommended_max_percent' => null,
                         'percentage_basis' => 'not_applicable',
+                        'identifiers' => ['cas' => [], 'ec' => []],
                     ],
                 ],
                 warnings: [],
@@ -528,6 +605,7 @@ it('reuses persisted guidance research after editorial generation fails', functi
                     'recommended_min_percent' => null,
                     'recommended_max_percent' => null,
                     'percentage_basis' => 'not_applicable',
+                    'identifiers' => ['cas' => [], 'ec' => []],
                 ]],
                 warnings: [],
                 unresolvedQuestions: [],

@@ -71,3 +71,49 @@ it('keeps identity citations on the strict source allowlist', function (): void 
         'title' => 'Supplier technical data',
     ]]))->toThrow(ValidationException::class);
 });
+
+it('accepts approved-secondary identifier citations from consulted technical sources', function (): void {
+    $result = [
+        'evidence' => [[
+            'field' => 'proposal.identifiers.1',
+            'source_url' => 'https://supplier.example/technical/apricot-oil.pdf',
+            'source_tier' => 'approved_secondary',
+        ]],
+        'proposal' => [
+            'identifiers' => [[
+                'field' => 'proposal.identifiers.1',
+                'source_url' => 'https://supplier.example/technical/apricot-oil.pdf',
+                'source_tier' => 'approved_secondary',
+            ]],
+        ],
+    ];
+
+    app(IngredientEnrichmentEvidenceVerifier::class)->verify($result, [[
+        'url' => 'https://supplier.example/technical/apricot-oil.pdf',
+        'title' => 'Supplier technical data',
+    ]]);
+
+    expect(true)->toBeTrue();
+});
+
+it('rejects approved-secondary identifier citations from unconsulted sources', function (): void {
+    $result = [
+        'evidence' => [[
+            'field' => 'proposal.identifiers.1',
+            'source_url' => 'https://other.example/apricot-oil.pdf',
+            'source_tier' => 'approved_secondary',
+        ]],
+        'proposal' => [
+            'identifiers' => [[
+                'field' => 'proposal.identifiers.1',
+                'source_url' => 'https://other.example/apricot-oil.pdf',
+                'source_tier' => 'approved_secondary',
+            ]],
+        ],
+    ];
+
+    expect(fn () => app(IngredientEnrichmentEvidenceVerifier::class)->verify($result, [[
+        'url' => 'https://supplier.example/technical/apricot-oil.pdf',
+        'title' => 'Supplier technical data',
+    ]]))->toThrow(ValidationException::class);
+});

@@ -27,6 +27,7 @@ class IngredientEnrichmentEvidenceVerifier
             $tier = IngredientSourceTier::tryFrom($citation['source_tier']);
 
             $allowed = $citation['field'] === 'proposal.info_markdown'
+                || $tier === IngredientSourceTier::ApprovedSecondary
                 ? $this->guidanceEvidencePolicy->allowsCitationUrl($url, $consultedSources)
                 : $tier instanceof IngredientSourceTier && $this->isAllowedUrl($url, $tier);
 

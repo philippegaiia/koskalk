@@ -232,6 +232,7 @@ class IngredientGuidanceStageRunner
                 'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
                 'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
                 'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
+                'identifiers',
             ], "Guidance research stage evidence {$index}");
         }
         if (count($data['candidate_evidence']) !== count($data['guidance_evidence'])) {

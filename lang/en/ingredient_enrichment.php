@@ -175,6 +175,7 @@ return [
         'guidance_evidence_none_accepted' => 'No researched evidence passed validation; the proposed guidance uses catalogue facts only.',
         'guidance_claim_omitted' => 'A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.',
         'identity_unresolved' => 'Identity could not be confirmed against the deterministic registries; guidance research was not run.',
+        'technical_identifier_corroborated' => 'Identifier reported by multiple independent consulted technical sources.',
     ],
     'replacement' => [
         'unknown' => 'Unknown enrichment replacement field [:field].',

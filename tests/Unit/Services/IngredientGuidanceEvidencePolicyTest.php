@@ -40,6 +40,32 @@ it('partitions valid guidance evidence from rejected candidates', function (): v
         ]);
 });
 
+it('accepts well-formed source-reported identifiers and rejects malformed ones', function (): void {
+    $withIdentifiers = guidanceEvidenceCandidate([
+        'identifiers' => ['cas' => ['8001-29-4'], 'ec' => ['269-656-5']],
+    ]);
+    $accepted = guidanceEvidencePolicy()->validateCandidates([$withIdentifiers], [[
+        'url' => $withIdentifiers['source_url'],
+        'title' => 'Supplier technical data',
+    ]]);
+
+    expect($accepted)->toHaveCount(1)
+        ->and($accepted[0]['identifiers'])->toBe(['cas' => ['8001-29-4'], 'ec' => ['269-656-5']]);
+
+    foreach ([
+        ['cas' => ['not-a-cas'], 'ec' => []],
+        ['cas' => [], 'ec' => ['123-45']],
+        ['cas' => '8001-29-4', 'ec' => []],
+    ] as $identifiers) {
+        $invalid = guidanceEvidenceCandidate(['identifiers' => $identifiers]);
+
+        expect(fn (): array => guidanceEvidencePolicy()->validateCandidates([$invalid], [[
+            'url' => $invalid['source_url'],
+            'title' => 'Supplier technical data',
+        ]]))->toThrow(ValidationException::class);
+    }
+});
+
 it('records precise rejection codes without retaining evidence content', function (): void {
     $cases = [
         'invalid_shape' => 'not-an-array',
@@ -215,6 +241,7 @@ it('converts accepted and legacy evidence to the persisted guidance shape', func
         'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
         'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
         'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
+        'identifiers',
     ])->and($persisted[0]['retrieved_at'])->toBe($retrievedAt->toIso8601String())
         ->and($legacy[0])->toMatchArray([
             'claim_type' => 'origin',
@@ -257,6 +284,7 @@ function guidanceEvidenceCandidate(array $overrides = []): array
         'recommended_min_percent' => '1',
         'recommended_max_percent' => '10',
         'percentage_basis' => 'total_formula',
+        'identifiers' => ['cas' => [], 'ec' => []],
         ...$overrides,
     ];
 }

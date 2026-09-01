@@ -101,7 +101,7 @@ return [
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
-        'guidance_prompt_version' => 'ingredient-guidance-v8',
+        'guidance_prompt_version' => 'ingredient-guidance-v9',
         'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',

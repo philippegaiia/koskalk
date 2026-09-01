@@ -64,7 +64,7 @@ return [
         'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'default'),
         'default_batch_size' => (int) env('INGREDIENT_ENRICHMENT_DEFAULT_BATCH_SIZE', 10),
         'maximum_batch_size' => (int) env('INGREDIENT_ENRICHMENT_MAXIMUM_BATCH_SIZE', 25),
-        'job_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_JOB_TIMEOUT', 900),
+        'job_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_JOB_TIMEOUT', 2000),
     ],
     'source_transport' => [
         'connect_timeout_seconds' => (int) env('INGREDIENT_SOURCE_CONNECT_TIMEOUT', 5),
@@ -121,7 +121,7 @@ return [
         ],
         'guidance_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_RESEARCH_ENABLED', true),
-            'prompt_version' => 'ingredient-guidance-research-v5',
+            'prompt_version' => 'ingredient-guidance-research-v6',
             'maximum_tool_calls' => (int) env('INGREDIENT_ENRICHMENT_GUIDANCE_MAX_TOOL_CALLS', 5),
             'blocked_domains' => [
                 'amazon.com',

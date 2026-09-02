@@ -364,7 +364,52 @@ class IngredientGuidanceDraftRenderer
             return true;
         }
 
-        $sourceNarrationVerbs = '(?:recommend(?:s|ed|ing)?|describ(?:e|es|ed|ing)?|report(?:s|ed|ing)?|list(?:s|ed|ing)?|specif(?:y|ies|ied|ying)|state(?:s|d|ing)?|note(?:s|d|ing)?|advis(?:e|es|ed|ing)?|say(?:s|id|ing)?|suggest(?:s|ed|ing)?|indicat(?:e|es|ed|ing)?)';
+        $sourceNarrationVerbs = '(?:'.implode('|', [
+            'recommend',
+            'recommends',
+            'recommended',
+            'recommending',
+            'describe',
+            'describes',
+            'described',
+            'describing',
+            'report',
+            'reports',
+            'reported',
+            'reporting',
+            'list',
+            'lists',
+            'listed',
+            'listing',
+            'specify',
+            'specifies',
+            'specified',
+            'specifying',
+            'state',
+            'states',
+            'stated',
+            'stating',
+            'note',
+            'notes',
+            'noted',
+            'noting',
+            'advise',
+            'advises',
+            'advised',
+            'advising',
+            'say',
+            'says',
+            'said',
+            'saying',
+            'suggest',
+            'suggests',
+            'suggested',
+            'suggesting',
+            'indicate',
+            'indicates',
+            'indicated',
+            'indicating',
+        ]).')';
         $sourceSubject = '(?:supplier|manufacturer)s?';
 
         return preg_match('/\b(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'[-\s,:;–—]+'.$sourceNarrationVerbs.'\b/u', $lower) === 1

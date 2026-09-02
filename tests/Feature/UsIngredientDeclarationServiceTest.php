@@ -68,12 +68,20 @@ it('normalizes punctuation and casing around editorial qualifiers before composi
         'Organic Virgin Marula‑Oil',
         'Marula (Sclerocarya Birrea) Oil',
     ],
+    'non-breaking hyphen in an editorial phrase' => [
+        'Cold‑Pressed Organic Marula Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
     'parenthesized qualifier' => [
         'Organic (Virgin) Marula Oil',
         'Marula (Sclerocarya Birrea) Oil',
     ],
     'mixed-case qualifiers' => [
         'oRgAnIc vIrGiN mArUlA oIl',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'uppercase and title-case qualifiers' => [
+        'ORGANIC Refined Marula Oil',
         'Marula (Sclerocarya Birrea) Oil',
     ],
     'sweet descriptor remains meaningful' => [
@@ -109,6 +117,21 @@ it('normalizes Unicode dashes in editorial phrases before composing the FDA labe
     'minus sign' => '−',
 ]);
 
+it('preserves a meaningful Unicode hyphen in the composed FDA label', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: 'Omega‑3 Marula Oil',
+    );
+
+    expect($result->data['declaration_name'])->toBe('Omega‑3 Marula (Sclerocarya Birrea) Oil');
+});
+
 it('keeps material-distinguishing adjectives in the composed FDA label', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose(
         candidate: [
@@ -122,6 +145,22 @@ it('keeps material-distinguishing adjectives in the composed FDA label', functio
     );
 
     expect($result->data['declaration_name'])->toBe('Sweet Almond (Prunus Amygdalus Dulcis) Oil');
+});
+
+it('keeps the high oleic descriptor in the composed FDA label', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'SUNFLOWER001',
+            'common_name' => 'HELIANTHUS ANNUUS SEED OIL',
+            'inci_names' => ['HELIANTHUS ANNUUS SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'HELIANTHUS ANNUUS SEED OIL',
+        displayName: 'Organic High Oleic Sunflower Oil',
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe('High Oleic Sunflower (Helianthus Annuus) Oil');
 });
 
 it('composes the FDA label form for seed-oil botanicals', function (): void {

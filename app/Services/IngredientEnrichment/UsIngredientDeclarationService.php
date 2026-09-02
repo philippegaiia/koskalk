@@ -162,7 +162,7 @@ class UsIngredientDeclarationService
      */
     private function stripEditorialQualifiers(string $name): string
     {
-        $stripped = $this->normalizeUnicodeDashes(trim($name));
+        $stripped = trim($name);
 
         foreach (self::EDITORIAL_PHRASES as $phrase) {
             $stripped = $this->removeEditorialQualifier($stripped, $phrase);
@@ -173,7 +173,7 @@ class UsIngredientDeclarationService
         }
 
         $stripped = (string) (preg_replace(
-            '/(?<![\p{L}\p{N}])[\p{P}]+(?![\p{L}\p{N}])/u',
+            '/(?<![\p{L}\p{N}])[\p{P}\x{2212}]+(?![\p{L}\p{N}])/u',
             ' ',
             $stripped,
         ) ?? $stripped);
@@ -183,13 +183,13 @@ class UsIngredientDeclarationService
 
     private function removeEditorialQualifier(string $value, string $qualifier): string
     {
-        $comparisonQualifier = $this->trimUnicodePunctuation($this->normalizeUnicodeDashes($qualifier));
-        $qualifierWords = preg_split('/[\s-]+/u', $comparisonQualifier, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $comparisonQualifier = $this->trimUnicodePunctuation($this->normalizeUnicodeDashesForComparison($qualifier));
+        $qualifierWords = preg_split('/[\s\x{002D}\x{2010}-\x{2015}\x{2212}]+/u', $comparisonQualifier, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         if ($qualifierWords === []) {
             return $value;
         }
 
-        $pattern = implode('[\s-]+', collect($qualifierWords)
+        $pattern = implode('[\s\x{002D}\x{2010}-\x{2015}\x{2212}]+', collect($qualifierWords)
             ->map(fn (string $word): string => preg_quote($word, '/'))
             ->all());
 
@@ -200,7 +200,7 @@ class UsIngredientDeclarationService
         ) ?? $value);
     }
 
-    private function normalizeUnicodeDashes(string $value): string
+    private function normalizeUnicodeDashesForComparison(string $value): string
     {
         return (string) (preg_replace('/[\x{2010}-\x{2015}\x{2212}]/u', '-', $value) ?? $value);
     }
@@ -216,13 +216,20 @@ class UsIngredientDeclarationService
      */
     private function composeBotanicalLabel(string $commonName, string $latin): ?string
     {
-        $words = preg_split('/[\s-]+/u', $this->normalizeUnicodeDashes(trim($commonName)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        if (count($words) < 2 || ! in_array(mb_strtolower((string) end($words)), self::FORM_WORDS, true)) {
+        $formPattern = implode('|', collect(self::FORM_WORDS)
+            ->map(fn (string $form): string => preg_quote($form, '/'))
+            ->all());
+        if (preg_match(
+            '/^(?<noun>.+?)(?:\s+|[\x{002D}\x{2010}-\x{2015}\x{2212}])(?<form>'.$formPattern.')$/iu',
+            trim($commonName),
+            $parts,
+        ) !== 1) {
             return null;
         }
 
-        $noun = implode(' ', array_slice($words, 0, -1));
-        $latinParts = preg_split('/[\s-]+/u', $this->normalizeUnicodeDashes(Str::title($latin)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $noun = trim($parts['noun']);
+        $form = trim($parts['form']);
+        $latinParts = preg_split('/\s+/u', Str::title($latin), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         while ($latinParts !== []
             && in_array(mb_strtolower((string) end($latinParts)), [...self::FORM_WORDS, 'seed', 'kernel', 'fruit', 'nut', 'extract', 'meal', 'husk'], true)) {
             array_pop($latinParts);
@@ -232,6 +239,6 @@ class UsIngredientDeclarationService
             return null;
         }
 
-        return Str::title($noun).' ('.$latinBase.') '.Str::title((string) end($words));
+        return Str::title($noun).' ('.$latinBase.') '.Str::title($form);
     }
 }

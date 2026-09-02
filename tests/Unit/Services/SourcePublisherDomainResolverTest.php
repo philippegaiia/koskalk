@@ -2,6 +2,7 @@
 
 use App\Services\IngredientEnrichment\SourcePublisherDomainResolver;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -45,6 +46,34 @@ it('fails closed for malformed urls and unknown suffixes', function (): void {
     expect($resolver->resolve('not-a-url'))->toBeNull()
         ->and($resolver->resolve('https://localhost/path'))->toBeNull()
         ->and($resolver->resolve('https://github.io/path'))->toBeNull();
+});
+
+it('handles URL authority variants without accepting network or numeric hosts', function (string $url, ?string $expected): void {
+    $resolver = app(SourcePublisherDomainResolver::class);
+
+    expect($resolver->resolve($url))->toBe($expected);
+})->with([
+    'userinfo and explicit port' => ['https://user:secret@docs.supplier.com:8443/path', 'supplier.com'],
+    'ordinary HTTPS port' => ['https://docs.supplier.com:443/path', 'supplier.com'],
+    'schemeless hostname' => ['docs.supplier.com/path', null],
+    'network path reference' => ['//docs.supplier.com/path', null],
+    'IPv4 address' => ['https://192.0.2.1/path', null],
+    'IPv6 address' => ['https://[2001:db8::1]/path', null],
+    'decimal IPv4 form' => ['https://2130706433/path', null],
+    'hexadecimal IPv4 form' => ['https://0x7f000001/path', null],
+    'octal IPv4 form' => ['https://017700000001/path', null],
+]);
+
+it('does not log ordinary malformed or untrusted URL inputs', function (): void {
+    Log::spy();
+
+    $resolver = app(SourcePublisherDomainResolver::class);
+
+    expect($resolver->resolve('not-a-url'))->toBeNull()
+        ->and($resolver->resolve('//docs.supplier.com/path'))->toBeNull()
+        ->and($resolver->resolve('https://localhost/path'))->toBeNull();
+
+    Log::shouldNotHaveReceived('warning');
 });
 
 it('fails closed when the local public suffix data is missing or corrupt', function (): void {

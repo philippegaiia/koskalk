@@ -1,6 +1,8 @@
 <?php
 
 use App\Services\IngredientEnrichment\CorroboratedIngredientIdentifierService;
+use App\Services\IngredientEnrichment\SourcePublisherDomainResolver;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -89,6 +91,17 @@ it('does not treat sibling subdomains on one publisher as independent authoritie
     expect($facts['proposal']['identifiers'])->toBe([]);
 });
 
+it('does not treat alternate URL presentations of one publisher as independent authorities', function (): void {
+    $service = app(CorroboratedIngredientIdentifierService::class);
+
+    $facts = $service->merge(corroborationFacts(), [
+        corroborationEvidenceRow('https://user:secret@docs.supplier.com:443/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('HTTPS://SHOP.SUPPLIER.COM.:8443/spec-sheets/argan-oil.pdf', 'cas', '68956-68-3'),
+    ]);
+
+    expect($facts['proposal']['identifiers'])->toBe([]);
+});
+
 it('accepts identifiers printed by two independent registrable publishers', function (): void {
     $service = app(CorroboratedIngredientIdentifierService::class);
 
@@ -131,6 +144,44 @@ it('does not count urls without a parseable host as authorities', function (): v
     ]);
 
     expect($facts['proposal']['identifiers'])->toBe([]);
+});
+
+it('logs one warning and rejects corroboration when the public suffix snapshot is unavailable', function (): void {
+    Log::spy();
+
+    $missingPath = tempnam(sys_get_temp_dir(), 'missing-psl-');
+    if ($missingPath === false) {
+        throw new RuntimeException('Could not create a temporary path.');
+    }
+
+    unlink($missingPath);
+
+    try {
+        $resolver = app()->makeWith(SourcePublisherDomainResolver::class, [
+            'rulesPath' => $missingPath,
+        ]);
+        $service = new CorroboratedIngredientIdentifierService($resolver);
+        $evidence = [
+            corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+            corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        ];
+
+        expect($service->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([])
+            ->and($service->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([]);
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context) use ($missingPath): bool {
+                return $message === 'Public suffix snapshot unavailable; publisher corroboration is disabled.'
+                    && ($context['event'] ?? null) === 'ingredient_enrichment.publisher_domain_resolver_failure'
+                    && ($context['reason'] ?? null) === 'snapshot_unavailable'
+                    && ($context['snapshot_path'] ?? null) === $missingPath;
+            });
+    } finally {
+        if (is_file($missingPath)) {
+            unlink($missingPath);
+        }
+    }
 });
 
 it('skips a value the official record already carries even when two hosts print it', function (): void {

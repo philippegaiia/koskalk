@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\IngredientEnrichment;
 
+use Pdp\CannotProcessHost;
 use Pdp\Domain;
 use Pdp\Rules;
 use Throwable;
 
 class SourcePublisherDomainResolver
 {
+    private const FAILURE_EVENT = 'ingredient_enrichment.publisher_domain_resolver_failure';
+
+    private const FAILURE_MESSAGE = 'Public suffix snapshot unavailable; publisher corroboration is disabled.';
+
     /**
      * SHA-256 of resources/data/public-suffix-list.dat. Update this value with every reviewed snapshot refresh.
      */
@@ -27,32 +32,53 @@ class SourcePublisherDomainResolver
 
     private bool $rulesLoaded = false;
 
+    private bool $failureReported = false;
+
     public function __construct(private readonly ?string $rulesPath = null) {}
 
     public function resolve(string $url): ?string
     {
         try {
             $parts = parse_url($url);
-            if (! is_array($parts)) {
-                return null;
-            }
+        } catch (ValueError) {
+            return null;
+        } catch (Throwable $exception) {
+            $this->reportFailure('url_parse_failed', $exception);
 
-            $scheme = mb_strtolower((string) ($parts['scheme'] ?? ''));
-            if (! in_array($scheme, ['http', 'https'], true)) {
-                return null;
-            }
+            return null;
+        }
 
-            $host = $parts['host'] ?? null;
-            if (! is_string($host) || trim($host) === '') {
-                return null;
-            }
+        if (! is_array($parts)) {
+            return null;
+        }
 
-            $rules = $this->rules();
-            if (! $rules instanceof Rules) {
-                return null;
-            }
+        $scheme = mb_strtolower((string) ($parts['scheme'] ?? ''));
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
 
-            $resolved = $rules->resolve(Domain::fromIDNA2008($host));
+        $host = $parts['host'] ?? null;
+        if (! is_string($host) || trim($host) === '') {
+            return null;
+        }
+
+        try {
+            $domain = Domain::fromIDNA2008($host);
+        } catch (CannotProcessHost) {
+            return null;
+        } catch (Throwable $exception) {
+            $this->reportFailure('domain_parse_failed', $exception);
+
+            return null;
+        }
+
+        $rules = $this->rules();
+        if (! $rules instanceof Rules) {
+            return null;
+        }
+
+        try {
+            $resolved = $rules->resolve($domain);
             if (! $resolved->suffix()->isKnown() || ! $resolved->suffix()->isPublicSuffix()) {
                 return null;
             }
@@ -63,7 +89,11 @@ class SourcePublisherDomainResolver
             }
 
             return mb_strtolower(rtrim($registrableDomain, '.'));
-        } catch (Throwable) {
+        } catch (CannotProcessHost) {
+            return null;
+        } catch (Throwable $exception) {
+            $this->reportFailure('rules_resolution_failed', $exception);
+
             return null;
         }
     }
@@ -80,16 +110,50 @@ class SourcePublisherDomainResolver
             $snapshotPath = $this->rulesPath ?? resource_path('data/public-suffix-list.dat');
             $snapshot = @file_get_contents($snapshotPath);
 
-            if (! is_string($snapshot) || ! $this->isTrustedSnapshot($snapshot)) {
+            if (! is_string($snapshot)) {
+                $this->reportFailure('snapshot_unavailable');
+
+                return null;
+            }
+
+            if (! $this->isTrustedSnapshot($snapshot)) {
+                $this->reportFailure('snapshot_integrity_failed');
+
                 return null;
             }
 
             $this->rules = Rules::fromString($snapshot);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             $this->rules = null;
+            $this->reportFailure('snapshot_load_failed', $exception);
         }
 
         return $this->rules;
+    }
+
+    private function reportFailure(string $reason, ?Throwable $exception = null): void
+    {
+        if ($this->failureReported) {
+            return;
+        }
+
+        $this->failureReported = true;
+
+        try {
+            $context = [
+                'event' => self::FAILURE_EVENT,
+                'reason' => $reason,
+                'snapshot_path' => $this->rulesPath ?? resource_path('data/public-suffix-list.dat'),
+            ];
+
+            if ($exception instanceof Throwable) {
+                $context['exception'] = $exception;
+            }
+
+            logger()->warning(self::FAILURE_MESSAGE, $context);
+        } catch (Throwable) {
+            // Logging must not turn fail-closed corroboration into a hard failure.
+        }
     }
 
     private function isTrustedSnapshot(string $snapshot): bool

@@ -162,17 +162,52 @@ class UsIngredientDeclarationService
      */
     private function stripEditorialQualifiers(string $name): string
     {
-        $stripped = trim($name);
+        $stripped = $this->normalizeUnicodeDashes(trim($name));
+
         foreach (self::EDITORIAL_PHRASES as $phrase) {
-            $stripped = trim((string) (preg_replace('/\b'.preg_quote($phrase, '/').'\b/iu', ' ', $stripped) ?? $stripped));
+            $stripped = $this->removeEditorialQualifier($stripped, $phrase);
         }
 
-        $words = preg_split('/\s+/u', $stripped) ?: [];
+        foreach (self::EDITORIAL_QUALIFIERS as $qualifier) {
+            $stripped = $this->removeEditorialQualifier($stripped, $qualifier);
+        }
 
-        return trim(implode(' ', array_filter(
-            $words,
-            fn (string $word): bool => ! in_array(mb_strtolower($word), self::EDITORIAL_QUALIFIERS, true),
-        )));
+        $stripped = (string) (preg_replace(
+            '/(?<![\p{L}\p{N}])[\p{P}]+(?![\p{L}\p{N}])/u',
+            ' ',
+            $stripped,
+        ) ?? $stripped);
+
+        return trim((string) (preg_replace('/\s+/u', ' ', $stripped) ?? $stripped));
+    }
+
+    private function removeEditorialQualifier(string $value, string $qualifier): string
+    {
+        $comparisonQualifier = $this->trimUnicodePunctuation($this->normalizeUnicodeDashes($qualifier));
+        $qualifierWords = preg_split('/[\s-]+/u', $comparisonQualifier, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if ($qualifierWords === []) {
+            return $value;
+        }
+
+        $pattern = implode('[\s-]+', collect($qualifierWords)
+            ->map(fn (string $word): string => preg_quote($word, '/'))
+            ->all());
+
+        return (string) (preg_replace(
+            '/(?<![\p{L}\p{N}])[\p{P}]*'.$pattern.'[\p{P}]*(?![\p{L}\p{N}])/iu',
+            ' ',
+            $value,
+        ) ?? $value);
+    }
+
+    private function normalizeUnicodeDashes(string $value): string
+    {
+        return (string) (preg_replace('/[\x{2010}-\x{2015}\x{2212}]/u', '-', $value) ?? $value);
+    }
+
+    private function trimUnicodePunctuation(string $value): string
+    {
+        return trim((string) (preg_replace('/^\p{P}+|\p{P}+$/u', '', $value) ?? $value));
     }
 
     /**
@@ -181,13 +216,13 @@ class UsIngredientDeclarationService
      */
     private function composeBotanicalLabel(string $commonName, string $latin): ?string
     {
-        $words = preg_split('/\s+/u', trim($commonName)) ?: [];
+        $words = preg_split('/[\s-]+/u', $this->normalizeUnicodeDashes(trim($commonName)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         if (count($words) < 2 || ! in_array(mb_strtolower((string) end($words)), self::FORM_WORDS, true)) {
             return null;
         }
 
         $noun = implode(' ', array_slice($words, 0, -1));
-        $latinParts = preg_split('/\s+/u', Str::title($latin)) ?: [];
+        $latinParts = preg_split('/[\s-]+/u', $this->normalizeUnicodeDashes(Str::title($latin)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         while ($latinParts !== []
             && in_array(mb_strtolower((string) end($latinParts)), [...self::FORM_WORDS, 'seed', 'kernel', 'fruit', 'nut', 'extract', 'meal', 'husk'], true)) {
             array_pop($latinParts);

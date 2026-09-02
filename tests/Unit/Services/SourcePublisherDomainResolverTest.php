@@ -77,6 +77,58 @@ it('fails closed when the local public suffix data is missing or corrupt', funct
     }
 });
 
+it('fails closed for a structurally valid but truncated public suffix snapshot', function (): void {
+    $truncatedPath = tempnam(sys_get_temp_dir(), 'truncated-psl-');
+    if ($truncatedPath === false) {
+        throw new RuntimeException('Could not create a temporary path.');
+    }
+
+    file_put_contents($truncatedPath, <<<'PSL'
+// ===BEGIN ICANN DOMAINS===
+com
+io
+// ===END ICANN DOMAINS===
+PSL
+    );
+
+    try {
+        $resolver = app()->makeWith(SourcePublisherDomainResolver::class, [
+            'rulesPath' => $truncatedPath,
+        ]);
+
+        expect($resolver->resolve('https://docs.supplier.com/path'))->toBeNull()
+            ->and($resolver->resolve('https://docs.project-a.github.io/path'))->toBeNull()
+            ->and($resolver->resolve('https://docs.project-b.github.io/path'))->toBeNull();
+    } finally {
+        unlink($truncatedPath);
+    }
+});
+
+it('fails closed when the committed public suffix snapshot is modified', function (): void {
+    $snapshot = file_get_contents(resource_path('data/public-suffix-list.dat'));
+    if (! is_string($snapshot)) {
+        throw new RuntimeException('Could not read the public suffix snapshot.');
+    }
+
+    $modifiedPath = tempnam(sys_get_temp_dir(), 'modified-psl-');
+    if ($modifiedPath === false) {
+        throw new RuntimeException('Could not create a temporary path.');
+    }
+
+    file_put_contents($modifiedPath, $snapshot."\n// modified snapshot\n");
+
+    try {
+        $resolver = app()->makeWith(SourcePublisherDomainResolver::class, [
+            'rulesPath' => $modifiedPath,
+        ]);
+
+        expect($resolver->resolve('https://docs.supplier.com/path'))->toBeNull()
+            ->and($resolver->resolve('https://docs.project-a.github.io/path'))->toBeNull();
+    } finally {
+        unlink($modifiedPath);
+    }
+});
+
 it('resolves against the local snapshot without making network requests', function (): void {
     Http::preventStrayRequests();
 

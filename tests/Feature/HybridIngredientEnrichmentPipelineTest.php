@@ -184,7 +184,7 @@ it('retains all apricot identifiers and keeps eu and us declarations distinct', 
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
             'perfuming', 'skin_conditioning',
         ])
-        ->and($response->structuredSourceCalls)->toBe(7)
+        ->and($response->structuredSourceCalls)->toBe(8)
         ->and($response->webSearchCalls)->toBe(0)
         ->and($editorial->calls)->toBe(1);
 });

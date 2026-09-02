@@ -352,7 +352,7 @@ class IngredientGuidanceDraftRenderer
     {
         $lower = mb_strtolower($text);
 
-        if (preg_match('/\bthis[-\s]+(?:product[-\s]+)?grade\b/u', $lower) === 1) {
+        if (preg_match('/\bthis[-\s]+(?:(?:particular|specific)[-\s]+)?(?:product[-\s]+)?grade\b/u', $lower) === 1) {
             return true;
         }
 
@@ -411,10 +411,15 @@ class IngredientGuidanceDraftRenderer
             'indicating',
         ]).')';
         $sourceSubject = '(?:supplier|manufacturer)s?';
+        $sourceArticle = '(?:a|the|one|some|multiple)?\s*';
+        $sourceSeparator = '[-\s,:;–—]+';
+        $sourceAdverbs = '(?:also|generally|typically|usually|often|commonly|frequently|explicitly|specifically|directly|reportedly|clearly)';
+        $sourceDocument = '(?:(?:technical|product|material)[-\s]+)?(?:data[-\s]+)?(?:sheet|document|specification)s?';
 
-        return preg_match('/\b(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'[-\s,:;–—]+'.$sourceNarrationVerbs.'\b/u', $lower) === 1
-            || preg_match('/\b'.$sourceNarrationVerbs.'\s+by\s+(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1
-            || preg_match('/\baccording\s+to\s+(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1;
+        return preg_match('/\b'.$sourceArticle.$sourceSubject.'(?:'.$sourceSeparator.$sourceAdverbs.')?'.$sourceSeparator.$sourceNarrationVerbs.'\b/u', $lower) === 1
+            || preg_match('/\b'.$sourceArticle.$sourceSubject."['’]s?\s+".$sourceDocument.'\s+'.$sourceNarrationVerbs.'\b/u', $lower) === 1
+            || preg_match('/\b'.$sourceNarrationVerbs.'\b[^.!?]{0,80}\bby\s+'.$sourceArticle.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1
+            || preg_match('/\baccording\s+to\s+'.$sourceArticle.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */

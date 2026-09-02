@@ -77,6 +77,10 @@ it('keeps explicit grades, bounded use levels, and bounded experiment language',
                 'claim_type' => 'formulation_role',
             ]),
             guidanceClaim([
+                'text' => 'This refined grade can be added to a heated oil phase.',
+                'claim_type' => 'formulation_role',
+            ]),
+            guidanceClaim([
                 'text' => 'Typical use level: 1–8% of the total formula.',
                 'claim_type' => 'usage',
                 'evidence_indexes' => [1],
@@ -93,6 +97,7 @@ it('keeps explicit grades, bounded use levels, and bounded experiment language',
     expect($result['info_markdown'])
         ->toContain('A refined grade can be added to a heated oil phase.')
         ->toContain('An unrefined grade can be incorporated after gentle warming.')
+        ->toContain('This refined grade can be added to a heated oil phase.')
         ->toContain('Typical use level: 1–8% of the total formula.')
         ->toContain('under the tested conditions')
         ->and($result['warnings'])->toBe([]);
@@ -708,6 +713,8 @@ dataset('guidance evidence meta prose', [
     ['The specified cold-pressed grade is water-insoluble.'],
     ['A manufacturer recommends this range.'],
     ['A supplier describes this product grade as suitable for emulsions.'],
+    ['This particular product grade is a reddish, viscous liquid.'],
+    ['This specific grade can be added to the oil phase.'],
 ]);
 
 dataset('guidance source attribution meta prose', [
@@ -723,6 +730,9 @@ dataset('guidance source attribution meta prose', [
     ['According to the manufacturer, the material is fluid.'],
     ['The range was recommended by a supplier.'],
     ['The result is described by the manufacturer.'],
+    ['The supplier generally recommends addition to the oil phase.'],
+    ['The manufacturer’s technical sheet recommends a low starting level.'],
+    ['A 1–10% range is recommended for emulsions by the supplier.'],
 ]);
 
 dataset('guidance evidence adjective meta prose', [

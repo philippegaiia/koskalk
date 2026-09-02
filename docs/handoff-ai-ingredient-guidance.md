@@ -90,7 +90,7 @@ The branch `codex/ingredient-guidance-evidence-quarantine` (7 commits, forked at
 ## 7. Current state
 
 - Config: `guidance_prompt_version` `ingredient-guidance-v11`; `guidance_research.prompt_version` `ingredient-guidance-research-v6`; `maximum_words` 240; `maximum_characters` 2000; `maximum_tool_calls` 5; job timeout default 2000 (env `INGREDIENT_ENRICHMENT_JOB_TIMEOUT`); local `.env` `MODEL=gpt-5.6-luna`, `REASONING_EFFORT=xhigh`, `DB_QUEUE_RETRY_AFTER=2100`.
-- Queue listener: running with `--timeout=960` (safe; job's own pcntl timeout governs).
+- Queue listener: running with `--timeout=0` per Decision 11 (job's own pcntl timeout governs). `--timeout=960` is **not** safe — the worker would be killed at 960s mid-call, before the 2000s job timeout, orphaning the job.
 - DB: batches 45–58 exercised; item 44 stuck `researching` from an Aug 30 killed worker (needs manual reset); items 40–46 failed from old runs (retryable).
 - Rules: `.ai/rules/ingredient-enrichment.md` records all settled decisions (drop-and-warn, authority chain, hygiene, stage reuse vs refresh invalidation, queue timeout trap, identity variants/form-awareness/gate, US declaration convention, corroborated CAS/EC, jsonb comparison).
 
@@ -108,7 +108,7 @@ The branch `codex/ingredient-guidance-evidence-quarantine` (7 commits, forked at
 ## 9. How to run / inspect
 
 ```bash
-php artisan queue:listen --queue=media,default --tries=1 --timeout=0   # or --timeout=960
+php artisan queue:listen --queue=media,default --tries=1 --timeout=0   # --timeout must be 0 or >= the 2000s job timeout (Decision 11); 960 is not safe
 php artisan test --compact tests/Feature/HybridIngredientEnrichmentPipelineTest.php  # pipeline incl. identity
 php artisan test --compact tests/Feature/IngredientGuidanceRefreshJobTest.php        # refresh incl. jsonb reuse
 # Start a full enrichment or guidance refresh from the admin UI (Ingredient Enrichment Batches);

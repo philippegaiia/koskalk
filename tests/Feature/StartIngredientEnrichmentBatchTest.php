@@ -38,6 +38,7 @@ it('atomically captures selected platform ingredients and dispatches one batched
     Bus::assertBatched(function (PendingBatch $pending) use ($batch): bool {
         return $pending->name === "ingredient-enrichment:{$batch->public_id}"
             && count($pending->jobs) === 3
+            && $pending->queue() === 'enrichment'
             && collect($pending->jobs)->every(fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment);
     });
 });
@@ -88,5 +89,6 @@ it('starts a guidance-only batch with a dedicated job and reusable context', fun
         ->and($batch->status)->toBe(IngredientEnrichmentBatchStatus::Processing)
         ->and(data_get($batch->items->sole()->snapshot, 'guidance_evidence.0.source_name'))->toBe('COSMILE Europe');
 
-    Bus::assertBatched(fn (PendingBatch $pending): bool => $pending->jobs[0] instanceof GenerateIngredientGuidanceRefresh);
+    Bus::assertBatched(fn (PendingBatch $pending): bool => $pending->queue() === 'enrichment'
+        && $pending->jobs[0] instanceof GenerateIngredientGuidanceRefresh);
 });

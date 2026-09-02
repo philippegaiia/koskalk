@@ -61,7 +61,7 @@ return [
     ],
     'direct_ai' => [
         'enabled' => env('INGREDIENT_ENRICHMENT_AI_ENABLED', false),
-        'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'default'),
+        'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'enrichment'),
         'default_batch_size' => (int) env('INGREDIENT_ENRICHMENT_DEFAULT_BATCH_SIZE', 10),
         'maximum_batch_size' => (int) env('INGREDIENT_ENRICHMENT_MAXIMUM_BATCH_SIZE', 25),
         'job_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_JOB_TIMEOUT', 2000),

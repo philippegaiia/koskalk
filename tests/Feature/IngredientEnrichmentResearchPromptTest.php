@@ -83,6 +83,14 @@ it('configures direct batches and an official web search domain allow list safel
         ]);
 });
 
+it('uses a dedicated enrichment queue with a reservation margin for long jobs', function (): void {
+    expect(config('ingredient-enrichment.direct_ai.queue'))->toBe('enrichment')
+        ->and(config('ingredient-enrichment.direct_ai.job_timeout_seconds'))->toBe(2000)
+        ->and(config('queue.connections.database.retry_after'))->toBe(2100)
+        ->and(file_get_contents(base_path('.env.example')))
+        ->toContain('INGREDIENT_ENRICHMENT_QUEUE=enrichment');
+});
+
 it('keeps guidance research policy separate from the official metadata domain allow list', function (): void {
     expect(config('ingredient-enrichment.guidance'))
         ->toMatchArray([

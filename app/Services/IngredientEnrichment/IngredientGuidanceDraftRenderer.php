@@ -62,7 +62,7 @@ class IngredientGuidanceDraftRenderer
             $sectionTexts[$section] = $texts;
         }
 
-        foreach ($this->baselineUseLevelSentences($context, $sections) as $baseline) {
+        foreach ($this->baselineUseLevelSentences($context, $sections, $skippedClaims) as $baseline) {
             $section = $baseline['section'];
             $sentence = $baseline['text'];
             if (($sectionTexts[$section] ?? []) === []
@@ -485,7 +485,7 @@ class IngredientGuidanceDraftRenderer
      * @param  array<string, string>  $sections
      * @return list<array{section:string,text:string}>
      */
-    private function baselineUseLevelSentences(array $context, array $sections): array
+    private function baselineUseLevelSentences(array $context, array $sections, int &$skippedClaims): array
     {
         $baseline = Arr::get($context, 'current.canonical.info_markdown');
         if (! is_string($baseline) || trim($baseline) === '') {
@@ -517,6 +517,12 @@ class IngredientGuidanceDraftRenderer
                 if ($sentence === ''
                     || preg_match('/\btypical\s+use\s+level\b/iu', $sentence) !== 1
                     || preg_match('/\b\d+(?:\.\d+)?\s*%/u', $sentence) !== 1) {
+                    continue;
+                }
+
+                if ($this->isEvidenceMetaClaim($sentence)) {
+                    $skippedClaims++;
+
                     continue;
                 }
 

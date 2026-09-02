@@ -411,6 +411,29 @@ it('preserves a soapmaking baseline use-level sentence when the refresh draft om
         ->and($result['warnings'])->toBe([]);
 });
 
+it('drops supplier and brand attribution from preserved baseline use-level sentences with a warning', function (): void {
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nBASF recommends a Typical use level: 1–10% of the total formula.\n\n## Soapmaking\nSupplier A recommends a Typical use level: 5–30% of the soap-oil blend.";
+
+    $result = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    expect($result['info_markdown'])->toBe('')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
+it('preserves direct cosmetics and soapmaking use-level baselines during refresh', function (): void {
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nTypical use level: 1–10% of the total formula.\n\n## Soapmaking\nTypical use level: 5–30% of the soap-oil blend.";
+
+    $result = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    expect($result['info_markdown'])
+        ->toContain('Typical use level: 1–10% of the total formula.')
+        ->toContain('Typical use level: 5–30% of the soap-oil blend.')
+        ->and($result['warnings'])->toBe([]);
+});
+
 it('omits a soapmaking usage fact that is not a verbatim baseline sentence', function (): void {
     $claim = guidanceClaim([
         'text' => 'Typical use level: 10–25% of the soap-oil blend.',

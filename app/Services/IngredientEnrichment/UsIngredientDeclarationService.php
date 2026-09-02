@@ -16,6 +16,9 @@ class UsIngredientDeclarationService
     /** @var list<string> */
     private const FORM_WORDS = ['oil', 'butter', 'tallow', 'fat', 'wax', 'lard', 'suet', 'ghee'];
 
+    /** @var list<string> */
+    private const MEANINGFUL_EDITORIAL_SEPARATORS = ['/', '&', '+', '|'];
+
     /**
      * Editorial grade/processing phrases removed from a catalogue display name
      * before it supplies the common part of an FDA-style label. These describe
@@ -342,7 +345,7 @@ class UsIngredientDeclarationService
         array $removedDelimiterOffsets,
         array $preservedPunctuationOffsets,
     ): string {
-        preg_match_all('/[\p{P}\x{2212}]/u', $separator, $matches, PREG_OFFSET_CAPTURE);
+        preg_match_all($this->editorialSeparatorPattern(), $separator, $matches, PREG_OFFSET_CAPTURE);
         if (($matches[0] ?? []) === []) {
             return $separator;
         }
@@ -502,7 +505,7 @@ class UsIngredientDeclarationService
                 $end++;
             }
 
-            if ($start === 0 || $end === $tokenCount - 1) {
+            if ($start === 0 || $end === $tokenCount - 1 || $this->isFinalFormToken($tokens, $end + 1)) {
                 continue;
             }
 
@@ -512,9 +515,9 @@ class UsIngredientDeclarationService
                 $leftSeparatorOffset,
                 $tokens[$start]['offset'] - $leftSeparatorOffset,
             );
-            $slashOffset = strpos($leftSeparator, '/');
-            if ($slashOffset !== false) {
-                $preserved[$leftSeparatorOffset + $slashOffset] = true;
+            $meaningfulSeparatorOffset = $this->firstMeaningfulSeparatorOffset($leftSeparator);
+            if ($meaningfulSeparatorOffset !== null) {
+                $preserved[$leftSeparatorOffset + $meaningfulSeparatorOffset] = true;
 
                 continue;
             }
@@ -525,13 +528,47 @@ class UsIngredientDeclarationService
                 $rightSeparatorOffset,
                 $tokens[$end + 1]['offset'] - $rightSeparatorOffset,
             );
-            $slashOffset = strpos($rightSeparator, '/');
-            if ($slashOffset !== false) {
-                $preserved[$rightSeparatorOffset + $slashOffset] = true;
+            $meaningfulSeparatorOffset = $this->firstMeaningfulSeparatorOffset($rightSeparator);
+            if ($meaningfulSeparatorOffset !== null) {
+                $preserved[$rightSeparatorOffset + $meaningfulSeparatorOffset] = true;
             }
         }
 
         return $preserved;
+    }
+
+    /**
+     * @param  list<array{value: string, offset: int, length: int, comparison: string, remove: bool}>  $tokens
+     */
+    private function isFinalFormToken(array $tokens, int $tokenIndex): bool
+    {
+        return $tokenIndex === count($tokens) - 1
+            && in_array($tokens[$tokenIndex]['comparison'], self::FORM_WORDS, true);
+    }
+
+    private function firstMeaningfulSeparatorOffset(string $separator): ?int
+    {
+        $firstOffset = null;
+        foreach (self::MEANINGFUL_EDITORIAL_SEPARATORS as $meaningfulSeparator) {
+            $offset = strpos($separator, $meaningfulSeparator);
+            if ($offset === false || ($firstOffset !== null && $offset >= $firstOffset)) {
+                continue;
+            }
+
+            $firstOffset = $offset;
+        }
+
+        return $firstOffset;
+    }
+
+    private function editorialSeparatorPattern(): string
+    {
+        $supportedSeparators = implode('', array_map(
+            fn (string $separator): string => preg_quote($separator, '/'),
+            self::MEANINGFUL_EDITORIAL_SEPARATORS,
+        ));
+
+        return '/[\p{P}\x{2212}'.$supportedSeparators.']/u';
     }
 
     private function normalizeUnicodeDashesForComparison(string $value): string

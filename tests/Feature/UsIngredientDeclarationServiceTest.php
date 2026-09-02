@@ -260,6 +260,51 @@ it('preserves one meaningful separator around removed editorial content', functi
         ->toBe('Omega‑3 / Marula (Sclerocarya Birrea) Oil');
 });
 
+it('preserves one supported separator around removed editorial content', function (string $separator): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: "Omega‑3 {$separator} Organic {$separator} Marula Oil",
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe("Omega‑3 {$separator} Marula (Sclerocarya Birrea) Oil");
+})->with([
+    'slash' => '/',
+    'ampersand' => '&',
+    'plus' => '+',
+    'pipe' => '|',
+]);
+
+it('strips orphan supported separators at editorial qualifier edges', function (string $displayName): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
+})->with([
+    'leading slash' => 'Organic / Marula Oil',
+    'leading ampersand' => 'Organic & Marula Oil',
+    'leading plus' => 'Organic + Marula Oil',
+    'leading pipe' => 'Organic | Marula Oil',
+    'trailing slash' => 'Marula / Organic Oil',
+    'trailing ampersand' => 'Marula & Organic Oil',
+    'trailing plus' => 'Marula + Organic Oil',
+    'trailing pipe' => 'Marula | Organic Oil',
+]);
+
 it('preserves a meaningful Unicode hyphen in the composed FDA label', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose(
         candidate: [

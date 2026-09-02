@@ -164,40 +164,156 @@ class UsIngredientDeclarationService
     {
         $stripped = trim($name);
 
-        foreach (self::EDITORIAL_PHRASES as $phrase) {
-            $stripped = $this->removeEditorialQualifier($stripped, $phrase);
+        $tokens = $this->editorialTokens($stripped);
+        if ($tokens === []) {
+            return $stripped;
         }
 
-        foreach (self::EDITORIAL_QUALIFIERS as $qualifier) {
-            $stripped = $this->removeEditorialQualifier($stripped, $qualifier);
-        }
+        $editorialQualifiers = collect(self::EDITORIAL_QUALIFIERS)
+            ->map(fn (string $qualifier): string => $this->normalizeEditorialToken($qualifier))
+            ->all();
 
-        $stripped = (string) (preg_replace(
-            '/(?<![\p{L}\p{N}])[\p{P}\x{2212}]+(?![\p{L}\p{N}])/u',
-            ' ',
-            $stripped,
-        ) ?? $stripped);
+        foreach ($tokens as &$token) {
+            $token['remove'] = in_array($token['comparison'], $editorialQualifiers, true);
+        }
+        unset($token);
+
+        $editorialPhrases = $this->editorialPhraseTokens();
+        do {
+            $changed = false;
+            foreach ($editorialPhrases as $phrase) {
+                $changed = $this->markEditorialPhraseMatches($tokens, $phrase) || $changed;
+            }
+        } while ($changed);
+
+        $stripped = $this->reconstructWithoutEditorialTokens($stripped, $tokens);
 
         return trim((string) (preg_replace('/\s+/u', ' ', $stripped) ?? $stripped));
     }
 
-    private function removeEditorialQualifier(string $value, string $qualifier): string
+    /**
+     * @return list<array{value: string, offset: int, length: int, comparison: string, remove: bool}>
+     */
+    private function editorialTokens(string $value): array
     {
-        $comparisonQualifier = $this->trimUnicodePunctuation($this->normalizeUnicodeDashesForComparison($qualifier));
-        $qualifierWords = preg_split('/[\s\x{002D}\x{2010}-\x{2015}\x{2212}]+/u', $comparisonQualifier, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        if ($qualifierWords === []) {
-            return $value;
+        preg_match_all('/[\p{L}\p{N}]+/u', $value, $matches, PREG_OFFSET_CAPTURE);
+
+        return collect($matches[0] ?? [])
+            ->map(fn (array $match): array => [
+                'value' => (string) $match[0],
+                'offset' => (int) $match[1],
+                'length' => strlen((string) $match[0]),
+                'comparison' => $this->normalizeEditorialToken((string) $match[0]),
+                'remove' => false,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<list<string>>
+     */
+    private function editorialPhraseTokens(): array
+    {
+        $phrases = [];
+
+        foreach (self::EDITORIAL_PHRASES as $phrase) {
+            $comparisonPhrase = $this->normalizeUnicodeDashesForComparison($phrase);
+            $words = collect(preg_split('/[\s\x{002D}\x{2010}-\x{2015}\x{2212}]+/u', $comparisonPhrase, -1, PREG_SPLIT_NO_EMPTY) ?: [])
+                ->map(fn (string $word): string => $this->normalizeEditorialToken($word))
+                ->all();
+            if ($words !== []) {
+                $phrases[implode('|', $words)] = $words;
+            }
         }
 
-        $pattern = implode('[\s\x{002D}\x{2010}-\x{2015}\x{2212}]+', collect($qualifierWords)
-            ->map(fn (string $word): string => preg_quote($word, '/'))
-            ->all());
+        return collect($phrases)->values()->all();
+    }
 
-        return (string) (preg_replace(
-            '/(?<![\p{L}\p{N}])[\p{P}]*'.$pattern.'[\p{P}]*(?![\p{L}\p{N}])/iu',
-            ' ',
-            $value,
-        ) ?? $value);
+    private function normalizeEditorialToken(string $value): string
+    {
+        $comparisonValue = $this->trimUnicodePunctuation($this->normalizeUnicodeDashesForComparison($value));
+
+        return mb_strtolower($comparisonValue);
+    }
+
+    /**
+     * @param  list<array{value: string, offset: int, length: int, comparison: string, remove: bool}>  $tokens
+     * @param  list<string>  $phrase
+     */
+    private function markEditorialPhraseMatches(array &$tokens, array $phrase): bool
+    {
+        $changed = false;
+        $tokenCount = count($tokens);
+
+        foreach (array_keys($tokens) as $start) {
+            $matchedIndexes = [];
+            $tokenIndex = $start;
+
+            foreach ($phrase as $expected) {
+                while ($tokenIndex < $tokenCount
+                    && $tokens[$tokenIndex]['remove']
+                    && $tokens[$tokenIndex]['comparison'] !== $expected) {
+                    $tokenIndex++;
+                }
+
+                if ($tokenIndex >= $tokenCount || $tokens[$tokenIndex]['comparison'] !== $expected) {
+                    $matchedIndexes = [];
+                    break;
+                }
+
+                $matchedIndexes[] = $tokenIndex;
+                $tokenIndex++;
+            }
+
+            if (count($matchedIndexes) !== count($phrase)) {
+                continue;
+            }
+
+            foreach ($matchedIndexes as $matchedIndex) {
+                if ($tokens[$matchedIndex]['remove']) {
+                    continue;
+                }
+
+                $tokens[$matchedIndex]['remove'] = true;
+                $changed = true;
+            }
+        }
+
+        return $changed;
+    }
+
+    /**
+     * @param  list<array{value: string, offset: int, length: int, comparison: string, remove: bool}>  $tokens
+     */
+    private function reconstructWithoutEditorialTokens(string $value, array $tokens): string
+    {
+        $result = '';
+        $cursor = 0;
+        $previousTokenWasRemoved = false;
+
+        foreach ($tokens as $token) {
+            $separator = substr($value, $cursor, $token['offset'] - $cursor);
+            $result .= $token['remove'] || $previousTokenWasRemoved
+                ? $this->removeEditorialSeparators($separator)
+                : $separator;
+
+            if (! $token['remove']) {
+                $result .= $token['value'];
+            }
+
+            $cursor = $token['offset'] + $token['length'];
+            $previousTokenWasRemoved = $token['remove'];
+        }
+
+        $suffix = substr($value, $cursor);
+
+        return $result.($previousTokenWasRemoved ? $this->removeEditorialSeparators($suffix) : $suffix);
+    }
+
+    private function removeEditorialSeparators(string $value): string
+    {
+        return (string) (preg_replace('/[\p{P}\x{2212}]/u', '', $value) ?? $value);
     }
 
     private function normalizeUnicodeDashesForComparison(string $value): string
@@ -219,8 +335,9 @@ class UsIngredientDeclarationService
         $formPattern = implode('|', collect(self::FORM_WORDS)
             ->map(fn (string $form): string => preg_quote($form, '/'))
             ->all());
+        $formSeparatorPattern = '(?:\s+|[\x{002D}\x{2010}-\x{2015}\x{2212}])+';
         if (preg_match(
-            '/^(?<noun>.+?)(?:\s+|[\x{002D}\x{2010}-\x{2015}\x{2212}])(?<form>'.$formPattern.')$/iu',
+            '/^(?<noun>.+?)'.$formSeparatorPattern.'(?<form>'.$formPattern.')$/iu',
             trim($commonName),
             $parts,
         ) !== 1) {

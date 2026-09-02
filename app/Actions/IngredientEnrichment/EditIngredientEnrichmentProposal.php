@@ -8,14 +8,13 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientIntakeItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
+use App\Services\IngredientEnrichment\IngredientEnrichmentEvidenceReconciler;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentResultValidator;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectBuilder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class EditIngredientEnrichmentProposal
@@ -26,6 +25,7 @@ class EditIngredientEnrichmentProposal
         private readonly IngredientEnrichmentPlanner $planner,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly IngredientEnrichmentSubjectBuilder $subjects,
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
     /** @param array<string, mixed> $proposal */
@@ -78,20 +78,17 @@ class EditIngredientEnrichmentProposal
             $currentProposal = is_array(data_get($currentReport, 'normalized.proposal'))
                 ? data_get($currentReport, 'normalized.proposal')
                 : [];
+            $reconciledMetadata = $this->evidenceReconciler->reconcileProposalMetadata(
+                is_array($currentResult['evidence'] ?? null) ? $currentResult['evidence'] : [],
+                is_array($currentResult['field_confidence'] ?? null) ? $currentResult['field_confidence'] : [],
+                is_array($currentResult['value_provenance'] ?? null) ? $currentResult['value_provenance'] : [],
+                $currentProposal,
+                $proposal,
+            );
             $candidate = [
                 ...$currentResult,
                 'proposal' => $proposal,
-                'evidence' => $this->synchronizeSourceEvidence(
-                    $currentResult['evidence'] ?? [],
-                    $currentProposal,
-                    $proposal,
-                ),
-                'field_confidence' => $this->synchronizeFieldConfidence($currentResult['field_confidence'] ?? [], $proposal),
-                'value_provenance' => $this->synchronizeValueProvenance(
-                    $currentResult['value_provenance'] ?? [],
-                    $currentProposal,
-                    $proposal,
-                ),
+                ...$reconciledMetadata,
             ];
             $report = $this->validator->validateOrFail(
                 $candidate,
@@ -116,7 +113,7 @@ class EditIngredientEnrichmentProposal
                 ->all();
             $editedFields = collect([
                 ...($locked->edited_fields ?? []),
-                ...$this->changedPaths($currentProposal, $normalized['proposal'], 'proposal'),
+                ...$this->evidenceReconciler->changedPaths($currentProposal, $normalized['proposal'], 'proposal'),
             ])->filter(fn (mixed $path): bool => is_string($path))->unique()->sort()->values()->all();
 
             $locked->update([
@@ -160,222 +157,5 @@ class EditIngredientEnrichmentProposal
                 'proposal' => __('ingredient_enrichment_admin.validation.proposal_fields'),
             ]);
         }
-    }
-
-    /**
-     * @param  array<string|int, mixed>  $before
-     * @param  array<string|int, mixed>  $after
-     * @return list<string>
-     */
-    private function changedPaths(array $before, array $after, string $prefix): array
-    {
-        $paths = [];
-        foreach (collect([...array_keys($before), ...array_keys($after)])->unique() as $key) {
-            $path = $prefix.'.'.$key;
-            $old = $before[$key] ?? null;
-            $new = $after[$key] ?? null;
-            if (is_array($old) && is_array($new)) {
-                $paths = [...$paths, ...$this->changedPaths($old, $new, $path)];
-            } elseif ($old !== $new) {
-                $paths[] = $path;
-            }
-        }
-
-        return $paths;
-    }
-
-    /**
-     * @param  array<int, mixed>  $evidence
-     * @param  array<string, mixed>  $before
-     * @param  array<string, mixed>  $after
-     * @return list<array<string, mixed>>
-     */
-    private function synchronizeSourceEvidence(array $evidence, array $before, array $after): array
-    {
-        $sourceFields = [
-            'source_name', 'source_url', 'source_tier', 'confidence', 'source_version',
-            'source_updated_at', 'retrieved_at',
-        ];
-        $preserved = collect($evidence)
-            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
-            ->reject(fn (array $row): bool => $this->isSourceBackedCollectionPath($row['field']));
-        $sourceBackedRows = $this->sourceBackedRows($after)
-            ->reject(fn (array $row): bool => str_starts_with($row['field'], 'proposal.identifiers.'));
-
-        return $preserved->merge($sourceBackedRows->map(
-            fn (array $row): array => [
-                'field' => $row['field'],
-                ...collect($row['source'])->only($sourceFields)->all(),
-            ],
-        ))->merge($this->synchronizeIdentifierEvidence($evidence, $before, $after))->values()->all();
-    }
-
-    /**
-     * @param  array<int, mixed>  $evidence
-     * @param  array<string, mixed>  $before
-     * @param  array<string, mixed>  $after
-     * @return list<array<string, mixed>>
-     */
-    private function synchronizeIdentifierEvidence(array $evidence, array $before, array $after): array
-    {
-        $beforeIdentifiers = collect(is_array($before['identifiers'] ?? null) ? $before['identifiers'] : [])
-            ->values();
-        $oldEvidence = collect($evidence)
-            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
-            ->filter(fn (array $row): bool => preg_match('/^proposal\.identifiers\.\d+$/', $row['field']) === 1);
-
-        return collect(is_array($after['identifiers'] ?? null) ? $after['identifiers'] : [])
-            ->values()
-            ->flatMap(function (mixed $row, int $index) use ($beforeIdentifiers, $oldEvidence): array {
-                if (! is_array($row)) {
-                    return [];
-                }
-
-                $key = $this->identifierKey($row);
-                $beforeMatch = $beforeIdentifiers->first(
-                    fn (mixed $beforeRow): bool => is_array($beforeRow)
-                        && $this->identifierKey($beforeRow) === $key,
-                );
-                $beforeIndex = $beforeIdentifiers->search(
-                    fn (mixed $beforeRow): bool => is_array($beforeRow)
-                        && $this->identifierKey($beforeRow) === $key,
-                );
-                $sameSource = is_array($beforeMatch)
-                    && $this->sourceAttributes($beforeMatch) === $this->sourceAttributes($row);
-
-                if ($sameSource && is_int($beforeIndex)) {
-                    return $oldEvidence
-                        ->filter(fn (array $evidenceRow): bool => $evidenceRow['field'] === "proposal.identifiers.{$beforeIndex}")
-                        ->map(fn (array $evidenceRow): array => [
-                            ...$evidenceRow,
-                            'field' => "proposal.identifiers.{$index}",
-                        ])
-                        ->values()
-                        ->all();
-                }
-
-                return [[
-                    'field' => "proposal.identifiers.{$index}",
-                    ...$this->sourceAttributes($row),
-                ]];
-            })
-            ->values()
-            ->all();
-    }
-
-    /** @param array<string, mixed> $row */
-    private function identifierKey(array $row): string
-    {
-        return mb_strtolower(trim((string) ($row['scheme'] ?? '')))
-            .':'
-            .mb_strtolower(trim((string) ($row['value'] ?? '')));
-    }
-
-    /**
-     * @param  array<string, mixed>  $row
-     * @return array<string, mixed>
-     */
-    private function sourceAttributes(array $row): array
-    {
-        $attributes = collect($row)->only([
-            'source_name',
-            'source_url',
-            'source_tier',
-            'confidence',
-            'source_version',
-            'source_updated_at',
-            'retrieved_at',
-        ])->all();
-
-        ksort($attributes);
-
-        return $attributes;
-    }
-
-    /**
-     * @param  array<int, mixed>  $fieldConfidence
-     * @param  array<string, mixed>  $proposal
-     * @return list<array{field: string, confidence: mixed}>
-     */
-    private function synchronizeFieldConfidence(array $fieldConfidence, array $proposal): array
-    {
-        $preserved = collect($fieldConfidence)
-            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
-            ->reject(fn (array $row): bool => $this->isSourceBackedCollectionPath($row['field']));
-
-        return $preserved->merge($this->sourceBackedRows($proposal)->map(fn (array $row): array => [
-            'field' => $row['field'],
-            'confidence' => $row['source']['confidence'] ?? null,
-        ]))->values()->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $proposal
-     * @return Collection<int, array{field: string, source: array<string, mixed>}>
-     */
-    private function sourceBackedRows(array $proposal): Collection
-    {
-        return collect(['aliases', 'identifiers', 'cosing_functions', 'market_labels'])
-            ->flatMap(fn (string $collection): array => collect(is_array($proposal[$collection] ?? null) ? $proposal[$collection] : [])
-                ->filter(fn (mixed $row): bool => is_array($row))
-                ->values()
-                ->map(fn (array $row, int $index): array => [
-                    'field' => "proposal.{$collection}.{$index}",
-                    'source' => $row,
-                ])->all())
-            ->values();
-    }
-
-    private function isSourceBackedCollectionPath(string $path): bool
-    {
-        return preg_match('/^proposal\.(aliases|identifiers|cosing_functions|market_labels)\.\d+$/', $path) === 1;
-    }
-
-    /**
-     * @param  array<int, mixed>  $provenance
-     * @param  array<string, mixed>  $before
-     * @param  array<string, mixed>  $after
-     * @return list<array<string, mixed>>
-     */
-    private function synchronizeValueProvenance(array $provenance, array $before, array $after): array
-    {
-        $rows = collect($provenance)
-            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
-            ->keyBy('field');
-
-        foreach ($this->changedPaths($before, $after, 'proposal') as $path) {
-            if ($this->isFormattingOnlyChange($path, data_get($before, Str::after($path, 'proposal.')), data_get($after, Str::after($path, 'proposal.')))) {
-                continue;
-            }
-
-            $field = $this->provenancePath($path);
-            $rows->put($field, [
-                'field' => $field,
-                'kind' => 'reviewer_supplied',
-                'reasoning' => 'Changed explicitly by the reviewing Admin.',
-                'source_urls' => [],
-            ]);
-        }
-
-        return $rows->values()->all();
-    }
-
-    private function isFormattingOnlyChange(string $path, mixed $before, mixed $after): bool
-    {
-        if (! preg_match('/^proposal\.(inci_name|market_labels\.\d+\.declaration_name)$/', $path)) {
-            return false;
-        }
-
-        return is_string($before) && is_string($after)
-            && Str::lower(Str::squish($before)) === Str::lower(Str::squish($after));
-    }
-
-    private function provenancePath(string $path): string
-    {
-        if (preg_match('/^(proposal\.(?:aliases|identifiers|cosing_functions|market_labels|translations)\.\d+)/', $path, $matches) === 1) {
-            return $matches[1];
-        }
-
-        return $path;
     }
 }

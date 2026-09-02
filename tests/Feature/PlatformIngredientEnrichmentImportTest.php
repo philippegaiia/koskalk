@@ -244,6 +244,95 @@ it('applies every corroborating identifier evidence row', function (): void {
     unlink($path);
 });
 
+it('matches equivalent Unicode identifier formatting when applying evidence to an existing identity', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EQUIVALENT-IDENTIFIER-FORMAT',
+        'category' => IngredientCategory::Other,
+    ]);
+    $ingredient->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'normalized_value' => '68956-68-3',
+        'is_primary' => true,
+    ]);
+    $source = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956–68–3',
+        'is_primary' => true,
+        ...$source,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        ...$source,
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    $identifiers = $ingredient->fresh()->identifiers()->withCount('evidence')->get();
+    expect($identifiers)->toHaveCount(1)
+        ->and($identifiers->first()->normalized_value)->toBe('68956-68-3')
+        ->and($identifiers->first()->evidence_count)->toBe(1)
+        ->and($identifiers->first()->evidence()->value('source_url'))->toBe($source['source_url']);
+
+    unlink($path);
+});
+
+it('accepts and canonicalizes a newly applied Unicode-dash identifier', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-NEW-UNICODE-IDENTIFIER',
+        'category' => IngredientCategory::Other,
+    ]);
+    $source = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956–68–3',
+        'is_primary' => true,
+        ...$source,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        ...$source,
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    expect($ingredient->fresh()->identifiers()->pluck('normalized_value')->all())
+        ->toBe(['68956-68-3']);
+
+    unlink($path);
+});
+
 it('attaches accepted identifier evidence to its matching identifier after a merge', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $ingredient = Ingredient::factory()->create([

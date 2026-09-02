@@ -7,6 +7,7 @@ use App\Enums\IngredientIdentifierScheme;
 use App\Models\Ingredient;
 use App\Models\IngredientIdentifierEvidence;
 use App\Models\SupportedLocale;
+use App\Services\IngredientEnrichment\IngredientEnrichmentEvidenceReconciler;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -15,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class IngredientIdentitySynchronizer
 {
+    public function __construct(
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
+    ) {}
+
     /**
      * @return array{cas_number:?string, ec_number:?string, additional_identifiers:array<int, array{scheme:string, value:string, is_primary:bool}>, aliases:array<int, array{locale:string, name:string, kind:string}>}
      */
@@ -109,10 +114,13 @@ class IngredientIdentitySynchronizer
             ->filter(fn (mixed $row): bool => is_array($row)
                 && is_string($row['scheme'] ?? null)
                 && is_string($row['value'] ?? null))
-            ->keyBy(fn (array $row): string => $row['scheme'].'|'.$this->normalizeIdentifier($row['value'], $row['scheme']));
+            ->keyBy(fn (array $row): string => $this->evidenceReconciler->identifierKey($row));
 
         foreach ($ingredient->identifiers()->get() as $identifier) {
-            $key = $identifier->scheme->value.'|'.$identifier->normalized_value;
+            $key = $this->evidenceReconciler->identifierKey([
+                'scheme' => $identifier->scheme->value,
+                'value' => $identifier->value,
+            ]);
             if (! $evidenceByIdentifier->has($key)) {
                 continue;
             }
@@ -211,7 +219,7 @@ class IngredientIdentitySynchronizer
                 'identifiers' => ['array', 'max:10'],
                 'identifiers.*' => ['array'],
                 'identifiers.*.scheme' => ['required', Rule::enum(IngredientIdentifierScheme::class)],
-                'identifiers.*.value' => ['required', 'string', 'max:64', 'regex:/^[\pL\pN][\pL\pN\s.()\/_:+#\-]*$/u'],
+                'identifiers.*.value' => ['required', 'string', 'max:64', 'regex:/^[\pL\pN][\pL\pN\s.()\/_:+#\-\p{Pd}\x{2212}]*$/u'],
                 'identifiers.*.is_primary' => ['boolean'],
                 'aliases' => ['array'],
                 'aliases.*' => ['array'],
@@ -226,8 +234,7 @@ class IngredientIdentitySynchronizer
             $primaryByScheme = [];
             foreach ($rawIdentifiers as $index => $row) {
                 $scheme = (string) ($row['scheme'] ?? '');
-                $normalized = $this->normalizeIdentifier((string) ($row['value'] ?? ''), $scheme);
-                $key = $scheme.'|'.$normalized;
+                $key = $this->evidenceReconciler->identifierKey($row);
                 if (isset($identifierKeys[$key])) {
                     $validator->errors()->add(
                         "identifiers.{$index}.value",
@@ -276,7 +283,7 @@ class IngredientIdentitySynchronizer
                 return [
                     'scheme' => $scheme,
                     'value' => $value,
-                    'normalized_value' => $this->normalizeIdentifier($value, $scheme),
+                    'normalized_value' => $this->evidenceReconciler->normalizeIdentifier($value, $scheme),
                     'is_primary' => (bool) ($row['is_primary'] ?? false),
                 ];
             })
@@ -332,18 +339,6 @@ class IngredientIdentitySynchronizer
                 'aliases' => __('ingredients.editor.identity.validation.workspace_aliases_limit', ['limit' => 5]),
             ]);
         }
-    }
-
-    private function normalizeIdentifier(string $value, string $scheme): string
-    {
-        $normalized = Str::of($value)->trim()->replace(['–', '—'], '-')->toString();
-
-        return in_array($scheme, [
-            IngredientIdentifierScheme::Unii->value,
-            IngredientIdentifierScheme::InchiKey->value,
-        ], true)
-            ? Str::upper($normalized)
-            : mb_strtolower($normalized);
     }
 
     private function normalizeAlias(string $value): string

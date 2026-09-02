@@ -12,6 +12,7 @@ class IngredientEnrichmentPlanner
 {
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
     /**
@@ -229,7 +230,7 @@ class IngredientEnrichmentPlanner
                 (string) ($row['locale'] ?? ''),
                 mb_strtolower((string) ($row['normalized_name'] ?? $row['name'] ?? '')),
             ]),
-            'identifiers' => fn (array $row): string => implode('|', [(string) ($row['scheme'] ?? ''), strtoupper((string) ($row['normalized_value'] ?? $row['value'] ?? ''))]),
+            'identifiers' => fn (array $row): string => $this->evidenceReconciler->identifierKey($row),
             'cosing_functions' => fn (array $row): string => (string) ($row['key'] ?? ''),
             'market_labels' => fn (array $row): string => (string) ($row['market_code'] ?? ''),
             default => fn (array $row): string => json_encode($row, JSON_THROW_ON_ERROR),

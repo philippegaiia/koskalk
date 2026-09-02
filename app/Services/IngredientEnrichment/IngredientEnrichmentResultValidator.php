@@ -21,6 +21,7 @@ class IngredientEnrichmentResultValidator
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
         private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
     /**
@@ -479,11 +480,16 @@ class IngredientEnrichmentResultValidator
                 $this->error($errors, "{$path}.is_primary", $this->message('identifier_primary_boolean'));
             }
             $this->validateSourceFields($row, $path, $errors);
-            $key = ($scheme?->value ?? '').'|'.strtoupper($value);
-            if (isset($seen[$key])) {
-                $this->error($errors, "{$path}.value", $this->message('identifier_duplicate'));
+            if ($scheme instanceof IngredientIdentifierScheme) {
+                $key = $this->evidenceReconciler->identifierKey([
+                    'scheme' => $scheme->value,
+                    'value' => $value,
+                ]);
+                if (isset($seen[$key])) {
+                    $this->error($errors, "{$path}.value", $this->message('identifier_duplicate'));
+                }
+                $seen[$key] = true;
             }
-            $seen[$key] = true;
             if (($row['is_primary'] ?? false) === true && isset($primary[$scheme?->value])) {
                 $this->error($errors, "{$path}.is_primary", $this->message('identifier_primary_unique'));
             }

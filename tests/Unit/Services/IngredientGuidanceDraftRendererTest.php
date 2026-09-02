@@ -154,6 +154,47 @@ it('omits source attribution narration across the bounded evidence verb family',
         ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 })->with('guidance source attribution meta prose');
 
+it('omits named supplier and brand attribution narration while retaining natural formulation facts', function (): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim(['text' => 'Supplier A recommends this material for emulsion trials.']),
+            guidanceClaim(['text' => 'supplier A recommends this material for emulsion trials.']),
+            guidanceClaim(['text' => 'BASF recommends this product grade for emulsions.']),
+            guidanceClaim(['text' => 'The range was recommended by BASF.']),
+            guidanceClaim([
+                'text' => 'The BASF-derived material remains fluid in the oil phase.',
+                'support_type' => 'fact',
+                'fact_paths' => ['proposal.display_name'],
+            ]),
+            guidanceClaim([
+                'text' => 'Vitamin E supports oxidative stability in an oil phase.',
+                'support_type' => 'fact',
+                'fact_paths' => ['proposal.display_name'],
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain('Supplier A recommends')
+        ->not->toContain('supplier a recommends')
+        ->not->toContain('BASF recommends')
+        ->not->toContain('recommended by BASF')
+        ->toContain('The BASF-derived material remains fluid in the oil phase.')
+        ->toContain('Vitamin E supports oxidative stability in an oil phase.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
+it('fails closed when every guidance claim is omitted', function (): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [guidanceClaim(['text' => 'BASF recommends this product grade for emulsions.'])],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->toBe('')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
 it('omits each evidence adjective when it qualifies a catalogue subject', function (string $text): void {
     $result = guidanceRenderer()->render(guidanceDraft([
         'overview' => [
@@ -339,6 +380,34 @@ it('keeps a preserved baseline soapmaking use level rendered as a baseline fact'
     ]), $context);
 
     expect($result['info_markdown'])->toContain('## Soapmaking', 'Typical use level: 10–25% of the soap-oil blend.')
+        ->and($result['warnings'])->toBe([]);
+});
+
+it('preserves a soapmaking baseline use-level sentence when the refresh draft omits it', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'][2]['recommended_min_percent'] = '10';
+    $context['guidance_evidence'][2]['recommended_max_percent'] = '25';
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nAdd it to the oil phase.\n\n## Soapmaking\nTypical use level: 10–25% of the soap-oil blend.";
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [guidanceClaim([
+            'text' => 'A pressed kernel oil from a single plant source.',
+            'claim_type' => 'origin',
+            'support_type' => 'fact',
+            'fact_paths' => ['proposal.display_name'],
+        ])],
+        'formulation_use' => [guidanceClaim([
+            'text' => 'Add it to the oil phase.',
+            'claim_type' => 'formulation_role',
+            'support_type' => 'fact',
+            'fact_paths' => ['current.canonical.info_markdown'],
+        ])],
+        'soapmaking' => [],
+    ]), $context);
+
+    expect($result['info_markdown'])
+        ->toContain('## Soapmaking')
+        ->toContain('Typical use level: 10–25% of the soap-oil blend.')
         ->and($result['warnings'])->toBe([]);
 });
 

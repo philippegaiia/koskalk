@@ -291,12 +291,20 @@ class UsIngredientDeclarationService
         $result = '';
         $cursor = 0;
         $previousTokenWasRemoved = false;
+        $delimiterOffsets = $this->editorialDelimiterOffsets($value, $tokens);
+        $preservedSeparatorOffsets = $this->editorialSeparatorOffsets($value, $tokens);
+        $preservedPunctuationOffsets = $delimiterOffsets['preserve'] + $preservedSeparatorOffsets;
+        $hasRemovedTokens = collect($tokens)->contains(fn (array $token): bool => $token['remove']);
 
         foreach ($tokens as $token) {
             $separator = substr($value, $cursor, $token['offset'] - $cursor);
-            $result .= $token['remove'] || $previousTokenWasRemoved
-                ? $this->removeEditorialSeparators($separator)
-                : $separator;
+            $result .= $this->reconstructSeparator(
+                separator: $separator,
+                offset: $cursor,
+                removeEditorialPunctuation: $token['remove'] || $previousTokenWasRemoved,
+                removedDelimiterOffsets: $delimiterOffsets['remove'],
+                preservedPunctuationOffsets: $preservedPunctuationOffsets,
+            );
 
             if (! $token['remove']) {
                 $result .= $token['value'];
@@ -307,13 +315,223 @@ class UsIngredientDeclarationService
         }
 
         $suffix = substr($value, $cursor);
+        $result .= $this->reconstructSeparator(
+            separator: $suffix,
+            offset: $cursor,
+            removeEditorialPunctuation: $previousTokenWasRemoved,
+            removedDelimiterOffsets: $delimiterOffsets['remove'],
+            preservedPunctuationOffsets: $preservedPunctuationOffsets,
+        );
 
-        return $result.($previousTokenWasRemoved ? $this->removeEditorialSeparators($suffix) : $suffix);
+        if ($hasRemovedTokens) {
+            $result = (string) (preg_replace('/([\(\[\{“‘])\s+/u', '$1', $result) ?? $result);
+            $result = (string) (preg_replace('/\s+([)\]}”’])/u', '$1', $result) ?? $result);
+        }
+
+        return $result;
     }
 
-    private function removeEditorialSeparators(string $value): string
+    /**
+     * @param  array<int, true>  $removedDelimiterOffsets
+     * @param  array<int, true>  $preservedPunctuationOffsets
+     */
+    private function reconstructSeparator(
+        string $separator,
+        int $offset,
+        bool $removeEditorialPunctuation,
+        array $removedDelimiterOffsets,
+        array $preservedPunctuationOffsets,
+    ): string {
+        preg_match_all('/[\p{P}\x{2212}]/u', $separator, $matches, PREG_OFFSET_CAPTURE);
+        if (($matches[0] ?? []) === []) {
+            return $separator;
+        }
+
+        $result = '';
+        $cursor = 0;
+        foreach ($matches[0] as $match) {
+            $punctuation = (string) $match[0];
+            $punctuationOffset = (int) $match[1];
+            $absoluteOffset = $offset + $punctuationOffset;
+            $result .= substr($separator, $cursor, $punctuationOffset - $cursor);
+
+            $isRemovedDelimiter = isset($removedDelimiterOffsets[$absoluteOffset]);
+            $isPreservedPunctuation = isset($preservedPunctuationOffsets[$absoluteOffset]);
+            if (! $isRemovedDelimiter && (! $removeEditorialPunctuation || $isPreservedPunctuation)) {
+                $result .= $punctuation;
+            }
+
+            $cursor = $punctuationOffset + strlen($punctuation);
+        }
+
+        return $result.substr($separator, $cursor);
+    }
+
+    /**
+     * @param  list<array{value: string, offset: int, length: int, comparison: string, remove: bool}>  $tokens
+     * @return array{remove: array<int, true>, preserve: array<int, true>}
+     */
+    private function editorialDelimiterOffsets(string $value, array $tokens): array
     {
-        return (string) (preg_replace('/[\p{P}\x{2212}]/u', '', $value) ?? $value);
+        $removed = [];
+        $preserved = [];
+
+        foreach ($this->editorialWrapperPairs($value) as $pair) {
+            $firstTokenIndex = null;
+            foreach ($tokens as $tokenIndex => $token) {
+                if ($token['offset'] <= $pair['openOffset']
+                    || $pair['closeOffset'] < $token['offset'] + $token['length']) {
+                    continue;
+                }
+
+                $firstTokenIndex = $tokenIndex;
+                break;
+            }
+
+            $offsets = $firstTokenIndex === null || $tokens[$firstTokenIndex]['remove']
+                ? $removed
+                : $preserved;
+            $offsets[$pair['openOffset']] = true;
+            $offsets[$pair['closeOffset']] = true;
+
+            if ($firstTokenIndex === null || $tokens[$firstTokenIndex]['remove']) {
+                $removed = $offsets;
+            } else {
+                $preserved = $offsets;
+            }
+        }
+
+        return [
+            'remove' => $removed,
+            'preserve' => $preserved,
+        ];
+    }
+
+    /**
+     * @return list<array{openOffset: int, closeOffset: int}>
+     */
+    private function editorialWrapperPairs(string $value): array
+    {
+        $openingToClosing = [
+            '(' => ')',
+            '[' => ']',
+            '{' => '}',
+            '"' => '"',
+            "'" => "'",
+            '“' => '”',
+            '‘' => '’',
+        ];
+        $closingToOpening = array_flip($openingToClosing);
+        $stack = [];
+        $pairs = [];
+
+        preg_match_all('/[()[\]{}"\'“”‘’]/u', $value, $matches, PREG_OFFSET_CAPTURE);
+        foreach ($matches[0] ?? [] as $match) {
+            $delimiter = (string) $match[0];
+            $offset = (int) $match[1];
+
+            if ($delimiter === "'" && $this->isApostropheWithinWord($value, $offset)) {
+                continue;
+            }
+
+            if (array_key_exists($delimiter, $openingToClosing)) {
+                if ($delimiter === '"' || $delimiter === "'") {
+                    $topIndex = array_key_last($stack);
+                    $top = $topIndex === null ? null : $stack[$topIndex];
+                    if (is_array($top) && $top['delimiter'] === $delimiter) {
+                        array_pop($stack);
+                        $pairs[] = [
+                            'openOffset' => $top['offset'],
+                            'closeOffset' => $offset,
+                        ];
+
+                        continue;
+                    }
+                }
+
+                $stack[] = [
+                    'delimiter' => $delimiter,
+                    'offset' => $offset,
+                ];
+
+                continue;
+            }
+
+            $topIndex = array_key_last($stack);
+            $top = $topIndex === null ? null : $stack[$topIndex];
+            if (! is_array($top) || $top['delimiter'] !== $closingToOpening[$delimiter]) {
+                continue;
+            }
+
+            array_pop($stack);
+            $pairs[] = [
+                'openOffset' => $top['offset'],
+                'closeOffset' => $offset,
+            ];
+        }
+
+        return $pairs;
+    }
+
+    private function isApostropheWithinWord(string $value, int $offset): bool
+    {
+        $before = substr($value, 0, $offset);
+        $after = substr($value, $offset + 1);
+
+        return preg_match('/[\p{L}\p{N}]$/u', $before) === 1
+            && preg_match('/^[\p{L}\p{N}]/u', $after) === 1;
+    }
+
+    /**
+     * @param  list<array{value: string, offset: int, length: int, comparison: string, remove: bool}>  $tokens
+     * @return array<int, true>
+     */
+    private function editorialSeparatorOffsets(string $value, array $tokens): array
+    {
+        $preserved = [];
+        $tokenCount = count($tokens);
+
+        foreach (array_keys($tokens) as $start) {
+            if (! $tokens[$start]['remove']
+                || ($start > 0 && $tokens[$start - 1]['remove'])) {
+                continue;
+            }
+
+            $end = $start;
+            while ($end + 1 < $tokenCount && $tokens[$end + 1]['remove']) {
+                $end++;
+            }
+
+            if ($start === 0 || $end === $tokenCount - 1) {
+                continue;
+            }
+
+            $leftSeparatorOffset = $tokens[$start - 1]['offset'] + $tokens[$start - 1]['length'];
+            $leftSeparator = substr(
+                $value,
+                $leftSeparatorOffset,
+                $tokens[$start]['offset'] - $leftSeparatorOffset,
+            );
+            $slashOffset = strpos($leftSeparator, '/');
+            if ($slashOffset !== false) {
+                $preserved[$leftSeparatorOffset + $slashOffset] = true;
+
+                continue;
+            }
+
+            $rightSeparatorOffset = $tokens[$end]['offset'] + $tokens[$end]['length'];
+            $rightSeparator = substr(
+                $value,
+                $rightSeparatorOffset,
+                $tokens[$end + 1]['offset'] - $rightSeparatorOffset,
+            );
+            $slashOffset = strpos($rightSeparator, '/');
+            if ($slashOffset !== false) {
+                $preserved[$rightSeparatorOffset + $slashOffset] = true;
+            }
+        }
+
+        return $preserved;
     }
 
     private function normalizeUnicodeDashesForComparison(string $value): string

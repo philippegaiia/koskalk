@@ -192,6 +192,74 @@ it('preserves meaningful punctuation between non-qualifier tokens', function ():
         ->toBe('Omega‑3 / Marula (Sclerocarya Birrea) Oil');
 });
 
+it('keeps balanced wrappers around retained material while removing editorial content', function (string $displayName, string $expected): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe($expected);
+})->with([
+    'editorial content starts the parenthesized segment' => [
+        '(Organic Marula) Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'editorial content starts the retained blend segment' => [
+        'Marula (Organic Blend) Oil',
+        'Marula Blend (Sclerocarya Birrea) Oil',
+    ],
+    'retained content starts the parenthesized segment' => [
+        'Marula (Blend Organic) Oil',
+        'Marula (Blend) (Sclerocarya Birrea) Oil',
+    ],
+]);
+
+it('keeps quote wrappers around retained material while removing editorial content', function (string $displayName, string $expected): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe($expected);
+})->with([
+    'ASCII quote' => [
+        'Organic "Marula" Oil',
+        '"Marula" (Sclerocarya Birrea) Oil',
+    ],
+    'Unicode quote' => [
+        'Organic “Marula” Oil',
+        '“Marula” (Sclerocarya Birrea) Oil',
+    ],
+]);
+
+it('preserves one meaningful separator around removed editorial content', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: 'Omega‑3 / Organic / Marula Oil',
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe('Omega‑3 / Marula (Sclerocarya Birrea) Oil');
+});
+
 it('preserves a meaningful Unicode hyphen in the composed FDA label', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose(
         candidate: [

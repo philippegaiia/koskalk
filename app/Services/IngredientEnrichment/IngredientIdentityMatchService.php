@@ -24,7 +24,12 @@ class IngredientIdentityMatchService
     {
         $inciName = $this->normalize((string) ($record['inci_name'] ?? ''));
         $displayName = $this->normalize((string) ($record['display_name'] ?? ''));
-        $inputForm = $this->formToken($this->normalize(trim((string) ($record['display_name'] ?? '').' '.(string) ($record['inci_name'] ?? ''))));
+        // The catalogue display name states the intended material form; the INCI
+        // name only supplies the form when the display name has none. Taking the
+        // last form token of a display+INCI concatenation let a trailing INCI
+        // sibling form (e.g. ... BUTTER) override the display form (... OIL) and
+        // silently matched the wrong substance.
+        $inputForm = $this->formToken($displayName) ?? $this->formToken($inciName);
         $identifiers = collect($record['identifiers'] ?? [])
             ->filter(fn (mixed $identifier): bool => is_array($identifier)
                 && is_string($identifier['value'] ?? null)

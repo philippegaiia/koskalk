@@ -157,7 +157,8 @@ class IngredientGuidanceDraftRenderer
 
         if ($section === 'soapmaking'
             && $supportType === 'fact'
-            && $claimType !== 'soapmaking') {
+            && $claimType !== 'soapmaking'
+            && ! ($claimType === 'usage' && $factPaths === ['current.canonical.info_markdown'])) {
             return null;
         }
 

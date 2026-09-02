@@ -16,6 +16,7 @@ it('defines stable hybrid enrichment vocabulary', function (): void {
         'official',
         'structured_mirror',
         'editorial',
+        'approved_secondary',
         'reviewer_supplied',
     ])->and(collect(IngredientValueProvenance::cases())->map->value->all())->toBe([
         'source_confirmed',

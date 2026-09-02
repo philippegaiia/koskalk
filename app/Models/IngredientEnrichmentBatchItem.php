@@ -109,6 +109,12 @@ class IngredientEnrichmentBatchItem extends Model
             $batchMode = $this->batch?->mode;
             $effectiveMode = $batchMode instanceof IngredientEnrichmentBatchMode ? $batchMode : null;
         }
+
+        if ($this->failure_code === 'identity_unresolved'
+            && ! ($effectiveMode?->isGuidance() ?? false)) {
+            return IngredientEnrichmentResearchStage::IdentityPreparation;
+        }
+
         $orderedStages = $effectiveMode?->guidanceStages() ?? [];
         if ($orderedStages === []) {
             $orderedStages = IngredientEnrichmentResearchStage::ordered();

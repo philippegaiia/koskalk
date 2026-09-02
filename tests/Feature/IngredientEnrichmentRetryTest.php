@@ -319,3 +319,61 @@ it('defines guidance stage order from the persisted batch mode', function (): vo
         IngredientEnrichmentResearchStage::Validation,
     ])->and(IngredientEnrichmentBatchMode::FillMissing->guidanceStages())->toBe([]);
 });
+
+it('reopens identity research when retrying an identity unresolved item', function (): void {
+    Bus::fake();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'marula_oil']);
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
+        'total_count' => 1,
+    ]);
+    $completedIdentity = collect([
+        IngredientEnrichmentResearchStage::IdentityPreparation,
+        IngredientEnrichmentResearchStage::UsIdentity,
+        IngredientEnrichmentResearchStage::EuStructured,
+        IngredientEnrichmentResearchStage::EuOfficial,
+        IngredientEnrichmentResearchStage::UsDeclaration,
+        IngredientEnrichmentResearchStage::ConflictEvaluation,
+    ])->mapWithKeys(fn (IngredientEnrichmentResearchStage $stage): array => [
+        $stage->value => ['stage' => $stage->value, 'status' => 'completed'],
+    ])->all();
+    $skippedGuidance = collect([
+        IngredientEnrichmentResearchStage::AiGuidanceResearch,
+        IngredientEnrichmentResearchStage::AiEditorial,
+        IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+        IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+        IngredientEnrichmentResearchStage::Validation,
+    ])->mapWithKeys(fn (IngredientEnrichmentResearchStage $stage): array => [
+        $stage->value => [
+            'stage' => $stage->value,
+            'status' => 'skipped',
+            'data' => ['reason' => 'identity_unresolved'],
+        ],
+    ])->all();
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'failure_code' => 'identity_unresolved',
+        'research_stages' => [...$completedIdentity, ...$skippedGuidance],
+    ]);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
+        ->and($item->fresh()->failure_code)->toBeNull()
+        ->and($item->fresh()->research_stages)->toBe([]);
+
+    Bus::assertBatched(function (PendingBatch $pending): bool {
+        return collect($pending->jobs)->contains(
+            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
+        ) && collect($pending->jobs)->doesntContain(
+            fn (mixed $job): bool => $job instanceof GenerateIngredientGuidanceRefresh,
+        );
+    });
+});

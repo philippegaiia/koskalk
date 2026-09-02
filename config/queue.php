@@ -40,7 +40,13 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 960),
+            'retry_after' => (int) env(
+                'DB_QUEUE_RETRY_AFTER',
+                // Reservations must outlive the longest job on this connection.
+                // Enrichment jobs self-timeout via pcntl at the configured job
+                // timeout, so the fallback default derives from it with margin.
+                (int) env('INGREDIENT_ENRICHMENT_JOB_TIMEOUT', 2000) + 100
+            ),
             'after_commit' => false,
         ],
 

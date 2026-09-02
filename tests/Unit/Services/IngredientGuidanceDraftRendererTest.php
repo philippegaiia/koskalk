@@ -174,6 +174,45 @@ it('keeps cosmetics and soapmaking usage claims in their respective sections', f
         ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
+it('keeps a preserved baseline soapmaking use level rendered as a baseline fact', function (): void {
+    $baseline = '## Overview'."\n".'Apricot kernel oil is a fixed oil.'."\n\n"
+        .'## Formulation use'."\n".'Typical use level: 1–10% of the total formula.'."\n\n"
+        .'## Soapmaking'."\n".'Typical use level: 10–25% of the soap-oil blend.';
+    $claim = guidanceClaim([
+        'text' => 'Typical use level: 10–25% of the soap-oil blend.',
+        'claim_type' => 'usage',
+        'support_type' => 'fact',
+        'fact_paths' => ['current.canonical.info_markdown'],
+        'usage_application' => 'soapmaking',
+    ]);
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = $baseline;
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'soapmaking' => [$claim],
+    ]), $context);
+
+    expect($result['info_markdown'])->toContain('## Soapmaking', 'Typical use level: 10–25% of the soap-oil blend.')
+        ->and($result['warnings'])->toBe([]);
+});
+
+it('omits a soapmaking usage fact that is not a verbatim baseline sentence', function (): void {
+    $claim = guidanceClaim([
+        'text' => 'Typical use level: 10–25% of the soap-oil blend.',
+        'claim_type' => 'usage',
+        'support_type' => 'fact',
+        'fact_paths' => ['current.soap_chemistry'],
+        'usage_application' => 'soapmaking',
+    ]);
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'soapmaking' => [$claim],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->not->toContain('10–25%')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
 it('omits usage prose whose percentage differs from the cited recommendation', function (): void {
     $claim = guidanceClaim([
         'text' => 'A supplier recommends this product grade at 2–20% of the total formula.',

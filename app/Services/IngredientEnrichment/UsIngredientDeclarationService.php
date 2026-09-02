@@ -17,6 +17,51 @@ class UsIngredientDeclarationService
     private const FORM_WORDS = ['oil', 'butter', 'tallow', 'fat', 'wax', 'lard', 'suet', 'ghee'];
 
     /**
+     * Editorial grade/processing phrases removed from a catalogue display name
+     * before it supplies the common part of an FDA-style label. These describe
+     * the product, never the material.
+     *
+     * @var list<string>
+     */
+    private const EDITORIAL_PHRASES = [
+        'extra virgin',
+        'extra-virgin',
+        'cold pressed',
+        'cold-pressed',
+        'expeller pressed',
+        'expeller-pressed',
+        'cosmetic grade',
+        'food grade',
+        'pharmaceutical grade',
+        'fair trade',
+        'fair-trade',
+    ];
+
+    /**
+     * Single editorial qualifier words removed from a catalogue display name
+     * before it supplies the common part of an FDA-style label.
+     *
+     * @var list<string>
+     */
+    private const EDITORIAL_QUALIFIERS = [
+        'organic',
+        'virgin',
+        'refined',
+        'unrefined',
+        'raw',
+        'pure',
+        'natural',
+        'premium',
+        'certified',
+        'cosmetic',
+        'pharmaceutical',
+        'culinary',
+        'artisan',
+        'grade',
+        'luxury',
+    ];
+
+    /**
      * @param  array{unii?: string|null, common_name?: string|null, inci_names?: list<string>, cas?: list<string>}  candidate
      */
     public function propose(
@@ -96,7 +141,7 @@ class UsIngredientDeclarationService
         $commonIsLatin = $inciNames !== []
             && mb_strtolower(trim($commonName)) === mb_strtolower(trim((string) $inciNames[0]));
         $commonPart = $commonIsLatin && is_string($displayName) && trim($displayName) !== ''
-            ? trim($displayName)
+            ? $this->stripEditorialQualifiers($displayName)
             : $commonName;
         $latin = $commonIsLatin ? $inciNames[0] : ($inciNames[0] ?? null);
 
@@ -106,6 +151,28 @@ class UsIngredientDeclarationService
         }
 
         return $commonName;
+    }
+
+    /**
+     * Removes editorial grade and marketing qualifiers ("Organic Virgin Marula
+     * Oil" -> "Marula Oil") so the display name can supply the common part of
+     * an FDA-style declaration without leaking product claims onto a
+     * regulatory surface. Material-distinguishing adjectives (sweet, bitter,
+     * high oleic, ...) are preserved.
+     */
+    private function stripEditorialQualifiers(string $name): string
+    {
+        $stripped = trim($name);
+        foreach (self::EDITORIAL_PHRASES as $phrase) {
+            $stripped = trim((string) (preg_replace('/\b'.preg_quote($phrase, '/').'\b/iu', ' ', $stripped) ?? $stripped));
+        }
+
+        $words = preg_split('/\s+/u', $stripped) ?: [];
+
+        return trim(implode(' ', array_filter(
+            $words,
+            fn (string $word): bool => ! in_array(mb_strtolower($word), self::EDITORIAL_QUALIFIERS, true),
+        )));
     }
 
     /**

@@ -31,6 +31,36 @@ it('composes the FDA label form when the registry common name is the latin name'
     expect($result->data['declaration_name'])->toBe('Beef (Adeps Bovis) Tallow');
 });
 
+it('strips editorial qualifiers from the display name before composing the FDA label', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: 'Organic Virgin Marula Oil',
+    );
+
+    expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
+});
+
+it('keeps material-distinguishing adjectives in the composed FDA label', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'SWEETALMOND001',
+            'common_name' => 'PRUNUS AMYGDALUS DULCIS OIL',
+            'inci_names' => ['PRUNUS AMYGDALUS DULCIS OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'PRUNUS AMYGDALUS DULCIS OIL',
+        displayName: 'Organic Sweet Almond Oil',
+    );
+
+    expect($result->data['declaration_name'])->toBe('Sweet Almond (Prunus Amygdalus Dulcis) Oil');
+});
+
 it('composes the FDA label form for seed-oil botanicals', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose([
         'unii' => 'H3E878020N',

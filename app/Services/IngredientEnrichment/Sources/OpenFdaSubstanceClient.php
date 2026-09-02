@@ -16,6 +16,14 @@ class OpenFdaSubstanceClient
     ) {}
 
     /**
+     * Queries each search variant in order and keeps traversing until a
+     * candidate is named *exactly* by a queried term (earliest variant wins).
+     * GSRS name searches match phrases inside synonyms, so an earlier
+     * sibling-form hit (an acid, ester, or modified record that merely
+     * contains the phrase) must not suppress the later variant that holds the
+     * exact record — otherwise discovery never offers the matcher the right
+     * candidate. Traversal stays bounded by the distinct term list.
+     *
      * @param  array{
      *     display_name?: string|null,
      *     inci_name?: string|null,
@@ -49,6 +57,7 @@ class OpenFdaSubstanceClient
 
             $sourceCalls += $response->sourceCalls;
 
+            $batch = [];
             foreach ($response->payload['results'] ?? [] as $result) {
                 if (! is_array($result)) {
                     continue;
@@ -56,9 +65,10 @@ class OpenFdaSubstanceClient
 
                 $candidate = $this->normalizeCandidate($result);
                 $candidates[$candidate['unii'] ?: $candidate['common_name']] = $candidate;
+                $batch[] = $candidate;
             }
 
-            if ($candidates !== []) {
+            if ($this->batchNamesTermExactly($batch, $term)) {
                 break;
             }
         }
@@ -106,6 +116,39 @@ class OpenFdaSubstanceClient
             ->unique(fn (string $value): string => mb_strtolower($value))
             ->values()
             ->all();
+    }
+
+    /**
+     * Whether any candidate in the batch carries a whole name that equals the
+     * queried term. Sibling records that only contain the phrase in a longer
+     * synonym do not count as a match, so traversal continues to the next
+     * variant.
+     *
+     * @param  list<array{common_name: string, inci_names: list<string>, names: list<string>}>  $batch
+     */
+    private function batchNamesTermExactly(array $batch, string $term): bool
+    {
+        $needle = mb_strtolower(trim($term));
+        if ($needle === '') {
+            return false;
+        }
+
+        foreach ($batch as $candidate) {
+            $names = collect([
+                $candidate['common_name'] ?? null,
+                ...($candidate['inci_names'] ?? []),
+                ...($candidate['names'] ?? []),
+            ])
+                ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
+                ->map(fn (string $name): string => mb_strtolower(trim($name)))
+                ->unique();
+
+            if ($names->contains($needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

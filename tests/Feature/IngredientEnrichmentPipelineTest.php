@@ -3,6 +3,7 @@
 use App\Contracts\IngredientEditorialClient;
 use App\Data\IngredientEditorialResponse;
 use App\Data\IngredientSourceStageResult;
+use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPipeline;
@@ -197,6 +198,28 @@ it('identifies the earliest failed or unresolved stage as the safe retry boundar
 
     expect($failed->retryableFromStage())->toBe(IngredientEnrichmentResearchStage::UsIdentity)
         ->and($unresolved->retryableFromStage())->toBe(IngredientEnrichmentResearchStage::UsDeclaration);
+});
+
+it('re-runs identity from scratch when an item failed with identity unresolved', function (): void {
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'failure_code' => 'identity_unresolved',
+        'research_stages' => [
+            'identity_preparation' => ['status' => 'completed'],
+            'us_identity' => ['status' => 'completed'],
+            'eu_structured' => ['status' => 'completed'],
+            'eu_official' => ['status' => 'completed'],
+            'us_declaration' => ['status' => 'completed'],
+            'conflict_evaluation' => ['status' => 'completed'],
+            'ai_guidance_research' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
+            'ai_editorial' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
+            'ai_guidance_authoring' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
+            'ai_guidance_localization' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
+            'validation' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
+        ],
+    ]);
+
+    expect($item->retryableFromStage())->toBe(IngredientEnrichmentResearchStage::IdentityPreparation);
 });
 
 it('surfaces identity conflicts as warnings and forces low confidence', function (): void {

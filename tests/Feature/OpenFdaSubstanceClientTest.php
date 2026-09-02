@@ -95,6 +95,42 @@ it('continues after an FDA no-match response and normalizes exact name searches 
         ]);
 });
 
+it('keeps searching when the first non-empty batch only contains a sibling-form phrase hit', function (): void {
+    Http::preventStrayRequests();
+    Http::fakeSequence()
+        ->push(['results' => [[
+            'unii' => 'SIBLING-PHRASE-001',
+            'names' => [[
+                'name' => 'HYDROGENATED ARGANIA SPINOSA KERNEL OIL',
+                'preferred' => true,
+                'display_name' => true,
+                'name_orgs' => [['name_org' => 'FDA']],
+            ]],
+            'codes' => [],
+        ]]])
+        ->push(openFdaFixture('openfda-argan.json'))
+        ->push(openFdaFixture('openfda-argan.json'));
+
+    $result = app(OpenFdaSubstanceClient::class)->lookup([
+        'display_name' => 'Argan oil',
+        'inci_name' => 'ARGANIA SPINOSA KERNEL OIL',
+        'identifiers' => [],
+    ]);
+
+    $searches = Http::recorded()
+        ->map(fn (array $recorded): string => (string) $recorded[0]->data()['search'])
+        ->all();
+
+    expect($result->sourceCalls)->toBe(3)
+        ->and(collect($result->data['candidates'])->pluck('unii')->all())
+        ->toBe(['SIBLING-PHRASE-001', '4V59G5UW9X'])
+        ->and($searches)->toBe([
+            'names.name:"ARGANIA SPINOSA KERNEL OIL"',
+            'names.name:"ARGANIA SPINOSA SEED OIL"',
+            'names.name:"ARGAN OIL"',
+        ]);
+});
+
 /**
  * @return array<string, mixed>
  */

@@ -187,3 +187,43 @@ it('keeps form-less registry names matchable for inputs with a form', function (
     expect($match['candidate']['common_name'])->toBe('ADEPS BOVIS')
         ->and($match['candidate']['match_reasons'])->toContain('exact_cas');
 });
+
+it('prefers the display-name material form over a conflicting trailing INCI form', function (): void {
+    $match = app(IngredientIdentityMatchService::class)->select([
+        [
+            'inci_name' => 'BUTYROSPERMUM PARKII OIL',
+            'cas' => ['194043-92-0'],
+            'ec' => [],
+        ],
+        [
+            'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+            'cas' => ['194043-92-0'],
+            'ec' => [],
+        ],
+    ], [
+        'display_name' => 'Shea Oil',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+        'identifiers' => [['scheme' => 'cas', 'value' => '194043-92-0']],
+    ]);
+
+    expect($match['candidate']['inci_name'])->toBe('BUTYROSPERMUM PARKII OIL')
+        ->and($match['candidate']['match_reasons'])->toContain('exact_cas')
+        ->and($match['conflicts'])->toBe([]);
+});
+
+it('does not gate the correct oil candidate when the catalogue INCI carries a sibling form', function (): void {
+    $match = app(IngredientIdentityMatchService::class)->select([
+        [
+            'inci_name' => 'BUTYROSPERMUM PARKII OIL',
+            'cas' => ['194043-92-0'],
+            'ec' => [],
+        ],
+    ], [
+        'display_name' => 'Shea Oil',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+        'identifiers' => [['scheme' => 'cas', 'value' => '194043-92-0']],
+    ]);
+
+    expect($match['candidate']['inci_name'])->toBe('BUTYROSPERMUM PARKII OIL')
+        ->and($match['conflicts'])->toBe([]);
+});

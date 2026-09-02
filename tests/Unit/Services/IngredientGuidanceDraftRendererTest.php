@@ -120,6 +120,56 @@ it('handles case and punctuation variants without blocking named grade prose', f
         ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
 });
 
+it('omits source attribution narration across the bounded evidence verb family', function (string $text): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim(['text' => $text]),
+            guidanceClaim([
+                'text' => 'The oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The manufacturer-grade oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The supplier-derived oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The material suggests a stable oil-phase dispersion.',
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain($text)
+        ->toContain('The oil remains fluid in the heated oil phase.')
+        ->toContain('The manufacturer-grade oil remains fluid in the heated oil phase.')
+        ->toContain('The supplier-derived oil remains fluid in the heated oil phase.')
+        ->toContain('The material suggests a stable oil-phase dispersion.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+})->with('guidance source attribution meta prose');
+
+it('omits each evidence adjective when it qualifies a catalogue subject', function (string $text): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim(['text' => $text]),
+            guidanceClaim([
+                'text' => 'The oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The study reported a fluid oil-phase result.',
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain($text)
+        ->toContain('The oil remains fluid in the heated oil phase.')
+        ->toContain('The study reported a fluid oil-phase result.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+})->with('guidance evidence adjective meta prose');
+
 it('omits claims containing headings, newlines, or multiple sentences', function (): void {
     foreach ([
         '## Overview A claim.',
@@ -658,6 +708,29 @@ dataset('guidance evidence meta prose', [
     ['The specified cold-pressed grade is water-insoluble.'],
     ['A manufacturer recommends this range.'],
     ['A supplier describes this product grade as suitable for emulsions.'],
+]);
+
+dataset('guidance source attribution meta prose', [
+    ['A supplier states that the material is suitable for emulsions.'],
+    ['The manufacturer notes that the material is fluid in the oil phase.'],
+    ['A supplier advises a low starting level.'],
+    ['SUPPLIERS SAY the material is suitable for emulsions.'],
+    ['The manufacturer suggests this material for emulsions.'],
+    ['A supplier indicates that the profile is stable.'],
+    ['According to the manufacturer, the material is fluid.'],
+    ['The range was recommended by a supplier.'],
+    ['The result is described by the manufacturer.'],
+]);
+
+dataset('guidance evidence adjective meta prose', [
+    ['A cited material has a reddish, viscous appearance.'],
+    ['A documented grade has a reddish, viscous appearance.'],
+    ['A specified profile is predominantly oleic.'],
+    ['A referenced data point describes viscosity.'],
+    ['A supplied material has a reddish hue.'],
+    ['A reported grade is pale yellow.'],
+    ['A listed profile is mostly oleic.'],
+    ['A verified material is clear.'],
 ]);
 
 /** @param array<string, mixed> $overrides @return array<string, mixed> */

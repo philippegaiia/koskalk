@@ -364,8 +364,12 @@ class IngredientGuidanceDraftRenderer
             return true;
         }
 
-        return preg_match('/\b(?:a|the|one|some|multiple)?\s*(?:supplier|manufacturer)s?[-\s]+(?:recommend(?:s|ed|ing)?|describ(?:e|es|ed|ing)?|report(?:s|ed|ing)?|list(?:s|ed|ing)?|specif(?:y|ies|ied|ying))\b/u', $lower) === 1
-            || preg_match('/\baccording\s+to\s+(?:a|the)\s+(?:supplier|manufacturer)\b/u', $lower) === 1;
+        $sourceNarrationVerbs = '(?:recommend(?:s|ed|ing)?|describ(?:e|es|ed|ing)?|report(?:s|ed|ing)?|list(?:s|ed|ing)?|specif(?:y|ies|ied|ying)|state(?:s|d|ing)?|note(?:s|d|ing)?|advis(?:e|es|ed|ing)?|say(?:s|id|ing)?|suggest(?:s|ed|ing)?|indicat(?:e|es|ed|ing)?)';
+        $sourceSubject = '(?:supplier|manufacturer)s?';
+
+        return preg_match('/\b(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'[-\s,:;–—]+'.$sourceNarrationVerbs.'\b/u', $lower) === 1
+            || preg_match('/\b'.$sourceNarrationVerbs.'\s+by\s+(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1
+            || preg_match('/\baccording\s+to\s+(?:a|the|one|some|multiple)?\s*'.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */

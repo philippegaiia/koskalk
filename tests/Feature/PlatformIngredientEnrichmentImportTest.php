@@ -170,6 +170,140 @@ it('keeps proposed secondary CAS and EC identifiers during explicit replacement'
     unlink($path);
 });
 
+it('applies every corroborating identifier evidence row', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-CORROBORATED-EVIDENCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $sourceA = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-a-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $sourceB = [
+        'source_name' => 'Supplier B technical dossier',
+        'source_url' => 'https://supplier-b.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-b-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+        ...$sourceA,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.0', ...$sourceB],
+    ];
+    $result['value_provenance'] = [[
+        'field' => 'proposal.identifiers.0',
+        'kind' => 'source_confirmed',
+        'reasoning' => 'Both technical dossiers print the same CAS number.',
+        'source_urls' => [$sourceA['source_url'], $sourceB['source_url']],
+    ]];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    $identifier = $ingredient->fresh()
+        ->identifiers()
+        ->where('scheme', 'cas')
+        ->where('normalized_value', '68956-68-3')
+        ->firstOrFail();
+
+    expect($identifier->evidence()->orderBy('source_url')->pluck('source_url')->all())
+        ->toBe([
+            'https://supplier-a.example/technical/marula-oil.pdf',
+            'https://supplier-b.example/technical/marula-oil.pdf',
+        ])
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.core.value_provenance.0.source_urls'))
+        ->toBe([
+            'https://supplier-a.example/technical/marula-oil.pdf',
+            'https://supplier-b.example/technical/marula-oil.pdf',
+        ]);
+
+    unlink($path);
+});
+
+it('attaches accepted identifier evidence to its matching identifier after a merge', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-CORROBORATED-EVIDENCE-MERGE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $ingredient->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '111-11-1',
+        'normalized_value' => '111-11-1',
+        'is_primary' => true,
+    ]);
+    $sourceA = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $sourceB = [
+        'source_name' => 'Supplier B technical dossier',
+        'source_url' => 'https://supplier-b.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+        ...$sourceA,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.0', ...$sourceB],
+    ];
+    $result['value_provenance'] = [[
+        'field' => 'proposal.identifiers.0',
+        'kind' => 'source_confirmed',
+        'reasoning' => 'Both technical dossiers print the same CAS number.',
+        'source_urls' => [$sourceA['source_url'], $sourceB['source_url']],
+    ]];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    $identifiers = $ingredient->fresh()->identifiers()->withCount('evidence')->get()->keyBy('value');
+
+    expect($identifiers['111-11-1']->evidence_count)->toBe(0)
+        ->and($identifiers['68956-68-3']->evidence_count)->toBe(2);
+
+    unlink($path);
+});
+
 it('merges source backed aliases without removing existing reviewed aliases', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $ingredient = Ingredient::factory()->create([

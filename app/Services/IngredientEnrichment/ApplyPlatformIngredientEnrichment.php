@@ -120,11 +120,14 @@ class ApplyPlatformIngredientEnrichment
 
         $effective = is_array($plan['effective'] ?? null) ? $plan['effective'] : [];
         $canonical = is_array($effective['canonical'] ?? null) ? $effective['canonical'] : [];
+        $proposal = is_array($result['proposal'] ?? null) ? $result['proposal'] : [];
         $this->syncCanonicalAndIdentity(
             $ingredient,
             $canonical,
             $effective['identifiers'] ?? [],
             $effective['aliases'] ?? [],
+            $result['evidence'] ?? [],
+            $proposal['identifiers'] ?? [],
         );
 
         $taxonomyChanged = ($ingredient->category?->value ?? null) !== ($canonical['category'] ?? null)
@@ -142,7 +145,6 @@ class ApplyPlatformIngredientEnrichment
         }
         $ingredient->save();
 
-        $proposal = is_array($result['proposal'] ?? null) ? $result['proposal'] : [];
         $cosingRows = $this->cosingRows($proposal['cosing_functions'] ?? []);
         if (in_array(IngredientEnrichmentReplaceField::CosingFunctions->value, $replaceFields, true)) {
             $this->functionAssignments->replaceCosIng($ingredient, $cosingRows);
@@ -173,6 +175,12 @@ class ApplyPlatformIngredientEnrichment
         data_set($sourceData, 'enrichment.core', [
             'schema_version' => (int) ($result['schema_version'] ?? config('ingredient-enrichment.schema_version')),
             'confidence' => $result['confidence'] ?? null,
+            'field_confidence' => is_array($result['field_confidence'] ?? null)
+                ? $result['field_confidence']
+                : [],
+            'value_provenance' => is_array($result['value_provenance'] ?? null)
+                ? $result['value_provenance']
+                : [],
             'warnings' => $result['warnings'] ?? [],
             'unresolved_questions' => $result['unresolved_questions'] ?? [],
             'source_fingerprint' => $sourceFingerprint,
@@ -210,9 +218,14 @@ class ApplyPlatformIngredientEnrichment
         array $canonical,
         mixed $identifierRows,
         mixed $aliasRows,
+        mixed $evidenceRows,
+        mixed $proposalIdentifierRows,
     ): void {
         $formState = $this->dataEntryService->formData($ingredient);
         $identifiers = is_array($identifierRows) ? $identifierRows : [];
+        $acceptedEvidence = is_array($evidenceRows) ? $evidenceRows : [];
+        $proposalIdentifiers = collect(is_array($proposalIdentifierRows) ? $proposalIdentifierRows : [])
+            ->values();
         $cas = collect($identifiers)->first(fn (array $row): bool => ($row['scheme'] ?? null) === 'cas' && ($row['is_primary'] ?? false));
         $ec = collect($identifiers)->first(fn (array $row): bool => ($row['scheme'] ?? null) === 'ec' && ($row['is_primary'] ?? false));
 
@@ -243,21 +256,46 @@ class ApplyPlatformIngredientEnrichment
             'ec_number' => $formState['ec_number'],
             'additional_identifiers' => $formState['additional_identifiers'],
             'identifier_evidence' => collect($identifiers)
-                ->filter(fn (array $row): bool => is_string($row['source_url'] ?? null)
-                    && is_string($row['source_name'] ?? null))
-                ->map(fn (array $row): array => [
-                    'scheme' => (string) ($row['scheme'] ?? ''),
-                    'value' => (string) ($row['value'] ?? ''),
-                    'evidence' => [[
-                        'source_name' => $row['source_name'] ?? null,
-                        'source_url' => $row['source_url'] ?? null,
-                        'source_tier' => $row['source_tier'] ?? null,
-                        'confidence' => $row['confidence'] ?? null,
-                        'source_version' => $row['source_version'] ?? null,
-                        'source_updated_at' => $row['source_updated_at'] ?? null,
-                        'retrieved_at' => $row['retrieved_at'] ?? null,
-                    ]],
-                ])->all(),
+                ->map(function (array $row, int $index) use ($acceptedEvidence, $proposalIdentifiers): array {
+                    $proposalIndex = $proposalIdentifiers->search(
+                        fn (mixed $proposalRow): bool => is_array($proposalRow)
+                            && $this->identifierKey($proposalRow) === $this->identifierKey($row),
+                    );
+                    $evidenceIndex = $proposalIdentifiers->isEmpty()
+                        ? $index
+                        : (is_int($proposalIndex) ? $proposalIndex : null);
+                    $evidence = $evidenceIndex === null
+                        ? []
+                        : collect($acceptedEvidence)
+                            ->filter(fn (mixed $evidenceRow): bool => is_array($evidenceRow)
+                                && ($evidenceRow['field'] ?? null) === "proposal.identifiers.{$evidenceIndex}")
+                            ->map(fn (array $evidenceRow): array => $this->identifierEvidenceAttributes($evidenceRow))
+                            ->values()
+                            ->all();
+
+                    if ($evidence === []) {
+                        $fallbackSource = $row;
+                        if (is_int($proposalIndex) && is_array($proposalIdentifiers->get($proposalIndex))) {
+                            $fallbackSource = [
+                                ...$row,
+                                ...$this->identifierEvidenceAttributes($proposalIdentifiers->get($proposalIndex)),
+                            ];
+                        }
+
+                        $evidence = collect([$fallbackSource])
+                            ->filter(fn (array $source): bool => is_string($source['source_url'] ?? null)
+                                && is_string($source['source_name'] ?? null))
+                            ->map(fn (array $source): array => $this->identifierEvidenceAttributes($source))
+                            ->values()
+                            ->all();
+                    }
+
+                    return [
+                        'scheme' => (string) ($row['scheme'] ?? ''),
+                        'value' => (string) ($row['value'] ?? ''),
+                        'evidence' => $evidence,
+                    ];
+                })->all(),
             'aliases' => collect(is_array($aliasRows) ? $aliasRows : [])
                 ->filter(fn (mixed $row): bool => is_array($row))
                 ->map(fn (array $row): array => [
@@ -268,6 +306,31 @@ class ApplyPlatformIngredientEnrichment
                 ->values()
                 ->all(),
         ]);
+    }
+
+    /** @param array<string, mixed> $row */
+    private function identifierKey(array $row): string
+    {
+        return mb_strtolower(trim((string) ($row['scheme'] ?? '')))
+            .':'
+            .mb_strtolower(trim((string) ($row['value'] ?? '')));
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function identifierEvidenceAttributes(array $row): array
+    {
+        return collect($row)->only([
+            'source_name',
+            'source_url',
+            'source_tier',
+            'confidence',
+            'source_version',
+            'source_updated_at',
+            'retrieved_at',
+        ])->all();
     }
 
     /**

@@ -81,7 +81,11 @@ class EditIngredientEnrichmentProposal
             $candidate = [
                 ...$currentResult,
                 'proposal' => $proposal,
-                'evidence' => $this->synchronizeSourceEvidence($currentResult['evidence'] ?? [], $proposal),
+                'evidence' => $this->synchronizeSourceEvidence(
+                    $currentResult['evidence'] ?? [],
+                    $currentProposal,
+                    $proposal,
+                ),
                 'field_confidence' => $this->synchronizeFieldConfidence($currentResult['field_confidence'] ?? [], $proposal),
                 'value_provenance' => $this->synchronizeValueProvenance(
                     $currentResult['value_provenance'] ?? [],
@@ -182,10 +186,11 @@ class EditIngredientEnrichmentProposal
 
     /**
      * @param  array<int, mixed>  $evidence
-     * @param  array<string, mixed>  $proposal
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
      * @return list<array<string, mixed>>
      */
-    private function synchronizeSourceEvidence(array $evidence, array $proposal): array
+    private function synchronizeSourceEvidence(array $evidence, array $before, array $after): array
     {
         $sourceFields = [
             'source_name', 'source_url', 'source_tier', 'confidence', 'source_version',
@@ -194,13 +199,93 @@ class EditIngredientEnrichmentProposal
         $preserved = collect($evidence)
             ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
             ->reject(fn (array $row): bool => $this->isSourceBackedCollectionPath($row['field']));
+        $sourceBackedRows = $this->sourceBackedRows($after)
+            ->reject(fn (array $row): bool => str_starts_with($row['field'], 'proposal.identifiers.'));
 
-        return $preserved->merge($this->sourceBackedRows($proposal)->map(
+        return $preserved->merge($sourceBackedRows->map(
             fn (array $row): array => [
                 'field' => $row['field'],
                 ...collect($row['source'])->only($sourceFields)->all(),
             ],
-        ))->values()->all();
+        ))->merge($this->synchronizeIdentifierEvidence($evidence, $before, $after))->values()->all();
+    }
+
+    /**
+     * @param  array<int, mixed>  $evidence
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
+     * @return list<array<string, mixed>>
+     */
+    private function synchronizeIdentifierEvidence(array $evidence, array $before, array $after): array
+    {
+        $beforeIdentifiers = collect(is_array($before['identifiers'] ?? null) ? $before['identifiers'] : [])
+            ->values();
+        $oldEvidence = collect($evidence)
+            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
+            ->filter(fn (array $row): bool => preg_match('/^proposal\.identifiers\.\d+$/', $row['field']) === 1);
+
+        return collect(is_array($after['identifiers'] ?? null) ? $after['identifiers'] : [])
+            ->values()
+            ->flatMap(function (mixed $row, int $index) use ($beforeIdentifiers, $oldEvidence): array {
+                if (! is_array($row)) {
+                    return [];
+                }
+
+                $key = $this->identifierKey($row);
+                $beforeMatch = $beforeIdentifiers->first(
+                    fn (mixed $beforeRow): bool => is_array($beforeRow)
+                        && $this->identifierKey($beforeRow) === $key,
+                );
+                $beforeIndex = $beforeIdentifiers->search(
+                    fn (mixed $beforeRow): bool => is_array($beforeRow)
+                        && $this->identifierKey($beforeRow) === $key,
+                );
+                $sameSource = is_array($beforeMatch)
+                    && $this->sourceAttributes($beforeMatch) === $this->sourceAttributes($row);
+
+                if ($sameSource && is_int($beforeIndex)) {
+                    return $oldEvidence
+                        ->filter(fn (array $evidenceRow): bool => $evidenceRow['field'] === "proposal.identifiers.{$beforeIndex}")
+                        ->map(fn (array $evidenceRow): array => [
+                            ...$evidenceRow,
+                            'field' => "proposal.identifiers.{$index}",
+                        ])
+                        ->values()
+                        ->all();
+                }
+
+                return [[
+                    'field' => "proposal.identifiers.{$index}",
+                    ...$this->sourceAttributes($row),
+                ]];
+            })
+            ->values()
+            ->all();
+    }
+
+    /** @param array<string, mixed> $row */
+    private function identifierKey(array $row): string
+    {
+        return mb_strtolower(trim((string) ($row['scheme'] ?? '')))
+            .':'
+            .mb_strtolower(trim((string) ($row['value'] ?? '')));
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function sourceAttributes(array $row): array
+    {
+        return collect($row)->only([
+            'source_name',
+            'source_url',
+            'source_tier',
+            'confidence',
+            'source_version',
+            'source_updated_at',
+            'retrieved_at',
+        ])->all();
     }
 
     /**

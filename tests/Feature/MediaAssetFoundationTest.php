@@ -43,6 +43,56 @@ it('gives media processing enough time for final R2 conversions', function () {
         ->and(config('queue.connections.database.retry_after'))->toBeGreaterThan($job->timeout);
 });
 
+it('derives the database reservation from the enrichment job timeout when no override is configured', function (): void {
+    $jobTimeout = 1234;
+    $environmentKeys = ['DB_QUEUE_RETRY_AFTER', 'INGREDIENT_ENRICHMENT_JOB_TIMEOUT'];
+    $originalEnvironment = [];
+
+    foreach ($environmentKeys as $key) {
+        $originalEnvironment[$key] = [
+            'env_present' => array_key_exists($key, $_ENV),
+            'env_value' => $_ENV[$key] ?? null,
+            'server_present' => array_key_exists($key, $_SERVER),
+            'server_value' => $_SERVER[$key] ?? null,
+            'process_value' => getenv($key),
+        ];
+    }
+
+    try {
+        unset($_ENV['DB_QUEUE_RETRY_AFTER'], $_SERVER['DB_QUEUE_RETRY_AFTER']);
+        putenv('DB_QUEUE_RETRY_AFTER');
+
+        $_ENV['INGREDIENT_ENRICHMENT_JOB_TIMEOUT'] = (string) $jobTimeout;
+        $_SERVER['INGREDIENT_ENRICHMENT_JOB_TIMEOUT'] = (string) $jobTimeout;
+        putenv('INGREDIENT_ENRICHMENT_JOB_TIMEOUT='.$jobTimeout);
+
+        $queue = require base_path('config/queue.php');
+
+        expect($queue['connections']['database']['retry_after'])
+            ->toBe($jobTimeout + 100);
+    } finally {
+        foreach ($originalEnvironment as $key => $state) {
+            if ($state['env_present']) {
+                $_ENV[$key] = $state['env_value'];
+            } else {
+                unset($_ENV[$key]);
+            }
+
+            if ($state['server_present']) {
+                $_SERVER[$key] = $state['server_value'];
+            } else {
+                unset($_SERVER[$key]);
+            }
+
+            if ($state['process_value'] === false) {
+                putenv($key);
+            } else {
+                putenv($key.'='.$state['process_value']);
+            }
+        }
+    }
+});
+
 it('runs the development worker against the media queue before the default queue', function () {
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
     $developmentCommand = implode(' ', $composer['scripts']['dev']);

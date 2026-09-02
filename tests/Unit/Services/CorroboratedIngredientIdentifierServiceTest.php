@@ -184,6 +184,50 @@ it('logs one warning and rejects corroboration when the public suffix snapshot i
     }
 });
 
+it('shares one unavailable-PSL resolver across separate container-resolved service graphs', function (): void {
+    Log::spy();
+
+    expect(app()->isShared(SourcePublisherDomainResolver::class))->toBeTrue();
+
+    $invalidPath = tempnam(sys_get_temp_dir(), 'invalid-psl-');
+    if ($invalidPath === false) {
+        throw new RuntimeException('Could not create a temporary path.');
+    }
+
+    file_put_contents($invalidPath, <<<'PSL'
+// ===BEGIN ICANN DOMAINS===
+com
+io
+// ===END ICANN DOMAINS===
+PSL
+    );
+
+    try {
+        app()->instance(
+            SourcePublisherDomainResolver::class,
+            new SourcePublisherDomainResolver($invalidPath),
+        );
+
+        $firstService = app(CorroboratedIngredientIdentifierService::class);
+        $secondService = app(CorroboratedIngredientIdentifierService::class);
+        $evidence = [
+            corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+            corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        ];
+
+        expect($firstService)->not->toBe($secondService)
+            ->and(app(SourcePublisherDomainResolver::class))->toBe(app(SourcePublisherDomainResolver::class))
+            ->and($firstService->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([])
+            ->and($secondService->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([]);
+
+        Log::shouldHaveReceived('warning')->once();
+    } finally {
+        app()->forgetInstance(SourcePublisherDomainResolver::class);
+        Log::clearResolvedInstances();
+        unlink($invalidPath);
+    }
+});
+
 it('skips a value the official record already carries even when two hosts print it', function (): void {
     $service = app(CorroboratedIngredientIdentifierService::class);
 

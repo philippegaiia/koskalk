@@ -116,6 +116,7 @@ class IngredientGuidanceDraftRenderer
             || str_contains($text, '##')
             || preg_match_all('/[.!?](?=\s|$)/u', $text) > 1
             || $this->isCatalogueMetaClaim($text)
+            || $this->isEvidenceMetaClaim($text)
             || ! is_string($claimType)
             || ! in_array($claimType, config('ingredient-enrichment.openai.guidance_research.allowed_claim_types', []), true)
             || ! is_string($supportType)
@@ -345,6 +346,26 @@ class IngredientGuidanceDraftRenderer
 
         return preg_match('/\b(?:classified|categorized)\s+as\b/u', $lower) === 1
             || preg_match('/\bwithin\s+the\s+[\w\s-]{1,24}\s+category\b/u', $lower) === 1;
+    }
+
+    private function isEvidenceMetaClaim(string $text): bool
+    {
+        $lower = mb_strtolower($text);
+
+        if (preg_match('/\bthis[-\s]+(?:product[-\s]+)?grade\b/u', $lower) === 1) {
+            return true;
+        }
+
+        $evidenceAdjectives = '(?:cited|documented|specified|referenced|supplied|reported|listed|verified)';
+        $evidenceSubject = '(?:materials?|(?:product[-\s]+)?grades?|profiles?|data)';
+
+        if (preg_match('/\b'.$evidenceAdjectives.'[-\s,;:]+(?:[\p{L}\p{N}][\p{L}\p{N}-]*[-\s,;:]+){0,3}'.$evidenceSubject.'\b/u', $lower) === 1
+            || preg_match('/\b'.$evidenceSubject.'\b[^.!?]{0,24}\b(?:is|was|are|were)\s+(?:not\s+)?'.$evidenceAdjectives.'\b/u', $lower) === 1) {
+            return true;
+        }
+
+        return preg_match('/\b(?:a|the|one|some|multiple)?\s*(?:supplier|manufacturer)s?[-\s]+(?:recommend(?:s|ed|ing)?|describ(?:e|es|ed|ing)?|report(?:s|ed|ing)?|list(?:s|ed|ing)?|specif(?:y|ies|ied|ying))\b/u', $lower) === 1
+            || preg_match('/\baccording\s+to\s+(?:a|the)\s+(?:supplier|manufacturer)\b/u', $lower) === 1;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */

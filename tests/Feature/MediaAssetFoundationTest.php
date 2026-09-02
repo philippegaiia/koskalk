@@ -49,7 +49,7 @@ it('runs the development worker against the media queue before the default queue
 
     expect($developmentCommand)
         ->toContain('--queue=media,default')
-        ->toContain('--timeout=300');
+        ->toContain('--timeout=0');
 });
 
 it('creates workspace media assets with an opaque public id and processing state', function () {

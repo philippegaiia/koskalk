@@ -13,6 +13,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -115,25 +116,32 @@ it('renders the calendar page with month, week, and agenda controls', function (
 });
 
 it('dispatches fresh events when a cached calendar page is refreshed', function (): void {
-    $fixture = productionCalendarFixture();
-    $task = ProductionTask::factory()->for($fixture['workspace'])->for($fixture['production'], 'productionRun')->create([
-        'name_snapshot' => 'Cut and cure',
-        'scheduled_for' => '2026-08-21',
-    ]);
+    // The component defaults its range to the current month; pin the clock to
+    // the fixture month (2026-08) so the run/task dates always fall in range.
+    Carbon::setTestNow('2026-08-15 12:00:00');
+    try {
+        $fixture = productionCalendarFixture();
+        $task = ProductionTask::factory()->for($fixture['workspace'])->for($fixture['production'], 'productionRun')->create([
+            'name_snapshot' => 'Cut and cure',
+            'scheduled_for' => '2026-08-21',
+        ]);
 
-    Livewire::actingAs($fixture['owner'])
-        ->test(ProductionCalendar::class)
-        ->call('refreshEvents')
-        ->assertDispatched('production-calendar-updated', function (string $event, array $payload) use ($fixture, $task): bool {
-            $events = collect($payload['events'] ?? []);
+        Livewire::actingAs($fixture['owner'])
+            ->test(ProductionCalendar::class)
+            ->call('refreshEvents')
+            ->assertDispatched('production-calendar-updated', function (string $event, array $payload) use ($fixture, $task): bool {
+                $events = collect($payload['events'] ?? []);
 
-            return $event === 'production-calendar-updated'
-                && $payload['showProductions'] === true
-                && $payload['showTasks'] === true
-                && $payload['showCompleted'] === false
-                && $events->contains('id', 'production-'.$fixture['production']->id)
-                && $events->contains('id', 'task-'.$task->id);
-        });
+                return $event === 'production-calendar-updated'
+                    && $payload['showProductions'] === true
+                    && $payload['showTasks'] === true
+                    && $payload['showCompleted'] === false
+                    && $events->contains('id', 'production-'.$fixture['production']->id)
+                    && $events->contains('id', 'task-'.$task->id);
+            });
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 /**

@@ -592,6 +592,114 @@ it('reuses a completed research stage when authoring is retried', function (): v
         ]);
 });
 
+it('reuses a completed research stage whose keys were canonicalized by postgres jsonb', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+    $calls = ['research' => 0];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [[
+                    'field' => 'proposal.info_markdown',
+                    'source_name' => 'Supplier technical data sheet',
+                    'source_url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'summary' => 'This product grade is recommended at 1–10% in cosmetic formulations.',
+                    'claim_type' => 'usage',
+                    'source_kind' => 'supplier_technical',
+                    'scope' => 'product_grade',
+                    'evidence_kind' => 'formulation_recommendation',
+                    'usage_application' => 'cosmetics',
+                    'recommended_min_percent' => '1',
+                    'recommended_max_percent' => '10',
+                    'percentage_basis' => 'total_formula',
+                    'identifiers' => ['cas' => [], 'ec' => []],
+                ]],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-jsonb-reuse',
+                requestId: 'req-jsonb-reuse',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://supplier.example/technical/olive-oil.pdf',
+                    'title' => 'Supplier technical data sheet',
+                ]],
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-guidance-jsonb',
+                requestId: 'req-guidance-jsonb',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class implements IngredientGuidanceLocalizationClient
+    {
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            return new IngredientGuidanceLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'info_markdown' => localizedGuidanceText(),
+                ])->values()->all(),
+                responseId: 'resp-localization-jsonb',
+                requestId: 'req-localization-jsonb',
+                model: 'gpt-test',
+                inputTokens: 33,
+                outputTokens: 44,
+            );
+        }
+    });
+
+    $fixture = guidanceResumeFixture();
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+    expect($calls['research'])->toBe(1);
+
+    // PostgreSQL jsonb canonicalizes object keys (length then bytes);
+    // simulate that round-trip on the persisted stage.
+    $item = $fixture['item']->fresh();
+    $stages = $item->research_stages;
+    $jsonbOrder = function (mixed $value) use (&$jsonbOrder): mixed {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $ordered = [];
+        foreach ($value as $key => $item) {
+            $ordered[$key] = $jsonbOrder($item);
+        }
+        if (! array_is_list($ordered)) {
+            uksort($ordered, fn (string $a, string $b): int => [strlen($a), $a] <=> [strlen($b), $b]);
+        }
+
+        return $ordered;
+    };
+    $stages['ai_guidance_research']['data']['candidate_evidence'] = $jsonbOrder($stages['ai_guidance_research']['data']['candidate_evidence']);
+    $stages['ai_guidance_research']['data']['guidance_evidence'] = $jsonbOrder($stages['ai_guidance_research']['data']['guidance_evidence']);
+    $item->update(['research_stages' => $stages]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    expect($calls['research'])->toBe(1)
+        ->and($fixture['item']->fresh()->status)->not->toBe(IngredientEnrichmentItemStatus::Failed);
+});
+
 it('stops a guidance refresh at a failed research stage', function (): void {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $calls = ['research' => 0, 'author' => 0, 'localize' => 0];

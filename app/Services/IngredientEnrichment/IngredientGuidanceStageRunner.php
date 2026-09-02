@@ -221,7 +221,7 @@ class IngredientGuidanceStageRunner
             $data['candidate_evidence'],
             $data['sources'],
         );
-        if ($candidates !== $data['candidate_evidence']) {
+        if ($this->keySorted($candidates) !== $this->keySorted($data['candidate_evidence'])) {
             throw new LogicException('Guidance research stage data contains non-canonical evidence.');
         }
         foreach ($data['guidance_evidence'] as $index => $row) {
@@ -238,6 +238,28 @@ class IngredientGuidanceStageRunner
         if (count($data['candidate_evidence']) !== count($data['guidance_evidence'])) {
             throw new LogicException('Guidance research stage evidence does not match candidate evidence.');
         }
+    }
+
+    /**
+     * PostgreSQL jsonb canonicalizes object key order (length then bytes),
+     * so stage data read back from the database must be compared
+     * order-insensitively.
+     */
+    private function keySorted(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $sorted = $value;
+        ksort($sorted);
+        foreach ($sorted as $key => $item) {
+            if (is_array($item)) {
+                $sorted[$key] = $this->keySorted($item);
+            }
+        }
+
+        return $sorted;
     }
 
     /** @param array<string,mixed> $data */

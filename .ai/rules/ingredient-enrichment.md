@@ -63,3 +63,6 @@ The enrichment pipeline gates after the deterministic identity stages: when neit
 
 ## US declarations use the Common (Plant Name) Form convention
 The US declaration follows the owner's FDA-label convention: English common name with the plant name in parentheses — `Coconut (Cocos Nucifera) Oil`, `Beef (Adeps Bovis) Tallow`, `Apricot Kernel (Prunus Armeniaca) Oil`. The parenthetical is the proper botanical name taken from the verified INCI with product-part words (oil, seed, kernel, fruit, ...) stripped; the known FDA sweet-almond label example remains the override. When the registry common name is itself the latin name, the catalogue display name supplies the common part.
+
+## Corroborated technical CAS/EC identifiers are separately governed
+Official identifiers always win. CAS or EC numbers that official records lack may enter the proposal only when at least two independent consulted research sources explicitly print them, tagged with source tier `approved_secondary` and `source_confirmed` provenance listing every corroborating URL. The research model reports identifiers only when a consulted source prints them, never guessing or converting. Stage data read back from PostgreSQL is compared order-insensitively (jsonb canonicalizes object key order); never reintroduce strict array equality on persisted research stage data.

@@ -413,7 +413,7 @@ it('preserves a soapmaking baseline use-level sentence when the refresh draft om
 
 it('drops supplier and brand attribution from preserved baseline use-level sentences with a warning', function (): void {
     $context = guidanceContext();
-    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nBASF recommends a Typical use level: 1–10% of the total formula.\n\n## Soapmaking\nSupplier A recommends a Typical use level: 5–30% of the soap-oil blend.";
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nBASF-recommended Typical use level: 1–10% of the total formula.\n\n## Soapmaking\nSupplier A recommends a Typical use level: 5–30% of the soap-oil blend.";
 
     $result = guidanceRenderer()->render(guidanceDraft(), $context);
 

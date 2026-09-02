@@ -478,7 +478,8 @@ class IngredientGuidanceDraftRenderer
             || preg_match('/\b'.$namedSource.$namedSourceAdverbs.'\s+'.$sourceNarrationVerbs.'\b/u', $text) === 1
             || preg_match('/\b'.$namedSource."['’]s?\s+".$sourceDocument.'\s+'.$sourceNarrationVerbs.'\b/u', $text) === 1
             || preg_match('/\b'.$sourceNarrationVerbs.'\b[^.!?]{0,80}\bby\s+(?:the\s+)?'.$namedSource.'(?![-\p{L}\p{N}_])/u', $text) === 1
-            || preg_match('/\baccording\s+to\s+(?:the\s+)?'.$namedSource.'(?![-\p{L}\p{N}_])/u', $text) === 1;
+            || preg_match('/\baccording\s+to\s+(?:the\s+)?'.$namedSource.'(?![-\p{L}\p{N}_])/u', $text) === 1
+            || preg_match('/\b'.$namedSource.'-'.$sourceNarrationVerbs.'\b/u', $text) === 1;
     }
 
     /**

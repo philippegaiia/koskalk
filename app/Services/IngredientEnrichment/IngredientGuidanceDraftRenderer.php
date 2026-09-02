@@ -413,10 +413,10 @@ class IngredientGuidanceDraftRenderer
         $sourceSubject = '(?:supplier|manufacturer)s?';
         $sourceArticle = '(?:a|the|one|some|multiple)?\s*';
         $sourceSeparator = '[-\s,:;–—]+';
-        $sourceAdverbs = '(?:also|generally|typically|usually|often|commonly|frequently|explicitly|specifically|directly|reportedly|clearly)';
-        $sourceDocument = '(?:(?:technical|product|material)[-\s]+)?(?:data[-\s]+)?(?:sheet|document|specification)s?';
+        $sourceAdverb = '(?:[\p{L}\p{M}]{1,24}ly|also|often|still|indeed)';
+        $sourceDocument = '(?:(?:technical|product|material)[-\s]+)?(?:data[-\s]+sheet|datasheet|sheet|document|specification)s?';
 
-        return preg_match('/\b'.$sourceArticle.$sourceSubject.'(?:'.$sourceSeparator.$sourceAdverbs.')?'.$sourceSeparator.$sourceNarrationVerbs.'\b/u', $lower) === 1
+        return preg_match('/\b'.$sourceArticle.$sourceSubject.'(?:'.$sourceSeparator.$sourceAdverb.'){0,2}'.$sourceSeparator.$sourceNarrationVerbs.'\b/u', $lower) === 1
             || preg_match('/\b'.$sourceArticle.$sourceSubject."['’]s?\s+".$sourceDocument.'\s+'.$sourceNarrationVerbs.'\b/u', $lower) === 1
             || preg_match('/\b'.$sourceNarrationVerbs.'\b[^.!?]{0,80}\bby\s+'.$sourceArticle.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1
             || preg_match('/\baccording\s+to\s+'.$sourceArticle.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1;

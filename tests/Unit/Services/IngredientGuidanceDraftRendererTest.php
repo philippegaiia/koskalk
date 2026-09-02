@@ -733,6 +733,9 @@ dataset('guidance source attribution meta prose', [
     ['The supplier generally recommends addition to the oil phase.'],
     ['The manufacturer’s technical sheet recommends a low starting level.'],
     ['A 1–10% range is recommended for emulsions by the supplier.'],
+    ['The supplier strongly recommends this range.'],
+    ['The manufacturer’s datasheet recommends this range.'],
+    ['The supplier generally also recommends this range.'],
 ]);
 
 dataset('guidance evidence adjective meta prose', [

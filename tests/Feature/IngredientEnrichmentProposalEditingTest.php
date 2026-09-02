@@ -169,6 +169,12 @@ it('preserves every corroborating evidence row when an unrelated field is edited
         'result' => $result,
     ]);
     $proposal = $result['proposal'];
+    $proposal['identifiers'][0] = [
+        ...array_reverse($sourceA, true),
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+    ];
     $proposal['display_name'] = 'Marula oil';
 
     $edited = app(EditIngredientEnrichmentProposal::class)->handle($admin, $item, $proposal);

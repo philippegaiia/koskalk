@@ -256,14 +256,12 @@ class ApplyPlatformIngredientEnrichment
             'ec_number' => $formState['ec_number'],
             'additional_identifiers' => $formState['additional_identifiers'],
             'identifier_evidence' => collect($identifiers)
-                ->map(function (array $row, int $index) use ($acceptedEvidence, $proposalIdentifiers): array {
+                ->map(function (array $row) use ($acceptedEvidence, $proposalIdentifiers): array {
                     $proposalIndex = $proposalIdentifiers->search(
                         fn (mixed $proposalRow): bool => is_array($proposalRow)
                             && $this->identifierKey($proposalRow) === $this->identifierKey($row),
                     );
-                    $evidenceIndex = $proposalIdentifiers->isEmpty()
-                        ? $index
-                        : (is_int($proposalIndex) ? $proposalIndex : null);
+                    $evidenceIndex = is_int($proposalIndex) ? $proposalIndex : null;
                     $evidence = $evidenceIndex === null
                         ? []
                         : collect($acceptedEvidence)
@@ -273,14 +271,11 @@ class ApplyPlatformIngredientEnrichment
                             ->values()
                             ->all();
 
-                    if ($evidence === []) {
-                        $fallbackSource = $row;
-                        if (is_int($proposalIndex) && is_array($proposalIdentifiers->get($proposalIndex))) {
-                            $fallbackSource = [
-                                ...$row,
-                                ...$this->identifierEvidenceAttributes($proposalIdentifiers->get($proposalIndex)),
-                            ];
-                        }
+                    if ($evidence === [] && is_int($proposalIndex) && is_array($proposalIdentifiers->get($proposalIndex))) {
+                        $fallbackSource = [
+                            ...$row,
+                            ...$this->identifierEvidenceAttributes($proposalIdentifiers->get($proposalIndex)),
+                        ];
 
                         $evidence = collect([$fallbackSource])
                             ->filter(fn (array $source): bool => is_string($source['source_url'] ?? null)

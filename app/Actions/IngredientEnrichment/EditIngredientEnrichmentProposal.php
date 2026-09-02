@@ -277,7 +277,7 @@ class EditIngredientEnrichmentProposal
      */
     private function sourceAttributes(array $row): array
     {
-        return collect($row)->only([
+        $attributes = collect($row)->only([
             'source_name',
             'source_url',
             'source_tier',
@@ -286,6 +286,10 @@ class EditIngredientEnrichmentProposal
             'source_updated_at',
             'retrieved_at',
         ])->all();
+
+        ksort($attributes);
+
+        return $attributes;
     }
 
     /**

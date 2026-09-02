@@ -304,6 +304,38 @@ it('attaches accepted identifier evidence to its matching identifier after a mer
     unlink($path);
 });
 
+it('does not attach identifier evidence without a matching proposed identifier', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-STALE-IDENTIFIER-EVIDENCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $ingredient->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '111-11-1',
+        'normalized_value' => '111-11-1',
+        'is_primary' => true,
+    ]);
+    $result = importResult($ingredient);
+    $result['evidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'source_name' => 'Stale identifier source',
+        'source_url' => 'https://stale.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    expect($ingredient->fresh()->identifiers()->withCount('evidence')->value('evidence_count'))->toBe(0);
+
+    unlink($path);
+});
+
 it('merges source backed aliases without removing existing reviewed aliases', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $ingredient = Ingredient::factory()->create([

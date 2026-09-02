@@ -39,7 +39,7 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
         'percentage_basis' => 'not_applicable',
         'identifiers' => ['cas' => ['68956-68-3'], 'ec' => []],
     ];
-    $singleRow = $row('https://single.example/technical/argan-oil.pdf', 'Single source');
+    $singleRow = $row('https://single.com/technical/argan-oil.pdf', 'Single source');
     $singleRow['identifiers'] = ['cas' => ['99999-99-9'], 'ec' => []];
     app()->instance(IngredientGuidanceResearchClient::class, new class($row, $singleRow) implements IngredientGuidanceResearchClient
     {
@@ -49,8 +49,8 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
         {
             return new IngredientGapResearchResponse(
                 candidateEvidence: [
-                    ($this->row)('https://supplier-a.example/technical/argan-oil.pdf', 'Supplier A'),
-                    ($this->row)('https://supplier-b.example/technical/argan-oil.pdf', 'Supplier B'),
+                    ($this->row)('https://supplier-a.com/technical/argan-oil.pdf', 'Supplier A'),
+                    ($this->row)('https://supplier-b.com/technical/argan-oil.pdf', 'Supplier B'),
                     $this->singleRow,
                 ],
                 warnings: [],
@@ -62,9 +62,9 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
                 outputTokens: 5,
                 webSearchCalls: 1,
                 sources: [
-                    ['url' => 'https://supplier-a.example/technical/argan-oil.pdf', 'title' => 'Supplier A'],
-                    ['url' => 'https://supplier-b.example/technical/argan-oil.pdf', 'title' => 'Supplier B'],
-                    ['url' => 'https://single.example/technical/argan-oil.pdf', 'title' => 'Single'],
+                    ['url' => 'https://supplier-a.com/technical/argan-oil.pdf', 'title' => 'Supplier A'],
+                    ['url' => 'https://supplier-b.com/technical/argan-oil.pdf', 'title' => 'Supplier B'],
+                    ['url' => 'https://single.com/technical/argan-oil.pdf', 'title' => 'Single'],
                 ],
             );
         }
@@ -86,8 +86,8 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
         ->toMatchArray([
             'kind' => 'source_confirmed',
             'source_urls' => [
-                'https://supplier-a.example/technical/argan-oil.pdf',
-                'https://supplier-b.example/technical/argan-oil.pdf',
+                'https://supplier-a.com/technical/argan-oil.pdf',
+                'https://supplier-b.com/technical/argan-oil.pdf',
             ],
         ])
         ->and($single)->toBeNull();

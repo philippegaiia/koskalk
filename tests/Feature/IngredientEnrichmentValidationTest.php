@@ -168,6 +168,40 @@ it('accepts classified guidance evidence and preserves its recommendation metada
         ]);
 });
 
+it('rejects malformed guidance evidence in full enrichment results', function (): void {
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);
+    }
+
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-MALFORMED-GUIDANCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $result = enrichmentResult($ingredient->catalog_key);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['guidance_evidence'] = [
+        [
+            'source_name' => '',
+            'source_url' => 'https://malformed.example/first',
+            'summary' => 'Missing source name.',
+            'source_tier' => 'editorial',
+        ],
+        [
+            'source_name' => 'Partial source',
+            'source_url' => 'https://malformed.example/second',
+            'summary' => 'Partially classified evidence.',
+            'source_tier' => 'editorial',
+            'claim_type' => 'usage',
+        ],
+    ];
+
+    $report = app(IngredientEnrichmentResultValidator::class)->validate($result, $ingredient);
+
+    expect($report['valid'])->toBeFalse()
+        ->and($report['errors'])->toHaveKey('guidance_evidence.0.source_name')
+        ->and($report['errors'])->toHaveKey('guidance_evidence.1.claim_type');
+});
+
 it('does not allow field confidence to exceed correlated evidence confidence', function (): void {
     $ingredient = Ingredient::factory()->create([
         'catalog_key' => 'ADM-CONFIDENCE-CEILING',

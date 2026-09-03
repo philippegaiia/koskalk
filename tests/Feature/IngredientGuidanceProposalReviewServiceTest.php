@@ -215,7 +215,7 @@ it('reports validator failures and absent evidence through localized validation 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
 });
 
-it('quarantines malformed inherited evidence before validating a guidance result', function (): void {
+it('rejects malformed generated evidence during guidance result validation', function (): void {
     $ingredient = Ingredient::factory()->create();
     $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
     $result = reviewServiceResult($ingredient, $fingerprint);
@@ -234,6 +234,13 @@ it('quarantines malformed inherited evidence before validating a guidance result
             'source_tier' => 'editorial',
             'claim_type' => 'usage',
         ],
+        [
+            'source_name' => 'Unexpected field source',
+            'source_url' => 'https://malformed.example/third',
+            'summary' => 'Evidence with an unsupported field.',
+            'source_tier' => 'editorial',
+            'unexpected' => true,
+        ],
     ];
 
     $report = app(IngredientGuidanceRefreshResultValidator::class)->validate(
@@ -243,9 +250,9 @@ it('quarantines malformed inherited evidence before validating a guidance result
         [],
     );
 
-    expect($report['valid'])->toBeTrue()
-        ->and($report['errors'])->toBe([])
-        ->and(data_get($report, 'normalized.guidance_evidence'))->toBe([]);
+    expect($report['valid'])->toBeFalse()
+        ->and($report['errors'])->not->toBe([])
+        ->and($report['normalized'])->toBeNull();
 });
 
 /** @return array{0: Ingredient, 1: IngredientEnrichmentBatch, 2: IngredientEnrichmentBatchItem} */

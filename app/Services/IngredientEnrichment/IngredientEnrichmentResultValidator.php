@@ -825,6 +825,11 @@ class IngredientEnrichmentResultValidator
 
             return [];
         }
+        if (! array_is_list($rows)) {
+            $this->error($errors, 'guidance_evidence', $this->message('guidance_evidence_array'));
+
+            return [];
+        }
 
         foreach ($rows as $index => $row) {
             if (! is_array($row)) {
@@ -832,7 +837,7 @@ class IngredientEnrichmentResultValidator
             }
         }
 
-        return $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        return $this->guidanceEvidencePolicy->normalizeForValidation($rows);
     }
 
     /**

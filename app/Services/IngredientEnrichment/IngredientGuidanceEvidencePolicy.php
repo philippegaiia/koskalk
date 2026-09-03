@@ -142,6 +142,45 @@ class IngredientGuidanceEvidencePolicy
     }
 
     /**
+     * Normalize valid rows for result validation while retaining malformed rows
+     * so the result validator can report the generated output that failed.
+     *
+     * Strict persisted normalization remains the quarantine boundary used for
+     * historical evidence and reconciliation.
+     *
+     * @return array<int|string, array<string, mixed>>
+     */
+    public function normalizeForValidation(mixed $rows, ?CarbonImmutable $fallbackRetrievedAt = null): array
+    {
+        if (! is_array($rows)) {
+            return [];
+        }
+
+        $allowedKeys = [
+            'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+            'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
+            'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
+        ];
+        $normalized = [];
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            if (array_diff(array_keys($row), $allowedKeys) !== []) {
+                $normalized[$index] = $row;
+
+                continue;
+            }
+
+            $strict = $this->normalizePersisted([$row], $fallbackRetrievedAt);
+            $normalized[$index] = $strict[0] ?? $row;
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Reconcile a prior persisted evidence bank with a fresh research bank.
      *
      * A logical row is identified by its canonical source URL, whitespace- and
@@ -183,6 +222,36 @@ class IngredientGuidanceEvidencePolicy
         }
 
         return $merged;
+    }
+
+    /**
+     * Return candidate rows whose logical keys do not occur in prior evidence.
+     * Metadata is excluded from the key, matching reconciliation semantics, so
+     * stale inherited rows cannot overwrite current metadata in legacy results.
+     *
+     * @param  list<array<string, mixed>>  $prior
+     * @param  list<array<string, mixed>>  $candidate
+     * @return list<array<string, mixed>>
+     */
+    public function logicalDifference(array $prior, array $candidate): array
+    {
+        $seen = [];
+        foreach ($this->normalizePersisted($prior) as $row) {
+            $seen[$this->logicalEvidenceKey($row)] = true;
+        }
+
+        $difference = [];
+        foreach ($this->normalizePersisted($candidate) as $row) {
+            $key = $this->logicalEvidenceKey($row);
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $difference[] = $row;
+        }
+
+        return $difference;
     }
 
     /**

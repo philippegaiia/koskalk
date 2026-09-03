@@ -270,6 +270,11 @@ class IngredientGuidanceRefreshResultValidator
 
             return [];
         }
+        if (! array_is_list($rows)) {
+            $this->error($errors, 'guidance_evidence', (string) __('ingredient_enrichment.validation.guidance_evidence_array'));
+
+            return [];
+        }
         foreach ($rows as $index => $row) {
             $path = "guidance_evidence.{$index}";
             if (! is_array($row)) {
@@ -277,7 +282,7 @@ class IngredientGuidanceRefreshResultValidator
             }
         }
 
-        $normalized = $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        $normalized = $this->guidanceEvidencePolicy->normalizeForValidation($rows);
         $allowedSourceKinds = [
             ...config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds', []),
             'legacy_editorial',

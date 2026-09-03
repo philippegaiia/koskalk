@@ -70,10 +70,10 @@ class ApplyIngredientGuidanceRefresh
                     $beforeGuidance = is_array(data_get($ingredient->source_data, 'enrichment.guidance'))
                         ? data_get($ingredient->source_data, 'enrichment.guidance')
                         : [];
-                    $beforeEvidence = $this->evidenceRows($beforeGuidance['evidence'] ?? []);
+                    $beforeEvidence = $this->guidanceEvidencePolicy->normalizePersisted($beforeGuidance['evidence'] ?? []);
                     $guidanceEvidence = $this->guidanceEvidencePolicy->reconcilePersisted(
                         $beforeEvidence,
-                        $this->freshEvidenceContribution($item, $mode, $normalized),
+                        $this->freshEvidenceContribution($item, $mode, $normalized, $beforeEvidence),
                     );
                     $normalized['guidance_evidence'] = $guidanceEvidence;
                     $report['normalized'] = $normalized;
@@ -280,9 +280,9 @@ class ApplyIngredientGuidanceRefresh
     /**
      * Guidance refresh results contain a merged authoring bank, but the
      * persisted research stage is the authoritative fresh contribution used at
-     * apply time. Hand-authored legacy items without that stage retain their
-     * result evidence as a compatibility fallback; localization has no research
-     * contribution and therefore uses its validated result evidence directly.
+     * apply time. Hand-authored legacy items without that stage contribute only
+     * logical rows absent from their prior snapshot. Localization has no
+     * guidance-evidence contribution.
      *
      * @param  array<string, mixed>  $normalized
      * @return list<array<string, mixed>>
@@ -291,18 +291,27 @@ class ApplyIngredientGuidanceRefresh
         IngredientEnrichmentBatchItem $item,
         IngredientEnrichmentBatchMode $mode,
         array $normalized,
+        array $beforeEvidence,
     ): array {
-        $resultEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
         if ($mode !== IngredientEnrichmentBatchMode::GuidanceRefresh) {
-            return $resultEvidence;
+            return [];
         }
 
-        $researchData = data_get($item->research_stages, 'ai_guidance_research.data');
-        if (! is_array($researchData) || ! array_key_exists('guidance_evidence', $researchData)) {
-            return $resultEvidence;
+        $resultEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
+
+        $researchStages = is_array($item->research_stages) ? $item->research_stages : [];
+        if (array_key_exists('ai_guidance_research', $researchStages)) {
+            $researchData = data_get($researchStages, 'ai_guidance_research.data');
+
+            return is_array($researchData) && array_key_exists('guidance_evidence', $researchData)
+                ? $this->evidenceRows($researchData['guidance_evidence'])
+                : [];
         }
 
-        return $this->evidenceRows($researchData['guidance_evidence']);
+        $snapshotPrior = data_get($item->snapshot, 'prior_guidance_evidence');
+        $priorEvidence = is_array($snapshotPrior) ? $snapshotPrior : $beforeEvidence;
+
+        return $this->guidanceEvidencePolicy->logicalDifference($priorEvidence, $resultEvidence);
     }
 
     /**

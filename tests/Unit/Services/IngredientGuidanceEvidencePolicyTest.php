@@ -302,6 +302,34 @@ it('quarantines malformed rows and deterministically normalizes legacy rows with
         ->and($policy->reconcilePersisted($malformed, []))->toBe([]);
 });
 
+it('returns only logical candidate rows absent from prior evidence', function (): void {
+    $policy = guidanceEvidencePolicy();
+    $prior = [[
+        'source_name' => 'Current source',
+        'source_url' => 'https://example.test/shared',
+        'summary' => 'The shared evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $staleDuplicate = [[
+        'source_name' => 'Stale inherited source',
+        'source_url' => 'HTTPS://EXAMPLE.TEST/shared/',
+        'summary' => '  THE shared evidence. ',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-02T00:00:00+00:00',
+    ]];
+    $distinct = [[
+        'source_name' => 'New source',
+        'source_url' => 'https://example.test/distinct',
+        'summary' => 'A distinct evidence row.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-03T00:00:00+00:00',
+    ]];
+
+    expect($policy->logicalDifference($prior, [...$staleDuplicate, ...$distinct, ...$distinct]))
+        ->toBe($policy->normalizePersisted($distinct));
+});
+
 it('matches consulted URLs canonically while removing fragments and a sole trailing slash', function (): void {
     $candidate = guidanceEvidenceCandidate([
         'source_url' => 'HTTPS://Supplier.Example/technical/apricot-oil.pdf',

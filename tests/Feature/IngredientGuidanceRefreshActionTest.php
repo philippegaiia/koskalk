@@ -263,9 +263,15 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         'retrieved_at' => '2026-08-01T00:00:00+00:00',
     ]];
     $newEvidence = [[
-        'source_name' => 'Fresh guidance source',
-        'source_url' => 'https://example.test/fresh',
-        'summary' => 'Fresh supported formulation evidence.',
+        'source_name' => 'Stale inherited guidance source',
+        'source_url' => 'https://example.test/previous',
+        'summary' => 'Previously reviewed evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-28T00:00:00+00:00',
+    ], [
+        'source_name' => 'Stale distinct guidance source',
+        'source_url' => 'https://example.test/stale-distinct',
+        'summary' => 'Stale distinct evidence from the locale result.',
         'source_tier' => 'editorial',
         'retrieved_at' => '2026-08-28T00:00:00+00:00',
     ]];
@@ -319,17 +325,12 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
     $this->actingAs($admin);
 
     $rows = app(IngredientEnrichmentReviewPresenter::class)->rows($item);
-    expect($rows)->toHaveCount(2)
+    expect($rows)->toHaveCount(1)
         ->and($rows[0])->toMatchArray([
             'path' => 'proposal.translations.fr.info_markdown',
             'decision' => 'revalidate',
         ])
-        ->and($rows[1])->toMatchArray([
-            'path' => 'guidance.evidence',
-            'label' => 'Evidence',
-            'decision' => 'replace',
-        ])
-        ->and($rows[1]['evidence'][0]['url'])->toBe('https://example.test/fresh');
+        ->and(collect($rows)->firstWhere('path', 'guidance.evidence'))->toBeNull();
 
     Livewire::test(ItemsRelationManager::class, [
         'ownerRecord' => $batch,
@@ -337,9 +338,8 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
     ])
         ->loadTable()
         ->mountAction(TestAction::make(ViewAction::class)->table($item))
-        ->assertMountedActionModalSee('Evidence')
-        ->assertMountedActionModalSee('Fresh guidance source')
-        ->assertMountedActionModalSeeHtml('href="https://example.test/fresh"')
+        ->assertMountedActionModalDontSee('Stale inherited guidance source')
+        ->assertMountedActionModalDontSee('Stale distinct guidance source')
         ->assertMountedActionModalSee('Conseils français existants.')
         ->assertMountedActionModalDontSee('INCI name')
         ->assertMountedActionModalDontSee('Identity and guidance')
@@ -363,11 +363,91 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
 
     $item = $item->fresh();
     $batch = $batch->fresh();
+    $expectedEvidence = app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($oldEvidence);
     expect($item->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($batch->status)->toBe(IngredientEnrichmentBatchStatus::Applied)
         ->and($batch->items()->where('status', IngredientEnrichmentItemStatus::Approved)->count())->toBe(0)
         ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
-        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->reconcilePersisted($oldEvidence, $newEvidence));
+        ->toBe($expectedEvidence)
+        ->and($item->result['guidance_evidence'])->toBe($expectedEvidence)
+        ->and(data_get($item->validation_report, 'normalized.guidance_evidence'))->toBe($expectedEvidence)
+        ->and(data_get($item->plan, 'effective.guidance_evidence'))->toBe($expectedEvidence)
+        ->and(collect($item->plan['decisions'] ?? [])->firstWhere('field', 'guidance.evidence'))->toBeNull();
+});
+
+it('derives a legacy refresh contribution as a logical delta from its snapshot', function (): void {
+    $admin = User::factory()->admin()->create();
+    $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";
+    $currentEvidence = [[
+        'source_name' => 'Current guidance source',
+        'source_url' => 'https://example.test/shared',
+        'summary' => 'Shared evidence from the current bank.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-20T00:00:00+00:00',
+    ]];
+    $staleInheritedEvidence = [[
+        'source_name' => 'Stale inherited guidance source',
+        'source_url' => 'https://example.test/shared',
+        'summary' => 'Shared evidence from the current bank.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-21T00:00:00+00:00',
+    ]];
+    $distinctEvidence = [[
+        'source_name' => 'New legacy guidance source',
+        'source_url' => 'https://example.test/legacy-new',
+        'summary' => 'A new row from a legacy refresh result.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-21T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $currentEvidence]]],
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'requested_by_user_id' => $admin->id,
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $item = IngredientEnrichmentBatchItem::factory()
+        ->for($batch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Approved,
+            'source_fingerprint' => $sourceFingerprint,
+            'snapshot' => ['prior_guidance_evidence' => $currentEvidence],
+            'approved_by_user_id' => $admin->id,
+            'approved_at' => now(),
+            'result' => [
+                'format' => 'soapkraft-ingredient-guidance-refresh-result',
+                'schema_version' => 1,
+                'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh->value,
+                'subject_public_id' => (string) $ingredient->public_id,
+                'source_fingerprint' => $sourceFingerprint,
+                'info_markdown' => $english,
+                'translations' => [],
+                'guidance_evidence' => [...$staleInheritedEvidence, ...$distinctEvidence],
+                'prompt_versions' => [
+                    'research' => 'ingredient-guidance-research-v2',
+                    'guidance' => 'ingredient-guidance-v3',
+                    'localization' => 'ingredient-guidance-localization-v1',
+                ],
+                'warnings' => [],
+                'unresolved_questions' => [],
+            ],
+        ]);
+
+    $totals = app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $batch);
+    $expectedEvidence = app(IngredientGuidanceEvidencePolicy::class)->reconcilePersisted(
+        $currentEvidence,
+        $distinctEvidence,
+    );
+
+    expect($totals['applied'])->toBe(1)
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe($expectedEvidence)
+        ->and($item->fresh()->result['guidance_evidence'])->toBe($expectedEvidence);
 });
 
 it('retains prior evidence when an approved fresh guidance result has no accepted sources', function (): void {

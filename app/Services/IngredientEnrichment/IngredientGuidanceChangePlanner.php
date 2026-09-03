@@ -82,7 +82,7 @@ class IngredientGuidanceChangePlanner
             ->filter(fn (mixed $evidence): bool => is_array($evidence))
             ->values()
             ->all();
-        $effectiveEvidence = $mode->isLocalizationOnly() && $proposedEvidence === []
+        $effectiveEvidence = $mode->isLocalizationOnly()
             ? $currentEvidence
             : $proposedEvidence;
         $evidenceDecision = $effectiveEvidence !== $currentEvidence

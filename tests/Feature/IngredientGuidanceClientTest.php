@@ -1,10 +1,26 @@
 <?php
 
 use App\Contracts\IngredientGuidanceAuthoringClient;
+use App\Services\IngredientEnrichment\IngredientGuidancePrompt;
 use App\Services\IngredientEnrichment\IngredientResearchProviderException;
 use App\Services\IngredientEnrichment\OpenAiStructuredOutputTransport;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+
+it('requests fuller practical guidance without filler when reviewed facts support it', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([]);
+
+    expect($prompt['version'])->toBe('ingredient-guidance-v12')
+        ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
+        ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
+        ->and($prompt['instructions'])
+        ->toContain('Aim for 130–200 English words when the reviewed facts support it.')
+        ->toContain('Normally write 1–2 overview sentences, 2–3 formulation-use sentences, and, when soapmaking is relevant, 1–2 soapmaking sentences.')
+        ->toContain('Prefer specific handling, stability, sensory, selection, and recipe consequences over generic role prose.')
+        ->toContain('Do not add filler to reach that range.')
+        ->toContain('Use trusted soap chemistry for one conservative recipe consequence when present.')
+        ->toContain('Do not repeat facts across sections.');
+});
 
 it('authors evidence-linked guidance with a strict no-web response contract', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');

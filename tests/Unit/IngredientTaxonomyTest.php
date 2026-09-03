@@ -45,36 +45,81 @@ it('does not offer a subcategory for other', function () {
     expect(IngredientSubcategory::forCategory(IngredientCategory::Other))->toBe([]);
 });
 
-it('maps every category to a badge tone that has a matching stylesheet rule', function () {
+it('gives every category a distinct badge variant that has a matching stylesheet rule', function () {
     $stylesheet = file_get_contents(resource_path('css/app.css'));
+    $variants = [];
+
+    foreach (IngredientCategory::cases() as $category) {
+        $variant = $category->badgeVariant();
+        $variants[$category->value] = $variant;
+
+        // A category with no rule renders a colourless badge, which looks like
+        // a styling bug rather than a missing palette entry, so the enum and
+        // the stylesheet are checked against each other here.
+        expect($stylesheet)->toContain('.sk-badge-'.$variant.' {');
+
+        // Half a rule is as broken as none: the badge needs both layers, since
+        // inheriting the panel colour would leave the text at 1.1:1.
+        preg_match('/\.sk-badge-'.preg_quote($variant, '/').'\s*\{([^}]*)\}/', $stylesheet, $body);
+        expect($body)->not->toBeEmpty();
+        expect($body[1])->toContain('background-color:');
+        expect($body[1])->toMatch('/(?<![\-\w])color\s*:/');
+    }
+
+    // One hue per category is the whole point; a shared variant silently
+    // reintroduces the old five-family grouping.
+    expect(array_unique(array_values($variants)))->toHaveCount(count(IngredientCategory::cases()));
+});
+
+it('keeps badge variants independent of the filament colour grouping', function () {
+    // The two answers are intentionally unrelated: getColor() collapses
+    // categories into broad semantic buckets for Filament, while the badge
+    // palette needs one hue each. Pinning that they differ is what stops
+    // someone from "simplifying" one back into the other.
     $tones = [];
 
     foreach (IngredientCategory::cases() as $category) {
-        $tone = $category->badgeTone();
-        $tones[$category->value] = $tone;
-
-        // A misspelled tone would silently render a colourless badge, so the
-        // enum and the stylesheet are checked against each other here.
-        expect($stylesheet)->toContain('.sk-badge-'.$tone.' {');
+        $tones[$category->getColor()][] = $category->badgeVariant();
     }
 
-    expect(array_unique(array_values($tones)))->toHaveCount(5);
+    // Five categories share `gray` yet must not share a badge colour.
+    expect($tones['gray'])->toHaveCount(5)
+        ->and(array_unique($tones['gray']))->toHaveCount(5)
+        // ...and the three corrosive groups share `danger` for the same reason.
+        ->and($tones['danger'])->toHaveCount(3)
+        ->and(array_unique($tones['danger']))->toHaveCount(3);
 });
 
-it('derives badge tones from the filament colour without repurposing it', function () {
-    // Representative of each family, so an edit to getColor() surfaces here.
-    expect(IngredientCategory::Lipids->badgeTone())->toBe('botanical')
-        ->and(IngredientCategory::BotanicalsExtracts->badgeTone())->toBe('botanical')
-        ->and(IngredientCategory::Surfactants->badgeTone())->toBe('functional')
-        ->and(IngredientCategory::Silicones->badgeTone())->toBe('functional')
-        ->and(IngredientCategory::AromaticMaterials->badgeTone())->toBe('fragrance')
-        ->and(IngredientCategory::SoapmakingAlkalis->badgeTone())->toBe('hazard')
-        ->and(IngredientCategory::Colourants->badgeTone())->toBe('inert');
-
-    // getColor() implements Filament's HasColor and must keep returning
-    // Filament palette names, which is why badgeTone() is a separate method.
+it('maps every category to a filament palette name', function () {
+    // getColor() implements Filament's HasColor, so it must return names from
+    // that palette. Pinned in full: an edit here repaints Filament components,
+    // and the intent is to notice rather than have it drift unnoticed.
     expect(IngredientCategory::Lipids->getColor())->toBe('success')
-        ->and(IngredientCategory::AromaticMaterials->getColor())->toBe('warning');
+        ->and(IngredientCategory::Waxes->getColor())->toBe('success')
+        ->and(IngredientCategory::Hydrocarbons->getColor())->toBe('success')
+        ->and(IngredientCategory::Silicones->getColor())->toBe('teal')
+        ->and(IngredientCategory::FattyDerivatives->getColor())->toBe('teal')
+        ->and(IngredientCategory::Surfactants->getColor())->toBe('info')
+        ->and(IngredientCategory::Emulsifiers->getColor())->toBe('info')
+        ->and(IngredientCategory::HumectantsPolyols->getColor())->toBe('blue')
+        ->and(IngredientCategory::WaterSolventsCarriers->getColor())->toBe('blue')
+        ->and(IngredientCategory::RheologyModifiers->getColor())->toBe('primary')
+        ->and(IngredientCategory::FunctionalPolymers->getColor())->toBe('primary')
+        ->and(IngredientCategory::MineralsSaltsPowders->getColor())->toBe('gray')
+        ->and(IngredientCategory::Colourants->getColor())->toBe('gray')
+        ->and(IngredientCategory::ExfoliantsAbrasives->getColor())->toBe('gray')
+        ->and(IngredientCategory::BasesBlendsPremixes->getColor())->toBe('gray')
+        ->and(IngredientCategory::Other->getColor())->toBe('gray')
+        ->and(IngredientCategory::Actives->getColor())->toBe('emerald')
+        ->and(IngredientCategory::BotanicalsExtracts->getColor())->toBe('emerald')
+        ->and(IngredientCategory::AromaticMaterials->getColor())->toBe('warning')
+        ->and(IngredientCategory::PreservationStability->getColor())->toBe('danger')
+        ->and(IngredientCategory::PhAdjustersBuffers->getColor())->toBe('danger')
+        ->and(IngredientCategory::SoapmakingAlkalis->getColor())->toBe('danger');
+
+    foreach (IngredientCategory::cases() as $category) {
+        expect($category->getColor())->toBeString()->not->toBe('');
+    }
 });
 
 it('declares a distinct short label for every category', function () {

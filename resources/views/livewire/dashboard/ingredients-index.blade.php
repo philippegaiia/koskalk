@@ -159,7 +159,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="sk-badge sk-badge-{{ $ingredient->category?->badgeTone() ?? 'inert' }} whitespace-nowrap">
+                                        <span class="sk-badge sk-badge-{{ $ingredient->category?->badgeVariant() ?? 'inert' }} whitespace-nowrap">
                                             {{ $ingredient->category?->localizedShortLabel() ?? __('ingredients.table.uncategorized') }}
                                         </span>
                                     </td>

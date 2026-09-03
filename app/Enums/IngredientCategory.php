@@ -72,6 +72,11 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
         return __(sprintf('ingredients.categories.%s.short_label', $this->value), [], $locale);
     }
 
+    /**
+     * Filament palette name. Changes here repaint Filament components only —
+     * the user-shell badge colour comes from `badgeVariant()` and is keyed by
+     * category, not by this grouping.
+     */
     public function getColor(): string|array|null
     {
         return match ($this) {
@@ -89,28 +94,24 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
     }
 
     /**
-     * Tone family for compact badges: botanical, functional, fragrance, hazard,
-     * or inert.
+     * Stylesheet modifier for a compact badge: `sk-badge-<value>`.
      *
-     * `getColor()` returns Filament palette names and must keep doing so for
-     * Filament components, but the user-shell token palette renders only five
-     * distinct hues — `success` and `emerald` are both green, `info`, `blue`,
-     * and `primary` are all blue, and `teal` has no token at all. Badges
-     * therefore group those nine names into five tone families, so a change to
-     * `getColor()` flows through to every badge instead of drifting from it.
+     * Every category has its own hue, so the modifier is the canonical value
+     * and the two cannot drift apart. Adding a case therefore needs one
+     * matching `.sk-badge-<value>` rule; without it the badge renders
+     * colourless, which the taxonomy test catches.
      *
-     * The match is intentionally exhaustive: a new Filament colour name fails
-     * loudly here rather than silently rendering as `inert`.
+     * This is deliberately *not* derived from `getColor()`. That method
+     * implements Filament's `HasColor` and answers a different question: it
+     * lumps categories into broad semantic buckets (`danger` for everything
+     * corrosive, `gray` for everything inert) for Filament components that
+     * ship their own palette. A per-category scale cannot be derived from a
+     * grouping that collapses nine categories into one colour, so the badge
+     * palette is defined in the stylesheet and keyed by value instead.
      */
-    public function badgeTone(): string
+    public function badgeVariant(): string
     {
-        return match ($this->getColor()) {
-            'success', 'emerald' => 'botanical',
-            'info', 'blue', 'teal', 'primary' => 'functional',
-            'warning' => 'fragrance',
-            'danger' => 'hazard',
-            'gray' => 'inert',
-        };
+        return $this->value;
     }
 
     public function getIcon(): string|BackedEnum|Htmlable|null

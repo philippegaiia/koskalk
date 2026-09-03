@@ -360,32 +360,145 @@
         color: var(--color-ink-strong);
     }
 
-    /* Ingredient category badges. The tone comes from
-       `IngredientCategory::badgeTone()`, which groups the nine Filament colour
-       names into the five families this palette can actually render. */
-    .sk-badge-botanical {
-        background: var(--color-success-soft);
-        color: var(--color-success-strong);
+    /* Ingredient category badges: one hue per category, 22 in total.
+
+       Literals rather than `--color-*` tokens on purpose. These are a
+       purpose-built categorical scale, not a face of the semantic palette, so
+       they must not drift when an intent token is retuned.
+
+       Hues are 16 degrees apart, assigned so chemically related categories
+       occupy adjacent slots: the oil phase runs 106-186, water 202-218,
+       surface chemistry 234-250, texture/polymers 266-298. The three
+       process-chemistry groups (10, 26, 346) deliberately wrap the wheel
+       because all three are corrosive.
+
+       Chroma carries a second signal: the hazard groups are the most
+       saturated, `bases_blends_premixes` is muted because a blend has no
+       chemistry of its own, and `other` is near-neutral because it carries no
+       signal at all.
+
+       Every text colour was solved against its own background for ~6:1 and
+       checked to be inside sRGB, so all 22 read with equal legibility; the
+       worst is 5.25:1 against AA's 4.5. Re-tuning any single value by hand
+       breaks that parity -- regenerate the whole scale instead.
+
+       `IngredientCategory::badgeVariant()` emits the modifier, so adding an
+       enum case without a rule here renders a colourless badge. The taxonomy
+       test fails on exactly that. */
+
+    /* process chemistry — Corrosive / reactive: the most saturated treatment in the palette. */
+    .sk-badge-preservation_stability {
+        background-color: oklch(94.8% 0.0262 10);
+        color: oklch(48.1% 0.150 10);
+    }
+    .sk-badge-ph_adjusters_buffers {
+        background-color: oklch(94.8% 0.0262 26);
+        color: oklch(45.1% 0.150 26);
+    }
+    .sk-badge-soapmaking_alkalis {
+        background-color: oklch(94.8% 0.0316 346);
+        color: oklch(45.2% 0.150 346);
     }
 
-    .sk-badge-functional {
-        background: var(--color-info-soft);
-        color: var(--color-info-strong);
+    /* aromatic / IFRA — Fragrance materials, flagged like the other hazard-handling groups. */
+    .sk-badge-aromatic_materials {
+        background-color: oklch(94.8% 0.0279 42);
+        color: oklch(50.7% 0.150 42);
     }
 
-    /* Mixed, not `--color-warning-soft`: that token sits only 6 degrees of hue
-       from `--color-panel-strong`, so on a light panel an amber badge built
-       from it is indistinguishable from the neutral `inert` badge. */
-    .sk-badge-fragrance {
-        background: color-mix(in oklab, var(--color-warning) 20%, var(--color-panel));
-        color: var(--color-warning-strong);
+    /* earthy / particulate — Dry, mineral, abrasive. */
+    .sk-badge-exfoliants_abrasives {
+        background-color: oklch(94.8% 0.0300 58);
+        color: oklch(45.6% 0.113 58);
+    }
+    .sk-badge-minerals_salts_powders {
+        background-color: oklch(94.8% 0.0300 74);
+        color: oklch(48.2% 0.106 74);
     }
 
-    .sk-badge-hazard {
-        background: var(--color-danger-soft);
-        color: var(--color-danger-strong);
+    /* unclassified — Deliberately near-neutral: no signal to carry. */
+    .sk-badge-other {
+        background-color: oklch(94.8% 0.0060 90);
+        color: oklch(46.6% 0.012 90);
     }
 
+    /* oil phase — Lipophilic materials, one continuous hue run. */
+    .sk-badge-hydrocarbons {
+        background-color: oklch(94.8% 0.0300 106);
+        color: oklch(43.3% 0.094 106);
+    }
+    .sk-badge-waxes {
+        background-color: oklch(94.8% 0.0300 138);
+        color: oklch(44.0% 0.120 138);
+    }
+    .sk-badge-botanicals_extracts {
+        background-color: oklch(94.8% 0.0300 154);
+        color: oklch(46.8% 0.120 154);
+    }
+    .sk-badge-lipids {
+        background-color: oklch(94.8% 0.0300 170);
+        color: oklch(45.4% 0.094 170);
+    }
+    .sk-badge-fatty_derivatives {
+        background-color: oklch(94.8% 0.0300 186);
+        color: oklch(42.9% 0.078 186);
+    }
+
+    /* composite — Muted: a blend has no single chemistry of its own. */
+    .sk-badge-bases_blends_premixes {
+        background-color: oklch(94.8% 0.0200 122);
+        color: oklch(48.9% 0.078 122);
+    }
+
+    /* water phase — Hydrophilic materials. */
+    .sk-badge-water_solvents_carriers {
+        background-color: oklch(94.8% 0.0300 202);
+        color: oklch(48.6% 0.083 202);
+    }
+    .sk-badge-humectants_polyols {
+        background-color: oklch(94.8% 0.0300 218);
+        color: oklch(44.5% 0.083 218);
+    }
+
+    /* surface chemistry — Surfactants and emulsifiers. */
+    .sk-badge-surfactants {
+        background-color: oklch(94.8% 0.0300 234);
+        color: oklch(47.7% 0.100 234);
+    }
+    .sk-badge-emulsifiers {
+        background-color: oklch(94.8% 0.0249 250);
+        color: oklch(46.5% 0.120 250);
+    }
+
+    /* texture / polymers — Rheology, film-formers, silicones. */
+    .sk-badge-rheology_modifiers {
+        background-color: oklch(94.8% 0.0249 266);
+        color: oklch(44.0% 0.120 266);
+    }
+    .sk-badge-functional_polymers {
+        background-color: oklch(94.8% 0.0249 282);
+        color: oklch(50.3% 0.120 282);
+    }
+    .sk-badge-silicones {
+        background-color: oklch(94.8% 0.0282 298);
+        color: oklch(46.0% 0.120 298);
+    }
+
+    /* specialty — Actives. */
+    .sk-badge-actives {
+        background-color: oklch(94.8% 0.0300 314);
+        color: oklch(49.1% 0.120 314);
+    }
+
+    /* colour — Colourants. */
+    .sk-badge-colourants {
+        background-color: oklch(94.8% 0.0300 330);
+        color: oklch(47.8% 0.120 330);
+    }
+
+    /* Not a category: the fallback for an ingredient with none. It stays
+       neutral rather than claiming a hue, and it is intentionally close to
+       `other` -- "no category" and "none of these" are the same idea. */
     .sk-badge-inert {
         background: var(--color-panel-strong);
         color: var(--color-ink-soft);

@@ -101,7 +101,7 @@ return [
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
-        'guidance_prompt_version' => 'ingredient-guidance-v12',
+        'guidance_prompt_version' => 'ingredient-guidance-v13',
         'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',
@@ -121,7 +121,7 @@ return [
         ],
         'guidance_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_RESEARCH_ENABLED', true),
-            'prompt_version' => 'ingredient-guidance-research-v6',
+            'prompt_version' => 'ingredient-guidance-research-v7',
             'maximum_tool_calls' => (int) env('INGREDIENT_ENRICHMENT_GUIDANCE_MAX_TOOL_CALLS', 5),
             'blocked_domains' => [
                 'amazon.com',

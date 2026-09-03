@@ -181,6 +181,8 @@ it('uses bounded practical web search only in an explicitly enabled guidance-res
             && str_contains((string) $data['instructions'], 'specialist formulation or soapmaking references')
             && str_contains((string) $data['instructions'], 'Do not use patents')
             && str_contains((string) $data['instructions'], 'isolated narrow studies')
+            && str_contains((string) $data['instructions'], 'native or principal cultivated region')
+            && str_contains((string) $data['instructions'], 'Do not spend an additional search solely to find geography')
             && str_contains((string) $data['instructions'], 'Stop researching')
             && str_contains((string) $data['instructions'], 'soap-relevant materials')
             && str_contains((string) $data['instructions'], 'For non-usage claims')

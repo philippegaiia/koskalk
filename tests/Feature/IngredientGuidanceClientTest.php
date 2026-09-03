@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 it('requests fuller practical guidance without filler when reviewed facts support it', function (): void {
     $prompt = app(IngredientGuidancePrompt::class)->build([]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-v12')
+    expect($prompt['version'])->toBe('ingredient-guidance-v13')
         ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
         ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
         ->and($prompt['instructions'])
@@ -19,6 +19,8 @@ it('requests fuller practical guidance without filler when reviewed facts suppor
         ->toContain('Prefer specific handling, stability, sensory, selection, and recipe consequences over generic role prose.')
         ->toContain('Do not add filler to reach that range.')
         ->toContain('Use trusted soap chemistry for one conservative recipe consequence when present.')
+        ->toContain('principal native or cultivated region')
+        ->toContain('Do not include traditional-use, therapeutic, sustainability, or marketing claims')
         ->toContain('Do not repeat facts across sections.');
 });
 

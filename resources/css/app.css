@@ -360,6 +360,37 @@
         color: var(--color-ink-strong);
     }
 
+    /* Ingredient category badges. The tone comes from
+       `IngredientCategory::badgeTone()`, which groups the nine Filament colour
+       names into the five families this palette can actually render. */
+    .sk-badge-botanical {
+        background: var(--color-success-soft);
+        color: var(--color-success-strong);
+    }
+
+    .sk-badge-functional {
+        background: var(--color-info-soft);
+        color: var(--color-info-strong);
+    }
+
+    /* Mixed, not `--color-warning-soft`: that token sits only 6 degrees of hue
+       from `--color-panel-strong`, so on a light panel an amber badge built
+       from it is indistinguishable from the neutral `inert` badge. */
+    .sk-badge-fragrance {
+        background: color-mix(in oklab, var(--color-warning) 20%, var(--color-panel));
+        color: var(--color-warning-strong);
+    }
+
+    .sk-badge-hazard {
+        background: var(--color-danger-soft);
+        color: var(--color-danger-strong);
+    }
+
+    .sk-badge-inert {
+        background: var(--color-panel-strong);
+        color: var(--color-ink-soft);
+    }
+
     .sk-workbench {
         color: var(--color-ink);
     }

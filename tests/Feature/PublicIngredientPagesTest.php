@@ -88,16 +88,32 @@ it('renders compact accessible pagination for the ingredient catalog', function 
         ->assertDontSeeText('Showing 1 to 25 of 26 results');
 });
 
-it('keeps compact ingredient columns readable before the catalog scrolls horizontally', function () {
+it('keeps compact ingredient columns readable without forcing the catalog to scroll horizontally', function () {
     $catalogSource = file_get_contents(resource_path('views/livewire/dashboard/ingredients-index.blade.php'));
 
+    // Six columns: INCI moved under the display name instead of owning a column.
+    expect(substr_count($catalogSource, '<col '))->toBe(6);
+
+    // No hard minimum width on the table. A `min-w-[…rem]` floor is what made
+    // the table overflow at every viewport, 1920 included, because the app
+    // container is already capped at 74rem.
     expect($catalogSource)
-        ->toContain('<table class="sk-table min-w-[68rem] table-auto">')
-        ->toContain('<col class="w-36" />')
-        ->toContain('<col class="w-24" />')
-        ->toContain('min-w-56 max-w-72 whitespace-normal')
-        ->toContain('inline-flex whitespace-nowrap rounded-full bg-[var(--color-panel-strong)] px-3 py-1.5 text-sm')
-        ->toContain('inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs');
+        ->toContain('<table class="sk-table table-auto">')
+        ->not->toMatch('/min-w-\[\d+(\.\d+)?rem\]/')
+        ->toContain('<col class="w-40" />')
+        ->toContain('<col class="w-24" />');
+
+    // Category uses the shared 12px badge with a tone, not a bespoke 14px pill.
+    expect($catalogSource)
+        ->toContain('sk-badge sk-badge-')
+        ->not->toContain('px-3 py-1.5 text-sm');
+
+    // The usage disclosure must stay out of flow, otherwise expanding a single
+    // row widens the whole table.
+    expect($catalogSource)->toContain('absolute right-0 top-full');
+
+    // Untouched: the source badge still marks ownership.
+    expect($catalogSource)->toContain('inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs');
 });
 
 it('lets the signed-in user search their ingredient catalog table', function () {

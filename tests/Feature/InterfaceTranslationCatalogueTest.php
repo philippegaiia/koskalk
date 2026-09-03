@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IngredientCategory;
 use App\Models\InterfaceTranslation;
 use App\Models\SupportedLocale;
 use App\Models\User;
@@ -43,6 +44,17 @@ beforeEach(function () {
 
 afterEach(function () {
     File::delete($this->cataloguePath);
+});
+
+it('resolves the category short labels that the ingredients table renders', function () {
+    $english = require lang_path('en/ingredients.php');
+
+    foreach (IngredientCategory::cases() as $category) {
+        // Proves the enum resolves through the translator rather than leaking a
+        // dotted key onto the badge.
+        expect((string) $category->localizedShortLabel())
+            ->toBe($english['categories'][$category->value]['short_label']);
+    }
 });
 
 it('commits a complete reviewed translation for every owned interface key', function (): void {

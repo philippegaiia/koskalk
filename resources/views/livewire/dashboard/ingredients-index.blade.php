@@ -83,28 +83,26 @@
                 </div>
             @else
                 <div class="sk-table-wrapper">
-                    <table class="sk-table min-w-[68rem] table-auto">
+                    <table class="sk-table table-auto">
                         <colgroup>
-                            <col class="w-20" />
                             <col />
                             <col />
-                            <col class="w-36" />
-                            <col class="w-24" />
                             <col class="w-40" />
+                            <col class="w-24" />
+                            <col class="w-32" />
                             <col class="w-32" />
                         </colgroup>
                         <thead>
                             <tr>
                                 <th scope="col">{{ __('ingredients.table.picture') }}</th>
                                 <th scope="col">
-                                    <button type="button" wire:click="sortBy('display_name')" class="inline-flex items-center gap-1 font-semibold">
+                                    <button type="button" wire:click="sortBy('display_name')" class="sk-table-sort-button">
                                         {{ __('ingredients.table.name') }}
                                         <span class="text-xs text-[var(--color-ink-soft)]">{{ $sortField === 'display_name' ? ($sortDirection === 'asc' ? __('ingredients.sort.ascending') : __('ingredients.sort.descending')) : '' }}</span>
                                     </button>
                                 </th>
-                                <th scope="col">{{ __('ingredients.table.inci') }}</th>
                                 <th scope="col">
-                                    <button type="button" wire:click="sortBy('category')" class="inline-flex items-center gap-1 font-semibold">
+                                    <button type="button" wire:click="sortBy('category')" class="sk-table-sort-button">
                                         {{ __('ingredients.table.category') }}
                                         <span class="text-xs text-[var(--color-ink-soft)]">{{ $sortField === 'category' ? ($sortDirection === 'asc' ? __('ingredients.sort.ascending') : __('ingredients.sort.descending')) : '' }}</span>
                                     </button>
@@ -127,13 +125,18 @@
                                     $historyOnlyFormulaUsageCount = $formulaUsageCount - $currentFormulaUsageCount;
                                     $hasFormulaUsage = $canEdit && $formulaUsageCount > 0;
                                     $usageDisclosureId = 'ingredient-usage-'.$ingredient->id;
+                                    $usageSummary = match (true) {
+                                        $currentFormulaUsageCount > 0 && $historyOnlyFormulaUsageCount > 0 => trans_choice('ingredients.usage.current_and_history', $currentFormulaUsageCount, ['current' => $currentFormulaUsageCount, 'history' => $historyOnlyFormulaUsageCount]),
+                                        $currentFormulaUsageCount > 0 => trans_choice('ingredients.usage.current', $currentFormulaUsageCount, ['count' => $currentFormulaUsageCount]),
+                                        default => trans_choice('ingredients.usage.history', $historyOnlyFormulaUsageCount, ['count' => $historyOnlyFormulaUsageCount]),
+                                    };
                                 @endphp
                                 <tr wire:key="ingredient-{{ $ingredient->id }}">
                                     <td>
                                         @if ($imageUrl)
-                                            <img src="{{ $imageUrl }}" alt="" class="size-13 rounded-lg object-cover" />
+                                            <img src="{{ $imageUrl }}" alt="" class="size-10 rounded-lg object-cover" />
                                         @else
-                                            <div class="grid size-13 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-xs font-semibold text-[var(--color-ink-soft)]">
+                                            <div class="grid size-10 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-xs font-semibold text-[var(--color-ink-soft)]">
                                                 {{ mb_substr((string) $displayName, 0, 1) }}
                                             </div>
                                         @endif
@@ -144,15 +147,19 @@
                                                 <span>{{ $displayName }}</span>
                                                 <x-ingredient-source-marker :is-user-owned="$isMine" />
                                             </p>
+                                            @if ($ingredient->inci_name)
+                                                <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">
+                                                    <span class="sr-only">{{ __('ingredients.table.inci') }}: </span>{{ $ingredient->inci_name }}
+                                                </p>
+                                            @endif
                                             @if ($ingredient->notes)
                                                 <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $ingredient->notes }}</p>
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="min-w-56 max-w-72 whitespace-normal text-[var(--color-ink-soft)]">{{ $ingredient->inci_name ?: '—' }}</td>
                                     <td>
-                                        <span class="inline-flex whitespace-nowrap rounded-full bg-[var(--color-panel-strong)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)]">
-                                            {{ $ingredient->category?->getLabel() ?? __('ingredients.table.uncategorized') }}
+                                        <span class="sk-badge sk-badge-{{ $ingredient->category?->badgeTone() ?? 'inert' }} whitespace-nowrap">
+                                            {{ $ingredient->category?->localizedShortLabel() ?? __('ingredients.table.uncategorized') }}
                                         </span>
                                     </td>
                                     <td>
@@ -161,7 +168,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="min-w-36">
+                                        <div class="min-w-28">
                                             <input
                                                 value="{{ $this->formattedPrice($ingredient->user_price_per_kg) }}"
                                                 wire:change="updateIngredientPrice({{ $ingredient->id }}, $event.target.value)"
@@ -184,22 +191,18 @@
                                                     </svg>
                                                 </a>
                                                 @if ($hasFormulaUsage)
-                                                    <div class="flex flex-col items-end">
+                                                    <div class="relative flex flex-col items-end">
                                                         <div class="flex items-center gap-1">
                                                             <button
                                                                 type="button"
                                                                 wire:click="toggleUsage({{ $ingredient->id }})"
                                                                 aria-expanded="{{ $expandedUsageIngredientId === $ingredient->id ? 'true' : 'false' }}"
                                                                 aria-controls="{{ $usageDisclosureId }}"
-                                                                class="{{ $currentFormulaUsageCount > 0 ? 'text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]' }} inline-flex min-h-9 items-center justify-center rounded-lg px-2.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                                                aria-label="{{ $usageSummary }}"
+                                                                title="{{ $usageSummary }}"
+                                                                class="{{ $currentFormulaUsageCount > 0 ? 'text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]' }} inline-flex min-h-9 items-center justify-center rounded-lg px-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                                             >
-                                                                @if ($currentFormulaUsageCount > 0 && $historyOnlyFormulaUsageCount > 0)
-                                                                    {{ trans_choice('ingredients.usage.current_and_history', $currentFormulaUsageCount, ['current' => $currentFormulaUsageCount, 'history' => $historyOnlyFormulaUsageCount]) }}
-                                                                @elseif ($currentFormulaUsageCount > 0)
-                                                                    {{ trans_choice('ingredients.usage.current', $currentFormulaUsageCount, ['count' => $currentFormulaUsageCount]) }}
-                                                                @else
-                                                                    {{ trans_choice('ingredients.usage.history', $historyOnlyFormulaUsageCount, ['count' => $historyOnlyFormulaUsageCount]) }}
-                                                                @endif
+                                                                {{ trans_choice('ingredients.usage.compact', $formulaUsageCount, ['count' => $formulaUsageCount]) }}
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -217,7 +220,7 @@
                                                             </button>
                                                         </div>
 
-                                                        <div id="{{ $usageDisclosureId }}" @if ($expandedUsageIngredientId !== $ingredient->id) hidden @endif class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 text-left shadow-sm">
+                                                        <div id="{{ $usageDisclosureId }}" @if ($expandedUsageIngredientId !== $ingredient->id) hidden @endif class="absolute right-0 top-full z-20 mt-1 w-72 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 text-left shadow-lg">
                                                             <ul class="space-y-2">
                                                                 @foreach ($formulaUsage as $usage)
                                                                     <li class="flex items-baseline justify-between gap-3">

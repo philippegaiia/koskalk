@@ -2376,6 +2376,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.actives.short_label",
+      "text": {
+        "de": "Wirkstoffe",
+        "es": "Activos",
+        "fr": "Actifs",
+        "it": "Attivi",
+        "nl": "Werkstoffen",
+        "pt_BR": "Ativos"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.additive.description",
       "text": {
         "de": "Kategorie: Legacy additive value retained for migration.",
@@ -2448,6 +2460,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.aromatic_materials.short_label",
+      "text": {
+        "de": "Duftstoffe",
+        "es": "Fragancia",
+        "fr": "Parfums",
+        "it": "Fragranze",
+        "nl": "Geurstoffen",
+        "pt_BR": "Fragrância"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.bases_blends_premixes.description",
       "text": {
         "de": "Kategorie: Classification guidance for Bases, blends & premixes.",
@@ -2468,6 +2492,18 @@
         "it": "Categoria: Bases, blends & premixes",
         "nl": "Categorie: Bases, blends & premixes",
         "pt_BR": "Bases, misturas e pré-misturas"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.bases_blends_premixes.short_label",
+      "text": {
+        "de": "Basen & Blends",
+        "es": "Bases y mezclas",
+        "fr": "Bases & mélanges",
+        "it": "Basi e miscele",
+        "nl": "Bases & mengsels",
+        "pt_BR": "Bases e misturas"
       }
     },
     {
@@ -2516,6 +2552,18 @@
         "it": "Categoria: Botanicals & extracts",
         "nl": "Categorie: Botanicals & extracts",
         "pt_BR": "Botânicos e extratos"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.botanicals_extracts.short_label",
+      "text": {
+        "de": "Pflanzenstoffe",
+        "es": "Botánicos",
+        "fr": "Végétaux",
+        "it": "Vegetali",
+        "nl": "Plantaardig",
+        "pt_BR": "Botânicos"
       }
     },
     {
@@ -2640,6 +2688,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.colourants.short_label",
+      "text": {
+        "de": "Farbmittel",
+        "es": "Colorantes",
+        "fr": "Colorants",
+        "it": "Coloranti",
+        "nl": "Kleurstoffen",
+        "pt_BR": "Corantes"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.emulsifiers.description",
       "text": {
         "de": "Kategorie: Classification guidance for Emulsifiers, solubilizers & co-emulsifiers.",
@@ -2660,6 +2720,18 @@
         "it": "Categoria: Emulsifiers, solubilizers & co-emulsifiers",
         "nl": "Categorie: Emulsifiers, solubilizers & co-emulsifiers",
         "pt_BR": "Emulsionantes, solubilizantes e coemulsionantes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.emulsifiers.short_label",
+      "text": {
+        "de": "Emulgatoren",
+        "es": "Emulsionantes",
+        "fr": "Émulsifiants",
+        "it": "Emulsionanti",
+        "nl": "Emulgatoren",
+        "pt_BR": "Emulsionantes"
       }
     },
     {
@@ -2712,6 +2784,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.exfoliants_abrasives.short_label",
+      "text": {
+        "de": "Exfoliantien",
+        "es": "Exfoliantes",
+        "fr": "Exfoliants",
+        "it": "Esfolianti",
+        "nl": "Exfolianten",
+        "pt_BR": "Esfoliantes"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.fatty_derivatives.description",
       "text": {
         "de": "Kategorie: Classification guidance for Fatty acids, alcohols & esters.",
@@ -2732,6 +2816,18 @@
         "it": "Categoria: Fatty acids, alcohols & esters",
         "nl": "Categorie: Fatty acids, alcohols & esters",
         "pt_BR": "Ácidos graxos, álcoois graxos e ésteres"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.fatty_derivatives.short_label",
+      "text": {
+        "de": "Fettderivate",
+        "es": "Derivados grasos",
+        "fr": "Dérivés gras",
+        "it": "Derivati grassi",
+        "nl": "Vetderivaten",
+        "pt_BR": "Derivados graxos"
       }
     },
     {
@@ -2784,6 +2880,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.functional_polymers.short_label",
+      "text": {
+        "de": "Polymere",
+        "es": "Polímeros",
+        "fr": "Polymères",
+        "it": "Polimeri",
+        "nl": "Polymeren",
+        "pt_BR": "Polímeros"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.glycol.description",
       "text": {
         "de": "Kategorie: Legacy glycol value retained for migration.",
@@ -2832,6 +2940,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.humectants_polyols.short_label",
+      "text": {
+        "de": "Feuchthaltemittel",
+        "es": "Humectantes",
+        "fr": "Humectants",
+        "it": "Umettanti",
+        "nl": "Humectanten",
+        "pt_BR": "Umectantes"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.hydrocarbons.description",
       "text": {
         "de": "Kategorie: Classification guidance for Hydrocarbons & mineral emollients.",
@@ -2856,6 +2976,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.hydrocarbons.short_label",
+      "text": {
+        "de": "Kohlenwasserstoffe",
+        "es": "Hidrocarburos",
+        "fr": "Hydrocarbures",
+        "it": "Idrocarburi",
+        "nl": "Koolwaterstoffen",
+        "pt_BR": "Hidrocarbonetos"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.lipids.description",
       "text": {
         "de": "Kategorie: Classification guidance for Oils, butters & fats.",
@@ -2876,6 +3008,18 @@
         "it": "Categoria: Oils, butters & fats",
         "nl": "Categorie: Oils, butters & fats",
         "pt_BR": "Óleos, manteigas e gorduras"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.lipids.short_label",
+      "text": {
+        "de": "Öle & Fette",
+        "es": "Aceites y grasas",
+        "fr": "Corps gras",
+        "it": "Oli e grassi",
+        "nl": "Oliën & vetten",
+        "pt_BR": "Óleos e gorduras"
       }
     },
     {
@@ -2928,6 +3072,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.minerals_salts_powders.short_label",
+      "text": {
+        "de": "Mineralien & Salze",
+        "es": "Minerales y sales",
+        "fr": "Minéraux & sels",
+        "it": "Minerali e sali",
+        "nl": "Mineralen & zouten",
+        "pt_BR": "Minerais e sais"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.other.description",
       "text": {
         "de": "Kategorie: Classification guidance for Other / needs classification.",
@@ -2948,6 +3104,18 @@
         "it": "Categoria: Other / needs classification",
         "nl": "Categorie: Other / needs classification",
         "pt_BR": "Outro / precisa de classificação"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.other.short_label",
+      "text": {
+        "de": "Sonstiges",
+        "es": "Otros",
+        "fr": "Autres",
+        "it": "Altro",
+        "nl": "Overig",
+        "pt_BR": "Outro"
       }
     },
     {
@@ -2976,6 +3144,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.ph_adjusters_buffers.short_label",
+      "text": {
+        "de": "pH-Regulatoren",
+        "es": "Reguladores de pH",
+        "fr": "Régulateurs de pH",
+        "it": "Regolatori di pH",
+        "nl": "pH-regelaars",
+        "pt_BR": "Reguladores de pH"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.preservation_stability.description",
       "text": {
         "de": "Kategorie: Classification guidance for Preservation & stability.",
@@ -2996,6 +3176,18 @@
         "it": "Categoria: Preservation & stability",
         "nl": "Categorie: Preservation & stability",
         "pt_BR": "Conservação e estabilidade"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.preservation_stability.short_label",
+      "text": {
+        "de": "Konservierung",
+        "es": "Conservación",
+        "fr": "Conservation",
+        "it": "Conservazione",
+        "nl": "Conservering",
+        "pt_BR": "Conservação"
       }
     },
     {
@@ -3048,6 +3240,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.rheology_modifiers.short_label",
+      "text": {
+        "de": "Verdickungsmittel",
+        "es": "Espesantes",
+        "fr": "Épaississants",
+        "it": "Addensanti",
+        "nl": "Verdikkingsmiddelen",
+        "pt_BR": "Espessantes"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.silicones.description",
       "text": {
         "de": "Kategorie: Classification guidance for Silicones.",
@@ -3067,6 +3271,18 @@
         "fr": "Catégorie: Silicones",
         "it": "Categoria: Silicones",
         "nl": "Categorie: Silicones",
+        "pt_BR": "Silicones"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.silicones.short_label",
+      "text": {
+        "de": "Silikone",
+        "es": "Siliconas",
+        "fr": "Silicones",
+        "it": "Siliconi",
+        "nl": "Siliconen",
         "pt_BR": "Silicones"
       }
     },
@@ -3096,6 +3312,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.soapmaking_alkalis.short_label",
+      "text": {
+        "de": "Seifenalkalien",
+        "es": "Álcalis para jabón",
+        "fr": "Alcalis pour savon",
+        "it": "Alcali per sapone",
+        "nl": "Zeepalkaliën",
+        "pt_BR": "Álcalis para sabão"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.surfactants.description",
       "text": {
         "de": "Kategorie: Classification guidance for Surfactants & cleansing agents.",
@@ -3116,6 +3344,18 @@
         "it": "Categoria: Surfactants & cleansing agents",
         "nl": "Categorie: Surfactants & cleansing agents",
         "pt_BR": "Tensoativos e agentes de limpeza"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.surfactants.short_label",
+      "text": {
+        "de": "Tenside",
+        "es": "Tensioactivos",
+        "fr": "Tensioactifs",
+        "it": "Tensioattivi",
+        "nl": "Tensiden",
+        "pt_BR": "Tensoativos"
       }
     },
     {
@@ -3144,6 +3384,18 @@
     },
     {
       "group": "ingredients",
+      "key": "categories.water_solvents_carriers.short_label",
+      "text": {
+        "de": "Wasser & Lösungsmittel",
+        "es": "Agua y disolventes",
+        "fr": "Eau & solvants",
+        "it": "Acqua e solventi",
+        "nl": "Water & oplosmiddelen",
+        "pt_BR": "Água e solventes"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "categories.waxes.description",
       "text": {
         "de": "Kategorie: Classification guidance for Waxes.",
@@ -3163,6 +3415,18 @@
         "fr": "Catégorie: Waxes",
         "it": "Categoria: Waxes",
         "nl": "Categorie: Waxes",
+        "pt_BR": "Ceras"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "categories.waxes.short_label",
+      "text": {
+        "de": "Wachse",
+        "es": "Ceras",
+        "fr": "Cires",
+        "it": "Cere",
+        "nl": "Wassen",
         "pt_BR": "Ceras"
       }
     },
@@ -11672,6 +11936,18 @@
         "it": "Senza categoria",
         "nl": "Zonder categorie",
         "pt_BR": "Sem categoria"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "usage.compact",
+      "text": {
+        "de": "{1} :count Rezeptur|[2,*] :count Rezepturen",
+        "es": "{1} :count fórmula|[2,*] :count fórmulas",
+        "fr": "{1} :count formule|[2,*] :count formules",
+        "it": "{1} :count formula|[2,*] :count formule",
+        "nl": "{1} :count formule|[2,*] :count formules",
+        "pt_BR": "{1} :count fórmula|[2,*] :count fórmulas"
       }
     },
     {

@@ -61,6 +61,17 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
         return __(sprintf('ingredients.categories.%s.description', $this->value), [], $locale);
     }
 
+    /**
+     * Compact label for dense views where the full label would not fit.
+     *
+     * Rows show the full label in forms, filters, and detail views; tables and
+     * chips use this shorter wording. Both read from `ingredients.categories`.
+     */
+    public function localizedShortLabel(?string $locale = null): string|Htmlable|null
+    {
+        return __(sprintf('ingredients.categories.%s.short_label', $this->value), [], $locale);
+    }
+
     public function getColor(): string|array|null
     {
         return match ($this) {
@@ -74,6 +85,31 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
             self::AromaticMaterials => 'warning',
             self::PreservationStability, self::PhAdjustersBuffers, self::SoapmakingAlkalis => 'danger',
             self::ExfoliantsAbrasives, self::BasesBlendsPremixes, self::Other => 'gray',
+        };
+    }
+
+    /**
+     * Tone family for compact badges: botanical, functional, fragrance, hazard,
+     * or inert.
+     *
+     * `getColor()` returns Filament palette names and must keep doing so for
+     * Filament components, but the user-shell token palette renders only five
+     * distinct hues — `success` and `emerald` are both green, `info`, `blue`,
+     * and `primary` are all blue, and `teal` has no token at all. Badges
+     * therefore group those nine names into five tone families, so a change to
+     * `getColor()` flows through to every badge instead of drifting from it.
+     *
+     * The match is intentionally exhaustive: a new Filament colour name fails
+     * loudly here rather than silently rendering as `inert`.
+     */
+    public function badgeTone(): string
+    {
+        return match ($this->getColor()) {
+            'success', 'emerald' => 'botanical',
+            'info', 'blue', 'teal', 'primary' => 'functional',
+            'warning' => 'fragrance',
+            'danger' => 'hazard',
+            'gray' => 'inert',
         };
     }
 

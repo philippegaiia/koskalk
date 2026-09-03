@@ -375,6 +375,74 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         ->and(collect($item->plan['decisions'] ?? [])->firstWhere('field', 'guidance.evidence'))->toBeNull();
 });
 
+it('quarantines an all-malformed historical bank during localization apply', function (): void {
+    $admin = User::factory()->admin()->create();
+    $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";
+    $malformedEvidence = [
+        [
+            'source_name' => '',
+            'source_url' => 'https://malformed.example/first',
+            'summary' => 'Missing source name.',
+            'source_tier' => 'editorial',
+        ],
+        [
+            'source_name' => 'Partial source',
+            'source_url' => 'https://malformed.example/second',
+            'summary' => 'Partially classified evidence.',
+            'source_tier' => 'editorial',
+            'claim_type' => 'usage',
+        ],
+    ];
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $malformedEvidence]]],
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'requested_by_user_id' => $admin->id,
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $item = IngredientEnrichmentBatchItem::factory()
+        ->for($batch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Approved,
+            'source_fingerprint' => $sourceFingerprint,
+            'approved_by_user_id' => $admin->id,
+            'approved_at' => now(),
+            'result' => [
+                'format' => 'soapkraft-ingredient-guidance-refresh-result',
+                'schema_version' => 1,
+                'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization->value,
+                'subject_public_id' => (string) $ingredient->public_id,
+                'source_fingerprint' => $sourceFingerprint,
+                'info_markdown' => $english,
+                'translations' => [],
+                'guidance_evidence' => [],
+                'prompt_versions' => [
+                    'guidance' => 'ingredient-guidance-v1',
+                    'localization' => 'ingredient-guidance-localization-v1',
+                ],
+                'warnings' => [],
+                'unresolved_questions' => [],
+            ],
+        ]);
+
+    $totals = app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $batch);
+    $applied = $item->fresh();
+
+    expect($totals['applied'])->toBe(1)
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe([])
+        ->and($applied->result['guidance_evidence'])->toBe([])
+        ->and(data_get($applied->validation_report, 'normalized.guidance_evidence'))->toBe([])
+        ->and(data_get($applied->plan, 'effective.guidance_evidence'))->toBe([])
+        ->and(data_get(collect($applied->plan['decisions'] ?? [])->firstWhere('field', 'guidance.evidence'), 'proposed', []))
+        ->toBe([]);
+});
+
 it('derives a legacy refresh contribution as a logical delta from its snapshot', function (): void {
     $admin = User::factory()->admin()->create();
     $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";

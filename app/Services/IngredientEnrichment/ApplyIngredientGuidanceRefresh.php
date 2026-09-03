@@ -147,9 +147,7 @@ class ApplyIngredientGuidanceRefresh
 
                     $sourceData = is_array($ingredient->source_data) ? $ingredient->source_data : [];
                     $guidance = $beforeGuidance;
-                    if (! $mode->isLocalizationOnly() || $guidanceEvidence !== []) {
-                        $guidance['evidence'] = $guidanceEvidence;
-                    }
+                    $guidance['evidence'] = $guidanceEvidence;
                     if (! $mode->isLocalizationOnly()) {
                         $guidance['guidance_prompt_version'] = (string) ($normalized['prompt_versions']['guidance']
                             ?? config('ingredient-enrichment.openai.guidance_prompt_version'));

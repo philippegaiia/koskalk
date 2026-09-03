@@ -13,6 +13,7 @@ use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Services\MediaStorage;
+use App\Support\InciName;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -128,6 +129,17 @@ class Ingredient extends Model
         $frenchName = $this->localizedPlatformValue('display_name', 'fr', null);
 
         return filled($frenchName) ? $frenchName : $this->display_name;
+    }
+
+    /**
+     * INCI in the sentence-case form dense views render.
+     *
+     * Presentation only: the stored `inci_name` is left exactly as curated, so
+     * `InciName::normalize()` dedupe and CosIng/FDA matching stay unaffected.
+     */
+    public function displayInciName(): ?string
+    {
+        return filled($this->inci_name) ? InciName::display($this->inci_name) : null;
     }
 
     public function localizedSaponificationName(?string $locale = null): ?string

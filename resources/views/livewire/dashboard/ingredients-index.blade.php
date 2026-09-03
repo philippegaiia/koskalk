@@ -117,6 +117,7 @@
                                 @php
                                     $imageUrl = $this->catalogImageUrl($ingredient);
                                     $displayName = $ingredient->localizedDisplayName();
+                                    $inciName = $ingredient->displayInciName();
                                     $isMine = $ingredient->owner_type !== null;
                                     $canEdit = $ingredient->isEditableBy($currentUser);
                                     $formulaUsage = $formulaUsageByIngredient[$ingredient->id] ?? [];
@@ -147,9 +148,9 @@
                                                 <span>{{ $displayName }}</span>
                                                 <x-ingredient-source-marker :is-user-owned="$isMine" />
                                             </p>
-                                            @if ($ingredient->inci_name)
+                                            @if ($inciName)
                                                 <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">
-                                                    <span class="sr-only">{{ __('ingredients.table.inci') }}: </span>{{ $ingredient->inci_name }}
+                                                    <span class="sr-only">{{ __('ingredients.table.inci') }}: </span>{{ $inciName }}
                                                 </p>
                                             @endif
                                             @if ($ingredient->notes)

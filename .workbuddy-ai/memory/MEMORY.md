@@ -58,6 +58,15 @@ mismatch (`--timeout=0` vs expected `300`).
   scratch test rather than calling cross-file.
 - Check `git rev-parse --abbrev-ref HEAD` before every commit — the owner works in this same
   checkout and may have switched branches between my commands.
+- **Under `.workbuddy-ai/`: commit `memory/`, `artifacts/` and `reports/`; ignore `skills/`.**
+  The memory daily logs are tracked alongside `MEMORY.md` (2026-08-29 onward), so an untracked
+  `memory/YYYY-MM-DD.md` is a *missed commit*, not a deliberate omission. But
+  `.workbuddy-ai/skills/` is a **generated mirror** of `.agents/skills/` (which is gitignored),
+  rebuilt by `scripts/sync-boost-skills.sh` — committing it would be like committing
+  `node_modules`. Only ignore the `skills/` subdirectory, never `.workbuddy-ai/` wholesale.
+- **Agent tooling directories are gitignored as a rule** (`/.agents`, `/.codex`, `/.gemini`,
+  `/.hermes`, `/.superpowers`, `/.worktrees`). If a new tool drops a directory at the repo root,
+  check whether it is generated before letting it show up as untracked.
 
 ## Schema / data gotchas
 

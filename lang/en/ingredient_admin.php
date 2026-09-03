@@ -63,9 +63,10 @@ return [
             'ai_generated' => 'AI-generated',
             'reviewer_edited' => 'Manually edited',
         ],
-        'regenerate_outdated' => 'Regenerate outdated translations',
-        'regenerate_outdated_heading' => 'Regenerate outdated translations?',
-        'regenerate_outdated_description' => 'Create a review batch for outdated locales: :locales.',
+        'update_translations' => 'Update translations',
+        'update_translations_heading' => 'Update ingredient translations?',
+        'update_translations_description' => 'Save edited English guidance first. This queues translations from the saved canonical English only. Current locales: :current. Missing locales: :missing. Outdated AI locales: :outdated. Reviewer-owned locales preserved: :preserved.',
+        'none' => 'None',
         'validation' => [
             'platform_only' => 'Only platform ingredients can have managed translations.',
             'content_required' => 'Enter a translated name or translated guidance.',

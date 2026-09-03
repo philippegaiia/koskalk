@@ -1,7 +1,9 @@
 <?php
 
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceLocalizationClient;
 use App\Data\IngredientEditorialResponse;
+use App\Data\IngredientGuidanceLocalizationResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
@@ -144,6 +146,13 @@ it('runs deterministic stages before one editorial pass and resumes their persis
             );
         }
     });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class implements IngredientGuidanceLocalizationClient
+    {
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            throw new RuntimeException('full enrichment must not invoke guidance localization');
+        }
+    });
 
     $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
 
@@ -157,17 +166,15 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         'ai_guidance_research',
         'ai_editorial',
         'ai_guidance_authoring',
-        'ai_guidance_localization',
         'validation',
     ])->and($response->structuredSourceCalls)->toBe(3)
         ->and($response->inputTokens)->toBe(321)
         ->and(data_get($response->result, 'proposal.inci_name'))->toBe('ARGANIA SPINOSA KERNEL OIL')
         ->and(data_get($response->result, 'proposal.soap_inci_naoh_name'))->toBe('SODIUM ARGANATE')
         ->and(data_get($response->result, 'proposal.soap_inci_koh_name'))->toBe('POTASSIUM ARGANATE')
-        ->and(data_get($response->result, 'proposal.translations.0.info_markdown'))->toStartWith("## Vue d’ensemble\n")
-        ->and(data_get($response->result, 'proposal.translations.0.info_markdown'))->toContain("## Utilisation en formulation\n", "## Savonnerie\n")
-        ->and(collect($response->result['value_provenance'])->pluck('kind', 'field')->get('proposal.translations.0'))
-        ->toBe('ai_proposed');
+        ->and(data_get($response->result, 'proposal.translations'))->toBe([])
+        ->and(collect($response->result['value_provenance'])->pluck('kind', 'field'))
+        ->not->toHaveKey('proposal.translations.0');
 
     app(IngredientEnrichmentPipeline::class)->run($item->id);
 

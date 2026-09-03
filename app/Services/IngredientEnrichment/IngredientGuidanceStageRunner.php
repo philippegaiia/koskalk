@@ -5,6 +5,7 @@ namespace App\Services\IngredientEnrichment;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentResearchStage;
+use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
@@ -427,7 +428,7 @@ class IngredientGuidanceStageRunner
             ?? ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization
                 ? $this->outdatedLocales($ingredient)
                 : $this->configuredTargetLocales());
-        if ($expectedLocales === []) {
+        if ($stage === IngredientEnrichmentResearchStage::AiGuidanceLocalization && $expectedLocales === []) {
             throw new LogicException('Guidance localization stage has no expected locales.');
         }
 
@@ -773,6 +774,8 @@ class IngredientGuidanceStageRunner
             IngredientEnrichmentResearchStage::AiGuidanceLocalization,
             IngredientEnrichmentResearchStage::Validation,
         ], true)) {
+            $configuration['localization_model'] = (string) config('ingredient-enrichment.openai.localization_model');
+            $configuration['localization_reasoning_effort'] = (string) config('ingredient-enrichment.openai.localization_reasoning_effort');
             $configuration['localization_prompt_version'] = (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version');
             $configuration['localized_headings'] = config('ingredient-enrichment.guidance.localized_headings', []);
         }
@@ -836,17 +839,24 @@ class IngredientGuidanceStageRunner
     private function outdatedLocales(Ingredient $ingredient): array
     {
         $fingerprint = $this->translationFingerprint->forIngredient($ingredient);
-        $outdated = $ingredient->translations()
-            ->get(['locale', 'source_fingerprint'])
-            ->filter(fn ($translation): bool => is_string($translation->locale)
-                && ($translation->source_fingerprint === null || $translation->source_fingerprint !== $fingerprint))
-            ->pluck('locale')
-            ->map(fn (string $locale): string => trim($locale))
-            ->unique()
-            ->all();
+        $translations = $ingredient->translations()
+            ->get(['locale', 'source_fingerprint', 'origin'])
+            ->keyBy('locale');
 
         return collect($this->configuredTargetLocales())
-            ->filter(fn (string $locale): bool => in_array($locale, $outdated, true))
+            ->filter(function (string $locale) use ($fingerprint, $translations): bool {
+                $translation = $translations->get($locale);
+                if ($translation === null) {
+                    return true;
+                }
+
+                if ($translation->origin === IngredientTranslationOrigin::ReviewerEdited) {
+                    return false;
+                }
+
+                return $translation->source_fingerprint === null
+                    || $translation->source_fingerprint !== $fingerprint;
+            })
             ->values()
             ->all();
     }

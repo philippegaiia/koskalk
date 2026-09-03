@@ -97,8 +97,14 @@ class IngredientEnrichmentBatchService
         $promptVersion = $localizationOnly
             ? config('ingredient-enrichment.openai.guidance_localization_prompt_version')
             : config('ingredient-enrichment.openai.guidance_prompt_version');
+        $model = $localizationOnly
+            ? config('ingredient-enrichment.openai.localization_model')
+            : config('ingredient-enrichment.openai.model');
+        $reasoningEffort = $localizationOnly
+            ? config('ingredient-enrichment.openai.localization_reasoning_effort')
+            : config('ingredient-enrichment.openai.reasoning_effort');
 
-        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion): IngredientEnrichmentBatch {
+        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion, $model, $reasoningEffort): IngredientEnrichmentBatch {
             $locked = Ingredient::query()
                 ->withoutGlobalScopes()
                 ->whereIn('id', $ids)
@@ -115,8 +121,8 @@ class IngredientEnrichmentBatchService
             $batch = IngredientEnrichmentBatch::query()->create([
                 'requested_by_user_id' => $actor->id,
                 'status' => IngredientEnrichmentBatchStatus::Pending,
-                'model' => config('ingredient-enrichment.openai.model'),
-                'reasoning_effort' => config('ingredient-enrichment.openai.reasoning_effort'),
+                'model' => $model,
+                'reasoning_effort' => $reasoningEffort,
                 'prompt_version' => $promptVersion,
                 'schema_version' => 1,
                 'mode' => $mode,

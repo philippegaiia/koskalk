@@ -4,6 +4,7 @@ use App\Actions\IngredientEnrichment\ApplyApprovedIngredientGuidanceRefresh;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
+use App\Enums\OwnerType;
 use App\Filament\Resources\IngredientEnrichmentBatches\Pages\ViewIngredientEnrichmentBatch;
 use App\Filament\Resources\IngredientEnrichmentBatches\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Ingredients\Pages\EditIngredient;
@@ -13,14 +14,15 @@ use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientTranslation;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceChangePlanner;
 use App\Services\IngredientEnrichment\IngredientGuidanceEvidencePolicy;
-use App\Services\IngredientTranslationSourceFingerprint;
 use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Livewire\Livewire;
@@ -56,47 +58,61 @@ it('offers a guidance-only bulk action and queues a guidance batch', function ()
         ->and($batch->items()->count())->toBe(2);
 });
 
-it('exposes outdated translation regeneration only when a locale is stale', function (): void {
+it('exposes update translations in the guidance section for saved English guidance', function (): void {
     $admin = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([
         'owner_type' => null,
         'owner_id' => null,
-        'info_markdown' => '## Overview\n\nEnglish guidance.',
+        'info_markdown' => '## Overview\n\nSECRET CANONICAL BODY.',
     ]);
-    IngredientTranslation::factory()
-        ->for($ingredient)
-        ->create([
-            'locale' => 'fr',
-            'source_fingerprint' => null,
-            'info_markdown' => '## Aperçu\n\nConseils existants.',
-        ]);
     $this->actingAs($admin);
 
     Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
-        ->assertActionVisible('regenerateOutdatedTranslations')
-        ->mountAction('regenerateOutdatedTranslations')
-        ->assertMountedActionModalSee('fr')
+        ->assertActionExists(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
+        ->assertActionVisible(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
+        ->mountAction(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
+        ->assertMountedActionModalSee('Missing locales:')
+        ->assertMountedActionModalDontSee('SECRET CANONICAL BODY')
         ->callMountedAction();
 
     $batch = IngredientEnrichmentBatch::query()->latest('id')->firstOrFail();
 
     expect($batch->mode)->toBe(IngredientEnrichmentBatchMode::GuidanceLocalization)
+        ->and($batch->model)->toBe('gpt-5.6-luna')
+        ->and($batch->reasoning_effort)->toBe('xhigh')
         ->and($batch->items()->whereBelongsTo($ingredient)->exists())->toBeTrue();
 
     $currentIngredient = Ingredient::factory()->create([
         'owner_type' => null,
         'owner_id' => null,
+        'info_markdown' => '## Overview\n\nEnglish guidance.',
     ]);
-    IngredientTranslation::factory()
-        ->for($currentIngredient)
-        ->create([
-            'locale' => 'fr',
-            'source_fingerprint' => app(IngredientTranslationSourceFingerprint::class)
-                ->forIngredient($currentIngredient),
-        ]);
 
     Livewire::test(EditIngredient::class, ['record' => $currentIngredient->public_id])
-        ->assertActionHidden('regenerateOutdatedTranslations');
+        ->assertActionVisible(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'));
+});
+
+it('hides update translations without saved English and keeps workspace ingredients outside the admin editor', function (): void {
+    $admin = User::factory()->admin()->create();
+    $withoutEnglish = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => null,
+    ]);
+    $workspace = Workspace::factory()->for($admin, 'owner')->create();
+    $workspaceIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'info_markdown' => '## Overview\n\nWorkspace guidance.',
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $withoutEnglish->public_id])
+        ->assertActionDoesNotExist(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'));
+
+    expect(fn () => Livewire::test(EditIngredient::class, ['record' => $workspaceIngredient->public_id]))
+        ->toThrow(ModelNotFoundException::class);
 });
 
 it('uses focused guidance fields for guidance batch review actions', function (): void {

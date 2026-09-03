@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientIdentifier;
 use App\Models\IngredientTranslation;
@@ -705,6 +706,109 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->assertExitCode(0);
 
     unlink($path);
+});
+
+it('does not apply legacy generated translations when full enrichment updates English', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-LEGACY-TRANSLATION',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+        'info_markdown' => "## Overview\nOriginal guidance.\n\n## Formulation use\nUse this material in a simple formula.",
+        'source_data' => ['enrichment' => ['guidance' => [
+            'localization_prompt_version' => 'stored-localization-v1',
+        ]]],
+    ]);
+    $translation = IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom français existant',
+        'saponification_name' => 'Nom de saponification existant',
+        'info_markdown' => "## Vue d’ensemble\nTraduction générée avant la nouvelle version.\n\n## Utilisation en formulation\nUtiliser ce matériau dans une formule simple.",
+        'source_fingerprint' => 'legacy-generated-fingerprint',
+        'origin' => IngredientTranslationOrigin::AiGenerated,
+        'prompt_version' => 'legacy-localization-v1',
+    ]);
+    $beforeTranslation = $translation->fresh()->only([
+        'display_name',
+        'saponification_name',
+        'info_markdown',
+        'source_fingerprint',
+        'origin',
+        'prompt_version',
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['display_name'] = $ingredient->display_name;
+    $result['proposal']['inci_name'] = $ingredient->inci_name;
+    $result['proposal']['info_markdown'] = "## Overview\nUpdated guidance.\n\n## Formulation use\nUse this material in a measured formula.";
+    $result['proposal']['translations'][2]['info_markdown'] = "## Vue d’ensemble\nAncienne traduction générée depuis la guidance précédente.\n\n## Utilisation en formulation\nUtiliser ce matériau dans une ancienne formule.";
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result, ['info_markdown', 'translations']);
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result, ['info_markdown', 'translations']);
+
+    $ingredient->refresh();
+    expect($applied['status'])->toBe('applied')
+        ->and($ingredient->info_markdown)->toBe($result['proposal']['info_markdown'])
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.localization_prompt_version'))->toBe('stored-localization-v1')
+        ->and($ingredient->translations()->count())->toBe(1)
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]))->toBe($beforeTranslation);
+});
+
+it('preserves reviewer-owned translations when a legacy full result requests replacement', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-REVIEWER-TRANSLATION',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+        'info_markdown' => "## Overview\nOriginal guidance.\n\n## Formulation use\nUse this material in a simple formula.",
+    ]);
+    $translation = IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom français relu',
+        'saponification_name' => 'Nom de saponification relu',
+        'info_markdown' => "## Vue d’ensemble\nTexte relu par un réviseur.\n\n## Utilisation en formulation\nUtiliser ce matériau avec discernement.",
+        'source_fingerprint' => 'reviewer-owned-fingerprint',
+        'origin' => IngredientTranslationOrigin::ReviewerEdited,
+        'prompt_version' => null,
+    ]);
+    $beforeTranslation = $translation->fresh()->only([
+        'display_name',
+        'saponification_name',
+        'info_markdown',
+        'source_fingerprint',
+        'origin',
+        'prompt_version',
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['display_name'] = $ingredient->display_name;
+    $result['proposal']['inci_name'] = $ingredient->inci_name;
+    $result['proposal']['info_markdown'] = "## Overview\nUpdated guidance.\n\n## Formulation use\nUse this material in a measured formula.";
+    $result['proposal']['translations'][2]['display_name'] = 'Legacy translated name';
+    $result['proposal']['translations'][2]['saponification_name'] = 'Legacy translated soap name';
+    $result['proposal']['translations'][2]['info_markdown'] = "## Vue d’ensemble\nAncienne proposition traduite.\n\n## Utilisation en formulation\nAncienne utilisation proposée.";
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result, ['info_markdown', 'translations']);
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result, ['info_markdown', 'translations']);
+
+    $ingredient->refresh();
+    expect($applied['status'])->toBe('applied')
+        ->and($ingredient->info_markdown)->toBe($result['proposal']['info_markdown'])
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]))->toBe($beforeTranslation);
 });
 
 it('rejects a stale result without changing the ingredient', function (): void {

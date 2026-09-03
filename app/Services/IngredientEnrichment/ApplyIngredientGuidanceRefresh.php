@@ -94,56 +94,65 @@ class ApplyIngredientGuidanceRefresh
                         $changed = true;
                     }
 
-                    $translationRows = collect($beforeTranslations)
-                        ->map(fn (array $translation): array => [
-                            'locale' => $translation['locale'],
-                            'display_name' => $translation['display_name'],
-                            'saponification_name' => $translation['saponification_name'],
-                            'info_markdown' => $translation['info_markdown'],
-                        ])
-                        ->keyBy('locale');
-                    $proposalRows = collect($normalized['translations'] ?? [])
-                        ->filter(fn (mixed $translation): bool => is_array($translation))
-                        ->mapWithKeys(function (array $translation) use ($translationRows): array {
-                            $locale = (string) ($translation['locale'] ?? '');
-                            $current = $translationRows->get($locale, [
-                                'locale' => $locale,
-                                'display_name' => null,
-                                'saponification_name' => null,
-                                'info_markdown' => null,
-                            ]);
+                    $normalizedTranslations = is_array($normalized['translations'] ?? null)
+                        ? $normalized['translations']
+                        : [];
+                    $translationsApplied = $mode->isLocalizationOnly();
+                    $localizationPromptVersion = null;
+                    if ($translationsApplied) {
+                        $translationRows = collect($beforeTranslations)
+                            ->map(fn (array $translation): array => [
+                                'locale' => $translation['locale'],
+                                'display_name' => $translation['display_name'],
+                                'saponification_name' => $translation['saponification_name'],
+                                'info_markdown' => $translation['info_markdown'],
+                            ])
+                            ->keyBy('locale');
+                        $proposalRows = collect($normalizedTranslations)
+                            ->filter(fn (mixed $translation): bool => is_array($translation))
+                            ->mapWithKeys(function (array $translation) use ($translationRows): array {
+                                $locale = (string) ($translation['locale'] ?? '');
+                                $current = $translationRows->get($locale, [
+                                    'locale' => $locale,
+                                    'display_name' => null,
+                                    'saponification_name' => null,
+                                    'info_markdown' => null,
+                                ]);
 
-                            return [$locale => [
-                                ...$current,
-                                'info_markdown' => $translation['info_markdown'] ?? null,
-                            ]];
-                        });
-                    $selectedProposalRows = $proposalRows
-                        ->filter(fn (array $translation, string $locale): bool => ! $englishEdited || $reviewerLocales->contains($locale));
-                    $selectedProposalRows
-                        ->each(fn (array $translation, string $locale) => $translationRows->put($locale, $translation));
-                    $localizationPromptVersion = (string) ($normalized['prompt_versions']['localization']
-                        ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version'));
-                    $writeIntents = $selectedProposalRows
-                        ->mapWithKeys(function (array $translation, string $locale) use ($reviewerLocales, $revalidatedLocales, $localizationPromptVersion): array {
-                            $reviewerEdited = $reviewerLocales->contains($locale);
+                                return [$locale => [
+                                    ...$current,
+                                    'info_markdown' => $translation['info_markdown'] ?? null,
+                                ]];
+                            });
+                        $selectedProposalRows = $proposalRows
+                            ->filter(fn (array $translation, string $locale): bool => ($beforeTranslations[$locale]['origin'] ?? null)
+                                !== IngredientTranslationOrigin::ReviewerEdited->value)
+                            ->filter(fn (array $translation, string $locale): bool => ! $englishEdited || $reviewerLocales->contains($locale));
+                        $selectedProposalRows
+                            ->each(fn (array $translation, string $locale) => $translationRows->put($locale, $translation));
+                        $localizationPromptVersion = (string) ($normalized['prompt_versions']['localization']
+                            ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version'));
+                        $writeIntents = $selectedProposalRows
+                            ->mapWithKeys(function (array $translation, string $locale) use ($reviewerLocales, $revalidatedLocales, $localizationPromptVersion): array {
+                                $reviewerEdited = $reviewerLocales->contains($locale);
 
-                            return [$locale => new IngredientTranslationWriteIntent(
-                                $reviewerEdited ? IngredientTranslationOrigin::ReviewerEdited : IngredientTranslationOrigin::AiGenerated,
-                                $reviewerEdited ? null : $localizationPromptVersion,
-                                $reviewerEdited || $revalidatedLocales->contains($locale),
-                            )];
-                        })
-                        ->all();
-                    $this->translations->sync(
-                        $ingredient,
-                        $translationRows->values()->all(),
-                        IngredientTranslationOrigin::AiGenerated,
-                        $localizationPromptVersion,
-                        $writeIntents,
-                    );
-                    $afterTranslations = $this->translationState($ingredient);
-                    $changed = $changed || $beforeTranslations !== $afterTranslations;
+                                return [$locale => new IngredientTranslationWriteIntent(
+                                    $reviewerEdited ? IngredientTranslationOrigin::ReviewerEdited : IngredientTranslationOrigin::AiGenerated,
+                                    $reviewerEdited ? null : $localizationPromptVersion,
+                                    $reviewerEdited || $revalidatedLocales->contains($locale),
+                                )];
+                            })
+                            ->all();
+                        $this->translations->sync(
+                            $ingredient,
+                            $translationRows->values()->all(),
+                            IngredientTranslationOrigin::AiGenerated,
+                            $localizationPromptVersion,
+                            $writeIntents,
+                        );
+                        $afterTranslations = $this->translationState($ingredient);
+                        $changed = $changed || $beforeTranslations !== $afterTranslations;
+                    }
 
                     $sourceData = is_array($ingredient->source_data) ? $ingredient->source_data : [];
                     $guidance = $beforeGuidance;
@@ -156,14 +165,17 @@ class ApplyIngredientGuidanceRefresh
                             $guidance['research_prompt_version'] = $researchPromptVersion;
                         }
                     }
-                    $guidance['localization_prompt_version'] = $localizationPromptVersion;
+                    if ($translationsApplied) {
+                        $guidance['localization_prompt_version'] = $localizationPromptVersion;
+                    }
                     $guidance['approved_at'] = $item->approved_at?->toIso8601String() ?? CarbonImmutable::now()->toIso8601String();
                     $afterEvidence = $this->evidenceRows($guidance['evidence'] ?? []);
                     $changed = $changed
                         || $beforeEvidence !== $afterEvidence
                         || ($beforeGuidance['guidance_prompt_version'] ?? null) !== ($guidance['guidance_prompt_version'] ?? null)
                         || ($beforeGuidance['research_prompt_version'] ?? null) !== ($guidance['research_prompt_version'] ?? null)
-                        || ($beforeGuidance['localization_prompt_version'] ?? null) !== ($guidance['localization_prompt_version'] ?? null);
+                        || ($translationsApplied
+                            && ($beforeGuidance['localization_prompt_version'] ?? null) !== ($guidance['localization_prompt_version'] ?? null));
                     data_set($sourceData, 'enrichment.guidance', $guidance);
                     $ingredient->source_data = $sourceData;
                     $ingredient->save();

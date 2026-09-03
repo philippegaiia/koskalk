@@ -65,12 +65,19 @@ class IngredientGuidanceRefreshResultValidator
         $english = $guidanceReport['normalized'];
         $soapmakingRelevant = $guidanceReport['soapmaking_relevant'];
 
-        $translationsReport = $this->validateTranslations($result['translations'] ?? null, $expectedLocales, $soapmakingRelevant);
+        $resultTranslations = $result['translations'] ?? null;
+        $translationsReport = $this->validateTranslations(
+            $resultTranslations,
+            $mode->isLocalizationOnly() || (is_array($resultTranslations) && $resultTranslations !== [])
+                ? $expectedLocales
+                : [],
+            $soapmakingRelevant,
+        );
         $errors = [...$errors, ...$translationsReport['errors']];
         $warnings = [...$warnings, ...$translationsReport['warnings']];
         $translations = $translationsReport['normalized'];
         $guidanceEvidence = $this->normalizeEvidence($result['guidance_evidence'] ?? null, $errors);
-        $promptVersions = $this->normalizePromptVersions($result['prompt_versions'] ?? null, $errors);
+        $promptVersions = $this->normalizePromptVersions($result['prompt_versions'] ?? null, $mode, $errors);
         $this->validateStringList($result['warnings'] ?? null, 'warnings', $errors);
         $this->validateStringList($result['unresolved_questions'] ?? null, 'unresolved_questions', $errors);
 
@@ -389,25 +396,28 @@ class IngredientGuidanceRefreshResultValidator
         return strcmp(str_pad($leftFraction, $length, '0'), str_pad($rightFraction, $length, '0')) <=> 0;
     }
 
-    /** @param array<string,list<string>> $errors @return array{guidance:string,localization:string,research:string} */
-    private function normalizePromptVersions(mixed $versions, array &$errors): array
-    {
+    /** @param array<string,list<string>> $errors @return array<string,string> */
+    private function normalizePromptVersions(
+        mixed $versions,
+        IngredientEnrichmentBatchMode $mode,
+        array &$errors,
+    ): array {
         if (! is_array($versions)) {
             $this->error($errors, 'prompt_versions', (string) __('ingredient_enrichment.validation.guidance_prompt_versions'));
 
-            return ['guidance' => '', 'localization' => '', 'research' => ''];
+            return [];
         }
-        foreach (['guidance', 'localization'] as $field) {
+        $requiredFields = $mode->isLocalizationOnly() ? ['localization'] : ['guidance'];
+        foreach ($requiredFields as $field) {
             if (! is_string($versions[$field] ?? null) || trim($versions[$field]) === '') {
                 $this->error($errors, "prompt_versions.{$field}", (string) __('ingredient_enrichment.validation.guidance_prompt_version'));
             }
         }
 
-        return [
-            'guidance' => trim((string) ($versions['guidance'] ?? '')),
-            'localization' => trim((string) ($versions['localization'] ?? '')),
-            'research' => trim((string) ($versions['research'] ?? '')),
-        ];
+        return collect(['guidance', 'localization', 'research'])
+            ->filter(fn (string $field): bool => array_key_exists($field, $versions))
+            ->mapWithKeys(fn (string $field): array => [$field => trim((string) $versions[$field])])
+            ->all();
     }
 
     /** @param array<string,list<string>> $errors */

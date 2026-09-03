@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
+use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Enums\IngredientTranslationOrigin;
+use App\Filament\Resources\IngredientEnrichmentBatches\IngredientEnrichmentBatchResource;
 use App\Filament\Resources\Ingredients\Pages\CreateIngredient;
 use App\Filament\Resources\Ingredients\Pages\EditIngredient;
 use App\Forms\Components\IngredientIdentityFields;
@@ -15,10 +18,13 @@ use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
+use App\Models\User;
+use App\Services\IngredientTranslationService;
 use App\Services\MediaStorage;
 use App\SoapSap;
 use App\Support\FilamentUploadMetadata;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -200,6 +206,70 @@ class IngredientForm
             ->schema([
                 Section::make(__('ingredients.editor.admin.guidance.section'))
                     ->description(__('ingredients.editor.admin.guidance.description'))
+                    ->key('guidance-media::section')
+                    ->afterHeader([
+                        Action::make('updateTranslations')
+                            ->label(__('ingredient_admin.translations.update_translations'))
+                            ->icon(Heroicon::Language)
+                            ->modalHeading(__('ingredient_admin.translations.update_translations_heading'))
+                            ->modalDescription(function (?Ingredient $record): string {
+                                $catalogueLocales = collect(config('interface-translations.catalogue_locales', []))
+                                    ->filter(fn (mixed $locale): bool => is_string($locale) && filled(trim($locale)))
+                                    ->map(fn (string $locale): string => trim($locale))
+                                    ->unique()
+                                    ->values();
+                                $translationRows = $record instanceof Ingredient
+                                    ? collect(app(IngredientTranslationService::class)->formData($record))
+                                    : collect();
+                                $translationRows = $translationRows
+                                    ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['locale'] ?? null))
+                                    ->filter(fn (array $row): bool => $catalogueLocales->contains($row['locale']));
+
+                                $currentLocales = $translationRows
+                                    ->filter(fn (array $row): bool => ($row['is_stale'] ?? true) === false)
+                                    ->pluck('locale')
+                                    ->implode(', ') ?: __('ingredient_admin.translations.none');
+                                $missingLocales = $catalogueLocales
+                                    ->diff($translationRows->pluck('locale'))
+                                    ->implode(', ') ?: __('ingredient_admin.translations.none');
+                                $outdatedLocales = $translationRows
+                                    ->filter(fn (array $row): bool => ($row['is_stale'] ?? false) === true
+                                        && ($row['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value)
+                                    ->pluck('locale')
+                                    ->implode(', ') ?: __('ingredient_admin.translations.none');
+                                $preservedLocales = $translationRows
+                                    ->filter(fn (array $row): bool => ($row['is_stale'] ?? false) === true
+                                        && ($row['origin'] ?? null) === IngredientTranslationOrigin::ReviewerEdited->value)
+                                    ->pluck('locale')
+                                    ->implode(', ') ?: __('ingredient_admin.translations.none');
+
+                                return __('ingredient_admin.translations.update_translations_description', [
+                                    'current' => $currentLocales,
+                                    'missing' => $missingLocales,
+                                    'outdated' => $outdatedLocales,
+                                    'preserved' => $preservedLocales,
+                                ]);
+                            })
+                            ->requiresConfirmation()
+                            ->visible(fn (LivewireComponent $livewire, ?Ingredient $record): bool => $livewire instanceof EditIngredient
+                                && $record?->exists === true
+                                && $record->owner_type === null
+                                && $record->owner_id === null
+                                && filled($record->info_markdown)
+                                && static::hasTranslationsToUpdate($record))
+                            ->action(function (Action $action, Ingredient $record, StartIngredientGuidanceRefresh $startRefresh): void {
+                                $actor = auth()->user();
+
+                                abort_unless($actor instanceof User, 403);
+
+                                $batch = $startRefresh->handle($actor, collect([$record]), true);
+
+                                $action->redirect(
+                                    IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]),
+                                    navigate: true,
+                                );
+                            }),
+                    ])
                     ->schema([
                         MarkdownEditor::make('info_markdown')
                             ->label(__('ingredients.editor.admin.guidance.field'))
@@ -270,6 +340,23 @@ class IngredientForm
                     ])
                     ->columnSpanFull(),
             ]);
+    }
+
+    private static function hasTranslationsToUpdate(Ingredient $ingredient): bool
+    {
+        $translations = collect(app(IngredientTranslationService::class)->formData($ingredient))
+            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['locale'] ?? null))
+            ->keyBy('locale');
+
+        return collect(config('interface-translations.catalogue_locales', []))
+            ->filter(fn (mixed $locale): bool => is_string($locale) && filled(trim($locale)))
+            ->contains(function (string $locale) use ($translations): bool {
+                $translation = $translations->get(trim($locale));
+
+                return $translation === null
+                    || (($translation['is_stale'] ?? false) === true
+                        && ($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value);
+            });
     }
 
     private static function translationsTab(): Tab

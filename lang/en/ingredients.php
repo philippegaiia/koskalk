@@ -28,7 +28,7 @@ return [
         'minerals_salts_powders' => ['label' => 'Minerals, salts & powders', 'short_label' => 'Minerals & salts', 'description' => 'Mineral, salt, starch, clay, and powder materials used for function or feel.'],
         'actives' => ['label' => 'Actives & specialty ingredients', 'short_label' => 'Actives', 'description' => 'Ingredients selected for a targeted skin, hair, protection, or sensory benefit.'],
         'botanicals_extracts' => ['label' => 'Botanicals & extracts', 'short_label' => 'Botanicals', 'description' => 'Plant-derived waters, extracts, macerates, and powders.'],
-        'aromatic_materials' => ['label' => 'Essential oils & fragrance materials', 'short_label' => 'Fragrance', 'description' => 'Aromatic materials that require fragrance, allergen, and IFRA-aware handling.'],
+        'aromatic_materials' => ['label' => 'Essential oils & fragrance materials', 'short_label' => 'Aromatics', 'description' => 'Aromatic materials that require fragrance, allergen, and IFRA-aware handling.'],
         'colourants' => ['label' => 'Colourants', 'short_label' => 'Colourants', 'description' => 'Pigments, dyes, micas, and other materials used to colour a product.'],
         'preservation_stability' => ['label' => 'Preservation & stability', 'short_label' => 'Preservation', 'description' => 'Preservatives and support ingredients that protect product quality and stability.'],
         'ph_adjusters_buffers' => ['label' => 'pH adjusters & buffers', 'short_label' => 'pH adjusters', 'description' => 'Acids, bases, and buffer systems used to control product pH.'],

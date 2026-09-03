@@ -2463,11 +2463,11 @@
       "key": "categories.aromatic_materials.short_label",
       "text": {
         "de": "Duftstoffe",
-        "es": "Fragancia",
-        "fr": "Parfums",
-        "it": "Fragranze",
+        "es": "Aromáticos",
+        "fr": "Aromatiques",
+        "it": "Aromatici",
         "nl": "Geurstoffen",
-        "pt_BR": "Fragrância"
+        "pt_BR": "Aromáticos"
       }
     },
     {

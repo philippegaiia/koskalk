@@ -22,6 +22,25 @@ it('requests fuller practical guidance without filler when reviewed facts suppor
         ->toContain('Do not repeat facts across sections.');
 });
 
+it('keeps renderer-only fresh evidence out of the guidance prompt input', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([
+        'guidance_evidence' => [[
+            'source_url' => 'https://example.test/merged',
+            'summary' => 'Merged evidence row.',
+        ]],
+        'fresh_guidance_evidence' => [[
+            'source_url' => 'https://example.test/internal-fresh',
+            'summary' => 'Renderer-only fresh evidence row.',
+        ]],
+    ]);
+
+    expect($prompt['input'])
+        ->toContain('Merged evidence row.')
+        ->not->toContain('fresh_guidance_evidence')
+        ->not->toContain('Renderer-only fresh evidence row.')
+        ->not->toContain('internal-fresh');
+});
+
 it('authors evidence-linked guidance with a strict no-web response contract', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     Http::preventStrayRequests();

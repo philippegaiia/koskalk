@@ -255,6 +255,53 @@ it('converts accepted and legacy evidence to the persisted guidance shape', func
         ]);
 });
 
+it('quarantines malformed rows and deterministically normalizes legacy rows without timestamps', function (): void {
+    $policy = guidanceEvidencePolicy();
+    $legacy = [[
+        'source_name' => 'Legacy source',
+        'source_url' => 'https://legacy.example/apricot-oil',
+        'summary' => 'A legacy editorial observation.',
+        'source_tier' => 'editorial',
+    ]];
+    $malformed = [
+        [
+            'source_name' => '',
+            'source_url' => 'https://malformed.example/first',
+            'summary' => 'Missing source name.',
+            'source_tier' => 'editorial',
+        ],
+        [
+            'source_name' => 'Partial source',
+            'source_url' => 'https://malformed.example/second',
+            'summary' => 'Partially classified evidence.',
+            'source_tier' => 'editorial',
+            'claim_type' => 'usage',
+        ],
+    ];
+
+    $normalized = $policy->normalizePersisted([...$legacy, ...$malformed]);
+    $normalizedAgain = $policy->normalizePersisted([...$legacy, ...$malformed]);
+
+    expect($normalized)->toHaveCount(1)
+        ->and($normalized)->toBe($normalizedAgain)
+        ->and($normalized[0])->toMatchArray([
+            'source_name' => 'Legacy source',
+            'source_url' => 'https://legacy.example/apricot-oil',
+            'summary' => 'A legacy editorial observation.',
+            'source_tier' => 'editorial',
+            'retrieved_at' => '1970-01-01T00:00:00+00:00',
+            'claim_type' => 'origin',
+            'source_kind' => 'legacy_editorial',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ])
+        ->and($policy->reconcilePersisted($malformed, []))->toBe([]);
+});
+
 it('matches consulted URLs canonically while removing fragments and a sole trailing slash', function (): void {
     $candidate = guidanceEvidenceCandidate([
         'source_url' => 'HTTPS://Supplier.Example/technical/apricot-oil.pdf',

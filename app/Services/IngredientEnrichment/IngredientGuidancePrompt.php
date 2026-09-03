@@ -14,6 +14,9 @@ class IngredientGuidancePrompt
      */
     public function build(array $context): array
     {
+        $promptContext = $context;
+        unset($promptContext['fresh_guidance_evidence']);
+
         return [
             'version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
             'instructions' => <<<'PROMPT'
@@ -36,7 +39,7 @@ You are an experienced cosmetic formulator writing English catalogue guidance fo
 PROMPT,
             'input' => '<ingredient_guidance_context>'."\n"
                 .json_encode(
-                    $context,
+                    $promptContext,
                     JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
                 )."\n"
                 .'</ingredient_guidance_context>',

@@ -25,6 +25,7 @@ class ApplyIngredientGuidanceRefresh
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
         private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
+        private readonly IngredientGuidanceChangePlanner $planner,
         private readonly IngredientTranslationService $translations,
         private readonly IngredientEnrichmentBatchService $batches,
     ) {}
@@ -70,6 +71,17 @@ class ApplyIngredientGuidanceRefresh
                         ? data_get($ingredient->source_data, 'enrichment.guidance')
                         : [];
                     $beforeEvidence = $this->evidenceRows($beforeGuidance['evidence'] ?? []);
+                    $guidanceEvidence = $this->guidanceEvidencePolicy->reconcilePersisted(
+                        $beforeEvidence,
+                        $this->freshEvidenceContribution($item, $mode, $normalized),
+                    );
+                    $normalized['guidance_evidence'] = $guidanceEvidence;
+                    $report['normalized'] = $normalized;
+                    $plan = $this->alignPlanEvidence(
+                        $this->planner->plan($ingredient, $normalized, $mode),
+                        $beforeEvidence,
+                        $guidanceEvidence,
+                    );
                     $editedFields = collect(is_array($item->edited_fields) ? $item->edited_fields : []);
                     $englishEdited = $editedFields->contains('proposal.info_markdown');
                     $reviewerLocales = $this->editedLocales($editedFields);
@@ -135,12 +147,6 @@ class ApplyIngredientGuidanceRefresh
 
                     $sourceData = is_array($ingredient->source_data) ? $ingredient->source_data : [];
                     $guidance = $beforeGuidance;
-                    $guidanceEvidence = $this->guidanceEvidencePolicy->reconcilePersisted(
-                        $beforeEvidence,
-                        $this->evidenceRows($normalized['guidance_evidence'] ?? []),
-                    );
-                    $normalized['guidance_evidence'] = $guidanceEvidence;
-                    $report['normalized'] = $normalized;
                     if (! $mode->isLocalizationOnly() || $guidanceEvidence !== []) {
                         $guidance['evidence'] = $guidanceEvidence;
                     }
@@ -168,6 +174,7 @@ class ApplyIngredientGuidanceRefresh
                         'status' => $changed ? IngredientEnrichmentItemStatus::Applied : IngredientEnrichmentItemStatus::Unchanged,
                         'result' => $normalized,
                         'validation_report' => $report,
+                        'plan' => $plan,
                         'applied_by_user_id' => $actor->id,
                         'applied_at' => now(),
                     ]);
@@ -268,5 +275,79 @@ class ApplyIngredientGuidanceRefresh
             ->filter(fn (mixed $row): bool => is_array($row))
             ->values()
             ->all();
+    }
+
+    /**
+     * Guidance refresh results contain a merged authoring bank, but the
+     * persisted research stage is the authoritative fresh contribution used at
+     * apply time. Hand-authored legacy items without that stage retain their
+     * result evidence as a compatibility fallback; localization has no research
+     * contribution and therefore uses its validated result evidence directly.
+     *
+     * @param  array<string, mixed>  $normalized
+     * @return list<array<string, mixed>>
+     */
+    private function freshEvidenceContribution(
+        IngredientEnrichmentBatchItem $item,
+        IngredientEnrichmentBatchMode $mode,
+        array $normalized,
+    ): array {
+        $resultEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
+        if ($mode !== IngredientEnrichmentBatchMode::GuidanceRefresh) {
+            return $resultEvidence;
+        }
+
+        $researchData = data_get($item->research_stages, 'ai_guidance_research.data');
+        if (! is_array($researchData) || ! array_key_exists('guidance_evidence', $researchData)) {
+            return $resultEvidence;
+        }
+
+        return $this->evidenceRows($researchData['guidance_evidence']);
+    }
+
+    /**
+     * The apply-time evidence bank can differ from the reviewed result when a
+     * concurrent refresh has added rows. Keep the plan's effective and proposed
+     * evidence in lockstep with that bank while preserving other review
+     * decisions.
+     *
+     * @param  array<string, mixed>  $plan
+     * @param  list<array<string, mixed>>  $beforeEvidence
+     * @param  list<array<string, mixed>>  $guidanceEvidence
+     * @return array<string, mixed>
+     */
+    private function alignPlanEvidence(
+        array $plan,
+        array $beforeEvidence,
+        array $guidanceEvidence,
+    ): array {
+        $plan['effective'] = [
+            ...(is_array($plan['effective'] ?? null) ? $plan['effective'] : []),
+            'guidance_evidence' => $guidanceEvidence,
+        ];
+        $decisions = collect(is_array($plan['decisions'] ?? null) ? $plan['decisions'] : []);
+        $hasEvidenceDecision = false;
+        $decisions = $decisions->map(function (mixed $decision) use ($guidanceEvidence, &$hasEvidenceDecision): mixed {
+            if (! is_array($decision) || ($decision['field'] ?? null) !== 'guidance.evidence') {
+                return $decision;
+            }
+
+            $hasEvidenceDecision = true;
+
+            return [...$decision, 'proposed' => $guidanceEvidence];
+        });
+        if ($beforeEvidence !== $guidanceEvidence && ! $hasEvidenceDecision) {
+            $decisions->push([
+                'field' => 'guidance.evidence',
+                'decision' => $beforeEvidence === [] ? 'new' : 'replace',
+                'current' => $beforeEvidence,
+                'proposed' => $guidanceEvidence,
+            ]);
+        }
+
+        $plan['changed'] = (bool) ($plan['changed'] ?? false) || $beforeEvidence !== $guidanceEvidence;
+        $plan['decisions'] = $decisions->values()->all();
+
+        return $plan;
     }
 }

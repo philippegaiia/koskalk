@@ -9,6 +9,8 @@ use RuntimeException;
 
 class IngredientGuidanceEvidencePolicy
 {
+    private const string DEFAULT_RETRIEVED_AT = '1970-01-01T00:00:00+00:00';
+
     public const array REJECTION_CODES = [
         'invalid_shape',
         'invalid_field',
@@ -129,49 +131,12 @@ class IngredientGuidanceEvidencePolicy
             return [];
         }
 
-        $fallback = ($fallbackRetrievedAt ?? CarbonImmutable::now())->toIso8601String();
+        $fallback = ($fallbackRetrievedAt ?? CarbonImmutable::parse(self::DEFAULT_RETRIEVED_AT))->toIso8601String();
 
         return collect($rows)
             ->filter(fn (mixed $row): bool => is_array($row))
-            ->map(function (array $row) use ($fallback): ?array {
-                $sourceName = trim((string) ($row['source_name'] ?? ''));
-                $sourceUrl = trim((string) ($row['source_url'] ?? ''));
-                $summary = trim((string) ($row['summary'] ?? ''));
-
-                if ($sourceName === '' || $sourceUrl === '' || $summary === '') {
-                    return $row;
-                }
-
-                if ($this->hasSomeClassifications($row) && ! $this->hasAllClassifications($row)) {
-                    return $row;
-                }
-
-                $retrievedAt = is_string($row['retrieved_at'] ?? null)
-                    && trim($row['retrieved_at']) !== ''
-                    ? trim($row['retrieved_at'])
-                    : $fallback;
-
-                $hasClassifications = $this->hasAllClassifications($row);
-
-                return [
-                    'source_name' => $sourceName,
-                    'source_url' => $sourceUrl,
-                    'summary' => $summary,
-                    'source_tier' => is_string($row['source_tier'] ?? null)
-                        ? trim($row['source_tier'])
-                        : 'editorial',
-                    'retrieved_at' => $retrievedAt,
-                    'claim_type' => $hasClassifications ? $row['claim_type'] : 'origin',
-                    'source_kind' => $hasClassifications ? $row['source_kind'] : 'legacy_editorial',
-                    'scope' => $hasClassifications ? $row['scope'] : 'material',
-                    'evidence_kind' => $hasClassifications ? $row['evidence_kind'] : 'fact',
-                    'usage_application' => $hasClassifications ? $row['usage_application'] : 'not_applicable',
-                    'recommended_min_percent' => $hasClassifications ? $row['recommended_min_percent'] : null,
-                    'recommended_max_percent' => $hasClassifications ? $row['recommended_max_percent'] : null,
-                    'percentage_basis' => $hasClassifications ? $row['percentage_basis'] : 'not_applicable',
-                ];
-            })
-            ->filter()
+            ->map(fn (array $row): ?array => $this->normalizePersistedRow($row, $fallback))
+            ->filter(fn (mixed $row): bool => is_array($row))
             ->values()
             ->all();
     }
@@ -559,6 +524,105 @@ class IngredientGuidanceEvidencePolicy
             'recommended_max_percent',
             'percentage_basis',
         ])->contains(fn (string $key): bool => array_key_exists($key, $row));
+    }
+
+    /**
+     * Normalize one persisted row, quarantining rows that cannot be represented
+     * as either a complete classified row or a complete legacy editorial row.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>|null
+     */
+    private function normalizePersistedRow(array $row, string $fallbackRetrievedAt): ?array
+    {
+        foreach (['source_name', 'source_url', 'summary'] as $field) {
+            if (! is_string($row[$field] ?? null) || trim($row[$field]) === '') {
+                return null;
+            }
+        }
+
+        $sourceName = trim($row['source_name']);
+        $sourceUrl = trim($row['source_url']);
+        $summary = trim($row['summary']);
+        if ($this->canonicalUrl($sourceUrl) === null) {
+            return null;
+        }
+
+        if (array_key_exists('source_tier', $row)
+            && (! is_string($row['source_tier']) || trim($row['source_tier']) !== 'editorial')) {
+            return null;
+        }
+
+        if (array_key_exists('retrieved_at', $row)
+            && (! is_string($row['retrieved_at'])
+                || trim($row['retrieved_at']) === ''
+                || ! $this->isParsableDateTime($row['retrieved_at']))) {
+            return null;
+        }
+
+        if ($this->hasSomeClassifications($row) && ! $this->hasAllClassifications($row)) {
+            return null;
+        }
+
+        $hasClassifications = $this->hasAllClassifications($row);
+        if ($hasClassifications && ! $this->hasValidPersistedClassifications($row)) {
+            return null;
+        }
+
+        return [
+            'source_name' => $sourceName,
+            'source_url' => $sourceUrl,
+            'summary' => $summary,
+            'source_tier' => 'editorial',
+            'retrieved_at' => array_key_exists('retrieved_at', $row)
+                ? trim($row['retrieved_at'])
+                : $fallbackRetrievedAt,
+            'claim_type' => $hasClassifications ? $row['claim_type'] : 'origin',
+            'source_kind' => $hasClassifications ? $row['source_kind'] : 'legacy_editorial',
+            'scope' => $hasClassifications ? $row['scope'] : 'material',
+            'evidence_kind' => $hasClassifications ? $row['evidence_kind'] : 'fact',
+            'usage_application' => $hasClassifications ? $row['usage_application'] : 'not_applicable',
+            'recommended_min_percent' => $hasClassifications ? $row['recommended_min_percent'] : null,
+            'recommended_max_percent' => $hasClassifications ? $row['recommended_max_percent'] : null,
+            'percentage_basis' => $hasClassifications ? $row['percentage_basis'] : 'not_applicable',
+        ];
+    }
+
+    /** @param array<string, mixed> $row */
+    private function hasValidPersistedClassifications(array $row): bool
+    {
+        foreach ([
+            'claim_type' => 'allowed_claim_types',
+            'source_kind' => 'allowed_source_kinds',
+            'scope' => 'allowed_scopes',
+            'evidence_kind' => 'allowed_evidence_kinds',
+            'usage_application' => 'allowed_usage_applications',
+            'percentage_basis' => 'allowed_percentage_bases',
+        ] as $field => $configKey) {
+            $allowedValues = config("ingredient-enrichment.openai.guidance_research.{$configKey}", []);
+            if ($field === 'source_kind') {
+                $allowedValues[] = 'legacy_editorial';
+            }
+            if (! is_string($row[$field] ?? null)
+                || ! in_array($row[$field], $allowedValues, true)) {
+                return false;
+            }
+        }
+
+        return collect(['recommended_min_percent', 'recommended_max_percent'])
+            ->every(fn (string $field): bool => $row[$field] === null || is_string($row[$field]))
+            && $this->hasValidPercentageEvidence($row);
+    }
+
+    private function isParsableDateTime(string $value): bool
+    {
+        try {
+            CarbonImmutable::parse($value);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return true;
     }
 
     /** @param array<string, mixed> $row */

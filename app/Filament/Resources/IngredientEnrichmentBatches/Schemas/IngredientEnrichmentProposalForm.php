@@ -73,7 +73,8 @@ class IngredientEnrichmentProposalForm
                         ->ordered()->pluck('name', 'code')->all())->required(),
                     TextInput::make('display_name')->label(__('ingredient_enrichment_admin.review.labels.display_name'))->required(),
                     TextInput::make('saponification_name')->label(__('ingredient_enrichment_admin.review.labels.saponification_name')),
-                    MarkdownEditor::make('info_markdown')->label(__('ingredient_enrichment_admin.review.labels.info_markdown'))->required()->columnSpanFull(),
+                    MarkdownEditor::make('info_markdown')->label(__('ingredient_enrichment_admin.review.labels.info_markdown'))
+                        ->dehydrated(fn (?string $state): bool => filled($state))->columnSpanFull(),
                 ])->columns(3)->columnSpanFull(),
             ]),
             Section::make(__('ingredient_enrichment_admin.review.labels.market_labels'))->schema([

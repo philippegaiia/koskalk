@@ -72,7 +72,6 @@ class IngredientEnrichmentResultSchema
                     'locale' => $this->string(enum: array_values(config('interface-translations.catalogue_locales', []))),
                     'display_name' => $this->string(),
                     'saponification_name' => $this->nullableString(),
-                    'info_markdown' => $this->string(),
                 ])),
                 'market_labels' => $this->array($this->object([
                     'market_code' => $this->string(enum: collect(IngredientLabelMarket::cases())->map->value->all()),

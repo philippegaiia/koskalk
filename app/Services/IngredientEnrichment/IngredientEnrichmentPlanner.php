@@ -281,6 +281,9 @@ class IngredientEnrichmentPlanner
             $proposedRow = $proposedByLocale->get($locale, []);
 
             foreach (['display_name', 'saponification_name', 'info_markdown'] as $field) {
+                if ($field === 'info_markdown' && ! array_key_exists($field, $proposedRow)) {
+                    continue;
+                }
                 $currentValue = is_array($currentRow) ? ($currentRow[$field] ?? null) : null;
                 $proposedValue = is_array($proposedRow) ? ($proposedRow[$field] ?? null) : null;
                 $decision = $this->scalarDecision($currentValue, $proposedValue, $replace);

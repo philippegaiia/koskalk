@@ -228,6 +228,7 @@ class IngredientForm
                                 $incompleteLocales = $translationRows
                                     ->filter(fn (array $row): bool => ($row['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value
                                         && (blank($row['display_name'] ?? null)
+                                            || blank($row['info_markdown'] ?? null)
                                             || (filled($record?->saponification_name) && blank($row['saponification_name'] ?? null))))
                                     ->pluck('locale');
                                 $currentLocales = $translationRows
@@ -365,6 +366,7 @@ class IngredientForm
                         && ($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value)
                     || (($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value
                         && (blank($translation['display_name'] ?? null)
+                            || blank($translation['info_markdown'] ?? null)
                             || (filled($ingredient->saponification_name) && blank($translation['saponification_name'] ?? null))));
             });
     }

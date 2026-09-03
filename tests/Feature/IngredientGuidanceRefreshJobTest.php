@@ -76,6 +76,18 @@ it('does not invoke localization during an ordinary guidance refresh', function 
         }
     });
     $fixture = guidanceResumeFixture();
+    $translation = $fixture['ingredient']->translations()->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom français existant',
+        'saponification_name' => 'Nom de savon existant',
+        'info_markdown' => localizedGuidanceText(),
+        'origin' => 'ai_generated',
+    ]);
+    $beforeNames = $translation->only(['display_name', 'saponification_name']);
+    $fixture['item']->update([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($fixture['ingredient']->fresh()),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($fixture['ingredient']->fresh()),
+    ]);
 
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
@@ -84,7 +96,8 @@ it('does not invoke localization during an ordinary guidance refresh', function 
         ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and($completed->result['translations'])->toBe([])
         ->and($completed->research_stages)->not->toHaveKey('ai_guidance_localization')
-        ->and($completed->result['prompt_versions'])->not->toHaveKey('localization');
+        ->and($completed->result['prompt_versions'])->not->toHaveKey('localization')
+        ->and($translation->fresh()->only(['display_name', 'saponification_name']))->toBe($beforeNames);
 });
 
 it('queues a guidance refresh and calls fresh research and authoring without localization', function (): void {
@@ -1125,7 +1138,11 @@ it('localizes only outdated locales and never calls English authoring', function
     });
 
     $admin = User::factory()->create(['is_admin' => true]);
-    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil', 'info_markdown' => guidanceText()]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive oil',
+        'saponification_name' => null,
+        'info_markdown' => guidanceText(),
+    ]);
     $fingerprint = app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient);
     $ingredient->translations()->create([
         'locale' => 'fr',

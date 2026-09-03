@@ -315,6 +315,7 @@ class IngredientEnrichmentResultValidator
         $this->validateTranslations(
             $proposal['translations'] ?? null,
             (bool) ($proposal['soapmaking_relevant'] ?? false),
+            $this->nullableString($proposal['saponification_name'] ?? null),
             $errors,
             $warnings,
         );
@@ -585,8 +586,13 @@ class IngredientEnrichmentResultValidator
      * @param  array<string, list<string>>  $errors
      * @param  list<string>  $warnings
      */
-    private function validateTranslations(mixed $rows, bool $soapmakingRelevant, array &$errors, array &$warnings): void
-    {
+    private function validateTranslations(
+        mixed $rows,
+        bool $soapmakingRelevant,
+        ?string $canonicalSaponificationName,
+        array &$errors,
+        array &$warnings,
+    ): void {
         if ($rows === null || $rows === []) {
             return;
         }
@@ -618,24 +624,34 @@ class IngredientEnrichmentResultValidator
             if (! is_string($row['display_name'] ?? null) || trim($row['display_name']) === '') {
                 $this->error($errors, "{$path}.display_name", $this->message('translation_display_name'));
             }
-            if (! is_string($row['info_markdown'] ?? null) || trim($row['info_markdown']) === '') {
+            $hasGuidance = array_key_exists('info_markdown', $row);
+            if ($hasGuidance && (! is_string($row['info_markdown']) || trim($row['info_markdown']) === '')) {
                 $this->error($errors, "{$path}.info_markdown", $this->message('translation_guidance'));
             }
             if (($row['saponification_name'] ?? null) !== null && ! is_string($row['saponification_name'])) {
                 $this->error($errors, "{$path}.saponification_name", $this->message('string_or_null'));
             }
-            if ($soapmakingRelevant
+            if (! $hasGuidance && $canonicalSaponificationName !== null
                 && (! is_string($row['saponification_name'] ?? null) || trim($row['saponification_name']) === '')) {
                 $this->error($errors, "{$path}.saponification_name", $this->message('saponification_name_required'));
             }
-            $this->validateTranslatedGuidance(
-                is_string($row['info_markdown'] ?? null) ? $row['info_markdown'] : '',
-                "{$path}.info_markdown",
-                $locale,
-                $soapmakingRelevant,
-                $errors,
-                $warnings,
-            );
+            if (! $hasGuidance && $canonicalSaponificationName === null && ($row['saponification_name'] ?? null) !== null) {
+                $this->error($errors, "{$path}.saponification_name", $this->message('string_or_null'));
+            }
+            if ($hasGuidance) {
+                if ($soapmakingRelevant
+                    && (! is_string($row['saponification_name'] ?? null) || trim($row['saponification_name']) === '')) {
+                    $this->error($errors, "{$path}.saponification_name", $this->message('saponification_name_required'));
+                }
+                $this->validateTranslatedGuidance(
+                    is_string($row['info_markdown'] ?? null) ? $row['info_markdown'] : '',
+                    "{$path}.info_markdown",
+                    $locale,
+                    $soapmakingRelevant,
+                    $errors,
+                    $warnings,
+                );
+            }
         }
 
         foreach (array_diff($expectedLocales, array_keys($seen)) as $locale) {

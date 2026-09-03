@@ -841,7 +841,7 @@ class IngredientGuidanceStageRunner
     {
         $fingerprint = $this->translationFingerprint->forIngredient($ingredient);
         $translations = $ingredient->translations()
-            ->get(['locale', 'display_name', 'saponification_name', 'source_fingerprint', 'origin'])
+            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown', 'source_fingerprint', 'origin'])
             ->keyBy('locale');
         $canonicalSaponificationName = $this->nullableString($ingredient->saponification_name);
 
@@ -869,6 +869,7 @@ class IngredientGuidanceStageRunner
                 }
 
                 return $this->nullableString($translation->display_name) === null
+                    || $this->nullableString($translation->info_markdown) === null
                     || ($canonicalSaponificationName !== null
                         && $this->nullableString($translation->saponification_name) === null);
             })

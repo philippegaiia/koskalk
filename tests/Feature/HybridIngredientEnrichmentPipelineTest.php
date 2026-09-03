@@ -3,9 +3,11 @@
 use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceResearchClient;
+use App\Contracts\IngredientIdentityNameLocalizationClient;
 use App\Data\IngredientEditorialResponse;
 use App\Data\IngredientGapResearchResponse;
 use App\Data\IngredientGuidanceAuthoringResponse;
+use App\Data\IngredientIdentityNameLocalizationResponse;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Enums\IngredientSubcategory;
@@ -18,6 +20,29 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    app()->instance(IngredientIdentityNameLocalizationClient::class, new class implements IngredientIdentityNameLocalizationClient
+    {
+        public function localize(array $context): IngredientIdentityNameLocalizationResponse
+        {
+            $hasSaponificationName = filled(data_get($context, 'canonical.saponification_name'));
+
+            return new IngredientIdentityNameLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => $hasSaponificationName ? "Localized soap {$locale}" : null,
+                ])->all(),
+                responseId: 'resp-identity-localization',
+                requestId: 'req-identity-localization',
+                model: 'gpt-test',
+                inputTokens: 0,
+                outputTokens: 0,
+            );
+        }
+    });
+});
 
 it('adds identifiers corroborated by two independent consulted sources to the proposal', function (): void {
     seedHybridCosingFunctions();
@@ -128,6 +153,7 @@ it('stops before guidance when identity cannot be confirmed against the registri
         ->and($response->webSearchCalls)->toBe(0)
         ->and(data_get($fresh->research_stages, 'ai_guidance_research.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'ai_guidance_authoring.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_identity_name_localization.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'ai_guidance_localization.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'validation.status'))->toBe('skipped');
 });

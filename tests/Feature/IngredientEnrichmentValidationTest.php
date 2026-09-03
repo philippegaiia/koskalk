@@ -154,6 +154,31 @@ it('accepts full enrichment results with deferred localization', function (bool 
     'translations omitted' => true,
 ]);
 
+it('accepts full enrichment name translations without guidance text', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['de']);
+
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-NAME-ONLY-TRANSLATION',
+        'category' => IngredientCategory::Other,
+    ]);
+    $result = enrichmentResult($ingredient->catalog_key);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['translations'] = [[
+        'locale' => 'de',
+        'display_name' => 'Übersetzter Name',
+        'saponification_name' => null,
+    ]];
+
+    $report = app(IngredientEnrichmentResultValidator::class)->validate($result, $ingredient);
+
+    expect($report['valid'])->toBeTrue()
+        ->and($report['normalized']['proposal']['translations'])->toBe([[
+            'locale' => 'de',
+            'display_name' => 'Übersetzter Name',
+            'saponification_name' => null,
+        ]]);
+});
+
 it('accepts classified guidance evidence and preserves its recommendation metadata', function (): void {
     foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
         SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);

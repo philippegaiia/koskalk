@@ -5,6 +5,7 @@ namespace App\Services\IngredientEnrichment;
 use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceResearchClient;
+use App\Contracts\IngredientIdentityNameLocalizationClient;
 use App\Data\IngredientEnrichmentPipelineResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientCategory;
@@ -29,6 +30,7 @@ class IngredientEnrichmentPipeline
         private readonly UsIngredientDeclarationService $usDeclarations,
         private readonly IngredientEnrichmentFactsBuilder $facts,
         private readonly IngredientEditorialClient $editorial,
+        private readonly IngredientIdentityNameLocalizationClient $identityNameLocalization,
         private readonly IngredientGuidanceAuthoringClient $guidanceAuthoring,
         private readonly IngredientGuidanceResearchClient $guidanceResearchClient,
         private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
@@ -112,6 +114,7 @@ class IngredientEnrichmentPipeline
             foreach ([
                 IngredientEnrichmentResearchStage::AiGuidanceResearch,
                 IngredientEnrichmentResearchStage::AiEditorial,
+                IngredientEnrichmentResearchStage::AiIdentityNameLocalization,
                 IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
                 IngredientEnrichmentResearchStage::AiGuidanceLocalization,
                 IngredientEnrichmentResearchStage::Validation,
@@ -235,6 +238,61 @@ class IngredientEnrichmentPipeline
             },
         );
         $metadataValues = is_array($editorial->data['editorial'] ?? null) ? $editorial->data['editorial'] : [];
+        $identityNameLocalization = $this->runStage(
+            $itemId,
+            IngredientEnrichmentResearchStage::AiIdentityNameLocalization,
+            function () use ($facts, $input, $metadataValues): IngredientSourceStageResult {
+                $locales = collect(data_get($input, 'vocabulary.locales', []))
+                    ->filter(fn (mixed $locale): bool => is_string($locale) && filled(trim($locale)))
+                    ->map(fn (string $locale): string => trim($locale))
+                    ->unique()
+                    ->values()
+                    ->all();
+                if ($locales === []) {
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiIdentityNameLocalization,
+                        status: 'completed',
+                        data: [
+                            'translations' => [],
+                            'provider_response_id' => '',
+                            'provider_request_id' => '',
+                            'provider_model' => '',
+                            'input_tokens' => 0,
+                            'output_tokens' => 0,
+                        ],
+                    );
+                }
+
+                $context = [
+                    'locales' => $locales,
+                    'canonical' => [
+                        'display_name' => $metadataValues['display_name'] ?? null,
+                        'saponification_name' => $metadataValues['saponification_name'] ?? null,
+                        'inci_name' => $metadataValues['inci_name']
+                            ?? data_get($facts, 'proposal.inci_name')
+                            ?? data_get($input, 'record.inci_name'),
+                    ],
+                ];
+                $response = $this->identityNameLocalization->localize($context);
+
+                return new IngredientSourceStageResult(
+                    stage: IngredientEnrichmentResearchStage::AiIdentityNameLocalization,
+                    status: 'completed',
+                    data: [
+                        'translations' => $this->normalizeIdentityNameTranslations(
+                            $response->translations,
+                            $locales,
+                            $metadataValues['saponification_name'] ?? null,
+                        ),
+                        'provider_response_id' => $response->responseId,
+                        'provider_request_id' => $response->requestId,
+                        'provider_model' => $response->model,
+                        'input_tokens' => $response->inputTokens,
+                        'output_tokens' => $response->outputTokens,
+                    ],
+                );
+            },
+        );
         $legacyGuidance = array_key_exists('info_markdown', $metadataValues)
             ? [
                 'info_markdown' => is_string($metadataValues['info_markdown'] ?? null)
@@ -300,7 +358,9 @@ class IngredientEnrichmentPipeline
             (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
         );
         $metadataValues['soapmaking_relevant'] = $soapmakingRelevant;
-        $metadataValues['translations'] = [];
+        $metadataValues['translations'] = is_array($identityNameLocalization->data['translations'] ?? null)
+            ? $identityNameLocalization->data['translations']
+            : [];
         $metadataValues['guidance_evidence'] = $this->guidanceEvidence($guidanceResearch);
         $validation = $this->runStage(
             $itemId,
@@ -339,23 +399,28 @@ class IngredientEnrichmentPipeline
                 ->all(),
             providerResponseId: (string) (
                 $guidance->data['provider_response_id']
+                    ?? $identityNameLocalization->data['provider_response_id']
                     ?? $editorial->data['provider_response_id']
                     ?? ''
             ),
             providerRequestId: (string) (
                 $guidance->data['provider_request_id']
+                    ?? $identityNameLocalization->data['provider_request_id']
                     ?? $editorial->data['provider_request_id']
                     ?? ''
             ),
             providerModel: (string) (
                 $guidance->data['provider_model']
+                    ?? $identityNameLocalization->data['provider_model']
                     ?? $editorial->data['provider_model']
                     ?? ''
             ),
             inputTokens: (int) ($editorial->data['input_tokens'] ?? 0)
+                + (int) ($identityNameLocalization->data['input_tokens'] ?? 0)
                 + (int) ($guidance->data['input_tokens'] ?? 0)
                 + (int) ($guidanceResearch->data['input_tokens'] ?? 0),
             outputTokens: (int) ($editorial->data['output_tokens'] ?? 0)
+                + (int) ($identityNameLocalization->data['output_tokens'] ?? 0)
                 + (int) ($guidance->data['output_tokens'] ?? 0)
                 + (int) ($guidanceResearch->data['output_tokens'] ?? 0),
             webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0)
@@ -363,6 +428,42 @@ class IngredientEnrichmentPipeline
                 + (int) ($guidanceResearch->data['web_search_calls'] ?? 0),
             structuredSourceCalls: collect($completed)->sum(fn (array $stage): int => (int) ($stage['source_calls'] ?? 0)),
         );
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $translations
+     * @param  list<string>  $expectedLocales
+     * @return list<array{locale:string,display_name:string,saponification_name:string|null}>
+     */
+    private function normalizeIdentityNameTranslations(
+        array $translations,
+        array $expectedLocales,
+        mixed $canonicalSaponificationName,
+    ): array {
+        $canonicalHasSaponificationName = is_string($canonicalSaponificationName)
+            && filled(trim($canonicalSaponificationName));
+        $normalized = collect($translations)
+            ->filter(fn (mixed $row): bool => is_array($row))
+            ->map(function (array $row): array {
+                $saponificationName = $row['saponification_name'] ?? null;
+
+                return [
+                    'locale' => is_string($row['locale'] ?? null) ? trim($row['locale']) : '',
+                    'display_name' => is_string($row['display_name'] ?? null) ? trim($row['display_name']) : '',
+                    'saponification_name' => is_string($saponificationName) ? trim($saponificationName) : null,
+                ];
+            })
+            ->values();
+
+        if ($normalized->pluck('locale')->all() !== $expectedLocales
+            || $normalized->contains(fn (array $row): bool => $row['display_name'] === '')
+            || $normalized->contains(fn (array $row): bool => $canonicalHasSaponificationName
+                ? blank($row['saponification_name'])
+                : $row['saponification_name'] !== null)) {
+            throw new \LogicException('Identity name localization returned invalid translations.');
+        }
+
+        return $normalized->all();
     }
 
     /** @return array<string, mixed> */
@@ -588,7 +689,6 @@ class IngredientEnrichmentPipeline
             ...collect($editorial['translations'] ?? [])->keys()->flatMap(fn (int $index): array => [
                 ['field' => "proposal.translations.{$index}.display_name", 'confidence' => 'supported'],
                 ['field' => "proposal.translations.{$index}.saponification_name", 'confidence' => 'supported'],
-                ['field' => "proposal.translations.{$index}.info_markdown", 'confidence' => 'supported'],
             ])->all(),
         ])->values()->all();
     }
@@ -688,7 +788,7 @@ class IngredientEnrichmentPipeline
             $rows[] = [
                 'field' => "proposal.translations.{$index}",
                 'kind' => 'ai_proposed',
-                'reasoning' => 'Translated by the editorial pass without changing deterministic identity facts.',
+                'reasoning' => 'Localized from the finalized human-facing identity names without translating regulatory identity fields.',
                 'source_urls' => [],
             ];
         }

@@ -34,6 +34,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | database/seeders/** | .ai/rules/seeders.md |
 | app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php | .ai/rules/services.md |
 | app/Services/IngredientEnrichment/Sources/** | .ai/rules/sources.md |
+| app/Support/InciName.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |
 | app/Services/Translations/** | .ai/rules/translations.md |
 | resources/views/** | .ai/rules/views.md |

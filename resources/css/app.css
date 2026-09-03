@@ -382,6 +382,12 @@
        worst is 5.25:1 against AA's 4.5. Re-tuning any single value by hand
        breaks that parity -- regenerate the whole scale instead.
 
+       Generator and auditor: `scripts/badge-palette.mjs` (node). Run it to
+       re-solve and print the whole scale; run `--check` to fail if the values
+       below have drifted from it. The taxonomy test can only see that a rule
+       exists and sets both colours -- it cannot see the numbers, so a
+       hand-edited hue would still pass it.
+
        `IngredientCategory::badgeVariant()` emits the modifier, so adding an
        enum case without a rule here renders a colourless badge. The taxonomy
        test fails on exactly that. */

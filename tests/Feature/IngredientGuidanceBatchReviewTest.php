@@ -3,13 +3,23 @@
 use App\Actions\IngredientEnrichment\ApplyApprovedIngredientEnrichment;
 use App\Actions\IngredientEnrichment\ApproveIngredientGuidanceProposal;
 use App\Actions\IngredientEnrichment\EditIngredientGuidanceProposal;
+use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
+use App\Enums\IngredientEvidenceConfidence;
+use App\Enums\IngredientFunctionSource;
+use App\Enums\IngredientIdentifierScheme;
+use App\Enums\IngredientLabelMarket;
+use App\Enums\IngredientSourceTier;
 use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
+use App\Models\IngredientFunction;
+use App\Models\IngredientIdentifier;
+use App\Models\IngredientIdentifierEvidence;
+use App\Models\IngredientMarketLabel;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
@@ -73,6 +83,186 @@ it('edits and applies guidance without changing approved identity fields', funct
         ->and($ingredient->translations()->where('locale', 'fr')->value('origin'))->toBe(IngredientTranslationOrigin::ReviewerEdited)
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))->toBe('ingredient-guidance-research-v2')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))->toBe('COSMILE Europe');
+});
+
+it('applies guidance without changing identity records or their provenance', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'IDENTITY-STABILITY',
+        'category' => IngredientCategory::Lipids,
+        'subcategory' => 'vegetable_oils',
+        'taxonomy_source' => 'admin_reviewed_enrichment',
+        'taxonomy_reviewed_at' => '2026-08-01 10:00:00',
+        'taxonomy_reviewed_by_user_id' => $admin->id,
+        'cosing_reference' => '54495',
+        'display_name' => 'Olive oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'saponification_name' => 'Olive oil',
+        'soap_inci_naoh_name' => 'Sodium olivate',
+        'soap_inci_koh_name' => 'Potassium olivate',
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => false,
+        'requires_admin_review' => false,
+        'is_active' => true,
+        'is_manufactured' => true,
+        'source_data' => [
+            'enrichment' => [
+                'core' => [
+                    'schema_version' => 1,
+                    'field_confidence' => [[
+                        'field' => 'proposal.inci_name',
+                        'confidence' => 'supported',
+                    ]],
+                    'value_provenance' => [[
+                        'field' => 'proposal.inci_name',
+                        'kind' => 'source_confirmed',
+                        'reasoning' => 'Exact registry identity match.',
+                        'source_urls' => ['https://registry.example/olive-oil'],
+                    ]],
+                    'source_fingerprint' => 'identity-source-fingerprint',
+                    'result_fingerprint' => 'identity-result-fingerprint',
+                ],
+                'guidance' => [
+                    'evidence' => [[
+                        'source_name' => 'Prior guidance source',
+                        'source_url' => 'https://example.test/prior-guidance',
+                        'summary' => 'Previously reviewed guidance.',
+                        'source_tier' => 'editorial',
+                        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+                    ]],
+                ],
+            ],
+        ],
+    ]);
+    $identifier = $ingredient->identifiers()->create([
+        'scheme' => IngredientIdentifierScheme::Cas,
+        'value' => '8001-25-0',
+        'normalized_value' => '8001-25-0',
+        'is_primary' => true,
+    ]);
+    $identifier->evidence()->create([
+        'source_name' => 'Registry identity source',
+        'source_url' => 'https://registry.example/olive-oil',
+        'source_tier' => IngredientSourceTier::Official,
+        'confidence' => IngredientEvidenceConfidence::Verified,
+        'source_version' => 'registry-2026',
+        'source_updated_at' => '2026-07-31',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]);
+    $function = IngredientFunction::factory()->create([
+        'key' => 'identity_stability_emollient',
+        'name' => 'Identity stability emollient',
+    ]);
+    $ingredient->functions()->attach($function->id, [
+        'source' => IngredientFunctionSource::CosIng->value,
+        'source_reference' => 'https://cosing.example/olive-oil',
+        'source_checked_at' => '2026-08-01 00:00:00',
+        'source_tier' => IngredientSourceTier::Official->value,
+        'confidence' => IngredientEvidenceConfidence::Verified->value,
+        'source_version' => 'cosing-2026',
+        'source_updated_at' => '2026-08-01',
+        'assigned_by_user_id' => $admin->id,
+    ]);
+    IngredientMarketLabel::factory()->for($ingredient)->create([
+        'market_code' => IngredientLabelMarket::Eu,
+        'declaration_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'source_name' => 'EU declaration source',
+        'source_url' => 'https://eu.example/olive-oil',
+        'source_tier' => IngredientSourceTier::Official,
+        'confidence' => IngredientEvidenceConfidence::Verified,
+        'source_version' => 'eu-2026',
+        'source_updated_at' => '2026-08-01',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+        'reviewed_by_user_id' => $admin->id,
+    ]);
+    IngredientMarketLabel::factory()->for($ingredient)->create([
+        'market_code' => IngredientLabelMarket::Us,
+        'declaration_name' => 'Olive Oil',
+        'source_name' => 'US declaration source',
+        'source_url' => 'https://us.example/olive-oil',
+        'source_tier' => IngredientSourceTier::Official,
+        'confidence' => IngredientEvidenceConfidence::Supported,
+        'source_version' => 'us-2026',
+        'source_updated_at' => '2026-08-02',
+        'retrieved_at' => '2026-08-02T00:00:00+00:00',
+        'reviewed_by_user_id' => $admin->id,
+    ]);
+
+    $identityState = function (Ingredient $subject): array {
+        $subject->refresh();
+
+        return [
+            'canonical' => [
+                'catalog_key' => $subject->catalog_key,
+                'category' => $subject->category?->value,
+                'subcategory' => $subject->subcategory?->value,
+                'taxonomy_source' => $subject->taxonomy_source,
+                'taxonomy_reviewed_at' => $subject->taxonomy_reviewed_at?->toIso8601String(),
+                'taxonomy_reviewed_by_user_id' => $subject->taxonomy_reviewed_by_user_id,
+                'cosing_reference' => $subject->cosing_reference,
+                'display_name' => $subject->display_name,
+                'inci_name' => $subject->inci_name,
+                'saponification_name' => $subject->saponification_name,
+                'soap_inci_naoh_name' => $subject->soap_inci_naoh_name,
+                'soap_inci_koh_name' => $subject->soap_inci_koh_name,
+                'is_soap_saponification_trusted' => $subject->is_soap_saponification_trusted,
+                'requires_aromatic_compliance' => $subject->requires_aromatic_compliance,
+                'requires_admin_review' => $subject->requires_admin_review,
+                'is_active' => $subject->is_active,
+                'is_manufactured' => $subject->is_manufactured,
+            ],
+            'core_provenance' => data_get($subject->source_data, 'enrichment.core'),
+            'identifiers' => $subject->identifiers()
+                ->with('evidence')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (IngredientIdentifier $row): array => [
+                    'id' => $row->id,
+                    'scheme' => $row->scheme?->value,
+                    'value' => $row->value,
+                    'normalized_value' => $row->normalized_value,
+                    'is_primary' => $row->is_primary,
+                    'evidence' => $row->evidence
+                        ->sortBy('id')
+                        ->map(fn (IngredientIdentifierEvidence $evidence): array => $evidence->toArray())
+                        ->values()
+                        ->all(),
+                ])
+                ->all(),
+            'functions' => $subject->functions()
+                ->orderBy('ingredient_functions.id')
+                ->get()
+                ->map(fn (IngredientFunction $row): array => [
+                    'id' => $row->id,
+                    'key' => $row->key,
+                    'pivot' => $row->pivot?->toArray(),
+                ])
+                ->all(),
+            'market_labels' => $subject->marketLabels()
+                ->orderBy('id')
+                ->get()
+                ->map(fn (IngredientMarketLabel $row): array => $row->toArray())
+                ->all(),
+        ];
+    };
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => guidanceResult($ingredient, $sourceFingerprint),
+    ]);
+    $beforeIdentity = $identityState($ingredient);
+
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
+        ->and($identityState($ingredient))->toBe($beforeIdentity)
+        ->and($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Generated')));
 });
 
 it('keeps a workspace override unchanged while applying reviewed platform guidance', function (): void {
@@ -542,10 +732,15 @@ it('persists approved guidance evidence when prose is identical', function (): v
 
     app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
     $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+    $expectedEvidence = app(IngredientGuidanceEvidencePolicy::class)->reconcilePersisted(
+        $firstEvidence,
+        $secondEvidence,
+    );
 
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
         ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
-        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($secondEvidence))
+        ->toBe($expectedEvidence)
+        ->and($item->fresh()->result['guidance_evidence'])->toBe($expectedEvidence)
         ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied)
         ->and($item->fresh()->applied_by_user_id)->toBe($admin->id)

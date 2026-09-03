@@ -185,6 +185,9 @@ class IngredientGuidanceRefreshProcessor
             $normalized = $this->normalizedResult($validation);
             $validationReport = $this->validationReport($validation, $normalized);
             $providerData = $this->providerData($research, $authoring, $localization);
+            $sourceEvidence = array_key_exists('fresh_guidance_evidence', $guidanceContext)
+                ? $guidanceContext['fresh_guidance_evidence']
+                : ($normalized['guidance_evidence'] ?? []);
 
             DB::transaction(function () use (
                 $itemId,
@@ -194,6 +197,7 @@ class IngredientGuidanceRefreshProcessor
                 $normalized,
                 $validationReport,
                 $providerData,
+                $sourceEvidence,
             ): void {
                 $item = IngredientEnrichmentBatchItem::query()->lockForUpdate()->findOrFail($itemId);
                 $currentIngredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($ingredient->id);
@@ -221,7 +225,7 @@ class IngredientGuidanceRefreshProcessor
                     'plan' => $plan,
                     'warnings' => $warnings,
                     'unresolved_questions' => $normalized['unresolved_questions'],
-                    'sources' => collect($normalized['guidance_evidence'] ?? [])
+                    'sources' => collect(is_array($sourceEvidence) ? $sourceEvidence : [])
                         ->filter(fn (mixed $evidence): bool => is_array($evidence))
                         ->map(fn (array $evidence): array => [
                             'url' => (string) ($evidence['source_url'] ?? ''),
@@ -284,7 +288,9 @@ class IngredientGuidanceRefreshProcessor
                             'candidate_evidence' => [],
                             'guidance_evidence' => [],
                             'rejected_evidence' => [],
-                            'warnings' => [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
+                            'warnings' => $this->hasPriorGuidanceEvidence($context)
+                                ? []
+                                : [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
                             'unresolved_questions' => [],
                             'sources' => [],
                             'provider_response_id' => '',
@@ -319,7 +325,7 @@ class IngredientGuidanceRefreshProcessor
                             ['count' => count($validation->rejected)],
                         ),
                     ))
-                    ->when($candidateEvidence === [], fn ($warnings) => $warnings->push(
+                    ->when($candidateEvidence === [] && ! $this->hasPriorGuidanceEvidence($context), fn ($warnings) => $warnings->push(
                         __('ingredient_enrichment.warnings.guidance_evidence_none_accepted'),
                     ))
                     ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
@@ -352,18 +358,33 @@ class IngredientGuidanceRefreshProcessor
     }
 
     /** @param array<string,mixed> $context */
+    private function hasPriorGuidanceEvidence(array $context): bool
+    {
+        $evidence = is_array($context['prior_guidance_evidence'] ?? null)
+            ? $context['prior_guidance_evidence']
+            : ($context['guidance_evidence'] ?? []);
+
+        return is_array($evidence) && $evidence !== [];
+    }
+
+    /** @param array<string,mixed> $context */
     private function contextWithFreshResearch(
         array $context,
         IngredientSourceStageResult $research,
     ): array {
         $researchData = $research->data;
-        $evidence = is_array($researchData['guidance_evidence'] ?? null)
+        $freshEvidence = is_array($researchData['guidance_evidence'] ?? null)
             ? $researchData['guidance_evidence']
             : [];
+        $priorEvidence = is_array($context['prior_guidance_evidence'] ?? null)
+            ? $context['prior_guidance_evidence']
+            : (is_array($context['guidance_evidence'] ?? null) ? $context['guidance_evidence'] : []);
+        $evidence = $this->guidanceEvidencePolicy->reconcilePersisted($priorEvidence, $freshEvidence);
 
         return [
             ...$context,
             'guidance_evidence' => $evidence,
+            'fresh_guidance_evidence' => $this->guidanceEvidencePolicy->normalizePersisted($freshEvidence),
             'guidance_research' => $researchData,
             'guidance_research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
             'warnings' => is_array($researchData['warnings'] ?? null) ? $researchData['warnings'] : [],

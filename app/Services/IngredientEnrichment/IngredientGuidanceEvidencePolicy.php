@@ -177,6 +177,50 @@ class IngredientGuidanceEvidencePolicy
     }
 
     /**
+     * Reconcile a prior persisted evidence bank with a fresh research bank.
+     *
+     * A logical row is identified by its canonical source URL, whitespace- and
+     * case-normalized summary, claim classifications, usage application, normalized
+     * decimal bounds, and percentage basis. Refresh metadata (source name, source
+     * tier, and retrieval time) is intentionally excluded, so a fresh logical
+     * duplicate replaces the prior row in its existing position. Prior rows retain
+     * their order, while distinct fresh rows append in research order.
+     *
+     * @param  list<array<string, mixed>>  $prior
+     * @param  list<array<string, mixed>>  $fresh
+     * @return list<array<string, mixed>>
+     */
+    public function reconcilePersisted(array $prior, array $fresh): array
+    {
+        $merged = [];
+        $indexes = [];
+
+        foreach ($this->normalizePersisted($prior) as $row) {
+            $key = $this->logicalEvidenceKey($row);
+            if (isset($indexes[$key])) {
+                continue;
+            }
+
+            $indexes[$key] = count($merged);
+            $merged[] = $row;
+        }
+
+        foreach ($this->normalizePersisted($fresh) as $row) {
+            $key = $this->logicalEvidenceKey($row);
+            if (isset($indexes[$key])) {
+                $merged[$indexes[$key]] = $row;
+
+                continue;
+            }
+
+            $indexes[$key] = count($merged);
+            $merged[] = $row;
+        }
+
+        return $merged;
+    }
+
+    /**
      * @param  array<string, bool>  $consultedUrls
      * @return array{
      *     accepted:array<string,mixed>|null,
@@ -515,6 +559,54 @@ class IngredientGuidanceEvidencePolicy
             'recommended_max_percent',
             'percentage_basis',
         ])->contains(fn (string $key): bool => array_key_exists($key, $row));
+    }
+
+    /** @param array<string, mixed> $row */
+    private function logicalEvidenceKey(array $row): string
+    {
+        return json_encode([
+            'source_url' => $this->canonicalUrl($row['source_url'] ?? null)
+                ?? mb_strtolower(trim((string) ($row['source_url'] ?? ''))),
+            'summary' => $this->normalizedSummary($row['summary'] ?? null),
+            'claim_type' => $this->normalizedKeyValue($row['claim_type'] ?? null),
+            'source_kind' => $this->normalizedKeyValue($row['source_kind'] ?? null),
+            'scope' => $this->normalizedKeyValue($row['scope'] ?? null),
+            'evidence_kind' => $this->normalizedKeyValue($row['evidence_kind'] ?? null),
+            'usage_application' => $this->normalizedKeyValue($row['usage_application'] ?? null),
+            'recommended_min_percent' => $this->normalizedDecimalBound($row['recommended_min_percent'] ?? null),
+            'recommended_max_percent' => $this->normalizedDecimalBound($row['recommended_max_percent'] ?? null),
+            'percentage_basis' => $this->normalizedKeyValue($row['percentage_basis'] ?? null),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    }
+
+    private function normalizedSummary(mixed $summary): string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim((string) $summary));
+
+        return mb_strtolower($normalized ?? '');
+    }
+
+    private function normalizedKeyValue(mixed $value): ?string
+    {
+        return is_string($value) ? mb_strtolower(trim($value)) : null;
+    }
+
+    private function normalizedDecimalBound(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+        if (preg_match('/^(?:0|[1-9]\d*)(?:\.\d+)?$/', $value) !== 1) {
+            return $value;
+        }
+
+        [$integer, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+        $integer = ltrim($integer, '0') ?: '0';
+        $fraction = rtrim($fraction, '0');
+
+        return $fraction === '' ? $integer : $integer.'.'.$fraction;
     }
 
     private function invalidResponse(): never

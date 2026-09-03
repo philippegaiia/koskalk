@@ -434,6 +434,30 @@ it('preserves direct cosmetics and soapmaking use-level baselines during refresh
         ->and($result['warnings'])->toBe([]);
 });
 
+it('uses only fresh evidence when deciding whether a historical baseline is contradicted', function (): void {
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nTypical use level: 1–10% of the total formula.";
+    $historicalConflict = [
+        'claim_type' => 'usage',
+        'usage_application' => 'cosmetics',
+        'recommended_min_percent' => '20',
+        'recommended_max_percent' => '30',
+        'percentage_basis' => 'total_formula',
+    ];
+    $context['guidance_evidence'] = [$historicalConflict];
+    $context['fresh_guidance_evidence'] = [];
+
+    $historicalResult = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    $context['fresh_guidance_evidence'] = [$historicalConflict];
+    $freshResult = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    expect($historicalResult['info_markdown'])
+        ->toContain('Typical use level: 1–10% of the total formula.')
+        ->and($freshResult['info_markdown'])
+        ->not->toContain('Typical use level: 1–10% of the total formula.');
+});
+
 it('omits a soapmaking usage fact that is not a verbatim baseline sentence', function (): void {
     $claim = guidanceClaim([
         'text' => 'Typical use level: 10–25% of the soap-oil blend.',

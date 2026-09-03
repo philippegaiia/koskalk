@@ -24,6 +24,7 @@ class ApplyIngredientGuidanceRefresh
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
         private readonly IngredientTranslationService $translations,
         private readonly IngredientEnrichmentBatchService $batches,
     ) {}
@@ -134,7 +135,12 @@ class ApplyIngredientGuidanceRefresh
 
                     $sourceData = is_array($ingredient->source_data) ? $ingredient->source_data : [];
                     $guidance = $beforeGuidance;
-                    $guidanceEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
+                    $guidanceEvidence = $this->guidanceEvidencePolicy->reconcilePersisted(
+                        $beforeEvidence,
+                        $this->evidenceRows($normalized['guidance_evidence'] ?? []),
+                    );
+                    $normalized['guidance_evidence'] = $guidanceEvidence;
+                    $report['normalized'] = $normalized;
                     if (! $mode->isLocalizationOnly() || $guidanceEvidence !== []) {
                         $guidance['evidence'] = $guidanceEvidence;
                     }

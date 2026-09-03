@@ -367,10 +367,10 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         ->and($batch->status)->toBe(IngredientEnrichmentBatchStatus::Applied)
         ->and($batch->items()->where('status', IngredientEnrichmentItemStatus::Approved)->count())->toBe(0)
         ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
-        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($newEvidence));
+        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->reconcilePersisted($oldEvidence, $newEvidence));
 });
 
-it('clears stale evidence when an approved fresh guidance result has no accepted sources', function (): void {
+it('retains prior evidence when an approved fresh guidance result has no accepted sources', function (): void {
     $admin = User::factory()->admin()->create();
     $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";
     $oldEvidence = [[
@@ -420,12 +420,136 @@ it('clears stale evidence when an approved fresh guidance result has no accepted
         ]);
 
     $totals = app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $batch);
+    $expectedEvidence = app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($oldEvidence);
 
     expect($totals['applied'])->toBe(1)
         ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
-        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe([])
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe($expectedEvidence)
+        ->and($item->fresh()->result['guidance_evidence'])->toBe($expectedEvidence)
         ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.research_prompt_version'))
         ->toBe('ingredient-guidance-research-v2');
+});
+
+it('preserves evidence applied by an earlier refresh when applying a stale concurrent result', function (): void {
+    $admin = User::factory()->admin()->create();
+    $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";
+    $priorEvidence = [[
+        'source_name' => 'Prior guidance source',
+        'source_url' => 'https://example.test/prior',
+        'summary' => 'Previously reviewed evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+        'claim_type' => 'formulation_role',
+        'source_kind' => 'scientific',
+        'scope' => 'material',
+        'evidence_kind' => 'fact',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ]];
+    $firstFreshEvidence = [[
+        'source_name' => 'First fresh guidance source',
+        'source_url' => 'https://example.test/first',
+        'summary' => 'First fresh evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-09-01T00:00:00+00:00',
+        'claim_type' => 'formulation_role',
+        'source_kind' => 'scientific',
+        'scope' => 'material',
+        'evidence_kind' => 'fact',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ]];
+    $secondFreshEvidence = [[
+        'source_name' => 'Second fresh guidance source',
+        'source_url' => 'https://example.test/second',
+        'summary' => 'Second fresh evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-09-02T00:00:00+00:00',
+        'claim_type' => 'formulation_role',
+        'source_kind' => 'scientific',
+        'scope' => 'material',
+        'evidence_kind' => 'fact',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $priorEvidence]]],
+    ]);
+    $createBatch = fn (): IngredientEnrichmentBatch => IngredientEnrichmentBatch::factory()->create([
+        'requested_by_user_id' => $admin->id,
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $firstBatch = $createBatch();
+    $secondBatch = $createBatch();
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = function (array $evidence) use ($ingredient, $sourceFingerprint, $english): array {
+        return [
+            'format' => 'soapkraft-ingredient-guidance-refresh-result',
+            'schema_version' => 1,
+            'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh->value,
+            'subject_public_id' => (string) $ingredient->public_id,
+            'source_fingerprint' => $sourceFingerprint,
+            'info_markdown' => $english,
+            'translations' => [],
+            'guidance_evidence' => $evidence,
+            'prompt_versions' => [
+                'research' => 'ingredient-guidance-research-v2',
+                'guidance' => 'ingredient-guidance-v3',
+                'localization' => 'ingredient-guidance-localization-v1',
+            ],
+            'warnings' => [],
+            'unresolved_questions' => [],
+        ];
+    };
+    $firstItem = IngredientEnrichmentBatchItem::factory()
+        ->for($firstBatch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Approved,
+            'source_fingerprint' => $sourceFingerprint,
+            'approved_by_user_id' => $admin->id,
+            'approved_at' => now(),
+            'result' => $result($firstFreshEvidence),
+        ]);
+    $secondItem = IngredientEnrichmentBatchItem::factory()
+        ->for($secondBatch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Approved,
+            'source_fingerprint' => $sourceFingerprint,
+            'approved_by_user_id' => $admin->id,
+            'approved_at' => now(),
+            'result' => $result($secondFreshEvidence),
+        ]);
+
+    $firstTotals = app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $firstBatch);
+    $secondTotals = app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $secondBatch);
+
+    $persistedUrls = collect(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
+        ->pluck('source_url')->all();
+    expect($firstTotals['applied'])->toBe(1)
+        ->and($secondTotals['applied'])->toBe(1)
+        ->and($persistedUrls)->toBe([
+            'https://example.test/prior',
+            'https://example.test/first',
+            'https://example.test/second',
+        ])
+        ->and($firstItem->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
+        ->and($secondItem->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
+        ->and(collect($firstItem->fresh()->result['guidance_evidence'])->pluck('source_url')->all())
+        ->toBe(['https://example.test/prior', 'https://example.test/first'])
+        ->and(collect($secondItem->fresh()->result['guidance_evidence'])->pluck('source_url')->all())
+        ->toBe($persistedUrls);
 });
 
 it('keeps English guidance read-only in localization-only review batches', function (): void {

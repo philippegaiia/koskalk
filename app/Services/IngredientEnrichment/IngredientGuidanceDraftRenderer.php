@@ -573,7 +573,10 @@ class IngredientGuidanceDraftRenderer
             }
         }
 
-        foreach (is_array($context['guidance_evidence'] ?? null) ? $context['guidance_evidence'] : [] as $evidence) {
+        $evidenceRows = array_key_exists('fresh_guidance_evidence', $context)
+            ? $context['fresh_guidance_evidence']
+            : ($context['guidance_evidence'] ?? []);
+        foreach (is_array($evidenceRows) ? $evidenceRows : [] as $evidence) {
             if (! is_array($evidence)
                 || ($evidence['claim_type'] ?? null) !== 'usage'
                 || ($evidence['usage_application'] ?? null) !== $application) {

@@ -268,6 +268,93 @@ it('matches consulted URLs canonically while removing fragments and a sole trail
     expect($accepted)->toHaveCount(1);
 });
 
+it('reconciles prior evidence in place while replacing logical duplicates with fresh metadata', function (): void {
+    $policy = guidanceEvidencePolicy();
+    $priorRetrievedAt = CarbonImmutable::parse('2026-08-01T00:00:00+00:00');
+    $freshRetrievedAt = CarbonImmutable::parse('2026-09-01T00:00:00+00:00');
+    $prior = $policy->toPersisted([
+        guidanceEvidenceCandidate([
+            'source_name' => 'Prior first source',
+            'source_url' => 'https://first.example/apricot-oil',
+            'summary' => 'A distinct first source observation.',
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'scientific',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Stale source name',
+            'summary' => 'The exact product grade is recommended at 1–10% in cosmetic formulations.',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Prior last source',
+            'source_url' => 'https://last.example/apricot-oil',
+            'summary' => 'A distinct last source observation.',
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'scientific',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ]),
+    ], $priorRetrievedAt);
+    $fresh = $policy->toPersisted([
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh source name',
+            'source_url' => 'HTTPS://Supplier.Example/technical/apricot-oil.pdf/#page=2',
+            'summary' => '  THE exact product grade is recommended at 1–10% in cosmetic formulations.  ',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh cosmetics conflict',
+            'recommended_min_percent' => '11',
+            'recommended_max_percent' => '20',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh soapmaking application',
+            'usage_application' => 'soapmaking',
+            'recommended_min_percent' => '5',
+            'recommended_max_percent' => '30',
+            'percentage_basis' => 'soap_oils',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh distinct URL',
+            'source_url' => 'https://another.example/apricot-oil',
+        ]),
+    ], $freshRetrievedAt);
+
+    $merged = $policy->reconcilePersisted($prior, $fresh);
+
+    expect($merged)->toHaveCount(6)
+        ->and(array_column($merged, 'source_name'))->toBe([
+            'Prior first source',
+            'Fresh source name',
+            'Prior last source',
+            'Fresh cosmetics conflict',
+            'Fresh soapmaking application',
+            'Fresh distinct URL',
+        ])
+        ->and($merged[1]['source_url'])->toBe('HTTPS://Supplier.Example/technical/apricot-oil.pdf/#page=2')
+        ->and($merged[1]['retrieved_at'])->toBe($freshRetrievedAt->toIso8601String())
+        ->and($merged[3])->toMatchArray([
+            'recommended_min_percent' => '11',
+            'recommended_max_percent' => '20',
+            'usage_application' => 'cosmetics',
+            'percentage_basis' => 'total_formula',
+        ])
+        ->and($merged[4])->toMatchArray([
+            'recommended_min_percent' => '5',
+            'recommended_max_percent' => '30',
+            'usage_application' => 'soapmaking',
+            'percentage_basis' => 'soap_oils',
+        ]);
+});
+
 /** @param array<string, mixed> $overrides @return array<string, mixed> */
 function guidanceEvidenceCandidate(array $overrides = []): array
 {

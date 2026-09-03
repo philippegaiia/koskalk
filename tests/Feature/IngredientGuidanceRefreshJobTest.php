@@ -167,7 +167,8 @@ it('queues a guidance refresh and calls fresh research, authoring, and localizat
         ->and($item->output_tokens)->toBe(74)
         ->and($item->web_search_calls)->toBe(1)
         ->and(data_get($item->research_stages, 'ai_guidance_research.status'))->toBe('completed')
-        ->and($item->result['guidance_evidence'][0]['source_kind'])->toBe('supplier_technical')
+        ->and(collect($item->result['guidance_evidence'])->firstWhere('source_kind', 'supplier_technical')['source_url'])
+        ->toBe('https://supplier.example/technical/olive-oil.pdf')
         ->and($item->plan['decisions'])->toHaveCount(8);
 
     $stages = $item->research_stages;
@@ -197,7 +198,7 @@ it('queues a guidance refresh and calls fresh research, authoring, and localizat
         ]);
 });
 
-it('records empty fresh evidence when guidance research is disabled', function (): void {
+it('retains prior evidence without a missing-evidence warning when guidance research is disabled', function (): void {
     app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
     {
         public function research(array $facts): IngredientGapResearchResponse
@@ -241,13 +242,20 @@ it('records empty fresh evidence when guidance research is disabled', function (
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
     $item = $fixture['item']->fresh();
+    $priorEvidence = app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted(
+        data_get($fixture['ingredient']->source_data, 'enrichment.guidance.evidence'),
+    );
     expect(data_get($item->research_stages, 'ai_guidance_research.data.performed'))->toBeFalse()
-        ->and($item->result['guidance_evidence'])->toBe([])
+        ->and($item->result['guidance_evidence'])->toBe($priorEvidence)
         ->and(collect($item->plan['decisions'])->firstWhere('field', 'guidance.evidence'))
         ->toMatchArray([
             'decision' => 'replace',
-            'proposed' => [],
-        ]);
+            'proposed' => $priorEvidence,
+        ])
+        ->and($item->warnings)
+        ->not->toContain('No persisted guidance evidence is available; refresh evidence before making source-backed guidance claims.')
+        ->and($item->warnings)
+        ->not->toContain('No researched evidence passed validation; the proposed guidance uses catalogue facts only.');
 });
 
 it('quarantines rejected guidance rows while completing a mixed refresh', function (): void {
@@ -347,16 +355,23 @@ it('quarantines rejected guidance rows while completing a mixed refresh', functi
     $completed = $fixture['item']->fresh();
 
     expect($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
-        ->and($completed->result['guidance_evidence'])->toHaveCount(1)
+        ->and($completed->result['guidance_evidence'])->toHaveCount(2)
         ->and(data_get($completed->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
             ['index' => 1, 'code' => 'unconsulted_url', 'host' => 'other.example'],
         ])
-        ->and($authoringContext['guidance_evidence'])->toHaveCount(1)
+        ->and(data_get($completed->research_stages, 'ai_guidance_research.data.candidate_evidence'))->toHaveCount(1)
+        ->and(data_get($completed->research_stages, 'ai_guidance_research.data.guidance_evidence'))->toHaveCount(1)
+        ->and($authoringContext['guidance_evidence'])->toHaveCount(2)
+        ->and($authoringContext['fresh_guidance_evidence'])->toHaveCount(1)
         ->and($authoringContext['guidance_unresolved_questions'])->toBe([
             'Confirm the supplier usage range before publishing it.',
         ])
         ->and(collect($authoringContext['guidance_evidence'])->pluck('source_url')->all())
-        ->toBe(['https://supplier.example/technical/olive-oil.pdf'])
+        ->toBe([
+            'https://cosmileeurope.eu/example',
+            'https://supplier.example/technical/olive-oil.pdf',
+        ])
+        ->and($completed->result)->not->toHaveKey('fresh_guidance_evidence')
         ->and($completed->warnings)->toContain('1 researched evidence item was rejected because it did not meet the evidence rules.')
         ->and($completed->sources)->toBe([[
             'url' => 'https://supplier.example/technical/olive-oil.pdf',
@@ -364,7 +379,7 @@ it('quarantines rejected guidance rows while completing a mixed refresh', functi
         ]]);
 });
 
-it('keeps an all-rejected guidance refresh reviewable with catalogue facts only', function (): void {
+it('keeps an all-rejected guidance refresh reviewable while retaining prior evidence', function (): void {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $authoringContext = [];
     app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
@@ -442,16 +457,22 @@ it('keeps an all-rejected guidance refresh reviewable with catalogue facts only'
     $fixture = guidanceResumeFixture();
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
     $completed = $fixture['item']->fresh();
+    $priorEvidence = app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted(
+        data_get($fixture['ingredient']->source_data, 'enrichment.guidance.evidence'),
+    );
 
     expect($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
-        ->and($completed->result['guidance_evidence'])->toBe([])
+        ->and($completed->result['guidance_evidence'])->toBe($priorEvidence)
         ->and($completed->sources)->toBe([])
         ->and(data_get($completed->research_stages, 'ai_guidance_research.data.rejected_evidence'))->toBe([
             ['index' => 0, 'code' => 'blocked_domain', 'host' => 'www.reddit.com'],
         ])
-        ->and($authoringContext['guidance_evidence'])->toBe([])
+        ->and($authoringContext['guidance_evidence'])->toBe($priorEvidence)
+        ->and($authoringContext['fresh_guidance_evidence'])->toBe([])
         ->and($authoringContext['current'])->toBeArray()
-        ->and($completed->warnings)->toContain('No researched evidence passed validation; the proposed guidance uses catalogue facts only.');
+        ->and($completed->warnings)->toContain('1 researched evidence item was rejected because it did not meet the evidence rules.')
+        ->and($completed->warnings)
+        ->not->toContain('No researched evidence passed validation; the proposed guidance uses catalogue facts only.');
 });
 
 it('recognizes only an exact level-two soapmaking heading', function (): void {
@@ -1056,7 +1077,7 @@ it('invalidates downstream guidance caches when a queued retry recomputes author
 
     $job->handle(app(IngredientGuidanceRefreshProcessor::class));
     expect($calls)->toBe(['author' => 2, 'localize' => 2])
-        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning);
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
 });
 
 it('localizes only outdated locales and never calls English authoring', function (): void {
@@ -1479,7 +1500,7 @@ it('resumes localization after a guidance refresh failure without repeating auth
     $completed = $item->fresh();
 
     expect($calls)->toBe(['author' => 1, 'localize' => 2])
-        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(data_get($completed->research_stages, 'ai_guidance_authoring.status'))->toBe('completed')
         ->and(data_get($completed->research_stages, 'ai_guidance_localization.status'))->toBe('completed')
         ->and(data_get($completed->research_stages, 'validation.status'))->toBe('completed')
@@ -1606,7 +1627,7 @@ it('resumes a validation failure without repeating completed guidance providers'
 
     expect($validator->calls)->toBe(2)
         ->and($calls)->toBe(['author' => 1, 'localize' => 1])
-        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(data_get($item->fresh()->research_stages, 'validation.status'))->toBe('completed');
 });
 
@@ -1684,7 +1705,7 @@ it('rejects a validation cache when cached localization output changes', functio
     $mutatedTranslation = collect($completed->result['translations'])
         ->firstWhere('locale', data_get($localization, 'data.translations.0.locale'));
     expect($calls)->toBe(['author' => 1, 'localize' => 1])
-        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($completed->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and($mutatedTranslation['info_markdown'] ?? '')->toContain($marker)
         ->and(data_get($completed->research_stages, 'validation.status'))->toBe('completed');
 });
@@ -2104,7 +2125,7 @@ it('fails fresh authoring with invalid headings before localization', function (
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
     expect($calls)->toBe(['author' => 2, 'localize' => 1])
-        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('completed');
 });
 
@@ -2169,7 +2190,7 @@ it('fails fresh localization when a response has an unexpected locale before val
     app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
     expect($calls)->toBe(['author' => 1, 'localize' => 2])
-        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('completed');
 });
 
@@ -2259,7 +2280,7 @@ it('fails cached localization when locales or translated content are invalid bef
         app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
         expect($calls)->toBe(['author' => 1, 'localize' => 2])
-            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
             ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('completed');
     }
 });
@@ -2368,7 +2389,7 @@ it('fails cached validation when its envelope context or normalized result is in
         app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
 
         expect($calls)->toBe(['author' => 1, 'localize' => 1])
-            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Warning)
+            ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
             ->and(data_get($fixture['item']->fresh()->research_stages, 'validation.status'))->toBe('completed');
     }
 });

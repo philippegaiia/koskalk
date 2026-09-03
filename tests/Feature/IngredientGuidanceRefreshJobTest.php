@@ -165,6 +165,8 @@ it('queues a guidance refresh and calls fresh research and authoring without loc
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization',
@@ -263,6 +265,8 @@ it('retains prior evidence without a missing-evidence warning when guidance rese
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization-disabled-research',
@@ -375,6 +379,8 @@ it('quarantines rejected guidance rows while completing a mixed refresh', functi
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization-mixed',
@@ -479,6 +485,8 @@ it('keeps an all-rejected guidance refresh reviewable while retaining prior evid
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization-all-rejected',
@@ -614,6 +622,8 @@ it('reuses a completed research stage when authoring is retried', function (): v
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization-retry-research',
@@ -713,6 +723,8 @@ it('reuses a completed research stage whose keys were canonicalized by postgres 
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization-jsonb',
@@ -839,6 +851,8 @@ it('rejects a completed authoring cache whose item provenance changed', function
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-provenance',
@@ -953,6 +967,8 @@ it('recomputes guidance stages when effective provider configuration changes', f
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-provider-config',
@@ -1018,6 +1034,8 @@ it('invalidates downstream guidance caches when a queued retry recomputes author
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-queued-retry',
@@ -1093,6 +1111,8 @@ it('localizes only outdated locales and never calls English authoring', function
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization',
@@ -1160,6 +1180,95 @@ it('localizes only outdated locales and never calls English authoring', function
         ->toBe(['fr', 'it', 'nl', 'pt_BR']);
 });
 
+it('requests current AI locales with missing names while excluding reviewer-owned locales', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr', 'de', 'nl']);
+    $providerContexts = [];
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($providerContexts) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param list<array<string,mixed>> $providerContexts */
+        public function __construct(private array &$providerContexts) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->providerContexts[] = $context;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: [[
+                    'locale' => 'fr',
+                    'display_name' => 'Huile de palmiste',
+                    'saponification_name' => 'Savon de palmiste',
+                    'info_markdown' => localizedGuidanceText(),
+                ]],
+                responseId: 'resp-palm-kernel-localization',
+                requestId: 'req-palm-kernel-localization',
+                model: 'gpt-test',
+                inputTokens: 5,
+                outputTokens: 6,
+            );
+        }
+    });
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Palm Kernel Oil',
+        'inci_name' => 'Elaeis Guineensis Kernel Oil',
+        'saponification_name' => 'Palm Kernel Oil Soap',
+        'info_markdown' => guidanceText(),
+    ]);
+    $fingerprint = app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient);
+    $ingredient->translations()->create([
+        'locale' => 'fr',
+        'display_name' => null,
+        'saponification_name' => null,
+        'info_markdown' => localizedGuidanceText(),
+        'source_fingerprint' => $fingerprint,
+        'origin' => 'ai_generated',
+    ]);
+    $ingredient->translations()->create([
+        'locale' => 'de',
+        'display_name' => 'Palmkernöl',
+        'saponification_name' => 'Palmkernölseife',
+        'info_markdown' => localizedGuidanceText(),
+        'source_fingerprint' => $fingerprint,
+        'origin' => 'ai_generated',
+    ]);
+    $ingredient->translations()->create([
+        'locale' => 'nl',
+        'display_name' => null,
+        'saponification_name' => null,
+        'info_markdown' => localizedGuidanceText(),
+        'source_fingerprint' => str_repeat('b', 64),
+        'origin' => 'reviewer_edited',
+    ]);
+
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => 'pending',
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($ingredient),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($providerContexts)->toHaveCount(1)
+        ->and($providerContexts[0]['locales'])->toBe(['fr'])
+        ->and($providerContexts[0]['canonical'])->toMatchArray([
+            'display_name' => 'Palm Kernel Oil',
+            'saponification_name' => 'Palm Kernel Oil Soap',
+            'inci_name' => 'Elaeis Guineensis Kernel Oil',
+        ])
+        ->and($providerContexts[0]['english_guidance'])->toBe(trim(guidanceText()))
+        ->and($item->fresh()->result['translations'])->toBe([[
+            'locale' => 'fr',
+            'display_name' => 'Huile de palmiste',
+            'saponification_name' => 'Savon de palmiste',
+            'info_markdown' => trim(localizedGuidanceText()),
+        ]]);
+});
+
 it('rejects corrupt frozen locales at the localization stage before calling the provider', function (): void {
     $corruptLocales = [
         'empty' => [],
@@ -1182,6 +1291,8 @@ it('rejects corrupt frozen locales at the localization stage before calling the 
                 return new IngredientGuidanceLocalizationResponse(
                     translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                         'locale' => $locale,
+                        'display_name' => "Localized {$locale}",
+                        'saponification_name' => null,
                         'info_markdown' => localizedGuidanceText(),
                     ])->all(),
                     responseId: 'resp-localization-corrupt',
@@ -1233,6 +1344,8 @@ it('orders first localization provider locales by configured target locale order
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->reverse()->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->values()->all(),
                 responseId: 'resp-localization-order',
@@ -1304,6 +1417,8 @@ it('uses the runner frozen localization context after a translation update race'
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-race',
@@ -1424,6 +1539,8 @@ it('resumes a validation failure without repeating completed guidance providers'
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization',
@@ -1535,6 +1652,8 @@ it('fails a corrupt completed authoring stage and retries authoring from that st
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-retry',
@@ -1611,6 +1730,8 @@ it('fails a completed authoring stage with malformed accounting instead of dropp
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-retry',
@@ -1716,6 +1837,8 @@ it('fails cached authoring when guidance headings or shape are invalid', functio
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-cached-shape',
@@ -1810,6 +1933,8 @@ it('fails fresh authoring with invalid headings before localization', function (
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-fresh-shape',
@@ -1871,6 +1996,8 @@ it('fails cached validation when its envelope context or normalized result is in
             return new IngredientGuidanceLocalizationResponse(
                 translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
                     'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => null,
                     'info_markdown' => localizedGuidanceText(),
                 ])->all(),
                 responseId: 'resp-localization-context',

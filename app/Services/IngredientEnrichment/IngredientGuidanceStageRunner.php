@@ -304,6 +304,7 @@ class IngredientGuidanceStageRunner
             $normalizedTranslations,
             $context['expected_locales'],
             $context['soapmaking_relevant'],
+            $this->nullableString($context['ingredient']->saponification_name),
         )['valid']) {
             throw new LogicException('Guidance localization stage data contains invalid translations.');
         }
@@ -840,11 +841,12 @@ class IngredientGuidanceStageRunner
     {
         $fingerprint = $this->translationFingerprint->forIngredient($ingredient);
         $translations = $ingredient->translations()
-            ->get(['locale', 'source_fingerprint', 'origin'])
+            ->get(['locale', 'display_name', 'saponification_name', 'source_fingerprint', 'origin'])
             ->keyBy('locale');
+        $canonicalSaponificationName = $this->nullableString($ingredient->saponification_name);
 
         return collect($this->configuredTargetLocales())
-            ->filter(function (string $locale) use ($fingerprint, $translations): bool {
+            ->filter(function (string $locale) use ($canonicalSaponificationName, $fingerprint, $translations): bool {
                 $translation = $translations->get($locale);
                 if ($translation === null) {
                     return true;
@@ -854,8 +856,21 @@ class IngredientGuidanceStageRunner
                     return false;
                 }
 
-                return $translation->source_fingerprint === null
-                    || $translation->source_fingerprint !== $fingerprint;
+                if ($translation->source_fingerprint === null
+                    || $translation->source_fingerprint !== $fingerprint) {
+                    return true;
+                }
+
+                if (! in_array($translation->origin, [
+                    IngredientTranslationOrigin::AiGenerated,
+                    IngredientTranslationOrigin::Legacy,
+                ], true)) {
+                    return false;
+                }
+
+                return $this->nullableString($translation->display_name) === null
+                    || ($canonicalSaponificationName !== null
+                        && $this->nullableString($translation->saponification_name) === null);
             })
             ->values()
             ->all();
@@ -894,5 +909,16 @@ class IngredientGuidanceStageRunner
             || collect($values)->contains(fn (mixed $value): bool => ! is_string($value))) {
             throw new LogicException("{$label} contains an invalid {$field} list.");
         }
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

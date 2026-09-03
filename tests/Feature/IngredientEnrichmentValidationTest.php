@@ -129,6 +129,31 @@ it('accepts the bounded result contract for a non-colourant', function (): void 
         ->and($report['normalized']['proposal']['display_name'])->toBe('Contract Ingredient');
 });
 
+it('accepts full enrichment results with deferred localization', function (bool $omitTranslations): void {
+    config()->set('interface-translations.catalogue_locales', ['de']);
+
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-DEFERRED-LOCALIZATION',
+        'category' => IngredientCategory::Other,
+    ]);
+    $result = enrichmentResult($ingredient->catalog_key);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+
+    if ($omitTranslations) {
+        unset($result['proposal']['translations']);
+    } else {
+        $result['proposal']['translations'] = [];
+    }
+
+    $report = app(IngredientEnrichmentResultValidator::class)->validate($result, $ingredient);
+
+    expect($report['valid'])->toBeTrue()
+        ->and($report['errors'])->not->toHaveKey('proposal.translations');
+})->with([
+    'empty translations array' => false,
+    'translations omitted' => true,
+]);
+
 it('accepts classified guidance evidence and preserves its recommendation metadata', function (): void {
     foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
         SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);

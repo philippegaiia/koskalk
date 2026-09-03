@@ -6,6 +6,7 @@ use App\Models\SupportedLocale;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 
 class IngredientGuidanceProposalForm
 {
@@ -33,6 +34,11 @@ class IngredientGuidanceProposalForm
                         ->disabled()
                         ->dehydrated()
                         ->required(),
+                    TextInput::make('display_name')
+                        ->label(__('ingredient_enrichment_admin.review.labels.display_name'))
+                        ->required(),
+                    TextInput::make('saponification_name')
+                        ->label(__('ingredient_enrichment_admin.review.labels.saponification_name')),
                     MarkdownEditor::make('info_markdown')
                         ->label(__('ingredient_enrichment_admin.review.labels.info_markdown'))
                         ->required()

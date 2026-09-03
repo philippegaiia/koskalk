@@ -225,8 +225,14 @@ class IngredientForm
                                     ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['locale'] ?? null))
                                     ->filter(fn (array $row): bool => $catalogueLocales->contains($row['locale']));
 
+                                $incompleteLocales = $translationRows
+                                    ->filter(fn (array $row): bool => ($row['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value
+                                        && (blank($row['display_name'] ?? null)
+                                            || (filled($record?->saponification_name) && blank($row['saponification_name'] ?? null))))
+                                    ->pluck('locale');
                                 $currentLocales = $translationRows
                                     ->filter(fn (array $row): bool => ($row['is_stale'] ?? true) === false)
+                                    ->reject(fn (array $row): bool => $incompleteLocales->contains($row['locale']))
                                     ->pluck('locale')
                                     ->implode(', ') ?: __('ingredient_admin.translations.none');
                                 $missingLocales = $catalogueLocales
@@ -247,6 +253,7 @@ class IngredientForm
                                     'current' => $currentLocales,
                                     'missing' => $missingLocales,
                                     'outdated' => $outdatedLocales,
+                                    'incomplete' => $incompleteLocales->implode(', ') ?: __('ingredient_admin.translations.none'),
                                     'preserved' => $preservedLocales,
                                 ]);
                             })
@@ -350,12 +357,15 @@ class IngredientForm
 
         return collect(config('interface-translations.catalogue_locales', []))
             ->filter(fn (mixed $locale): bool => is_string($locale) && filled(trim($locale)))
-            ->contains(function (string $locale) use ($translations): bool {
+            ->contains(function (string $locale) use ($translations, $ingredient): bool {
                 $translation = $translations->get(trim($locale));
 
                 return $translation === null
                     || (($translation['is_stale'] ?? false) === true
-                        && ($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value);
+                        && ($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value)
+                    || (($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value
+                        && (blank($translation['display_name'] ?? null)
+                            || (filled($ingredient->saponification_name) && blank($translation['saponification_name'] ?? null))));
             });
     }
 

@@ -121,6 +121,8 @@ class ApplyIngredientGuidanceRefresh
 
                                 return [$locale => [
                                     ...$current,
+                                    'display_name' => $translation['display_name'] ?? null,
+                                    'saponification_name' => $translation['saponification_name'] ?? null,
                                     'info_markdown' => $translation['info_markdown'] ?? null,
                                 ]];
                             });
@@ -254,8 +256,9 @@ class ApplyIngredientGuidanceRefresh
         return $editedFields
             ->filter(fn (mixed $path): bool => is_string($path)
                 && Str::startsWith($path, 'proposal.translations.')
-                && Str::endsWith($path, '.info_markdown'))
-            ->map(fn (string $path): string => Str::between($path, 'proposal.translations.', '.info_markdown'))
+                && collect(['.display_name', '.saponification_name', '.info_markdown'])
+                    ->contains(fn (string $suffix): bool => Str::endsWith($path, $suffix)))
+            ->map(fn (string $path): string => Str::beforeLast(Str::after($path, 'proposal.translations.'), '.'))
             ->filter()
             ->unique()
             ->values();

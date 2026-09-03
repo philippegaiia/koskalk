@@ -4,6 +4,7 @@ use App\Actions\IngredientEnrichment\ApplyApprovedIngredientGuidanceRefresh;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
+use App\Enums\IngredientTranslationOrigin;
 use App\Enums\OwnerType;
 use App\Filament\Resources\IngredientEnrichmentBatches\Pages\ViewIngredientEnrichmentBatch;
 use App\Filament\Resources\IngredientEnrichmentBatches\RelationManagers\ItemsRelationManager;
@@ -19,6 +20,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceChangePlanner;
 use App\Services\IngredientEnrichment\IngredientGuidanceEvidencePolicy;
+use App\Services\IngredientTranslationSourceFingerprint;
 use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
@@ -113,6 +115,32 @@ it('hides update translations without saved English and keeps workspace ingredie
 
     expect(fn () => Livewire::test(EditIngredient::class, ['record' => $workspaceIngredient->public_id]))
         ->toThrow(ModelNotFoundException::class);
+});
+
+it('offers update translations for a current AI locale with missing localized names', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'display_name' => 'Palm Kernel Oil',
+        'saponification_name' => 'Palm Kernel Oil Soap',
+        'info_markdown' => "## Overview\n\nEnglish guidance.\n\n## Formulation use\n\nFormulation guidance.",
+    ]);
+    $ingredient->translations()->create([
+        'locale' => 'fr',
+        'display_name' => null,
+        'saponification_name' => null,
+        'info_markdown' => "## Vue d’ensemble\n\nConseils.\n\n## Utilisation en formulation\n\nUtilisation.",
+        'source_fingerprint' => app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient),
+        'origin' => IngredientTranslationOrigin::AiGenerated,
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertActionVisible(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
+        ->mountAction(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
+        ->assertMountedActionModalSee('Incomplete AI locales: fr');
 });
 
 it('uses focused guidance fields for guidance batch review actions', function (): void {
@@ -300,6 +328,8 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
     ]);
     IngredientTranslation::factory()->for($ingredient)->create([
         'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'saponification_name' => null,
         'info_markdown' => $french,
         'source_fingerprint' => 'stale-locale-fingerprint',
     ]);
@@ -315,7 +345,12 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         'subject_public_id' => (string) $ingredient->public_id,
         'source_fingerprint' => $sourceFingerprint,
         'info_markdown' => $english,
-        'translations' => [['locale' => 'fr', 'info_markdown' => $french]],
+        'translations' => [[
+            'locale' => 'fr',
+            'display_name' => 'Huile d’olive',
+            'saponification_name' => null,
+            'info_markdown' => $french,
+        ]],
         'guidance_evidence' => $newEvidence,
         'prompt_versions' => [
             'guidance' => 'ingredient-guidance-v1',

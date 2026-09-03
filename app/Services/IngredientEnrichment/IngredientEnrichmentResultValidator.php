@@ -587,6 +587,10 @@ class IngredientEnrichmentResultValidator
      */
     private function validateTranslations(mixed $rows, bool $soapmakingRelevant, array &$errors, array &$warnings): void
     {
+        if ($rows === null || $rows === []) {
+            return;
+        }
+
         if (! is_array($rows)) {
             $this->error($errors, 'proposal.translations', $this->message('translations_array'));
 

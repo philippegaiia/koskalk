@@ -106,10 +106,16 @@ class IngredientGuidanceRefreshProcessor
                 $localization = $this->stages->run(
                     $itemId,
                     IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                    function (array $stageContext) use ($englishGuidance, $metadataTranslations): IngredientSourceStageResult {
+                    function (array $stageContext) use ($context, $englishGuidance, $metadataTranslations): IngredientSourceStageResult {
                         $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
+                        $canonical = is_array($context['current']['canonical'] ?? null)
+                            ? collect($context['current']['canonical'])->only([
+                                'display_name', 'saponification_name', 'inci_name',
+                            ])->all()
+                            : [];
                         $response = $this->localization->localize([
                             'locales' => $stageContext['expected_locales'],
+                            'canonical' => $canonical,
                             'english_guidance' => $englishGuidance,
                             'soapmaking_relevant' => $stageContext['soapmaking_relevant'],
                             'localized_headings' => is_array($providerConfiguration['localized_headings'] ?? null)
@@ -469,13 +475,19 @@ class IngredientGuidanceRefreshProcessor
             ->all();
     }
 
-    /** @return list<array{locale:string,info_markdown:string}> */
+    /** @return list<array{locale:string,display_name:string,saponification_name:string|null,info_markdown:string}> */
     private function normalizedTranslations(IngredientSourceStageResult $localization, bool $soapmakingRelevant): array
     {
         $translations = collect($localization->data['translations'] ?? [])
             ->filter(fn (mixed $translation): bool => is_array($translation))
             ->map(fn (array $translation): array => [
                 'locale' => (string) ($translation['locale'] ?? ''),
+                'display_name' => is_string($translation['display_name'] ?? null)
+                    ? trim($translation['display_name'])
+                    : '',
+                'saponification_name' => ($translation['saponification_name'] ?? null) === null
+                    ? null
+                    : (is_string($translation['saponification_name']) ? trim($translation['saponification_name']) : ''),
                 'info_markdown' => $this->headings->normalize(
                     (string) ($translation['info_markdown'] ?? ''),
                     (string) ($translation['locale'] ?? ''),

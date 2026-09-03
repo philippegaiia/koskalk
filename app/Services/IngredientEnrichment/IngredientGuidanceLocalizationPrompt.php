@@ -24,8 +24,8 @@ You are a native cosmetic-formulation editor. Produce an in-context rewrite of t
 # Non-negotiable rules
 
 1. Do not research the web and do not add facts. Preserve every supported fact, caution, omission, and section from the approved English text.
-2. Write each locale as a natural editorial rewrite by a native cosmetic-formulation professional, using native cosmetic-formulation terminology and, where applicable, native soapmaking terminology; never translate literally or sentence by sentence, use English calques, or use English as a grammatical template. Recast syntax and terminology naturally for the target locale.
-3. Preserve the configured section count and order. Translate headings using the supplied localized heading map. Do not translate INCI names, identifiers, Latin botanical names, URLs, or market declarations.
+2. Write each locale as a natural editorial rewrite by a native cosmetic-formulation professional. Translate the display name, translate the saponification name only when the canonical saponification name is present, and translate the guidance using native cosmetic-formulation terminology and, where applicable, native soapmaking terminology; never translate literally or sentence by sentence, use English calques, or use English as a grammatical template. Recast syntax and terminology naturally for the target locale.
+3. Preserve the configured section count and order. Translate headings using the supplied localized heading map. Do not translate INCI names, identifiers, Latin botanical names, URLs, or market declarations when they appear in names or guidance. If the canonical saponification name is null, return null for every localized saponification name; otherwise return a nonblank localized saponification name.
 4. Keep the result compact and faithful. Return exactly one row per requested locale and no extra locales.
 5. Return only the strict JSON object requested by the schema. Do not include Markdown fences or extra keys.
 PROMPT,

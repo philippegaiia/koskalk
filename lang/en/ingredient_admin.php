@@ -65,7 +65,7 @@ return [
         ],
         'update_translations' => 'Update translations',
         'update_translations_heading' => 'Update ingredient translations?',
-        'update_translations_description' => 'Save edited English guidance first. This queues translations from the saved canonical English only. Current locales: :current. Missing locales: :missing. Outdated AI locales: :outdated. Reviewer-owned locales preserved: :preserved.',
+        'update_translations_description' => 'Save edited English guidance first. This queues translations from the saved canonical English only. Current locales: :current. Missing locales: :missing. Outdated AI locales: :outdated. Incomplete AI locales: :incomplete. Reviewer-owned locales preserved: :preserved.',
         'none' => 'None',
         'validation' => [
             'platform_only' => 'Only platform ingredients can have managed translations.',

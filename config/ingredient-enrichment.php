@@ -104,7 +104,7 @@ return [
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
         'guidance_prompt_version' => 'ingredient-guidance-v13',
-        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v2',
+        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v3',
         'allowed_domains' => [
             'ec.europa.eu',
             'single-market-economy.ec.europa.eu',

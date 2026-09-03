@@ -19,6 +19,9 @@
 /.gemini
 /.hermes
 /.superpowers
+# Generated: mirrored from the ignored /.agents/skills by scripts/sync-boost-skills.sh.
+# Only skills/ is ignored -- .workbuddy-ai/memory, /artifacts and /reports are committed.
+/.workbuddy-ai/skills/
 /.worktrees
 /auth.json
 /node_modules

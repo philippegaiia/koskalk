@@ -697,7 +697,7 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))
         ->toBe('ingredient-guidance-research-v7')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
-        ->toBe('ingredient-guidance-v14');
+        ->toBe('ingredient-guidance-v15');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,

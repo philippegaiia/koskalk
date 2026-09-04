@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 it('requests fuller practical guidance without filler when reviewed facts support it', function (): void {
     $prompt = app(IngredientGuidancePrompt::class)->build([]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-v14')
+    expect($prompt['version'])->toBe('ingredient-guidance-v15')
         ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
         ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
         ->and($prompt['instructions'])
@@ -36,6 +36,20 @@ it('requires natural concrete English guidance without evidence-report or stock 
         ->toContain('Remove decorative words such as `enhances`, `key`, `valuable`, or `versatile` when they add no factual meaning.')
         ->toContain('Avoid repeated qualifications and forced contrasts such as "not only X, but Y".')
         ->toContain('Keep necessary scientific uncertainty once, in the clearest place.');
+});
+
+it('avoids repeating the unfamiliar technical term mesocarp in Palm Oil guidance', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([
+        'current' => [
+            'canonical' => [
+                'display_name' => 'Palm Oil',
+                'info_markdown' => 'Palm Oil comes from the fleshy mesocarp of the fruit. The mesocarp is pressed to extract the oil.',
+            ],
+        ],
+    ]);
+
+    expect($prompt['instructions'])
+        ->toContain('Use an unfamiliar technical term only when it materially improves ingredient identification or formulation clarity; explain it once in plain language on first use, then prefer the everyday term and do not repeat the technical label mechanically.');
 });
 
 it('keeps renderer-only fresh evidence out of the guidance prompt input', function (): void {

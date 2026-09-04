@@ -60,8 +60,24 @@ it('keeps Palm Oil application-specific usage ranges distinct in the authoring p
             ],
         ],
         'guidance_evidence' => [
-            ['claim_type' => 'usage', 'scope' => 'product_grade', 'usage_application' => 'cosmetics'],
-            ['claim_type' => 'usage', 'scope' => 'product_grade', 'usage_application' => 'soapmaking'],
+            [
+                'claim_type' => 'usage',
+                'scope' => 'product_grade',
+                'summary' => 'Natural, unrefined Palm Oil is used at 2–5% of the oil phase in lotions and creams.',
+                'usage_application' => 'cosmetics',
+                'recommended_min_percent' => 2,
+                'recommended_max_percent' => 5,
+                'percentage_basis' => 'oil_phase',
+            ],
+            [
+                'claim_type' => 'usage',
+                'scope' => 'product_grade',
+                'summary' => 'Natural, unrefined Palm Oil is used at 2–10% of the total formula in lip products.',
+                'usage_application' => 'cosmetics',
+                'recommended_min_percent' => 2,
+                'recommended_max_percent' => 10,
+                'percentage_basis' => 'total_formula',
+            ],
         ],
     ]);
 

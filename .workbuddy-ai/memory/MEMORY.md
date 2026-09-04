@@ -30,6 +30,14 @@ queue-timeout contract mismatch, `--timeout=0` vs expected `300`).
 - **Never trust a single headless-Chrome measurement.** `--dump-dom` is flaky by up to **15px —
   exactly one scrollbar** — and a retry loop reports the flake as a real number. Take ≥3 samples
   per width, keep the median. Unreproduced = symptom, not measurement.
+- **Read `.ai/rules/index.md` before auditing any file — it maps path globs → rule files**
+  (`app/Livewire/Dashboard/IngredientEditor.php` → `dashboard.md`, `resources/views/**` → `views.md`,
+  `app/Livewire/**` → `livewire.md`). Skipping it produced a false finding: I called the hidden
+  `is_soap_saponification_trusted` flag a defect when `dashboard.md` mandates it ("Keep the trust
+  flag hidden in the workspace editor"). A rule file can also hand you the *remedy* for a separate
+  finding. **Measure the owner's own compliance before filing a rule violation** — `livewire.md`
+  says enforce with `authorize()`, but all 12 `$this->authorize()` calls sit in one component while
+  4 others use `abort(403)`. A rule most of the owner's components break is not the house rule.
 
 ## Conventions
 

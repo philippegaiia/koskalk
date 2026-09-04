@@ -149,15 +149,26 @@ edit-vs-view distinction is carried by icon literacy alone.
 
 ---
 
-### F8 — A hidden flag gates an entire tab, with no path to resolve it
+### F8 — The carrier-oil warning names no remedy *(amended 2026-09-04)*
 
-`is_soap_saponification_trusted` is a `Hidden` field (IngredientEditor.php:656). It decides
-whether the Soap chemistry tab exists (`soapChemistryAvailable()`, :1389). A carrier oil without
-it gets a warning aside (blade.php:31-36) — but the user cannot see the flag, change it, or act
-on the warning.
+`is_soap_saponification_trusted` is a `Hidden` field (IngredientEditor.php:656) deciding whether
+the Soap chemistry tab exists (`soapChemistryAvailable()`, :1389). A carrier oil without it gets a
+warning aside (blade.php:31-36).
 
-**Proposal:** surface the trust state and the remedy ("request verification", "supplier
-documented value missing") rather than only warning that something is off.
+**Retracted — the hidden flag is deliberate, not a defect.** `.ai/rules/dashboard.md` states it
+outright: *"A workspace user cannot mark a manually created ingredient as trusted for soap
+saponification… **Keep the trust flag hidden in the workspace editor.**"* The original audit called
+this a finding; it is intended behaviour. **This clause is withdrawn.**
+
+**What survives, and is now sharper.** The warning is correct to fire, but it names no way to
+recover — and the same rule supplies the remedy the warning should state: soap chemistry is
+retained only for an **editable duplicate of a trusted platform ingredient** whose `source_data`
+contains `user_authoring.trusted_koh_sap_value`. The recovery path exists; it is simply never
+communicated. `better-interface` escalates errors that name no recovery.
+
+**Proposal (revised):** have the warning state the remedy — duplicate a trusted platform ingredient
+to get editable soap chemistry — rather than only warning that something is off. Do **not** unhide
+the flag.
 
 ---
 
@@ -342,3 +353,30 @@ wins (F1, F4, F5) stand as written. F6 should be implemented by copying the work
 indicator rather than designing a new one. F2 should start as a **deletion**, with a new reference
 page only if the summary card proves insufficient. F7 should be dropped from the follow-ups.
 F10-F13 are small and independent; F10 and F11 are one-line changes.
+
+### 6.7 Project rules (`.ai/rules`) — checked late, and it mattered
+
+This audit was written against the codebase and the design skills without first reading
+`.ai/rules/index.md`. That was a mistake — the index maps the audited files to rule files directly
+(`app/Livewire/Dashboard/IngredientEditor.php` → `dashboard.md`; `resources/views/**` → `views.md`;
+`app/Livewire/**` → `livewire.md`). Reading them changed one finding and confirmed another.
+
+- **`dashboard.md` → F8 amended.** The hidden `is_soap_saponification_trusted` flag is required by
+  rule ("Keep the trust flag hidden in the workspace editor"), so that clause is **withdrawn**. The
+  rule also named the remedy the carrier-oil warning should communicate. See F8.
+- **`views.md` → reinforces F2's delete-first conclusion.** *"WordPress owns… long-form end-user
+  documentation. Laravel… keeps concise task copy, contextual help, and visible safety/compliance
+  warnings; link to WordPress for deeper material instead of duplicating it."* So the platform
+  reference surface should stay **concise**: badge-level facts (INCI, CAS/EC, allergens) plus a link
+  out. Any proposal that expands this page into a full technical reference would violate the rule as
+  well as lose the cheaper-fix argument.
+- **`livewire.md` → checked and cleared, not filed.** The rule says *"Enforce with the throwing
+  `authorize()` call… in controllers and Livewire"*, but `IngredientEditor.php:210` uses
+  `abort_if($this->isReadOnly(), 403)`. Measured before ruling: `$this->authorize()` appears 12
+  times under `app/Livewire/`, **all in `RecipeWorkbench`**; `abort(403)` / `abort_if` appears 6
+  times across **four other** components (`SettingsIndex` ×2, `IngredientEditor`, `SupplierEdit`,
+  `SupplierListingCreate`, `SupplierCreate`). A rule that most of the owner's own components do not
+  follow is not the house rule. **Not a finding.**
+
+**Process note for next time:** read `.ai/rules/index.md` and load every rule whose glob matches the
+file under review *before* writing findings — the same discipline as reading the governing spec.

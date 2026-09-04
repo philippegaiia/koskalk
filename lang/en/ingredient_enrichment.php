@@ -63,6 +63,7 @@ return [
         'soapmaking_flag_required' => 'soapmaking_relevant must be true when Soapmaking guidance is present.',
         'saponification_name_required' => 'A saponification name is required for soapmaking-relevant ingredients.',
         'guidance_headings' => 'Guidance headings must use the approved sections in order.',
+        'guidance_required_section_body' => 'Overview and Formulation use must each include guidance content.',
         'aliases_array' => 'Synonyms must be an array.',
         'alias_object' => 'Each synonym must be an object.',
         'alias_locale' => 'The synonym language code is invalid.',

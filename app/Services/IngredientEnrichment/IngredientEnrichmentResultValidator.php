@@ -443,6 +443,15 @@ class IngredientEnrichmentResultValidator
             : $required;
         if ($headings !== $expectedHeadings) {
             $this->error($errors, 'proposal.info_markdown', $this->message('guidance_headings'));
+        } else {
+            foreach ($required as $heading) {
+                $pattern = '/^##\h+'.preg_quote((string) $heading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
+                if (preg_match($pattern, $guidance, $section) !== 1 || trim($section[1]) === '') {
+                    $this->error($errors, 'proposal.info_markdown', $this->message('guidance_required_section_body'));
+
+                    break;
+                }
+            }
         }
 
         $this->warnOnWordCount($guidance, 'proposal.info_markdown', $warnings);

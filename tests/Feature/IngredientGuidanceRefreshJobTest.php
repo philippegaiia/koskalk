@@ -1923,18 +1923,18 @@ it('fails cached authoring when guidance headings or shape are invalid', functio
     }
 });
 
-it('fails fresh authoring with invalid headings before localization', function (): void {
+it('fails fresh authoring with invalid required sections before localization', function (string $invalidGuidance): void {
     $calls = ['author' => 0, 'localize' => 0];
-    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls) implements IngredientGuidanceAuthoringClient
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class($calls, $invalidGuidance) implements IngredientGuidanceAuthoringClient
     {
         /** @param array<string,int> $calls */
-        public function __construct(private array &$calls) {}
+        public function __construct(private array &$calls, private readonly string $invalidGuidance) {}
 
         public function author(array $context): IngredientGuidanceAuthoringResponse
         {
             $this->calls['author']++;
             $infoMarkdown = $this->calls['author'] === 1
-                ? str_replace('## Overview', '## Summary', guidanceText())
+                ? $this->invalidGuidance
                 : guidanceText();
 
             return new IngredientGuidanceAuthoringResponse(
@@ -1987,7 +1987,11 @@ it('fails fresh authoring with invalid headings before localization', function (
     expect($calls)->toBe(['author' => 2, 'localize' => 0])
         ->and($fixture['item']->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready)
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('completed');
-});
+})->with([
+    'unexpected heading' => str_replace('## Overview', '## Summary', guidanceText()),
+    'empty overview' => "## Overview\n\n## Formulation use\n\nUse this material in a suitable formulation.",
+    'empty formulation use' => "## Overview\n\nThis material has a verified identity and physical form.\n\n## Formulation use",
+]);
 
 it('fails cached validation when its envelope context or normalized result is inconsistent', function (): void {
     $calls = ['author' => 0, 'localize' => 0];

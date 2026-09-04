@@ -199,6 +199,15 @@ class IngredientGuidanceRefreshResultValidator
         $expected = $soapmakingRelevant ? [...$required, $soapmakingHeading] : $required;
         if ($headings !== $expected) {
             $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_headings'));
+        } else {
+            foreach ($required as $heading) {
+                $pattern = '/^##\h+'.preg_quote((string) $heading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
+                if (preg_match($pattern, $guidance, $section) !== 1 || trim($section[1]) === '') {
+                    $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_required_section_body'));
+
+                    break;
+                }
+            }
         }
         $this->warnOnWordCount($guidance, 'info_markdown', $warnings);
 

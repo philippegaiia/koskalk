@@ -129,6 +129,26 @@ it('accepts the bounded result contract for a non-colourant', function (): void 
         ->and($report['normalized']['proposal']['display_name'])->toBe('Contract Ingredient');
 });
 
+it('rejects full enrichment guidance with an empty required section', function (string $guidance): void {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EMPTY-GUIDANCE-SECTION',
+        'category' => IngredientCategory::Other,
+    ]);
+    $result = enrichmentResult($ingredient->catalog_key);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['info_markdown'] = $guidance;
+
+    $report = app(IngredientEnrichmentResultValidator::class)->validate($result, $ingredient);
+
+    expect($report['valid'])->toBeFalse()
+        ->and($report['errors'])->toHaveKey('proposal.info_markdown')
+        ->and($report['errors']['proposal.info_markdown'])
+        ->toContain('Overview and Formulation use must each include guidance content.');
+})->with([
+    'empty overview' => "## Overview\n\n## Formulation use\n\nUse this material in a suitable formulation.",
+    'empty formulation use' => "## Overview\n\nThis material has a verified identity and physical form.\n\n## Formulation use",
+]);
+
 it('accepts full enrichment results with deferred localization', function (bool $omitTranslations): void {
     config()->set('interface-translations.catalogue_locales', ['de']);
 

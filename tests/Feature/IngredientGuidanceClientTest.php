@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 it('requests fuller practical guidance without filler when reviewed facts support it', function (): void {
     $prompt = app(IngredientGuidancePrompt::class)->build([]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-v15')
+    expect($prompt['version'])->toBe('ingredient-guidance-v16')
         ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
         ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
         ->and($prompt['instructions'])
@@ -50,6 +50,22 @@ it('avoids repeating the unfamiliar technical term mesocarp in Palm Oil guidance
 
     expect($prompt['instructions'])
         ->toContain('Use an unfamiliar technical term only when it materially improves ingredient identification or formulation clarity; explain it once in plain language on first use, then prefer the everyday term and do not repeat the technical label mechanically.');
+});
+
+it('keeps Palm Oil application-specific usage ranges distinct in the authoring prompt', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([
+        'current' => [
+            'canonical' => [
+                'display_name' => 'Palm Oil',
+            ],
+        ],
+        'guidance_evidence' => [
+            ['claim_type' => 'usage', 'scope' => 'product_grade', 'usage_application' => 'cosmetics'],
+            ['claim_type' => 'usage', 'scope' => 'product_grade', 'usage_application' => 'soapmaking'],
+        ],
+    ]);
+
+    expect($prompt['instructions'])->toContain('When multiple supported use ranges concern the same grade, state the grade qualification once, name the application for every range, keep each evidence-backed usage claim separate and traceable to its own evidence row, and avoid repeating the same `Typical use level` lead-in. Never generalize an application-specific range, and never merge or average conflicting ranges.');
 });
 
 it('keeps renderer-only fresh evidence out of the guidance prompt input', function (): void {

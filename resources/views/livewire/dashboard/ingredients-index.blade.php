@@ -175,7 +175,7 @@
                                                 wire:change="updateIngredientPrice({{ $ingredient->id }}, $event.target.value)"
                                                 type="text"
                                                 inputmode="decimal"
-                                                class="sk-input numeric"
+                                                class="sk-input numeric text-right"
                                                 aria-label="{{ __('ingredients.accessibility.price', ['ingredient' => $displayName, 'unit' => $currentPriceUnit]) }}"
                                             />
                                             @error('price_'.$ingredient->id)

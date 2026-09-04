@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 it('requests fuller practical guidance without filler when reviewed facts support it', function (): void {
     $prompt = app(IngredientGuidancePrompt::class)->build([]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-v13')
+    expect($prompt['version'])->toBe('ingredient-guidance-v14')
         ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
         ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
         ->and($prompt['instructions'])
@@ -22,6 +22,20 @@ it('requests fuller practical guidance without filler when reviewed facts suppor
         ->toContain('principal native or cultivated region')
         ->toContain('Do not include traditional-use, therapeutic, sustainability, or marketing claims')
         ->toContain('Do not repeat facts across sections.');
+});
+
+it('requires natural concrete English guidance without evidence-report or stock AI phrasing', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([]);
+
+    expect($prompt['instructions'])
+        ->toContain('Never alter a supported fact or qualification that you carry into the guidance, and never invent details.')
+        ->toContain('Use plain, concrete cosmetic-formulation language, simple verbs, and active subjects.')
+        ->toContain('Vary sentence openings and sentence length when natural.')
+        ->toContain('Remove evidence-report narration, vague attribution, sales language, filler, stock AI vocabulary, and generic positive conclusions.')
+        ->toContain('Prefer `is` and `has` to inflated substitutes such as `serves as`, `offers`, or `boasts`.')
+        ->toContain('Remove decorative words such as `enhances`, `key`, `valuable`, or `versatile` when they add no factual meaning.')
+        ->toContain('Avoid repeated qualifications and forced contrasts such as "not only X, but Y".')
+        ->toContain('Keep necessary scientific uncertainty once, in the clearest place.');
 });
 
 it('keeps renderer-only fresh evidence out of the guidance prompt input', function (): void {
@@ -146,6 +160,8 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
             && str_contains((string) $data['instructions'], 'minimum-only bound')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });
+
+    Http::assertSentCount(1);
 });
 
 it('omits an unsupported guidance claim before returning authoring output', function (): void {

@@ -103,8 +103,8 @@ return [
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
-        'guidance_prompt_version' => 'ingredient-guidance-v13',
-        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v3',
+        'guidance_prompt_version' => 'ingredient-guidance-v14',
+        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v4',
         'identity_name_localization_prompt_version' => 'ingredient-identity-name-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',

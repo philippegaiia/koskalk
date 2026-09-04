@@ -123,12 +123,14 @@ it('uses the localization-specific model and reasoning effort', function (): voi
 
     Http::assertSent(fn (Request $request): bool => data_get($request->data(), 'model') === 'gpt-5.6-luna'
         && data_get($request->data(), 'reasoning.effort') === 'xhigh');
+
+    Http::assertSentCount(1);
 });
 
 it('describes localization as an in-context native editorial rewrite', function (): void {
     $prompt = app(IngredientGuidanceLocalizationPrompt::class)->build([]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-localization-v3')
+    expect($prompt['version'])->toBe('ingredient-guidance-localization-v4')
         ->and($prompt['instructions'])
         ->toContain('in-context')
         ->toContain('native cosmetic-formulation')
@@ -136,6 +138,17 @@ it('describes localization as an in-context native editorial rewrite', function 
         ->toContain('never translate literally or sentence by sentence')
         ->toContain('Latin botanical names')
         ->toContain('INCI names');
+});
+
+it('requires faithful natural localization without calques, evidence prose, or filler', function (): void {
+    $prompt = app(IngredientGuidanceLocalizationPrompt::class)->build([]);
+
+    expect($prompt['instructions'])
+        ->toContain('Preserve every fact, limitation, warning, omission, and section.')
+        ->toContain('Use native cosmetic-formulation terminology and recast syntax naturally for the target locale.')
+        ->toContain('Prefer simple verbs, concrete wording, and natural rhythm.')
+        ->toContain('Avoid literal calques, bureaucratic evidence language, filler, sales language, repetitive openings, and unnecessary qualifiers.')
+        ->toContain('Invent nothing beyond the approved English guidance.');
 });
 
 it('fails safely when the no-web provider connection cannot be established', function (): void {

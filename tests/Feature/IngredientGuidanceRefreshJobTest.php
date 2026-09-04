@@ -1195,6 +1195,15 @@ it('localizes only outdated locales and never calls English authoring', function
         ->toBe(['fr', 'it', 'nl', 'pt_BR'])
         ->and(collect($item->fresh()->result['translations'])->pluck('locale')->all())
         ->toBe(['fr', 'it', 'nl', 'pt_BR']);
+
+    config()->set('ingredient-enrichment.openai.guidance_localization_prompt_version', 'ingredient-guidance-localization-v5');
+    $item->update(['status' => IngredientEnrichmentItemStatus::Failed]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($calls)->toBe(['research' => 0, 'author' => 0, 'localize' => 3])
+        ->and(data_get($item->fresh()->research_stages, 'ai_guidance_localization.data.stage_context.provider_configuration.localization_prompt_version'))
+        ->toBe('ingredient-guidance-localization-v5');
 });
 
 it('requests current AI locales with missing names while excluding reviewer-owned locales', function (): void {

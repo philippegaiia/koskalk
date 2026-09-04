@@ -20,9 +20,10 @@ class StartIngredientGuidanceRefresh
         User $actor,
         Collection $ingredients,
         bool $localizationOnly = false,
+        bool $freshResearch = false,
     ): IngredientEnrichmentBatch {
         Gate::forUser($actor)->authorize('create', IngredientEnrichmentBatch::class);
 
-        return $this->service->startGuidanceRefresh($actor, $ingredients, $localizationOnly);
+        return $this->service->startGuidanceRefresh($actor, $ingredients, $localizationOnly, $freshResearch);
     }
 }

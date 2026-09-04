@@ -80,7 +80,14 @@ class IngredientEnrichmentBatchService
         User $actor,
         Collection $ingredients,
         bool $localizationOnly = false,
+        bool $freshResearch = false,
     ): IngredientEnrichmentBatch {
+        if ($localizationOnly && $freshResearch) {
+            throw ValidationException::withMessages([
+                'fresh_research' => __('ingredient_enrichment_admin.validation.fresh_research_localization'),
+            ]);
+        }
+
         $this->assertConfigured();
 
         $ids = $ingredients->pluck('id')->filter()->unique()->sort()->values();
@@ -104,7 +111,7 @@ class IngredientEnrichmentBatchService
             ? config('ingredient-enrichment.openai.localization_reasoning_effort')
             : config('ingredient-enrichment.openai.reasoning_effort');
 
-        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion, $model, $reasoningEffort): IngredientEnrichmentBatch {
+        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion, $model, $reasoningEffort, $freshResearch): IngredientEnrichmentBatch {
             $locked = Ingredient::query()
                 ->withoutGlobalScopes()
                 ->whereIn('id', $ids)
@@ -126,12 +133,13 @@ class IngredientEnrichmentBatchService
                 'prompt_version' => $promptVersion,
                 'schema_version' => 1,
                 'mode' => $mode,
+                'fresh_research' => $freshResearch,
                 'total_count' => $locked->count(),
                 'pending_count' => $locked->count(),
             ]);
 
             foreach ($locked as $ingredient) {
-                $context = $this->guidanceContext->build($ingredient);
+                $context = $this->guidanceContext->build($ingredient, $freshResearch);
                 $batch->items()->create([
                     'ingredient_id' => $ingredient->id,
                     'catalog_key' => $ingredient->catalog_key,

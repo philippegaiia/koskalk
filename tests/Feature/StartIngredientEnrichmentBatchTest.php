@@ -43,6 +43,39 @@ it('atomically captures selected platform ingredients and dispatches one batched
     });
 });
 
+it('defaults fresh research to false for full and guidance batches', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create();
+
+    $fullBatch = app(StartIngredientEnrichmentBatch::class)->handle($admin, collect([$ingredient]));
+    $guidanceBatch = app(StartIngredientGuidanceRefresh::class)->handle($admin, collect([$ingredient]));
+
+    expect($fullBatch->fresh_research)->toBeFalse()
+        ->and($guidanceBatch->fresh_research)->toBeFalse();
+});
+
+it('persists fresh research for an ordinary guidance refresh when requested', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create();
+
+    $batch = app(StartIngredientGuidanceRefresh::class)->handle($admin, collect([$ingredient]), false, true);
+
+    expect($batch->mode)->toBe(IngredientEnrichmentBatchMode::GuidanceRefresh)
+        ->and($batch->fresh_research)->toBeTrue()
+        ->and(IngredientEnrichmentBatch::query()->findOrFail($batch->id)->fresh_research)->toBeTrue();
+});
+
+it('rejects fresh research for a guidance localization batch', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create();
+
+    expect(fn () => app(StartIngredientGuidanceRefresh::class)->handle($admin, collect([$ingredient]), true, true))
+        ->toThrow(ValidationException::class);
+
+    expect(IngredientEnrichmentBatch::query()->count())->toBe(0);
+    Bus::assertNothingBatched();
+});
+
 it('rejects private ingredients without leaving partial batch rows', function (): void {
     $admin = User::factory()->create(['is_admin' => true]);
     $private = Ingredient::factory()->create(['owner_type' => 'user', 'owner_id' => $admin->id]);

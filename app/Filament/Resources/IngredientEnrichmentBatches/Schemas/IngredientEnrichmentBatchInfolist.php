@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\IngredientEnrichmentBatches\Schemas;
 
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -17,6 +18,9 @@ class IngredientEnrichmentBatchInfolist
                     TextEntry::make('status')->badge()->formatStateUsing(fn ($state): string => $state->label()),
                     TextEntry::make('model')->badge(),
                     TextEntry::make('reasoning_effort'),
+                    IconEntry::make('fresh_research')
+                        ->label(__('ingredient_enrichment_admin.fields.fresh_research'))
+                        ->boolean(),
                     TextEntry::make('requester.name'),
                     TextEntry::make('total_count'),
                     TextEntry::make('ready_count'),

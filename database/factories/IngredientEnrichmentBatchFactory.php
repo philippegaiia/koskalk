@@ -20,6 +20,7 @@ class IngredientEnrichmentBatchFactory extends Factory
             'prompt_version' => 'ingredient-enrichment-research-v1',
             'schema_version' => 1,
             'mode' => 'fill_missing',
+            'fresh_research' => false,
         ];
     }
 }

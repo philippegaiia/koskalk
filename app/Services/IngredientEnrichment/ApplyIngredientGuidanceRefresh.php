@@ -71,10 +71,10 @@ class ApplyIngredientGuidanceRefresh
                         ? data_get($ingredient->source_data, 'enrichment.guidance')
                         : [];
                     $beforeEvidence = $this->guidanceEvidencePolicy->normalizePersisted($beforeGuidance['evidence'] ?? []);
-                    $guidanceEvidence = $this->guidanceEvidencePolicy->reconcilePersisted(
-                        $beforeEvidence,
-                        $this->freshEvidenceContribution($item, $mode, $normalized, $beforeEvidence),
-                    );
+                    $freshEvidence = $this->freshEvidenceContribution($item, $mode, $normalized, $beforeEvidence);
+                    $guidanceEvidence = $batch->fresh_research && $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+                        ? $this->guidanceEvidencePolicy->normalizePersisted($freshEvidence)
+                        : $this->guidanceEvidencePolicy->reconcilePersisted($beforeEvidence, $freshEvidence);
                     $normalized['guidance_evidence'] = $guidanceEvidence;
                     $report['normalized'] = $normalized;
                     $plan = $this->alignPlanEvidence(

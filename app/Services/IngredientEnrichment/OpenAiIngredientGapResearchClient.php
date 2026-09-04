@@ -21,8 +21,12 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
      */
     public function research(array $facts): IngredientGapResearchResponse
     {
+        $freshResearchOverride = (bool) ($facts['fresh_research_override'] ?? false);
+        unset($facts['fresh_research_override']);
+
         if (! config('ingredient-enrichment.openai.gap_research.enabled')
-            && ! config('ingredient-enrichment.openai.guidance_research.enabled')) {
+            && ! config('ingredient-enrichment.openai.guidance_research.enabled')
+            && ! $freshResearchOverride) {
             throw new RuntimeException(__('ingredient_enrichment_admin.validation.gap_research_disabled'));
         }
 

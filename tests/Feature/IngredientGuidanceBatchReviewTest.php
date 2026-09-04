@@ -927,6 +927,57 @@ it('persists approved guidance evidence when prose is identical', function (): v
         ->and($item->fresh()->applied_at)->not->toBeNull();
 });
 
+it('replaces the prior evidence bank when applying a fresh research batch', function (): void {
+    $admin = User::factory()->admin()->create();
+    $priorEvidence = [[
+        'source_name' => 'Prior source',
+        'source_url' => 'https://example.test/prior',
+        'summary' => 'Prior evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $freshEvidence = [[
+        'source_name' => 'Fresh source',
+        'source_url' => 'https://example.test/fresh',
+        'summary' => 'Fresh evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-09-04T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => guidanceApplyText('Original'),
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $priorEvidence]]],
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = guidanceResult($ingredient, $sourceFingerprint);
+    $result['info_markdown'] = guidanceApplyText('Original');
+    $result['guidance_evidence'] = $freshEvidence;
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'fresh_research' => true,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Approved,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => $result,
+        'research_stages' => [
+            'ai_guidance_research' => [
+                'status' => 'completed',
+                'data' => ['guidance_evidence' => $freshEvidence],
+            ],
+        ],
+        'approved_by_user_id' => $admin->id,
+        'approved_at' => now(),
+    ]);
+
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch);
+    $normalizedFreshEvidence = app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($freshEvidence);
+
+    expect($totals['applied'])->toBe(1)
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe($normalizedFreshEvidence)
+        ->and($item->fresh()->result['guidance_evidence'])->toBe($normalizedFreshEvidence);
+});
+
 it('rejects identity fields in a guidance proposal and marks stale items before approval', function (): void {
     $admin = User::factory()->create(['is_admin' => true]);
     $ingredient = Ingredient::factory()->create(['info_markdown' => guidanceApplyText('Original')]);

@@ -39,5 +39,6 @@ it('starts one durable batch for all selected ingredients', function (): void {
         ->assertHasNoFormErrors();
 
     expect(IngredientEnrichmentBatch::query()->count())->toBe(1)
-        ->and(IngredientEnrichmentBatch::query()->firstOrFail()->items()->count())->toBe(3);
+        ->and(IngredientEnrichmentBatch::query()->firstOrFail()->items()->count())->toBe(3)
+        ->and(IngredientEnrichmentBatch::query()->firstOrFail()->fresh_research)->toBeFalse();
 });

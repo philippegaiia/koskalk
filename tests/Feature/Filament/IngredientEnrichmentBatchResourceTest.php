@@ -34,6 +34,20 @@ it('offers a new batch shortcut from the batch index', function (): void {
         ->assertActionHasUrl('create', IngredientResource::getUrl('index'));
 });
 
+it('shows whether a batch started with fresh research', function (): void {
+    $admin = User::factory()->admin()->create();
+    $freshBatch = IngredientEnrichmentBatch::factory()->create(['fresh_research' => true]);
+    $reusedBatch = IngredientEnrichmentBatch::factory()->create(['fresh_research' => false]);
+    $this->actingAs($admin);
+
+    Livewire::test(ViewIngredientEnrichmentBatch::class, ['record' => $freshBatch->public_id])
+        ->assertSchemaComponentStateSet('fresh_research', true)
+        ->assertSee('Fresh research');
+
+    Livewire::test(ViewIngredientEnrichmentBatch::class, ['record' => $reusedBatch->public_id])
+        ->assertSchemaComponentStateSet('fresh_research', false);
+});
+
 it('presents current and proposed values with field-level evidence', function (): void {
     $admin = User::factory()->admin()->create();
     $batch = IngredientEnrichmentBatch::factory()->create();

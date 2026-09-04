@@ -51,12 +51,14 @@ it('offers a guidance-only bulk action and queues a guidance batch', function ()
         ->assertActionExists(TestAction::make('runGuidanceRefresh')->table()->bulk())
         ->selectTableRecords($ingredients->modelKeys())
         ->mountAction(TestAction::make('runGuidanceRefresh')->table()->bulk())
-        ->assertMountedActionModalSee('Identity fields are not included.')
+        ->assertMountedActionModalSee('Identity fields and localized guidance are not included.')
+        ->fillForm(['fresh_research' => true])
         ->callMountedAction();
 
     $batch = IngredientEnrichmentBatch::query()->latest('id')->firstOrFail();
 
     expect($batch->mode)->toBe(IngredientEnrichmentBatchMode::GuidanceRefresh)
+        ->and($batch->fresh_research)->toBeTrue()
         ->and($batch->items()->count())->toBe(2);
 });
 

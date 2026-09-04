@@ -311,6 +311,66 @@ it('retains prior evidence without a missing-evidence warning when guidance rese
         ->not->toContain('No researched evidence passed validation; the proposed guidance uses catalogue facts only.');
 });
 
+it('forces guidance research and excludes prior evidence when fresh research is requested', function (): void {
+    $calls = ['research' => 0];
+    $researchContexts = [];
+    app()->instance(IngredientGuidanceResearchClient::class, new class($calls, $researchContexts) implements IngredientGuidanceResearchClient
+    {
+        /** @param array<string,int> $calls @param list<array<string,mixed>> $contexts */
+        public function __construct(private array &$calls, private array &$contexts) {}
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls['research']++;
+            $this->contexts[] = $facts;
+
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp-fresh-research',
+                requestId: 'req-fresh-research',
+                model: 'gpt-test',
+                inputTokens: 7,
+                outputTokens: 8,
+                webSearchCalls: 1,
+                sources: [],
+            );
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            return new IngredientGuidanceAuthoringResponse(
+                guidance: ['info_markdown' => guidanceText(), 'warnings' => [], 'unresolved_questions' => []],
+                responseId: 'resp-fresh-authoring',
+                requestId: 'req-fresh-authoring',
+                model: 'gpt-test',
+                inputTokens: 11,
+                outputTokens: 22,
+            );
+        }
+    });
+    $fixture = guidanceResumeFixture();
+    $fixture['batch']->update(['fresh_research' => true]);
+    $fixture['item']->update([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build(
+            $fixture['ingredient'],
+            freshResearch: true,
+        ),
+    ]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    expect($calls['research'])->toBe(1)
+        ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_research.data.performed'))->toBeTrue()
+        ->and($researchContexts[0]['guidance_evidence'])->toBe([])
+        ->and($researchContexts[0]['prior_guidance_evidence'])->toBe([])
+        ->and($researchContexts[0]['fresh_research_override'])->toBeTrue()
+        ->and(data_get($researchContexts[0], 'current.canonical.info_markdown'))->not->toBeNull();
+});
+
 it('quarantines rejected guidance rows while completing a mixed refresh', function (): void {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     $authoringContext = [];

@@ -203,6 +203,42 @@ it('does not permit an implicit gap-research request when the feature is disable
     Http::assertNothingSent();
 });
 
+it('allows an explicitly fresh research call when ordinary research is disabled', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    config()->set('ingredient-enrichment.openai.gap_research.enabled', false);
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'id' => 'resp_fresh_override',
+            'status' => 'completed',
+            'model' => 'gpt-5.6-terra-2026-08-01',
+            'output' => [[
+                'type' => 'message',
+                'content' => [[
+                    'type' => 'output_text',
+                    'text' => json_encode([
+                        'candidate_evidence' => [],
+                        'warnings' => [],
+                        'unresolved_questions' => [],
+                    ], JSON_THROW_ON_ERROR),
+                ]],
+            ]],
+        ]),
+    ]);
+
+    $response = app(OpenAiIngredientGapResearchClient::class)->research([
+        ...editorialFacts(),
+        'fresh_research_override' => true,
+    ]);
+
+    expect($response->responseId)->toBe('resp_fresh_override');
+    Http::assertSent(fn (Request $request): bool => ! str_contains(
+        (string) data_get($request->data(), 'input'),
+        'fresh_research_override',
+    ));
+});
+
 it('returns guidance candidates without applying the evidence policy in transport', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);

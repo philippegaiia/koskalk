@@ -293,7 +293,8 @@ class IngredientGuidanceRefreshProcessor
             $itemId,
             IngredientEnrichmentResearchStage::AiGuidanceResearch,
             function (array $stageContext) use ($context): IngredientSourceStageResult {
-                if (! (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true)) {
+                if (! ($context['fresh_research'] ?? false)
+                    && ! (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true)) {
                     return new IngredientSourceStageResult(
                         stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
                         status: 'completed',
@@ -320,6 +321,7 @@ class IngredientGuidanceRefreshProcessor
 
                 $response = $this->guidanceResearch->research([
                     ...$context,
+                    'fresh_research_override' => (bool) ($context['fresh_research'] ?? false),
                     'guidance_research_prompt_version' => $stageContext['provider_configuration']['guidance_research_prompt_version'] ?? null,
                 ]);
                 $validation = $this->guidanceEvidencePolicy->partitionCandidates(
@@ -393,7 +395,9 @@ class IngredientGuidanceRefreshProcessor
         $priorEvidence = is_array($context['prior_guidance_evidence'] ?? null)
             ? $context['prior_guidance_evidence']
             : (is_array($context['guidance_evidence'] ?? null) ? $context['guidance_evidence'] : []);
-        $evidence = $this->guidanceEvidencePolicy->reconcilePersisted($priorEvidence, $freshEvidence);
+        $evidence = ($context['fresh_research'] ?? false)
+            ? $this->guidanceEvidencePolicy->normalizePersisted($freshEvidence)
+            : $this->guidanceEvidencePolicy->reconcilePersisted($priorEvidence, $freshEvidence);
 
         return [
             ...$context,

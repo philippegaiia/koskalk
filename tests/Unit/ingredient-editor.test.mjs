@@ -470,6 +470,44 @@ test('captures the flushed scope state at the request interception stage', () =>
     assert.equal(editor.baselineFor('ingredient').name, 'Flushed after debounce');
 });
 
+test('adopts a canonical material code when the response normalizes the submitted value', () => {
+    const setup = makeEditor();
+
+    setup.editor.init();
+    edit(setup.wire, 'workspaceMaterialCode', 'code-01');
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('material-code') });
+    setup.wire.startCommit('saveWorkspaceMaterialCode');
+    edit(setup.wire, 'workspaceMaterialCode', 'CODE-01');
+    setup.wire.emit('ingredient-editor:saved', {
+        scope: 'material-code',
+        baseline: 'CODE-01',
+    });
+    setup.wire.completeCommit();
+
+    assert.equal(setup.editor.stateFor('material-code'), 'saved');
+    assert.equal(setup.editor.baselineFor('material-code'), 'CODE-01');
+    assert.equal(setup.editor.currentFor('material-code'), 'CODE-01');
+});
+
+test('keeps a newer material code edit dirty against the canonical saved value', () => {
+    const setup = makeEditor();
+
+    setup.editor.init();
+    edit(setup.wire, 'workspaceMaterialCode', 'code-01');
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('material-code') });
+    setup.wire.startCommit('saveWorkspaceMaterialCode');
+    edit(setup.wire, 'workspaceMaterialCode', 'newer-02');
+    setup.wire.emit('ingredient-editor:saved', {
+        scope: 'material-code',
+        baseline: 'CODE-01',
+    });
+    setup.wire.completeCommit();
+
+    assert.equal(setup.editor.stateFor('material-code'), 'dirty');
+    assert.equal(setup.editor.baselineFor('material-code'), 'CODE-01');
+    assert.equal(setup.editor.currentFor('material-code'), 'newer-02');
+});
+
 test('installs one navigation guard and removes every listener on destroy', () => {
     const { editor, wire, eventTarget, windowTarget, navigationTarget, registry } = makeEditor();
 
@@ -590,9 +628,17 @@ test('adopts inherited guidance when customization opens, then tracks later edit
     assert.equal(setup.editor.stateFor('guidance'), 'dirty');
 });
 
-test('allows an initial create redirect from its submitted baseline without prompting', () => {
+test('acknowledges an initial create from its explicit success event and navigates once', () => {
     const controls = [new FakeControl('input'), new FakeControl('textarea'), new FakeControl('contenteditable')];
-    const setup = makeEditor({ isCreate: true });
+    const navigations = [];
+    let setup;
+    setup = makeEditor({
+        isCreate: true,
+        navigate(url) {
+            navigations.push(url);
+            setup.navigationTarget.dispatch('livewire:navigate');
+        },
+    });
     const form = new FakeForm('ingredient', controls);
 
     setup.editor.init();
@@ -605,25 +651,50 @@ test('allows an initial create redirect from its submitted baseline without prom
     assert.equal(controls[1].readOnly, true);
     assert.equal(controls[2].getAttribute('contenteditable'), 'false');
 
-    setup.wire.completeCommit({ redirect: '/ingredients/1' }, 0, () => {
-        assert.equal(setup.editor.stateFor('ingredient'), 'saved');
-        assert.equal(controls[0].disabled, false);
+    setup.wire.emit('ingredient-editor:created', {
+        scope: 'ingredient',
+        baseline: structuredClone(setup.state.data),
+        redirect: '/ingredients/1',
     });
-
-    setup.wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
+    setup.wire.completeCommit();
 
     assert.equal(setup.editor.stateFor('ingredient'), 'saved');
     assert.equal(setup.editor.baselineFor('ingredient').name, 'New ingredient');
     assert.equal(controls[0].disabled, false);
     assert.equal(controls[1].readOnly, false);
     assert.equal(controls[2].getAttribute('contenteditable'), 'true');
-    assert.equal(setup.wire.redirectPrevented, false);
+    assert.deepEqual(navigations, ['/ingredients/1']);
     assert.equal(setup.confirmations.length, 0);
 });
 
-test('keeps newer create edits protected when a redirect arrives', async () => {
+test('does not treat a transport redirect as a successful initial create', () => {
+    const controls = [new FakeControl('input'), new FakeControl('contenteditable')];
+    const setup = makeEditor({ isCreate: true });
+    const form = new FakeForm('ingredient', controls);
+
+    setup.editor.init();
+    setup.state.data.name = 'Submitted ingredient';
+    setup.eventTarget.dispatch('submit', { target: form });
+    setup.wire.startCommit();
+    setup.wire.completeCommit({ redirect: '/login' });
+
+    assert.equal(controls[0].disabled, false);
+    assert.equal(controls[1].getAttribute('contenteditable'), 'true');
+    assert.equal(setup.editor.stateFor('ingredient'), 'failed');
+    assert.equal(setup.editor.baselineFor('ingredient').name, 'Argan oil');
+    assert.equal(setup.registry.blocksNavigation(), true);
+    assert.equal(setup.wire.redirectPrevented, true);
+});
+
+test('keeps newer create edits protected after explicit success', () => {
     const controls = [new FakeControl('input')];
-    const setup = makeEditor({ isCreate: true, confirm: () => false });
+    const navigations = [];
+    const setup = makeEditor({
+        isCreate: true,
+        navigate(url) {
+            navigations.push(url);
+        },
+    });
     const form = new FakeForm('ingredient', controls);
 
     setup.editor.init();
@@ -631,14 +702,17 @@ test('keeps newer create edits protected when a redirect arrives', async () => {
     setup.eventTarget.dispatch('submit', { target: form });
     setup.wire.startCommit();
     edit(setup.wire, 'data.name', 'Newer ingredient edit');
-    setup.wire.completeCommit({ redirect: '/ingredients/1' });
-    setup.wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
-    await new Promise((resolve) => queueMicrotask(resolve));
+    setup.wire.emit('ingredient-editor:created', {
+        scope: 'ingredient',
+        baseline: { ...setup.state.data, name: 'Submitted ingredient' },
+        redirect: '/ingredients/1',
+    });
+    setup.wire.completeCommit();
 
     assert.equal(controls[0].disabled, false);
     assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
     assert.equal(setup.editor.baselineFor('ingredient').name, 'Submitted ingredient');
-    assert.equal(setup.wire.redirectPrevented, true);
+    assert.deepEqual(navigations, []);
 });
 
 test('unfreezes and keeps an initial create dirty after a failed commit', () => {

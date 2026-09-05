@@ -230,6 +230,13 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     $ingredient?->load('identifiers');
 
+    $component->assertDispatched('ingredient-editor:created', function (string $event, array $payload) use ($ingredient): bool {
+        return $event === 'ingredient-editor:created'
+            && $payload['scope'] === 'ingredient'
+            && $payload['baseline']['name'] === 'French Green Clay'
+            && $payload['redirect'] === route('ingredients.edit', $ingredient);
+    });
+
     expect($ingredient)->not->toBeNull()
         ->and($ingredient->visibility)->toBe(Visibility::Private)
         ->and($ingredient->is_soap_saponification_trusted)->toBeFalse()
@@ -261,6 +268,12 @@ it('saves an optional workspace material code without generating one', function 
 
     $ingredient = Ingredient::query()->where('display_name', 'French Green Clay')->sole();
     $workspace = $user->refresh()->company();
+
+    $component->assertDispatched('ingredient-editor:saved', function (string $event, array $payload): bool {
+        return $event === 'ingredient-editor:saved'
+            && $payload['scope'] === 'ingredient'
+            && $payload['baseline']['name'] === 'French Green Clay';
+    });
 
     expect($workspace)->toBeInstanceOf(Workspace::class)
         ->and(WorkspaceIngredientCode::query()
@@ -342,7 +355,7 @@ it('lets an editor assign a platform material code in the active workspace', fun
 
     $this->actingAs($editor);
 
-    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
         ->assertSet('workspaceMaterialCode', null)
         ->set('workspaceMaterialCode', 'PLAT-01')
         ->assertSet('workspaceMaterialCode', 'PLAT-01')
@@ -350,6 +363,12 @@ it('lets an editor assign a platform material code in the active workspace', fun
         ->assertSet('workspaceMaterialCode', 'PLAT-01')
         ->call('saveWorkspaceMaterialCode')
         ->assertHasNoErrors();
+
+    $component->assertDispatched('ingredient-editor:saved', function (string $event, array $payload): bool {
+        return $event === 'ingredient-editor:saved'
+            && $payload['scope'] === 'material-code'
+            && $payload['baseline'] === 'PLAT-01';
+    });
 
     expect(WorkspaceIngredientCode::query()
         ->where('workspace_id', $workspace->id)

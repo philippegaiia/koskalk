@@ -6,6 +6,7 @@ const SCOPE_PATHS = {
 
 const SCOPE_KEYS = Object.keys(SCOPE_PATHS);
 const SAVED_EVENT = 'ingredient-editor:saved';
+const CREATED_EVENT = 'ingredient-editor:created';
 const CANCELLED_EVENT = 'ingredient-editor:cancelled';
 const BASELINE_EVENT = 'ingredient-editor:baseline';
 const SAVE_METHODS = {
@@ -178,6 +179,17 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const interceptRequest = options.interceptRequest
         ?? ((method, callback) => wire.$interceptRequest?.(method, callback));
     const invoke = options.invoke ?? ((method) => wire[method]?.());
+    const navigate = options.navigate ?? ((url) => {
+        if (typeof window !== 'undefined' && window.Livewire?.navigate) {
+            return window.Livewire.navigate(url);
+        }
+
+        if (typeof window !== 'undefined' && typeof window.location?.assign === 'function') {
+            return window.location.assign(url);
+        }
+
+        return undefined;
+    });
     const confirm = options.confirm ?? defaultConfirm;
 
     const scopeBaselines = {};
@@ -185,9 +197,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const scopeSequences = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
     const pendingSaves = new Map();
     const pendingCancels = new Map();
-    const redirectAcknowledgements = new Map();
+    const createAcknowledgements = new Map();
     const unsubscriptions = [];
     let boundEventTarget = null;
+    let navigationAllowance = false;
 
     const editor = {
         registry,
@@ -250,11 +263,16 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             const unlistenSaved = listen(SAVED_EVENT, (detail = {}) => this.completeSave(detail.scope, detail));
+            const unlistenCreated = listen(CREATED_EVENT, (detail = {}) => this.completeCreate(detail));
             const unlistenCancelled = listen(CANCELLED_EVENT, (detail = {}) => this.cancelScope(detail.scope, detail));
             const unlistenBaseline = listen(BASELINE_EVENT, (detail = {}) => this.adoptBaseline(detail.scope, detail));
 
             if (typeof unlistenSaved === 'function') {
                 unsubscriptions.push(unlistenSaved);
+            }
+
+            if (typeof unlistenCreated === 'function') {
+                unsubscriptions.push(unlistenCreated);
             }
 
             if (typeof unlistenCancelled === 'function') {
@@ -356,7 +374,8 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             pendingSaves.clear();
             pendingCancels.clear();
-            redirectAcknowledgements.clear();
+            createAcknowledgements.clear();
+            navigationAllowance = false;
 
             for (const scope of SCOPE_KEYS) {
                 registry.remove(scope);
@@ -441,7 +460,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
-            redirectAcknowledgements.delete(scope);
+            createAcknowledgements.delete(scope);
 
             if (captureValue) {
                 this.captureValue(scope);
@@ -486,43 +505,37 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             this.captureSubmittedValue(scope);
-            const pending = pendingSaves.get(scope);
-            const requestSnapshot = pending === undefined
-                ? null
-                : {
-                    sequence: pending.sequence,
-                    value: cloneValue(pending.value),
-                };
 
             onRedirect?.(({ preventDefault } = {}) => {
                 if (scope !== 'ingredient' || !this.isCreate || !this.createSubmission) {
                     return;
                 }
 
-                redirectAcknowledgements.set(scope, requestSnapshot);
-
-                if (pendingSaves.has(scope)) {
-                    this.completeSave(scope);
-                } else if (requestSnapshot !== null) {
-                    const currentSignature = stableSerialize(scopeValues[scope]);
-                    const submittedSignature = stableSerialize(requestSnapshot.value);
-
-                    scopeBaselines[scope] = cloneValue(requestSnapshot.value);
-                    this.setScopeState(
-                        scope,
-                        requestSnapshot.sequence !== scopeSequences[scope]
-                            || currentSignature !== submittedSignature
-                            ? 'dirty'
-                            : 'saved',
-                    );
-                }
-
-                this.restoreCreateForm();
-
-                if (this.stateFor(scope) !== 'saved') {
-                    preventDefault?.();
-                }
+                this.failScope(scope);
+                preventDefault?.();
             });
+        },
+
+        completeCreate(detail = {}) {
+            if (
+                this.isDestroyed
+                || !this.isCreate
+                || detail.scope !== 'ingredient'
+                || !isEditable(editable, 'ingredient')
+                || !this.createSubmission
+                || !pendingSaves.has('ingredient')
+                || !Object.prototype.hasOwnProperty.call(detail, 'baseline')
+            ) {
+                return;
+            }
+
+            createAcknowledgements.set('ingredient', cloneValue(detail.baseline));
+            this.completeSave('ingredient', { baseline: detail.baseline });
+            this.restoreCreateForm();
+
+            if (this.stateFor('ingredient') === 'saved') {
+                this.navigateAfterCreate(detail.redirect);
+            }
         },
 
         completeSave(scope, detail = {}) {
@@ -531,26 +544,31 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             const pending = pendingSaves.get(scope);
-            if (pending === undefined && redirectAcknowledgements.has(scope)) {
+            if (pending === undefined && createAcknowledgements.has(scope)) {
                 return;
             }
 
-            const savedValue = Object.prototype.hasOwnProperty.call(detail, 'baseline')
+            const hasCanonicalBaseline = Object.prototype.hasOwnProperty.call(detail, 'baseline');
+            const savedValue = hasCanonicalBaseline
                 ? detail.baseline
                 : pending !== undefined
                     ? pending.value
                     : scopeValues[scope] ?? read(scope);
-            const savedSignature = stableSerialize(savedValue);
             const currentSignature = stableSerialize(scopeValues[scope]);
-            const changedDuringSave = pending !== undefined
-                && pending.sequence !== scopeSequences[scope];
+            const submittedSignature = pending === undefined
+                ? null
+                : stableSerialize(pending.value);
+
+            if (hasCanonicalBaseline && pending !== undefined && currentSignature === submittedSignature) {
+                scopeValues[scope] = cloneValue(savedValue);
+            }
 
             scopeBaselines[scope] = cloneValue(savedValue);
             pendingSaves.delete(scope);
 
             this.setScopeState(
                 scope,
-                changedDuringSave || currentSignature !== savedSignature ? 'dirty' : 'saved',
+                stableSerialize(scopeValues[scope]) === stableSerialize(savedValue) ? 'saved' : 'dirty',
             );
 
             if (scope === 'ingredient' && this.isCreate) {
@@ -562,12 +580,31 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
         },
 
+        navigateAfterCreate(url) {
+            if (typeof url !== 'string' || url === '') {
+                return;
+            }
+
+            navigationAllowance = true;
+
+            try {
+                navigate(url);
+            } catch (error) {
+                void error;
+            } finally {
+                queueMicrotask(() => {
+                    navigationAllowance = false;
+                });
+            }
+        },
+
         failScope(scope) {
             if (!SCOPE_KEYS.includes(scope)) {
                 return;
             }
 
             pendingSaves.delete(scope);
+            createAcknowledgements.delete(scope);
             this.setScopeState(scope, 'failed');
 
             if (scope === 'ingredient' && this.isCreate) {
@@ -612,7 +649,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             scopeValues[scope] = cloneValue(currentValue);
             pendingSaves.delete(scope);
             pendingCancels.delete(scope);
-            redirectAcknowledgements.delete(scope);
+            createAcknowledgements.delete(scope);
             this.setScopeState(scope, 'saved');
         },
 
@@ -728,6 +765,12 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             };
 
             this.navigateHandler = (event) => {
+                if (navigationAllowance) {
+                    navigationAllowance = false;
+
+                    return;
+                }
+
                 if (!this.blocksNavigation()) {
                     return;
                 }

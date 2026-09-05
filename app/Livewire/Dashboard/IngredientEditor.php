@@ -419,21 +419,36 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 : null;
         $this->form->fill($refreshedState);
         $this->confirmCompositionRemoval = false;
-        $this->dispatch('ingredient-editor:saved', scope: 'ingredient');
+
+        /** @var array<string, mixed> $canonicalState */
+        $canonicalState = $this->form->getState();
 
         if (! $wasEditing) {
             session()->flash('status', $statusMessage);
 
-            if ($this->returnTo === 'supplier_listing') {
-                return redirect()->route('production-bench.purchasing.listings.create', array_filter([
+            $redirect = $this->returnTo === 'supplier_listing'
+                ? route('production-bench.purchasing.listings.create', array_filter([
                     'material_type' => 'ingredient',
                     'ingredient' => $ingredient->public_id,
                     'supplier' => $this->returnSupplierPublicId,
-                ]));
-            }
+                ]))
+                : route('ingredients.edit', $ingredient);
 
-            return redirect()->route('ingredients.edit', $ingredient);
+            $this->dispatch(
+                'ingredient-editor:created',
+                scope: 'ingredient',
+                baseline: $canonicalState,
+                redirect: $redirect,
+            );
+
+            return null;
         }
+
+        $this->dispatch(
+            'ingredient-editor:saved',
+            scope: 'ingredient',
+            baseline: $canonicalState,
+        );
 
         return null;
     }
@@ -466,7 +481,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $this->workspaceMaterialCode = $workspaceIngredientCodes->codeFor($workspace, $ingredient);
         $this->showAppNotification(__('ingredients.editor.material_code.saved'));
-        $this->dispatch('ingredient-editor:saved', scope: 'material-code');
+        $this->dispatch(
+            'ingredient-editor:saved',
+            scope: 'material-code',
+            baseline: $this->workspaceMaterialCode,
+        );
     }
 
     public function startWorkspaceGuidanceCustomization(

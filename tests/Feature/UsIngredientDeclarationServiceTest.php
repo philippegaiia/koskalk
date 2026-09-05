@@ -362,6 +362,32 @@ it('composes the FDA label form for seed-oil botanicals', function (): void {
     expect($result->data['declaration_name'])->toBe('Cottonseed (Gossypium Herbaceum) Oil');
 });
 
+it('does not repeat a common-name alias inside the botanical parenthetical', function (
+    string $commonName,
+    string $inciName,
+    string $expected,
+): void {
+    $result = app(UsIngredientDeclarationService::class)->propose([
+        'unii' => null,
+        'common_name' => $commonName,
+        'inci_names' => [$inciName],
+        'cas' => [],
+    ]);
+
+    expect($result->data['declaration_name'])->toBe($expected);
+})->with([
+    'cocoa butter' => [
+        'COCOA BUTTER',
+        'THEOBROMA CACAO (COCOA) SEED BUTTER',
+        'Cocoa (Theobroma Cacao) Butter',
+    ],
+    'palm oil' => [
+        'PALM OIL',
+        'ELAEIS GUINEENSIS (PALM) OIL',
+        'Palm (Elaeis Guineensis) Oil',
+    ],
+]);
+
 it('uses the FDA sweet almond botanical label example', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose([
         'unii' => '18L9E3U51M',

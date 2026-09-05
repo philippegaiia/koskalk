@@ -15,6 +15,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\MarkdownEditor;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -116,7 +117,11 @@ it('presents current and proposed values with field-level evidence', function ()
     ])
         ->loadTable()
         ->mountAction(TestAction::make('editProposal')->table($item))
-        ->assertMountedActionModalSee('Identity and guidance');
+        ->assertMountedActionModalSee('Identity and guidance')
+        ->assertFormFieldExists(
+            'info_markdown',
+            checkFieldUsing: fn (MarkdownEditor $field): bool => ! $field->isRequired(),
+        );
 });
 
 it('shows only genuine replacement conflicts when approving an enrichment item', function (): void {

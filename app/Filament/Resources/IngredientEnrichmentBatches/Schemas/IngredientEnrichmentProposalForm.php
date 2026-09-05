@@ -38,7 +38,7 @@ class IngredientEnrichmentProposalForm
                 TextInput::make('soap_inci_koh_name')->label(__('ingredient_enrichment_admin.review.labels.soap_inci_koh_name')),
                 Toggle::make('soapmaking_relevant')->label(__('ingredient_enrichment_admin.review.labels.soapmaking_relevant')),
                 MarkdownEditor::make('info_markdown')->label(__('ingredient_enrichment_admin.review.labels.info_markdown'))
-                    ->required()->columnSpanFull(),
+                    ->columnSpanFull(),
             ])->columns(2),
             Section::make(__('ingredient_enrichment_admin.review.labels.aliases'))->schema([
                 Repeater::make('aliases')->hiddenLabel()->schema([

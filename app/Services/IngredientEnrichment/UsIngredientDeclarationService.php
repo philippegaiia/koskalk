@@ -601,6 +601,7 @@ class UsIngredientDeclarationService
 
         $noun = trim($parts['noun']);
         $form = trim($parts['form']);
+        $latin = $this->stripDuplicatedCommonAlias($latin, $noun);
         $latinParts = preg_split('/\s+/u', Str::title($latin), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         while ($latinParts !== []
             && in_array(mb_strtolower((string) end($latinParts)), [...self::FORM_WORDS, 'seed', 'kernel', 'fruit', 'nut', 'extract', 'meal', 'husk'], true)) {
@@ -612,5 +613,26 @@ class UsIngredientDeclarationService
         }
 
         return Str::title($noun).' ('.$latinBase.') '.Str::title($form);
+    }
+
+    private function stripDuplicatedCommonAlias(string $latin, string $commonNoun): string
+    {
+        $normalizedCommonNoun = $this->normalizeNameForComparison($commonNoun);
+
+        return trim((string) (preg_replace_callback(
+            '/\s*\((?<alias>[^()]*)\)/u',
+            fn (array $matches): string => $this->normalizeNameForComparison((string) $matches['alias']) === $normalizedCommonNoun
+                ? ''
+                : (string) $matches[0],
+            $latin,
+        ) ?? $latin));
+    }
+
+    private function normalizeNameForComparison(string $name): string
+    {
+        $normalized = mb_strtolower($name);
+        $normalized = (string) (preg_replace('/[^\p{L}\p{N}]+/u', ' ', $normalized) ?? $normalized);
+
+        return trim((string) (preg_replace('/\s+/u', ' ', $normalized) ?? $normalized));
     }
 }

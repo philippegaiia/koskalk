@@ -1,14 +1,18 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\IngredientTranslation;
+use App\Models\MediaAsset;
+use App\Models\MediaAssetUsage;
 use App\Models\ProductionOutputSetting;
 use App\Models\Substance;
 use App\Models\User;
@@ -117,6 +121,54 @@ it('rechecks platform source ownership after the duplication quota lock opens', 
             ->exists())->toBeFalse();
 });
 
+it('rechecks the bound destination after the duplication quota lock opens', function (): void {
+    $user = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $otherWorkspace = Workspace::factory()->for($otherOwner, 'owner')->create();
+    WorkspaceMember::factory()->for($otherWorkspace)->for($user)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('withinWorkspaceQuotaLock')
+        ->once()
+        ->withArgs(fn (Workspace $destination, Closure $callback): bool => $destination->is($workspace))
+        ->andReturnUsing(function (Workspace $destination, Closure $callback) use ($user, $otherWorkspace): Ingredient {
+            $user->forceFill(['active_workspace_id' => $otherWorkspace->id])->save();
+            $user->forgetAccessibleWorkspaceIds();
+
+            return $callback($destination);
+        });
+    $entitlementService
+        ->shouldReceive('assertCanCreatePrivateIngredientInWorkspace')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $user,
+        $workspace,
+    ))->toThrow(AuthorizationException::class);
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->exists())->toBeFalse();
+});
+
 it('rejects an explicit null duplicate after another user instance provisions a workspace', function (): void {
     $user = User::factory()->create();
     $source = Ingredient::factory()->create([
@@ -160,6 +212,7 @@ it('rejects an explicit null duplicate after another user instance provisions a 
 
 it('duplicates a platform ingredient into a workspace-owned copy with all data except images', function () {
     $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
     $function = IngredientFunction::factory()->create(['is_active' => true]);
     $allergen = Allergen::factory()->create();
     $ifraCategory = IfraProductCategory::factory()->create(['is_active' => true]);
@@ -203,6 +256,26 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
         'max_percentage' => 5.0,
         'restriction_note' => 'Standard limit',
     ]);
+    $imageAsset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $user->id,
+    ]);
+    $documentAsset = MediaAsset::factory()->pdf()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $user->id,
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $imageAsset->id,
+        'usable_type' => Ingredient::class,
+        'usable_id' => $source->id,
+        'role' => MediaAssetUsageRole::IngredientMain,
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $documentAsset->id,
+        'usable_type' => Ingredient::class,
+        'usable_id' => $source->id,
+        'role' => MediaAssetUsageRole::IngredientDocument,
+    ]);
 
     $service = app(UserIngredientAuthoringService::class);
     $copy = $service->duplicate($source, $user);
@@ -233,6 +306,10 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
             'created_by_user_id' => $user->id,
             'updated_by_user_id' => $user->id,
         ]);
+    expect(MediaAssetUsage::query()
+        ->where('usable_type', Ingredient::class)
+        ->where('usable_id', $copy->id)
+        ->exists())->toBeFalse();
     expect($copy->is_active)->toBeTrue();
     expect($copy->catalog_key)->toStartWith('USR-');
     expect($copy->id)->not->toBe($source->id);

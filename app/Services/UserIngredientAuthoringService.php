@@ -274,6 +274,38 @@ class UserIngredientAuthoringService
         return $this->duplicateIntoWorkspace($source, $user, $user->company());
     }
 
+    public function duplicateBlocker(
+        Ingredient $source,
+        ?User $user = null,
+        ?Workspace $workspace = null,
+    ): ?string {
+        $sourceBlocker = $this->duplicateSourceBlocker($source);
+
+        if ($sourceBlocker !== null || ! $user instanceof User) {
+            return $sourceBlocker;
+        }
+
+        if (! Gate::forUser($user)->allows('duplicateIntoWorkspace', [$source, $workspace])) {
+            return __('ingredients.editor.validation.stale_workspace');
+        }
+
+        try {
+            if ($workspace instanceof Workspace) {
+                $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
+            } else {
+                $this->entitlementService->assertCanCreatePrivateIngredient($user);
+            }
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())
+                ->flatten()
+                ->first(fn (mixed $message): bool => is_string($message) && filled($message));
+
+            return is_string($message) ? $message : __('ingredients.editor.validation.stale_workspace');
+        }
+
+        return null;
+    }
+
     public function duplicateIntoWorkspace(
         Ingredient $source,
         User $user,
@@ -293,6 +325,7 @@ class UserIngredientAuthoringService
             return $this->entitlementService->withinWorkspaceQuotaLock(
                 $workspace,
                 function (Workspace $lockedWorkspace) use ($sourceId, $user): Ingredient {
+                    $lockedUser = $this->lockedDuplicateUser($user, $lockedWorkspace);
                     $lockedSource = Ingredient::query()
                         ->lockForUpdate()
                         ->find($sourceId);
@@ -301,9 +334,9 @@ class UserIngredientAuthoringService
                         throw new AuthorizationException;
                     }
 
-                    $this->authorizeDuplicateSource($user, $lockedSource, $lockedWorkspace);
+                    $this->authorizeDuplicateSource($lockedUser, $lockedSource, $lockedWorkspace);
 
-                    return $this->duplicateInLockedWorkspace($lockedSource, $user, $lockedWorkspace);
+                    return $this->duplicateInLockedWorkspace($lockedSource, $lockedUser, $lockedWorkspace);
                 },
             );
         }
@@ -332,6 +365,12 @@ class UserIngredientAuthoringService
             return $this->entitlementService->withinCompanyQuotaLock(
                 $lockedUser,
                 function (Workspace $lockedWorkspace) use ($sourceId, $lockedUser): Ingredient {
+                    $lockedUser->forgetAccessibleWorkspaceIds();
+
+                    if ($lockedUser->company()?->id !== $lockedWorkspace->id) {
+                        throw new AuthorizationException;
+                    }
+
                     $lockedSource = Ingredient::query()
                         ->lockForUpdate()
                         ->find($sourceId);
@@ -353,22 +392,79 @@ class UserIngredientAuthoringService
         return $copy;
     }
 
+    private function lockedDuplicateUser(User $user, Workspace $workspace): User
+    {
+        $lockedUser = User::query()
+            ->lockForUpdate()
+            ->find($user->id);
+
+        if (! $lockedUser instanceof User) {
+            throw new AuthorizationException;
+        }
+
+        $lockedUser->forgetAccessibleWorkspaceIds();
+
+        if ($lockedUser->company()?->id !== $workspace->id) {
+            throw new AuthorizationException;
+        }
+
+        return $lockedUser;
+    }
+
     private function authorizeDuplicateSource(User $user, Ingredient $source, ?Workspace $workspace): void
     {
         Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$source, $workspace]);
 
-        if ($source->category instanceof IngredientCategory) {
-            $this->assertWorkspaceAuthorableCategory($source->category);
+        $blocker = $this->duplicateBlocker($source);
+
+        if ($blocker === null) {
+            return;
+        }
+
+        if ($source->category === IngredientCategory::SoapmakingAlkalis) {
+            throw ValidationException::withMessages([
+                'category' => $blocker,
+            ]);
+        }
+
+        if ($source->category === IngredientCategory::Lipids) {
+            throw ValidationException::withMessages([
+                'ingredient' => $blocker,
+            ]);
+        }
+
+        throw new AuthorizationException;
+    }
+
+    private function duplicateSourceBlocker(Ingredient $source): ?string
+    {
+        if (! $this->isPlatformIngredient($source)) {
+            return __('ingredients.editor.validation.duplicate_platform_only');
+        }
+
+        if (! $source->is_active) {
+            return __('ingredients.status.unavailable');
+        }
+
+        if ($source->category === IngredientCategory::SoapmakingAlkalis) {
+            return __('ingredients.editor.validation.soapmaking_alkalis_platform_only');
         }
 
         if (
             $source->category === IngredientCategory::Lipids
             && $source->sapProfile?->koh_sap_value === null
         ) {
-            throw ValidationException::withMessages([
-                'ingredient' => __('ingredients.editor.validation.duplicate_soap_profile_required'),
-            ]);
+            return __('ingredients.editor.validation.duplicate_soap_profile_required');
         }
+
+        return null;
+    }
+
+    private function isPlatformIngredient(Ingredient $ingredient): bool
+    {
+        return $ingredient->owner_type === null
+            && $ingredient->owner_id === null
+            && $ingredient->workspace_id === null;
     }
 
     private function createInLockedWorkspace(array $state, User $user, Workspace $workspace): Ingredient

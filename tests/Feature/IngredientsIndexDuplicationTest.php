@@ -2,9 +2,12 @@
 
 use App\Enums\IngredientCategory;
 use App\Enums\OwnerType;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
+use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -97,6 +100,301 @@ it('searches platform ingredients by curated aliases and typed identifiers witho
     $identifierResults = $this->getJson(route('ingredients.search-platform').'?q=8002-75-3');
     $identifierResults->assertSuccessful();
     expect($identifierResults->json('0.id'))->toBe($platform->id);
+});
+
+it('reports duplication eligibility metadata for an eligible platform ingredient', function (): void {
+    $user = User::factory()->create();
+
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $platform->sapProfile()->create(['koh_sap_value' => 0.188]);
+
+    actingAs($user);
+
+    $response = $this->getJson(route('ingredients.search-platform').'?q=olive');
+
+    $response->assertSuccessful()
+        ->assertJsonPath('0.id', $platform->id)
+        ->assertJsonPath('0.duplication.available', true)
+        ->assertJsonPath('0.duplication.reason', null)
+        ->assertJsonPath('0.duplication.inherits_soap_chemistry', true);
+
+    expect($response->json('0'))->not->toHaveKeys([
+        'source_data',
+        'requires_admin_review',
+        'is_soap_saponification_trusted',
+    ]);
+});
+
+it('reports role denial in search metadata and does not create a copy', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Viewer denied source',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    $viewer->forgetAccessibleWorkspaceIds();
+
+    actingAs($viewer);
+
+    $this->getJson(route('ingredients.search-platform').'?q=viewer%20denied')
+        ->assertSuccessful()
+        ->assertJsonPath('0.id', $source->id)
+        ->assertJsonPath('0.duplication.available', false)
+        ->assertJsonPath('0.duplication.reason', __('ingredients.editor.validation.stale_workspace'));
+
+    $signature = hash_hmac(
+        'sha256',
+        $viewer->id.'|'.$workspace->id,
+        (string) config('app.key'),
+    );
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => $signature,
+    ])
+        ->assertForbidden()
+        ->assertJsonPath('message', __('ingredients.editor.validation.stale_workspace'));
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->exists())->toBeFalse();
+});
+
+it('rejects a nonplatform source without creating a copy', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Workspace source cannot be duplicated',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_active' => true,
+    ]);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    actingAs($owner);
+
+    $signature = hash_hmac(
+        'sha256',
+        $owner->id.'|'.$workspace->id,
+        (string) config('app.key'),
+    );
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => $signature,
+    ])
+        ->assertForbidden()
+        ->assertJsonPath('message', __('ingredients.editor.validation.stale_workspace'));
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->whereKeyNot($source->id)
+        ->exists())->toBeFalse();
+});
+
+it('rejects an inactive platform source without creating a copy', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Inactive source cannot be duplicated',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => false,
+    ]);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    actingAs($owner);
+
+    $this->getJson(route('ingredients.search-platform').'?q=inactive%20source')
+        ->assertSuccessful()
+        ->assertJsonCount(0);
+
+    $signature = hash_hmac(
+        'sha256',
+        $owner->id.'|'.$workspace->id,
+        (string) config('app.key'),
+    );
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => $signature,
+    ])->assertForbidden();
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->exists())->toBeFalse();
+});
+
+it('reports the platform-only alkali blocker and does not create a copy', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Sodium hydroxide',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    actingAs($owner);
+
+    $this->getJson(route('ingredients.search-platform').'?q=sodium%20hydroxide')
+        ->assertSuccessful()
+        ->assertJsonPath('0.duplication.available', false)
+        ->assertJsonPath(
+            '0.duplication.reason',
+            __('ingredients.editor.validation.soapmaking_alkalis_platform_only'),
+        );
+
+    $signature = hash_hmac(
+        'sha256',
+        $owner->id.'|'.$workspace->id,
+        (string) config('app.key'),
+    );
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => $signature,
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath(
+            'errors.category.0',
+            __('ingredients.editor.validation.soapmaking_alkalis_platform_only'),
+        );
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->exists())->toBeFalse();
+});
+
+it('reports the missing lipid SAP blocker and does not create a copy', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Incomplete platform oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    actingAs($owner);
+
+    $this->getJson(route('ingredients.search-platform').'?q=incomplete%20platform%20oil')
+        ->assertSuccessful()
+        ->assertJsonPath('0.duplication.available', false)
+        ->assertJsonPath(
+            '0.duplication.reason',
+            __('ingredients.editor.validation.duplicate_soap_profile_required'),
+        );
+
+    $signature = hash_hmac(
+        'sha256',
+        $owner->id.'|'.$workspace->id,
+        (string) config('app.key'),
+    );
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => $signature,
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath(
+            'errors.ingredient.0',
+            __('ingredients.editor.validation.duplicate_soap_profile_required'),
+        );
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->exists())->toBeFalse();
+});
+
+it('reports a reached private ingredient quota and does not create a copy', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $plan = Plan::factory()->hasLimit('private_ingredients', 1)->create();
+    $owner->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+    Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => 'private',
+    ]);
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Quota source',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    actingAs($owner);
+
+    $expectedMessage = trans_choice(
+        'ingredients.editor.validation.private_ingredient_limit',
+        1,
+        ['limit' => 1],
+    );
+
+    $this->getJson(route('ingredients.search-platform').'?q=quota%20source')
+        ->assertSuccessful()
+        ->assertJsonPath('0.duplication.available', false)
+        ->assertJsonPath('0.duplication.reason', $expectedMessage);
+
+    $signature = hash_hmac(
+        'sha256',
+        $owner->id.'|'.$workspace->id,
+        (string) config('app.key'),
+    );
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => $signature,
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.plan.0', $expectedMessage);
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->count())->toBe(1);
 });
 
 it('creates a workspace-owned copy when duplicating a platform ingredient', function () {

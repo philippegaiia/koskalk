@@ -123,9 +123,15 @@ class IngredientController extends Controller
         Request $request,
         IngredientCatalogSearchService $catalogSearch,
         IngredientAliasLocaleService $ingredientAliasLocaleService,
+        UserIngredientAuthoringService $userIngredientAuthoringService,
     ): JsonResponse {
         $query = (string) $request->query('q', '');
         $translationLocales = Ingredient::translationLocaleCandidates();
+        $authenticatedUser = $request->user();
+        $user = $authenticatedUser instanceof User
+            ? User::query()->find($authenticatedUser->id)
+            : null;
+        $workspace = $user?->company();
 
         $results = Ingredient::query()
             ->with([
@@ -133,26 +139,46 @@ class IngredientController extends Controller
                     ->whereIn('locale', $translationLocales),
                 'identifiers',
                 'aliases',
+                'sapProfile',
             ])
             ->whereNull('owner_type')
+            ->whereNull('owner_id')
+            ->whereNull('workspace_id')
             ->where('is_active', true)
             ->when(filled($query), fn ($q) => $catalogSearch->apply($q, $query, $translationLocales))
             ->limit(20)
             ->get()
-            ->map(fn (Ingredient $ingredient) => [
-                'id' => $ingredient->id,
-                'name' => $ingredient->localizedDisplayName(),
-                'inci_name' => $ingredient->inci_name,
-                'category' => $ingredient->category?->getLabel(),
-                'identifiers' => $ingredient->identifiers->map(fn ($identifier): array => [
-                    'scheme' => $identifier->scheme->value,
-                    'value' => $identifier->value,
-                ])->all(),
-                'aliases' => $ingredientAliasLocaleService
-                    ->eligibleAliases($ingredient->aliases, $translationLocales)
-                    ->pluck('name')
-                    ->all(),
-            ])
+            ->map(function (Ingredient $ingredient) use (
+                $ingredientAliasLocaleService,
+                $translationLocales,
+                $user,
+                $userIngredientAuthoringService,
+                $workspace,
+            ): array {
+                $duplicationReason = $user instanceof User
+                    ? $userIngredientAuthoringService->duplicateBlocker($ingredient, $user, $workspace)
+                    : __('ingredients.editor.validation.stale_workspace');
+
+                return [
+                    'id' => $ingredient->id,
+                    'name' => $ingredient->localizedDisplayName(),
+                    'inci_name' => $ingredient->inci_name,
+                    'category' => $ingredient->category?->getLabel(),
+                    'identifiers' => $ingredient->identifiers->map(fn ($identifier): array => [
+                        'scheme' => $identifier->scheme->value,
+                        'value' => $identifier->value,
+                    ])->all(),
+                    'aliases' => $ingredientAliasLocaleService
+                        ->eligibleAliases($ingredient->aliases, $translationLocales)
+                        ->pluck('name')
+                        ->all(),
+                    'duplication' => [
+                        'available' => $duplicationReason === null,
+                        'reason' => $duplicationReason,
+                        'inherits_soap_chemistry' => $ingredient->canDriveSoapSaponification(),
+                    ],
+                ];
+            })
             ->sortBy('name')
             ->values();
 

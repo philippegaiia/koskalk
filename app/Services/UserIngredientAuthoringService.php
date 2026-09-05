@@ -188,6 +188,7 @@ class UserIngredientAuthoringService
         array $state,
         User $user,
         ?Workspace $workspace = null,
+        ?bool $compositionRemovalConfirmed = null,
     ): Ingredient {
         $ingredientId = (int) $ingredient->getKey();
 
@@ -208,10 +209,16 @@ class UserIngredientAuthoringService
         }
 
         if ($workspace instanceof Workspace) {
-            return $this->updateInWorkspace($ingredientId, $state, $user, $workspace);
+            return $this->updateInWorkspace(
+                $ingredientId,
+                $state,
+                $user,
+                $workspace,
+                $compositionRemovalConfirmed,
+            );
         }
 
-        return DB::transaction(function () use ($ingredientId, $state, $user): Ingredient {
+        return DB::transaction(function () use ($compositionRemovalConfirmed, $ingredientId, $state, $user): Ingredient {
             $lockedIngredient = Ingredient::query()
                 ->lockForUpdate()
                 ->find($ingredientId);
@@ -221,6 +228,11 @@ class UserIngredientAuthoringService
             }
 
             Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+            $this->assertCompositionRemovalConfirmed(
+                $lockedIngredient,
+                $state,
+                $compositionRemovalConfirmed,
+            );
 
             return $this->persistUpdate($lockedIngredient, $state, $user);
         });
@@ -231,10 +243,11 @@ class UserIngredientAuthoringService
         array $state,
         User $user,
         Workspace $workspace,
+        ?bool $compositionRemovalConfirmed = null,
     ): Ingredient {
         return $this->entitlementService->withinWorkspaceQuotaLock(
             $workspace,
-            function (Workspace $lockedWorkspace) use ($ingredientId, $state, $user): Ingredient {
+            function (Workspace $lockedWorkspace) use ($compositionRemovalConfirmed, $ingredientId, $state, $user): Ingredient {
                 $lockedIngredient = Ingredient::query()
                     ->lockForUpdate()
                     ->find($ingredientId);
@@ -245,6 +258,11 @@ class UserIngredientAuthoringService
                 }
 
                 Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+                $this->assertCompositionRemovalConfirmed(
+                    $lockedIngredient,
+                    $state,
+                    $compositionRemovalConfirmed,
+                );
 
                 return $this->persistUpdate($lockedIngredient, $state, $user);
             },
@@ -398,6 +416,25 @@ class UserIngredientAuthoringService
         }
 
         return $ingredient;
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function assertCompositionRemovalConfirmed(
+        Ingredient $ingredient,
+        array $state,
+        ?bool $compositionRemovalConfirmed,
+    ): void {
+        if ($compositionRemovalConfirmed !== false
+            || Arr::get($state, 'ingredient_structure') !== 'ingredient'
+            || ! $ingredient->components()->lockForUpdate()->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'confirmCompositionRemoval' => __('ingredients.editor.validation.composition_removal_confirmation'),
+        ]);
     }
 
     private function duplicateInLockedWorkspace(Ingredient $source, User $user, Workspace $workspace): Ingredient

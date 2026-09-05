@@ -314,11 +314,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
         unset($state['material_code']);
         unset($state['guidance_html']);
         $state['public_id'] = $this->mediaPublicId;
+        $confirmCompositionRemoval = $this->confirmCompositionRemoval;
 
         try {
-            $ingredient = DB::transaction(function () use ($currentIngredient, $destinationWorkspace, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceIngredientGuidanceContent, $workspaceIngredientGuidances, $workspaceGuidanceHtml, $workspaceMaterialCode): Ingredient {
+            $ingredient = DB::transaction(function () use ($confirmCompositionRemoval, $currentIngredient, $destinationWorkspace, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceIngredientGuidanceContent, $workspaceIngredientGuidances, $workspaceGuidanceHtml, $workspaceMaterialCode): Ingredient {
                 $ingredient = $currentIngredient instanceof Ingredient
-                    ? $userIngredientAuthoringService->update($currentIngredient, $state, $user, $destinationWorkspace)
+                    ? $userIngredientAuthoringService->update($currentIngredient, $state, $user, $destinationWorkspace, $confirmCompositionRemoval)
                     : $userIngredientAuthoringService->createInWorkspace($state, $user, $destinationWorkspace);
 
                 $workspace = $destinationWorkspace instanceof Workspace
@@ -378,7 +379,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
                 foreach ($messages as $message) {
-                    $this->addError(str_starts_with($key, 'data.') ? $key : 'data.'.$key, $message);
+                    $field = $key === 'confirmCompositionRemoval' || str_starts_with($key, 'data.')
+                        ? $key
+                        : 'data.'.$key;
+                    $this->addError($field, $message);
                 }
             }
 

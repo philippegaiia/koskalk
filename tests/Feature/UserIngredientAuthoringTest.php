@@ -896,6 +896,94 @@ it('refuses removal when persisted blend relations are missing from the draft st
         ->toBe([65.0, 35.0]);
 });
 
+it('rechecks persisted composition after locking before an unconfirmed single update', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $firstComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $secondComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Interleaving fallback blend',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'notes' => 'Persisted notes',
+        'composition_source_notes' => 'Persisted supplier source',
+        'is_active' => true,
+    ]);
+    $authoringService = app(UserIngredientAuthoringService::class);
+    $state = [
+        ...$authoringService->formData($ingredient),
+        'ingredient_structure' => 'ingredient',
+        'components' => [],
+        'notes' => 'Edited notes that must not persist',
+    ];
+
+    expect($ingredient->components()->exists())->toBeFalse();
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('withinWorkspaceQuotaLock')
+        ->once()
+        ->withArgs(fn (Workspace $destination, Closure $callback): bool => $destination->is($workspace))
+        ->andReturnUsing(function (Workspace $lockedWorkspace, Closure $callback) use ($ingredient, $firstComponent, $secondComponent): Ingredient {
+            $ingredient->fresh()->components()->createMany([
+                [
+                    'component_ingredient_id' => $firstComponent->id,
+                    'percentage_in_parent' => 70,
+                ],
+                [
+                    'component_ingredient_id' => $secondComponent->id,
+                    'percentage_in_parent' => 30,
+                ],
+            ]);
+
+            return $callback($lockedWorkspace);
+        });
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    $exception = null;
+
+    try {
+        app(UserIngredientAuthoringService::class)->update(
+            $ingredient,
+            $state,
+            $user,
+            $workspace,
+            false,
+        );
+        test()->fail('Expected the persisted composition removal to require confirmation.');
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors()['confirmCompositionRemoval'][0])
+        ->toBe(__('ingredients.editor.validation.composition_removal_confirmation'));
+
+    $persistedIngredient = $ingredient->fresh(['components']);
+
+    expect($persistedIngredient->display_name)->toBe('Interleaving fallback blend')
+        ->and($persistedIngredient->notes)->toBe('Persisted notes')
+        ->and($persistedIngredient->composition_source_notes)->toBe('Persisted supplier source')
+        ->and($authoringService->formData($persistedIngredient)['ingredient_structure'])->toBe('blend')
+        ->and($persistedIngredient->components)->toHaveCount(2)
+        ->and($persistedIngredient->components->pluck('component_ingredient_id')->all())
+        ->toBe([$firstComponent->id, $secondComponent->id])
+        ->and($persistedIngredient->components->pluck('percentage_in_parent')->map(fn (mixed $percentage): float => (float) $percentage)->all())
+        ->toBe([70.0, 30.0]);
+});
+
 it('removes a saved blend composition after confirmation', function (): void {
     $user = User::factory()->create();
     $firstComponent = Ingredient::factory()->create([

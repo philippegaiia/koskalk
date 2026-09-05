@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 final class WorkspaceIngredientGuidanceService
 {
-    public const MAX_LENGTH = 2000;
+    public const MAX_LENGTH = 10000;
 
     public function __construct(
         private readonly WorkspaceIngredientGuidanceContent $content,

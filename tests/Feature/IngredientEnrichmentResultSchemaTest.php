@@ -119,6 +119,7 @@ it('describes the exact enrichment validator contract as a strict json schema', 
             ...collect(IngredientSubcategory::cases())->map->value->all(),
             null,
         ])
+        ->and(data_get($schema, 'properties.proposal.properties.info_markdown.type'))->toBe(['string', 'null'])
         ->and(data_get($schema, 'properties.proposal.properties.identifiers.items.properties.scheme.enum'))->toBe(
             collect(IngredientIdentifierScheme::cases())->map->value->all(),
         )

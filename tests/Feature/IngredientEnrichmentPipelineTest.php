@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Http;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-only');
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
 });
 
@@ -194,6 +195,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         'ai_editorial',
         'ai_identity_name_localization',
         'ai_guidance_authoring',
+        'ai_guidance_localization',
         'validation',
     ])->and($response->structuredSourceCalls)->toBe(3)
         ->and($response->inputTokens)->toBe(334)
@@ -201,6 +203,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         ->and(data_get($response->result, 'proposal.inci_name'))->toBe('ARGANIA SPINOSA KERNEL OIL')
         ->and(data_get($response->result, 'proposal.soap_inci_naoh_name'))->toBe('SODIUM ARGANATE')
         ->and(data_get($response->result, 'proposal.soap_inci_koh_name'))->toBe('POTASSIUM ARGANATE')
+        ->and(data_get($response->result, 'proposal.info_markdown'))->toBeNull()
         ->and(data_get($response->result, 'proposal.translations'))->toBe([[
             'locale' => 'fr',
             'display_name' => 'Huile d’argan',

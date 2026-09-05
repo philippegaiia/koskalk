@@ -151,10 +151,22 @@ class IngredientEnrichmentPipeline
             );
         }
 
+        $guidanceGenerationEnabled = (bool) config(
+            'ingredient-enrichment.openai.guidance_generation.enabled',
+            false,
+        );
         $guidanceResearch = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::AiGuidanceResearch,
-            function () use ($editorialFacts, $allowGapResearch): IngredientSourceStageResult {
+            function () use ($editorialFacts, $allowGapResearch, $guidanceGenerationEnabled): IngredientSourceStageResult {
+                if (! $guidanceGenerationEnabled) {
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
+                        status: 'skipped',
+                        data: ['reason' => 'external_guidance_workflow'],
+                    );
+                }
+
                 $shouldResearch = $allowGapResearch
                     || (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true);
 
@@ -305,7 +317,15 @@ class IngredientEnrichmentPipeline
         $guidance = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-            function () use ($editorialFacts, $guidanceResearch, $legacyGuidance): IngredientSourceStageResult {
+            function () use ($editorialFacts, $guidanceResearch, $legacyGuidance, $guidanceGenerationEnabled): IngredientSourceStageResult {
+                if (! $guidanceGenerationEnabled) {
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                        status: 'skipped',
+                        data: ['reason' => 'external_guidance_workflow'],
+                    );
+                }
+
                 if ($legacyGuidance !== null) {
                     return new IngredientSourceStageResult(
                         stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
@@ -344,7 +364,18 @@ class IngredientEnrichmentPipeline
                 );
             },
         );
-        $metadataValues['info_markdown'] = (string) data_get($guidance->data, 'guidance.info_markdown', '');
+        $this->runStage(
+            $itemId,
+            IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+            fn (): IngredientSourceStageResult => new IngredientSourceStageResult(
+                stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                status: 'skipped',
+                data: ['reason' => $guidanceGenerationEnabled ? 'separate_translation_workflow' : 'external_guidance_workflow'],
+            ),
+        );
+        $metadataValues['info_markdown'] = $guidanceGenerationEnabled
+            ? (string) data_get($guidance->data, 'guidance.info_markdown', '')
+            : null;
         $metadataValues['warnings'] = collect($metadataValues['warnings'] ?? [])
             ->merge(data_get($guidance->data, 'guidance.warnings', []))
             ->merge($guidanceResearch->data['warnings'] ?? [])
@@ -353,15 +384,19 @@ class IngredientEnrichmentPipeline
             ->merge(data_get($guidance->data, 'guidance.unresolved_questions', []))
             ->merge($guidanceResearch->data['unresolved_questions'] ?? [])
             ->filter()->unique()->values()->all();
-        $soapmakingRelevant = $this->localizedGuidanceHeadings->hasExactHeading(
-            $metadataValues['info_markdown'],
-            (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
-        );
+        $soapmakingRelevant = $guidanceGenerationEnabled
+            ? $this->localizedGuidanceHeadings->hasExactHeading(
+                (string) $metadataValues['info_markdown'],
+                (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
+            )
+            : (bool) ($metadataValues['soapmaking_relevant'] ?? false);
         $metadataValues['soapmaking_relevant'] = $soapmakingRelevant;
         $metadataValues['translations'] = is_array($identityNameLocalization->data['translations'] ?? null)
             ? $identityNameLocalization->data['translations']
             : [];
-        $metadataValues['guidance_evidence'] = $this->guidanceEvidence($guidanceResearch);
+        $metadataValues['guidance_evidence'] = $guidanceGenerationEnabled
+            ? $this->guidanceEvidence($guidanceResearch)
+            : [];
         $validation = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::Validation,
@@ -684,7 +719,7 @@ class IngredientEnrichmentPipeline
             ['field' => 'proposal.category', 'confidence' => filled($proposal['category'] ?? null) ? 'supported' : 'unresolved'],
             ['field' => 'proposal.subcategory', 'confidence' => filled($proposal['subcategory'] ?? null) ? 'supported' : 'unresolved'],
             ['field' => 'proposal.saponification_name', 'confidence' => 'supported'],
-            ['field' => 'proposal.info_markdown', 'confidence' => 'supported'],
+            ['field' => 'proposal.info_markdown', 'confidence' => filled($proposal['info_markdown'] ?? null) ? 'supported' : 'unresolved'],
             ['field' => 'proposal.soapmaking_relevant', 'confidence' => 'supported'],
             ...collect($editorial['translations'] ?? [])->keys()->flatMap(fn (int $index): array => [
                 ['field' => "proposal.translations.{$index}.display_name", 'confidence' => 'supported'],
@@ -712,7 +747,9 @@ class IngredientEnrichmentPipeline
 
         foreach ([
             'proposal.display_name' => ['kind' => 'ai_proposed', 'reasoning' => 'Written by the editorial pass from the reviewed identity facts.'],
-            'proposal.info_markdown' => ['kind' => 'ai_proposed', 'reasoning' => 'Written by the editorial pass from deterministic facts and permitted guidance evidence.'],
+            'proposal.info_markdown' => filled($proposal['info_markdown'] ?? null)
+                ? ['kind' => 'ai_proposed', 'reasoning' => 'Written by the editorial pass from deterministic facts and permitted guidance evidence.']
+                : ['kind' => 'unresolved', 'reasoning' => 'English guidance is authored outside the identity enrichment workflow.'],
             'proposal.soapmaking_relevant' => ['kind' => 'ai_proposed', 'reasoning' => 'Selected by the editorial pass from the reviewed material identity.'],
             'proposal.saponification_name' => ['kind' => filled($editorial['saponification_name'] ?? null) ? 'ai_proposed' : 'unresolved', 'reasoning' => filled($editorial['saponification_name'] ?? null) ? 'Proposed as an editorial soapmaking stem; it is not an INCI name.' : 'No reviewed soapmaking stem was available.'],
         ] as $field => $definition) {

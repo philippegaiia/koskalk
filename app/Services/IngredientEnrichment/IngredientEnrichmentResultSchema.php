@@ -50,7 +50,7 @@ class IngredientEnrichmentResultSchema
                 'saponification_name' => $this->nullableString(),
                 'soap_inci_naoh_name' => $this->nullableString(),
                 'soap_inci_koh_name' => $this->nullableString(),
-                'info_markdown' => $this->string(),
+                'info_markdown' => $this->nullableString(),
                 'soapmaking_relevant' => ['type' => 'boolean'],
                 'aliases' => $this->array($this->object([
                     'locale' => $this->string(),

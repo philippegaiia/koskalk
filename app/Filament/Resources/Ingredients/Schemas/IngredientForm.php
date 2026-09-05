@@ -227,9 +227,7 @@ class IngredientForm
 
                                 $incompleteLocales = $translationRows
                                     ->filter(fn (array $row): bool => ($row['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value
-                                        && (blank($row['display_name'] ?? null)
-                                            || blank($row['info_markdown'] ?? null)
-                                            || (filled($record?->saponification_name) && blank($row['saponification_name'] ?? null))))
+                                        && blank($row['info_markdown'] ?? null))
                                     ->pluck('locale');
                                 $currentLocales = $translationRows
                                     ->filter(fn (array $row): bool => ($row['is_stale'] ?? true) === false)
@@ -282,6 +280,7 @@ class IngredientForm
                         MarkdownEditor::make('info_markdown')
                             ->label(__('ingredients.editor.admin.guidance.field'))
                             ->helperText(__('ingredients.editor.admin.guidance.helper'))
+                            ->maxLength((int) config('ingredient-enrichment.guidance.maximum_characters', 10000))
                             ->columnSpanFull(),
                         FileUpload::make('featured_image_path')
                             ->label(__('ingredients.editor.admin.guidance.image'))
@@ -358,16 +357,14 @@ class IngredientForm
 
         return collect(config('interface-translations.catalogue_locales', []))
             ->filter(fn (mixed $locale): bool => is_string($locale) && filled(trim($locale)))
-            ->contains(function (string $locale) use ($translations, $ingredient): bool {
+            ->contains(function (string $locale) use ($translations): bool {
                 $translation = $translations->get(trim($locale));
 
                 return $translation === null
                     || (($translation['is_stale'] ?? false) === true
                         && ($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value)
                     || (($translation['origin'] ?? null) !== IngredientTranslationOrigin::ReviewerEdited->value
-                        && (blank($translation['display_name'] ?? null)
-                            || blank($translation['info_markdown'] ?? null)
-                            || (filled($ingredient->saponification_name) && blank($translation['saponification_name'] ?? null))));
+                        && blank($translation['info_markdown'] ?? null));
             });
     }
 
@@ -414,6 +411,7 @@ class IngredientForm
                                 MarkdownEditor::make('info_markdown')
                                     ->label(__('ingredients.editor.admin.translations.guidance'))
                                     ->helperText(__('ingredients.editor.admin.translations.guidance_helper'))
+                                    ->maxLength((int) config('ingredient-enrichment.guidance.maximum_characters', 10000))
                                     ->columnSpanFull(),
                             ])
                             ->itemLabel(fn (array $state): ?string => static::translationLocaleOptions()[$state['locale'] ?? ''] ?? null)

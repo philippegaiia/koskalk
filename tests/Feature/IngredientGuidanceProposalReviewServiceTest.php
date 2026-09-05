@@ -135,6 +135,44 @@ it('forbids English edits in localization-only batches', function (): void {
     }
 });
 
+it('forbids identity-name edits in localization-only batches', function (): void {
+    $actor = User::factory()->admin()->create();
+    [, , $item] = reviewServiceItem(IngredientEnrichmentBatchMode::GuidanceLocalization);
+
+    try {
+        app(IngredientGuidanceProposalReviewService::class)->edit($actor, $item, [
+            'translations' => [[
+                'locale' => 'fr',
+                'display_name' => 'Nom interdit',
+                'info_markdown' => reviewServiceFrench('Révisé'),
+            ]],
+        ]);
+        test()->fail('Expected the localized identity-name edit to be rejected.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('proposal.translations.0');
+    }
+});
+
+it('rejects localized guidance above the configured word or visible-character maximum', function (): void {
+    $validator = app(IngredientGuidanceRefreshResultValidator::class);
+    $translation = [[
+        'locale' => 'fr',
+        'info_markdown' => reviewServiceFrench('Texte volontairement trop long'),
+    ]];
+
+    config()->set('ingredient-enrichment.guidance.maximum_words', 5);
+    $wordReport = $validator->validateTranslations($translation, ['fr'], false, null, false);
+
+    config()->set('ingredient-enrichment.guidance.maximum_words', 500);
+    config()->set('ingredient-enrichment.guidance.maximum_characters', 20);
+    $characterReport = $validator->validateTranslations($translation, ['fr'], false, null, false);
+
+    expect($wordReport['valid'])->toBeFalse()
+        ->and($wordReport['errors'])->toHaveKey('translations.0.info_markdown')
+        ->and($characterReport['valid'])->toBeFalse()
+        ->and($characterReport['errors'])->toHaveKey('translations.0.info_markdown');
+});
+
 it('marks stale items before returning a translated stale validation error', function (): void {
     $actor = User::factory()->admin()->create();
     [$ingredient, $batch, $item] = reviewServiceItem();

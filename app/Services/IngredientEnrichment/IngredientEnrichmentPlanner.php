@@ -95,15 +95,17 @@ class IngredientEnrichmentPlanner
             $effective[$field] = $collection;
         }
 
-        $proposedGuidanceEvidence = collect($result['guidance_evidence'] ?? [])->values()->all();
-        $currentGuidanceEvidence = collect(data_get($ingredient->source_data, 'enrichment.guidance.evidence', []))->values()->all();
-        if ($proposedGuidanceEvidence !== $currentGuidanceEvidence) {
-            $decisions[] = [
-                'field' => 'guidance.evidence',
-                'decision' => $currentGuidanceEvidence === [] ? 'new' : 'replace',
-                'current' => $currentGuidanceEvidence,
-                'proposed' => $proposedGuidanceEvidence,
-            ];
+        if (filled($proposal['info_markdown'] ?? null)) {
+            $proposedGuidanceEvidence = collect($result['guidance_evidence'] ?? [])->values()->all();
+            $currentGuidanceEvidence = collect(data_get($ingredient->source_data, 'enrichment.guidance.evidence', []))->values()->all();
+            if ($proposedGuidanceEvidence !== $currentGuidanceEvidence) {
+                $decisions[] = [
+                    'field' => 'guidance.evidence',
+                    'decision' => $currentGuidanceEvidence === [] ? 'new' : 'replace',
+                    'current' => $currentGuidanceEvidence,
+                    'proposed' => $proposedGuidanceEvidence,
+                ];
+            }
         }
 
         return [

@@ -16,6 +16,7 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientTranslation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceChangePlanner;
@@ -27,6 +28,7 @@ use Filament\Actions\ViewAction;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -39,6 +41,7 @@ beforeEach(function (): void {
 });
 
 it('offers a guidance-only bulk action and queues a guidance batch', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', true);
     $admin = User::factory()->admin()->create();
     $ingredients = Ingredient::factory()->count(2)->create([
         'owner_type' => null,
@@ -60,6 +63,33 @@ it('offers a guidance-only bulk action and queues a guidance batch', function ()
     expect($batch->mode)->toBe(IngredientEnrichmentBatchMode::GuidanceRefresh)
         ->and($batch->fresh_research)->toBeTrue()
         ->and($batch->items()->count())->toBe(2);
+});
+
+it('removes automatic English guidance generation while retaining translation-only refresh', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', false);
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => "## Overview\n\nApproved English guidance.\n\n## Formulation use\n\nUseful formulation guidance.",
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(ListIngredients::class)
+        ->loadTable()
+        ->assertActionHidden(TestAction::make('runGuidanceRefresh')->table()->bulk());
+
+    expect(fn () => app(IngredientEnrichmentBatchService::class)->startGuidanceRefresh(
+        $admin,
+        collect([$ingredient]),
+    ))->toThrow(ValidationException::class);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertActionVisible(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
+        ->callAction(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'));
+
+    expect(IngredientEnrichmentBatch::query()->latest('id')->firstOrFail()->mode)
+        ->toBe(IngredientEnrichmentBatchMode::GuidanceLocalization);
 });
 
 it('exposes update translations in the guidance section for saved English guidance', function (): void {
@@ -119,7 +149,7 @@ it('hides update translations without saved English and keeps workspace ingredie
         ->toThrow(ModelNotFoundException::class);
 });
 
-it('offers update translations for a current AI locale with missing localized names', function (): void {
+it('does not offer guidance translation when only localized identity names are missing', function (): void {
     config()->set('interface-translations.catalogue_locales', ['fr']);
     $admin = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([
@@ -140,9 +170,7 @@ it('offers update translations for a current AI locale with missing localized na
     $this->actingAs($admin);
 
     Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
-        ->assertActionVisible(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
-        ->mountAction(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'))
-        ->assertMountedActionModalSee('Incomplete AI locales: fr');
+        ->assertActionDoesNotExist(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'));
 });
 
 it('uses focused guidance fields for guidance batch review actions', function (): void {
@@ -331,7 +359,7 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
     IngredientTranslation::factory()->for($ingredient)->create([
         'locale' => 'fr',
         'display_name' => 'Huile d’olive',
-        'saponification_name' => null,
+        'saponification_name' => 'Savon d’huile d’olive',
         'info_markdown' => $french,
         'source_fingerprint' => 'stale-locale-fingerprint',
     ]);
@@ -349,8 +377,6 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         'info_markdown' => $english,
         'translations' => [[
             'locale' => 'fr',
-            'display_name' => 'Huile d’olive',
-            'saponification_name' => null,
             'info_markdown' => $french,
         ]],
         'guidance_evidence' => $newEvidence,
@@ -425,7 +451,14 @@ it('reviews and applies an approved stale-locale revalidation through the guidan
         ->and($item->result['guidance_evidence'])->toBe($expectedEvidence)
         ->and(data_get($item->validation_report, 'normalized.guidance_evidence'))->toBe($expectedEvidence)
         ->and(data_get($item->plan, 'effective.guidance_evidence'))->toBe($expectedEvidence)
-        ->and(collect($item->plan['decisions'] ?? [])->firstWhere('field', 'guidance.evidence'))->toBeNull();
+        ->and(collect($item->plan['decisions'] ?? [])->firstWhere('field', 'guidance.evidence'))->toBeNull()
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->only([
+            'display_name',
+            'saponification_name',
+        ]))->toBe([
+            'display_name' => 'Huile d’olive',
+            'saponification_name' => 'Savon d’huile d’olive',
+        ]);
 });
 
 it('quarantines an all-malformed historical bank during localization apply', function (): void {

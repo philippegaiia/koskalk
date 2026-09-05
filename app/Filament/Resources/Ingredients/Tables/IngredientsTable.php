@@ -107,6 +107,7 @@ class IngredientsTable
 
                             return redirect(IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]));
                         })
+                        ->visible(fn (): bool => (bool) config('ingredient-enrichment.openai.guidance_generation.enabled', false))
                         ->deselectRecordsAfterCompletion(),
                     ExportBulkAction::make()
                         ->exporter(IngredientExporter::class)

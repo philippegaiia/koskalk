@@ -145,6 +145,7 @@ return [
     ],
     'validation' => [
         'fresh_research_localization' => 'Fresh research is not available for guidance localization.',
+        'guidance_generation_disabled' => 'Automatic English guidance generation is disabled. Save the approved English guidance, then use Translate guidance.',
         'not_editable' => 'Only proposals awaiting review can be edited.',
         'proposal_fields' => 'The proposal contains fields that cannot be edited.',
         'guidance_batch_mode' => 'This is not a guidance refresh batch.',

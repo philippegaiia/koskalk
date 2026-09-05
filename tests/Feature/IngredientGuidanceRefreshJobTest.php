@@ -38,8 +38,21 @@ beforeEach(function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     config()->set('ingredient-enrichment.direct_ai.enabled', true);
     config()->set('ingredient-enrichment.openai.api_key', 'test-only');
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', true);
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
     Bus::fake();
+});
+
+it('cancels an already queued English guidance job when generation is disabled', function (): void {
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', false);
+    $fixture = guidanceResumeFixture();
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id);
+
+    expect($fixture['item']->fresh())
+        ->status->toBe(IngredientEnrichmentItemStatus::Cancelled)
+        ->failure_code->toBe('guidance_generation_disabled')
+        ->attempt_count->toBe(0);
 });
 
 it('does not invoke localization during an ordinary guidance refresh', function (): void {
@@ -1256,17 +1269,17 @@ it('localizes only outdated locales and never calls English authoring', function
         ->and(collect($item->fresh()->result['translations'])->pluck('locale')->all())
         ->toBe(['fr', 'it', 'nl', 'pt_BR']);
 
-    config()->set('ingredient-enrichment.openai.guidance_localization_prompt_version', 'ingredient-guidance-localization-v5');
+    config()->set('ingredient-enrichment.openai.guidance_localization_prompt_version', 'ingredient-guidance-localization-v6-test');
     $item->update(['status' => IngredientEnrichmentItemStatus::Failed]);
 
     app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
 
     expect($calls)->toBe(['research' => 0, 'author' => 0, 'localize' => 3])
         ->and(data_get($item->fresh()->research_stages, 'ai_guidance_localization.data.stage_context.provider_configuration.localization_prompt_version'))
-        ->toBe('ingredient-guidance-localization-v5');
+        ->toBe('ingredient-guidance-localization-v6-test');
 });
 
-it('requests current AI locales with missing names while excluding reviewer-owned locales', function (): void {
+it('requests only locales with missing guidance while excluding reviewer-owned locales', function (): void {
     config()->set('interface-translations.catalogue_locales', ['fr', 'de', 'nl']);
     $providerContexts = [];
     app()->instance(IngredientGuidanceLocalizationClient::class, new class($providerContexts) implements IngredientGuidanceLocalizationClient
@@ -1281,8 +1294,6 @@ it('requests current AI locales with missing names while excluding reviewer-owne
             return new IngredientGuidanceLocalizationResponse(
                 translations: [[
                     'locale' => 'fr',
-                    'display_name' => 'Huile de palmiste',
-                    'saponification_name' => 'Savon de palmiste',
                     'info_markdown' => localizedGuidanceText(),
                 ]],
                 responseId: 'resp-palm-kernel-localization',
@@ -1305,7 +1316,7 @@ it('requests current AI locales with missing names while excluding reviewer-owne
         'locale' => 'fr',
         'display_name' => null,
         'saponification_name' => null,
-        'info_markdown' => localizedGuidanceText(),
+        'info_markdown' => null,
         'source_fingerprint' => $fingerprint,
         'origin' => 'ai_generated',
     ]);
@@ -1341,16 +1352,10 @@ it('requests current AI locales with missing names while excluding reviewer-owne
 
     expect($providerContexts)->toHaveCount(1)
         ->and($providerContexts[0]['locales'])->toBe(['fr'])
-        ->and($providerContexts[0]['canonical'])->toMatchArray([
-            'display_name' => 'Palm Kernel Oil',
-            'saponification_name' => 'Palm Kernel Oil Soap',
-            'inci_name' => 'Elaeis Guineensis Kernel Oil',
-        ])
+        ->and($providerContexts[0])->not->toHaveKeys(['canonical', 'metadata_translations'])
         ->and($providerContexts[0]['english_guidance'])->toBe(trim(guidanceText()))
         ->and($item->fresh()->result['translations'])->toBe([[
             'locale' => 'fr',
-            'display_name' => 'Huile de palmiste',
-            'saponification_name' => 'Savon de palmiste',
             'info_markdown' => trim(localizedGuidanceText()),
         ]]);
 });

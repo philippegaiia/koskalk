@@ -73,7 +73,7 @@ class IngredientGuidanceRefreshResultValidator
                 : [],
             $soapmakingRelevant,
             $this->nullableString($ingredient->saponification_name),
-            $mode->isLocalizationOnly(),
+            false,
         );
         $errors = [...$errors, ...$translationsReport['errors']];
         $warnings = [...$warnings, ...$translationsReport['warnings']];
@@ -209,6 +209,7 @@ class IngredientGuidanceRefreshResultValidator
                 }
             }
         }
+        $this->validateLength($guidance, 'info_markdown', $errors);
         $this->warnOnWordCount($guidance, 'info_markdown', $warnings);
 
         return $soapmakingRelevant;
@@ -279,6 +280,7 @@ class IngredientGuidanceRefreshResultValidator
                 $this->error($errors, "{$path}.info_markdown", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
             } else {
                 $this->validateTranslatedHeadings($guidance, $locale, $soapmakingRelevant, "{$path}.info_markdown", $errors);
+                $this->validateLength($guidance, "{$path}.info_markdown", $errors);
                 $this->warnOnWordCount($guidance, "{$path}.info_markdown", $warnings);
             }
             $normalizedRow = [
@@ -515,6 +517,36 @@ class IngredientGuidanceRefreshResultValidator
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    /** @param array<string,list<string>> $errors */
+    private function validateLength(string $value, string $path, array &$errors): void
+    {
+        $wordCount = preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}’\'\-]*/u', strip_tags($value));
+        $wordCount = is_int($wordCount) ? $wordCount : 0;
+        $maximumWords = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_words', 1500);
+        if ($maximumWords > 0 && $wordCount > $maximumWords) {
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_maximum_words', [
+                'maximum' => $maximumWords,
+            ]));
+        }
+
+        $maximumCharacters = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_characters', 10000);
+        if ($maximumCharacters > 0 && $this->visibleCharacterCount($value) > $maximumCharacters) {
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_maximum_characters', [
+                'maximum' => $maximumCharacters,
+            ]));
+        }
+    }
+
+    private function visibleCharacterCount(string $markdown): int
+    {
+        $text = preg_replace('/^#{1,6}\h+/mu', '', strip_tags($markdown)) ?? $markdown;
+        $text = preg_replace('/\[([^\]]+)]\([^)]*\)/u', '$1', $text) ?? $text;
+        $text = preg_replace('/[*_~`]/u', '', $text) ?? $text;
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return mb_strlen(trim($text));
     }
 
     /** @param list<string> $warnings */

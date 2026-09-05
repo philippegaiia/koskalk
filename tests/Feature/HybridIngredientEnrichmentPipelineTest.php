@@ -14,6 +14,7 @@ use App\Enums\IngredientSubcategory;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientFunction;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPipeline;
+use App\Services\IngredientEnrichment\IngredientEnrichmentResultValidator;
 use App\Services\IngredientEnrichment\IngredientSourceException;
 use App\Services\IngredientEnrichment\UsIngredientDeclarationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -156,6 +157,55 @@ it('stops before guidance when identity cannot be confirmed against the registri
         ->and(data_get($fresh->research_stages, 'ai_identity_name_localization.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'ai_guidance_localization.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'validation.status'))->toBe('skipped');
+});
+
+it('keeps identity enrichment and identity translations without generating guidance', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    fakeHybridEditorialClient();
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', false);
+    app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            throw new RuntimeException('guidance research must not run');
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            throw new RuntimeException('guidance authoring must not run');
+        }
+    });
+    $item = hybridPipelineItem('argan_external_guidance', 'Argan oil');
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', false);
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+    $fresh = $item->fresh();
+    $validation = app(IngredientEnrichmentResultValidator::class)->validate(
+        $response->result,
+    );
+
+    expect($validation['errors'])->toBe([])
+        ->and($validation['valid'])->toBeTrue()
+        ->and($response->result['proposal']['inci_name'])->toBe('ARGANIA SPINOSA KERNEL OIL')
+        ->and($response->result['proposal']['info_markdown'])->toBeNull()
+        ->and($response->result['proposal']['translations'])->toHaveCount(1)
+        ->and($response->result['proposal']['translations'][0])->toMatchArray([
+            'locale' => 'fr',
+            'display_name' => 'Localized fr',
+        ])
+        ->and(data_get($fresh->research_stages, 'ai_guidance_research.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_research.data.reason'))->toBe('external_guidance_workflow')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_authoring.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_localization.status'))->toBe('skipped')
+        ->and(collect($response->result['field_confidence'])->firstWhere('field', 'proposal.info_markdown'))
+        ->toMatchArray(['confidence' => 'unresolved'])
+        ->and(collect($response->result['value_provenance'])->firstWhere('field', 'proposal.info_markdown'))
+        ->toMatchArray(['kind' => 'unresolved']);
 });
 
 it('assembles precise argan facts from deterministic eu and us sources before editorial work', function (): void {
@@ -775,6 +825,7 @@ function hybridPipelineItem(
     ?string $researchFamily = null,
     ?array $trustedSoapChemistry = null,
 ): IngredientEnrichmentBatchItem {
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', true);
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
 
     return IngredientEnrichmentBatchItem::factory()->create([

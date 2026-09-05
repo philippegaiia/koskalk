@@ -63,9 +63,9 @@ return [
             'ai_generated' => 'AI-generated',
             'reviewer_edited' => 'Manually edited',
         ],
-        'update_translations' => 'Update translations',
-        'update_translations_heading' => 'Update ingredient translations?',
-        'update_translations_description' => 'Save edited English guidance first. This queues translations from the saved canonical English only. Current locales: :current. Missing locales: :missing. Outdated AI locales: :outdated. Incomplete AI locales: :incomplete. Reviewer-owned locales preserved: :preserved.',
+        'update_translations' => 'Translate guidance',
+        'update_translations_heading' => 'Translate ingredient guidance?',
+        'update_translations_description' => 'Save the English guidance first. This translates guidance only from the saved English text; ingredient names and identity data are not changed. Current locales: :current. Missing locales: :missing. Outdated AI locales: :outdated. Incomplete AI locales: :incomplete. Reviewer-owned locales preserved: :preserved.',
         'none' => 'None',
         'validation' => [
             'platform_only' => 'Only platform ingredients can have managed translations.',

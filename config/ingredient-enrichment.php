@@ -46,8 +46,8 @@ return [
     ],
     'guidance' => [
         'minimum_words' => 0,
-        'maximum_words' => 240,
-        'maximum_characters' => 2000,
+        'maximum_words' => 1500,
+        'maximum_characters' => 10000,
         'required_headings' => ['Overview', 'Formulation use'],
         'soapmaking_heading' => 'Soapmaking',
         'localized_headings' => [
@@ -104,7 +104,7 @@ return [
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
         'guidance_prompt_version' => 'ingredient-guidance-v16',
-        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v4',
+        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v5',
         'identity_name_localization_prompt_version' => 'ingredient-identity-name-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',
@@ -121,6 +121,9 @@ return [
         ],
         'gap_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GAP_RESEARCH_ENABLED', false),
+        ],
+        'guidance_generation' => [
+            'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_GENERATION_ENABLED', false),
         ],
         'guidance_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_RESEARCH_ENABLED', true),

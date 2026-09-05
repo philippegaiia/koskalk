@@ -27,8 +27,6 @@ class IngredientGuidanceProposalReviewService
         IngredientEnrichmentBatchItem $item,
         array $proposal,
     ): IngredientEnrichmentBatchItem {
-        $this->assertAllowed($proposal);
-
         $outcome = DB::transaction(function () use ($actor, $item, $proposal): array {
             $locked = IngredientEnrichmentBatchItem::query()
                 ->lockForUpdate()
@@ -50,6 +48,8 @@ class IngredientGuidanceProposalReviewService
                     'batch' => __('ingredient_enrichment_admin.validation.guidance_batch_mode'),
                 ]);
             }
+
+            $this->assertAllowed($proposal, $mode);
 
             if ($this->snapshots->fingerprint($ingredient) !== $locked->source_fingerprint) {
                 $locked->update(['status' => IngredientEnrichmentItemStatus::Stale]);
@@ -199,7 +199,7 @@ class IngredientGuidanceProposalReviewService
     /**
      * @param  array<string, mixed>  $proposal
      */
-    private function assertAllowed(array $proposal): void
+    private function assertAllowed(array $proposal, IngredientEnrichmentBatchMode $mode): void
     {
         if (array_diff(array_keys($proposal), ['info_markdown', 'translations']) !== []) {
             throw ValidationException::withMessages([
@@ -231,7 +231,10 @@ class IngredientGuidanceProposalReviewService
                     $path => __('ingredient_enrichment_admin.validation.guidance_translation_row'),
                 ]);
             }
-            if (array_diff(array_keys($translation), ['locale', 'display_name', 'saponification_name', 'info_markdown']) !== []) {
+            $allowedTranslationFields = $mode->isLocalizationOnly()
+                ? ['locale', 'info_markdown']
+                : ['locale', 'display_name', 'saponification_name', 'info_markdown'];
+            if (array_diff(array_keys($translation), $allowedTranslationFields) !== []) {
                 throw ValidationException::withMessages([
                     $path => __('ingredient_enrichment_admin.validation.guidance_translation_fields'),
                 ]);

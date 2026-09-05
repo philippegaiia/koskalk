@@ -34,6 +34,8 @@ return [
         'validation' => 'Validation',
     ],
     'validation' => [
+        'guidance_maximum_words' => 'Guidance may not exceed :maximum words.',
+        'guidance_maximum_characters' => 'Guidance may not exceed :maximum visible characters.',
         'unsupported_format' => 'Unsupported enrichment result format.',
         'unsupported_schema' => 'Unsupported enrichment result schema version.',
         'subject_type' => 'Subject type must be ingredient or intake.',

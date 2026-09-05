@@ -88,6 +88,13 @@ class IngredientEnrichmentBatchService
             ]);
         }
 
+        if (! $localizationOnly
+            && ! (bool) config('ingredient-enrichment.openai.guidance_generation.enabled', false)) {
+            throw ValidationException::withMessages([
+                'ingredients' => __('ingredient_enrichment_admin.validation.guidance_generation_disabled'),
+            ]);
+        }
+
         $this->assertConfigured();
 
         $ids = $ingredients->pluck('id')->filter()->unique()->sort()->values();

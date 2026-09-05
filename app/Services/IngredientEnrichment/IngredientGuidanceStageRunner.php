@@ -305,6 +305,7 @@ class IngredientGuidanceStageRunner
             $context['expected_locales'],
             $context['soapmaking_relevant'],
             $this->nullableString($context['ingredient']->saponification_name),
+            false,
         )['valid']) {
             throw new LogicException('Guidance localization stage data contains invalid translations.');
         }
@@ -843,10 +844,9 @@ class IngredientGuidanceStageRunner
         $translations = $ingredient->translations()
             ->get(['locale', 'display_name', 'saponification_name', 'info_markdown', 'source_fingerprint', 'origin'])
             ->keyBy('locale');
-        $canonicalSaponificationName = $this->nullableString($ingredient->saponification_name);
 
         return collect($this->configuredTargetLocales())
-            ->filter(function (string $locale) use ($canonicalSaponificationName, $fingerprint, $translations): bool {
+            ->filter(function (string $locale) use ($fingerprint, $translations): bool {
                 $translation = $translations->get($locale);
                 if ($translation === null) {
                     return true;
@@ -868,10 +868,7 @@ class IngredientGuidanceStageRunner
                     return false;
                 }
 
-                return $this->nullableString($translation->display_name) === null
-                    || $this->nullableString($translation->info_markdown) === null
-                    || ($canonicalSaponificationName !== null
-                        && $this->nullableString($translation->saponification_name) === null);
+                return $this->nullableString($translation->info_markdown) === null;
             })
             ->values()
             ->all();

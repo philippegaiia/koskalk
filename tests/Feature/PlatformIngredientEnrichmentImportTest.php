@@ -602,6 +602,41 @@ it('plans and applies removal of stale guidance evidence after empty fresh resea
         ->toBe('ingredient-guidance-research-v7');
 });
 
+it('preserves existing guidance and its evidence when identity enrichment does not assess guidance', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $existingEvidence = [[
+        'source_name' => 'Approved guidance source',
+        'source_url' => 'https://example.test/approved-guidance',
+        'summary' => 'Evidence retained with the approved English guidance.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-IDENTITY-ONLY',
+        'category' => IngredientCategory::Other,
+        'info_markdown' => "## Overview\nApproved guidance.\n\n## Formulation use\nApproved formulation guidance.",
+        'source_data' => ['enrichment' => ['guidance' => [
+            'evidence' => $existingEvidence,
+            'guidance_prompt_version' => 'approved-guidance-v1',
+        ]]],
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['info_markdown'] = null;
+    $result['guidance_evidence'] = [];
+
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result);
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result);
+
+    expect(collect($plan['decisions'])->firstWhere('field', 'proposal.info_markdown'))
+        ->toMatchArray(['decision' => 'preserved', 'proposed' => null])
+        ->and(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))->toBeNull()
+        ->and($applied['ingredient']->info_markdown)->toBe($ingredient->info_markdown)
+        ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.evidence'))->toBe($existingEvidence)
+        ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.guidance_prompt_version'))
+        ->toBe('approved-guidance-v1');
+});
+
 it('applies successive evidence-only updates with the same source fingerprint', function (): void {
     $ingredient = Ingredient::factory()->create([
         'catalog_key' => 'ADM-EVIDENCE-REPLAY',

@@ -20,6 +20,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     config()->set('ingredient-enrichment.direct_ai.enabled', true);
     config()->set('ingredient-enrichment.openai.api_key', 'test-only');
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', true);
     Bus::fake();
 });
 

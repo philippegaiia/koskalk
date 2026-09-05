@@ -17,6 +17,7 @@ class IngredientGuidanceProposalForm
             MarkdownEditor::make('info_markdown')
                 ->label(__('ingredient_enrichment_admin.review.labels.info_markdown'))
                 ->required()
+                ->maxLength((int) config('ingredient-enrichment.guidance.maximum_characters', 10000))
                 ->disabled($localizationOnly)
                 ->dehydrated(! $localizationOnly)
                 ->columnSpanFull(),
@@ -36,12 +37,17 @@ class IngredientGuidanceProposalForm
                         ->required(),
                     TextInput::make('display_name')
                         ->label(__('ingredient_enrichment_admin.review.labels.display_name'))
-                        ->required(),
+                        ->required(! $localizationOnly)
+                        ->visible(! $localizationOnly)
+                        ->dehydrated(! $localizationOnly),
                     TextInput::make('saponification_name')
-                        ->label(__('ingredient_enrichment_admin.review.labels.saponification_name')),
+                        ->label(__('ingredient_enrichment_admin.review.labels.saponification_name'))
+                        ->visible(! $localizationOnly)
+                        ->dehydrated(! $localizationOnly),
                     MarkdownEditor::make('info_markdown')
                         ->label(__('ingredient_enrichment_admin.review.labels.info_markdown'))
                         ->required()
+                        ->maxLength((int) config('ingredient-enrichment.guidance.maximum_characters', 10000))
                         ->columnSpanFull(),
                 ])
                 ->reorderable(false)

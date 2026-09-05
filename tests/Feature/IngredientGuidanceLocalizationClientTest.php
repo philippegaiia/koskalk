@@ -20,8 +20,6 @@ it('localizes approved guidance with a locale-bounded strict response contract',
                     'text' => json_encode([
                         'translations' => [[
                             'locale' => 'fr',
-                            'display_name' => 'Huile d’argan',
-                            'saponification_name' => 'Savon d’huile d’argan',
                             'info_markdown' => "## Vue d’ensemble\n\nUne présentation concise.",
                         ]],
                     ], JSON_THROW_ON_ERROR),
@@ -44,8 +42,6 @@ it('localizes approved guidance with a locale-bounded strict response contract',
     expect($response->translations)->toBe([
         [
             'locale' => 'fr',
-            'display_name' => 'Huile d’argan',
-            'saponification_name' => 'Savon d’huile d’argan',
             'info_markdown' => "## Vue d’ensemble\n\nUne présentation concise.",
         ],
     ])
@@ -73,13 +69,12 @@ it('localizes approved guidance with a locale-bounded strict response contract',
             && data_get($data, 'text.format.schema.required') === ['translations']
             && data_get($data, 'text.format.schema.additionalProperties') === false
             && array_keys($properties) === ['translations']
-            && array_keys($translationProperties) === ['locale', 'display_name', 'saponification_name', 'info_markdown']
+            && array_keys($translationProperties) === ['locale', 'info_markdown']
             && data_get($data, 'text.format.schema.properties.translations.items.required') === [
-                'locale', 'display_name', 'saponification_name', 'info_markdown',
+                'locale', 'info_markdown',
             ]
-            && data_get($data, 'text.format.schema.properties.translations.items.properties.saponification_name.type') === ['string', 'null']
-            && str_contains((string) ($data['input'] ?? ''), 'Argan oil')
-            && str_contains((string) ($data['input'] ?? ''), 'Argania Spinosa Kernel Oil');
+            && ! str_contains((string) ($data['input'] ?? ''), 'Argan oil')
+            && ! str_contains((string) ($data['input'] ?? ''), 'Argania Spinosa Kernel Oil');
     });
 });
 
@@ -100,8 +95,6 @@ it('uses the localization-specific model and reasoning effort', function (): voi
                     'text' => json_encode([
                         'translations' => [[
                             'locale' => 'fr',
-                            'display_name' => 'Huile d’argan',
-                            'saponification_name' => null,
                             'info_markdown' => "## Vue d’ensemble\n\nUne présentation.",
                         ]],
                     ], JSON_THROW_ON_ERROR),
@@ -130,7 +123,7 @@ it('uses the localization-specific model and reasoning effort', function (): voi
 it('describes localization as an in-context native editorial rewrite', function (): void {
     $prompt = app(IngredientGuidanceLocalizationPrompt::class)->build([]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-localization-v4')
+    expect($prompt['version'])->toBe('ingredient-guidance-localization-v5')
         ->and($prompt['instructions'])
         ->toContain('in-context')
         ->toContain('native cosmetic-formulation')
@@ -138,6 +131,10 @@ it('describes localization as an in-context native editorial rewrite', function 
         ->toContain('never translate literally or sentence by sentence')
         ->toContain('Latin botanical names')
         ->toContain('INCI names');
+
+    expect($prompt['instructions'])
+        ->toContain('Translate only the guidance')
+        ->not->toContain('Translate the display name');
 });
 
 it('requires faithful natural localization without calques, evidence prose, or filler', function (): void {

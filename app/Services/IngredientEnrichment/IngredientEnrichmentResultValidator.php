@@ -251,10 +251,15 @@ class IngredientEnrichmentResultValidator
         ];
         $this->validateExactKeys($proposal, $allowed, 'proposal', $errors);
 
-        foreach (['display_name', 'info_markdown'] as $field) {
+        foreach (['display_name'] as $field) {
             if (! is_string($proposal[$field] ?? null) || trim($proposal[$field]) === '') {
                 $this->error($errors, "proposal.{$field}", $this->message('required_non_empty'));
             }
+        }
+
+        if (($proposal['info_markdown'] ?? null) !== null
+            && (! is_string($proposal['info_markdown']) || trim($proposal['info_markdown']) === '')) {
+            $this->error($errors, 'proposal.info_markdown', $this->message('string_or_null'));
         }
 
         $hasInciName = is_string($proposal['inci_name'] ?? null) && trim($proposal['inci_name']) !== '';
@@ -308,7 +313,9 @@ class IngredientEnrichmentResultValidator
             $this->error($errors, 'proposal.inci_name', $this->message('ci_reserved'));
         }
 
-        $this->validateGuidance($proposal, $errors, $warnings);
+        if (is_string($proposal['info_markdown'] ?? null)) {
+            $this->validateGuidance($proposal, $errors, $warnings);
+        }
         $this->validateAliases($proposal['aliases'] ?? [], $errors);
         $this->validateIdentifiers($proposal['identifiers'] ?? null, $errors);
         $this->validateCosIngFunctions($proposal['cosing_functions'] ?? null, $errors);
@@ -347,7 +354,9 @@ class IngredientEnrichmentResultValidator
             'soap_inci_koh_name' => is_string($proposal['soap_inci_koh_name'] ?? null)
                 ? $this->normalizeInciName($proposal['soap_inci_koh_name'])
                 : null,
-            'info_markdown' => trim((string) ($proposal['info_markdown'] ?? '')),
+            'info_markdown' => is_string($proposal['info_markdown'] ?? null)
+                ? trim($proposal['info_markdown'])
+                : null,
             'soapmaking_relevant' => (bool) ($proposal['soapmaking_relevant'] ?? false),
             'aliases' => $this->normalizeRows($proposal['aliases'] ?? null, [
                 'locale', 'name', 'kind', ...$this->sourceStringFields(),

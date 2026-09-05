@@ -121,9 +121,15 @@ class ApplyIngredientGuidanceRefresh
 
                                 return [$locale => [
                                     ...$current,
-                                    'display_name' => $translation['display_name'] ?? null,
-                                    'saponification_name' => $translation['saponification_name'] ?? null,
-                                    'info_markdown' => $translation['info_markdown'] ?? null,
+                                    'display_name' => array_key_exists('display_name', $translation)
+                                        ? $translation['display_name']
+                                        : $current['display_name'],
+                                    'saponification_name' => array_key_exists('saponification_name', $translation)
+                                        ? $translation['saponification_name']
+                                        : $current['saponification_name'],
+                                    'info_markdown' => array_key_exists('info_markdown', $translation)
+                                        ? $translation['info_markdown']
+                                        : $current['info_markdown'],
                                 ]];
                             });
                         $selectedProposalRows = $proposalRows

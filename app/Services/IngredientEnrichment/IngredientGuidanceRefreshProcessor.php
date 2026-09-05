@@ -53,6 +53,19 @@ class IngredientGuidanceRefreshProcessor
                 return null;
             }
 
+            if ($mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+                && ! (bool) config('ingredient-enrichment.openai.guidance_generation.enabled', false)) {
+                $item->update([
+                    'status' => IngredientEnrichmentItemStatus::Cancelled,
+                    'failure_code' => 'guidance_generation_disabled',
+                    'failure_message' => __('ingredient_enrichment_admin.validation.guidance_generation_disabled'),
+                    'research_completed_at' => now(),
+                ]);
+                $this->batches->refresh($item->ingredient_enrichment_batch_id);
+
+                return null;
+            }
+
             $item->update([
                 'status' => IngredientEnrichmentItemStatus::Researching,
                 'attempt_count' => $item->attempt_count + 1,
@@ -102,26 +115,18 @@ class IngredientGuidanceRefreshProcessor
             );
             $localization = null;
             if ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization) {
-                $metadataTranslations = $this->metadataTranslations($context);
                 $localization = $this->stages->run(
                     $itemId,
                     IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                    function (array $stageContext) use ($context, $englishGuidance, $metadataTranslations): IngredientSourceStageResult {
+                    function (array $stageContext) use ($englishGuidance): IngredientSourceStageResult {
                         $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
-                        $canonical = is_array($context['current']['canonical'] ?? null)
-                            ? collect($context['current']['canonical'])->only([
-                                'display_name', 'saponification_name', 'inci_name',
-                            ])->all()
-                            : [];
                         $response = $this->localization->localize([
                             'locales' => $stageContext['expected_locales'],
-                            'canonical' => $canonical,
                             'english_guidance' => $englishGuidance,
                             'soapmaking_relevant' => $stageContext['soapmaking_relevant'],
                             'localized_headings' => is_array($providerConfiguration['localized_headings'] ?? null)
                                 ? $providerConfiguration['localized_headings']
                                 : [],
-                            'metadata_translations' => $metadataTranslations,
                         ]);
 
                         return new IngredientSourceStageResult(
@@ -467,31 +472,13 @@ class IngredientGuidanceRefreshProcessor
             : (string) ($ingredient->info_markdown ?? '');
     }
 
-    /** @param array<string,mixed> $context @return list<array<string,mixed>> */
-    private function metadataTranslations(array $context): array
-    {
-        return collect(data_get($context, 'current.translations', []))
-            ->filter(fn (mixed $translation): bool => is_array($translation))
-            ->map(fn (array $translation): array => collect($translation)->only([
-                'locale', 'display_name', 'saponification_name',
-            ])->all())
-            ->values()
-            ->all();
-    }
-
-    /** @return list<array{locale:string,display_name:string,saponification_name:string|null,info_markdown:string}> */
+    /** @return list<array{locale:string,info_markdown:string}> */
     private function normalizedTranslations(IngredientSourceStageResult $localization, bool $soapmakingRelevant): array
     {
         $translations = collect($localization->data['translations'] ?? [])
             ->filter(fn (mixed $translation): bool => is_array($translation))
             ->map(fn (array $translation): array => [
                 'locale' => (string) ($translation['locale'] ?? ''),
-                'display_name' => is_string($translation['display_name'] ?? null)
-                    ? trim($translation['display_name'])
-                    : '',
-                'saponification_name' => ($translation['saponification_name'] ?? null) === null
-                    ? null
-                    : (is_string($translation['saponification_name']) ? trim($translation['saponification_name']) : ''),
                 'info_markdown' => $this->headings->normalize(
                     (string) ($translation['info_markdown'] ?? ''),
                     (string) ($translation['locale'] ?? ''),

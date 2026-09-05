@@ -187,20 +187,22 @@ class ApplyPlatformIngredientEnrichment
             'result_fingerprint' => $resultFingerprint,
             'applied_at' => CarbonImmutable::now()->toIso8601String(),
         ]);
-        $guidanceEvidence = is_array($result['guidance_evidence'] ?? null)
-            ? $result['guidance_evidence']
-            : [];
-        $guidanceMetadata = [
-            'evidence' => $guidanceEvidence,
-            'research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
-            'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
-            'approved_at' => CarbonImmutable::now()->toIso8601String(),
-        ];
-        $localizationPromptVersion = data_get($sourceData, 'enrichment.guidance.localization_prompt_version');
-        if (is_string($localizationPromptVersion) && trim($localizationPromptVersion) !== '') {
-            $guidanceMetadata['localization_prompt_version'] = $localizationPromptVersion;
+        if (filled(data_get($result, 'proposal.info_markdown'))) {
+            $guidanceEvidence = is_array($result['guidance_evidence'] ?? null)
+                ? $result['guidance_evidence']
+                : [];
+            $guidanceMetadata = [
+                'evidence' => $guidanceEvidence,
+                'research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
+                'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
+                'approved_at' => CarbonImmutable::now()->toIso8601String(),
+            ];
+            $localizationPromptVersion = data_get($sourceData, 'enrichment.guidance.localization_prompt_version');
+            if (is_string($localizationPromptVersion) && trim($localizationPromptVersion) !== '') {
+                $guidanceMetadata['localization_prompt_version'] = $localizationPromptVersion;
+            }
+            data_set($sourceData, 'enrichment.guidance', $guidanceMetadata);
         }
-        data_set($sourceData, 'enrichment.guidance', $guidanceMetadata);
         $ingredient->source_data = $sourceData;
         $ingredient->requires_admin_review = $promotion ? false : true;
         if ($promotion) {

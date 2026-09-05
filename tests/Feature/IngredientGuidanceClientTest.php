@@ -11,8 +11,8 @@ it('requests fuller practical guidance without filler when reviewed facts suppor
     $prompt = app(IngredientGuidancePrompt::class)->build([]);
 
     expect($prompt['version'])->toBe('ingredient-guidance-v16')
-        ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
-        ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
+        ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(1500)
+        ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(10000)
         ->and($prompt['instructions'])
         ->toContain('Aim for 130–200 English words when the reviewed facts support it.')
         ->toContain('Normally write 1–2 overview sentences, 2–3 formulation-use sentences, and, when soapmaking is relevant, 1–2 soapmaking sentences.')

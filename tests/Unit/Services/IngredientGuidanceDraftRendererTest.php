@@ -648,6 +648,8 @@ it('accepts concise guidance and rejects guidance above the word or visible-char
             ->all(),
     ]);
 
+    config()->set('ingredient-enrichment.guidance.maximum_words', 20);
+
     expect($short['info_markdown'])->toContain('A pressed kernel oil.')
         ->and(fn (): array => guidanceRenderer()->render($long, guidanceContext()))
         ->toThrow(RuntimeException::class);

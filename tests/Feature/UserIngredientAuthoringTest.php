@@ -458,7 +458,7 @@ it('lets an editor customize and switch between localized platform and workspace
             return is_array($value);
         })
         ->assertSeeText('Workspace-authored guidance')
-        ->assertSeeText('Edit guidance')
+        ->assertSeeText('Edit workspace guidance')
         ->assertSeeText('Use platform guidance')
         ->assertSee('wire:confirm="Use the current platform guidance for this workspace? Your workspace guidance will be kept and can be restored later."', escape: false)
         ->call('usePlatformGuidance')

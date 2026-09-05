@@ -1,14 +1,35 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientFunctionSource;
 use App\Enums\OwnerType;
 use App\Livewire\Dashboard\IngredientEditor;
+use App\Models\Allergen;
+use App\Models\FattyAcid;
+use App\Models\IfraAmendment;
+use App\Models\IfraCertificate;
+use App\Models\IfraCertificateLimit;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientAlias;
+use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientComponent;
+use App\Models\IngredientFattyAcid;
+use App\Models\IngredientFunction;
+use App\Models\IngredientIdentifier;
+use App\Models\IngredientSapProfile;
+use App\Models\IngredientSubstanceEntry;
 use App\Models\IngredientTranslation;
 use App\Models\InterfaceTranslation;
+use App\Models\MediaAsset;
+use App\Models\MediaAssetUsage;
+use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
+use App\Models\WorkspaceIngredientGuidance;
+use App\Models\WorkspaceMember;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +40,282 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed(SupportedLocaleSeeder::class);
+});
+
+it('keeps the complete platform reference available as plain technical values', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create(['name' => 'North Star Soapworks']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Rosehip blend',
+        'inci_name' => 'ROSA CANINA FRUIT OIL',
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+        'is_soap_saponification_trusted' => true,
+        'info_markdown' => 'Platform formulation guidance',
+        'composition_source_notes' => 'Platform composition source',
+        'allergen_source_notes' => 'Platform allergen source',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+    $component = Ingredient::factory()->create([
+        'display_name' => 'Neroli oil',
+        'inci_name' => 'CITRUS AURANTIUM FLOWER OIL',
+    ]);
+
+    IngredientIdentifier::factory()->createMany([
+        [
+            'ingredient_id' => $platform->id,
+            'scheme' => 'cas',
+            'value' => 'PLATFORM-CAS',
+            'normalized_value' => 'PLATFORM-CAS',
+            'is_primary' => true,
+        ],
+        [
+            'ingredient_id' => $platform->id,
+            'scheme' => 'ec',
+            'value' => 'PLATFORM-EC',
+            'normalized_value' => 'PLATFORM-EC',
+            'is_primary' => true,
+        ],
+        [
+            'ingredient_id' => $platform->id,
+            'scheme' => 'pubchem_cid',
+            'value' => 'AUX-42',
+            'normalized_value' => 'AUX-42',
+            'is_primary' => false,
+        ],
+    ]);
+    IngredientAlias::factory()->create([
+        'ingredient_id' => $platform->id,
+        'name' => 'Rosehip seed oil',
+        'normalized_name' => 'rosehip seed oil',
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $platform->id,
+        'component_ingredient_id' => $component->id,
+        'percentage_in_parent' => 70,
+        'source_notes' => 'Neroli source note',
+    ]);
+    $function = IngredientFunction::factory()->create([
+        'name' => 'Emollient',
+        'key' => 'emollient-reference',
+    ]);
+    $platform->functions()->attach($function, ['source' => IngredientFunctionSource::Manual->value]);
+
+    $sapProfile = IngredientSapProfile::factory()->create([
+        'ingredient_id' => $platform->id,
+        'koh_sap_value' => 0.185,
+        'iodine_value' => 81.25,
+        'ins_value' => 98.5,
+        'source_notes' => 'SAP source note',
+    ]);
+    $fattyAcid = FattyAcid::factory()->create(['name' => 'Oleic acid', 'key' => 'oleic-reference']);
+    IngredientFattyAcid::factory()->create([
+        'ingredient_id' => $platform->id,
+        'fatty_acid_id' => $fattyAcid->id,
+        'percentage' => 42,
+        'source_notes' => 'Fatty acid source note',
+    ]);
+    $allergen = Allergen::factory()->create(['inci_name' => 'LIMONENE']);
+    IngredientAllergenEntry::factory()->create([
+        'ingredient_id' => $platform->id,
+        'allergen_id' => $allergen->id,
+        'concentration_percent' => 0.25,
+        'source_notes' => 'Allergen source note',
+    ]);
+    $substance = Substance::factory()->create(['name' => 'Linalool']);
+    IngredientSubstanceEntry::factory()->create([
+        'ingredient_id' => $platform->id,
+        'substance_id' => $substance->id,
+        'concentration_percent' => 1.75,
+        'source_notes' => 'Substance source note',
+    ]);
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
+    $certificate = IfraCertificate::factory()->create([
+        'ingredient_id' => $platform->id,
+        'ifra_amendment_id' => $amendment->id,
+        'certificate_name' => 'Rosehip IFRA certificate',
+        'source_amendment_label' => 'Amendment 51',
+        'peroxide_value' => 2.5,
+        'source_notes' => 'IFRA source note',
+    ]);
+    $ifraCategory = IfraProductCategory::factory()->create(['code' => '4', 'name' => 'Category 4']);
+    IfraCertificateLimit::factory()->create([
+        'ifra_certificate_id' => $certificate->id,
+        'ifra_product_category_id' => $ifraCategory->id,
+        'max_percentage' => 12.5,
+        'restriction_note' => 'IFRA limit note',
+    ]);
+    $document = MediaAsset::factory()->pdf()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $user->id,
+        'original_filename' => 'platform-safety.pdf',
+        'display_name' => 'Platform safety sheet',
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $document->id,
+        'usable_type' => $platform->getMorphClass(),
+        'usable_id' => $platform->id,
+        'role' => 'ingredient_document',
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
+        ->assertSeeText('Rosehip blend')
+        ->assertSeeText('ROSA CANINA FRUIT OIL')
+        ->assertSeeText('PLATFORM-CAS')
+        ->assertSeeText('PLATFORM-EC')
+        ->assertSeeText('AUX-42')
+        ->assertSeeText('Rosehip seed oil')
+        ->assertSeeText('Neroli oil')
+        ->assertSeeText('70%')
+        ->assertSeeText('Emollient')
+        ->assertSeeText('0.185')
+        ->assertSeeText('Oleic acid')
+        ->assertSeeText('42%')
+        ->assertSeeText('LIMONENE')
+        ->assertSeeText('0.25%')
+        ->assertSeeText('Linalool')
+        ->assertSeeText('1.75%')
+        ->assertSeeText('Rosehip IFRA certificate')
+        ->assertSeeText('Amendment 51')
+        ->assertSeeText('Category 4')
+        ->assertSeeText('12.5%')
+        ->assertSeeText('Platform safety sheet')
+        ->assertDontSeeHtml('<input disabled="disabled"')
+        ->assertDontSeeText('Save changes');
+
+    expect($component->instance()->referenceData)->toHaveKey('documents')
+        ->and($component->instance()->data)->toBe([])
+        ->and($component->instance()->workspaceMaterialCode)->toBeNull();
+});
+
+it('shows a sparse reference without inventing composition or chemistry', function (): void {
+    $user = User::factory()->create();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Sparse platform ingredient',
+        'inci_name' => null,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
+        ->assertSeeText('Sparse platform ingredient')
+        ->assertSeeText('Not available')
+        ->assertDontSeeText('Composition')
+        ->assertDontSeeText('Soap chemistry')
+        ->assertDontSeeText('Fatty acids');
+
+    expect($component->instance()->referenceData['components'])->toBe([])
+        ->and($component->instance()->referenceData['soap'])->toBeNull();
+});
+
+it('keeps a single ingredient reference separate from blend composition', function (): void {
+    $user = User::factory()->create();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Single platform ingredient',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
+        ->assertSeeText('Single platform ingredient')
+        ->assertDontSeeText('Composition');
+
+    expect($component->instance()->referenceData['ingredient_structure'])->toBe('ingredient');
+});
+
+it('filters workspace overrides and media links independently for a public non-member', function (): void {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => 'viewer']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Public workspace blend',
+        'inci_name' => 'PUBLIC TECHNICAL INCI',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => 'public',
+        'notes' => 'PRIVATE SOURCE SENTINEL',
+        'composition_source_notes' => 'PRIVATE COMPOSITION SENTINEL',
+        'allergen_source_notes' => 'PRIVATE ALLERGEN SENTINEL',
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'material_code' => 'PRIVATE-CODE-SENTINEL',
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'guidance_html' => '<p>PRIVATE GUIDANCE SENTINEL</p>',
+    ]);
+    $document = MediaAsset::factory()->pdf()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $owner->id,
+        'original_filename' => 'private-workspace-document.pdf',
+        'display_name' => 'Private workspace document',
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $document->id,
+        'usable_type' => $ingredient->getMorphClass(),
+        'usable_id' => $ingredient->id,
+        'role' => 'ingredient_document',
+    ]);
+
+    $member->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $member->forgetAccessibleWorkspaceIds();
+    $this->actingAs($member);
+    $authorized = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+
+    $authorized
+        ->assertSeeText('PUBLIC TECHNICAL INCI')
+        ->assertSeeText('Private workspace document')
+        ->assertSee(route('media.download', $document));
+
+    $nonMember = User::factory()->create();
+    $this->actingAs($nonMember);
+    $public = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+
+    $public
+        ->assertSeeText('PUBLIC TECHNICAL INCI')
+        ->assertDontSeeText('PRIVATE-CODE-SENTINEL')
+        ->assertDontSeeText('PRIVATE GUIDANCE SENTINEL')
+        ->assertDontSeeText('PRIVATE SOURCE SENTINEL')
+        ->assertDontSeeText('PRIVATE COMPOSITION SENTINEL')
+        ->assertDontSeeText('PRIVATE ALLERGEN SENTINEL')
+        ->assertDontSeeText('Private workspace document')
+        ->assertDontSee(route('media.download', $document))
+        ->set('data.notes', 'PRIVATE SOURCE SENTINEL')
+        ->set('referenceData.notes', 'PRIVATE SOURCE SENTINEL')
+        ->set('workspaceMaterialCode', 'PRIVATE-CODE-SENTINEL')
+        ->set('workspaceGuidance.html', '<p>PRIVATE GUIDANCE SENTINEL</p>')
+        ->assertSet('data', [])
+        ->assertSet('referenceData.notes', null)
+        ->assertSet('workspaceMaterialCode', null)
+        ->assertSet('workspaceGuidance', ['html' => null]);
+
+    expect($public->instance()->data)->toBe([])
+        ->and($public->instance()->workspaceMaterialCode)->toBeNull()
+        ->and($public->instance()->workspaceGuidance)->toBe(['html' => null]);
 });
 
 it('shows localized platform content while preserving authored workspace names', function (): void {
@@ -44,7 +341,7 @@ it('shows localized platform content while preserving authored workspace names',
     $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
 
     $component
-        ->assertSet('data.name', 'Huile de coco')
+        ->assertSet('referenceData.name', 'Huile de coco')
         ->call('startWorkspaceGuidanceCustomization')
         ->assertSet('isEditingWorkspaceGuidance', true)
         ->tap(fn ($test) => expect($test->instance()->workspaceGuidanceForm->getState()['html'])->toBe('<p>Conseils en français</p>'))
@@ -335,6 +632,8 @@ it('keeps every ingredient editor string in the ingredients translation group', 
     $copy = require lang_path('en/ingredients.php');
 
     expect($copy)->toHaveKeys([
+        'editor.workspace_scope',
+        'editor.read_only_description',
         'editor.create.page_title',
         'editor.create.heading',
         'editor.create.intro',
@@ -393,6 +692,13 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.identity.identifier_schemes.inchikey',
         'editor.identity.identifier_schemes.pubchem_cid',
     ]);
+
+    expect(data_get($copy, 'editor.workspace_scope'))
+        ->toBe('Changes are shared with everyone in :workspace.')
+        ->and(data_get($copy, 'editor.read_only_description'))
+        ->toBe('You can view this ingredient, but you do not have permission to edit it.')
+        ->and(data_get($copy, 'editor.workspace_guidance.edit'))
+        ->toBe('Edit workspace guidance');
 });
 
 it('presents primary identifiers separately from supported additional schemes', function () {

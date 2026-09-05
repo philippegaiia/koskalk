@@ -31,7 +31,7 @@
  @if ($isPlatformIngredient)
  {{ __('ingredients.editor.reference.intro') }}
  @elseif ($isReadOnlyIngredient)
- {{ __('ingredients.editor.read_only.intro') }}
+ {{ __('ingredients.editor.read_only_description') }}
  @elseif (! $isCreate)
  {{ __('ingredients.editor.edit.intro') }}
  @else
@@ -48,57 +48,11 @@
  </div>
  </section>
 
- @if ($isPlatformIngredient)
- <section class="sk-card p-5 sm:p-6" aria-labelledby="platform-regulatory-summary">
- <p class="sk-eyebrow">{{ __('ingredients.editor.reference.section') }}</p>
- <h4 id="platform-regulatory-summary" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.reference.description') }}</h4>
- <dl class="mt-5 grid gap-4 sm:grid-cols-2">
- <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
- <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.inci') }}</dt>
- <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $ingredient->inci_name ?: __('ingredients.editor.common.not_available') }}</dd>
- </div>
- <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
- <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.cas_number') }}</dt>
- <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identityState['cas_number'] ?: __('ingredients.editor.common.not_available') }}</dd>
- </div>
- <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
- <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.ec_number') }}</dt>
- <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identityState['ec_number'] ?: __('ingredients.editor.common.not_available') }}</dd>
- </div>
- @if (count($identityState['additional_identifiers'] ?? []) > 0)
- <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 sm:col-span-2">
- <details>
- <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.reference.additional_identifiers') }}</summary>
- <ul class="mt-3 space-y-2 text-sm text-[var(--color-ink-soft)]">
- @foreach ($identityState['additional_identifiers'] as $identifier)
- <li><span class="font-medium text-[var(--color-ink-strong)]">{{ \App\Enums\IngredientIdentifierScheme::tryFrom((string) ($identifier['scheme'] ?? ''))?->label() ?? ($identifier['scheme'] ?? __('ingredients.editor.common.not_available')) }}</span>: {{ $identifier['value'] ?? __('ingredients.editor.common.not_available') }}</li>
- @endforeach
- </ul>
- </details>
- </div>
+ @if ($isReferenceView)
+ @include('livewire.dashboard.partials.ingredient-reference', ['referenceData' => $referenceData])
  @endif
- <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 sm:col-span-2">
- <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.allergens') }}</dt>
- <dd class="mt-2">
- @if ($ingredient->allergenEntries->isEmpty())
- <span class="text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.no_allergens') }}</span>
- @else
- <ul class="flex flex-wrap gap-2">
- @foreach ($ingredient->allergenEntries as $entry)
- <li class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-sm text-[var(--color-ink-strong)]">
- {{ $entry->allergen?->inci_name ?? __('ingredients.editor.reference.unknown_allergen') }}
- @if ($entry->concentration_percent !== null)
- <span class="text-[var(--color-ink-soft)]">· {{ rtrim(rtrim(number_format((float) $entry->concentration_percent, 5, '.', ''), '0'), '.') }}%</span>
- @endif
- </li>
- @endforeach
- </ul>
- @endif
- </dd>
- </div>
- </dl>
- </section>
 
+ @if ($isPlatformIngredient)
  <section class="sk-card p-5 sm:p-6" aria-labelledby="workspace-guidance-heading">
  <div class="flex flex-col gap-1">
  <p class="sk-eyebrow">{{ __('ingredients.editor.workspace_guidance.eyebrow') }}</p>
@@ -111,6 +65,11 @@
  <p class="text-sm leading-6 text-[var(--color-ink-soft)]">
  {{ $canEditWorkspaceGuidance ? __('ingredients.editor.workspace_guidance.helper', ['max' => \App\Services\WorkspaceIngredientGuidanceService::MAX_LENGTH]) : __('ingredients.editor.workspace_guidance.read_only') }}
  </p>
+ @if (filled($workspaceName))
+ <p class="text-xs leading-5 text-[var(--color-ink-soft)]">
+ {{ __('ingredients.editor.workspace_scope', ['workspace' => $workspaceName]) }}
+ </p>
+ @endif
  </div>
 
  <div class="sk-rich-content mt-5 max-w-none">
@@ -164,6 +123,7 @@
  <h2 id="platform-material-code-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.workspace_heading') }}</h2>
  <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.workspace_helper') }}</p>
  </div>
+ @if ($canEditWorkspaceMaterialCode)
  <form wire:submit="saveWorkspaceMaterialCode" class="mt-5 max-w-xl space-y-3">
  <label for="workspace-material-code" class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.label') }}</label>
  <input
@@ -172,24 +132,29 @@
  wire:model="workspaceMaterialCode"
  maxlength="64"
  placeholder="{{ __('ingredients.editor.material_code.placeholder') }}"
- @disabled(! $canEditWorkspaceMaterialCode)
  class="sk-field-control w-full"
  aria-describedby="workspace-material-code-help"
  aria-invalid="{{ $errors->has('workspaceMaterialCode') ? 'true' : 'false' }}"
  />
- <p id="workspace-material-code-help" class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ $canEditWorkspaceMaterialCode ? __('ingredients.editor.material_code.helper') : __('ingredients.editor.material_code.workspace_read_only') }}</p>
+ <p id="workspace-material-code-help" class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.helper') }}</p>
  @error('workspaceMaterialCode')
  <p class="text-sm text-[var(--color-danger-strong)]" role="alert">{{ $message }}</p>
  @enderror
- @if ($canEditWorkspaceMaterialCode)
  <button type="submit" wire:loading.attr="disabled" wire:target="saveWorkspaceMaterialCode" class="sk-btn sk-btn-primary">
  {{ __('ingredients.editor.material_code.save') }}
  </button>
- @endif
  </form>
+ @else
+ <dl class="mt-5 max-w-xl rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
+ <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.label') }}</dt>
+ <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $workspaceMaterialCode ?: __('ingredients.editor.common.not_available') }}</dd>
+ </dl>
+ <p class="mt-3 max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.workspace_read_only') }}</p>
+ @endif
  </section>
  @endif
 
+ @if (! $isReferenceView)
  <form wire:submit="save" class="space-y-4 pb-24">
  {{ $this->form }}
 
@@ -209,6 +174,7 @@
  </x-workflow-action-bar>
  @endif
  </form>
+ @endif
 
  <x-filament-actions::modals />
 </div>

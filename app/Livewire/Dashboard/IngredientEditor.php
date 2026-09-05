@@ -4,6 +4,8 @@ namespace App\Livewire\Dashboard;
 
 use App\Data\IngredientClassificationPromptInput;
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientFunctionSource;
+use App\Enums\IngredientIdentifierScheme;
 use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
@@ -18,6 +20,7 @@ use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\MediaAsset;
 use App\Models\Substance;
 use App\Models\Supplier;
 use App\Models\User;
@@ -94,6 +97,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
      */
     public array $data = [];
 
+    /**
+     * @var array<string, mixed>
+     */
+    public array $referenceData = [];
+
     public ?string $workspaceMaterialCode = null;
 
     /** @var array{html: ?string} */
@@ -151,13 +159,20 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $this->ingredientId = $ingredient?->id;
         $mountUser = $this->freshAuthenticatedUser();
-        $this->destinationWorkspaceId = $ingredient?->workspace_id
-            ?? $mountUser?->company()?->id;
+        $ingredient = $this->currentIngredient();
+        $settingsWorkspace = $this->workspaceForIngredientSettings($ingredient);
+        $this->destinationWorkspaceId = $settingsWorkspace?->id;
         $this->mediaPublicId = (string) ($ingredient?->public_id ?? Str::uuid());
 
         if ($ingredient === null && request()->query('return_to') === 'supplier_listing') {
             $this->returnTo = 'supplier_listing';
             $this->returnSupplierPublicId = $this->validReturnSupplierPublicId(request()->query('supplier'));
+        }
+
+        if ($ingredient instanceof Ingredient && $this->isReferenceViewFor($ingredient)) {
+            $this->initializeReferenceState($ingredient, $mountUser);
+
+            return;
         }
 
         $state = $ingredient instanceof Ingredient
@@ -172,7 +187,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $state['document_media_asset_ids'] = $ingredient instanceof Ingredient
             ? $mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientDocument)
             : [];
-        $workspace = $this->workspaceForIngredientSettings($ingredient);
+        $workspace = $settingsWorkspace;
         $materialCode = $ingredient instanceof Ingredient && $workspace instanceof Workspace
             ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
             : null;
@@ -195,6 +210,24 @@ class IngredientEditor extends Component implements HasActions, HasForms
         ]);
 
         $this->form->fill($state);
+    }
+
+    public function hydrate(): void
+    {
+        $ingredient = $this->currentIngredient();
+
+        if (! $ingredient instanceof Ingredient || ! $this->isReferenceViewFor($ingredient)) {
+            return;
+        }
+
+        $this->data = [];
+        $this->referenceData = [];
+        $this->isEditingWorkspaceGuidance = false;
+
+        if (! $this->isPlatformIngredient($ingredient)) {
+            $this->workspaceMaterialCode = null;
+            $this->workspaceGuidance = ['html' => null];
+        }
     }
 
     public function save(
@@ -1095,11 +1128,407 @@ class IngredientEditor extends Component implements HasActions, HasForms
             && $ingredient->workspace_id === null;
     }
 
+    private function initializeReferenceState(Ingredient $ingredient, ?User $user): void
+    {
+        $this->data = [];
+        $this->referenceData = $user instanceof User
+            ? $this->referenceDataFor($ingredient, $user)
+            : [];
+        $this->workspaceMaterialCode = null;
+        $this->workspaceGuidance = ['html' => null];
+        $this->isEditingWorkspaceGuidance = false;
+
+        if (! $this->isPlatformIngredient($ingredient)) {
+            return;
+        }
+
+        $workspace = $this->workspaceForIngredientSettings($ingredient);
+
+        if (! $workspace instanceof Workspace) {
+            return;
+        }
+
+        $this->workspaceMaterialCode = app(WorkspaceIngredientCodeService::class)
+            ->codeFor($workspace, $ingredient);
+        $guidance = app(WorkspaceIngredientGuidanceService::class)
+            ->recordFor($workspace, $ingredient);
+        $this->workspaceGuidance = ['html' => $guidance?->guidance_html];
+        $this->workspaceGuidanceForm->fill($this->workspaceGuidance);
+    }
+
+    /**
+     * Build the only ingredient data that is assigned to public reference state.
+     *
+     * @return array<string, mixed>
+     */
+    private function referenceDataFor(Ingredient $ingredient, User $user): array
+    {
+        $ingredient->load([
+            'translations',
+            'identifiers',
+            'aliases',
+            'components.componentIngredient',
+            'functions',
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
+            'allergenEntries.allergen',
+            'substanceEntries.substance',
+            'ifraCertificates.ifraAmendment',
+            'ifraCertificates.limits.ifraProductCategory',
+            'mediaAssetUsages.mediaAsset',
+        ]);
+
+        $identityState = app(IngredientIdentitySynchronizer::class)->formState($ingredient);
+        $category = $ingredient->category;
+        $subcategory = $ingredient->subcategory;
+        $structure = $ingredient->components->isNotEmpty() ? 'blend' : 'ingredient';
+        $workspace = $this->referenceWorkspaceFor($ingredient, $user);
+        $canSeePrivateData = $this->canSeePrivateReferenceData($ingredient, $user, $workspace);
+        $aliases = $canSeePrivateData ? ($identityState['aliases'] ?? []) : [];
+        $additionalIdentifiers = collect($identityState['additional_identifiers'] ?? [])
+            ->map(function (array $identifier): array {
+                $scheme = (string) ($identifier['scheme'] ?? '');
+                $schemeEnum = IngredientIdentifierScheme::tryFrom($scheme);
+
+                return [
+                    'scheme' => $scheme,
+                    'label' => $schemeEnum?->label() ?? $scheme,
+                    'value' => (string) ($identifier['value'] ?? ''),
+                    'is_primary' => (bool) ($identifier['is_primary'] ?? false),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $functions = $ingredient->functions
+            ->map(function (IngredientFunction $function): array {
+                $source = $function->pivot?->source;
+                $sourceValue = $source instanceof IngredientFunctionSource
+                    ? $source->value
+                    : (string) $source;
+
+                return [
+                    'name' => $function->localizedName(),
+                    'description' => filled($function->localizedDescription())
+                        ? $function->localizedDescription()
+                        : null,
+                    'source' => $sourceValue !== '' ? $sourceValue : null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $components = $structure === 'blend'
+            ? $ingredient->components
+                ->map(function ($entry) use ($user, $canSeePrivateData): ?array {
+                    $component = $entry->componentIngredient;
+
+                    if (! $component instanceof Ingredient || ! $component->isAccessibleBy($user)) {
+                        return null;
+                    }
+
+                    return [
+                        'name' => $component->localizedDisplayName() ?: $component->display_name,
+                        'inci_name' => $component->inci_name,
+                        'percentage' => $entry->percentage_in_parent === null
+                            ? null
+                            : (float) $entry->percentage_in_parent,
+                        'source_notes' => $canSeePrivateData ? $entry->source_notes : null,
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all()
+            : [];
+
+        $allergens = $ingredient->allergenEntries
+            ->map(function ($entry) use ($canSeePrivateData): array {
+                return [
+                    'name' => $entry->allergen?->inci_name
+                        ?: $entry->allergen?->common_name_en,
+                    'concentration' => $entry->concentration_percent === null
+                        ? null
+                        : (float) $entry->concentration_percent,
+                    'source_notes' => $canSeePrivateData ? $entry->source_notes : null,
+                ];
+            })
+            ->filter(fn (array $entry): bool => filled($entry['name']))
+            ->values()
+            ->all();
+
+        $substances = $ingredient->substanceEntries
+            ->map(function ($entry) use ($canSeePrivateData): array {
+                return [
+                    'name' => $entry->substance?->name ?: $entry->substance?->inci_name,
+                    'inci_name' => $entry->substance?->inci_name,
+                    'concentration' => $entry->concentration_percent === null
+                        ? null
+                        : (float) $entry->concentration_percent,
+                    'source_notes' => $canSeePrivateData ? $entry->source_notes : null,
+                ];
+            })
+            ->filter(fn (array $entry): bool => filled($entry['name']))
+            ->values()
+            ->all();
+
+        $soap = $this->referenceSoapData($ingredient, $canSeePrivateData);
+        $ifra = $this->referenceIfraData($ingredient, $canSeePrivateData);
+        $guidance = $this->referenceGuidanceData($ingredient, $workspace, $canSeePrivateData);
+        $documents = $ingredient->mediaAssetsForRole(MediaAssetUsageRole::IngredientDocument)
+            ->filter(fn (MediaAsset $asset): bool => Gate::forUser($user)->allows('view', $asset))
+            ->map(fn (MediaAsset $asset): array => [
+                'public_id' => (string) $asset->public_id,
+                'name' => $asset->displayName(),
+                'original_filename' => $asset->original_filename,
+                'download_url' => route('media.download', $asset),
+            ])
+            ->values()
+            ->all();
+        $identity = [
+            'name' => $ingredient->localizedDisplayName() ?: $ingredient->display_name,
+            'inci_name' => $ingredient->inci_name,
+            'cas_number' => $identityState['cas_number'] ?? null,
+            'ec_number' => $identityState['ec_number'] ?? null,
+            'additional_identifiers' => $additionalIdentifiers,
+            'aliases' => $aliases,
+        ];
+
+        return [
+            'ingredient_structure' => $structure,
+            'identity' => $identity,
+            'name' => $identity['name'],
+            'inci_name' => $identity['inci_name'],
+            'cas_number' => $identity['cas_number'],
+            'ec_number' => $identity['ec_number'],
+            'additional_identifiers' => $additionalIdentifiers,
+            'aliases' => $aliases,
+            'classification' => [
+                'category' => $category instanceof IngredientCategory
+                    ? [
+                        'value' => $category->value,
+                        'label' => (string) $category->getLabel(),
+                        'description' => (string) $category->getDescription(),
+                    ]
+                    : null,
+                'subcategory' => $subcategory instanceof IngredientSubcategory
+                    ? [
+                        'value' => $subcategory->value,
+                        'label' => (string) $subcategory->getLabel(),
+                        'description' => (string) $subcategory->getDescription(),
+                    ]
+                    : null,
+                'requires_aromatic_compliance' => $ingredient->requires_aromatic_compliance,
+            ],
+            'functions' => $functions,
+            'components' => $components,
+            'composition_source_notes' => $canSeePrivateData
+                ? $ingredient->composition_source_notes
+                : null,
+            'guidance' => $guidance,
+            'documents' => $documents,
+            'soap' => $soap,
+            'fatty_acids' => $soap['fatty_acids'] ?? [],
+            'allergens' => $allergens,
+            'allergen_source_notes' => $canSeePrivateData
+                ? $ingredient->allergen_source_notes
+                : null,
+            'substances' => $substances,
+            'ifra' => $ifra,
+            'notes' => $canSeePrivateData ? $ingredient->notes : null,
+        ];
+    }
+
+    private function referenceWorkspaceFor(Ingredient $ingredient, User $user): ?Workspace
+    {
+        if ($this->isPlatformIngredient($ingredient)) {
+            return $this->workspaceForIngredientSettings($ingredient);
+        }
+
+        if ($ingredient->workspace_id === null) {
+            return null;
+        }
+
+        $workspace = Workspace::withoutGlobalScopes()->find((int) $ingredient->workspace_id);
+
+        return $workspace instanceof Workspace && $workspace->hasMember($user)
+            ? $workspace
+            : null;
+    }
+
+    private function canSeePrivateReferenceData(
+        Ingredient $ingredient,
+        User $user,
+        ?Workspace $workspace,
+    ): bool {
+        return $this->isPlatformIngredient($ingredient)
+            || $ingredient->isOwnedBy($user)
+            || $workspace instanceof Workspace;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function referenceGuidanceData(
+        Ingredient $ingredient,
+        ?Workspace $workspace,
+        bool $canSeePrivateData,
+    ): ?array {
+        $guidances = app(WorkspaceIngredientGuidanceService::class);
+        $html = null;
+        $source = null;
+
+        if ($this->isPlatformIngredient($ingredient)) {
+            $override = $workspace instanceof Workspace
+                ? $guidances->recordFor($workspace, $ingredient)
+                : null;
+            $html = $workspace instanceof Workspace
+                ? $guidances->effectiveHtml($workspace, $ingredient, app()->getLocale())
+                : $guidances->platformHtml($ingredient->localizedInfoMarkdown(app()->getLocale()));
+            $source = $override?->is_active ? 'workspace' : 'platform';
+        } elseif ($canSeePrivateData && $workspace instanceof Workspace) {
+            $override = $guidances->recordFor($workspace, $ingredient);
+            $html = $override?->is_active ? $override->guidance_html : null;
+            $source = $html === null ? null : 'workspace';
+        }
+
+        if (! is_string($html) || trim($html) === '') {
+            return null;
+        }
+
+        return [
+            'html' => $html,
+            'source' => $source,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function referenceSoapData(Ingredient $ingredient, bool $canSeePrivateData): ?array
+    {
+        if (! $ingredient->is_soap_saponification_trusted || ! $canSeePrivateData) {
+            return null;
+        }
+
+        $profile = $ingredient->sapProfile;
+        $koh = $profile?->koh_sap_value;
+
+        if (! $this->isPlatformIngredient($ingredient)
+            && ! is_numeric(data_get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value'))) {
+            return null;
+        }
+
+        if ($koh === null) {
+            $koh = data_get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
+        }
+
+        if (! is_numeric($koh)) {
+            return null;
+        }
+
+        $fattyAcids = $ingredient->fattyAcidEntries
+            ->map(fn ($entry): array => [
+                'name' => $entry->fattyAcid?->name,
+                'percentage' => $entry->percentage === null ? null : (float) $entry->percentage,
+                'source_notes' => $entry->source_notes,
+            ])
+            ->filter(fn (array $entry): bool => filled($entry['name']))
+            ->values()
+            ->all();
+
+        return [
+            'koh_sap_value' => (float) $koh,
+            'naoh_sap_value' => round(SoapSap::deriveNaohFromKoh((float) $koh), 6),
+            'iodine_value' => $profile?->iodine_value === null ? null : (float) $profile->iodine_value,
+            'ins_value' => $profile?->ins_value === null ? null : (float) $profile->ins_value,
+            'source_notes' => $profile?->source_notes,
+            'fatty_acids' => $fattyAcids,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function referenceIfraData(Ingredient $ingredient, bool $canSeePrivateData): ?array
+    {
+        if (! $ingredient->requires_aromatic_compliance || ! $canSeePrivateData) {
+            return null;
+        }
+
+        $certificate = $ingredient->ifraCertificates
+            ->filter(fn ($candidate): bool => $candidate->is_current)
+            ->sortByDesc('id')
+            ->first();
+
+        if ($certificate === null) {
+            return null;
+        }
+
+        $limits = $certificate->limits
+            ->sortBy('ifra_product_category_id')
+            ->map(fn ($limit): array => [
+                'category' => $limit->ifraProductCategory?->localizedName()
+                    ?: $limit->ifraProductCategory?->name,
+                'code' => $limit->ifraProductCategory?->code,
+                'max_percentage' => $limit->max_percentage === null
+                    ? null
+                    : (float) $limit->max_percentage,
+                'restriction_note' => $limit->restriction_note,
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'reference_label' => $certificate->certificate_name,
+            'certificate_name' => $certificate->certificate_name,
+            'amendment' => $certificate->ifraAmendment?->code,
+            'source_amendment_label' => $certificate->source_amendment_label,
+            'peroxide_value' => $certificate->peroxide_value === null
+                ? null
+                : (float) $certificate->peroxide_value,
+            'source_notes' => $certificate->source_notes,
+            'limits' => $limits,
+        ];
+    }
+
+    private function isReferenceViewFor(?Ingredient $ingredient, ?bool $canEditIngredientData = null): bool
+    {
+        if (! $ingredient instanceof Ingredient) {
+            return false;
+        }
+
+        return $this->isPlatformIngredient($ingredient)
+            || ! ($canEditIngredientData ?? $this->canEditIngredientData());
+    }
+
     public function render(): View
     {
         $ingredient = $this->currentIngredient();
+        $canEditIngredientData = $this->canEditIngredientData();
+        $isReferenceView = $this->isReferenceViewFor($ingredient, $canEditIngredientData);
+
+        if ($isReferenceView && $ingredient instanceof Ingredient) {
+            $user = $this->freshAuthenticatedUser();
+            $this->data = [];
+            $this->referenceData = $user instanceof User
+                ? $this->referenceDataFor($ingredient, $user)
+                : [];
+
+            if (! $this->isPlatformIngredient($ingredient)) {
+                $this->workspaceMaterialCode = null;
+                $this->workspaceGuidance = ['html' => null];
+            }
+        } else {
+            $this->referenceData = [];
+        }
+
         $ingredient?->loadMissing('allergenEntries.allergen');
         $workspace = $this->workspaceForIngredientSettings($ingredient);
+        if ($isReferenceView && $ingredient instanceof Ingredient && $this->isPlatformIngredient($ingredient)) {
+            $this->workspaceMaterialCode = $workspace instanceof Workspace
+                ? app(WorkspaceIngredientCodeService::class)->codeFor($workspace, $ingredient)
+                : null;
+        }
         $workspaceGuidanceOverride = $ingredient instanceof Ingredient
             && $this->isPlatformIngredient($ingredient)
             && $workspace instanceof Workspace
@@ -1114,7 +1543,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     app()->getLocale(),
                 )
                 : null;
-        $identityState = $ingredient instanceof Ingredient
+        $identityState = $ingredient instanceof Ingredient && ! $isReferenceView
             ? app(IngredientIdentitySynchronizer::class)->formState($ingredient)
             : [
                 'cas_number' => null,
@@ -1126,12 +1555,15 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return view('livewire.dashboard.ingredient-editor', [
             'ingredient' => $ingredient,
             'identityState' => $identityState,
-            'canEditIngredientData' => $this->canEditIngredientData(),
+            'canEditIngredientData' => $canEditIngredientData,
+            'isReferenceView' => $isReferenceView,
+            'referenceData' => $this->referenceData,
             'hasSoapChemistry' => $this->soapChemistryAvailable(),
             'canEditWorkspaceMaterialCode' => $this->canEditWorkspaceMaterialCode(),
             'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
             'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
             'canEditWorkspaceGuidance' => $this->canEditWorkspaceGuidance(),
+            'workspaceName' => $workspace?->name,
         ]);
     }
 

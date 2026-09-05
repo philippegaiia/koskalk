@@ -116,7 +116,7 @@ it('does not expose platform customization for a tenant-owned ingredient with a 
 
     $editor = Livewire::test(IngredientEditor::class, ['ingredient' => $malformedPlatform]);
 
-    $editor->assertSee('This ingredient is available for reference');
+    $editor->assertSee('You can view this ingredient, but you do not have permission to edit it.');
 
     expect($editor->instance()->canEditWorkspaceGuidance())->toBeFalse()
         ->and($editor->instance()->canEditWorkspaceMaterialCode())->toBeFalse();
@@ -210,7 +210,7 @@ it('renders edit controls only for workspace writers and references for readers'
     $this->actingAs($viewer);
     Livewire::test(IngredientEditor::class, ['ingredient' => $privateIngredient])
         ->assertSee('Ingredient reference')
-        ->assertSee('you cannot edit it in the current workspace')
+        ->assertSee('You can view this ingredient, but you do not have permission to edit it.')
         ->assertDontSee('Save changes');
 
     $outsider = User::factory()->create();

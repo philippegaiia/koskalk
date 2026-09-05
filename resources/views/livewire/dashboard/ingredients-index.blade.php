@@ -13,7 +13,9 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3 lg:justify-end">
-                @include('livewire.dashboard.partials.duplicate-ingredient-modal')
+                @if ($canDuplicateIngredients)
+                    @include('livewire.dashboard.partials.duplicate-ingredient-modal')
+                @endif
 
                 <a href="{{ route('dashboard') }}" wire:navigate class="sk-btn sk-btn-outline">
                     {{ __('ingredients.actions.back_to_dashboard') }}
@@ -36,7 +38,9 @@
                         <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.catalog.description') }}</p>
                     </div>
 
-                    <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('ingredients.actions.add') }}</a>
+                    @if ($canCreateIngredients)
+                        <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('ingredients.actions.add') }}</a>
+                    @endif
                 </div>
 
                 <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between" aria-label="{{ __('ingredients.catalog.filters_label') }}">
@@ -78,7 +82,9 @@
                     <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $search !== '' ? __('ingredients.empty.no_matches') : __('ingredients.empty.no_ingredients') }}</h4>
                     <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.empty.description') }}</p>
                     <div class="mt-5">
-                        <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('ingredients.actions.add') }}</a>
+                        @if ($canCreateIngredients)
+                            <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('ingredients.actions.add') }}</a>
+                        @endif
                     </div>
                 </div>
             @else
@@ -175,6 +181,7 @@
                                                 wire:change="updateIngredientPrice({{ $ingredient->id }}, $event.target.value)"
                                                 type="text"
                                                 inputmode="decimal"
+                                                @disabled(! $canEditPrices)
                                                 class="sk-input numeric text-right"
                                                 aria-label="{{ __('ingredients.accessibility.price', ['ingredient' => $displayName, 'unit' => $currentPriceUnit]) }}"
                                             />

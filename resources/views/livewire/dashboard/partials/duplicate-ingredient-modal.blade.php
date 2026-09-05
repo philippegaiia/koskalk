@@ -83,7 +83,11 @@ function duplicateModal() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ ingredient_id: ingredientId }),
+                body: JSON.stringify({
+                    ingredient_id: ingredientId,
+                    destination_workspace_id: @json($destinationWorkspaceId),
+                    destination_workspace_signature: @json($duplicateDestinationSignature),
+                }),
             });
             const data = await response.json();
             if (data.ok && data.redirect) {

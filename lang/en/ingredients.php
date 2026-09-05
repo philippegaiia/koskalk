@@ -567,6 +567,10 @@ return [
             'heading' => 'Edit ingredient details.',
             'intro' => 'Update the information used in your formulas, calculations, and ingredient library.',
         ],
+        'read_only' => [
+            'heading' => 'Ingredient reference',
+            'intro' => 'This ingredient is available for reference, but you cannot edit it in the current workspace.',
+        ],
         'reference' => [
             'source' => 'Soapkraft ingredient',
             'heading' => 'Soapkraft ingredient',
@@ -947,6 +951,7 @@ return [
             'workspace_guidance_required' => 'Enter ingredient guidance before saving.',
             'workspace_guidance_max' => 'Ingredient guidance may not exceed :max characters.',
             'workspace_guidance_missing' => 'No workspace guidance is available to restore.',
+            'stale_workspace' => 'This workspace or ingredient access changed. Refresh the page and reopen the ingredient before saving.',
             'private_ingredient_limit' => '{1} Your current plan allows 1 private ingredient.|[2,*] Your current plan allows :limit private ingredients.',
             'translation_write_intent_invalid' => 'Each translation write intent must use a valid intent value.',
             'translation_write_intent_locale_distinct' => 'Each translation write intent locale must be unique.',

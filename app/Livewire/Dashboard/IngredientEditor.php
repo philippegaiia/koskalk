@@ -8,7 +8,6 @@ use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
-use App\Enums\WorkspaceMemberRole;
 use App\Forms\Components\IngredientIdentityFields;
 use App\Forms\Components\MediaAssetPicker;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
@@ -59,6 +58,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -76,6 +76,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     #[Locked]
     public ?int $ingredientId = null;
+
+    #[Locked]
+    public ?int $destinationWorkspaceId = null;
 
     #[Locked]
     public string $mediaPublicId;
@@ -147,6 +150,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         $this->ingredientId = $ingredient?->id;
+        $mountUser = $this->freshAuthenticatedUser();
+        $this->destinationWorkspaceId = $ingredient?->workspace_id
+            ?? $mountUser?->company()?->id;
         $this->mediaPublicId = (string) ($ingredient?->public_id ?? Str::uuid());
 
         if ($ingredient === null && request()->query('return_to') === 'supplier_listing') {
@@ -171,13 +177,16 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
             : null;
         $state['material_code'] = $materialCode;
-        $this->workspaceMaterialCode = $ingredient?->owner_type === null ? $materialCode : null;
+        $this->workspaceMaterialCode = $ingredient instanceof Ingredient
+            && $this->isPlatformIngredient($ingredient)
+                ? $materialCode
+                : null;
         $guidance = $ingredient instanceof Ingredient
             && $workspace instanceof Workspace
                 ? $workspaceIngredientGuidances->recordFor($workspace, $ingredient)
                 : null;
 
-        if ($ingredient instanceof Ingredient && $ingredient->owner_type !== null) {
+        if ($ingredient instanceof Ingredient && ! $this->isPlatformIngredient($ingredient)) {
             $state['guidance_html'] = $guidance?->guidance_html;
         }
 
@@ -195,8 +204,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
         WorkspaceIngredientGuidanceContent $workspaceIngredientGuidanceContent,
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ) {
-        $user = $this->currentUser();
-        $wasEditing = $this->isEditing();
+        $user = $this->freshAuthenticatedUser();
+        $wasEditing = $this->ingredientId !== null;
 
         if (! $user instanceof User) {
             $this->showAppNotification(
@@ -207,7 +216,25 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        abort_if($this->isReadOnly(), 403);
+        try {
+            $currentIngredient = $wasEditing
+                ? $this->authorizeIngredientWrite($user)
+                : null;
+            $destinationWorkspace = $currentIngredient?->workspace_id !== null
+                ? $this->authorizeOwningWorkspace($user, $currentIngredient)
+                : (! $wasEditing ? $this->authorizeDestinationWorkspace($user) : null);
+
+            if (! $wasEditing) {
+                Gate::forUser($user)->authorize(
+                    'createInWorkspace',
+                    [Ingredient::class, $destinationWorkspace],
+                );
+            }
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('data');
+
+            return null;
+        }
 
         /** @var array<string, mixed> $state */
         $state = $this->mergeCustomCompositionState($this->form->getState());
@@ -220,15 +247,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
         unset($state['material_code']);
         unset($state['guidance_html']);
         $state['public_id'] = $this->mediaPublicId;
-        $currentIngredient = $this->currentIngredient();
 
         try {
-            $ingredient = DB::transaction(function () use ($currentIngredient, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceIngredientGuidanceContent, $workspaceIngredientGuidances, $workspaceGuidanceHtml, $workspaceMaterialCode): Ingredient {
+            $ingredient = DB::transaction(function () use ($currentIngredient, $destinationWorkspace, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService, $workspaceIngredientCodes, $workspaceIngredientGuidanceContent, $workspaceIngredientGuidances, $workspaceGuidanceHtml, $workspaceMaterialCode): Ingredient {
                 $ingredient = $currentIngredient instanceof Ingredient
-                    ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
-                    : $userIngredientAuthoringService->create($state, $user);
+                    ? $userIngredientAuthoringService->update($currentIngredient, $state, $user, $destinationWorkspace)
+                    : $userIngredientAuthoringService->createInWorkspace($state, $user, $destinationWorkspace);
 
-                $workspace = $this->workspaceForIngredientSettings($ingredient);
+                $workspace = $destinationWorkspace instanceof Workspace
+                    ? $destinationWorkspace
+                    : ($ingredient->workspace_id === null
+                        ? null
+                        : Workspace::withoutGlobalScopes()->find((int) $ingredient->workspace_id));
 
                 if ($workspace instanceof Workspace) {
                     if ($ingredient->owner_type === OwnerType::Workspace) {
@@ -274,6 +304,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
                 return $ingredient;
             });
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('data');
+
+            return null;
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
                 foreach ($messages as $message) {
@@ -289,6 +323,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
+        $this->refreshAuthenticatedUserContext($user);
         $this->ingredientId = $ingredient->id;
         $statusMessage = $wasEditing
             ? __('ingredients.editor.status.saved')
@@ -296,7 +331,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->showAppNotification($statusMessage);
 
         $refreshedState = $userIngredientAuthoringService->formData($ingredient);
-        $workspace = $this->workspaceForIngredientSettings($ingredient);
+        $workspace = $destinationWorkspace instanceof Workspace
+            ? $destinationWorkspace
+            : ($ingredient->workspace_id === null
+                ? null
+                : Workspace::withoutGlobalScopes()->find((int) $ingredient->workspace_id));
         $refreshedState['material_code'] = $workspace instanceof Workspace
             ? $workspaceIngredientCodes->codeFor($workspace, $ingredient)
             : null;
@@ -328,12 +367,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function saveWorkspaceMaterialCode(WorkspaceIngredientCodeService $workspaceIngredientCodes): void
     {
-        $user = $this->currentUser();
-        $ingredient = $this->currentIngredient();
-        $workspace = $this->workspaceForIngredientSettings($ingredient);
-
-        if (! $user instanceof User || ! $ingredient instanceof Ingredient || $ingredient->owner_type !== null || ! $workspace instanceof Workspace) {
-            $this->addError('workspaceMaterialCode', __('ingredients.editor.validation.material_code_forbidden'));
+        try {
+            [$user, $workspace, $ingredient] = $this->authorizePlatformWorkspaceContext();
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('workspaceMaterialCode');
 
             return;
         }
@@ -361,18 +398,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function startWorkspaceGuidanceCustomization(
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
-        $context = $this->workspaceGuidanceWriteContext();
-
-        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+        try {
+            [, $workspace, $ingredient] = $this->authorizePlatformWorkspaceContext();
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
-
-        [, $workspace, $ingredient] = $context;
 
         $this->workspaceGuidanceForm->fill([
             'html' => $workspaceIngredientGuidances->editableHtml(
@@ -403,18 +435,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function saveWorkspaceGuidance(
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
-        $context = $this->workspaceGuidanceWriteContext();
-
-        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+        try {
+            [$user, $workspace, $ingredient] = $this->authorizePlatformWorkspaceContext();
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
-
-        [$user, $workspace, $ingredient] = $context;
 
         try {
             $guidance = $workspaceIngredientGuidances->save(
@@ -428,10 +455,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
             return;
         } catch (AuthorizationException) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
@@ -447,18 +471,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function usePlatformGuidance(
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
-        $context = $this->workspaceGuidanceWriteContext();
-
-        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+        try {
+            [$user, $workspace, $ingredient] = $this->authorizePlatformWorkspaceContext();
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
-
-        [$user, $workspace, $ingredient] = $context;
 
         try {
             $workspaceIngredientGuidances->usePlatform($user, $workspace, $ingredient);
@@ -467,10 +486,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
             return;
         } catch (AuthorizationException) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
@@ -485,18 +501,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function useWorkspaceGuidance(
         WorkspaceIngredientGuidanceService $workspaceIngredientGuidances,
     ): void {
-        $context = $this->workspaceGuidanceWriteContext();
-
-        if ($context === null || ! $this->canEditWorkspaceGuidance()) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+        try {
+            [$user, $workspace, $ingredient] = $this->authorizePlatformWorkspaceContext();
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
-
-        [$user, $workspace, $ingredient] = $context;
 
         try {
             $guidance = $workspaceIngredientGuidances->useWorkspace($user, $workspace, $ingredient);
@@ -505,10 +516,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
             return;
         } catch (AuthorizationException) {
-            $this->addError(
-                'workspaceGuidance.html',
-                __('ingredients.editor.validation.workspace_guidance_forbidden'),
-            );
+            $this->addStaleWorkspaceError('workspaceGuidance.html');
 
             return;
         }
@@ -521,26 +529,31 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function canEditWorkspaceGuidance(): bool
     {
-        $context = $this->workspaceGuidanceWriteContext();
+        $user = $this->freshAuthenticatedUser();
+        $ingredient = $this->ingredientId === null
+            ? null
+            : Ingredient::query()->find($this->ingredientId);
 
-        if ($context === null) {
+        if (! $user instanceof User
+            || ! $ingredient instanceof Ingredient
+            || ! $this->isPlatformIngredient($ingredient)
+            || ! $ingredient->is_active) {
             return false;
         }
 
-        [$user, $workspace, $ingredient] = $context;
+        try {
+            $workspace = $this->authorizeDestinationWorkspace($user);
+        } catch (AuthorizationException) {
+            return false;
+        }
 
-        return $ingredient->owner_type === null
-            && $ingredient->is_active
-            && in_array($workspace->roleFor($user), [
-                WorkspaceMemberRole::Owner,
-                WorkspaceMemberRole::Admin,
-                WorkspaceMemberRole::Editor,
-            ], true);
+        return $workspace instanceof Workspace
+            && Gate::forUser($user)->allows('createInWorkspace', [Ingredient::class, $workspace]);
     }
 
     public function addComponent(int $ingredientId): void
     {
-        $user = $this->currentUser();
+        $user = $this->freshAuthenticatedUser();
 
         $componentIsAccessible = $user instanceof User
             && Ingredient::query()
@@ -576,7 +589,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function createAndAddComponent(UserIngredientAuthoringService $userIngredientAuthoringService): void
     {
-        $user = $this->currentUser();
+        $user = $this->freshAuthenticatedUser();
 
         if (! $user instanceof User) {
             $this->addError('quickComponentName', __('ingredients.editor.validation.quick_auth_required'));
@@ -595,10 +608,41 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'quickComponentCategory' => ['required', Rule::enum(IngredientCategory::class)],
         ]);
 
-        $ingredient = $userIngredientAuthoringService->createInlineComponent([
-            'name' => $validated['quickComponentName'],
-            'category' => $validated['quickComponentCategory'],
-        ], $user);
+        try {
+            $parentIngredient = $this->ingredientId === null
+                ? null
+                : $this->authorizeIngredientWrite($user);
+            $destinationWorkspace = $parentIngredient?->workspace_id !== null
+                ? $this->authorizeOwningWorkspace($user, $parentIngredient)
+                : $this->authorizeDestinationWorkspace($user);
+
+            Gate::forUser($user)->authorize(
+                'createInWorkspace',
+                [Ingredient::class, $destinationWorkspace],
+            );
+
+            $ingredient = $userIngredientAuthoringService->createInlineComponentInWorkspace([
+                'name' => $validated['quickComponentName'],
+                'category' => $validated['quickComponentCategory'],
+            ], $user, $destinationWorkspace);
+        } catch (AuthorizationException) {
+            $this->addStaleWorkspaceError('quickComponentName');
+
+            return;
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $key => $messages) {
+                $field = match ($key) {
+                    'name' => 'quickComponentName',
+                    default => $key,
+                };
+
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
 
         $this->addComponent($ingredient->id);
         $this->quickComponentName = '';
@@ -666,9 +710,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->helperText(__('ingredients.editor.material_code.helper'))
                                             ->placeholder(__('ingredients.editor.material_code.placeholder'))
                                             ->maxLength(64)
-                                            ->visible(fn (): bool => ! $this->isReadOnly()),
+                                            ->visible(fn (): bool => $this->canEditIngredientData()),
                                         SchemaView::make('livewire.dashboard.partials.ingredient-classification-prompt')
-                                            ->visible(fn (): bool => ! $this->isReadOnly())
+                                            ->visible(fn (): bool => $this->canEditIngredientData())
                                             ->columnSpanFull(),
                                         Select::make('ingredient_structure')
                                             ->label(__('ingredients.editor.details.type.label'))
@@ -999,7 +1043,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     ]),
             ])
             ->statePath('data')
-            ->disabled($this->isReadOnly())
+            ->disabled(! $this->canEditIngredientData())
             ->model($this->currentIngredient() ?? Ingredient::class);
     }
 
@@ -1045,8 +1089,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     private function isCurrentPlatformIngredient(): bool
     {
-        return $this->currentIngredient()?->owner_type === null
-            && $this->currentIngredient()?->exists === true;
+        $ingredient = $this->currentIngredient();
+
+        return $ingredient instanceof Ingredient
+            && $ingredient->exists
+            && $this->isPlatformIngredient($ingredient);
+    }
+
+    private function isPlatformIngredient(Ingredient $ingredient): bool
+    {
+        return $ingredient->owner_type === null
+            && $ingredient->owner_id === null
+            && $ingredient->workspace_id === null;
     }
 
     public function render(): View
@@ -1055,12 +1109,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $ingredient?->loadMissing('allergenEntries.allergen');
         $workspace = $this->workspaceForIngredientSettings($ingredient);
         $workspaceGuidanceOverride = $ingredient instanceof Ingredient
-            && $ingredient->owner_type === null
+            && $this->isPlatformIngredient($ingredient)
             && $workspace instanceof Workspace
                 ? app(WorkspaceIngredientGuidanceService::class)->recordFor($workspace, $ingredient)
                 : null;
         $effectiveWorkspaceGuidance = $ingredient instanceof Ingredient
-            && $ingredient->owner_type === null
+            && $this->isPlatformIngredient($ingredient)
             && $workspace instanceof Workspace
                 ? app(WorkspaceIngredientGuidanceService::class)->effectiveHtml(
                     $workspace,
@@ -1080,6 +1134,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return view('livewire.dashboard.ingredient-editor', [
             'ingredient' => $ingredient,
             'identityState' => $identityState,
+            'canEditIngredientData' => $this->canEditIngredientData(),
             'hasSoapChemistry' => $this->soapChemistryAvailable(),
             'canEditWorkspaceMaterialCode' => $this->canEditWorkspaceMaterialCode(),
             'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
@@ -1264,6 +1319,162 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return new HtmlString(implode(' ', $parts));
     }
 
+    public function canEditIngredientData(): bool
+    {
+        $user = $this->freshAuthenticatedUser();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        if ($this->ingredientId === null) {
+            try {
+                $destinationWorkspace = $this->authorizeDestinationWorkspace($user);
+            } catch (AuthorizationException) {
+                return false;
+            }
+
+            return Gate::forUser($user)->allows(
+                'createInWorkspace',
+                [Ingredient::class, $destinationWorkspace],
+            );
+        }
+
+        $ingredient = Ingredient::query()->find($this->ingredientId);
+
+        if (! $ingredient instanceof Ingredient) {
+            return false;
+        }
+
+        if ($this->isPlatformIngredient($ingredient) && ! $ingredient->is_active) {
+            return false;
+        }
+
+        if (! $ingredient->isAccessibleBy($user)) {
+            return false;
+        }
+
+        return Gate::forUser($user)->allows('editWorkspaceIngredient', $ingredient);
+    }
+
+    private function freshAuthenticatedUser(): ?User
+    {
+        $userId = auth()->id();
+
+        return $userId === null ? null : User::query()->find($userId);
+    }
+
+    private function refreshAuthenticatedUserContext(User $freshUser): void
+    {
+        $authenticatedUser = auth()->user();
+
+        if (! $authenticatedUser instanceof User || $authenticatedUser->id !== $freshUser->id) {
+            return;
+        }
+
+        $authenticatedUser->forceFill([
+            'active_workspace_id' => $freshUser->active_workspace_id,
+        ]);
+        $authenticatedUser->forgetAccessibleWorkspaceIds();
+    }
+
+    private function authorizeIngredientWrite(User $user): Ingredient
+    {
+        $ingredient = $this->ingredientId === null
+            ? null
+            : Ingredient::query()->find($this->ingredientId);
+
+        if (! $ingredient instanceof Ingredient
+            || ($this->isPlatformIngredient($ingredient) && ! $ingredient->is_active)
+            || ! $ingredient->isAccessibleBy($user)) {
+            throw new AuthorizationException;
+        }
+
+        Gate::forUser($user)->authorize('editWorkspaceIngredient', $ingredient);
+
+        return $ingredient;
+    }
+
+    /**
+     * @return array{0: User, 1: Workspace, 2: Ingredient}
+     */
+    private function authorizePlatformWorkspaceContext(): array
+    {
+        $user = $this->freshAuthenticatedUser();
+        $ingredient = $this->ingredientId === null
+            ? null
+            : Ingredient::query()->find($this->ingredientId);
+
+        if (! $user instanceof User
+            || ! $ingredient instanceof Ingredient
+            || ! $this->isPlatformIngredient($ingredient)
+            || ! $ingredient->is_active) {
+            throw new AuthorizationException;
+        }
+
+        $workspace = $this->authorizeDestinationWorkspace($user);
+
+        if (! $workspace instanceof Workspace) {
+            throw new AuthorizationException;
+        }
+
+        Gate::forUser($user)->authorize(
+            'createInWorkspace',
+            [Ingredient::class, $workspace],
+        );
+
+        return [$user, $workspace, $ingredient];
+    }
+
+    private function authorizeDestinationWorkspace(User $user): ?Workspace
+    {
+        $activeWorkspace = $user->company();
+
+        if ($this->destinationWorkspaceId === null) {
+            if ($activeWorkspace instanceof Workspace || $user->active_workspace_id !== null) {
+                throw new AuthorizationException;
+            }
+
+            return null;
+        }
+
+        $destinationWorkspace = Workspace::withoutGlobalScopes()->find($this->destinationWorkspaceId);
+
+        if (! $destinationWorkspace instanceof Workspace
+            || ! $activeWorkspace instanceof Workspace
+            || (int) $activeWorkspace->id !== (int) $destinationWorkspace->id
+            || ($user->active_workspace_id !== null
+                && (int) $user->active_workspace_id !== (int) $destinationWorkspace->id)) {
+            throw new AuthorizationException;
+        }
+
+        return $destinationWorkspace;
+    }
+
+    private function authorizeOwningWorkspace(User $user, Ingredient $ingredient): Workspace
+    {
+        $workspaceId = $ingredient->workspace_id;
+
+        if ($workspaceId === null || $this->destinationWorkspaceId !== (int) $workspaceId) {
+            throw new AuthorizationException;
+        }
+
+        $workspace = Workspace::withoutGlobalScopes()->find((int) $workspaceId);
+
+        if (! $workspace instanceof Workspace) {
+            throw new AuthorizationException;
+        }
+
+        return $workspace;
+    }
+
+    private function addStaleWorkspaceError(string $field): void
+    {
+        $message = __('ingredients.editor.validation.stale_workspace');
+        $this->addError($field, $message);
+        $this->showAppNotification($message, 'error');
+    }
+
     private function currentIngredient(): ?Ingredient
     {
         if ($this->ingredientId === null) {
@@ -1282,7 +1493,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        if ($ingredient->owner_type === null) {
+        if ($this->isPlatformIngredient($ingredient)) {
             return $ingredient->is_active ? $ingredient : null;
         }
 
@@ -1342,20 +1553,26 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function canEditWorkspaceMaterialCode(): bool
     {
-        $ingredient = $this->currentIngredient();
-        $workspace = $this->workspaceForIngredientSettings($ingredient);
-        $user = $this->currentUser();
+        $user = $this->freshAuthenticatedUser();
+        $ingredient = $this->ingredientId === null
+            ? null
+            : Ingredient::query()->find($this->ingredientId);
 
-        return $ingredient instanceof Ingredient
-            && $ingredient->owner_type === null
-            && $ingredient->is_active
-            && $workspace instanceof Workspace
-            && $user instanceof User
-            && in_array($workspace->roleFor($user), [
-                WorkspaceMemberRole::Owner,
-                WorkspaceMemberRole::Admin,
-                WorkspaceMemberRole::Editor,
-            ], true);
+        if (! $user instanceof User
+            || ! $ingredient instanceof Ingredient
+            || ! $this->isPlatformIngredient($ingredient)
+            || ! $ingredient->is_active) {
+            return false;
+        }
+
+        try {
+            $workspace = $this->authorizeDestinationWorkspace($user);
+        } catch (AuthorizationException) {
+            return false;
+        }
+
+        return $workspace instanceof Workspace
+            && Gate::forUser($user)->allows('createInWorkspace', [Ingredient::class, $workspace]);
     }
 
     private function isEditing(): bool
@@ -1379,11 +1596,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     private function isReadOnly(): bool
     {
-        $ingredient = $this->currentIngredient();
-        $user = $this->currentUser();
-
-        return $ingredient instanceof Ingredient
-            && ($ingredient->owner_type === null || ! ($user instanceof User) || ! $ingredient->isEditableBy($user));
+        return $this->ingredientId !== null && ! $this->canEditIngredientData();
     }
 
     private function soapChemistryAvailable(): bool
@@ -1394,7 +1607,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return false;
         }
 
-        return $ingredient->owner_type === null || $this->hasInheritedSoapChemistry();
+        return $this->isPlatformIngredient($ingredient) || $this->hasInheritedSoapChemistry();
     }
 
     private function hasInheritedSoapChemistry(): bool

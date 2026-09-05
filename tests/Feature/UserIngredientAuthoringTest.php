@@ -24,6 +24,7 @@ use App\Services\LocalePreferenceResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -521,12 +522,12 @@ it('lets a workspace manage bounded identity aliases and declared substances', f
         ->and($updated->fresh()->substanceEntries)->toHaveCount(0);
 
     expect(fn () => $service->update($updated, $service->formData($updated), $otherUser))
-        ->toThrow(ValidationException::class, 'cannot be edited');
+        ->toThrow(AuthorizationException::class);
 
     $platformIngredient = Ingredient::factory()->create(['owner_type' => null, 'owner_id' => null]);
 
     expect(fn () => $service->update($platformIngredient, $service->formData($platformIngredient), $user))
-        ->toThrow(ValidationException::class, 'cannot be edited');
+        ->toThrow(AuthorizationException::class);
 });
 
 it('shows composition only when the user chooses a blend', function () {

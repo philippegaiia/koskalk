@@ -1,5 +1,10 @@
 @php
- $isPlatformIngredient = $ingredient !== null && $ingredient->owner_type === null;
+ $isCreate = $ingredientId === null;
+ $isPlatformIngredient = $ingredient !== null
+     && $ingredient->owner_type === null
+     && $ingredient->owner_id === null
+     && $ingredient->workspace_id === null;
+ $isReadOnlyIngredient = ! $isCreate && ! $isPlatformIngredient && ! $canEditIngredientData;
  $ingredientContext = $ingredient?->localizedDisplayName() ?: __('ingredients.editor.common.new_ingredient');
  $isCarrierOil = \App\Enums\IngredientCategory::tryFrom((string) ($data['category'] ?? '')) === \App\Enums\IngredientCategory::Lipids;
 @endphp
@@ -16,12 +21,18 @@
 
  <div class="mt-3 max-w-3xl">
  <h1 id="ingredient-editor-title" class="text-3xl font-semibold tracking-tight text-[var(--color-ink-strong)]">
- {{ $isPlatformIngredient ? __('ingredients.editor.reference.heading') : ($ingredient ? __('ingredients.editor.edit.heading') : __('ingredients.editor.create.heading')) }}
+ {{ $isPlatformIngredient
+     ? __('ingredients.editor.reference.heading')
+     : ($isReadOnlyIngredient
+         ? __('ingredients.editor.read_only.heading')
+         : ($isCreate ? __('ingredients.editor.create.heading') : __('ingredients.editor.edit.heading'))) }}
  </h1>
  <p class="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--color-ink-soft)]">
  @if ($isPlatformIngredient)
  {{ __('ingredients.editor.reference.intro') }}
- @elseif ($ingredient)
+ @elseif ($isReadOnlyIngredient)
+ {{ __('ingredients.editor.read_only.intro') }}
+ @elseif (! $isCreate)
  {{ __('ingredients.editor.edit.intro') }}
  @else
  {{ __('ingredients.editor.create.intro') }}
@@ -182,7 +193,7 @@
  <form wire:submit="save" class="space-y-4 pb-24">
  {{ $this->form }}
 
- @unless ($isPlatformIngredient)
+ @if ($canEditIngredientData)
  <x-workflow-action-bar data-ingredient-save-bar>
  <a href="{{ route('ingredients.index') }}" wire:navigate class="sk-btn sk-btn-ghost">
  {{ __('ingredients.actions.cancel') }}
@@ -196,7 +207,7 @@
  {{ $ingredient ? __('ingredients.editor.actions.save') : __('ingredients.editor.actions.create') }}
  </button>
  </x-workflow-action-bar>
- @endunless
+ @endif
  </form>
 
  <x-filament-actions::modals />

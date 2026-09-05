@@ -9,6 +9,7 @@ use App\Enums\OwnerType;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\EntitlementService;
@@ -18,9 +19,11 @@ use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
 use App\Services\PriceBasisConverter;
 use App\Support\NumberLocale;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -58,6 +61,9 @@ class IngredientsIndex extends Component
     #[Locked]
     public ?int $pendingDeleteId = null;
 
+    #[Locked]
+    public ?int $destinationWorkspaceId = null;
+
     public ?int $replacementIngredientId = null;
 
     public ?string $statusMessage = null;
@@ -81,8 +87,15 @@ class IngredientsIndex extends Component
     public function mount(CurrentAppUserResolver $resolver): void
     {
         $user = $resolver->resolve();
-        $massDisplaySystem = $user?->company()?->mass_display_system ?? MassDisplaySystem::Metric;
+        $workspace = $user?->company();
 
+        if ($workspace instanceof Workspace && $workspace->owner_user_id === $user?->id) {
+            $workspace->setRelation('owner', $user);
+        }
+
+        $massDisplaySystem = $workspace?->mass_display_system ?? MassDisplaySystem::Metric;
+
+        $this->destinationWorkspaceId = $workspace?->id;
         $this->currentCurrency = $user?->defaultCurrency();
         $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
         $this->currentPriceUnit = $massDisplaySystem->priceUnit()->value;
@@ -111,8 +124,10 @@ class IngredientsIndex extends Component
         IngredientFormulaMutationService $ingredientFormulaMutationService,
         IngredientFormulaUsageService $ingredientFormulaUsageService,
     ): View {
-        $currentUser = $this->currentUser();
+        $currentUser = app(CurrentAppUserResolver::class)->resolve();
         $ingredients = $this->ingredients($currentUser);
+        $canCreateIngredients = $currentUser instanceof User
+            && $this->canWriteToDestination($currentUser);
         $privateIngredientUsage = $currentUser instanceof User
             ? $entitlementService->privateIngredientUsageFor($currentUser)
             : ['used' => 0, 'limit' => null, 'remaining' => null, 'allowed' => false];
@@ -137,6 +152,10 @@ class IngredientsIndex extends Component
 
         return view('livewire.dashboard.ingredients-index', [
             'currentUser' => $currentUser,
+            'canCreateIngredients' => $canCreateIngredients,
+            'canDuplicateIngredients' => $canCreateIngredients,
+            'canEditPrices' => $canCreateIngredients,
+            'duplicateDestinationSignature' => $this->duplicateDestinationSignature(),
             'ingredients' => $ingredients,
             'privateIngredientUsage' => $privateIngredientUsage,
             'formulaUsageByIngredient' => $formulaUsageByIngredient,
@@ -194,7 +213,7 @@ class IngredientsIndex extends Component
 
     public function updateIngredientPrice(int $id, string $value): void
     {
-        $user = $this->currentUser();
+        $user = $this->freshAuthenticatedUser();
 
         if (! $user instanceof User) {
             return;
@@ -202,13 +221,27 @@ class IngredientsIndex extends Component
 
         $workspace = $user->company();
 
-        if ($workspace === null) {
+        if ($workspace === null || $this->destinationWorkspaceId !== (int) $workspace->id) {
+            $this->addError('price_'.$id, __('ingredients.editor.validation.stale_workspace'));
+
             return;
         }
 
         $ingredient = $this->accessibleIngredient($id, $user);
 
         if (! $ingredient instanceof Ingredient) {
+            return;
+        }
+
+        try {
+            Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $workspace]);
+
+            if ($ingredient->owner_type !== null) {
+                Gate::forUser($user)->authorize('editWorkspaceIngredient', $ingredient);
+            }
+        } catch (AuthorizationException) {
+            $this->addError('price_'.$id, __('ingredients.editor.validation.stale_workspace'));
+
             return;
         }
 
@@ -584,7 +617,48 @@ class IngredientsIndex extends Component
 
     private function currentUser(): ?User
     {
-        return app(CurrentAppUserResolver::class)->resolve();
+        return $this->freshAuthenticatedUser() ?? app(CurrentAppUserResolver::class)->resolve();
+    }
+
+    private function freshAuthenticatedUser(): ?User
+    {
+        $userId = auth()->id();
+
+        return $userId === null ? null : User::query()->find($userId);
+    }
+
+    public function duplicateDestinationSignature(): string
+    {
+        return hash_hmac(
+            'sha256',
+            (string) auth()->id().'|'.($this->destinationWorkspaceId ?? 'none'),
+            (string) config('app.key'),
+        );
+    }
+
+    private function canWriteToDestination(User $user): bool
+    {
+        $activeWorkspace = $user->company();
+
+        if ($this->destinationWorkspaceId === null) {
+            if ($activeWorkspace instanceof Workspace || $user->active_workspace_id !== null) {
+                return false;
+            }
+
+            return Gate::forUser($user)->allows(
+                'createInWorkspace',
+                [Ingredient::class, null],
+            );
+        }
+
+        return $activeWorkspace instanceof Workspace
+            && (int) $activeWorkspace->id === (int) $this->destinationWorkspaceId
+            && ($user->active_workspace_id === null
+                || (int) $user->active_workspace_id === (int) $activeWorkspace->id)
+            && Gate::forUser($user)->allows(
+                'createInWorkspace',
+                [Ingredient::class, $activeWorkspace],
+            );
     }
 
     private function normalizedPerPage(): int

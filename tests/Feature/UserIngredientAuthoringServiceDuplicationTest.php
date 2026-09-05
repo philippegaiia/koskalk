@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -376,7 +377,7 @@ it('refuses to duplicate a user-owned ingredient', function () {
     $service = app(UserIngredientAuthoringService::class);
 
     expect(fn () => $service->duplicate($source, $otherUser))
-        ->toThrow(ValidationException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('duplicates parent-level source notes for composition and allergens', function () {

@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use App\Enums\MaterialPriceSource;
 use App\Models\Ingredient;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\IngredientAliasLocaleService;
 use App\Services\IngredientCatalogSearchService;
 use App\Services\UserIngredientAuthoringService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class IngredientController extends Controller
 {
@@ -30,10 +33,13 @@ class IngredientController extends Controller
 
     public function edit(string $ingredient, CurrentAppUserResolver $currentAppUserResolver): View
     {
-        $user = $currentAppUserResolver->resolve();
+        $resolvedUser = $currentAppUserResolver->resolve();
+        $user = $resolvedUser instanceof User
+            ? User::query()->find($resolvedUser->id)
+            : null;
         $ingredient = Ingredient::query()->where('public_id', $ingredient)->firstOrFail();
 
-        $isAccessiblePlatformIngredient = $ingredient->owner_type === null && $ingredient->is_active;
+        $isAccessiblePlatformIngredient = $this->isPlatformIngredient($ingredient) && $ingredient->is_active;
 
         abort_unless(
             $user !== null && ($ingredient->isAccessibleBy($user) || $isAccessiblePlatformIngredient),
@@ -47,7 +53,13 @@ class IngredientController extends Controller
 
     public function updatePrice(Request $request, CurrentMaterialPriceService $currentMaterialPriceService): JsonResponse
     {
-        $user = $request->user();
+        $resolvedUser = $request->user();
+
+        if (! $resolvedUser instanceof User) {
+            return response()->json(['ok' => false], 403);
+        }
+
+        $user = User::query()->find($resolvedUser->id);
 
         if (! $user instanceof User) {
             return response()->json(['ok' => false], 403);
@@ -61,7 +73,21 @@ class IngredientController extends Controller
         $ingredient = Ingredient::query()->findOrFail($validated['ingredient_id']);
         $workspace = $user->company();
 
-        abort_unless($workspace !== null && $this->canUpdatePrice($ingredient, $user), 404);
+        abort_unless($workspace instanceof Workspace, 404);
+
+        try {
+            if ($this->isPlatformIngredient($ingredient)) {
+                if (! $ingredient->is_active) {
+                    throw new AuthorizationException;
+                }
+            } else {
+                Gate::forUser($user)->authorize('editWorkspaceIngredient', $ingredient);
+            }
+
+            Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $workspace]);
+        } catch (AuthorizationException) {
+            abort(404);
+        }
 
         $currentMaterialPriceService->rememberIngredient(
             workspace: $workspace,
@@ -119,7 +145,13 @@ class IngredientController extends Controller
 
     public function duplicate(Request $request)
     {
-        $user = $request->user();
+        $authenticatedUser = $request->user();
+
+        if (! $authenticatedUser instanceof User) {
+            return response()->json(['ok' => false, 'message' => 'Sign in required.'], 403);
+        }
+
+        $user = User::query()->find($authenticatedUser->id);
 
         if (! $user instanceof User) {
             return response()->json(['ok' => false, 'message' => 'Sign in required.'], 403);
@@ -127,11 +159,31 @@ class IngredientController extends Controller
 
         $validated = $request->validate([
             'ingredient_id' => ['required', 'integer', 'exists:ingredients,id'],
+            'destination_workspace_id' => ['nullable', 'integer'],
+            'destination_workspace_signature' => ['nullable', 'string', 'size:64'],
         ]);
 
         $source = Ingredient::query()->findOrFail($validated['ingredient_id']);
 
-        $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+        try {
+            $requestData = $request->all();
+            $hasBoundDestination = array_key_exists('destination_workspace_id', $requestData)
+                || array_key_exists('destination_workspace_signature', $requestData);
+            $destinationWorkspace = $hasBoundDestination
+                ? $this->boundDuplicateDestination($user, $validated)
+                : $user->company();
+
+            $copy = app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+                $source,
+                $user,
+                $destinationWorkspace,
+            );
+        } catch (AuthorizationException) {
+            return response()->json([
+                'ok' => false,
+                'message' => __('ingredients.editor.validation.stale_workspace'),
+            ], 403);
+        }
 
         return response()->json([
             'ok' => true,
@@ -140,12 +192,49 @@ class IngredientController extends Controller
         ]);
     }
 
-    private function canUpdatePrice(Ingredient $ingredient, User $user): bool
+    /**
+     * @param  array{destination_workspace_id?: int|null, destination_workspace_signature?: string|null}  $validated
+     */
+    private function boundDuplicateDestination(User $user, array $validated): ?Workspace
     {
-        if ($ingredient->owner_type === null) {
-            return $ingredient->is_active;
+        $destinationWorkspaceId = $validated['destination_workspace_id'] ?? null;
+        $signature = $validated['destination_workspace_signature'] ?? null;
+        $expectedSignature = hash_hmac(
+            'sha256',
+            (string) $user->id.'|'.($destinationWorkspaceId ?? 'none'),
+            (string) config('app.key'),
+        );
+
+        if (! is_string($signature) || ! hash_equals($expectedSignature, $signature)) {
+            throw new AuthorizationException;
         }
 
-        return $ingredient->isOwnedBy($user) || $ingredient->isWorkspaceAccessibleBy($user);
+        if ($destinationWorkspaceId === null) {
+            if ($user->active_workspace_id !== null || $user->company() instanceof Workspace) {
+                throw new AuthorizationException;
+            }
+
+            return null;
+        }
+
+        $destinationWorkspace = Workspace::withoutGlobalScopes()->find($destinationWorkspaceId);
+        $activeWorkspace = $user->company();
+
+        if (! $destinationWorkspace instanceof Workspace
+            || ! $activeWorkspace instanceof Workspace
+            || (int) $activeWorkspace->id !== (int) $destinationWorkspace->id
+            || ($user->active_workspace_id !== null
+                && (int) $user->active_workspace_id !== (int) $destinationWorkspace->id)) {
+            throw new AuthorizationException;
+        }
+
+        return $destinationWorkspace;
+    }
+
+    private function isPlatformIngredient(Ingredient $ingredient): bool
+    {
+        return $ingredient->owner_type === null
+            && $ingredient->owner_id === null
+            && $ingredient->workspace_id === null;
     }
 }

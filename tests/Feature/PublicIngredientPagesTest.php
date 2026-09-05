@@ -1031,7 +1031,7 @@ it('rejects a forced Livewire save of a platform ingredient', function () {
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.name', 'Tampered Glycerin')
         ->call('save')
-        ->assertForbidden();
+        ->assertHasErrors('data');
 
     expect($ingredient->refresh()->display_name)->toBe('Platform Glycerin');
 });

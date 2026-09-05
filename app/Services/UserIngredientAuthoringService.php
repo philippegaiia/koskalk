@@ -11,8 +11,10 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\SoapSap;
 use App\Support\NumberLocale;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class UserIngredientAuthoringService
@@ -130,40 +132,161 @@ class UserIngredientAuthoringService
         ];
     }
 
-    public function create(array $state, User $user): Ingredient
+    public function create(array $state, User $user, ?Workspace $workspace = null): Ingredient
     {
-        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($state, $user): Ingredient {
-            $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
-
-            $ingredient = new Ingredient([
-                'public_id' => Arr::get($state, 'public_id'),
-                'catalog_key' => $this->ingredientDataEntryService->generateCatalogKey('USR'),
-                'owner_type' => OwnerType::Workspace,
-                'owner_id' => $workspace->id,
-                'workspace_id' => $workspace->id,
-                'visibility' => Visibility::Private,
-                'requires_admin_review' => true,
-                'is_active' => true,
-                'is_soap_saponification_trusted' => false,
-                'requires_aromatic_compliance' => false,
-                'taxonomy_source' => 'workspace_user',
-            ]);
-
-            $this->fillIngredient($ingredient, $state);
-            $ingredient->save();
-
-            return $this->syncState($ingredient, $state, $user);
-        });
+        return $this->createInWorkspace(
+            $state,
+            $user,
+            func_num_args() >= 3 ? $workspace : $user->company(),
+        );
     }
 
-    public function update(Ingredient $ingredient, array $state, User $user): Ingredient
+    public function createInWorkspace(array $state, User $user, ?Workspace $workspace): Ingredient
     {
-        if (! $ingredient->isEditableBy($user)) {
+        if (! $workspace instanceof Workspace) {
+            Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, null]);
+
+            return $this->entitlementService->withinCompanyQuotaLock(
+                $user,
+                function (Workspace $lockedWorkspace) use ($state, $user): Ingredient {
+                    Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $lockedWorkspace]);
+
+                    return $this->createInLockedWorkspace($state, $user, $lockedWorkspace);
+                },
+            );
+        }
+
+        Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $workspace]);
+
+        return $this->entitlementService->withinWorkspaceQuotaLock(
+            $workspace,
+            function (Workspace $lockedWorkspace) use ($state, $user): Ingredient {
+                Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $lockedWorkspace]);
+
+                return $this->createInLockedWorkspace($state, $user, $lockedWorkspace);
+            },
+        );
+    }
+
+    public function update(
+        Ingredient $ingredient,
+        array $state,
+        User $user,
+        ?Workspace $workspace = null,
+    ): Ingredient {
+        $lockedIngredient = Ingredient::query()->find($ingredient->getKey());
+
+        if (! $lockedIngredient instanceof Ingredient) {
+            throw new AuthorizationException;
+        }
+
+        if ($workspace instanceof Workspace
+            && (int) $lockedIngredient->workspace_id !== (int) $workspace->id) {
+            throw new AuthorizationException;
+        }
+
+        Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+
+        if ($workspace instanceof Workspace) {
+            return $this->entitlementService->withinWorkspaceQuotaLock(
+                $workspace,
+                function (Workspace $lockedWorkspace) use ($lockedIngredient, $state, $user): Ingredient {
+                    if ((int) $lockedIngredient->workspace_id !== (int) $lockedWorkspace->id) {
+                        throw new AuthorizationException;
+                    }
+
+                    Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+
+                    return $this->persistUpdate($lockedIngredient, $state, $user);
+                },
+            );
+        }
+
+        return $this->persistUpdate($lockedIngredient, $state, $user);
+    }
+
+    public function duplicate(Ingredient $source, User $user, ?Workspace $workspace = null): Ingredient
+    {
+        return $this->duplicateIntoWorkspace(
+            $source,
+            $user,
+            func_num_args() >= 3 ? $workspace : $user->company(),
+        );
+    }
+
+    public function duplicateIntoWorkspace(
+        Ingredient $source,
+        User $user,
+        ?Workspace $workspace,
+    ): Ingredient {
+        $lockedSource = Ingredient::query()->find($source->getKey());
+
+        if (! $lockedSource instanceof Ingredient) {
+            throw new AuthorizationException;
+        }
+
+        Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$lockedSource, $workspace]);
+
+        if ($lockedSource->category instanceof IngredientCategory) {
+            $this->assertWorkspaceAuthorableCategory($lockedSource->category);
+        }
+
+        if (
+            $lockedSource->category === IngredientCategory::Lipids
+            && $lockedSource->sapProfile?->koh_sap_value === null
+        ) {
             throw ValidationException::withMessages([
-                'ingredient' => __('ingredients.editor.validation.private_edit_forbidden'),
+                'ingredient' => __('ingredients.editor.validation.duplicate_soap_profile_required'),
             ]);
         }
 
+        if ($workspace instanceof Workspace) {
+            return $this->entitlementService->withinWorkspaceQuotaLock(
+                $workspace,
+                function (Workspace $lockedWorkspace) use ($lockedSource, $user): Ingredient {
+                    Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$lockedSource, $lockedWorkspace]);
+
+                    return $this->duplicateInLockedWorkspace($lockedSource, $user, $lockedWorkspace);
+                },
+            );
+        }
+
+        return $this->entitlementService->withinCompanyQuotaLock(
+            $user,
+            function (Workspace $lockedWorkspace) use ($lockedSource, $user): Ingredient {
+                Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$lockedSource, $lockedWorkspace]);
+
+                return $this->duplicateInLockedWorkspace($lockedSource, $user, $lockedWorkspace);
+            },
+        );
+    }
+
+    private function createInLockedWorkspace(array $state, User $user, Workspace $workspace): Ingredient
+    {
+        $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
+
+        $ingredient = new Ingredient([
+            'public_id' => Arr::get($state, 'public_id'),
+            'catalog_key' => $this->ingredientDataEntryService->generateCatalogKey('USR'),
+            'owner_type' => OwnerType::Workspace,
+            'owner_id' => $workspace->id,
+            'workspace_id' => $workspace->id,
+            'visibility' => Visibility::Private,
+            'requires_admin_review' => true,
+            'is_active' => true,
+            'is_soap_saponification_trusted' => false,
+            'requires_aromatic_compliance' => false,
+            'taxonomy_source' => 'workspace_user',
+        ]);
+
+        $this->fillIngredient($ingredient, $state);
+        $ingredient->save();
+
+        return $this->syncState($ingredient, $state, $user);
+    }
+
+    private function persistUpdate(Ingredient $ingredient, array $state, User $user): Ingredient
+    {
         $previousFeaturedImagePath = $ingredient->featured_image_path;
         $previousIconImagePath = $ingredient->icon_image_path;
 
@@ -185,87 +308,66 @@ class UserIngredientAuthoringService
         return $ingredient;
     }
 
-    public function duplicate(Ingredient $source, User $user): Ingredient
+    private function duplicateInLockedWorkspace(Ingredient $source, User $user, Workspace $workspace): Ingredient
     {
-        if ($source->owner_type !== null) {
-            throw ValidationException::withMessages([
-                'ingredient' => __('ingredients.editor.validation.duplicate_platform_only'),
-            ]);
+        $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
+
+        $source->loadMissing([
+            'translations',
+            'identifiers',
+            'aliases',
+            'substanceEntries',
+        ]);
+
+        $copy = $source->replicate([
+            'public_id',
+            'featured_image_path',
+            'featured_image_original_name',
+            'icon_image_path',
+            'icon_image_original_name',
+        ]);
+
+        $copy->catalog_key = $this->ingredientDataEntryService->generateCatalogKey('USR');
+        $copy->owner_type = OwnerType::Workspace;
+        $copy->owner_id = $workspace->id;
+        $copy->workspace_id = $workspace->id;
+        $copy->visibility = Visibility::Private;
+        $copy->requires_admin_review = false;
+        $copy->display_name = $source->localizedDisplayName($user->locale) ?? $source->display_name;
+        $copy->saponification_name = $source->localizedSaponificationName($user->locale) ?? $source->saponification_name;
+        $copy->info_markdown = null;
+        $copy->source_data = $this->duplicateSourceData($source);
+        $copy->featured_image_path = null;
+        $copy->featured_image_original_name = null;
+        $copy->icon_image_path = null;
+        $copy->icon_image_original_name = null;
+        $copy->save();
+
+        $this->deepCopyRelations($source, $copy);
+        $this->ingredientIdentitySynchronizer->sync($copy, $this->localizedIdentityState($source, $user));
+
+        $localizedGuidance = $source->localizedInfoMarkdown($user->locale);
+
+        if (filled($localizedGuidance)) {
+            $this->workspaceIngredientGuidanceService->save(
+                $user,
+                $workspace,
+                $copy,
+                $this->workspaceIngredientGuidanceService->platformHtml($localizedGuidance),
+            );
         }
 
-        if ($source->category instanceof IngredientCategory) {
-            $this->assertWorkspaceAuthorableCategory($source->category);
-        }
-
-        if (
-            $source->category === IngredientCategory::Lipids
-            && $source->sapProfile?->koh_sap_value === null
-        ) {
-            throw ValidationException::withMessages([
-                'ingredient' => __('ingredients.editor.validation.duplicate_soap_profile_required'),
-            ]);
-        }
-
-        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($source, $user): Ingredient {
-            $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
-
-            $source->loadMissing([
-                'translations',
-                'identifiers',
-                'aliases',
-                'substanceEntries',
-            ]);
-
-            $copy = $source->replicate([
-                'public_id',
-                'featured_image_path',
-                'featured_image_original_name',
-                'icon_image_path',
-                'icon_image_original_name',
-            ]);
-
-            $copy->catalog_key = $this->ingredientDataEntryService->generateCatalogKey('USR');
-            $copy->owner_type = OwnerType::Workspace;
-            $copy->owner_id = $workspace->id;
-            $copy->workspace_id = $workspace->id;
-            $copy->visibility = Visibility::Private;
-            $copy->requires_admin_review = false;
-            $copy->display_name = $source->localizedDisplayName($user->locale) ?? $source->display_name;
-            $copy->saponification_name = $source->localizedSaponificationName($user->locale) ?? $source->saponification_name;
-            $copy->info_markdown = null;
-            $copy->source_data = $this->duplicateSourceData($source);
-            $copy->featured_image_path = null;
-            $copy->featured_image_original_name = null;
-            $copy->icon_image_path = null;
-            $copy->icon_image_original_name = null;
-            $copy->save();
-
-            $this->deepCopyRelations($source, $copy);
-            $this->ingredientIdentitySynchronizer->sync($copy, $this->localizedIdentityState($source, $user));
-
-            $localizedGuidance = $source->localizedInfoMarkdown($user->locale);
-
-            if (filled($localizedGuidance)) {
-                $this->workspaceIngredientGuidanceService->save(
-                    $user,
-                    $workspace,
-                    $copy,
-                    $this->workspaceIngredientGuidanceService->platformHtml($localizedGuidance),
-                );
-            }
-
-            return $copy->fresh([
-                'sapProfile',
-                'fattyAcidEntries.fattyAcid',
-                'components.componentIngredient',
-                'allergenEntries.allergen',
-                'substanceEntries.substance',
-                'identifiers',
-                'aliases',
-                'functions',
-                'ifraCertificates.limits.ifraProductCategory',
-            ]);
-        });
+        return $copy->fresh([
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
+            'components.componentIngredient',
+            'allergenEntries.allergen',
+            'substanceEntries.substance',
+            'identifiers',
+            'aliases',
+            'functions',
+            'ifraCertificates.limits.ifraProductCategory',
+        ]);
     }
 
     /**
@@ -329,7 +431,15 @@ class UserIngredientAuthoringService
 
     public function createInlineComponent(array $state, User $user): Ingredient
     {
-        return $this->create([
+        return $this->createInlineComponentInWorkspace($state, $user, $user->company());
+    }
+
+    public function createInlineComponentInWorkspace(
+        array $state,
+        User $user,
+        ?Workspace $workspace,
+    ): Ingredient {
+        return $this->createInWorkspace([
             'name' => $state['name'] ?? null,
             'category' => $state['category'] ?? null,
             'inci_name' => $state['inci_name'] ?? null,
@@ -352,7 +462,7 @@ class UserIngredientAuthoringService
                 'source_notes' => null,
                 'limits' => [],
             ],
-        ], $user);
+        ], $user, $workspace);
     }
 
     /**

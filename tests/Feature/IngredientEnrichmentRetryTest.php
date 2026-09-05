@@ -312,7 +312,6 @@ it('defines guidance stage order from the persisted batch mode', function (): vo
     expect(IngredientEnrichmentBatchMode::GuidanceRefresh->guidanceStages())->toBe([
         IngredientEnrichmentResearchStage::AiGuidanceResearch,
         IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-        IngredientEnrichmentResearchStage::AiGuidanceLocalization,
         IngredientEnrichmentResearchStage::Validation,
     ])->and(IngredientEnrichmentBatchMode::GuidanceLocalization->guidanceStages())->toBe([
         IngredientEnrichmentResearchStage::AiGuidanceLocalization,

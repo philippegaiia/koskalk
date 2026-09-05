@@ -1,7 +1,9 @@
 <?php
 
 use App\Contracts\IngredientEditorialClient;
+use App\Contracts\IngredientGuidanceLocalizationClient;
 use App\Data\IngredientEditorialResponse;
+use App\Data\IngredientGuidanceLocalizationResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientEnrichmentItemStatus;
 use App\Enums\IngredientEnrichmentResearchStage;
@@ -12,6 +14,8 @@ use App\Services\IngredientEnrichment\Sources\CosingCheckerClient;
 use App\Services\IngredientEnrichment\Sources\EurLexGlossaryClient;
 use App\Services\IngredientEnrichment\Sources\OpenFdaSubstanceClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
@@ -47,6 +51,8 @@ it('persists normalized completed stages and invalidates a stage with all of its
 });
 
 it('runs deterministic stages before one editorial pass and resumes their persisted results', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+
     $item = IngredientEnrichmentBatchItem::factory()->create([
         'catalog_key' => 'argan_oil',
         'snapshot' => [
@@ -124,6 +130,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
             return new IngredientEditorialResponse(
                 editorial: [
                     'display_name' => 'Argan oil',
+                    'inci_name' => 'FINALIZED EDITORIAL INCI',
                     'saponification_name' => 'Argan oil',
                     'info_markdown' => "## Overview\nArgan oil is a plant-derived lipid.\n\n## Formulation use\nIt is used for emollience.\n\n## Soapmaking\nIt can be included as an oil component.",
                     'soapmaking_relevant' => true,
@@ -144,6 +151,35 @@ it('runs deterministic stages before one editorial pass and resumes their persis
             );
         }
     });
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class implements IngredientGuidanceLocalizationClient
+    {
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            throw new RuntimeException('full enrichment must not invoke guidance localization');
+        }
+    });
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'id' => 'resp_identity_localization_123',
+            'status' => 'completed',
+            'model' => 'gpt-5.6-luna-2026-08-01',
+            'output' => [[
+                'type' => 'message',
+                'content' => [[
+                    'type' => 'output_text',
+                    'text' => json_encode([
+                        'translations' => [[
+                            'locale' => 'fr',
+                            'display_name' => 'Huile d’argan',
+                            'saponification_name' => 'Huile d’argan',
+                        ]],
+                    ], JSON_THROW_ON_ERROR),
+                ]],
+            ]],
+            'usage' => ['input_tokens' => 13, 'output_tokens' => 7],
+        ], 200, ['x-request-id' => 'req_identity_localization_456']),
+    ]);
 
     $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
 
@@ -156,18 +192,35 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         'conflict_evaluation',
         'ai_guidance_research',
         'ai_editorial',
+        'ai_identity_name_localization',
         'ai_guidance_authoring',
-        'ai_guidance_localization',
         'validation',
     ])->and($response->structuredSourceCalls)->toBe(3)
-        ->and($response->inputTokens)->toBe(321)
+        ->and($response->inputTokens)->toBe(334)
+        ->and($response->outputTokens)->toBe(130)
         ->and(data_get($response->result, 'proposal.inci_name'))->toBe('ARGANIA SPINOSA KERNEL OIL')
         ->and(data_get($response->result, 'proposal.soap_inci_naoh_name'))->toBe('SODIUM ARGANATE')
         ->and(data_get($response->result, 'proposal.soap_inci_koh_name'))->toBe('POTASSIUM ARGANATE')
-        ->and(data_get($response->result, 'proposal.translations.0.info_markdown'))->toStartWith("## Vue d’ensemble\n")
-        ->and(data_get($response->result, 'proposal.translations.0.info_markdown'))->toContain("## Utilisation en formulation\n", "## Savonnerie\n")
-        ->and(collect($response->result['value_provenance'])->pluck('kind', 'field')->get('proposal.translations.0'))
-        ->toBe('ai_proposed');
+        ->and(data_get($response->result, 'proposal.translations'))->toBe([[
+            'locale' => 'fr',
+            'display_name' => 'Huile d’argan',
+            'saponification_name' => 'Huile d’argan',
+        ]])
+        ->and(data_get($response->result, 'proposal.translations.0'))->not->toHaveKey('info_markdown');
+
+    Http::assertSent(function (Request $request): bool {
+        $input = (string) data_get($request->data(), 'input');
+
+        return data_get($request->data(), 'model') === 'gpt-5.6-luna'
+            && data_get($request->data(), 'reasoning.effort') === 'xhigh'
+            && data_get($request->data(), 'text.format.schema.properties.translations.items.required') === [
+                'locale', 'display_name', 'saponification_name',
+            ]
+            && data_get($request->data(), 'text.format.schema.properties.translations.items.properties.info_markdown') === null
+            && str_contains($input, 'FINALIZED EDITORIAL INCI')
+            && ! str_contains($input, 'ARGANIA SPINOSA KERNEL OIL')
+            && ! str_contains($input, 'plant-derived lipid');
+    });
 
     app(IngredientEnrichmentPipeline::class)->run($item->id);
 
@@ -213,6 +266,7 @@ it('re-runs identity from scratch when an item failed with identity unresolved',
             'conflict_evaluation' => ['status' => 'completed'],
             'ai_guidance_research' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
             'ai_editorial' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
+            'ai_identity_name_localization' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
             'ai_guidance_authoring' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
             'ai_guidance_localization' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],
             'validation' => ['status' => 'skipped', 'data' => ['reason' => 'identity_unresolved']],

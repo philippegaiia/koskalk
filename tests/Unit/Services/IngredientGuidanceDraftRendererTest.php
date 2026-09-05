@@ -14,7 +14,7 @@ it('renders supported claims under deterministic guidance headings', function ()
             'fact_paths' => ['current.canonical.display_name'],
         ])],
         'formulation_use' => [guidanceClaim([
-            'text' => 'A supplier describes this product grade as suitable for the oil phase.',
+            'text' => 'Add it to the oil phase of anhydrous products or emulsions.',
             'claim_type' => 'formulation_role',
             'support_type' => 'evidence',
             'evidence_indexes' => [0],
@@ -25,9 +25,196 @@ it('renders supported claims under deterministic guidance headings', function ()
     $result = guidanceRenderer()->render($draft, guidanceContext());
 
     expect($result['info_markdown'])
-        ->toBe("## Overview\n\nA fixed oil pressed from apricot kernels.\n\n## Formulation use\n\nA supplier describes this product grade as suitable for the oil phase.")
+        ->toBe("## Overview\n\nA fixed oil pressed from apricot kernels.\n\n## Formulation use\n\nAdd it to the oil phase of anhydrous products or emulsions.")
         ->not->toContain('## Soapmaking');
 });
+
+it('omits evidence meta prose while retaining the rest of the draft', function (string $text): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim([
+                'text' => $text,
+                'claim_type' => 'formulation_role',
+            ]),
+            guidanceClaim([
+                'text' => 'A pressed kernel oil from a single plant source.',
+                'claim_type' => 'origin',
+                'support_type' => 'fact',
+                'fact_paths' => ['proposal.display_name'],
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain($text)
+        ->toContain('A pressed kernel oil from a single plant source.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+})->with('guidance evidence meta prose');
+
+it('keeps explicit grades, bounded use levels, and bounded experiment language', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'][1]['recommended_max_percent'] = '8';
+    $context['guidance_evidence'][] = [
+        'claim_type' => 'dispersion',
+        'source_kind' => 'scientific',
+        'scope' => 'product_grade',
+        'evidence_kind' => 'experimental_observation',
+        'usage_application' => 'not_applicable',
+        'recommended_min_percent' => null,
+        'recommended_max_percent' => null,
+        'percentage_basis' => 'not_applicable',
+    ];
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'formulation_use' => [
+            guidanceClaim([
+                'text' => 'A refined grade can be added to a heated oil phase.',
+                'claim_type' => 'formulation_role',
+            ]),
+            guidanceClaim([
+                'text' => 'An unrefined grade can be incorporated after gentle warming.',
+                'claim_type' => 'formulation_role',
+            ]),
+            guidanceClaim([
+                'text' => 'This refined grade can be added to a heated oil phase.',
+                'claim_type' => 'formulation_role',
+            ]),
+            guidanceClaim([
+                'text' => 'Typical use level: 1–8% of the total formula.',
+                'claim_type' => 'usage',
+                'evidence_indexes' => [1],
+                'usage_application' => 'cosmetics',
+            ]),
+            guidanceClaim([
+                'text' => 'In a Pickering-emulsion experiment, dispersion was observed under the tested conditions.',
+                'claim_type' => 'dispersion',
+                'evidence_indexes' => [3],
+            ]),
+        ],
+    ]), $context);
+
+    expect($result['info_markdown'])
+        ->toContain('A refined grade can be added to a heated oil phase.')
+        ->toContain('An unrefined grade can be incorporated after gentle warming.')
+        ->toContain('This refined grade can be added to a heated oil phase.')
+        ->toContain('Typical use level: 1–8% of the total formula.')
+        ->toContain('under the tested conditions')
+        ->and($result['warnings'])->toBe([]);
+});
+
+it('handles case and punctuation variants without blocking named grade prose', function (): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim([
+                'text' => 'A DOCUMENTED, cold-pressed product-grade profile is reddish.',
+            ]),
+            guidanceClaim([
+                'text' => 'A SUPPLIER-RECOMMENDED range is available for formulation trials.',
+            ]),
+            guidanceClaim([
+                'text' => 'The refined grade remains fluid when warmed.',
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain('DOCUMENTED')
+        ->not->toContain('SUPPLIER-RECOMMENDED')
+        ->toContain('The refined grade remains fluid when warmed.')
+        ->and($result['warnings'])->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
+it('omits source attribution narration across the bounded evidence verb family', function (string $text): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim(['text' => $text]),
+            guidanceClaim([
+                'text' => 'The oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The manufacturer-grade oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The supplier-derived oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The material suggests a stable oil-phase dispersion.',
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain($text)
+        ->toContain('The oil remains fluid in the heated oil phase.')
+        ->toContain('The manufacturer-grade oil remains fluid in the heated oil phase.')
+        ->toContain('The supplier-derived oil remains fluid in the heated oil phase.')
+        ->toContain('The material suggests a stable oil-phase dispersion.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+})->with('guidance source attribution meta prose');
+
+it('omits named supplier and brand attribution narration while retaining natural formulation facts', function (): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim(['text' => 'Supplier A recommends this material for emulsion trials.']),
+            guidanceClaim(['text' => 'supplier A recommends this material for emulsion trials.']),
+            guidanceClaim(['text' => 'BASF recommends this product grade for emulsions.']),
+            guidanceClaim(['text' => 'The range was recommended by BASF.']),
+            guidanceClaim([
+                'text' => 'The BASF-derived material remains fluid in the oil phase.',
+                'support_type' => 'fact',
+                'fact_paths' => ['proposal.display_name'],
+            ]),
+            guidanceClaim([
+                'text' => 'Vitamin E supports oxidative stability in an oil phase.',
+                'support_type' => 'fact',
+                'fact_paths' => ['proposal.display_name'],
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain('Supplier A recommends')
+        ->not->toContain('supplier a recommends')
+        ->not->toContain('BASF recommends')
+        ->not->toContain('recommended by BASF')
+        ->toContain('The BASF-derived material remains fluid in the oil phase.')
+        ->toContain('Vitamin E supports oxidative stability in an oil phase.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
+it('fails closed when every guidance claim is omitted', function (): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [guidanceClaim(['text' => 'BASF recommends this product grade for emulsions.'])],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])->toBe('')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
+it('omits each evidence adjective when it qualifies a catalogue subject', function (string $text): void {
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [
+            guidanceClaim(['text' => $text]),
+            guidanceClaim([
+                'text' => 'The oil remains fluid in the heated oil phase.',
+            ]),
+            guidanceClaim([
+                'text' => 'The study reported a fluid oil-phase result.',
+            ]),
+        ],
+    ]), guidanceContext());
+
+    expect($result['info_markdown'])
+        ->not->toContain($text)
+        ->toContain('The oil remains fluid in the heated oil phase.')
+        ->toContain('The study reported a fluid oil-phase result.')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+})->with('guidance evidence adjective meta prose');
 
 it('omits claims containing headings, newlines, or multiple sentences', function (): void {
     foreach ([
@@ -194,6 +381,81 @@ it('keeps a preserved baseline soapmaking use level rendered as a baseline fact'
 
     expect($result['info_markdown'])->toContain('## Soapmaking', 'Typical use level: 10–25% of the soap-oil blend.')
         ->and($result['warnings'])->toBe([]);
+});
+
+it('preserves a soapmaking baseline use-level sentence when the refresh draft omits it', function (): void {
+    $context = guidanceContext();
+    $context['guidance_evidence'][2]['recommended_min_percent'] = '10';
+    $context['guidance_evidence'][2]['recommended_max_percent'] = '25';
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nAdd it to the oil phase.\n\n## Soapmaking\nTypical use level: 10–25% of the soap-oil blend.";
+
+    $result = guidanceRenderer()->render(guidanceDraft([
+        'overview' => [guidanceClaim([
+            'text' => 'A pressed kernel oil from a single plant source.',
+            'claim_type' => 'origin',
+            'support_type' => 'fact',
+            'fact_paths' => ['proposal.display_name'],
+        ])],
+        'formulation_use' => [guidanceClaim([
+            'text' => 'Add it to the oil phase.',
+            'claim_type' => 'formulation_role',
+            'support_type' => 'fact',
+            'fact_paths' => ['current.canonical.info_markdown'],
+        ])],
+        'soapmaking' => [],
+    ]), $context);
+
+    expect($result['info_markdown'])
+        ->toContain('## Soapmaking')
+        ->toContain('Typical use level: 10–25% of the soap-oil blend.')
+        ->and($result['warnings'])->toBe([]);
+});
+
+it('drops supplier and brand attribution from preserved baseline use-level sentences with a warning', function (): void {
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nBASF-recommended Typical use level: 1–10% of the total formula.\n\n## Soapmaking\nSupplier A recommends a Typical use level: 5–30% of the soap-oil blend.";
+
+    $result = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    expect($result['info_markdown'])->toBe('')
+        ->and($result['warnings'])
+        ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.');
+});
+
+it('preserves direct cosmetics and soapmaking use-level baselines during refresh', function (): void {
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nTypical use level: 1–10% of the total formula.\n\n## Soapmaking\nTypical use level: 5–30% of the soap-oil blend.";
+
+    $result = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    expect($result['info_markdown'])
+        ->toContain('Typical use level: 1–10% of the total formula.')
+        ->toContain('Typical use level: 5–30% of the soap-oil blend.')
+        ->and($result['warnings'])->toBe([]);
+});
+
+it('uses only fresh evidence when deciding whether a historical baseline is contradicted', function (): void {
+    $context = guidanceContext();
+    $context['current']['canonical']['info_markdown'] = "## Overview\nApricot kernel oil is a fixed oil.\n\n## Formulation use\nTypical use level: 1–10% of the total formula.";
+    $historicalConflict = [
+        'claim_type' => 'usage',
+        'usage_application' => 'cosmetics',
+        'recommended_min_percent' => '20',
+        'recommended_max_percent' => '30',
+        'percentage_basis' => 'total_formula',
+    ];
+    $context['guidance_evidence'] = [$historicalConflict];
+    $context['fresh_guidance_evidence'] = [];
+
+    $historicalResult = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    $context['fresh_guidance_evidence'] = [$historicalConflict];
+    $freshResult = guidanceRenderer()->render(guidanceDraft(), $context);
+
+    expect($historicalResult['info_markdown'])
+        ->toContain('Typical use level: 1–10% of the total formula.')
+        ->and($freshResult['info_markdown'])
+        ->not->toContain('Typical use level: 1–10% of the total formula.');
 });
 
 it('omits a soapmaking usage fact that is not a verbatim baseline sentence', function (): void {
@@ -455,7 +717,7 @@ it('rejects generic water claims and universal emulsifier advice from bounded ex
         ->toContain('A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.')
         ->and(guidanceRenderer()->render(guidanceDraft([
             'formulation_use' => [guidanceClaim([
-                'text' => 'A Pickering-emulsion experiment with this product grade observed dispersion under the tested conditions.',
+                'text' => 'In a Pickering-emulsion experiment, dispersion was observed under the tested conditions.',
                 'claim_type' => 'dispersion',
                 'evidence_indexes' => [1],
             ])],
@@ -551,7 +813,7 @@ it('does not block supported soapmaking guidance for unresolved soap declaration
 
     $result = guidanceRenderer()->render(guidanceDraft([
         'soapmaking' => [guidanceClaim([
-            'text' => 'For this supplied grade, the supplier describes a softer-feeling bar.',
+            'text' => 'This formulation can produce a softer-feeling bar.',
             'claim_type' => 'soapmaking',
             'support_type' => 'evidence',
             'evidence_indexes' => [3],
@@ -560,6 +822,48 @@ it('does not block supported soapmaking guidance for unresolved soap declaration
 
     expect($result['info_markdown'])->toContain('## Soapmaking');
 });
+
+dataset('guidance evidence meta prose', [
+    ['A documented product grade is a reddish, viscous liquid.'],
+    ['For this product grade, add it to the oil phase.'],
+    ['The specified cold-pressed grade is water-insoluble.'],
+    ['A manufacturer recommends this range.'],
+    ['A supplier describes this product grade as suitable for emulsions.'],
+    ['This particular product grade is a reddish, viscous liquid.'],
+    ['This specific grade can be added to the oil phase.'],
+]);
+
+dataset('guidance source attribution meta prose', [
+    ['A supplier states that the material is suitable for emulsions.'],
+    ['The manufacturer notes that the material is fluid in the oil phase.'],
+    ['A supplier advises a low starting level.'],
+    ['A supplier said that the material is suitable for emulsions.'],
+    ['A supplier, stating that the material is suitable, supports this use.'],
+    ['THE MANUFACTURER, NOTING THAT THE MATERIAL IS FLUID, RECOMMENDS THIS RANGE.'],
+    ['SUPPLIERS SAY the material is suitable for emulsions.'],
+    ['The manufacturer suggests this material for emulsions.'],
+    ['A supplier indicates that the profile is stable.'],
+    ['According to the manufacturer, the material is fluid.'],
+    ['The range was recommended by a supplier.'],
+    ['The result is described by the manufacturer.'],
+    ['The supplier generally recommends addition to the oil phase.'],
+    ['The manufacturer’s technical sheet recommends a low starting level.'],
+    ['A 1–10% range is recommended for emulsions by the supplier.'],
+    ['The supplier strongly recommends this range.'],
+    ['The manufacturer’s datasheet recommends this range.'],
+    ['The supplier generally also recommends this range.'],
+]);
+
+dataset('guidance evidence adjective meta prose', [
+    ['A cited material has a reddish, viscous appearance.'],
+    ['A documented grade has a reddish, viscous appearance.'],
+    ['A specified profile is predominantly oleic.'],
+    ['A referenced data point describes viscosity.'],
+    ['A supplied material has a reddish hue.'],
+    ['A reported grade is pale yellow.'],
+    ['A listed profile is mostly oleic.'],
+    ['A verified material is clear.'],
+]);
 
 /** @param array<string, mixed> $overrides @return array<string, mixed> */
 function guidanceClaim(array $overrides = []): array

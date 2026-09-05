@@ -35,7 +35,7 @@ class IngredientGuidanceChangePlanner
             ];
 
         $currentTranslations = $ingredient->translations()
-            ->get(['locale', 'info_markdown', 'source_fingerprint'])
+            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown', 'source_fingerprint'])
             ->keyBy('locale');
         $canonicalTranslationFingerprint = $this->translationFingerprint->forIngredient($ingredient);
         $proposedTranslations = is_array($result['translations'] ?? null)
@@ -43,33 +43,32 @@ class IngredientGuidanceChangePlanner
             : [];
         $translationDecisions = collect($proposedTranslations)
             ->filter(fn (mixed $translation): bool => is_array($translation))
-            ->map(function (array $translation) use ($currentTranslations, $canonicalTranslationFingerprint): ?array {
+            ->flatMap(function (array $translation) use ($currentTranslations, $canonicalTranslationFingerprint): array {
                 $locale = (string) ($translation['locale'] ?? '');
-                $proposed = (string) ($translation['info_markdown'] ?? '');
                 $currentTranslation = $currentTranslations->get($locale);
-                $current = (string) ($currentTranslation?->info_markdown ?? '');
-
-                if ($current !== $proposed) {
-                    return [
-                        'field' => "proposal.translations.{$locale}.info_markdown",
+                $decisions = collect(['display_name', 'saponification_name', 'info_markdown'])
+                    ->filter(fn (string $field): bool => array_key_exists($field, $translation))
+                    ->filter(fn (string $field): bool => $currentTranslation?->{$field} !== $translation[$field])
+                    ->map(fn (string $field): array => [
+                        'field' => "proposal.translations.{$locale}.{$field}",
                         'decision' => 'replace',
-                        'current' => $current,
-                        'proposed' => $proposed,
-                    ];
-                }
+                        'current' => $currentTranslation?->{$field},
+                        'proposed' => $translation[$field],
+                    ])
+                    ->values()
+                    ->all();
 
-                if ($currentTranslation?->source_fingerprint !== $canonicalTranslationFingerprint) {
-                    return [
+                if ($decisions === [] && $currentTranslation?->source_fingerprint !== $canonicalTranslationFingerprint) {
+                    $decisions[] = [
                         'field' => "proposal.translations.{$locale}.info_markdown",
                         'decision' => 'revalidate',
-                        'current' => $current,
-                        'proposed' => $proposed,
+                        'current' => $currentTranslation?->info_markdown,
+                        'proposed' => $translation['info_markdown'] ?? null,
                     ];
                 }
 
-                return null;
+                return $decisions;
             })
-            ->filter(fn (mixed $decision): bool => is_array($decision))
             ->values();
 
         $proposedEvidence = collect(is_array($result['guidance_evidence'] ?? null)
@@ -82,7 +81,7 @@ class IngredientGuidanceChangePlanner
             ->filter(fn (mixed $evidence): bool => is_array($evidence))
             ->values()
             ->all();
-        $effectiveEvidence = $mode->isLocalizationOnly() && $proposedEvidence === []
+        $effectiveEvidence = $mode->isLocalizationOnly()
             ? $currentEvidence
             : $proposedEvidence;
         $evidenceDecision = $effectiveEvidence !== $currentEvidence

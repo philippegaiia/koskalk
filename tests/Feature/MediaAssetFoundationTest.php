@@ -93,12 +93,12 @@ it('derives the database reservation from the enrichment job timeout when no ove
     }
 });
 
-it('runs the development worker against the media queue before the default queue', function () {
+it('runs the development worker against the media, enrichment, and default queues', function () {
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
     $developmentCommand = implode(' ', $composer['scripts']['dev']);
 
     expect($developmentCommand)
-        ->toContain('--queue=media,default')
+        ->toContain('--queue=media,enrichment,default')
         ->toContain('--timeout=0');
 });
 

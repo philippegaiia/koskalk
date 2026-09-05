@@ -3,6 +3,7 @@
 namespace App\Services\IngredientEnrichment;
 
 use App\Models\IngredientEnrichmentBatch;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +20,54 @@ class IngredientEnrichmentBatchDeletionService
         }, attempts: 5);
 
         return $this->cleanupAfterCommit($cleanup);
+    }
+
+    /**
+     * Delete selected batches atomically and clean their private records after commit.
+     *
+     * @param  Collection<int, int>  $batchIds
+     */
+    public function deleteMany(Collection $batchIds): bool
+    {
+        $cleanups = DB::transaction(function () use ($batchIds): array {
+            /** @var Collection<int, IngredientEnrichmentBatch> $lockedBatches */
+            $lockedBatches = IngredientEnrichmentBatch::query()
+                ->whereIn('id', $batchIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($lockedBatches->count() !== $batchIds->count()) {
+                throw ValidationException::withMessages([
+                    'batch' => __('ingredient_enrichment_admin.validation.batch_not_found'),
+                ]);
+            }
+
+            if ($lockedBatches->contains(fn (IngredientEnrichmentBatch $batch): bool => ! $batch->status->isTerminal())) {
+                throw ValidationException::withMessages([
+                    'batch' => __('ingredient_enrichment_admin.validation.batch_not_terminal'),
+                ]);
+            }
+
+            $cleanup = $lockedBatches
+                ->map(fn (IngredientEnrichmentBatch $batch): array => $this->cleanupDescriptor($batch))
+                ->all();
+
+            foreach ($lockedBatches as $batch) {
+                if ($batch->delete() !== true) {
+                    throw new RuntimeException(__('ingredient_enrichment_admin.validation.batch_delete_failed'));
+                }
+            }
+
+            return $cleanup;
+        }, attempts: 5);
+
+        $success = true;
+        foreach ($cleanups as $cleanup) {
+            $success = $this->cleanupAfterCommit($cleanup) && $success;
+        }
+
+        return $success;
     }
 
     /**

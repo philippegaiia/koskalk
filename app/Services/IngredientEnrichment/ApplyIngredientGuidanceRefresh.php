@@ -24,6 +24,8 @@ class ApplyIngredientGuidanceRefresh
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshots,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
+        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
+        private readonly IngredientGuidanceChangePlanner $planner,
         private readonly IngredientTranslationService $translations,
         private readonly IngredientEnrichmentBatchService $batches,
     ) {}
@@ -68,7 +70,18 @@ class ApplyIngredientGuidanceRefresh
                     $beforeGuidance = is_array(data_get($ingredient->source_data, 'enrichment.guidance'))
                         ? data_get($ingredient->source_data, 'enrichment.guidance')
                         : [];
-                    $beforeEvidence = $this->evidenceRows($beforeGuidance['evidence'] ?? []);
+                    $beforeEvidence = $this->guidanceEvidencePolicy->normalizePersisted($beforeGuidance['evidence'] ?? []);
+                    $freshEvidence = $this->freshEvidenceContribution($item, $mode, $normalized, $beforeEvidence);
+                    $guidanceEvidence = $batch->fresh_research && $mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+                        ? $this->guidanceEvidencePolicy->normalizePersisted($freshEvidence)
+                        : $this->guidanceEvidencePolicy->reconcilePersisted($beforeEvidence, $freshEvidence);
+                    $normalized['guidance_evidence'] = $guidanceEvidence;
+                    $report['normalized'] = $normalized;
+                    $plan = $this->alignPlanEvidence(
+                        $this->planner->plan($ingredient, $normalized, $mode),
+                        $beforeEvidence,
+                        $guidanceEvidence,
+                    );
                     $editedFields = collect(is_array($item->edited_fields) ? $item->edited_fields : []);
                     $englishEdited = $editedFields->contains('proposal.info_markdown');
                     $reviewerLocales = $this->editedLocales($editedFields);
@@ -81,63 +94,71 @@ class ApplyIngredientGuidanceRefresh
                         $changed = true;
                     }
 
-                    $translationRows = collect($beforeTranslations)
-                        ->map(fn (array $translation): array => [
-                            'locale' => $translation['locale'],
-                            'display_name' => $translation['display_name'],
-                            'saponification_name' => $translation['saponification_name'],
-                            'info_markdown' => $translation['info_markdown'],
-                        ])
-                        ->keyBy('locale');
-                    $proposalRows = collect($normalized['translations'] ?? [])
-                        ->filter(fn (mixed $translation): bool => is_array($translation))
-                        ->mapWithKeys(function (array $translation) use ($translationRows): array {
-                            $locale = (string) ($translation['locale'] ?? '');
-                            $current = $translationRows->get($locale, [
-                                'locale' => $locale,
-                                'display_name' => null,
-                                'saponification_name' => null,
-                                'info_markdown' => null,
-                            ]);
+                    $normalizedTranslations = is_array($normalized['translations'] ?? null)
+                        ? $normalized['translations']
+                        : [];
+                    $translationsApplied = $mode->isLocalizationOnly();
+                    $localizationPromptVersion = null;
+                    if ($translationsApplied) {
+                        $translationRows = collect($beforeTranslations)
+                            ->map(fn (array $translation): array => [
+                                'locale' => $translation['locale'],
+                                'display_name' => $translation['display_name'],
+                                'saponification_name' => $translation['saponification_name'],
+                                'info_markdown' => $translation['info_markdown'],
+                            ])
+                            ->keyBy('locale');
+                        $proposalRows = collect($normalizedTranslations)
+                            ->filter(fn (mixed $translation): bool => is_array($translation))
+                            ->mapWithKeys(function (array $translation) use ($translationRows): array {
+                                $locale = (string) ($translation['locale'] ?? '');
+                                $current = $translationRows->get($locale, [
+                                    'locale' => $locale,
+                                    'display_name' => null,
+                                    'saponification_name' => null,
+                                    'info_markdown' => null,
+                                ]);
 
-                            return [$locale => [
-                                ...$current,
-                                'info_markdown' => $translation['info_markdown'] ?? null,
-                            ]];
-                        });
-                    $selectedProposalRows = $proposalRows
-                        ->filter(fn (array $translation, string $locale): bool => ! $englishEdited || $reviewerLocales->contains($locale));
-                    $selectedProposalRows
-                        ->each(fn (array $translation, string $locale) => $translationRows->put($locale, $translation));
-                    $localizationPromptVersion = (string) ($normalized['prompt_versions']['localization']
-                        ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version'));
-                    $writeIntents = $selectedProposalRows
-                        ->mapWithKeys(function (array $translation, string $locale) use ($reviewerLocales, $revalidatedLocales, $localizationPromptVersion): array {
-                            $reviewerEdited = $reviewerLocales->contains($locale);
+                                return [$locale => [
+                                    ...$current,
+                                    'display_name' => $translation['display_name'] ?? null,
+                                    'saponification_name' => $translation['saponification_name'] ?? null,
+                                    'info_markdown' => $translation['info_markdown'] ?? null,
+                                ]];
+                            });
+                        $selectedProposalRows = $proposalRows
+                            ->filter(fn (array $translation, string $locale): bool => ($beforeTranslations[$locale]['origin'] ?? null)
+                                !== IngredientTranslationOrigin::ReviewerEdited->value)
+                            ->filter(fn (array $translation, string $locale): bool => ! $englishEdited || $reviewerLocales->contains($locale));
+                        $selectedProposalRows
+                            ->each(fn (array $translation, string $locale) => $translationRows->put($locale, $translation));
+                        $localizationPromptVersion = (string) ($normalized['prompt_versions']['localization']
+                            ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version'));
+                        $writeIntents = $selectedProposalRows
+                            ->mapWithKeys(function (array $translation, string $locale) use ($reviewerLocales, $revalidatedLocales, $localizationPromptVersion): array {
+                                $reviewerEdited = $reviewerLocales->contains($locale);
 
-                            return [$locale => new IngredientTranslationWriteIntent(
-                                $reviewerEdited ? IngredientTranslationOrigin::ReviewerEdited : IngredientTranslationOrigin::AiGenerated,
-                                $reviewerEdited ? null : $localizationPromptVersion,
-                                $reviewerEdited || $revalidatedLocales->contains($locale),
-                            )];
-                        })
-                        ->all();
-                    $this->translations->sync(
-                        $ingredient,
-                        $translationRows->values()->all(),
-                        IngredientTranslationOrigin::AiGenerated,
-                        $localizationPromptVersion,
-                        $writeIntents,
-                    );
-                    $afterTranslations = $this->translationState($ingredient);
-                    $changed = $changed || $beforeTranslations !== $afterTranslations;
+                                return [$locale => new IngredientTranslationWriteIntent(
+                                    $reviewerEdited ? IngredientTranslationOrigin::ReviewerEdited : IngredientTranslationOrigin::AiGenerated,
+                                    $reviewerEdited ? null : $localizationPromptVersion,
+                                    $reviewerEdited || $revalidatedLocales->contains($locale),
+                                )];
+                            })
+                            ->all();
+                        $this->translations->sync(
+                            $ingredient,
+                            $translationRows->values()->all(),
+                            IngredientTranslationOrigin::AiGenerated,
+                            $localizationPromptVersion,
+                            $writeIntents,
+                        );
+                        $afterTranslations = $this->translationState($ingredient);
+                        $changed = $changed || $beforeTranslations !== $afterTranslations;
+                    }
 
                     $sourceData = is_array($ingredient->source_data) ? $ingredient->source_data : [];
                     $guidance = $beforeGuidance;
-                    $guidanceEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
-                    if (! $mode->isLocalizationOnly() || $guidanceEvidence !== []) {
-                        $guidance['evidence'] = $guidanceEvidence;
-                    }
+                    $guidance['evidence'] = $guidanceEvidence;
                     if (! $mode->isLocalizationOnly()) {
                         $guidance['guidance_prompt_version'] = (string) ($normalized['prompt_versions']['guidance']
                             ?? config('ingredient-enrichment.openai.guidance_prompt_version'));
@@ -146,14 +167,17 @@ class ApplyIngredientGuidanceRefresh
                             $guidance['research_prompt_version'] = $researchPromptVersion;
                         }
                     }
-                    $guidance['localization_prompt_version'] = $localizationPromptVersion;
+                    if ($translationsApplied) {
+                        $guidance['localization_prompt_version'] = $localizationPromptVersion;
+                    }
                     $guidance['approved_at'] = $item->approved_at?->toIso8601String() ?? CarbonImmutable::now()->toIso8601String();
                     $afterEvidence = $this->evidenceRows($guidance['evidence'] ?? []);
                     $changed = $changed
                         || $beforeEvidence !== $afterEvidence
                         || ($beforeGuidance['guidance_prompt_version'] ?? null) !== ($guidance['guidance_prompt_version'] ?? null)
                         || ($beforeGuidance['research_prompt_version'] ?? null) !== ($guidance['research_prompt_version'] ?? null)
-                        || ($beforeGuidance['localization_prompt_version'] ?? null) !== ($guidance['localization_prompt_version'] ?? null);
+                        || ($translationsApplied
+                            && ($beforeGuidance['localization_prompt_version'] ?? null) !== ($guidance['localization_prompt_version'] ?? null));
                     data_set($sourceData, 'enrichment.guidance', $guidance);
                     $ingredient->source_data = $sourceData;
                     $ingredient->save();
@@ -162,6 +186,7 @@ class ApplyIngredientGuidanceRefresh
                         'status' => $changed ? IngredientEnrichmentItemStatus::Applied : IngredientEnrichmentItemStatus::Unchanged,
                         'result' => $normalized,
                         'validation_report' => $report,
+                        'plan' => $plan,
                         'applied_by_user_id' => $actor->id,
                         'applied_at' => now(),
                     ]);
@@ -231,8 +256,9 @@ class ApplyIngredientGuidanceRefresh
         return $editedFields
             ->filter(fn (mixed $path): bool => is_string($path)
                 && Str::startsWith($path, 'proposal.translations.')
-                && Str::endsWith($path, '.info_markdown'))
-            ->map(fn (string $path): string => Str::between($path, 'proposal.translations.', '.info_markdown'))
+                && collect(['.display_name', '.saponification_name', '.info_markdown'])
+                    ->contains(fn (string $suffix): bool => Str::endsWith($path, $suffix)))
+            ->map(fn (string $path): string => Str::beforeLast(Str::after($path, 'proposal.translations.'), '.'))
             ->filter()
             ->unique()
             ->values();
@@ -262,5 +288,88 @@ class ApplyIngredientGuidanceRefresh
             ->filter(fn (mixed $row): bool => is_array($row))
             ->values()
             ->all();
+    }
+
+    /**
+     * Guidance refresh results contain a merged authoring bank, but the
+     * persisted research stage is the authoritative fresh contribution used at
+     * apply time. Hand-authored legacy items without that stage contribute only
+     * logical rows absent from their prior snapshot. Localization has no
+     * guidance-evidence contribution.
+     *
+     * @param  array<string, mixed>  $normalized
+     * @return list<array<string, mixed>>
+     */
+    private function freshEvidenceContribution(
+        IngredientEnrichmentBatchItem $item,
+        IngredientEnrichmentBatchMode $mode,
+        array $normalized,
+        array $beforeEvidence,
+    ): array {
+        if ($mode !== IngredientEnrichmentBatchMode::GuidanceRefresh) {
+            return [];
+        }
+
+        $resultEvidence = $this->evidenceRows($normalized['guidance_evidence'] ?? []);
+
+        $researchStages = is_array($item->research_stages) ? $item->research_stages : [];
+        if (array_key_exists('ai_guidance_research', $researchStages)) {
+            $researchData = data_get($researchStages, 'ai_guidance_research.data');
+
+            return is_array($researchData) && array_key_exists('guidance_evidence', $researchData)
+                ? $this->evidenceRows($researchData['guidance_evidence'])
+                : [];
+        }
+
+        $snapshotPrior = data_get($item->snapshot, 'prior_guidance_evidence');
+        $priorEvidence = is_array($snapshotPrior) ? $snapshotPrior : $beforeEvidence;
+
+        return $this->guidanceEvidencePolicy->logicalDifference($priorEvidence, $resultEvidence);
+    }
+
+    /**
+     * The apply-time evidence bank can differ from the reviewed result when a
+     * concurrent refresh has added rows. Keep the plan's effective and proposed
+     * evidence in lockstep with that bank while preserving other review
+     * decisions.
+     *
+     * @param  array<string, mixed>  $plan
+     * @param  list<array<string, mixed>>  $beforeEvidence
+     * @param  list<array<string, mixed>>  $guidanceEvidence
+     * @return array<string, mixed>
+     */
+    private function alignPlanEvidence(
+        array $plan,
+        array $beforeEvidence,
+        array $guidanceEvidence,
+    ): array {
+        $plan['effective'] = [
+            ...(is_array($plan['effective'] ?? null) ? $plan['effective'] : []),
+            'guidance_evidence' => $guidanceEvidence,
+        ];
+        $decisions = collect(is_array($plan['decisions'] ?? null) ? $plan['decisions'] : []);
+        $hasEvidenceDecision = false;
+        $decisions = $decisions->map(function (mixed $decision) use ($guidanceEvidence, &$hasEvidenceDecision): mixed {
+            if (! is_array($decision) || ($decision['field'] ?? null) !== 'guidance.evidence') {
+                return $decision;
+            }
+
+            $hasEvidenceDecision = true;
+
+            return [...$decision, 'proposed' => $guidanceEvidence];
+        });
+        if ($beforeEvidence !== $guidanceEvidence && ! $hasEvidenceDecision) {
+            $decisions->push([
+                'field' => 'guidance.evidence',
+                'decision' => $beforeEvidence === [] ? 'new' : 'replace',
+                'current' => $beforeEvidence,
+                'proposed' => $guidanceEvidence,
+            ]);
+        }
+
+        $plan['changed'] = (bool) ($plan['changed'] ?? false) || $beforeEvidence !== $guidanceEvidence;
+        $plan['decisions'] = $decisions->values()->all();
+
+        return $plan;
     }
 }

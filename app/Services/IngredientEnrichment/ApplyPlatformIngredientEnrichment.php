@@ -2,6 +2,7 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\Data\IngredientTranslationWriteIntent;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentReplaceField;
 use App\Enums\IngredientSubcategory;
@@ -21,8 +22,9 @@ class ApplyPlatformIngredientEnrichment
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
         private readonly IngredientDataEntryService $dataEntryService,
         private readonly IngredientFunctionAssignmentService $functionAssignments,
-        private readonly IngredientTranslationService $translationService,
         private readonly IngredientMarketLabelService $marketLabelService,
+        private readonly IngredientTranslationService $translationService,
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
     /**
@@ -98,9 +100,10 @@ class ApplyPlatformIngredientEnrichment
         $sourceFingerprint = (string) ($result['source_fingerprint'] ?? '');
         $storedSourceFingerprint = data_get($ingredient->source_data, 'enrichment.core.source_fingerprint');
         $storedResultFingerprint = data_get($ingredient->source_data, 'enrichment.core.result_fingerprint');
+        $hasApplicableChanges = $this->hasApplicableChanges($plan);
 
         if (! $promotion
-            && ($plan['changed'] ?? false) !== true
+            && ! $hasApplicableChanges
             && $sourceFingerprint === $storedSourceFingerprint
             && $currentFingerprint === $storedResultFingerprint) {
             return ['status' => 'unchanged', 'ingredient' => $ingredient];
@@ -112,7 +115,7 @@ class ApplyPlatformIngredientEnrichment
             ]);
         }
 
-        if (($plan['changed'] ?? false) !== true) {
+        if (! $hasApplicableChanges) {
             return ['status' => 'unchanged', 'ingredient' => $ingredient];
         }
 
@@ -120,11 +123,14 @@ class ApplyPlatformIngredientEnrichment
 
         $effective = is_array($plan['effective'] ?? null) ? $plan['effective'] : [];
         $canonical = is_array($effective['canonical'] ?? null) ? $effective['canonical'] : [];
+        $proposal = is_array($result['proposal'] ?? null) ? $result['proposal'] : [];
         $this->syncCanonicalAndIdentity(
             $ingredient,
             $canonical,
             $effective['identifiers'] ?? [],
             $effective['aliases'] ?? [],
+            $result['evidence'] ?? [],
+            $proposal['identifiers'] ?? [],
         );
 
         $taxonomyChanged = ($ingredient->category?->value ?? null) !== ($canonical['category'] ?? null)
@@ -141,22 +147,18 @@ class ApplyPlatformIngredientEnrichment
             $ingredient->taxonomy_reviewed_by_user_id = $promotion ? $reviewerId : null;
         }
         $ingredient->save();
+        $this->applyIdentityNameTranslations(
+            $ingredient,
+            $effective['translations'] ?? [],
+            $proposal['translations'] ?? [],
+        );
 
-        $proposal = is_array($result['proposal'] ?? null) ? $result['proposal'] : [];
         $cosingRows = $this->cosingRows($proposal['cosing_functions'] ?? []);
         if (in_array(IngredientEnrichmentReplaceField::CosingFunctions->value, $replaceFields, true)) {
             $this->functionAssignments->replaceCosIng($ingredient, $cosingRows);
         } else {
             $this->functionAssignments->mergeCosIng($ingredient, $cosingRows);
         }
-
-        $translationRows = is_array($effective['translations'] ?? null) ? $effective['translations'] : [];
-        $this->translationService->sync(
-            $ingredient,
-            $translationRows,
-            IngredientTranslationOrigin::AiGenerated,
-            (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
-        );
 
         $marketRows = is_array($proposal['market_labels'] ?? null) ? $proposal['market_labels'] : [];
         if ($marketRows !== []) {
@@ -173,6 +175,12 @@ class ApplyPlatformIngredientEnrichment
         data_set($sourceData, 'enrichment.core', [
             'schema_version' => (int) ($result['schema_version'] ?? config('ingredient-enrichment.schema_version')),
             'confidence' => $result['confidence'] ?? null,
+            'field_confidence' => is_array($result['field_confidence'] ?? null)
+                ? $result['field_confidence']
+                : [],
+            'value_provenance' => is_array($result['value_provenance'] ?? null)
+                ? $result['value_provenance']
+                : [],
             'warnings' => $result['warnings'] ?? [],
             'unresolved_questions' => $result['unresolved_questions'] ?? [],
             'source_fingerprint' => $sourceFingerprint,
@@ -182,13 +190,17 @@ class ApplyPlatformIngredientEnrichment
         $guidanceEvidence = is_array($result['guidance_evidence'] ?? null)
             ? $result['guidance_evidence']
             : [];
-        data_set($sourceData, 'enrichment.guidance', [
+        $guidanceMetadata = [
             'evidence' => $guidanceEvidence,
             'research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
             'guidance_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_prompt_version'),
-            'localization_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_localization_prompt_version'),
             'approved_at' => CarbonImmutable::now()->toIso8601String(),
-        ]);
+        ];
+        $localizationPromptVersion = data_get($sourceData, 'enrichment.guidance.localization_prompt_version');
+        if (is_string($localizationPromptVersion) && trim($localizationPromptVersion) !== '') {
+            $guidanceMetadata['localization_prompt_version'] = $localizationPromptVersion;
+        }
+        data_set($sourceData, 'enrichment.guidance', $guidanceMetadata);
         $ingredient->source_data = $sourceData;
         $ingredient->requires_admin_review = $promotion ? false : true;
         if ($promotion) {
@@ -202,6 +214,106 @@ class ApplyPlatformIngredientEnrichment
         return ['status' => 'applied', 'ingredient' => $ingredient->fresh()];
     }
 
+    /** @param array<string, mixed> $plan */
+    private function hasApplicableChanges(array $plan): bool
+    {
+        $decisions = collect(is_array($plan['decisions'] ?? null) ? $plan['decisions'] : []);
+        if ($decisions->isEmpty()) {
+            return ($plan['changed'] ?? false) === true;
+        }
+
+        if ($decisions->contains(
+            fn (mixed $decision): bool => is_array($decision)
+                && is_string($decision['field'] ?? null)
+                && ! str_starts_with($decision['field'], 'proposal.translations')
+                && in_array($decision['decision'] ?? null, ['new', 'replace'], true),
+        )) {
+            return true;
+        }
+
+        return $decisions->contains(
+            fn (mixed $decision): bool => is_array($decision)
+                && preg_match('/^proposal\.translations\.[^.]+\.(display_name|saponification_name)$/', (string) ($decision['field'] ?? '')) === 1
+                && in_array($decision['decision'] ?? null, ['new', 'replace'], true),
+        );
+    }
+
+    private function applyIdentityNameTranslations(Ingredient $ingredient, mixed $effectiveRows, mixed $proposalRows): void
+    {
+        if (! is_array($effectiveRows) || ! is_array($proposalRows) || $proposalRows === []) {
+            return;
+        }
+
+        $proposedLocales = collect($proposalRows)
+            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['locale'] ?? null))
+            ->map(fn (array $row): string => trim($row['locale']))
+            ->filter()
+            ->all();
+
+        $rows = $ingredient->translations()
+            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown', 'source_fingerprint', 'origin', 'prompt_version'])
+            ->mapWithKeys(fn ($translation): array => [$translation->locale => [
+                'locale' => $translation->locale,
+                'display_name' => $translation->display_name,
+                'saponification_name' => $translation->saponification_name,
+                'info_markdown' => $translation->info_markdown,
+                'source_fingerprint' => $translation->source_fingerprint,
+                'origin' => $translation->origin,
+                'prompt_version' => $translation->prompt_version,
+            ]]);
+        $promptVersion = (string) config('ingredient-enrichment.openai.identity_name_localization_prompt_version');
+        $writeIntents = [];
+        $preservedGuidanceMetadata = [];
+
+        collect($effectiveRows)
+            ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['locale'] ?? null))
+            ->filter(fn (array $row): bool => in_array(trim($row['locale']), $proposedLocales, true))
+            ->each(function (array $row) use ($rows, &$preservedGuidanceMetadata, &$writeIntents, $promptVersion): void {
+                $locale = trim($row['locale']);
+                $current = $rows->get($locale);
+                if (($current['origin'] ?? null) === IngredientTranslationOrigin::ReviewerEdited) {
+                    return;
+                }
+
+                $rows->put($locale, [
+                    'locale' => $locale,
+                    'display_name' => $row['display_name'] ?? null,
+                    'saponification_name' => $row['saponification_name'] ?? null,
+                    'info_markdown' => $current['info_markdown'] ?? null,
+                    'origin' => IngredientTranslationOrigin::AiGenerated,
+                    'source_fingerprint' => $current['source_fingerprint'] ?? null,
+                    'prompt_version' => $current['prompt_version'] ?? null,
+                ]);
+                if (filled($current['info_markdown'] ?? null)) {
+                    $preservedGuidanceMetadata[$locale] = [
+                        'source_fingerprint' => $current['source_fingerprint'] ?? null,
+                        'prompt_version' => $current['prompt_version'] ?? null,
+                    ];
+                }
+                $writeIntents[$locale] = new IngredientTranslationWriteIntent(
+                    IngredientTranslationOrigin::AiGenerated,
+                    filled($current['info_markdown'] ?? null)
+                        ? ($current['prompt_version'] ?? null)
+                        : $promptVersion,
+                    true,
+                );
+            });
+
+        $this->translationService->sync(
+            $ingredient,
+            $rows->map(fn (array $row): array => collect($row)->only([
+                'locale', 'display_name', 'saponification_name', 'info_markdown',
+            ])->all())->values()->all(),
+            IngredientTranslationOrigin::AiGenerated,
+            $promptVersion,
+            $writeIntents,
+        );
+
+        foreach ($preservedGuidanceMetadata as $locale => $metadata) {
+            $ingredient->translations()->where('locale', $locale)->update($metadata);
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $canonical
      */
@@ -210,9 +322,14 @@ class ApplyPlatformIngredientEnrichment
         array $canonical,
         mixed $identifierRows,
         mixed $aliasRows,
+        mixed $evidenceRows,
+        mixed $proposalIdentifierRows,
     ): void {
         $formState = $this->dataEntryService->formData($ingredient);
         $identifiers = is_array($identifierRows) ? $identifierRows : [];
+        $acceptedEvidence = is_array($evidenceRows) ? $evidenceRows : [];
+        $proposalIdentifiers = collect(is_array($proposalIdentifierRows) ? $proposalIdentifierRows : [])
+            ->values();
         $cas = collect($identifiers)->first(fn (array $row): bool => ($row['scheme'] ?? null) === 'cas' && ($row['is_primary'] ?? false));
         $ec = collect($identifiers)->first(fn (array $row): bool => ($row['scheme'] ?? null) === 'ec' && ($row['is_primary'] ?? false));
 
@@ -242,22 +359,11 @@ class ApplyPlatformIngredientEnrichment
             'cas_number' => $formState['cas_number'],
             'ec_number' => $formState['ec_number'],
             'additional_identifiers' => $formState['additional_identifiers'],
-            'identifier_evidence' => collect($identifiers)
-                ->filter(fn (array $row): bool => is_string($row['source_url'] ?? null)
-                    && is_string($row['source_name'] ?? null))
-                ->map(fn (array $row): array => [
-                    'scheme' => (string) ($row['scheme'] ?? ''),
-                    'value' => (string) ($row['value'] ?? ''),
-                    'evidence' => [[
-                        'source_name' => $row['source_name'] ?? null,
-                        'source_url' => $row['source_url'] ?? null,
-                        'source_tier' => $row['source_tier'] ?? null,
-                        'confidence' => $row['confidence'] ?? null,
-                        'source_version' => $row['source_version'] ?? null,
-                        'source_updated_at' => $row['source_updated_at'] ?? null,
-                        'retrieved_at' => $row['retrieved_at'] ?? null,
-                    ]],
-                ])->all(),
+            'identifier_evidence' => $this->evidenceReconciler->projectIdentifierEvidence(
+                $identifiers,
+                $proposalIdentifiers->all(),
+                $acceptedEvidence,
+            ),
             'aliases' => collect(is_array($aliasRows) ? $aliasRows : [])
                 ->filter(fn (mixed $row): bool => is_array($row))
                 ->map(fn (array $row): array => [

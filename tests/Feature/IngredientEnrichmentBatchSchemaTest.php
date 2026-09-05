@@ -24,6 +24,7 @@ it('persists auditable batches and per ingredient research items', function (): 
         'laravel_batch_id',
         'model',
         'prompt_version',
+        'fresh_research',
         'total_count',
         'input_tokens',
         'started_at',

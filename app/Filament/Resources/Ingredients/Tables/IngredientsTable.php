@@ -13,6 +13,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Checkbox;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -91,8 +92,18 @@ class IngredientsTable
                         ->requiresConfirmation()
                         ->modalHeading(__('ingredient_enrichment_admin.actions.guidance_refresh_heading'))
                         ->modalDescription(__('ingredient_enrichment_admin.actions.guidance_refresh_description'))
-                        ->action(function (Collection $records, StartIngredientGuidanceRefresh $startRefresh): mixed {
-                            $batch = $startRefresh->handle(auth()->user(), $records);
+                        ->schema([
+                            Checkbox::make('fresh_research')
+                                ->label(__('ingredient_enrichment_admin.actions.fresh_research'))
+                                ->helperText(__('ingredient_enrichment_admin.actions.fresh_research_help'))
+                                ->default(false),
+                        ])
+                        ->action(function (Collection $records, array $data, StartIngredientGuidanceRefresh $startRefresh): mixed {
+                            $batch = $startRefresh->handle(
+                                auth()->user(),
+                                $records,
+                                freshResearch: (bool) ($data['fresh_research'] ?? false),
+                            );
 
                             return redirect(IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]));
                         })

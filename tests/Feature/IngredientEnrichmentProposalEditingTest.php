@@ -109,6 +109,337 @@ it('keeps field confidence and evidence aligned when a source-backed row is edit
     ])->and($edited->edited_fields)->toContain('proposal.identifiers.0');
 });
 
+it('preserves every corroborating evidence row when an unrelated field is edited', function (): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'argan_oil_corroborated_edit',
+        'category' => IngredientCategory::Other,
+    ]);
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = editableEnrichmentResult($ingredient, $fingerprint);
+    $sourceA = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-a-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $sourceB = [
+        'source_name' => 'Supplier B technical dossier',
+        'source_url' => 'https://supplier-b.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-b-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+        ...$sourceA,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.0', ...$sourceB],
+    ];
+    $result['value_provenance'] = [[
+        'field' => 'proposal.identifiers.0',
+        'kind' => 'source_confirmed',
+        'reasoning' => 'Both technical dossiers print the same CAS number.',
+        'source_urls' => [$sourceA['source_url'], $sourceB['source_url']],
+    ]];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $fingerprint,
+        'result' => $result,
+    ]);
+    $proposal = $result['proposal'];
+    $proposal['identifiers'][0] = [
+        ...array_reverse($sourceA, true),
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+    ];
+    $proposal['display_name'] = 'Marula oil';
+
+    $edited = app(EditIngredientEnrichmentProposal::class)->handle($admin, $item, $proposal);
+
+    $identifierEvidence = collect($edited->result['evidence'])
+        ->where('field', 'proposal.identifiers.0')
+        ->pluck('source_url')
+        ->values()
+        ->all();
+
+    expect($identifierEvidence)->toBe([
+        'https://supplier-a.example/technical/marula-oil.pdf',
+        'https://supplier-b.example/technical/marula-oil.pdf',
+    ])->and(collect($edited->result['value_provenance'])
+        ->firstWhere('field', 'proposal.identifiers.0')['source_urls'])
+        ->toBe([
+            'https://supplier-a.example/technical/marula-oil.pdf',
+            'https://supplier-b.example/technical/marula-oil.pdf',
+        ]);
+});
+
+it('preserves corroborating identifier evidence across equivalent Unicode formatting edits', function (): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'argan_oil_equivalent_identifier_edit',
+        'category' => IngredientCategory::Other,
+    ]);
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = editableEnrichmentResult($ingredient, $fingerprint);
+    $sourceA = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-a-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $sourceB = [
+        'source_name' => 'Supplier B technical dossier',
+        'source_url' => 'https://supplier-b.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-b-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956–68–3',
+        'is_primary' => false,
+        ...$sourceA,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.0', ...$sourceB],
+    ];
+    $result['value_provenance'] = [[
+        'field' => 'proposal.identifiers.0',
+        'kind' => 'source_confirmed',
+        'reasoning' => 'Both technical dossiers print the same CAS number.',
+        'source_urls' => [$sourceA['source_url'], $sourceB['source_url']],
+    ]];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $fingerprint,
+        'result' => $result,
+    ]);
+    $proposal = $result['proposal'];
+    $proposal['identifiers'][0]['value'] = ' 68956-68-3 ';
+
+    $edited = app(EditIngredientEnrichmentProposal::class)->handle($admin, $item, $proposal);
+
+    expect(collect($edited->result['evidence'])
+        ->where('field', 'proposal.identifiers.0')
+        ->pluck('source_url')
+        ->values()
+        ->all())->toBe([
+            'https://supplier-a.example/technical/marula-oil.pdf',
+            'https://supplier-b.example/technical/marula-oil.pdf',
+        ])->and(collect($edited->result['value_provenance'])
+        ->firstWhere('field', 'proposal.identifiers.0')['kind'])
+        ->toBe('source_confirmed');
+});
+
+it('reconciles identifier evidence and provenance by canonical identity when rows are reordered', function (): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'argan_oil_reordered_identifier_edit',
+        'category' => IngredientCategory::Other,
+    ]);
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = editableEnrichmentResult($ingredient, $fingerprint);
+    $sourceA = enrichmentProposalSource(
+        'Supplier A technical dossier',
+        'https://supplier-a.example/technical/marula-oil.pdf',
+        'supported',
+        'supplier-a-2026',
+    );
+    $sourceB = enrichmentProposalSource(
+        'Supplier B technical dossier',
+        'https://supplier-b.example/technical/marula-oil.pdf',
+        'supported',
+        'supplier-b-2026',
+    );
+    $result['proposal']['identifiers'] = [
+        [
+            'scheme' => 'cas',
+            'value' => '68956-68-3',
+            'is_primary' => false,
+            ...$sourceA,
+        ],
+        [
+            'scheme' => 'unii',
+            'value' => '4V59G5UW9X',
+            'is_primary' => true,
+            ...$sourceB,
+        ],
+    ];
+    $result['field_confidence'] = [
+        ...$result['field_confidence'],
+        ['field' => 'proposal.identifiers.0', 'confidence' => 'supported'],
+        ['field' => 'proposal.identifiers.1', 'confidence' => 'supported'],
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.1', ...$sourceB],
+    ];
+    $result['value_provenance'] = [
+        [
+            'field' => 'proposal.identifiers.0',
+            'kind' => 'source_confirmed',
+            'reasoning' => 'The CAS number is printed by Supplier A.',
+            'source_urls' => [$sourceA['source_url']],
+        ],
+        [
+            'field' => 'proposal.identifiers.1',
+            'kind' => 'source_confirmed',
+            'reasoning' => 'The UNII is printed by Supplier B.',
+            'source_urls' => [$sourceB['source_url']],
+        ],
+    ];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $fingerprint,
+        'result' => $result,
+    ]);
+    $proposal = $result['proposal'];
+    $proposal['identifiers'] = array_reverse($proposal['identifiers']);
+
+    $edited = app(EditIngredientEnrichmentProposal::class)->handle($admin, $item, $proposal);
+
+    $provenance = collect($edited->result['value_provenance'])->keyBy('field');
+    expect(collect($edited->result['evidence'])
+        ->where('field', 'proposal.identifiers.0')
+        ->pluck('source_url')
+        ->all())->toBe([$sourceB['source_url']])
+        ->and(collect($edited->result['evidence'])
+            ->where('field', 'proposal.identifiers.1')
+            ->pluck('source_url')
+            ->all())->toBe([$sourceA['source_url']])
+        ->and($provenance['proposal.identifiers.0']['kind'])->toBe('source_confirmed')
+        ->and($provenance['proposal.identifiers.0']['source_urls'])->toBe([$sourceB['source_url']])
+        ->and($provenance['proposal.identifiers.1']['kind'])->toBe('source_confirmed')
+        ->and($provenance['proposal.identifiers.1']['source_urls'])->toBe([$sourceA['source_url']]);
+});
+
+it('removes provenance for deleted identifiers while preserving the surviving identifier audit', function (): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'argan_oil_removed_identifier_edit',
+        'category' => IngredientCategory::Other,
+    ]);
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = editableEnrichmentResult($ingredient, $fingerprint);
+    $sourceA = enrichmentProposalSource(
+        'Supplier A technical dossier',
+        'https://supplier-a.example/technical/marula-oil.pdf',
+        'supported',
+        'supplier-a-2026',
+    );
+    $sourceB = enrichmentProposalSource(
+        'Supplier B technical dossier',
+        'https://supplier-b.example/technical/marula-unii.pdf',
+        'supported',
+        'supplier-b-2026',
+    );
+    $result['proposal']['identifiers'] = [
+        ['scheme' => 'cas', 'value' => '68956-68-3', 'is_primary' => false, ...$sourceA],
+        ['scheme' => 'unii', 'value' => '4V59G5UW9X', 'is_primary' => true, ...$sourceB],
+    ];
+    $result['field_confidence'] = [
+        ...$result['field_confidence'],
+        ['field' => 'proposal.identifiers.0', 'confidence' => 'supported'],
+        ['field' => 'proposal.identifiers.1', 'confidence' => 'supported'],
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.1', ...$sourceB],
+    ];
+    $result['value_provenance'] = [
+        [
+            'field' => 'proposal.identifiers.0',
+            'kind' => 'source_confirmed',
+            'reasoning' => 'The CAS is documented by Supplier A.',
+            'source_urls' => [$sourceA['source_url']],
+        ],
+        [
+            'field' => 'proposal.identifiers.1',
+            'kind' => 'source_confirmed',
+            'reasoning' => 'The UNII is documented by Supplier B.',
+            'source_urls' => [$sourceB['source_url']],
+        ],
+    ];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $fingerprint,
+        'result' => $result,
+    ]);
+    $proposal = $result['proposal'];
+    $proposal['identifiers'] = [$proposal['identifiers'][1]];
+
+    $edited = app(EditIngredientEnrichmentProposal::class)->handle($admin, $item, $proposal);
+
+    $provenance = collect($edited->result['value_provenance']);
+    expect($provenance->pluck('field')->all())->not->toContain('proposal.identifiers.1')
+        ->and($provenance->firstWhere('field', 'proposal.identifiers.0'))
+        ->toMatchArray([
+            'kind' => 'source_confirmed',
+            'source_urls' => [$sourceB['source_url']],
+        ])
+        ->and(collect($edited->result['evidence'])
+            ->where('field', 'proposal.identifiers.0')
+            ->pluck('source_url')
+            ->all())->toBe([$sourceB['source_url']]);
+});
+
 it('returns a rejected proposal to review and clears the old decision audit', function (): void {
     config()->set('interface-translations.catalogue_locales', []);
     $admin = User::factory()->create(['is_admin' => true]);

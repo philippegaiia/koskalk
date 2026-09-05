@@ -21,6 +21,7 @@ class IngredientEnrichmentResultValidator
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
         private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
     /**
@@ -314,6 +315,7 @@ class IngredientEnrichmentResultValidator
         $this->validateTranslations(
             $proposal['translations'] ?? null,
             (bool) ($proposal['soapmaking_relevant'] ?? false),
+            $this->nullableString($proposal['saponification_name'] ?? null),
             $errors,
             $warnings,
         );
@@ -441,6 +443,15 @@ class IngredientEnrichmentResultValidator
             : $required;
         if ($headings !== $expectedHeadings) {
             $this->error($errors, 'proposal.info_markdown', $this->message('guidance_headings'));
+        } else {
+            foreach ($required as $heading) {
+                $pattern = '/^##\h+'.preg_quote((string) $heading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
+                if (preg_match($pattern, $guidance, $section) !== 1 || trim($section[1]) === '') {
+                    $this->error($errors, 'proposal.info_markdown', $this->message('guidance_required_section_body'));
+
+                    break;
+                }
+            }
         }
 
         $this->warnOnWordCount($guidance, 'proposal.info_markdown', $warnings);
@@ -479,11 +490,16 @@ class IngredientEnrichmentResultValidator
                 $this->error($errors, "{$path}.is_primary", $this->message('identifier_primary_boolean'));
             }
             $this->validateSourceFields($row, $path, $errors);
-            $key = ($scheme?->value ?? '').'|'.strtoupper($value);
-            if (isset($seen[$key])) {
-                $this->error($errors, "{$path}.value", $this->message('identifier_duplicate'));
+            if ($scheme instanceof IngredientIdentifierScheme) {
+                $key = $this->evidenceReconciler->identifierKey([
+                    'scheme' => $scheme->value,
+                    'value' => $value,
+                ]);
+                if (isset($seen[$key])) {
+                    $this->error($errors, "{$path}.value", $this->message('identifier_duplicate'));
+                }
+                $seen[$key] = true;
             }
-            $seen[$key] = true;
             if (($row['is_primary'] ?? false) === true && isset($primary[$scheme?->value])) {
                 $this->error($errors, "{$path}.is_primary", $this->message('identifier_primary_unique'));
             }
@@ -579,8 +595,17 @@ class IngredientEnrichmentResultValidator
      * @param  array<string, list<string>>  $errors
      * @param  list<string>  $warnings
      */
-    private function validateTranslations(mixed $rows, bool $soapmakingRelevant, array &$errors, array &$warnings): void
-    {
+    private function validateTranslations(
+        mixed $rows,
+        bool $soapmakingRelevant,
+        ?string $canonicalSaponificationName,
+        array &$errors,
+        array &$warnings,
+    ): void {
+        if ($rows === null || $rows === []) {
+            return;
+        }
+
         if (! is_array($rows)) {
             $this->error($errors, 'proposal.translations', $this->message('translations_array'));
 
@@ -608,24 +633,34 @@ class IngredientEnrichmentResultValidator
             if (! is_string($row['display_name'] ?? null) || trim($row['display_name']) === '') {
                 $this->error($errors, "{$path}.display_name", $this->message('translation_display_name'));
             }
-            if (! is_string($row['info_markdown'] ?? null) || trim($row['info_markdown']) === '') {
+            $hasGuidance = array_key_exists('info_markdown', $row);
+            if ($hasGuidance && (! is_string($row['info_markdown']) || trim($row['info_markdown']) === '')) {
                 $this->error($errors, "{$path}.info_markdown", $this->message('translation_guidance'));
             }
             if (($row['saponification_name'] ?? null) !== null && ! is_string($row['saponification_name'])) {
                 $this->error($errors, "{$path}.saponification_name", $this->message('string_or_null'));
             }
-            if ($soapmakingRelevant
+            if (! $hasGuidance && $canonicalSaponificationName !== null
                 && (! is_string($row['saponification_name'] ?? null) || trim($row['saponification_name']) === '')) {
                 $this->error($errors, "{$path}.saponification_name", $this->message('saponification_name_required'));
             }
-            $this->validateTranslatedGuidance(
-                is_string($row['info_markdown'] ?? null) ? $row['info_markdown'] : '',
-                "{$path}.info_markdown",
-                $locale,
-                $soapmakingRelevant,
-                $errors,
-                $warnings,
-            );
+            if (! $hasGuidance && $canonicalSaponificationName === null && ($row['saponification_name'] ?? null) !== null) {
+                $this->error($errors, "{$path}.saponification_name", $this->message('string_or_null'));
+            }
+            if ($hasGuidance) {
+                if ($soapmakingRelevant
+                    && (! is_string($row['saponification_name'] ?? null) || trim($row['saponification_name']) === '')) {
+                    $this->error($errors, "{$path}.saponification_name", $this->message('saponification_name_required'));
+                }
+                $this->validateTranslatedGuidance(
+                    is_string($row['info_markdown'] ?? null) ? $row['info_markdown'] : '',
+                    "{$path}.info_markdown",
+                    $locale,
+                    $soapmakingRelevant,
+                    $errors,
+                    $warnings,
+                );
+            }
         }
 
         foreach (array_diff($expectedLocales, array_keys($seen)) as $locale) {
@@ -819,6 +854,11 @@ class IngredientEnrichmentResultValidator
 
             return [];
         }
+        if (! array_is_list($rows)) {
+            $this->error($errors, 'guidance_evidence', $this->message('guidance_evidence_array'));
+
+            return [];
+        }
 
         foreach ($rows as $index => $row) {
             if (! is_array($row)) {
@@ -826,7 +866,7 @@ class IngredientEnrichmentResultValidator
             }
         }
 
-        return $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        return $this->guidanceEvidencePolicy->normalizeForValidation($rows);
     }
 
     /**

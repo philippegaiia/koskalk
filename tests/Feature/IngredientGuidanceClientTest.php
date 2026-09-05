@@ -1,10 +1,107 @@
 <?php
 
 use App\Contracts\IngredientGuidanceAuthoringClient;
+use App\Services\IngredientEnrichment\IngredientGuidancePrompt;
 use App\Services\IngredientEnrichment\IngredientResearchProviderException;
 use App\Services\IngredientEnrichment\OpenAiStructuredOutputTransport;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+
+it('requests fuller practical guidance without filler when reviewed facts support it', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([]);
+
+    expect($prompt['version'])->toBe('ingredient-guidance-v16')
+        ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(240)
+        ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(2000)
+        ->and($prompt['instructions'])
+        ->toContain('Aim for 130–200 English words when the reviewed facts support it.')
+        ->toContain('Normally write 1–2 overview sentences, 2–3 formulation-use sentences, and, when soapmaking is relevant, 1–2 soapmaking sentences.')
+        ->toContain('Prefer specific handling, stability, sensory, selection, and recipe consequences over generic role prose.')
+        ->toContain('Do not add filler to reach that range.')
+        ->toContain('Use trusted soap chemistry for one conservative recipe consequence when present.')
+        ->toContain('principal native or cultivated region')
+        ->toContain('Do not include traditional-use, therapeutic, sustainability, or marketing claims')
+        ->toContain('Do not repeat facts across sections.');
+});
+
+it('requires natural concrete English guidance without evidence-report or stock AI phrasing', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([]);
+
+    expect($prompt['instructions'])
+        ->toContain('Never alter a supported fact or qualification that you carry into the guidance, and never invent details.')
+        ->toContain('Use plain, concrete cosmetic-formulation language, simple verbs, and active subjects.')
+        ->toContain('Vary sentence openings and sentence length when natural.')
+        ->toContain('Remove evidence-report narration, vague attribution, sales language, filler, stock AI vocabulary, and generic positive conclusions.')
+        ->toContain('Prefer `is` and `has` to inflated substitutes such as `serves as`, `offers`, or `boasts`.')
+        ->toContain('Remove decorative words such as `enhances`, `key`, `valuable`, or `versatile` when they add no factual meaning.')
+        ->toContain('Avoid repeated qualifications and forced contrasts such as "not only X, but Y".')
+        ->toContain('Keep necessary scientific uncertainty once, in the clearest place.');
+});
+
+it('avoids repeating the unfamiliar technical term mesocarp in Palm Oil guidance', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([
+        'current' => [
+            'canonical' => [
+                'display_name' => 'Palm Oil',
+                'info_markdown' => 'Palm Oil comes from the fleshy mesocarp of the fruit. The mesocarp is pressed to extract the oil.',
+            ],
+        ],
+    ]);
+
+    expect($prompt['instructions'])
+        ->toContain('Use an unfamiliar technical term only when it materially improves ingredient identification or formulation clarity; explain it once in plain language on first use, then prefer the everyday term and do not repeat the technical label mechanically.');
+});
+
+it('keeps Palm Oil application-specific usage ranges distinct in the authoring prompt', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([
+        'current' => [
+            'canonical' => [
+                'display_name' => 'Palm Oil',
+            ],
+        ],
+        'guidance_evidence' => [
+            [
+                'claim_type' => 'usage',
+                'scope' => 'product_grade',
+                'summary' => 'Natural, unrefined Palm Oil is used at 2–5% of the oil phase in lotions and creams.',
+                'usage_application' => 'cosmetics',
+                'recommended_min_percent' => 2,
+                'recommended_max_percent' => 5,
+                'percentage_basis' => 'oil_phase',
+            ],
+            [
+                'claim_type' => 'usage',
+                'scope' => 'product_grade',
+                'summary' => 'Natural, unrefined Palm Oil is used at 2–10% of the total formula in lip products.',
+                'usage_application' => 'cosmetics',
+                'recommended_min_percent' => 2,
+                'recommended_max_percent' => 10,
+                'percentage_basis' => 'total_formula',
+            ],
+        ],
+    ]);
+
+    expect($prompt['instructions'])->toContain('When multiple supported use ranges concern the same grade, state the grade qualification once, name the application for every range, keep each evidence-backed usage claim separate and traceable to its own evidence row, and avoid repeating the same `Typical use level` lead-in. Never generalize an application-specific range, and never merge or average conflicting ranges.');
+});
+
+it('keeps renderer-only fresh evidence out of the guidance prompt input', function (): void {
+    $prompt = app(IngredientGuidancePrompt::class)->build([
+        'guidance_evidence' => [[
+            'source_url' => 'https://example.test/merged',
+            'summary' => 'Merged evidence row.',
+        ]],
+        'fresh_guidance_evidence' => [[
+            'source_url' => 'https://example.test/internal-fresh',
+            'summary' => 'Renderer-only fresh evidence row.',
+        ]],
+    ]);
+
+    expect($prompt['input'])
+        ->toContain('Merged evidence row.')
+        ->not->toContain('fresh_guidance_evidence')
+        ->not->toContain('Renderer-only fresh evidence row.')
+        ->not->toContain('internal-fresh');
+});
 
 it('authors evidence-linked guidance with a strict no-web response contract', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
@@ -109,6 +206,8 @@ it('authors evidence-linked guidance with a strict no-web response contract', fu
             && str_contains((string) $data['instructions'], 'minimum-only bound')
             && str_contains((string) $data['instructions'], 'omit generic filler');
     });
+
+    Http::assertSentCount(1);
 });
 
 it('omits an unsupported guidance claim before returning authoring output', function (): void {

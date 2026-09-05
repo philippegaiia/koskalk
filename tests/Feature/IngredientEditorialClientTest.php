@@ -181,6 +181,8 @@ it('uses bounded practical web search only in an explicitly enabled guidance-res
             && str_contains((string) $data['instructions'], 'specialist formulation or soapmaking references')
             && str_contains((string) $data['instructions'], 'Do not use patents')
             && str_contains((string) $data['instructions'], 'isolated narrow studies')
+            && str_contains((string) $data['instructions'], 'native or principal cultivated region')
+            && str_contains((string) $data['instructions'], 'Do not spend an additional search solely to find geography')
             && str_contains((string) $data['instructions'], 'Stop researching')
             && str_contains((string) $data['instructions'], 'soap-relevant materials')
             && str_contains((string) $data['instructions'], 'For non-usage claims')
@@ -199,6 +201,42 @@ it('does not permit an implicit gap-research request when the feature is disable
         ->toThrow(RuntimeException::class, 'disabled');
 
     Http::assertNothingSent();
+});
+
+it('allows an explicitly fresh research call when ordinary research is disabled', function (): void {
+    config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
+    config()->set('ingredient-enrichment.openai.gap_research.enabled', false);
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.openai.com/v1/responses' => Http::response([
+            'id' => 'resp_fresh_override',
+            'status' => 'completed',
+            'model' => 'gpt-5.6-terra-2026-08-01',
+            'output' => [[
+                'type' => 'message',
+                'content' => [[
+                    'type' => 'output_text',
+                    'text' => json_encode([
+                        'candidate_evidence' => [],
+                        'warnings' => [],
+                        'unresolved_questions' => [],
+                    ], JSON_THROW_ON_ERROR),
+                ]],
+            ]],
+        ]),
+    ]);
+
+    $response = app(OpenAiIngredientGapResearchClient::class)->research([
+        ...editorialFacts(),
+        'fresh_research_override' => true,
+    ]);
+
+    expect($response->responseId)->toBe('resp_fresh_override');
+    Http::assertSent(fn (Request $request): bool => ! str_contains(
+        (string) data_get($request->data(), 'input'),
+        'fresh_research_override',
+    ));
 });
 
 it('returns guidance candidates without applying the evidence policy in transport', function (): void {

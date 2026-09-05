@@ -80,7 +80,14 @@ class IngredientEnrichmentBatchService
         User $actor,
         Collection $ingredients,
         bool $localizationOnly = false,
+        bool $freshResearch = false,
     ): IngredientEnrichmentBatch {
+        if ($localizationOnly && $freshResearch) {
+            throw ValidationException::withMessages([
+                'fresh_research' => __('ingredient_enrichment_admin.validation.fresh_research_localization'),
+            ]);
+        }
+
         $this->assertConfigured();
 
         $ids = $ingredients->pluck('id')->filter()->unique()->sort()->values();
@@ -97,8 +104,14 @@ class IngredientEnrichmentBatchService
         $promptVersion = $localizationOnly
             ? config('ingredient-enrichment.openai.guidance_localization_prompt_version')
             : config('ingredient-enrichment.openai.guidance_prompt_version');
+        $model = $localizationOnly
+            ? config('ingredient-enrichment.openai.localization_model')
+            : config('ingredient-enrichment.openai.model');
+        $reasoningEffort = $localizationOnly
+            ? config('ingredient-enrichment.openai.localization_reasoning_effort')
+            : config('ingredient-enrichment.openai.reasoning_effort');
 
-        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion): IngredientEnrichmentBatch {
+        $batch = DB::transaction(function () use ($actor, $ids, $mode, $promptVersion, $model, $reasoningEffort, $freshResearch): IngredientEnrichmentBatch {
             $locked = Ingredient::query()
                 ->withoutGlobalScopes()
                 ->whereIn('id', $ids)
@@ -115,17 +128,18 @@ class IngredientEnrichmentBatchService
             $batch = IngredientEnrichmentBatch::query()->create([
                 'requested_by_user_id' => $actor->id,
                 'status' => IngredientEnrichmentBatchStatus::Pending,
-                'model' => config('ingredient-enrichment.openai.model'),
-                'reasoning_effort' => config('ingredient-enrichment.openai.reasoning_effort'),
+                'model' => $model,
+                'reasoning_effort' => $reasoningEffort,
                 'prompt_version' => $promptVersion,
                 'schema_version' => 1,
                 'mode' => $mode,
+                'fresh_research' => $freshResearch,
                 'total_count' => $locked->count(),
                 'pending_count' => $locked->count(),
             ]);
 
             foreach ($locked as $ingredient) {
-                $context = $this->guidanceContext->build($ingredient);
+                $context = $this->guidanceContext->build($ingredient, $freshResearch);
                 $batch->items()->create([
                     'ingredient_id' => $ingredient->id,
                     'catalog_key' => $ingredient->catalog_key,

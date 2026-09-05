@@ -1,6 +1,8 @@
 <?php
 
 use App\Services\IngredientEnrichment\CorroboratedIngredientIdentifierService;
+use App\Services\IngredientEnrichment\SourcePublisherDomainResolver;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -37,12 +39,12 @@ function corroborationFacts(array $overrides = []): array
     ];
 }
 
-it('adds an identifier printed by two independent hosts with approved-secondary provenance', function (): void {
+it('adds an identifier printed by two independent publishers with approved-secondary provenance', function (): void {
     $service = app(CorroboratedIngredientIdentifierService::class);
 
     $facts = $service->merge(corroborationFacts(), [
-        corroborationEvidenceRow('https://supplier-a.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
-        corroborationEvidenceRow('https://supplier-b.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
     ]);
 
     expect($facts['proposal']['identifiers'])->toHaveCount(1)
@@ -54,25 +56,80 @@ it('adds an identifier printed by two independent hosts with approved-secondary 
             'confidence' => 'supported',
         ])
         ->and(collect($facts['evidence'])->pluck('source_url')->all())->toBe([
-            'https://supplier-a.example/technical/argan-oil.pdf',
-            'https://supplier-b.example/technical/argan-oil.pdf',
+            'https://supplier-a.com/technical/argan-oil.pdf',
+            'https://supplier-b.com/technical/argan-oil.pdf',
         ])
         ->and($facts['value_provenance'][0])->toMatchArray([
             'kind' => 'source_confirmed',
             'source_urls' => [
-                'https://supplier-a.example/technical/argan-oil.pdf',
-                'https://supplier-b.example/technical/argan-oil.pdf',
+                'https://supplier-a.com/technical/argan-oil.pdf',
+                'https://supplier-b.com/technical/argan-oil.pdf',
             ],
         ]);
 });
 
-it('does not treat two pages on one host as independent authorities', function (): void {
+it('does not treat two pages on one publisher as independent authorities', function (): void {
     $service = app(CorroboratedIngredientIdentifierService::class);
 
     $facts = $service->merge(corroborationFacts(), [
-        corroborationEvidenceRow('https://supplier-a.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
-        corroborationEvidenceRow('https://supplier-a.example/spec-sheets/argan-oil.pdf', 'cas', '68956-68-3'),
-        corroborationEvidenceRow('https://www.supplier-a.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-a.com/spec-sheets/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://www.supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+    ]);
+
+    expect($facts['proposal']['identifiers'])->toBe([]);
+});
+
+it('does not treat sibling subdomains on one publisher as independent authorities', function (): void {
+    $service = app(CorroboratedIngredientIdentifierService::class);
+
+    $facts = $service->merge(corroborationFacts(), [
+        corroborationEvidenceRow('https://docs.supplier.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://shop.supplier.com/spec-sheets/argan-oil.pdf', 'cas', '68956-68-3'),
+    ]);
+
+    expect($facts['proposal']['identifiers'])->toBe([]);
+});
+
+it('does not treat alternate URL presentations of one publisher as independent authorities', function (): void {
+    $service = app(CorroboratedIngredientIdentifierService::class);
+
+    $facts = $service->merge(corroborationFacts(), [
+        corroborationEvidenceRow('https://user:secret@docs.supplier.com:443/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('HTTPS://SHOP.SUPPLIER.COM.:8443/spec-sheets/argan-oil.pdf', 'cas', '68956-68-3'),
+    ]);
+
+    expect($facts['proposal']['identifiers'])->toBe([]);
+});
+
+it('accepts identifiers printed by two independent registrable publishers', function (): void {
+    $service = app(CorroboratedIngredientIdentifierService::class);
+
+    $facts = $service->merge(corroborationFacts(), [
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+    ]);
+
+    expect($facts['proposal']['identifiers'])->toHaveCount(1);
+});
+
+it('accepts identifiers from unrelated multi-label-suffix publishers', function (): void {
+    $service = app(CorroboratedIngredientIdentifierService::class);
+
+    $facts = $service->merge(corroborationFacts(), [
+        corroborationEvidenceRow('https://docs.supplier-a.co.uk/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://shop.supplier-b.co.uk/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+    ]);
+
+    expect($facts['proposal']['identifiers'])->toHaveCount(1);
+});
+
+it('rejects an identifier when one source has no resolvable publisher domain', function (): void {
+    $service = app(CorroboratedIngredientIdentifierService::class);
+
+    $facts = $service->merge(corroborationFacts(), [
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://localhost/technical/argan-oil.pdf', 'cas', '68956-68-3'),
     ]);
 
     expect($facts['proposal']['identifiers'])->toBe([]);
@@ -89,6 +146,88 @@ it('does not count urls without a parseable host as authorities', function (): v
     expect($facts['proposal']['identifiers'])->toBe([]);
 });
 
+it('logs one warning and rejects corroboration when the public suffix snapshot is unavailable', function (): void {
+    Log::spy();
+
+    $missingPath = tempnam(sys_get_temp_dir(), 'missing-psl-');
+    if ($missingPath === false) {
+        throw new RuntimeException('Could not create a temporary path.');
+    }
+
+    unlink($missingPath);
+
+    try {
+        $resolver = app()->makeWith(SourcePublisherDomainResolver::class, [
+            'rulesPath' => $missingPath,
+        ]);
+        $service = new CorroboratedIngredientIdentifierService($resolver);
+        $evidence = [
+            corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+            corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        ];
+
+        expect($service->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([])
+            ->and($service->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([]);
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context) use ($missingPath): bool {
+                return $message === 'Public suffix snapshot unavailable; publisher corroboration is disabled.'
+                    && ($context['event'] ?? null) === 'ingredient_enrichment.publisher_domain_resolver_failure'
+                    && ($context['reason'] ?? null) === 'snapshot_unavailable'
+                    && ($context['snapshot_path'] ?? null) === $missingPath;
+            });
+    } finally {
+        if (is_file($missingPath)) {
+            unlink($missingPath);
+        }
+    }
+});
+
+it('shares one unavailable-PSL resolver across separate container-resolved service graphs', function (): void {
+    Log::spy();
+
+    expect(app()->isShared(SourcePublisherDomainResolver::class))->toBeTrue();
+
+    $invalidPath = tempnam(sys_get_temp_dir(), 'invalid-psl-');
+    if ($invalidPath === false) {
+        throw new RuntimeException('Could not create a temporary path.');
+    }
+
+    file_put_contents($invalidPath, <<<'PSL'
+// ===BEGIN ICANN DOMAINS===
+com
+io
+// ===END ICANN DOMAINS===
+PSL
+    );
+
+    try {
+        app()->instance(
+            SourcePublisherDomainResolver::class,
+            new SourcePublisherDomainResolver($invalidPath),
+        );
+
+        $firstService = app(CorroboratedIngredientIdentifierService::class);
+        $secondService = app(CorroboratedIngredientIdentifierService::class);
+        $evidence = [
+            corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+            corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        ];
+
+        expect($firstService)->not->toBe($secondService)
+            ->and(app(SourcePublisherDomainResolver::class))->toBe(app(SourcePublisherDomainResolver::class))
+            ->and($firstService->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([])
+            ->and($secondService->merge(corroborationFacts(), $evidence)['proposal']['identifiers'])->toBe([]);
+
+        Log::shouldHaveReceived('warning')->once();
+    } finally {
+        app()->forgetInstance(SourcePublisherDomainResolver::class);
+        Log::clearResolvedInstances();
+        unlink($invalidPath);
+    }
+});
+
 it('skips a value the official record already carries even when two hosts print it', function (): void {
     $service = app(CorroboratedIngredientIdentifierService::class);
 
@@ -103,8 +242,8 @@ it('skips a value the official record already carries even when two hosts print 
             ]],
         ],
     ]), [
-        corroborationEvidenceRow('https://supplier-a.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
-        corroborationEvidenceRow('https://supplier-b.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
     ]);
 
     expect($facts['proposal']['identifiers'])->toHaveCount(1);
@@ -124,10 +263,10 @@ it('keeps a different value of an officially covered scheme as a non-primary sec
             ]],
         ],
     ]), [
-        corroborationEvidenceRow('https://supplier-a.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
-        corroborationEvidenceRow('https://supplier-b.example/technical/argan-oil.pdf', 'cas', '68956-68-3'),
-        corroborationEvidenceRow('https://supplier-a.example/technical/argan-oil.pdf', 'ec', '614-11-9'),
-        corroborationEvidenceRow('https://supplier-b.example/technical/argan-oil.pdf', 'ec', '614-11-9'),
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'cas', '68956-68-3'),
+        corroborationEvidenceRow('https://supplier-a.com/technical/argan-oil.pdf', 'ec', '614-11-9'),
+        corroborationEvidenceRow('https://supplier-b.com/technical/argan-oil.pdf', 'ec', '614-11-9'),
     ]);
 
     expect(collect($facts['proposal']['identifiers'])->pluck('value')->all())->toBe(['223747-87-3', '68956-68-3', '614-11-9'])

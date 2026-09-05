@@ -9,6 +9,7 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceProposalReviewService;
+use App\Services\IngredientEnrichment\IngredientGuidanceRefreshResultValidator;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -212,6 +213,46 @@ it('reports validator failures and absent evidence through localized validation 
     }
 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
+});
+
+it('rejects malformed generated evidence during guidance result validation', function (): void {
+    $ingredient = Ingredient::factory()->create();
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = reviewServiceResult($ingredient, $fingerprint);
+    $result['translations'] = [];
+    $result['guidance_evidence'] = [
+        [
+            'source_name' => '',
+            'source_url' => 'https://malformed.example/first',
+            'summary' => 'Missing source name.',
+            'source_tier' => 'editorial',
+        ],
+        [
+            'source_name' => 'Partial source',
+            'source_url' => 'https://malformed.example/second',
+            'summary' => 'Partially classified evidence.',
+            'source_tier' => 'editorial',
+            'claim_type' => 'usage',
+        ],
+        [
+            'source_name' => 'Unexpected field source',
+            'source_url' => 'https://malformed.example/third',
+            'summary' => 'Evidence with an unsupported field.',
+            'source_tier' => 'editorial',
+            'unexpected' => true,
+        ],
+    ];
+
+    $report = app(IngredientGuidanceRefreshResultValidator::class)->validate(
+        $result,
+        $ingredient,
+        IngredientEnrichmentBatchMode::GuidanceRefresh,
+        [],
+    );
+
+    expect($report['valid'])->toBeFalse()
+        ->and($report['errors'])->not->toBe([])
+        ->and($report['normalized'])->toBeNull();
 });
 
 /** @return array{0: Ingredient, 1: IngredientEnrichmentBatch, 2: IngredientEnrichmentBatchItem} */

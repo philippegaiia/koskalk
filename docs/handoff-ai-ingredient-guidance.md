@@ -108,7 +108,8 @@ The branch `codex/ingredient-guidance-evidence-quarantine` (7 commits, forked at
 ## 9. How to run / inspect
 
 ```bash
-php artisan queue:listen --queue=media,default --tries=1 --timeout=0   # --timeout must be 0 or >= the 2000s job timeout (Decision 11); 960 is not safe
+php artisan queue:listen --queue=media,default --tries=1 --timeout=0   # media/default worker
+php artisan queue:listen --queue=enrichment --tries=3 --timeout=0  # enrichment job timeout governs; 960 is not safe
 php artisan test --compact tests/Feature/HybridIngredientEnrichmentPipelineTest.php  # pipeline incl. identity
 php artisan test --compact tests/Feature/IngredientGuidanceRefreshJobTest.php        # refresh incl. jsonb reuse
 # Start a full enrichment or guidance refresh from the admin UI (Ingredient Enrichment Batches);

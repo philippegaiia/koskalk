@@ -46,6 +46,280 @@ it('strips editorial qualifiers from the display name before composing the FDA l
     expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
 });
 
+it('normalizes punctuation and casing around editorial qualifiers before composing the FDA label', function (string $displayName, string $expected): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe($expected);
+})->with([
+    'comma-adjacent qualifiers' => [
+        'Organic, Virgin Marula Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'non-breaking hyphen in the form' => [
+        'Organic Virgin Marula‑Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'non-breaking hyphen in an editorial phrase' => [
+        'Cold‑Pressed Organic Marula Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'parenthesized qualifier' => [
+        'Organic (Virgin) Marula Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'mixed-case qualifiers' => [
+        'oRgAnIc vIrGiN mArUlA oIl',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'uppercase and title-case qualifiers' => [
+        'ORGANIC Refined Marula Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'sweet descriptor remains meaningful' => [
+        'Organic Sweet Marula Oil',
+        'Sweet Marula (Sclerocarya Birrea) Oil',
+    ],
+    'high oleic descriptor remains meaningful' => [
+        'Organic High Oleic Marula Oil',
+        'High Oleic Marula (Sclerocarya Birrea) Oil',
+    ],
+]);
+
+it('normalizes Unicode dashes in editorial phrases before composing the FDA label', function (string $dash): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: "Organic{$dash}Extra{$dash}Virgin Marula Oil",
+    );
+
+    expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
+})->with([
+    'hyphen' => '‐',
+    'non-breaking hyphen' => '‑',
+    'figure dash' => '‒',
+    'en dash' => '–',
+    'em dash' => '—',
+    'horizontal bar' => '―',
+    'minus sign' => '−',
+]);
+
+it('removes separators attached to editorial qualifiers before composing the FDA label', function (string $displayName): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
+})->with([
+    'leading ASCII hyphen' => 'Organic-Marula Oil',
+    'leading U+2010 hyphen' => 'Organic‐Marula Oil',
+    'leading U+2011 hyphen' => 'Organic‑Marula Oil',
+    'leading U+2012 figure dash' => 'Organic‒Marula Oil',
+    'leading U+2013 en dash' => 'Organic–Marula Oil',
+    'leading U+2014 em dash' => 'Organic—Marula Oil',
+    'leading U+2015 horizontal bar' => 'Organic―Marula Oil',
+    'leading U+2212 minus sign' => 'Organic−Marula Oil',
+    'trailing ASCII hyphen' => 'Marula-Organic Oil',
+    'trailing U+2010 hyphen' => 'Marula‐Organic Oil',
+    'trailing U+2011 hyphen' => 'Marula‑Organic Oil',
+    'trailing U+2012 figure dash' => 'Marula‒Organic Oil',
+    'trailing U+2013 en dash' => 'Marula–Organic Oil',
+    'trailing U+2014 em dash' => 'Marula—Organic Oil',
+    'trailing U+2015 horizontal bar' => 'Marula―Organic Oil',
+    'trailing U+2212 minus sign' => 'Marula−Organic Oil',
+    'parenthesized leading ASCII hyphen' => '(Organic)-Marula Oil',
+    'parenthesized leading U+2010 hyphen' => '(Organic)‐Marula Oil',
+    'parenthesized leading U+2011 hyphen' => '(Organic)‑Marula Oil',
+    'parenthesized leading U+2012 figure dash' => '(Organic)‒Marula Oil',
+    'parenthesized leading U+2013 en dash' => '(Organic)–Marula Oil',
+    'parenthesized leading U+2014 em dash' => '(Organic)—Marula Oil',
+    'parenthesized leading U+2015 horizontal bar' => '(Organic)―Marula Oil',
+    'parenthesized leading U+2212 minus sign' => '(Organic)−Marula Oil',
+]);
+
+it('removes editorial phrases separated by harmless punctuation or stacked qualifiers', function (string $displayName): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
+})->with([
+    'comma-separated extra virgin' => 'Extra, Virgin Marula Oil',
+    'slash-separated cold pressed' => 'Cold / Pressed Organic Marula Oil',
+    'stacked extra organic virgin' => 'Extra Organic Virgin Marula Oil',
+]);
+
+it('preserves meaningful punctuation between non-qualifier tokens', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: 'Omega‑3 / Marula Oil',
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe('Omega‑3 / Marula (Sclerocarya Birrea) Oil');
+});
+
+it('keeps balanced wrappers around retained material while removing editorial content', function (string $displayName, string $expected): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe($expected);
+})->with([
+    'editorial content starts the parenthesized segment' => [
+        '(Organic Marula) Oil',
+        'Marula (Sclerocarya Birrea) Oil',
+    ],
+    'editorial content starts the retained blend segment' => [
+        'Marula (Organic Blend) Oil',
+        'Marula Blend (Sclerocarya Birrea) Oil',
+    ],
+    'retained content starts the parenthesized segment' => [
+        'Marula (Blend Organic) Oil',
+        'Marula (Blend) (Sclerocarya Birrea) Oil',
+    ],
+]);
+
+it('keeps quote wrappers around retained material while removing editorial content', function (string $displayName, string $expected): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe($expected);
+})->with([
+    'ASCII quote' => [
+        'Organic "Marula" Oil',
+        '"Marula" (Sclerocarya Birrea) Oil',
+    ],
+    'Unicode quote' => [
+        'Organic “Marula” Oil',
+        '“Marula” (Sclerocarya Birrea) Oil',
+    ],
+]);
+
+it('preserves one meaningful separator around removed editorial content', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: 'Omega‑3 / Organic / Marula Oil',
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe('Omega‑3 / Marula (Sclerocarya Birrea) Oil');
+});
+
+it('preserves one supported separator around removed editorial content', function (string $separator): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: "Omega‑3 {$separator} Organic {$separator} Marula Oil",
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe("Omega‑3 {$separator} Marula (Sclerocarya Birrea) Oil");
+})->with([
+    'slash' => '/',
+    'ampersand' => '&',
+    'plus' => '+',
+    'pipe' => '|',
+]);
+
+it('strips orphan supported separators at editorial qualifier edges', function (string $displayName): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: $displayName,
+    );
+
+    expect($result->data['declaration_name'])->toBe('Marula (Sclerocarya Birrea) Oil');
+})->with([
+    'leading slash' => 'Organic / Marula Oil',
+    'leading ampersand' => 'Organic & Marula Oil',
+    'leading plus' => 'Organic + Marula Oil',
+    'leading pipe' => 'Organic | Marula Oil',
+    'trailing slash' => 'Marula / Organic Oil',
+    'trailing ampersand' => 'Marula & Organic Oil',
+    'trailing plus' => 'Marula + Organic Oil',
+    'trailing pipe' => 'Marula | Organic Oil',
+]);
+
+it('preserves a meaningful Unicode hyphen in the composed FDA label', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'WDO4TLS35F',
+            'common_name' => 'SCLEROCARYA BIRREA SEED OIL',
+            'inci_names' => ['SCLEROCARYA BIRREA SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'SCLEROCARYA BIRREA SEED OIL',
+        displayName: 'Omega‑3 Marula Oil',
+    );
+
+    expect($result->data['declaration_name'])->toBe('Omega‑3 Marula (Sclerocarya Birrea) Oil');
+});
+
 it('keeps material-distinguishing adjectives in the composed FDA label', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose(
         candidate: [
@@ -59,6 +333,22 @@ it('keeps material-distinguishing adjectives in the composed FDA label', functio
     );
 
     expect($result->data['declaration_name'])->toBe('Sweet Almond (Prunus Amygdalus Dulcis) Oil');
+});
+
+it('keeps the high oleic descriptor in the composed FDA label', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => 'SUNFLOWER001',
+            'common_name' => 'HELIANTHUS ANNUUS SEED OIL',
+            'inci_names' => ['HELIANTHUS ANNUUS SEED OIL'],
+            'cas' => [],
+        ],
+        verifiedInciName: 'HELIANTHUS ANNUUS SEED OIL',
+        displayName: 'Organic High Oleic Sunflower Oil',
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe('High Oleic Sunflower (Helianthus Annuus) Oil');
 });
 
 it('composes the FDA label form for seed-oil botanicals', function (): void {

@@ -2,15 +2,12 @@
 
 namespace App\Filament\Resources\Ingredients\Pages;
 
-use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientLabelMarket;
-use App\Filament\Resources\IngredientEnrichmentBatches\IngredientEnrichmentBatchResource;
 use App\Filament\Resources\Ingredients\IngredientResource;
 use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientClassificationPrompt;
 use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientDataEntry;
 use App\Models\Ingredient;
-use App\Models\User;
 use App\Services\IngredientDataEntryService;
 use App\Services\IngredientMarketLabelService;
 use App\Services\IngredientTranslationService;
@@ -37,29 +34,6 @@ class EditIngredient extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('regenerateOutdatedTranslations')
-                ->label(__('ingredient_admin.translations.regenerate_outdated'))
-                ->icon(Heroicon::Language)
-                ->modalHeading(__('ingredient_admin.translations.regenerate_outdated_heading'))
-                ->modalDescription(function (Ingredient $record): string {
-                    $locales = collect(app(IngredientTranslationService::class)->formData($record))
-                        ->filter(fn (array $row): bool => ($row['is_stale'] ?? false) === true)
-                        ->pluck('locale')
-                        ->implode(', ');
-
-                    return __('ingredient_admin.translations.regenerate_outdated_description', ['locales' => $locales]);
-                })
-                ->requiresConfirmation()
-                ->visible(fn (Ingredient $record): bool => $record->owner_type === null
-                    && $record->owner_id === null
-                    && collect(app(IngredientTranslationService::class)->formData($record))
-                        ->contains(fn (array $row): bool => ($row['is_stale'] ?? false) === true))
-                ->action(function (Ingredient $record, StartIngredientGuidanceRefresh $startRefresh): void {
-                    $actor = auth()->user();
-                    abort_unless($actor instanceof User, 403);
-                    $batch = $startRefresh->handle($actor, collect([$record]), true);
-                    $this->redirect(IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]), navigate: true);
-                }),
             Action::make('marketColourLabels')
                 ->label(__('ingredient_admin.market_labels.action.label'))
                 ->icon(Heroicon::Swatch)

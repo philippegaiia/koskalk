@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientIdentifier;
 use App\Models\IngredientTranslation;
 use App\Services\IngredientEnrichment\ApplyPlatformIngredientEnrichment;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
+use App\Services\IngredientTranslationSourceFingerprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -166,6 +168,261 @@ it('keeps proposed secondary CAS and EC identifiers during explicit replacement'
         ->toBe(['333-33-3', '333-333-3', '444-44-4', '444-444-4'])
         ->and($ingredient->fresh()->identifiers()->withCount('evidence')->get()->pluck('evidence_count')->all())
         ->each->toBe(1);
+
+    unlink($path);
+});
+
+it('applies every corroborating identifier evidence row', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-CORROBORATED-EVIDENCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $sourceA = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-a-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $sourceB = [
+        'source_name' => 'Supplier B technical dossier',
+        'source_url' => 'https://supplier-b.example/technical/marula-oil.pdf',
+        'source_tier' => 'approved_secondary',
+        'confidence' => 'supported',
+        'source_version' => 'supplier-b-2026',
+        'source_updated_at' => null,
+        'retrieved_at' => '2026-08-14T12:00:00+00:00',
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+        ...$sourceA,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.0', ...$sourceB],
+    ];
+    $result['value_provenance'] = [[
+        'field' => 'proposal.identifiers.0',
+        'kind' => 'source_confirmed',
+        'reasoning' => 'Both technical dossiers print the same CAS number.',
+        'source_urls' => [$sourceA['source_url'], $sourceB['source_url']],
+    ]];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    $identifier = $ingredient->fresh()
+        ->identifiers()
+        ->where('scheme', 'cas')
+        ->where('normalized_value', '68956-68-3')
+        ->firstOrFail();
+
+    expect($identifier->evidence()->orderBy('source_url')->pluck('source_url')->all())
+        ->toBe([
+            'https://supplier-a.example/technical/marula-oil.pdf',
+            'https://supplier-b.example/technical/marula-oil.pdf',
+        ])
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.core.value_provenance.0.source_urls'))
+        ->toBe([
+            'https://supplier-a.example/technical/marula-oil.pdf',
+            'https://supplier-b.example/technical/marula-oil.pdf',
+        ]);
+
+    unlink($path);
+});
+
+it('matches equivalent Unicode identifier formatting when applying evidence to an existing identity', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EQUIVALENT-IDENTIFIER-FORMAT',
+        'category' => IngredientCategory::Other,
+    ]);
+    $ingredient->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'normalized_value' => '68956-68-3',
+        'is_primary' => true,
+    ]);
+    $source = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956–68–3',
+        'is_primary' => true,
+        ...$source,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        ...$source,
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    $identifiers = $ingredient->fresh()->identifiers()->withCount('evidence')->get();
+    expect($identifiers)->toHaveCount(1)
+        ->and($identifiers->first()->normalized_value)->toBe('68956-68-3')
+        ->and($identifiers->first()->evidence_count)->toBe(1)
+        ->and($identifiers->first()->evidence()->value('source_url'))->toBe($source['source_url']);
+
+    unlink($path);
+});
+
+it('accepts and canonicalizes a newly applied Unicode-dash identifier', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-NEW-UNICODE-IDENTIFIER',
+        'category' => IngredientCategory::Other,
+    ]);
+    $source = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956–68–3',
+        'is_primary' => true,
+        ...$source,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        ...$source,
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    expect($ingredient->fresh()->identifiers()->pluck('normalized_value')->all())
+        ->toBe(['68956-68-3']);
+
+    unlink($path);
+});
+
+it('attaches accepted identifier evidence to its matching identifier after a merge', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-CORROBORATED-EVIDENCE-MERGE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $ingredient->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '111-11-1',
+        'normalized_value' => '111-11-1',
+        'is_primary' => true,
+    ]);
+    $sourceA = [
+        'source_name' => 'Supplier A technical dossier',
+        'source_url' => 'https://supplier-a.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $sourceB = [
+        'source_name' => 'Supplier B technical dossier',
+        'source_url' => 'https://supplier-b.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result = importResult($ingredient);
+    $result['proposal']['identifiers'] = [[
+        'scheme' => 'cas',
+        'value' => '68956-68-3',
+        'is_primary' => false,
+        ...$sourceA,
+    ]];
+    $result['field_confidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'confidence' => 'supported',
+    ];
+    $result['evidence'] = [
+        ...$result['evidence'],
+        ['field' => 'proposal.identifiers.0', ...$sourceA],
+        ['field' => 'proposal.identifiers.0', ...$sourceB],
+    ];
+    $result['value_provenance'] = [[
+        'field' => 'proposal.identifiers.0',
+        'kind' => 'source_confirmed',
+        'reasoning' => 'Both technical dossiers print the same CAS number.',
+        'source_urls' => [$sourceA['source_url'], $sourceB['source_url']],
+    ]];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    $identifiers = $ingredient->fresh()->identifiers()->withCount('evidence')->get()->keyBy('value');
+
+    expect($identifiers['111-11-1']->evidence_count)->toBe(0)
+        ->and($identifiers['68956-68-3']->evidence_count)->toBe(2);
+
+    unlink($path);
+});
+
+it('does not attach identifier evidence without a matching proposed identifier', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-STALE-IDENTIFIER-EVIDENCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $ingredient->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '111-11-1',
+        'normalized_value' => '111-11-1',
+        'is_primary' => true,
+    ]);
+    $result = importResult($ingredient);
+    $result['evidence'][] = [
+        'field' => 'proposal.identifiers.0',
+        'source_name' => 'Stale identifier source',
+        'source_url' => 'https://stale.example/technical/marula-oil.pdf',
+        ...importSource(),
+    ];
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $path = writeJsonl($result);
+
+    $this->artisan('ingredients:enrichment:import', [
+        'path' => $path,
+        '--apply' => true,
+    ])->assertExitCode(0);
+
+    expect($ingredient->fresh()->identifiers()->withCount('evidence')->value('evidence_count'))->toBe(0);
 
     unlink($path);
 });
@@ -342,7 +599,7 @@ it('plans and applies removal of stale guidance evidence after empty fresh resea
         ->and($applied['status'])->toBe('applied')
         ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.evidence'))->toBe([])
         ->and(data_get($applied['ingredient']->source_data, 'enrichment.guidance.research_prompt_version'))
-        ->toBe('ingredient-guidance-research-v6');
+        ->toBe('ingredient-guidance-research-v7');
 });
 
 it('applies successive evidence-only updates with the same source fingerprint', function (): void {
@@ -438,9 +695,9 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))
         ->toBe('COSMILE Europe')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))
-        ->toBe('ingredient-guidance-research-v6')
+        ->toBe('ingredient-guidance-research-v7')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))
-        ->toBe('ingredient-guidance-v11');
+        ->toBe('ingredient-guidance-v16');
 
     $this->artisan('ingredients:enrichment:import', [
         'path' => $path,
@@ -450,6 +707,199 @@ it('applies a valid result atomically, records enrichment metadata, and is idemp
         ->assertExitCode(0);
 
     unlink($path);
+});
+
+it('fills missing localized identity names without replacing existing names or guidance in merge mode', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-LEGACY-TRANSLATION',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+        'info_markdown' => "## Overview\nOriginal guidance.\n\n## Formulation use\nUse this material in a simple formula.",
+        'source_data' => ['enrichment' => ['guidance' => [
+            'localization_prompt_version' => 'stored-localization-v1',
+        ]]],
+    ]);
+    $translation = IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom français existant',
+        'saponification_name' => 'Nom de saponification existant',
+        'info_markdown' => "## Vue d’ensemble\nTraduction générée avant la nouvelle version.\n\n## Utilisation en formulation\nUtiliser ce matériau dans une formule simple.",
+        'source_fingerprint' => 'legacy-generated-fingerprint',
+        'origin' => IngredientTranslationOrigin::AiGenerated,
+        'prompt_version' => 'legacy-localization-v1',
+    ]);
+    IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'de',
+        'display_name' => null,
+        'saponification_name' => null,
+        'info_markdown' => "## Übersicht\nBestehende Anleitung.\n\n## Verwendung in Formulierungen\nBestehende Verwendung.",
+        'source_fingerprint' => 'existing-german-fingerprint',
+        'origin' => IngredientTranslationOrigin::AiGenerated,
+        'prompt_version' => 'legacy-localization-v1',
+    ]);
+    $existingLocalizedGuidance = $translation->info_markdown;
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['display_name'] = $ingredient->display_name;
+    $result['proposal']['inci_name'] = $ingredient->inci_name;
+    $result['proposal']['info_markdown'] = "## Overview\nUpdated guidance.\n\n## Formulation use\nUse this material in a measured formula.";
+    $result['proposal']['translations'][2] = [
+        'locale' => 'fr',
+        'display_name' => 'Nouveau nom français',
+        'saponification_name' => null,
+    ];
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result, ['info_markdown']);
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result, ['info_markdown']);
+
+    $ingredient->refresh();
+    expect($applied['status'])->toBe('applied')
+        ->and($ingredient->info_markdown)->toBe($result['proposal']['info_markdown'])
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.localization_prompt_version'))->toBe('stored-localization-v1')
+        ->and($ingredient->translations()->count())->toBe(6)
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->display_name)->toBe('Nom français existant')
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->saponification_name)->toBe('Nom de saponification existant')
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->info_markdown)->toBe($existingLocalizedGuidance)
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->source_fingerprint)->toBe('legacy-generated-fingerprint')
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->prompt_version)->toBe('legacy-localization-v1')
+        ->and($ingredient->translations()->where('locale', 'de')->firstOrFail()->display_name)->toBe('Translated de')
+        ->and($ingredient->translations()->where('locale', 'de')->firstOrFail()->info_markdown)->toContain('Bestehende Anleitung')
+        ->and($ingredient->translations()->where('locale', 'de')->firstOrFail()->source_fingerprint)->toBe('existing-german-fingerprint')
+        ->and($ingredient->translations()->where('locale', 'it')->firstOrFail()->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($ingredient->translations()->where('locale', 'it')->firstOrFail()->prompt_version)->toBe('ingredient-identity-name-localization-v1')
+        ->and($ingredient->translations()->where('locale', 'it')->firstOrFail()->source_fingerprint)
+        ->toBe(app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient))
+        ->and($ingredient->translations()->where('locale', 'it')->firstOrFail()->info_markdown)->toBeNull();
+});
+
+it('replaces AI identity names explicitly without erasing localized guidance', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-REPLACE-TRANSLATED-NAME',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+    ]);
+    $translation = IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom existant',
+        'saponification_name' => 'Nom savon existant',
+        'info_markdown' => "## Vue d’ensemble\nConseils existants.\n\n## Utilisation en formulation\nUtilisation existante.",
+        'source_fingerprint' => 'existing-guidance-fingerprint',
+        'origin' => IngredientTranslationOrigin::AiGenerated,
+        'prompt_version' => 'legacy-localization-v1',
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['display_name'] = $ingredient->display_name;
+    $result['proposal']['inci_name'] = $ingredient->inci_name;
+    $result['proposal']['info_markdown'] = $ingredient->info_markdown;
+    $result['proposal']['translations'] = [[
+        'locale' => 'fr',
+        'display_name' => 'Nouveau nom',
+        'saponification_name' => 'Nouveau nom savon',
+    ]];
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result, ['translations']);
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result, ['translations']);
+
+    $translation->refresh();
+    expect($applied['status'])->toBe('applied')
+        ->and($translation->display_name)->toBe('Nouveau nom')
+        ->and($translation->saponification_name)->toBe('Nouveau nom savon')
+        ->and($translation->info_markdown)->toContain('Conseils existants')
+        ->and($translation->source_fingerprint)->toBe('existing-guidance-fingerprint')
+        ->and($translation->prompt_version)->toBe('legacy-localization-v1');
+});
+
+it('does not apply preserved identity-name differences as changes', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create(['category' => IngredientCategory::Other]);
+    IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom conservé',
+        'saponification_name' => null,
+        'origin' => IngredientTranslationOrigin::AiGenerated,
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = ['source_fingerprint' => $sourceFingerprint, 'proposal' => ['translations' => [[
+        'locale' => 'fr',
+        'display_name' => 'Nom proposé',
+        'saponification_name' => null,
+    ]]]];
+    $plan = [
+        'ingredient_id' => $ingredient->id,
+        'changed' => true,
+        'effective' => ['translations' => [[
+            'locale' => 'fr',
+            'display_name' => 'Nom conservé',
+            'saponification_name' => null,
+        ]]],
+        'decisions' => [[
+            'field' => 'proposal.translations.fr.display_name',
+            'decision' => 'preserved',
+            'current' => 'Nom conservé',
+            'proposed' => 'Nom proposé',
+        ]],
+    ];
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result);
+
+    expect($applied['status'])->toBe('unchanged')
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->display_name)->toBe('Nom conservé');
+});
+
+it('preserves reviewer-owned translations when a legacy full result requests replacement', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-REVIEWER-TRANSLATION',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Existing ingredient',
+        'info_markdown' => "## Overview\nOriginal guidance.\n\n## Formulation use\nUse this material in a simple formula.",
+    ]);
+    $translation = IngredientTranslation::factory()->for($ingredient)->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom français relu',
+        'saponification_name' => 'Nom de saponification relu',
+        'info_markdown' => "## Vue d’ensemble\nTexte relu par un réviseur.\n\n## Utilisation en formulation\nUtiliser ce matériau avec discernement.",
+        'source_fingerprint' => 'reviewer-owned-fingerprint',
+        'origin' => IngredientTranslationOrigin::ReviewerEdited,
+        'prompt_version' => null,
+    ]);
+    $beforeTranslation = $translation->fresh()->only([
+        'display_name',
+        'saponification_name',
+        'info_markdown',
+        'source_fingerprint',
+        'origin',
+        'prompt_version',
+    ]);
+    $result = importResult($ingredient);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['display_name'] = $ingredient->display_name;
+    $result['proposal']['inci_name'] = $ingredient->inci_name;
+    $result['proposal']['info_markdown'] = "## Overview\nUpdated guidance.\n\n## Formulation use\nUse this material in a measured formula.";
+    $result['proposal']['translations'][2] = [
+        'locale' => 'fr',
+        'display_name' => 'Generated translated name',
+        'saponification_name' => 'Generated translated soap name',
+    ];
+    $plan = app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result, ['info_markdown', 'translations']);
+
+    $applied = app(ApplyPlatformIngredientEnrichment::class)->apply($plan, $result, ['info_markdown', 'translations']);
+
+    $ingredient->refresh();
+    expect($applied['status'])->toBe('applied')
+        ->and($ingredient->info_markdown)->toBe($result['proposal']['info_markdown'])
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]))->toBe($beforeTranslation);
 });
 
 it('rejects a stale result without changing the ingredient', function (): void {

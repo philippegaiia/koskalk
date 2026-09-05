@@ -153,23 +153,18 @@ it('forbids identity-name edits in localization-only batches', function (): void
     }
 });
 
-it('rejects localized guidance above the configured word or visible-character maximum', function (): void {
+it('uses the visible-character maximum when the word maximum is disabled', function (): void {
     $validator = app(IngredientGuidanceRefreshResultValidator::class);
     $translation = [[
         'locale' => 'fr',
         'info_markdown' => reviewServiceFrench('Texte volontairement trop long'),
     ]];
 
-    config()->set('ingredient-enrichment.guidance.maximum_words', 5);
-    $wordReport = $validator->validateTranslations($translation, ['fr'], false, null, false);
-
-    config()->set('ingredient-enrichment.guidance.maximum_words', 500);
+    config()->set('ingredient-enrichment.guidance.maximum_words', 0);
     config()->set('ingredient-enrichment.guidance.maximum_characters', 20);
     $characterReport = $validator->validateTranslations($translation, ['fr'], false, null, false);
 
-    expect($wordReport['valid'])->toBeFalse()
-        ->and($wordReport['errors'])->toHaveKey('translations.0.info_markdown')
-        ->and($characterReport['valid'])->toBeFalse()
+    expect($characterReport['valid'])->toBeFalse()
         ->and($characterReport['errors'])->toHaveKey('translations.0.info_markdown');
 });
 

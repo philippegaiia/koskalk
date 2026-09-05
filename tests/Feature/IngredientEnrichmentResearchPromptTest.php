@@ -94,7 +94,7 @@ it('uses a dedicated enrichment queue with a reservation margin for long jobs', 
 it('keeps guidance research policy separate from the official metadata domain allow list', function (): void {
     expect(config('ingredient-enrichment.guidance'))
         ->toMatchArray([
-            'maximum_words' => 1500,
+            'maximum_words' => 0,
             'maximum_characters' => 10000,
         ])
         ->and(config('ingredient-enrichment.openai.guidance_generation'))

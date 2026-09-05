@@ -1022,7 +1022,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->helperText($helper ?? __('ingredients.editor.workspace_guidance.helper', [
                 'max' => WorkspaceIngredientGuidanceService::MAX_LENGTH,
             ]))
-            ->maxLength(WorkspaceIngredientGuidanceService::MAX_LENGTH)
             ->extraInputAttributes([
                 'class' => 'min-h-[18rem] [&_.fi-fo-rich-editor-content]:min-h-[16rem]',
             ])

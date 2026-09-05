@@ -11,7 +11,7 @@ it('requests fuller practical guidance without filler when reviewed facts suppor
     $prompt = app(IngredientGuidancePrompt::class)->build([]);
 
     expect($prompt['version'])->toBe('ingredient-guidance-v16')
-        ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(1500)
+        ->and(config('ingredient-enrichment.guidance.maximum_words'))->toBe(0)
         ->and(config('ingredient-enrichment.guidance.maximum_characters'))->toBe(10000)
         ->and($prompt['instructions'])
         ->toContain('Aim for 130–200 English words when the reviewed facts support it.')

@@ -46,7 +46,7 @@ return [
     ],
     'guidance' => [
         'minimum_words' => 0,
-        'maximum_words' => 1500,
+        'maximum_words' => 0,
         'maximum_characters' => 10000,
         'required_headings' => ['Overview', 'Formulation use'],
         'soapmaking_heading' => 'Soapmaking',

@@ -414,6 +414,33 @@ it('keeps workspace guidance read-only for viewers', function (): void {
         ->exists())->toBeFalse();
 });
 
+it('limits workspace guidance by visible text instead of stored html length', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Platform guidance',
+    ]);
+    $formattedGuidance = '<p>'.str_repeat('<strong>x</strong>', 700).'</p>';
+
+    expect(mb_strlen($formattedGuidance))->toBeGreaterThan(10000);
+
+    $this->actingAs($owner);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->call('startWorkspaceGuidanceCustomization')
+        ->set('workspaceGuidance.html', $formattedGuidance)
+        ->call('saveWorkspaceGuidance')
+        ->assertHasNoErrors();
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->exists())->toBeTrue();
+});
+
 it('stores optional workspace-owned ingredient guidance in the shared rich editor', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

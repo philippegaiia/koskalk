@@ -556,7 +556,7 @@ class IngredientGuidanceRefreshResultValidator
         $count = is_int($count) ? $count : 0;
         $minimum = (int) data_get(config('ingredient-enrichment.guidance'), 'minimum_words', 80);
         $maximum = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_words', 160);
-        if ($count < $minimum || $count > $maximum) {
+        if ($count < $minimum || ($maximum > 0 && $count > $maximum)) {
             $warnings[] = (string) __('ingredient_enrichment.warnings.word_count', [
                 'path' => $path,
                 'count' => $count,

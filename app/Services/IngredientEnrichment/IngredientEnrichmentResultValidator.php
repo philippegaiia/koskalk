@@ -1349,7 +1349,7 @@ class IngredientEnrichmentResultValidator
         $minimum = (int) data_get(config('ingredient-enrichment.guidance'), 'minimum_words', 80);
         $maximum = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_words', 220);
 
-        if ($wordCount < $minimum || $wordCount > $maximum) {
+        if ($wordCount < $minimum || ($maximum > 0 && $wordCount > $maximum)) {
             $warnings[] = (string) __('ingredient_enrichment.warnings.word_count', [
                 'path' => $path,
                 'count' => $wordCount,

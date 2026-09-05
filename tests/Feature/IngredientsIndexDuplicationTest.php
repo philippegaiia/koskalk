@@ -4,6 +4,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
+use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
@@ -46,7 +47,26 @@ it('renders a preview-only accessible duplication dialog with its data disclosur
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
         ->assertSee('for="ingredient-duplication-search"', false)
+        ->assertSee('ingredientDuplicationModal', false)
+        ->assertSee('!confirming && closeModal()', false)
+        ->assertSee('KOH SAP range')
+        ->assertSee('NaOH SAP range')
+        ->assertSee('Fatty acid total range')
+        ->assertSee('selected.duplication.chemistry.koh_sap.minimum', false)
+        ->assertSee('selected.duplication.chemistry.fatty_acids', false)
         ->assertDontSee('info_markdown');
+});
+
+it('registers the duplication factory and keeps dismissal guarded during confirmation', function (): void {
+    $partial = (string) file_get_contents(base_path('resources/views/livewire/dashboard/partials/duplicate-ingredient-modal.blade.php'));
+    $app = (string) file_get_contents(base_path('resources/js/app.js'));
+
+    expect($app)->toContain('window.ingredientDuplicationModal = (payload) => createIngredientDuplicationModal(payload);')
+        ->and($partial)->toContain('x-data="ingredientDuplicationModal({')
+        ->and($partial)->toContain('@click.self="!confirming && closeModal()"')
+        ->and($partial)->toContain('@keydown.escape.window="!confirming && closeModal()"')
+        ->and($partial)->toContain('selected.duplication.chemistry.koh_sap.minimum')
+        ->and($partial)->toContain('selected.duplication.chemistry.fatty_acids');
 });
 
 it('searches platform ingredients for duplication', function () {
@@ -140,6 +160,12 @@ it('reports duplication eligibility metadata for an eligible platform ingredient
         'is_soap_saponification_trusted' => true,
     ]);
     $platform->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $oleic = FattyAcid::factory()->create(['name' => 'Oleic acid']);
+    $palmitic = FattyAcid::factory()->create(['name' => 'Palmitic acid']);
+    $platform->fattyAcidEntries()->createMany([
+        ['fatty_acid_id' => $oleic->id, 'percentage' => 70],
+        ['fatty_acid_id' => $palmitic->id, 'percentage' => 20],
+    ]);
 
     actingAs($user);
 
@@ -149,7 +175,27 @@ it('reports duplication eligibility metadata for an eligible platform ingredient
         ->assertJsonPath('0.id', $platform->id)
         ->assertJsonPath('0.duplication.available', true)
         ->assertJsonPath('0.duplication.reason', null)
-        ->assertJsonPath('0.duplication.inherits_soap_chemistry', true);
+        ->assertJsonPath('0.duplication.inherits_soap_chemistry', true)
+        ->assertJsonPath('0.duplication.chemistry.koh_sap.minimum', '0.182360')
+        ->assertJsonPath('0.duplication.chemistry.koh_sap.maximum', '0.193640')
+        ->assertJsonPath('0.duplication.chemistry.naoh_sap.minimum', '0.130023')
+        ->assertJsonPath('0.duplication.chemistry.naoh_sap.maximum', '0.138065')
+        ->assertJsonPath('0.duplication.chemistry.fatty_acid_total.minimum', '80.0')
+        ->assertJsonPath('0.duplication.chemistry.fatty_acid_total.maximum', '100.0');
+
+    $fattyAcids = collect($response->json('0.duplication.chemistry.fatty_acids'))->keyBy('id');
+
+    expect($fattyAcids->get($oleic->id))->toMatchArray([
+        'name' => 'Oleic acid',
+        'original' => '70.0',
+        'minimum' => '56.0',
+        'maximum' => '84.0',
+    ])->and($fattyAcids->get($palmitic->id))->toMatchArray([
+        'name' => 'Palmitic acid',
+        'original' => '20.0',
+        'minimum' => '16.0',
+        'maximum' => '24.0',
+    ]);
 
     expect($response->json('0'))->not->toHaveKeys([
         'source_data',
@@ -186,6 +232,55 @@ it('evaluates destination duplication eligibility once for a bounded search', fu
     $this->getJson(route('ingredients.search-platform').'?q=batch')
         ->assertSuccessful()
         ->assertJsonCount(3);
+});
+
+it('does not expose chemistry limits for untrusted, incomplete, or unrelated platform ingredients', function (): void {
+    $user = User::factory()->create();
+
+    $untrusted = Ingredient::factory()->create([
+        'display_name' => 'Preview source untrusted oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => false,
+    ]);
+    $untrusted->sapProfile()->create(['koh_sap_value' => 0.188]);
+
+    Ingredient::factory()->create([
+        'display_name' => 'Preview source missing oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+    ]);
+
+    $unrelated = Ingredient::factory()->create([
+        'display_name' => 'Preview source aromatic oil',
+        'category' => IngredientCategory::AromaticMaterials,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $unrelated->sapProfile()->create(['koh_sap_value' => 0.188]);
+
+    actingAs($user);
+
+    $results = collect($this->getJson(route('ingredients.search-platform').'?q=preview%20source')->json())
+        ->keyBy('name');
+
+    expect($results)->toHaveCount(3)
+        ->and($results->get('Preview source untrusted oil')['duplication']['inherits_soap_chemistry'])->toBeFalse()
+        ->and($results->get('Preview source untrusted oil')['duplication']['chemistry'])->toBeNull()
+        ->and($results->get('Preview source missing oil')['duplication']['inherits_soap_chemistry'])->toBeFalse()
+        ->and($results->get('Preview source missing oil')['duplication']['chemistry'])->toBeNull()
+        ->and($results->get('Preview source aromatic oil')['duplication']['inherits_soap_chemistry'])->toBeFalse()
+        ->and($results->get('Preview source aromatic oil')['duplication']['chemistry'])->toBeNull();
 });
 
 it('reports role denial in search metadata and does not create a copy', function (): void {

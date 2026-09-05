@@ -36,8 +36,8 @@
         <div
             x-cloak
             class="fixed inset-0 z-50 flex items-center justify-center bg-[color:oklch(from_var(--color-surface-strong)_l_c_h_/_0.55)] px-4 py-6"
-            @click.self="closeModal()"
-            @keydown.escape.window="closeModal()"
+            @click.self="!confirming && closeModal()"
+            @keydown.escape.window="!confirming && closeModal()"
             role="dialog"
             aria-modal="true"
             aria-labelledby="ingredient-duplication-dialog-heading"
@@ -56,7 +56,7 @@
                         <h3 id="ingredient-duplication-dialog-heading" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.duplicate.heading') }}</h3>
                         <p id="ingredient-duplication-dialog-description" class="mt-2 max-w-xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.description') }}</p>
                     </div>
-                    <button type="button" @click="closeModal()" class="sk-btn sk-btn-ghost shrink-0">{{ __('ingredients.actions.cancel') }}</button>
+                    <button type="button" @click="!confirming && closeModal()" :disabled="confirming || redirecting" class="sk-btn sk-btn-ghost shrink-0 disabled:cursor-not-allowed disabled:opacity-60">{{ __('ingredients.actions.cancel') }}</button>
                 </div>
 
                 <div class="mt-5">
@@ -66,6 +66,7 @@
                         x-ref="searchInput"
                         x-model="query"
                         @input.debounce.300ms="search()"
+                        :disabled="confirming || redirecting"
                         type="search"
                         autocomplete="off"
                         placeholder="{{ __('ingredients.duplicate.search_placeholder') }}"
@@ -130,7 +131,7 @@
                                 <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.eyebrow') }}</p>
                                 <h4 x-ref="previewHeading" id="ingredient-duplication-preview-heading" tabindex="-1" class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)] focus:outline-none" x-text="selected.name"></h4>
                             </div>
-                            <button type="button" @click="chooseAnother()" class="sk-btn sk-btn-outline">{{ __('ingredients.duplicate.preview.choose_another') }}</button>
+                            <button type="button" @click="chooseAnother()" :disabled="confirming || redirecting" class="sk-btn sk-btn-outline disabled:cursor-not-allowed disabled:opacity-60">{{ __('ingredients.duplicate.preview.choose_another') }}</button>
                         </div>
 
                         <p class="mt-4 rounded-lg bg-[var(--color-accent-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)]">
@@ -182,7 +183,38 @@
                                 </div>
 
                                 <template x-if="chemistryState() === 'inherited'">
-                                    <p class="rounded-lg bg-[var(--color-chemistry-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)]">{{ __('ingredients.duplicate.preview.inherited_chemistry') }}</p>
+                                    <div class="space-y-3 rounded-lg bg-[var(--color-chemistry-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)]">
+                                        <p>{{ __('ingredients.duplicate.preview.inherited_chemistry') }}</p>
+                                        <template x-if="selected.duplication.chemistry">
+                                            <div>
+                                                <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.chemistry_limits') }}</p>
+                                                <dl class="mt-2 grid gap-2 sm:grid-cols-3">
+                                                    <div>
+                                                        <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.koh_sap_range') }}</dt>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.koh_sap.minimum}–${selected.duplication.chemistry.koh_sap.maximum} ({{ __('ingredients.duplicate.preview.source') }} ${selected.duplication.chemistry.koh_sap.original})`"></dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.naoh_sap_range') }}</dt>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.naoh_sap.minimum}–${selected.duplication.chemistry.naoh_sap.maximum} ({{ __('ingredients.duplicate.preview.source') }} ${selected.duplication.chemistry.naoh_sap.original})`"></dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.fatty_acid_total_range') }}</dt>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.fatty_acid_total.minimum}%–${selected.duplication.chemistry.fatty_acid_total.maximum}%`"></dd>
+                                                    </div>
+                                                </dl>
+                                                <template x-if="selected.duplication.chemistry.fatty_acids.length">
+                                                    <div class="mt-3">
+                                                        <p class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.fatty_acid_ranges') }}</p>
+                                                        <ul class="mt-1 space-y-1">
+                                                            <template x-for="fattyAcid in selected.duplication.chemistry.fatty_acids" :key="fattyAcid.id">
+                                                                <li class="numeric" x-text="fattyAcid.display || `${fattyAcid.name}: ${fattyAcid.minimum}%–${fattyAcid.maximum}% ({{ __('ingredients.duplicate.preview.source') }} ${fattyAcid.original}%)`"></li>
+                                                            </template>
+                                                        </ul>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </template>
                                 <template x-if="chemistryState() === 'untrusted'">
                                     <p class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.untrusted_chemistry') }}</p>
@@ -200,11 +232,11 @@
                         ></p>
 
                         <div class="mt-5 flex flex-col-reverse gap-2 border-t border-[var(--color-line)] pt-4 sm:flex-row sm:justify-end">
-                            <button type="button" @click="closeModal()" class="sk-btn sk-btn-outline">{{ __('ingredients.actions.cancel') }}</button>
+                            <button type="button" @click="!confirming && closeModal()" :disabled="confirming || redirecting" class="sk-btn sk-btn-outline disabled:cursor-not-allowed disabled:opacity-60">{{ __('ingredients.actions.cancel') }}</button>
                             <button
                                 type="button"
                                 @click="confirmDuplicate()"
-                                :disabled="!selected.duplication.available || confirming"
+                                :disabled="!selected.duplication.available || confirming || redirecting"
                                 class="sk-btn sk-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <span x-show="!confirming">{{ __('ingredients.duplicate.preview.confirm') }}</span>

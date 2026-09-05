@@ -109,6 +109,77 @@ test('prevents a second confirmation while the first request is in flight', asyn
 
     assert.deepEqual(redirects, ['/dashboard/ingredients/42']);
     assert.equal(modal.confirming, false);
+    assert.equal(modal.redirecting, true);
+    assert.equal(await modal.confirmDuplicate(), null);
+});
+
+test('keeps one confirmation owner when dismissal and reselection are attempted', async () => {
+    let resolveRequest;
+    const calls = [];
+    const redirects = [];
+    const firstCandidate = candidate({ id: 7, name: 'Olive Oil' });
+    const secondCandidate = candidate({ id: 8, name: 'Coconut Oil' });
+    const modal = createIngredientDuplicationModal({
+        fetch: (...args) => {
+            calls.push(args);
+
+            return new Promise((resolve) => {
+                resolveRequest = resolve;
+            });
+        },
+        navigate: (url) => redirects.push(url),
+        messages,
+    });
+    modal.selectCandidate(firstCandidate);
+
+    const firstConfirmation = modal.confirmDuplicate();
+
+    assert.equal(modal.confirming, true);
+    assert.equal(modal.closeModal(), false);
+    modal.openModal();
+    modal.chooseAnother();
+    modal.selectCandidate(secondCandidate);
+    assert.equal(modal.selected.id, firstCandidate.id);
+    assert.equal(await modal.confirmDuplicate(), null);
+    assert.equal(calls.length, 1);
+
+    resolveRequest(response({ ok: true, redirect: '/dashboard/ingredients/7' }));
+    await firstConfirmation;
+
+    assert.deepEqual(redirects, ['/dashboard/ingredients/7']);
+    assert.equal(modal.confirming, false);
+});
+
+test('clears a pending search when the dialog closes and reopens', async () => {
+    let resolveSearch;
+    const modal = createIngredientDuplicationModal({
+        fetch: () => new Promise((resolve) => {
+            resolveSearch = resolve;
+        }),
+        messages,
+    });
+
+    modal.openModal();
+    modal.query = 'olive';
+    const search = modal.search();
+
+    assert.equal(modal.loading, true);
+    assert.notEqual(modal.searchController, null);
+
+    assert.equal(modal.closeModal(), true);
+    assert.equal(modal.loading, false);
+    assert.equal(modal.searchController, null);
+
+    modal.openModal();
+    assert.equal(modal.loading, false);
+    assert.equal(modal.query, '');
+    assert.deepEqual(modal.results, []);
+
+    resolveSearch(response([candidate()]));
+    await search;
+
+    assert.equal(modal.loading, false);
+    assert.deepEqual(modal.results, []);
 });
 
 test('keeps the selected preview open after a validation failure', async () => {
@@ -187,6 +258,38 @@ test('only exposes chemistry messaging for relevant lipid candidates', () => {
     assert.equal(modal.chemistryState(candidate({
         duplication: { available: false, reason: 'SAP is missing', inherits_soap_chemistry: false },
     })), null);
+});
+
+test('keeps trusted chemistry limit metadata bounded in the preview', () => {
+    const modal = createIngredientDuplicationModal({ messages });
+
+    modal.selectCandidate(candidate({
+        duplication: {
+            available: true,
+            reason: null,
+            inherits_soap_chemistry: true,
+            chemistry: {
+                koh_sap: { minimum: '0.182360', maximum: '0.193640', original: '0.188000' },
+                naoh_sap: { minimum: '0.130023', maximum: '0.138065', original: '0.134044' },
+                fatty_acid_total: { minimum: '80.0', maximum: '100.0' },
+                fatty_acids: Array.from({ length: 25 }, (_, index) => ({
+                    id: index + 1,
+                    name: `Acid ${index + 1}`,
+                    minimum: '56.0',
+                    maximum: '84.0',
+                    original: '70.0',
+                    display: `Acid ${index + 1}: 56.0%–84.0% (source 70.0%).`,
+                })),
+                source_data: 'must not reach the preview',
+            },
+        },
+    }));
+
+    assert.equal(modal.chemistryState(), 'inherited');
+    assert.equal(modal.selected.duplication.chemistry.fatty_acids.length, 20);
+    assert.equal(modal.selected.duplication.chemistry.koh_sap.minimum, '0.182360');
+    assert.equal(modal.selected.duplication.chemistry.fatty_acids[0].display, 'Acid 1: 56.0%–84.0% (source 70.0%).');
+    assert.equal(Object.hasOwn(modal.selected.duplication.chemistry, 'source_data'), false);
 });
 
 test('bounds and normalizes optional preview metadata', async () => {

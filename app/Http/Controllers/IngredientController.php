@@ -11,6 +11,7 @@ use App\Services\CurrentMaterialPriceService;
 use App\Services\IngredientAliasLocaleService;
 use App\Services\IngredientCatalogSearchService;
 use App\Services\UserIngredientAuthoringService;
+use App\Support\NumberLocale;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -131,6 +132,7 @@ class IngredientController extends Controller
         $user = $authenticatedUser instanceof User
             ? User::query()->find($authenticatedUser->id)
             : null;
+        $numberLocale = $user?->number_locale;
         $workspace = $user?->company();
         $destinationDuplicationBlocker = $user instanceof User
             ? $userIngredientAuthoringService->duplicateDestinationBlocker($user, $workspace)
@@ -143,6 +145,7 @@ class IngredientController extends Controller
                 'identifiers',
                 'aliases',
                 'sapProfile',
+                'fattyAcidEntries.fattyAcid',
             ])
             ->whereNull('owner_type')
             ->whereNull('owner_id')
@@ -156,9 +159,11 @@ class IngredientController extends Controller
                 $translationLocales,
                 $userIngredientAuthoringService,
                 $destinationDuplicationBlocker,
+                $numberLocale,
             ): array {
                 $duplicationReason = $userIngredientAuthoringService->duplicateSourceBlocker($ingredient)
                     ?? $destinationDuplicationBlocker;
+                $chemistry = $userIngredientAuthoringService->duplicationChemistryPreview($ingredient);
 
                 return [
                     'id' => $ingredient->id,
@@ -176,7 +181,8 @@ class IngredientController extends Controller
                     'duplication' => [
                         'available' => $duplicationReason === null,
                         'reason' => $duplicationReason,
-                        'inherits_soap_chemistry' => $ingredient->canDriveSoapSaponification(),
+                        'inherits_soap_chemistry' => $chemistry !== null,
+                        'chemistry' => $this->formatDuplicationChemistry($chemistry, $numberLocale),
                     ],
                 ];
             })
@@ -184,6 +190,64 @@ class IngredientController extends Controller
             ->values();
 
         return response()->json($results);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $chemistry
+     * @return array<string, mixed>|null
+     */
+    private function formatDuplicationChemistry(?array $chemistry, ?string $numberLocale): ?array
+    {
+        if ($chemistry === null) {
+            return null;
+        }
+
+        $format = fn (mixed $value, int $decimals): string => NumberLocale::formatDecimal(
+            $value,
+            $decimals,
+            $numberLocale,
+        );
+
+        return [
+            'koh_sap' => [
+                'minimum' => $format($chemistry['koh_sap']['minimum'], 6),
+                'maximum' => $format($chemistry['koh_sap']['maximum'], 6),
+                'original' => $format($chemistry['koh_sap']['original'], 6),
+            ],
+            'naoh_sap' => [
+                'minimum' => $format($chemistry['naoh_sap']['minimum'], 6),
+                'maximum' => $format($chemistry['naoh_sap']['maximum'], 6),
+                'original' => $format($chemistry['naoh_sap']['original'], 6),
+            ],
+            'fatty_acid_total' => [
+                'minimum' => $format($chemistry['fatty_acid_total']['minimum'], 1),
+                'maximum' => $format($chemistry['fatty_acid_total']['maximum'], 1),
+            ],
+            'fatty_acids' => collect($chemistry['fatty_acids'] ?? [])
+                ->take(20)
+                ->map(function (array $fattyAcid) use ($format): array {
+                    $original = $format($fattyAcid['original'], 1);
+                    $minimum = $format($fattyAcid['minimum'], 1);
+                    $maximum = $format($fattyAcid['maximum'], 1);
+                    $name = (string) $fattyAcid['name'];
+
+                    return [
+                        'id' => (int) $fattyAcid['id'],
+                        'name' => $name,
+                        'original' => $original,
+                        'minimum' => $minimum,
+                        'maximum' => $maximum,
+                        'display' => __('ingredients.duplicate.preview.fatty_acid_range', [
+                            'name' => $name,
+                            'minimum' => $minimum,
+                            'maximum' => $maximum,
+                            'original' => $original,
+                        ]),
+                    ];
+                })
+                ->values()
+                ->all(),
+        ];
     }
 
     public function duplicate(Request $request)

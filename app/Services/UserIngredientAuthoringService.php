@@ -21,6 +21,10 @@ class UserIngredientAuthoringService
 {
     private const TRUSTED_KOH_SAP_TOLERANCE = 0.03;
 
+    private const TRUSTED_FATTY_ACID_MIN_TOTAL = 80.0;
+
+    private const TRUSTED_FATTY_ACID_MAX_TOTAL = 100.0;
+
     public function __construct(
         protected IngredientDataEntryService $ingredientDataEntryService,
         protected EntitlementService $entitlementService,
@@ -971,7 +975,7 @@ class UserIngredientAuthoringService
 
         $total = $currentProfile->sum();
 
-        if ($total < 80 || $total > 100) {
+        if ($total < self::TRUSTED_FATTY_ACID_MIN_TOTAL || $total > self::TRUSTED_FATTY_ACID_MAX_TOTAL) {
             throw ValidationException::withMessages([
                 'fatty_acid_entries' => __('ingredients.editor.validation.fatty_acid_total'),
             ]);
@@ -1004,10 +1008,61 @@ class UserIngredientAuthoringService
 
         $original = (float) Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
 
+        return $this->kohSapRange($original);
+    }
+
+    /**
+     * @return array{
+     *     koh_sap: array{minimum: float, maximum: float, original: float},
+     *     naoh_sap: array{minimum: float, maximum: float, original: float},
+     *     fatty_acid_total: array{minimum: float, maximum: float},
+     *     fatty_acids: list<array{id: int, name: string, minimum: float, maximum: float, original: float}>
+     * }|null
+     */
+    public function duplicationChemistryPreview(Ingredient $ingredient): ?array
+    {
+        if ($ingredient->category !== IngredientCategory::Lipids || ! $ingredient->is_soap_saponification_trusted) {
+            return null;
+        }
+
+        $kohSapValue = $ingredient->sapProfile?->koh_sap_value;
+
+        if (! is_numeric($kohSapValue)) {
+            return null;
+        }
+
+        $kohSapRange = $this->kohSapRange((float) $kohSapValue);
+        $fattyAcidEntries = $ingredient->fattyAcidEntries->loadMissing('fattyAcid:id,name');
+        $fattyAcids = $fattyAcidEntries
+            ->filter(fn ($entry): bool => filled($entry->fattyAcid?->name) && is_numeric($entry->percentage))
+            ->take(20)
+            ->map(function ($entry): array {
+                $original = (float) $entry->percentage;
+                [$minimum, $maximum] = $this->fattyAcidRange($original);
+
+                return [
+                    'id' => (int) $entry->fatty_acid_id,
+                    'name' => (string) $entry->fattyAcid->name,
+                    'minimum' => $minimum,
+                    'maximum' => $maximum,
+                    'original' => $original,
+                ];
+            })
+            ->values()
+            ->all();
+
         return [
-            'minimum' => $original * (1 - self::TRUSTED_KOH_SAP_TOLERANCE),
-            'maximum' => $original * (1 + self::TRUSTED_KOH_SAP_TOLERANCE),
-            'original' => $original,
+            'koh_sap' => $kohSapRange,
+            'naoh_sap' => [
+                'minimum' => SoapSap::deriveNaohFromKoh($kohSapRange['minimum']),
+                'maximum' => SoapSap::deriveNaohFromKoh($kohSapRange['maximum']),
+                'original' => SoapSap::deriveNaohFromKoh($kohSapRange['original']),
+            ],
+            'fatty_acid_total' => [
+                'minimum' => self::TRUSTED_FATTY_ACID_MIN_TOTAL,
+                'maximum' => self::TRUSTED_FATTY_ACID_MAX_TOTAL,
+            ],
+            'fatty_acids' => $fattyAcids,
         ];
     }
 
@@ -1038,6 +1093,18 @@ class UserIngredientAuthoringService
         }
 
         return [max(0, $original * 0.8), min(100, $original * 1.2)];
+    }
+
+    /**
+     * @return array{minimum: float, maximum: float, original: float}
+     */
+    private function kohSapRange(float $original): array
+    {
+        return [
+            'minimum' => $original * (1 - self::TRUSTED_KOH_SAP_TOLERANCE),
+            'maximum' => $original * (1 + self::TRUSTED_KOH_SAP_TOLERANCE),
+            'original' => $original,
+        ];
     }
 
     private function formatRangeValue(float $value): string

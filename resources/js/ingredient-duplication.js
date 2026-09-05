@@ -9,6 +9,7 @@ const DEFAULT_MESSAGES = {
 
 const DEFAULT_MAX_IDENTIFIERS = 4;
 const DEFAULT_MAX_ALIASES = 4;
+const DEFAULT_MAX_FATTY_ACIDS = 20;
 
 function firstMessage(value) {
     if (typeof value === 'string' && value.trim() !== '') {
@@ -101,7 +102,75 @@ async function decodeResponse(response) {
     return null;
 }
 
-function normalizedCandidate(candidate, maxIdentifiers, maxAliases) {
+function boundedDisplayValue(value, maxLength = 32) {
+    if (typeof value !== 'string' && typeof value !== 'number') {
+        return null;
+    }
+
+    const displayValue = String(value).trim();
+
+    return displayValue === '' ? null : displayValue.slice(0, maxLength);
+}
+
+function normalizedRange(range) {
+    if (range === null || typeof range !== 'object') {
+        return null;
+    }
+
+    const normalized = {
+        minimum: boundedDisplayValue(range.minimum),
+        maximum: boundedDisplayValue(range.maximum),
+        original: boundedDisplayValue(range.original),
+    };
+
+    return normalized.minimum === null || normalized.maximum === null
+        ? null
+        : normalized;
+}
+
+function normalizedChemistry(chemistry, maxFattyAcids) {
+    if (chemistry === null || typeof chemistry !== 'object') {
+        return null;
+    }
+
+    const kohSap = normalizedRange(chemistry.koh_sap);
+    const naohSap = normalizedRange(chemistry.naoh_sap);
+    const fattyAcidTotal = normalizedRange(chemistry.fatty_acid_total);
+
+    if (kohSap === null || naohSap === null || fattyAcidTotal === null) {
+        return null;
+    }
+
+    const fattyAcids = Array.isArray(chemistry.fatty_acids)
+        ? chemistry.fatty_acids
+            .filter((fattyAcid) => fattyAcid !== null && typeof fattyAcid === 'object')
+            .slice(0, maxFattyAcids)
+            .map((fattyAcid) => {
+                const id = Number(fattyAcid.id);
+                const name = boundedDisplayValue(fattyAcid.name, 120);
+                const minimum = boundedDisplayValue(fattyAcid.minimum);
+                const maximum = boundedDisplayValue(fattyAcid.maximum);
+                const original = boundedDisplayValue(fattyAcid.original);
+                const display = boundedDisplayValue(fattyAcid.display, 180);
+
+                if (!Number.isSafeInteger(id) || id < 1 || name === null || minimum === null || maximum === null) {
+                    return null;
+                }
+
+                return { id, name, minimum, maximum, original, display };
+            })
+            .filter(Boolean)
+        : [];
+
+    return {
+        koh_sap: kohSap,
+        naoh_sap: naohSap,
+        fatty_acid_total: fattyAcidTotal,
+        fatty_acids: fattyAcids,
+    };
+}
+
+function normalizedCandidate(candidate, maxIdentifiers, maxAliases, maxFattyAcids) {
     const duplication = candidate?.duplication !== null && typeof candidate?.duplication === 'object'
         ? candidate.duplication
         : {};
@@ -120,6 +189,7 @@ function normalizedCandidate(candidate, maxIdentifiers, maxAliases) {
             available: duplication.available === true,
             reason: duplication.reason ?? null,
             inherits_soap_chemistry: duplication.inherits_soap_chemistry === true,
+            chemistry: normalizedChemistry(duplication.chemistry, maxFattyAcids),
         },
     };
 }
@@ -153,6 +223,7 @@ export function createIngredientDuplicationModal(options = {}) {
     const fetchImpl = options.fetch ?? globalThis.fetch?.bind(globalThis);
     const maxIdentifiers = options.maxIdentifiers ?? DEFAULT_MAX_IDENTIFIERS;
     const maxAliases = options.maxAliases ?? DEFAULT_MAX_ALIASES;
+    const maxFattyAcids = options.maxFattyAcids ?? DEFAULT_MAX_FATTY_ACIDS;
 
     return {
         open: false,
@@ -163,6 +234,7 @@ export function createIngredientDuplicationModal(options = {}) {
         selected: null,
         duplicateError: null,
         confirming: false,
+        redirecting: false,
         opener: null,
         searchGeneration: 0,
         searchController: null,
@@ -184,8 +256,8 @@ export function createIngredientDuplicationModal(options = {}) {
         },
 
         openModal() {
-            if (this.open) {
-                return;
+            if (this.open || this.confirming || this.redirecting) {
+                return false;
             }
 
             this.opener = this.$refs?.opener ?? null;
@@ -196,9 +268,15 @@ export function createIngredientDuplicationModal(options = {}) {
             this.searchError = null;
             this.duplicateError = null;
             this.$nextTick?.(() => this.$refs?.searchInput?.focus());
+
+            return true;
         },
 
         closeModal() {
+            if (this.confirming || this.redirecting) {
+                return false;
+            }
+
             const opener = this.opener;
 
             this.abortSearch();
@@ -209,31 +287,48 @@ export function createIngredientDuplicationModal(options = {}) {
             this.selected = null;
             this.searchError = null;
             this.duplicateError = null;
-            this.confirming = false;
             this.opener = null;
             this.$nextTick?.(() => opener?.focus?.());
+
+            return true;
         },
 
         chooseAnother() {
+            if (this.confirming || this.redirecting) {
+                return false;
+            }
+
             this.selected = null;
             this.duplicateError = null;
             this.$nextTick?.(() => this.$refs?.searchInput?.focus());
+
+            return true;
         },
 
         selectCandidate(candidate) {
-            if (candidate === null || candidate === undefined || candidate.id === null || candidate.id === undefined) {
-                return;
+            if (
+                this.confirming
+                || this.redirecting
+                || candidate === null
+                || candidate === undefined
+                || candidate.id === null
+                || candidate.id === undefined
+            ) {
+                return false;
             }
 
-            this.selected = normalizedCandidate(candidate, maxIdentifiers, maxAliases);
+            this.selected = normalizedCandidate(candidate, maxIdentifiers, maxAliases, maxFattyAcids);
             this.open = true;
             this.duplicateError = null;
             this.$nextTick?.(() => this.$refs?.previewHeading?.focus());
+
+            return true;
         },
 
         abortSearch() {
             this.searchController?.abort?.();
             this.searchController = null;
+            this.loading = false;
         },
 
         async requestJson(url, init, operation) {
@@ -273,6 +368,10 @@ export function createIngredientDuplicationModal(options = {}) {
         },
 
         async search() {
+            if (this.confirming || this.redirecting) {
+                return [];
+            }
+
             const query = String(this.query ?? '').trim();
             const generation = ++this.searchGeneration;
 
@@ -314,7 +413,7 @@ export function createIngredientDuplicationModal(options = {}) {
 
                 this.results = payload
                     .filter((candidate) => candidate !== null && typeof candidate === 'object')
-                    .map((candidate) => normalizedCandidate(candidate, maxIdentifiers, maxAliases));
+                    .map((candidate) => normalizedCandidate(candidate, maxIdentifiers, maxAliases, maxFattyAcids));
 
                 return this.results;
             } catch (error) {
@@ -388,7 +487,7 @@ export function createIngredientDuplicationModal(options = {}) {
         },
 
         async confirmDuplicate() {
-            if (!this.selected || this.selected.duplication?.available !== true || this.confirming) {
+            if (!this.selected || this.selected.duplication?.available !== true || this.confirming || this.redirecting) {
                 return null;
             }
 
@@ -424,6 +523,7 @@ export function createIngredientDuplicationModal(options = {}) {
                 }
 
                 (options.navigate ?? defaultNavigate)(payload.redirect);
+                this.redirecting = true;
 
                 return payload;
             } catch (error) {

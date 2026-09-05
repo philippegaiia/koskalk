@@ -285,7 +285,12 @@ class UserIngredientAuthoringService
             return $sourceBlocker;
         }
 
-        if (! Gate::forUser($user)->allows('duplicateIntoWorkspace', [$source, $workspace])) {
+        return $this->duplicateDestinationBlocker($user, $workspace);
+    }
+
+    public function duplicateDestinationBlocker(User $user, ?Workspace $workspace): ?string
+    {
+        if (! Gate::forUser($user)->allows('createInWorkspace', [Ingredient::class, $workspace])) {
             return __('ingredients.editor.validation.stale_workspace');
         }
 
@@ -415,7 +420,7 @@ class UserIngredientAuthoringService
     {
         Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$source, $workspace]);
 
-        $blocker = $this->duplicateBlocker($source);
+        $blocker = $this->duplicateSourceBlocker($source);
 
         if ($blocker === null) {
             return;
@@ -436,7 +441,7 @@ class UserIngredientAuthoringService
         throw new AuthorizationException;
     }
 
-    private function duplicateSourceBlocker(Ingredient $source): ?string
+    public function duplicateSourceBlocker(Ingredient $source): ?string
     {
         if (! $this->isPlatformIngredient($source)) {
             return __('ingredients.editor.validation.duplicate_platform_only');

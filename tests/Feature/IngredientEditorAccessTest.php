@@ -1,11 +1,14 @@
 <?php
 
+use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
+use App\Models\MediaAsset;
+use App\Models\MediaAssetUsage;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
@@ -635,6 +638,26 @@ it('rejects duplicate requests that omit the captured destination after a worksp
         'is_active' => true,
         'display_name' => 'Omitted destination source',
     ]);
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspaceA->id,
+        'uploaded_by_user_id' => $user->id,
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $asset->id,
+        'usable_type' => Ingredient::class,
+        'usable_id' => $platform->id,
+        'role' => MediaAssetUsageRole::IngredientMain,
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspaceA->id,
+        'ingredient_id' => $platform->id,
+        'created_by_user_id' => $user->id,
+        'updated_by_user_id' => $user->id,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspaceA->id,
+        'ingredient_id' => $platform->id,
+    ]);
 
     $user->forceFill(['active_workspace_id' => $workspaceA->id])->save();
     $user->forgetAccessibleWorkspaceIds();
@@ -646,6 +669,14 @@ it('rejects duplicate requests that omit the captured destination after a worksp
     $user->forceFill(['active_workspace_id' => $workspaceB->id])->save();
     $user->forgetAccessibleWorkspaceIds();
 
+    $before = [
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ];
+
     $this->postJson(route('ingredients.duplicate'), [
         'ingredient_id' => $platform->id,
     ])
@@ -656,7 +687,14 @@ it('rejects duplicate requests that omit the captured destination after a worksp
         ->where('owner_type', OwnerType::Workspace)
         ->where('owner_id', $workspaceB->id)
         ->where('display_name', 'Omitted destination source')
-        ->exists())->toBeFalse();
+        ->exists())->toBeFalse()
+        ->and([
+            'ingredients' => Ingredient::query()->count(),
+            'guidance' => WorkspaceIngredientGuidance::query()->count(),
+            'media_usages' => MediaAssetUsage::query()->count(),
+            'media_assets' => MediaAsset::query()->count(),
+            'codes' => WorkspaceIngredientCode::query()->count(),
+        ])->toBe($before);
 });
 
 it('binds a first-workspace inline creation before allowing more writes', function (): void {

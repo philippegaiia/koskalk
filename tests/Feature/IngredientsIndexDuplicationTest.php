@@ -1,16 +1,23 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
+use App\Models\MediaAsset;
+use App\Models\MediaAssetUsage;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientCode;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
+use App\Services\EntitlementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
@@ -133,6 +140,36 @@ it('reports duplication eligibility metadata for an eligible platform ingredient
     ]);
 });
 
+it('evaluates destination duplication eligibility once for a bounded search', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    Ingredient::factory()->count(3)->create([
+        'display_name' => 'Batch search ingredient',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('assertCanCreatePrivateIngredientInWorkspace')
+        ->once()
+        ->withArgs(fn (Workspace $candidate): bool => $candidate->is($workspace))
+        ->andReturnNull();
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    actingAs($user);
+
+    $this->getJson(route('ingredients.search-platform').'?q=batch')
+        ->assertSuccessful()
+        ->assertJsonCount(3);
+});
+
 it('reports role denial in search metadata and does not create a copy', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -147,6 +184,26 @@ it('reports role denial in search metadata and does not create a copy', function
         'workspace_id' => null,
         'is_active' => true,
     ]);
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $owner->id,
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $asset->id,
+        'usable_type' => Ingredient::class,
+        'usable_id' => $source->id,
+        'role' => MediaAssetUsageRole::IngredientMain,
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'created_by_user_id' => $owner->id,
+        'updated_by_user_id' => $owner->id,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+    ]);
     $viewer->forgetAccessibleWorkspaceIds();
 
     actingAs($viewer);
@@ -157,6 +214,13 @@ it('reports role denial in search metadata and does not create a copy', function
         ->assertJsonPath('0.duplication.available', false)
         ->assertJsonPath('0.duplication.reason', __('ingredients.editor.validation.stale_workspace'));
 
+    $before = [
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ];
     $signature = hash_hmac(
         'sha256',
         $viewer->id.'|'.$workspace->id,
@@ -171,10 +235,13 @@ it('reports role denial in search metadata and does not create a copy', function
         ->assertForbidden()
         ->assertJsonPath('message', __('ingredients.editor.validation.stale_workspace'));
 
-    expect(Ingredient::query()
-        ->where('owner_type', OwnerType::Workspace)
-        ->where('owner_id', $workspace->id)
-        ->exists())->toBeFalse();
+    expect([
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ])->toBe($before);
 });
 
 it('rejects a nonplatform source without creating a copy', function (): void {
@@ -222,6 +289,26 @@ it('rejects an inactive platform source without creating a copy', function (): v
         'workspace_id' => null,
         'is_active' => false,
     ]);
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $owner->id,
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $asset->id,
+        'usable_type' => Ingredient::class,
+        'usable_id' => $source->id,
+        'role' => MediaAssetUsageRole::IngredientDocument,
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'created_by_user_id' => $owner->id,
+        'updated_by_user_id' => $owner->id,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+    ]);
     $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
     $owner->forgetAccessibleWorkspaceIds();
     actingAs($owner);
@@ -230,6 +317,13 @@ it('rejects an inactive platform source without creating a copy', function (): v
         ->assertSuccessful()
         ->assertJsonCount(0);
 
+    $before = [
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ];
     $signature = hash_hmac(
         'sha256',
         $owner->id.'|'.$workspace->id,
@@ -242,10 +336,13 @@ it('rejects an inactive platform source without creating a copy', function (): v
         'destination_workspace_signature' => $signature,
     ])->assertForbidden();
 
-    expect(Ingredient::query()
-        ->where('owner_type', OwnerType::Workspace)
-        ->where('owner_id', $workspace->id)
-        ->exists())->toBeFalse();
+    expect([
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ])->toBe($before);
 });
 
 it('reports the platform-only alkali blocker and does not create a copy', function (): void {
@@ -364,6 +461,26 @@ it('reports a reached private ingredient quota and does not create a copy', func
         'workspace_id' => null,
         'is_active' => true,
     ]);
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'uploaded_by_user_id' => $owner->id,
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $asset->id,
+        'usable_type' => Ingredient::class,
+        'usable_id' => $source->id,
+        'role' => MediaAssetUsageRole::IngredientMain,
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'created_by_user_id' => $owner->id,
+        'updated_by_user_id' => $owner->id,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+    ]);
     actingAs($owner);
 
     $expectedMessage = trans_choice(
@@ -377,6 +494,13 @@ it('reports a reached private ingredient quota and does not create a copy', func
         ->assertJsonPath('0.duplication.available', false)
         ->assertJsonPath('0.duplication.reason', $expectedMessage);
 
+    $before = [
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ];
     $signature = hash_hmac(
         'sha256',
         $owner->id.'|'.$workspace->id,
@@ -391,10 +515,13 @@ it('reports a reached private ingredient quota and does not create a copy', func
         ->assertStatus(422)
         ->assertJsonPath('errors.plan.0', $expectedMessage);
 
-    expect(Ingredient::query()
-        ->where('owner_type', OwnerType::Workspace)
-        ->where('owner_id', $workspace->id)
-        ->count())->toBe(1);
+    expect([
+        'ingredients' => Ingredient::query()->count(),
+        'guidance' => WorkspaceIngredientGuidance::query()->count(),
+        'media_usages' => MediaAssetUsage::query()->count(),
+        'media_assets' => MediaAsset::query()->count(),
+        'codes' => WorkspaceIngredientCode::query()->count(),
+    ])->toBe($before);
 });
 
 it('creates a workspace-owned copy when duplicating a platform ingredient', function () {

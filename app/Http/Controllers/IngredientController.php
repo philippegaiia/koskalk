@@ -132,6 +132,9 @@ class IngredientController extends Controller
             ? User::query()->find($authenticatedUser->id)
             : null;
         $workspace = $user?->company();
+        $destinationDuplicationBlocker = $user instanceof User
+            ? $userIngredientAuthoringService->duplicateDestinationBlocker($user, $workspace)
+            : __('ingredients.editor.validation.stale_workspace');
 
         $results = Ingredient::query()
             ->with([
@@ -151,13 +154,11 @@ class IngredientController extends Controller
             ->map(function (Ingredient $ingredient) use (
                 $ingredientAliasLocaleService,
                 $translationLocales,
-                $user,
                 $userIngredientAuthoringService,
-                $workspace,
+                $destinationDuplicationBlocker,
             ): array {
-                $duplicationReason = $user instanceof User
-                    ? $userIngredientAuthoringService->duplicateBlocker($ingredient, $user, $workspace)
-                    : __('ingredients.editor.validation.stale_workspace');
+                $duplicationReason = $userIngredientAuthoringService->duplicateSourceBlocker($ingredient)
+                    ?? $destinationDuplicationBlocker;
 
                 return [
                     'id' => $ingredient->id,

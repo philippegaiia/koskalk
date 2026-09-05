@@ -26,6 +26,9 @@ class UserIngredientAuthoringService
 
     private const TRUSTED_FATTY_ACID_MAX_TOTAL = 100.0;
 
+    /** @var array<int, string>|null */
+    private ?array $duplicationFattyAcidNameCache = null;
+
     public function __construct(
         protected IngredientDataEntryService $ingredientDataEntryService,
         protected EntitlementService $entitlementService,
@@ -1084,13 +1087,15 @@ class UserIngredientAuthoringService
                 ->values();
 
             if ($missingStoredFattyAcidIds->isNotEmpty()) {
+                $this->duplicationFattyAcidNameCache ??= FattyAcid::query()
+                    ->pluck('name', 'id')
+                    ->mapWithKeys(fn (mixed $name, mixed $fattyAcidId): array => [
+                        (int) $fattyAcidId => (string) $name,
+                    ])
+                    ->all();
                 $fattyAcidNames = $fattyAcidNames->union(
-                    FattyAcid::query()
-                        ->whereKey($missingStoredFattyAcidIds->all())
-                        ->pluck('name', 'id')
-                        ->mapWithKeys(fn (mixed $name, mixed $fattyAcidId): array => [
-                            (int) $fattyAcidId => (string) $name,
-                        ]),
+                    collect($this->duplicationFattyAcidNameCache)
+                        ->filter(fn (mixed $name, int $fattyAcidId): bool => $missingStoredFattyAcidIds->contains($fattyAcidId)),
                 );
             }
         }

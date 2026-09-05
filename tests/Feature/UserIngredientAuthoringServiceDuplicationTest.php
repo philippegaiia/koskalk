@@ -25,6 +25,7 @@ use App\Services\WorkspaceProvisioner;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\mock;
@@ -456,6 +457,64 @@ it('previews inherited chemistry limits and newly added acids for an edited trus
 
     expect((float) data_get($copy->source_data, 'user_authoring.trusted_koh_sap_value'))->toBe(0.188)
         ->and((float) data_get($copy->source_data, 'user_authoring.trusted_fatty_acid_profile.'.$oleic->id))->toBe(70.0);
+});
+
+it('batches names for trusted profile acids removed from current relationships', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
+    $sourceAttributes = [
+        'display_name' => 'Trusted oil with removed profile entry',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.188,
+                'trusted_fatty_acid_profile' => [$oleic->id => 70.0],
+            ],
+        ],
+    ];
+    $firstSource = Ingredient::factory()->create($sourceAttributes);
+    $secondSource = Ingredient::factory()->create($sourceAttributes);
+    $firstSource->sapProfile()->create(['koh_sap_value' => 0.19]);
+    $secondSource->sapProfile()->create(['koh_sap_value' => 0.19]);
+    $firstSource->load('sapProfile');
+    $secondSource->load('sapProfile');
+
+    $fattyAcidQueries = [];
+    DB::listen(function ($query) use (&$fattyAcidQueries): void {
+        if (str_contains($query->sql, 'from "fatty_acids"')) {
+            $fattyAcidQueries[] = $query->sql;
+        }
+    });
+
+    $service = app(UserIngredientAuthoringService::class);
+    $firstPreview = $service->duplicationChemistryPreview($firstSource);
+    $secondPreview = $service->duplicationChemistryPreview($secondSource);
+
+    expect($firstPreview)->not->toBeNull()
+        ->and($firstPreview['fatty_acids'][0])->toMatchArray([
+            'id' => $oleic->id,
+            'name' => 'Oleic',
+            'minimum' => 56.0,
+            'maximum' => 84.0,
+            'original' => 70.0,
+        ])
+        ->and($secondPreview['fatty_acids'][0])->toMatchArray([
+            'id' => $oleic->id,
+            'name' => 'Oleic',
+            'minimum' => 56.0,
+            'maximum' => 84.0,
+            'original' => 70.0,
+        ])
+        ->and($fattyAcidQueries)->toHaveCount(1);
 });
 
 it('previews current chemistry limits for a trusted platform source', function (): void {

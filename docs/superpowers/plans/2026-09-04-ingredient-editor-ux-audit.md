@@ -1,6 +1,9 @@
 # UX audit — user-side ingredient editor
 
 **Status:** analysis only, nothing built (owner asked for analysis, 2026-09-04)
+**Revised twice since:** §6 (review against `better-interface` / `better-accessibility`) and
+§6.7 (review against `.ai/rules`). **§4 is the current recommendation** — it supersedes the
+per-finding proposals in §2 where the two disagree. F8 was amended and F7 dropped; see §6.2.
 **Surface:** `app/Livewire/Dashboard/IngredientEditor.php` +
 `resources/views/livewire/dashboard/ingredient-editor.blade.php`
 **Entry points:** `ingredients-index.blade.php:189` (pencil) and `:256` (eye)
@@ -135,6 +138,11 @@ a form this long.
 
 **Proposal:** a `beforeunload` / `wire:navigate` dirty guard, or autosave per section.
 
+> **Refined 2026-09-04 (§4 #2).** Prefer **reuse** over invention: the workbench already ships the
+> indicator (`dirtyStateRegistry` + `<x-workflow-action-bar role="status">`,
+> `partials/recipe-workbench/instructions-media.blade.php:8-34`). Adopt the indicator, with or
+> without its autosave. CLAUDE.md requires it ("Clear unsaved state indicator always visible").
+
 ---
 
 ### F7 — Row entry points are icon-only
@@ -146,6 +154,10 @@ edit-vs-view distinction is carried by icon literacy alone.
 
 **Proposal:** show icon + text at wider widths; at minimum differentiate the two states visually
 (weight or colour), not just by glyph.
+
+> **Superseded 2026-09-04 (§6.2, §4 "Dropped").** Neither escalation trigger applies — both links
+> already carry `aria-label` and `title` — so this is ladder step 5 for a non-problem. Not being
+> taken forward. The observation stands as background; it is not a recommendation.
 
 ---
 
@@ -205,21 +217,40 @@ Worth naming, because these are the patterns the fixes should extend rather than
 
 **Quick wins (independent, low risk)**
 1. **F1** — gate the save bar on `isReadOnly()`, not `$isPlatformIngredient`. One line; removes
-   a reachable 403.
-2. **F6** — add a dirty-state guard.
+   a reachable 403. *(Ladder step 4: correct the value, no new machinery.)*
+2. **F6** — **reuse** the workbench's unsaved-state indicator rather than designing a guard:
+   `dirtyStateRegistry` + `<x-workflow-action-bar role="status" aria-live="polite">`
+   (`partials/recipe-workbench/instructions-media.blade.php:8-34`). Required by CLAUDE.md's
+   *"Clear unsaved state indicator always visible"*. *(Ladder step 3.)*
 3. **F4** — add a "shared with your workspace" marker to both override cards.
-4. **F5** — handle the disappearing Composition tab.
+4. **F5** — validate the persisted Composition tab on load (`persistTabInQueryString` can hold a
+   tab that no longer exists).
+5. **F11** — add `wire:confirm` to Cancel at `blade.php:120`, copying `:131`. One attribute.
+6. **F10** — `<h4>` → `<h2>` at `blade.php:43`. Platform branch only; if #7 lands first, this
+   dissolves into it.
 
 **Structural (the real win)**
-5. **F2** — split the route by intent. Platform ingredients should open a **reference page**, not
-   an editor: workspace overrides at the top, technical data as read-only description lists, no
-   disabled form. Own/editable ingredients keep the current editor. This removes the dead form,
-   removes the duplication with the summary card, and makes F3's mixed save model largely moot.
+7. **F2** — **delete** the disabled form from the platform branch first, and let the summary card
+   that already exists (`blade.php:41`) carry INCI / CAS / EC / allergens. *(Ladder step 1.)* Only
+   if that proves insufficient should a separate reference route be considered — and per
+   `.ai/rules/views.md` it must stay **concise** (task copy, safety warnings) and link to WordPress
+   for depth rather than duplicate it.
 
 **Follow-ups**
-6. **F8** — surface the soap-trust state.
-7. **F7** — label the row actions.
-8. **F9** — decouple carrier-oil detection from the Lipids category.
+8. **F8** — make the carrier-oil warning state the remedy: soap chemistry is editable only on a
+   **duplicate of a trusted platform ingredient** carrying `user_authoring.trusted_koh_sap_value`.
+   **Do not unhide the flag** — `.ai/rules/dashboard.md` requires it hidden.
+9. **F12** — derive the guidance card's action set from state explicitly, so the primary button
+   stops changing meaning invisibly (`blade.php:113-147`).
+10. **F9** — decouple carrier-oil detection from the `Lipids` category.
+11. **F13** — add a `title` to the truncating breadcrumb (`blade.php:14`).
+
+**Dropped**
+- **F7** — leave as-is. The targets are 36×36px, clearing the WCAG 2.5.8 floor of 24×24px, and
+  both links already carry a contextual `aria-label` and a `title`. Adding text labels is the most
+  expensive rung on the ladder for something that isn't broken.
+- **F8 (first clause)** — the hidden `is_soap_saponification_trusted` flag is mandated by rule,
+  not a defect. See §6.7.
 
 ---
 
@@ -253,12 +284,14 @@ moment anything in section 4 is implemented.
 Four changes to section 4, all from `better-interface`'s cheaper-fix ladder
 (**1 Delete → 2 Use the platform → 3 Reuse the project's → 4 Correct the value → 5 Add**):
 
-1. **F2 inverted from "build" to "delete" (step 5 → step 1).** Section 4 proposal 5 proposed
-   building a reference page for platform ingredients. The ladder ranks deletion above
-   construction: removing the disabled form from the platform branch gets most of the benefit with
-   none of the new surface. Whatever reference data still needs a home should be absorbed by the
-   summary card that **already exists** (`blade.php:41`). Building a new page is the last resort,
-   not the first.
+1. **F2 — the ladder resolved an internal contradiction, and narrowed it further.** The audit
+   already disagreed with itself: F2's own proposal (§2) said *stop rendering the form* and show the
+   data as an infolist, while §4 proposal 5 said *split the route* and build a **reference page**.
+   The ladder settles it in favour of deletion — and then goes further than F2 did: don't render a
+   new infolist either, because the summary card **already exists** (`blade.php:41`) and already
+   carries INCI / CAS / EC / allergens. `views.md` then caps how much may be shown at all (§6.7).
+   Sequence: delete the form (step 1) → reuse the existing card (step 3) → only then consider a new
+   route (step 5).
 2. **F6 re-specified as "reuse", not "add" (step 5 → step 3).** The workbench already ships the
    pattern: `dirtyStateRegistry` + `recipeContentAutosave` + `<x-workflow-action-bar>` with
    `role="status" aria-live="polite" aria-atomic="true"` and `allSaved` / `unsaved` / `saving` /
@@ -273,13 +306,16 @@ Four changes to section 4, all from `better-interface`'s cheaper-fix ladder
 
 ### 6.2 Corrections — things I over-called
 
-- **F7 (icon-only row actions): downgraded HIGH-ish → LOW.** `better-accessibility/hit-areas.md`
-  sets the WCAG 2.5.8 floor at **24×24px**; these targets are **36×36px** (`size-9`), comfortably
-  clear — "too small" was simply wrong. Both escalation triggers I might have reached for are also
-  cleared: each link carries a contextual `aria-label` **and** a `title`
-  (`ingredients-index.blade.php:189`, `:256`). What remains is minor: edit vs. view is carried by
-  icon literacy alone, and the two are mutually exclusive (`@if ($canEdit)`), so the eye is a
-  Viewer's only entry point. Not worth spending step-5 effort on.
+- **F7 (icon-only row actions): LOW, and dropped from the proposal list.** *Correction to the
+  previous paragraph's framing:* the original F7 already noted that 36×36px clears the WCAG 2.5.8
+  floor of 24×24px, so it never claimed the targets were too small — my first draft of this section
+  mischaracterised the finding as a sizing error, and it was not one. The real reason to demote it
+  is different: **neither escalation trigger applies**. Each link carries a contextual `aria-label`
+  **and** a `title` (`ingredients-index.blade.php:189`, `:256`), so it is neither unnamed nor
+  truncated-with-no-full-value. What remains is genuinely minor — edit vs. view is carried by icon
+  literacy alone, and the two are mutually exclusive (`@if ($canEdit)`), so the eye is a Viewer's
+  only entry point. Since nothing escalates, the proposed fix (visible text labels) is ladder
+  **step 5**, the most expensive rung, for a non-problem. Dropped, not deferred.
 - **Tab ARIA: not a finding.** CLAUDE.md:181 documents a hand-written tab pattern
   (`role="tablist"` / `role="tab"` / `role="tabpanel"`), but these tabs are Filament
   `Tabs::make()` (`IngredientEditor.php:644`), and Filament emits `role="tab"` with

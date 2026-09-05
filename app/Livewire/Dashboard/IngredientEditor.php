@@ -492,7 +492,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->dispatch(
             'ingredient-editor:baseline',
             scope: 'guidance',
-            baseline: $this->workspaceGuidanceForm->getState()['html'] ?? null,
+            baseline: ['html' => $this->workspaceGuidanceForm->getState()['html'] ?? null],
         );
     }
 

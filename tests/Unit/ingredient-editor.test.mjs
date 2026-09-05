@@ -92,6 +92,31 @@ class FakeControl {
         this.disabled = false;
         this.readOnly = false;
         this.contentEditable = tagName === 'contenteditable' ? 'true' : 'false';
+        this.attributes = new Map();
+
+        if (tagName === 'contenteditable') {
+            this.setAttribute('contenteditable', 'true');
+        }
+    }
+
+    getAttribute(name) {
+        return this.attributes.get(name) ?? null;
+    }
+
+    setAttribute(name, value) {
+        this.attributes.set(name, String(value));
+
+        if (name === 'contenteditable') {
+            this.contentEditable = String(value);
+        }
+    }
+
+    removeAttribute(name) {
+        this.attributes.delete(name);
+
+        if (name === 'contenteditable') {
+            this.contentEditable = 'inherit';
+        }
     }
 }
 
@@ -112,7 +137,9 @@ class FakeWire {
         this.watchers = new Map();
         this.listeners = new Map();
         this.hooks = new Map();
+        this.requestInterceptors = new Map();
         this.pendingCommits = [];
+        this.redirectPrevented = false;
     }
 
     $watch(path, callback) {
@@ -139,6 +166,19 @@ class FakeWire {
         this.hooks.set(name, callback);
 
         return () => this.hooks.delete(name);
+    }
+
+    $interceptRequest(method, callback) {
+        const callbacks = this.requestInterceptors.get(method) ?? [];
+        callbacks.push(callback);
+        this.requestInterceptors.set(method, callbacks);
+
+        return () => {
+            this.requestInterceptors.set(
+                method,
+                (this.requestInterceptors.get(method) ?? []).filter((candidate) => candidate !== callback),
+            );
+        };
     }
 
     get(path) {
@@ -168,12 +208,14 @@ class FakeWire {
         }
     }
 
-    startCommit() {
+    startCommit(method = 'save', flush = null) {
         const succeed = [];
         const fail = [];
+        const redirects = [];
         const hook = this.hooks.get('commit');
 
         hook?.({
+            commit: { calls: [{ method }] },
             succeed(callback) {
                 succeed.push(callback);
             },
@@ -182,11 +224,38 @@ class FakeWire {
             },
         });
 
-        this.pendingCommits.push({ succeed, fail });
+        flush?.();
+
+        for (const callback of this.requestInterceptors.get(method) ?? []) {
+            callback({
+                request: { messages: [] },
+                onRedirect(callback) {
+                    redirects.push(callback);
+                },
+            });
+        }
+
+        this.pendingCommits.push({ succeed, fail, redirects });
     }
 
-    completeCommit(effects = {}, index = 0) {
+    completeCommit(effects = {}, index = 0, afterRedirect = null) {
         const [commit] = this.pendingCommits.splice(index, 1);
+
+        this.redirectPrevented = false;
+        if (effects.redirect) {
+            let prevented = false;
+            for (const callback of commit?.redirects ?? []) {
+                callback({
+                    url: effects.redirect,
+                    preventDefault() {
+                        prevented = true;
+                    },
+                });
+            }
+            this.redirectPrevented = prevented;
+        }
+
+        afterRedirect?.();
 
         for (const callback of commit?.succeed ?? []) {
             callback({ effects });
@@ -384,8 +453,25 @@ test('captures buffered state after submit has flushed before marking it saved',
     assert.equal(editor.baselineFor('ingredient').name, 'Buffered before blur');
 });
 
+test('captures the flushed scope state at the request interception stage', () => {
+    const { editor, state, wire, eventTarget } = makeEditor();
+
+    editor.init();
+    eventTarget.dispatch('input', { target: new FakeElement('ingredient') });
+    eventTarget.dispatch('submit', { target: new FakeElement('ingredient') });
+    wire.startCommit('save', () => {
+        state.data.name = 'Flushed after debounce';
+        wire.set('data', state.data);
+    });
+    wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
+    wire.completeCommit();
+
+    assert.equal(editor.stateFor('ingredient'), 'saved');
+    assert.equal(editor.baselineFor('ingredient').name, 'Flushed after debounce');
+});
+
 test('installs one navigation guard and removes every listener on destroy', () => {
-    const { editor, eventTarget, windowTarget, navigationTarget, registry } = makeEditor();
+    const { editor, wire, eventTarget, windowTarget, navigationTarget, registry } = makeEditor();
 
     editor.init();
     editor.init();
@@ -393,6 +479,7 @@ test('installs one navigation guard and removes every listener on destroy', () =
     assert.equal(eventTarget.listenerCount('input'), 1);
     assert.equal(eventTarget.listenerCount('change'), 1);
     assert.equal(eventTarget.listenerCount('submit'), 1);
+    assert.equal([...wire.requestInterceptors.values()].flat().length, 5);
     assert.equal(windowTarget.listenerCount('beforeunload'), 1);
     assert.equal(navigationTarget.listenerCount('livewire:navigate'), 1);
 
@@ -410,6 +497,7 @@ test('installs one navigation guard and removes every listener on destroy', () =
     editor.destroy();
 
     assert.equal(eventTarget.listenerCount(), 0);
+    assert.equal([...wire.requestInterceptors.values()].flat().length, 0);
     assert.equal(windowTarget.listenerCount(), 0);
     assert.equal(navigationTarget.listenerCount(), 0);
     assert.equal(registry.blocksNavigation(), false);
@@ -515,13 +603,18 @@ test('allows an initial create redirect from its submitted baseline without prom
     assert.equal(setup.editor.stateFor('ingredient'), 'saving');
     assert.equal(controls[0].disabled, true);
     assert.equal(controls[1].readOnly, true);
-    assert.equal(controls[2].readOnly, true);
+    assert.equal(controls[2].getAttribute('contenteditable'), 'false');
 
-    setup.wire.completeCommit({ redirect: '/ingredients/1' });
-    const navigation = setup.navigationTarget.dispatch('livewire:navigate');
+    setup.wire.completeCommit({ redirect: '/ingredients/1' }, 0, () => {
+        assert.equal(setup.editor.stateFor('ingredient'), 'saved');
+        assert.equal(controls[0].disabled, false);
+    });
 
     assert.equal(setup.editor.stateFor('ingredient'), 'saved');
-    assert.equal(navigation.defaultPrevented, false);
+    assert.equal(controls[0].disabled, false);
+    assert.equal(controls[1].readOnly, false);
+    assert.equal(controls[2].getAttribute('contenteditable'), 'true');
+    assert.equal(setup.wire.redirectPrevented, false);
     assert.equal(setup.confirmations.length, 0);
 });
 
@@ -540,9 +633,7 @@ test('keeps newer create edits protected when a redirect arrives', async () => {
 
     assert.equal(controls[0].disabled, false);
     assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
-    const navigation = setup.navigationTarget.dispatch('livewire:navigate');
-
-    assert.equal(navigation.defaultPrevented, true);
+    assert.equal(setup.wire.redirectPrevented, true);
 });
 
 test('unfreezes and keeps an initial create dirty after a failed commit', () => {
@@ -557,7 +648,7 @@ test('unfreezes and keeps an initial create dirty after a failed commit', () => 
     setup.wire.failCommit();
 
     assert.equal(controls[0].disabled, false);
-    assert.equal(controls[1].readOnly, false);
+    assert.equal(controls[1].getAttribute('contenteditable'), 'true');
     assert.equal(setup.editor.stateFor('ingredient'), 'failed');
     assert.equal(setup.registry.blocksNavigation(), true);
 });
@@ -573,7 +664,7 @@ test('does not rewrite the first submitted snapshot during an overlapping second
     edit(setup.wire, 'data.name', 'Newer ingredient edit');
     edit(setup.wire, 'workspaceGuidance.html', '<p>Submitted guidance.</p>');
     setup.eventTarget.dispatch('submit', { target: new FakeElement('guidance') });
-    setup.wire.startCommit();
+    setup.wire.startCommit('saveWorkspaceGuidance');
 
     setup.wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
     setup.wire.completeCommit({}, 0);

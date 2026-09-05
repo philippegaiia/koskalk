@@ -449,7 +449,12 @@ it('lets an editor customize and switch between localized platform and workspace
         ->tap(fn ($test) => expect($test->instance()->workspaceGuidanceForm->getState()['html'])->toBe('<p>Conseils de la plateforme</p>'))
         ->assertSee('fi-fo-rich-editor', escape: false)
         ->assertSeeText('Save guidance')
-        ->assertSeeText('Cancel');
+        ->assertSeeText('Cancel')
+        ->assertDispatched('ingredient-editor:baseline', function (string $event, array $payload): bool {
+            return $event === 'ingredient-editor:baseline'
+                && $payload['scope'] === 'guidance'
+                && $payload['baseline'] === ['html' => '<p>Conseils de la plateforme</p>'];
+        });
 
     expect(WorkspaceIngredientGuidance::query()
         ->where('workspace_id', $workspace->id)
@@ -463,6 +468,11 @@ it('lets an editor customize and switch between localized platform and workspace
         ->assertSet('isEditingWorkspaceGuidance', false)
         ->assertSeeText('Workspace-authored guidance')
         ->assertSeeText('Workspace guidance')
+        ->assertDispatched('ingredient-editor:saved', function (string $event, array $payload): bool {
+            return $event === 'ingredient-editor:saved'
+                && $payload['scope'] === 'guidance'
+                && $payload['baseline'] === ['html' => '<p>Workspace-authored guidance</p>'];
+        })
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'
                 && $payload['message'] === 'Workspace guidance saved.';

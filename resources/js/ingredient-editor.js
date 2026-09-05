@@ -8,6 +8,19 @@ const SCOPE_KEYS = Object.keys(SCOPE_PATHS);
 const SAVED_EVENT = 'ingredient-editor:saved';
 const CANCELLED_EVENT = 'ingredient-editor:cancelled';
 const BASELINE_EVENT = 'ingredient-editor:baseline';
+const SAVE_METHODS = {
+    ingredient: 'save',
+    guidance: 'saveWorkspaceGuidance',
+    'material-code': 'saveWorkspaceMaterialCode',
+};
+const SCOPE_METHODS = {
+    ingredient: ['save'],
+    guidance: ['saveWorkspaceGuidance', 'usePlatformGuidance', 'useWorkspaceGuidance'],
+    'material-code': ['saveWorkspaceMaterialCode'],
+};
+const CANCEL_METHODS = {
+    guidance: 'cancelWorkspaceGuidanceCustomization',
+};
 
 const DEFAULT_LABELS = {
     saved: 'All changes saved',
@@ -138,6 +151,17 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const navigationTarget = options.navigationTarget
         ?? (typeof document === 'undefined' ? null : document);
     const paths = { ...SCOPE_PATHS, ...(options.paths ?? {}) };
+    const saveMethods = { ...SAVE_METHODS, ...(options.saveMethods ?? {}) };
+    const scopeMethods = Object.fromEntries(
+        SCOPE_KEYS.map((scope) => {
+            const primaryMethod = saveMethods[scope];
+            const defaultMethods = SCOPE_METHODS[scope] ?? [];
+            const methods = options.scopeMethods?.[scope]
+                ?? [primaryMethod, ...defaultMethods.filter((method) => method !== SAVE_METHODS[scope])];
+
+            return [scope, methods.filter(Boolean)];
+        }),
+    );
     const editable = { ...Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, true])), ...(options.editable ?? {}) };
     const initialBaselines = options.baselines ?? {};
     const labels = { ...DEFAULT_LABELS, ...(options.labels ?? {}) };
@@ -151,6 +175,8 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const watch = options.watch ?? ((path, callback) => wire.$watch?.(path, callback));
     const listen = options.on ?? ((name, callback) => wire.$on?.(name, callback));
     const hook = options.hook ?? ((name, callback) => wire.$hook?.(name, callback));
+    const interceptRequest = options.interceptRequest
+        ?? ((method, callback) => wire.$interceptRequest?.(method, callback));
     const invoke = options.invoke ?? ((method) => wire[method]?.());
     const confirm = options.confirm ?? defaultConfirm;
 
@@ -161,7 +187,6 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const pendingCancels = new Map();
     const unsubscriptions = [];
     let boundEventTarget = null;
-    let nextCommitCapture = null;
 
     const editor = {
         registry,
@@ -180,7 +205,6 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
         beforeUnloadHandler: null,
         navigateHandler: null,
         createSubmission: null,
-        createRedirectAllowed: false,
         frozenCreateControls: [],
         boundEventTarget: null,
 
@@ -212,6 +236,16 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 if (typeof unwatch === 'function') {
                     unsubscriptions.push(unwatch);
                 }
+
+                for (const method of scopeMethods[scope]) {
+                    const unlistenRequest = interceptRequest(method, (details = {}) => {
+                        this.handleRequest(scope, details);
+                    });
+
+                    if (typeof unlistenRequest === 'function') {
+                        unsubscriptions.push(unlistenRequest);
+                    }
+                }
             }
 
             const unlistenSaved = listen(SAVED_EVENT, (detail = {}) => this.completeSave(detail.scope, detail));
@@ -230,26 +264,26 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 unsubscriptions.push(unlistenBaseline);
             }
 
-            const unhook = hook('commit', ({ succeed, fail } = {}) => {
-                const commitScope = nextCommitCapture;
-                nextCommitCapture = null;
+            const unhook = hook('commit', ({ succeed, fail, commit } = {}) => {
+                const commitMethods = (commit?.calls ?? [])
+                    .map(({ method }) => method)
+                    .filter(Boolean);
+                const commitScope = SCOPE_KEYS.find((scope) => (
+                    scopeMethods[scope] ?? []
+                ).some((method) => commitMethods.includes(method)));
+                const cancelScope = SCOPE_KEYS.find((scope) => (
+                    CANCEL_METHODS[scope] !== undefined
+                    && commitMethods.includes(CANCEL_METHODS[scope])
+                ));
 
-                const pendingScopes = commitScope !== null && pendingSaves.has(commitScope)
+                const pendingScopes = commitScope !== undefined && pendingSaves.has(commitScope)
                     ? [commitScope]
                     : [];
-                const pendingCancelScopes = commitScope !== null && pendingCancels.has(commitScope)
-                    ? [commitScope]
+                const pendingCancelScopes = cancelScope !== undefined && pendingCancels.has(cancelScope)
+                    ? [cancelScope]
                     : [];
 
-                succeed?.(({ effects } = {}) => {
-                    if (commitScope === 'ingredient'
-                        && this.isCreate
-                        && this.createSubmission
-                        && effects?.redirect) {
-                        this.completeSave('ingredient');
-                        this.createRedirectAllowed = this.stateFor('ingredient') === 'saved';
-                    }
-
+                succeed?.(() => {
                     queueMicrotask(() => {
                         for (const scope of pendingScopes) {
                             if (pendingSaves.has(scope)) {
@@ -413,7 +447,6 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 sequence: scopeSequences[scope],
                 value: cloneValue(scopeValues[scope]),
             });
-            nextCommitCapture = scope;
             this.setScopeState(scope, 'saving');
         },
 
@@ -429,6 +462,39 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 scopeSequences[scope] += 1;
             }
             scopeValues[scope] = nextValue;
+        },
+
+        captureSubmittedValue(scope) {
+            const pending = pendingSaves.get(scope);
+
+            if (!pending) {
+                return;
+            }
+
+            this.captureValue(scope);
+            pending.sequence = scopeSequences[scope];
+            pending.value = cloneValue(scopeValues[scope]);
+        },
+
+        handleRequest(scope, { onRedirect } = {}) {
+            if (!pendingSaves.has(scope)) {
+                return;
+            }
+
+            this.captureSubmittedValue(scope);
+
+            onRedirect?.(({ preventDefault } = {}) => {
+                if (scope !== 'ingredient' || !this.isCreate || !this.createSubmission) {
+                    return;
+                }
+
+                this.completeSave(scope);
+                this.restoreCreateForm();
+
+                if (this.stateFor(scope) !== 'saved') {
+                    preventDefault?.();
+                }
+            });
         },
 
         completeSave(scope, detail = {}) {
@@ -457,7 +523,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             if (scope === 'ingredient' && this.isCreate) {
                 queueMicrotask(() => {
-                    if (this.isInitialized && !this.createRedirectAllowed) {
+                    if (this.isInitialized) {
                         this.restoreCreateForm();
                     }
                 });
@@ -527,7 +593,6 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 value: cloneValue(scopeValues[scope]),
                 state: this.stateFor(scope),
             });
-            nextCommitCapture = scope;
             this.setScopeState(scope, 'saved');
         },
 
@@ -564,7 +629,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 this.freezeCreateForm(event.target);
             }
 
-            this.beginSave(scope, true);
+            this.beginSave(scope, false);
         },
 
         handleClick(event) {
@@ -630,13 +695,6 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             };
 
             this.navigateHandler = (event) => {
-                if (this.createRedirectAllowed) {
-                    this.createRedirectAllowed = false;
-                    this.restoreCreateForm();
-
-                    return;
-                }
-
                 if (!this.blocksNavigation()) {
                     return;
                 }
@@ -667,23 +725,36 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
-            const controls = form.querySelectorAll('input, textarea, select, button, [contenteditable="true"]');
+            const controls = form.querySelectorAll('input, textarea, select, button, [contenteditable]');
             const frozenControls = [];
 
             for (const control of controls) {
                 const hadDisabled = 'disabled' in control;
                 const hadReadOnly = 'readOnly' in control;
-                const isContentEditable = control.contentEditable === 'true'
-                    || control.getAttribute?.('contenteditable') === 'true';
+                const contentEditableValue = control.getAttribute?.('contenteditable');
+                const isContentEditable = (
+                    contentEditableValue !== null
+                    && contentEditableValue !== undefined
+                ) || control.contentEditable === 'true'
+                    || control.isContentEditable === true;
 
                 if (hadDisabled) {
                     frozenControls.push({ control, property: 'disabled', value: control.disabled });
                     control.disabled = true;
                 }
 
-                if (hadReadOnly || isContentEditable) {
+                if (hadReadOnly && !isContentEditable) {
                     frozenControls.push({ control, property: 'readOnly', value: control.readOnly });
                     control.readOnly = true;
+                }
+
+                if (isContentEditable) {
+                    frozenControls.push({
+                        control,
+                        attribute: 'contenteditable',
+                        value: contentEditableValue,
+                    });
+                    control.setAttribute('contenteditable', 'false');
                 }
             }
 
@@ -692,8 +763,18 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
         },
 
         restoreCreateForm() {
-            for (const { control, property, value } of this.frozenCreateControls) {
-                control[property] = value;
+            for (const frozenControl of this.frozenCreateControls) {
+                if (frozenControl.attribute === 'contenteditable') {
+                    if (frozenControl.value === null || frozenControl.value === undefined) {
+                        frozenControl.control.removeAttribute('contenteditable');
+                    } else {
+                        frozenControl.control.setAttribute('contenteditable', frozenControl.value);
+                    }
+
+                    continue;
+                }
+
+                frozenControl.control[frozenControl.property] = frozenControl.value;
             }
 
             this.frozenCreateControls = [];

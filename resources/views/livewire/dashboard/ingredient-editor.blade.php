@@ -27,6 +27,7 @@
      watch: (path, callback) => $wire.$watch(path, callback),
      on: (event, callback) => $wire.$on(event, callback),
      hook: (event, callback) => $wire.$hook(event, callback),
+     interceptRequest: (method, callback) => $wire.$interceptRequest(method, callback),
      invoke: (method) => $wire[method](),
  })"
  x-init="init()"

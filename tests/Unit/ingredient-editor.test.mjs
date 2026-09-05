@@ -567,6 +567,33 @@ test('keeps a buffered material code input dirty after an in-flight save succeed
     assert.equal(setup.registry.blocksNavigation(), false);
 });
 
+test('reconciles a newer material code observed before canonical save acknowledgement', () => {
+    const setup = makeEditor();
+
+    setup.editor.init();
+    edit(setup.wire, 'workspaceMaterialCode', 'code-01');
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('material-code') });
+    setup.wire.startCommit('saveWorkspaceMaterialCode');
+    setup.eventTarget.dispatch('input', { target: new FakeElement('material-code') });
+    edit(setup.wire, 'workspaceMaterialCode', 'newer-02');
+
+    setup.wire.emit('ingredient-editor:saved', {
+        scope: 'material-code',
+        baseline: 'CODE-01',
+    });
+    setup.wire.completeCommit();
+
+    assert.equal(setup.editor.stateFor('material-code'), 'dirty');
+    assert.equal(setup.editor.currentFor('material-code'), 'newer-02');
+
+    setup.editor.markDirty('material-code');
+    edit(setup.wire, 'workspaceMaterialCode', 'CODE-01');
+
+    assert.equal(setup.editor.stateFor('material-code'), 'saved');
+    assert.equal(setup.editor.currentFor('material-code'), 'CODE-01');
+    assert.equal(setup.registry.blocksNavigation(), false);
+});
+
 test('adopts the raw nested ingredient state emitted after persistence', () => {
     const setup = makeEditor();
     const rawState = {

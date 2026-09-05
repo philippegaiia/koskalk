@@ -282,6 +282,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const scopeBaselines = {};
     const scopeValues = {};
     const scopeSequences = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
+    const scopeObservationSequences = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
     const scopeEditVersions = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
     const unresolvedBufferedEdits = new Map();
     const pendingSaves = new Map();
@@ -521,6 +522,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             if (previousSignature !== nextSignature) {
                 scopeSequences[scope] += 1;
+                scopeObservationSequences[scope] += 1;
             }
 
             if (
@@ -596,6 +598,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             pendingSaves.set(scope, {
                 sequence: scopeSequences[scope],
+                observationSequence: scopeObservationSequences[scope],
                 editVersion: scopeEditVersions[scope],
                 value: cloneValue(scopeValues[scope]),
             });
@@ -625,6 +628,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             this.captureValue(scope);
             pending.sequence = scopeSequences[scope];
+            pending.observationSequence = scopeObservationSequences[scope];
             pending.editVersion = scopeEditVersions[scope];
             pending.value = cloneValue(scopeValues[scope]);
         },
@@ -690,13 +694,18 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             const submittedSignature = pending === undefined
                 ? null
                 : stableSerialize(pending.value);
+            const savedSignature = stableSerialize(savedValue);
             const editedDuringSave = pending !== undefined
                 && pending.editVersion !== scopeEditVersions[scope];
+            const newerValueWasObservedDuringSave = editedDuringSave
+                && pending !== undefined
+                && scopeObservationSequences[scope] !== pending.observationSequence
+                && currentSignature !== savedSignature;
 
             if (editedDuringSave) {
                 unresolvedBufferedEdits.set(scope, {
                     editVersion: scopeEditVersions[scope],
-                    observedNewerValue: false,
+                    observedNewerValue: newerValueWasObservedDuringSave,
                 });
             } else {
                 unresolvedBufferedEdits.delete(scope);

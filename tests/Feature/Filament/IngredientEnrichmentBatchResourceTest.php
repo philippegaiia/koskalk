@@ -15,6 +15,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentReviewPresenter;
 use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\MarkdownEditor;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -32,6 +33,20 @@ it('offers a new batch shortcut from the batch index', function (): void {
         ->assertActionExists('create')
         ->assertActionHasLabel('create', 'New batch')
         ->assertActionHasUrl('create', IngredientResource::getUrl('index'));
+});
+
+it('shows whether a batch started with fresh research', function (): void {
+    $admin = User::factory()->admin()->create();
+    $freshBatch = IngredientEnrichmentBatch::factory()->create(['fresh_research' => true]);
+    $reusedBatch = IngredientEnrichmentBatch::factory()->create(['fresh_research' => false]);
+    $this->actingAs($admin);
+
+    Livewire::test(ViewIngredientEnrichmentBatch::class, ['record' => $freshBatch->public_id])
+        ->assertSchemaComponentStateSet('fresh_research', true)
+        ->assertSee('Fresh research');
+
+    Livewire::test(ViewIngredientEnrichmentBatch::class, ['record' => $reusedBatch->public_id])
+        ->assertSchemaComponentStateSet('fresh_research', false);
 });
 
 it('presents current and proposed values with field-level evidence', function (): void {
@@ -102,7 +117,11 @@ it('presents current and proposed values with field-level evidence', function ()
     ])
         ->loadTable()
         ->mountAction(TestAction::make('editProposal')->table($item))
-        ->assertMountedActionModalSee('Identity and guidance');
+        ->assertMountedActionModalSee('Identity and guidance')
+        ->assertFormFieldExists(
+            'info_markdown',
+            checkFieldUsing: fn (MarkdownEditor $field): bool => ! $field->isRequired(),
+        );
 });
 
 it('shows only genuine replacement conflicts when approving an enrichment item', function (): void {

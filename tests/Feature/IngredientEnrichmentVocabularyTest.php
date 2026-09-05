@@ -34,6 +34,7 @@ it('defines stable hybrid enrichment vocabulary', function (): void {
             IngredientEnrichmentResearchStage::ConflictEvaluation,
             IngredientEnrichmentResearchStage::AiGuidanceResearch,
             IngredientEnrichmentResearchStage::AiEditorial,
+            IngredientEnrichmentResearchStage::AiIdentityNameLocalization,
             IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
             IngredientEnrichmentResearchStage::AiGuidanceLocalization,
             IngredientEnrichmentResearchStage::Validation,

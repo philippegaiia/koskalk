@@ -273,16 +273,23 @@ it('rejects invalid workspace guidance without changing an existing record', fun
 })->with([
     'empty after trimming' => '   ',
     'empty html' => '<p><br></p>',
-    'too long unicode value' => '<p>'.str_repeat('界', 2001).'</p>',
 ]);
 
-it('accepts the two-thousand-character Unicode boundary and supported HTML', function (): void {
+it('accepts the ten-thousand-character Unicode boundary and supported HTML', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create();
     $service = app(WorkspaceIngredientGuidanceService::class);
 
-    $boundary = $service->save($owner, $workspace, $ingredient, '<p>'.str_repeat('界', 2000).'</p>');
+    $content = app(WorkspaceIngredientGuidanceContent::class);
+    $boundaryHtml = '<p>'.str_repeat('word ', 1999).'wordx</p>';
+    $boundary = $service->save($owner, $workspace, $ingredient, $boundaryHtml);
+
+    expect(mb_strlen($content->text($boundary->guidance_html)))->toBe(10000);
+
+    expect(fn () => $service->save($owner, $workspace, $ingredient, $boundaryHtml.'<p>x</p>'))
+        ->toThrow(ValidationException::class);
+
     $markdown = $service->save(
         $owner,
         $workspace,
@@ -290,8 +297,7 @@ it('accepts the two-thousand-character Unicode boundary and supported HTML', fun
         '<h2>Heading</h2><ul><li>item</li></ul><p><strong>emphasis</strong> <a href="https://example.com">More</a></p>',
     );
 
-    expect(mb_strlen(app(WorkspaceIngredientGuidanceContent::class)->text($boundary->guidance_html)))->toBe(2000)
-        ->and($markdown->guidance_html)
+    expect($markdown->guidance_html)
         ->toBe('<h2>Heading</h2><ul><li>item</li></ul><p><strong>emphasis</strong> <a href="https://example.com">More</a></p>');
 });
 

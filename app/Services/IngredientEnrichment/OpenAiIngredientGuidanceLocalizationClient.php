@@ -23,6 +23,8 @@ class OpenAiIngredientGuidanceLocalizationClient implements IngredientGuidanceLo
             input: $prompt['input'],
             schemaName: 'ingredient_guidance_localization',
             schema: $this->schema->build($context),
+            model: (string) config('ingredient-enrichment.openai.localization_model'),
+            reasoningEffort: (string) config('ingredient-enrichment.openai.localization_reasoning_effort'),
         );
         $translations = is_array($response->payload['translations'] ?? null)
             ? $response->payload['translations']

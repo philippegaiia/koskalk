@@ -9,6 +9,7 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceProposalReviewService;
+use App\Services\IngredientEnrichment\IngredientGuidanceRefreshResultValidator;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -134,6 +135,39 @@ it('forbids English edits in localization-only batches', function (): void {
     }
 });
 
+it('forbids identity-name edits in localization-only batches', function (): void {
+    $actor = User::factory()->admin()->create();
+    [, , $item] = reviewServiceItem(IngredientEnrichmentBatchMode::GuidanceLocalization);
+
+    try {
+        app(IngredientGuidanceProposalReviewService::class)->edit($actor, $item, [
+            'translations' => [[
+                'locale' => 'fr',
+                'display_name' => 'Nom interdit',
+                'info_markdown' => reviewServiceFrench('Révisé'),
+            ]],
+        ]);
+        test()->fail('Expected the localized identity-name edit to be rejected.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('proposal.translations.0');
+    }
+});
+
+it('uses the visible-character maximum when the word maximum is disabled', function (): void {
+    $validator = app(IngredientGuidanceRefreshResultValidator::class);
+    $translation = [[
+        'locale' => 'fr',
+        'info_markdown' => reviewServiceFrench('Texte volontairement trop long'),
+    ]];
+
+    config()->set('ingredient-enrichment.guidance.maximum_words', 0);
+    config()->set('ingredient-enrichment.guidance.maximum_characters', 20);
+    $characterReport = $validator->validateTranslations($translation, ['fr'], false, null, false);
+
+    expect($characterReport['valid'])->toBeFalse()
+        ->and($characterReport['errors'])->toHaveKey('translations.0.info_markdown');
+});
+
 it('marks stale items before returning a translated stale validation error', function (): void {
     $actor = User::factory()->admin()->create();
     [$ingredient, $batch, $item] = reviewServiceItem();
@@ -212,6 +246,46 @@ it('reports validator failures and absent evidence through localized validation 
     }
 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Ready);
+});
+
+it('rejects malformed generated evidence during guidance result validation', function (): void {
+    $ingredient = Ingredient::factory()->create();
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = reviewServiceResult($ingredient, $fingerprint);
+    $result['translations'] = [];
+    $result['guidance_evidence'] = [
+        [
+            'source_name' => '',
+            'source_url' => 'https://malformed.example/first',
+            'summary' => 'Missing source name.',
+            'source_tier' => 'editorial',
+        ],
+        [
+            'source_name' => 'Partial source',
+            'source_url' => 'https://malformed.example/second',
+            'summary' => 'Partially classified evidence.',
+            'source_tier' => 'editorial',
+            'claim_type' => 'usage',
+        ],
+        [
+            'source_name' => 'Unexpected field source',
+            'source_url' => 'https://malformed.example/third',
+            'summary' => 'Evidence with an unsupported field.',
+            'source_tier' => 'editorial',
+            'unexpected' => true,
+        ],
+    ];
+
+    $report = app(IngredientGuidanceRefreshResultValidator::class)->validate(
+        $result,
+        $ingredient,
+        IngredientEnrichmentBatchMode::GuidanceRefresh,
+        [],
+    );
+
+    expect($report['valid'])->toBeFalse()
+        ->and($report['errors'])->not->toBe([])
+        ->and($report['normalized'])->toBeNull();
 });
 
 /** @return array{0: Ingredient, 1: IngredientEnrichmentBatch, 2: IngredientEnrichmentBatchItem} */

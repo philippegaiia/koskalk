@@ -216,6 +216,32 @@ it('derives outdated translations when canonical English guidance changes', func
     ]);
 });
 
+it('keeps guidance translations current when only canonical identity names change', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'saponification_name' => 'Olive oil soap',
+        'info_markdown' => '## Overview\nOriginal guidance',
+    ]);
+    $service = app(IngredientTranslationService::class);
+    $service->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'saponification_name' => 'Savon d’huile d’olive',
+        'info_markdown' => '## Vue d’ensemble\nConseils originaux',
+    ]], IngredientTranslationOrigin::AiGenerated, 'ingredient-guidance-localization-v1');
+
+    $ingredient->update([
+        'display_name' => 'High-oleic olive oil',
+        'saponification_name' => 'High-oleic olive oil soap',
+    ]);
+
+    expect(collect($service->formData($ingredient))->first())->toMatchArray([
+        'freshness' => 'current',
+        'is_stale' => false,
+    ]);
+});
+
 it('marks only changed locales as reviewer edited while preserving other metadata', function (): void {
     SupportedLocale::factory()->create(['code' => 'fr']);
     SupportedLocale::factory()->create(['code' => 'de']);

@@ -119,12 +119,12 @@ class OpenFdaSubstanceClient
     }
 
     /**
-     * Whether any candidate in the batch carries a whole name that equals the
-     * queried term. Sibling records that only contain the phrase in a longer
-     * synonym do not count as a match, so traversal continues to the next
-     * variant.
+     * Whether any candidate in the batch carries an authoritative whole name
+     * that equals the queried term. This matches the identity matcher: only
+     * INCI-qualified names can end discovery, while ordinary aliases remain
+     * available on the normalized candidate for display and review.
      *
-     * @param  list<array{common_name: string, inci_names: list<string>, names: list<string>}>  $batch
+     * @param  list<array{inci_name?: string|null, inci_names?: list<string>}>  $batch
      */
     private function batchNamesTermExactly(array $batch, string $term): bool
     {
@@ -135,9 +135,8 @@ class OpenFdaSubstanceClient
 
         foreach ($batch as $candidate) {
             $names = collect([
-                $candidate['common_name'] ?? null,
+                $candidate['inci_name'] ?? null,
                 ...($candidate['inci_names'] ?? []),
-                ...($candidate['names'] ?? []),
             ])
                 ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
                 ->map(fn (string $name): string => mb_strtolower(trim($name)))

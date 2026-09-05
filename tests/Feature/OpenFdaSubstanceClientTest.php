@@ -131,6 +131,57 @@ it('keeps searching when the first non-empty batch only contains a sibling-form 
         ]);
 });
 
+it('continues FDA discovery past an ordinary alias until an exact INCI name is found', function (): void {
+    Http::preventStrayRequests();
+    Http::fakeSequence()
+        ->push(['results' => [[
+            'unii' => 'HYDROGENATED-ARGAN-001',
+            'names' => [
+                [
+                    'name' => 'HYDROGENATED ARGANIA SPINOSA KERNEL OIL',
+                    'preferred' => true,
+                    'display_name' => true,
+                    'name_orgs' => [['name_org' => 'INCI']],
+                ],
+                [
+                    'name' => 'ARGANIA SPINOSA KERNEL OIL',
+                    'preferred' => false,
+                    'display_name' => false,
+                    'name_orgs' => [['name_org' => 'FDA']],
+                ],
+            ],
+            'codes' => [],
+        ]]])
+        ->push(['results' => [[
+            'unii' => 'REAL-ARGAN-001',
+            'names' => [[
+                'name' => 'ARGANIA SPINOSA SEED OIL',
+                'preferred' => false,
+                'display_name' => false,
+                'name_orgs' => [['name_org' => 'INCI']],
+            ]],
+            'codes' => [],
+        ]]]);
+
+    $result = app(OpenFdaSubstanceClient::class)->lookup([
+        'display_name' => 'Argan oil',
+        'inci_name' => 'ARGANIA SPINOSA KERNEL OIL',
+        'identifiers' => [],
+    ]);
+
+    $searches = Http::recorded()
+        ->map(fn (array $recorded): string => (string) $recorded[0]->data()['search'])
+        ->all();
+
+    expect($result->sourceCalls)->toBe(2)
+        ->and($searches)->toBe([
+            'names.name:"ARGANIA SPINOSA KERNEL OIL"',
+            'names.name:"ARGANIA SPINOSA SEED OIL"',
+        ])
+        ->and(collect($result->data['candidates'])->pluck('unii')->all())
+        ->toContain('REAL-ARGAN-001');
+});
+
 /**
  * @return array<string, mixed>
  */

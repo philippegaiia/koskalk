@@ -5,7 +5,7 @@ namespace App\Data;
 final readonly class IngredientGuidanceLocalizationResponse
 {
     /**
-     * @param  list<array{locale: string, info_markdown: string}>  $translations
+     * @param  list<array{locale: string, display_name: string, saponification_name: string|null, info_markdown: string}>  $translations
      */
     public function __construct(
         public array $translations,

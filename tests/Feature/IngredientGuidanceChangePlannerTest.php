@@ -204,6 +204,44 @@ it('preserves current evidence when localization-only returns no evidence', func
         ->and($plan['effective']['guidance_evidence'])->toBe($currentEvidence);
 });
 
+it('always uses current evidence for localization-only results', function (): void {
+    $english = guidancePlannerText('Current');
+    $currentEvidence = [[
+        'source_name' => 'Current source',
+        'source_url' => 'https://example.test/current',
+        'summary' => 'Current evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $staleEvidence = [[
+        'source_name' => 'Stale source',
+        'source_url' => 'https://example.test/current',
+        'summary' => 'Current evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-02T00:00:00+00:00',
+    ], [
+        'source_name' => 'Stale distinct source',
+        'source_url' => 'https://example.test/stale-distinct',
+        'summary' => 'Stale distinct evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-02T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => $english,
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $currentEvidence]]],
+    ]);
+
+    $plan = app(IngredientGuidanceChangePlanner::class)->plan(
+        $ingredient,
+        guidancePlannerResult($ingredient, $english, [], $staleEvidence),
+        IngredientEnrichmentBatchMode::GuidanceLocalization,
+    );
+
+    expect($plan['changed'])->toBeFalse()
+        ->and(collect($plan['decisions'])->firstWhere('field', 'guidance.evidence'))->toBeNull()
+        ->and($plan['effective']['guidance_evidence'])->toBe($currentEvidence);
+});
+
 /** @return array<string, mixed> */
 function guidancePlannerResult(
     Ingredient $ingredient,

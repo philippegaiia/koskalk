@@ -23,7 +23,6 @@ enum IngredientEnrichmentBatchMode: string
             self::GuidanceRefresh => [
                 IngredientEnrichmentResearchStage::AiGuidanceResearch,
                 IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-                IngredientEnrichmentResearchStage::AiGuidanceLocalization,
                 IngredientEnrichmentResearchStage::Validation,
             ],
             self::GuidanceLocalization => [

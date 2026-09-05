@@ -119,6 +119,7 @@ it('describes the exact enrichment validator contract as a strict json schema', 
             ...collect(IngredientSubcategory::cases())->map->value->all(),
             null,
         ])
+        ->and(data_get($schema, 'properties.proposal.properties.info_markdown.type'))->toBe(['string', 'null'])
         ->and(data_get($schema, 'properties.proposal.properties.identifiers.items.properties.scheme.enum'))->toBe(
             collect(IngredientIdentifierScheme::cases())->map->value->all(),
         )
@@ -127,6 +128,12 @@ it('describes the exact enrichment validator contract as a strict json schema', 
             'fr',
             'pt_BR',
         ])
+        ->and(data_get($schema, 'properties.proposal.properties.translations.items.required'))->toBe([
+            'locale',
+            'display_name',
+            'saponification_name',
+        ])
+        ->and(data_get($schema, 'properties.proposal.properties.translations.items.properties.info_markdown'))->toBeNull()
         ->and(data_get($schema, 'properties.proposal.properties.market_labels.items.properties.market_code.enum'))->toBe(
             collect(IngredientLabelMarket::cases())->map->value->all(),
         );

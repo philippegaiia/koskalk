@@ -3,13 +3,23 @@
 use App\Actions\IngredientEnrichment\ApplyApprovedIngredientEnrichment;
 use App\Actions\IngredientEnrichment\ApproveIngredientGuidanceProposal;
 use App\Actions\IngredientEnrichment\EditIngredientGuidanceProposal;
+use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentBatchMode;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
+use App\Enums\IngredientEvidenceConfidence;
+use App\Enums\IngredientFunctionSource;
+use App\Enums\IngredientIdentifierScheme;
+use App\Enums\IngredientLabelMarket;
+use App\Enums\IngredientSourceTier;
 use App\Enums\IngredientTranslationOrigin;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
+use App\Models\IngredientFunction;
+use App\Models\IngredientIdentifier;
+use App\Models\IngredientIdentifierEvidence;
+use App\Models\IngredientMarketLabel;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
@@ -69,10 +79,363 @@ it('edits and applies guidance without changing approved identity fields', funct
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
         ->and($ingredient->only(['display_name', 'inci_name', 'category', 'subcategory', 'saponification_name']))->toBe($beforeIdentity)
         ->and($ingredient->info_markdown)->toBe(trim(guidanceApplyText('Edited')))
-        ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))->toBe(trim(guidanceApplyTranslationText('Révisé')))
-        ->and($ingredient->translations()->where('locale', 'fr')->value('origin'))->toBe(IngredientTranslationOrigin::ReviewerEdited)
+        ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))->toBe(trim(guidanceApplyTranslationText('Original')))
+        ->and($ingredient->translations()->where('locale', 'fr')->value('origin'))->toBe(IngredientTranslationOrigin::Legacy)
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.research_prompt_version'))->toBe('ingredient-guidance-research-v2')
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.evidence.0.source_name'))->toBe('COSMILE Europe');
+});
+
+it('preserves locale metadata and localization provenance when a guidance refresh has no translations', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => guidanceApplyText('Original'),
+        'source_data' => [
+            'enrichment' => [
+                'guidance' => [
+                    'evidence' => [[
+                        'source_name' => 'Prior guidance source',
+                        'source_url' => 'https://example.test/prior-guidance',
+                        'summary' => 'Previously reviewed guidance.',
+                        'source_tier' => 'editorial',
+                        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+                    ]],
+                    'guidance_prompt_version' => 'stored-guidance-v1',
+                    'research_prompt_version' => 'stored-research-v1',
+                    'localization_prompt_version' => 'stored-localization-v1',
+                ],
+            ],
+        ],
+    ]);
+    $translation = $ingredient->translations()->create([
+        'locale' => 'fr',
+        'display_name' => 'Nom français relu',
+        'saponification_name' => 'Nom de saponification relu',
+        'info_markdown' => guidanceApplyTranslationText('Reviewer French'),
+        'source_fingerprint' => 'reviewer-guidance-fingerprint',
+        'origin' => IngredientTranslationOrigin::ReviewerEdited,
+        'prompt_version' => null,
+    ]);
+    $beforeTranslation = $translation->fresh()->only([
+        'display_name',
+        'saponification_name',
+        'info_markdown',
+        'source_fingerprint',
+        'origin',
+        'prompt_version',
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = guidanceResult($ingredient, $sourceFingerprint);
+    $result['info_markdown'] = guidanceApplyText('Refreshed');
+    $result['translations'] = [];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => $result,
+    ]);
+
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    $ingredient->refresh();
+    expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
+        ->and($ingredient->info_markdown)->toBe(trim($result['info_markdown']))
+        ->and(collect(data_get($ingredient->source_data, 'enrichment.guidance.evidence', []))
+            ->pluck('source_name')->all())->toContain('COSMILE Europe')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.localization_prompt_version'))->toBe('stored-localization-v1')
+        ->and($ingredient->translations()->where('locale', 'fr')->firstOrFail()->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]))->toBe($beforeTranslation);
+});
+
+it('never overwrites an existing reviewer-owned locale during localization apply', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive oil',
+        'saponification_name' => 'Olive oil soap',
+        'info_markdown' => guidanceApplyText('Current English'),
+    ]);
+    app(IngredientTranslationService::class)->sync($ingredient, [[
+        'locale' => 'fr',
+        'display_name' => 'Nom français relu',
+        'saponification_name' => 'Savon d’huile relu',
+        'info_markdown' => guidanceApplyTranslationText('Reviewer French'),
+    ]], IngredientTranslationOrigin::ReviewerEdited);
+    $beforeFrench = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = guidanceResult($ingredient, $sourceFingerprint);
+    $result['mode'] = IngredientEnrichmentBatchMode::GuidanceLocalization->value;
+    $result['info_markdown'] = $ingredient->info_markdown;
+    $result['translations'] = [[
+        'locale' => 'fr',
+        'display_name' => 'Nom français généré',
+        'saponification_name' => 'Savon d’huile généré',
+        'info_markdown' => guidanceApplyTranslationText('AI replacement'),
+    ]];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => $result,
+    ]);
+
+    $editedItem = app(EditIngredientGuidanceProposal::class)->handle($admin, $item, [
+        'translations' => [[
+            'locale' => 'fr',
+            'info_markdown' => guidanceApplyTranslationText('Reviewer update'),
+        ]],
+    ]);
+    expect(data_get($editedItem->result, 'translations.0.display_name'))->toBe('Nom français généré')
+        ->and(data_get($editedItem->result, 'translations.0.saponification_name'))->toBe('Savon d’huile généré');
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $editedItem);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    $afterFrench = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
+    expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
+        ->and($afterFrench->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]))->toBe($beforeFrench->only([
+            'display_name',
+            'saponification_name',
+            'info_markdown',
+            'source_fingerprint',
+            'origin',
+            'prompt_version',
+        ]));
+});
+
+it('persists generated localized names and guidance together', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Palm Kernel Oil',
+        'saponification_name' => 'Palm Kernel Oil Soap',
+        'info_markdown' => guidanceApplyText('Current English'),
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = guidanceResult($ingredient, $sourceFingerprint);
+    $result['mode'] = IngredientEnrichmentBatchMode::GuidanceLocalization->value;
+    $result['info_markdown'] = $ingredient->info_markdown;
+    $result['translations'] = [[
+        'locale' => 'fr',
+        'display_name' => 'Huile de palmiste',
+        'saponification_name' => 'Savon à l’huile de palmiste',
+        'info_markdown' => guidanceApplyTranslationText('Conseils localisés'),
+    ]];
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => $result,
+    ]);
+
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    $french = $ingredient->translations()->where('locale', 'fr')->firstOrFail();
+    expect($totals['applied'])->toBe(1)
+        ->and($french->display_name)->toBe('Huile de palmiste')
+        ->and($french->saponification_name)->toBe('Savon à l’huile de palmiste')
+        ->and($french->info_markdown)->toBe(trim(guidanceApplyTranslationText('Conseils localisés')))
+        ->and($french->origin)->toBe(IngredientTranslationOrigin::AiGenerated);
+});
+
+it('applies guidance without changing identity records or their provenance', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'IDENTITY-STABILITY',
+        'category' => IngredientCategory::Lipids,
+        'subcategory' => 'vegetable_oils',
+        'taxonomy_source' => 'admin_reviewed_enrichment',
+        'taxonomy_reviewed_at' => '2026-08-01 10:00:00',
+        'taxonomy_reviewed_by_user_id' => $admin->id,
+        'cosing_reference' => '54495',
+        'display_name' => 'Olive oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'saponification_name' => 'Olive oil',
+        'soap_inci_naoh_name' => 'Sodium olivate',
+        'soap_inci_koh_name' => 'Potassium olivate',
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => false,
+        'requires_admin_review' => false,
+        'is_active' => true,
+        'is_manufactured' => true,
+        'source_data' => [
+            'enrichment' => [
+                'core' => [
+                    'schema_version' => 1,
+                    'field_confidence' => [[
+                        'field' => 'proposal.inci_name',
+                        'confidence' => 'supported',
+                    ]],
+                    'value_provenance' => [[
+                        'field' => 'proposal.inci_name',
+                        'kind' => 'source_confirmed',
+                        'reasoning' => 'Exact registry identity match.',
+                        'source_urls' => ['https://registry.example/olive-oil'],
+                    ]],
+                    'source_fingerprint' => 'identity-source-fingerprint',
+                    'result_fingerprint' => 'identity-result-fingerprint',
+                ],
+                'guidance' => [
+                    'evidence' => [[
+                        'source_name' => 'Prior guidance source',
+                        'source_url' => 'https://example.test/prior-guidance',
+                        'summary' => 'Previously reviewed guidance.',
+                        'source_tier' => 'editorial',
+                        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+                    ]],
+                ],
+            ],
+        ],
+    ]);
+    $identifier = $ingredient->identifiers()->create([
+        'scheme' => IngredientIdentifierScheme::Cas,
+        'value' => '8001-25-0',
+        'normalized_value' => '8001-25-0',
+        'is_primary' => true,
+    ]);
+    $identifier->evidence()->create([
+        'source_name' => 'Registry identity source',
+        'source_url' => 'https://registry.example/olive-oil',
+        'source_tier' => IngredientSourceTier::Official,
+        'confidence' => IngredientEvidenceConfidence::Verified,
+        'source_version' => 'registry-2026',
+        'source_updated_at' => '2026-07-31',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]);
+    $function = IngredientFunction::factory()->create([
+        'key' => 'identity_stability_emollient',
+        'name' => 'Identity stability emollient',
+    ]);
+    $ingredient->functions()->attach($function->id, [
+        'source' => IngredientFunctionSource::CosIng->value,
+        'source_reference' => 'https://cosing.example/olive-oil',
+        'source_checked_at' => '2026-08-01 00:00:00',
+        'source_tier' => IngredientSourceTier::Official->value,
+        'confidence' => IngredientEvidenceConfidence::Verified->value,
+        'source_version' => 'cosing-2026',
+        'source_updated_at' => '2026-08-01',
+        'assigned_by_user_id' => $admin->id,
+    ]);
+    IngredientMarketLabel::factory()->for($ingredient)->create([
+        'market_code' => IngredientLabelMarket::Eu,
+        'declaration_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'source_name' => 'EU declaration source',
+        'source_url' => 'https://eu.example/olive-oil',
+        'source_tier' => IngredientSourceTier::Official,
+        'confidence' => IngredientEvidenceConfidence::Verified,
+        'source_version' => 'eu-2026',
+        'source_updated_at' => '2026-08-01',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+        'reviewed_by_user_id' => $admin->id,
+    ]);
+    IngredientMarketLabel::factory()->for($ingredient)->create([
+        'market_code' => IngredientLabelMarket::Us,
+        'declaration_name' => 'Olive Oil',
+        'source_name' => 'US declaration source',
+        'source_url' => 'https://us.example/olive-oil',
+        'source_tier' => IngredientSourceTier::Official,
+        'confidence' => IngredientEvidenceConfidence::Supported,
+        'source_version' => 'us-2026',
+        'source_updated_at' => '2026-08-02',
+        'retrieved_at' => '2026-08-02T00:00:00+00:00',
+        'reviewed_by_user_id' => $admin->id,
+    ]);
+
+    $identityState = function (Ingredient $subject): array {
+        $subject->refresh();
+
+        return [
+            'canonical' => [
+                'catalog_key' => $subject->catalog_key,
+                'category' => $subject->category?->value,
+                'subcategory' => $subject->subcategory?->value,
+                'taxonomy_source' => $subject->taxonomy_source,
+                'taxonomy_reviewed_at' => $subject->taxonomy_reviewed_at?->toIso8601String(),
+                'taxonomy_reviewed_by_user_id' => $subject->taxonomy_reviewed_by_user_id,
+                'cosing_reference' => $subject->cosing_reference,
+                'display_name' => $subject->display_name,
+                'inci_name' => $subject->inci_name,
+                'saponification_name' => $subject->saponification_name,
+                'soap_inci_naoh_name' => $subject->soap_inci_naoh_name,
+                'soap_inci_koh_name' => $subject->soap_inci_koh_name,
+                'is_soap_saponification_trusted' => $subject->is_soap_saponification_trusted,
+                'requires_aromatic_compliance' => $subject->requires_aromatic_compliance,
+                'requires_admin_review' => $subject->requires_admin_review,
+                'is_active' => $subject->is_active,
+                'is_manufactured' => $subject->is_manufactured,
+            ],
+            'core_provenance' => data_get($subject->source_data, 'enrichment.core'),
+            'identifiers' => $subject->identifiers()
+                ->with('evidence')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (IngredientIdentifier $row): array => [
+                    'id' => $row->id,
+                    'scheme' => $row->scheme?->value,
+                    'value' => $row->value,
+                    'normalized_value' => $row->normalized_value,
+                    'is_primary' => $row->is_primary,
+                    'evidence' => $row->evidence
+                        ->sortBy('id')
+                        ->map(fn (IngredientIdentifierEvidence $evidence): array => $evidence->toArray())
+                        ->values()
+                        ->all(),
+                ])
+                ->all(),
+            'functions' => $subject->functions()
+                ->orderBy('ingredient_functions.id')
+                ->get()
+                ->map(fn (IngredientFunction $row): array => [
+                    'id' => $row->id,
+                    'key' => $row->key,
+                    'pivot' => $row->pivot?->toArray(),
+                ])
+                ->all(),
+            'market_labels' => $subject->marketLabels()
+                ->orderBy('id')
+                ->get()
+                ->map(fn (IngredientMarketLabel $row): array => $row->toArray())
+                ->all(),
+        ];
+    };
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => guidanceResult($ingredient, $sourceFingerprint),
+    ]);
+    $beforeIdentity = $identityState($ingredient);
+
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
+        ->and($identityState($ingredient))->toBe($beforeIdentity)
+        ->and($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Generated')));
 });
 
 it('keeps a workspace override unchanged while applying reviewed platform guidance', function (): void {
@@ -117,7 +480,7 @@ it('keeps a workspace override unchanged while applying reviewed platform guidan
 
     expect($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Edited')))
         ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))
-        ->toBe(trim(guidanceApplyTranslationText('Révisé')))
+        ->toBe(trim(guidanceApplyTranslationText('Original')))
         ->and($override->fresh()->guidance_html)->toBe('<p>Workspace-authored guidance</p>');
 });
 
@@ -207,10 +570,10 @@ it('applies English and reviewer-edited French while leaving German outdated', f
     $translations = $ingredient->translations()->get()->keyBy('locale');
     $currentFingerprint = app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient);
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
-        ->and($translations['fr']->info_markdown)->toBe(trim(guidanceApplyTranslationText('Reviewer French')))
-        ->and($translations['fr']->origin)->toBe(IngredientTranslationOrigin::ReviewerEdited)
-        ->and($translations['fr']->prompt_version)->toBeNull()
-        ->and($translations['fr']->source_fingerprint)->toBe($currentFingerprint)
+        ->and($translations['fr']->info_markdown)->toBe(trim(guidanceApplyTranslationText('Stored French')))
+        ->and($translations['fr']->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
+        ->and($translations['fr']->prompt_version)->toBe('ingredient-guidance-localization-v1')
+        ->and($translations['fr']->source_fingerprint)->toBe($oldTranslationFingerprint)
         ->and($translations['de']->info_markdown)->toBe(guidanceApplyLocalizedTranslationText('Stored German', 'de'))
         ->and($translations['de']->source_fingerprint)->toBe($oldTranslationFingerprint)
         ->and($translations['de']->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
@@ -220,6 +583,7 @@ it('applies English and reviewer-edited French while leaving German outdated', f
 it('applies a French-only reviewer edit and generated German with truthful provenance', function (): void {
     $admin = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([
+        'saponification_name' => 'Olive oil soap',
         'info_markdown' => guidanceApplyText('Original'),
     ]);
     app(IngredientTranslationService::class)->sync($ingredient, [
@@ -245,6 +609,8 @@ it('applies a French-only reviewer edit and generated German with truthful prove
     $result['info_markdown'] = guidanceApplyText('Original');
     $result['translations'][] = [
         'locale' => 'de',
+        'display_name' => 'Generiertes Olivenöl',
+        'saponification_name' => 'Generierte Olivenölseife',
         'info_markdown' => guidanceApplyLocalizedTranslationText('Generated German', 'de'),
     ];
     $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
@@ -252,6 +618,7 @@ it('applies a French-only reviewer edit and generated German with truthful prove
         'source_fingerprint' => $sourceFingerprint,
         'result' => $result,
     ]);
+    $beforeFrench = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
     $beforeGerman = $ingredient->translations()->where('locale', 'de')->firstOrFail()->fresh();
 
     app(EditIngredientGuidanceProposal::class)->handle($admin, $item, [
@@ -266,17 +633,16 @@ it('applies a French-only reviewer edit and generated German with truthful prove
 
     $ingredient->refresh();
     $translations = $ingredient->translations()->get()->keyBy('locale');
-    $currentFingerprint = app(IngredientTranslationSourceFingerprint::class)->forIngredient($ingredient);
-    expect($translations['fr']->info_markdown)->toBe(trim(guidanceApplyTranslationText('Reviewer French')))
-        ->and($translations['fr']->origin)->toBe(IngredientTranslationOrigin::ReviewerEdited)
-        ->and($translations['fr']->prompt_version)->toBeNull()
-        ->and($translations['fr']->source_fingerprint)->toBe($currentFingerprint)
+    expect($translations['fr']->info_markdown)->toBe($beforeFrench->info_markdown)
+        ->and($translations['fr']->origin)->toBe($beforeFrench->origin)
+        ->and($translations['fr']->prompt_version)->toBe($beforeFrench->prompt_version)
+        ->and($translations['fr']->source_fingerprint)->toBe($beforeFrench->source_fingerprint)
         ->and($translations['de']->display_name)->toBe($beforeGerman->display_name)
         ->and($translations['de']->saponification_name)->toBe($beforeGerman->saponification_name)
-        ->and($translations['de']->info_markdown)->toBe(trim(guidanceApplyLocalizedTranslationText('Generated German', 'de')))
+        ->and($translations['de']->info_markdown)->toBe($beforeGerman->info_markdown)
         ->and($translations['de']->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
         ->and($translations['de']->prompt_version)->toBe('ingredient-guidance-localization-v1')
-        ->and($translations['de']->source_fingerprint)->toBe($currentFingerprint);
+        ->and($translations['de']->source_fingerprint)->toBe($beforeGerman->source_fingerprint);
 });
 
 it('refreshes reviewer provenance when a locale is edited back to its stored text', function (): void {
@@ -301,6 +667,7 @@ it('refreshes reviewer provenance when a locale is edited back to its stored tex
         'source_fingerprint' => $sourceFingerprint,
         'result' => $result,
     ]);
+    $beforeFrench = $ingredient->translations()->where('locale', 'fr')->firstOrFail()->fresh();
 
     app(EditIngredientGuidanceProposal::class)->handle($admin, $item, [
         'translations' => [[
@@ -320,9 +687,9 @@ it('refreshes reviewer provenance when a locale is edited back to its stored tex
     $appliedItem = $item->fresh();
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
         ->and($french->info_markdown)->toBe(trim($storedFrench))
-        ->and($french->origin)->toBe(IngredientTranslationOrigin::ReviewerEdited)
-        ->and($french->prompt_version)->toBeNull()
-        ->and($french->source_fingerprint)->toBe($currentFingerprint)
+        ->and($french->origin)->toBe($beforeFrench->origin)
+        ->and($french->prompt_version)->toBe($beforeFrench->prompt_version)
+        ->and($french->source_fingerprint)->toBe($beforeFrench->source_fingerprint)
         ->and($appliedItem->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($appliedItem->applied_by_user_id)->toBe($admin->id)
         ->and($appliedItem->applied_at)->not->toBeNull()
@@ -376,6 +743,8 @@ it('revalidates an identical stale locale without changing its text or unrelated
     $result['info_markdown'] = guidanceApplyText('Updated');
     $result['translations'] = [[
         'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'saponification_name' => null,
         'info_markdown' => guidanceApplyTranslationText('Stored French'),
     ]];
     $batch = IngredientEnrichmentBatch::factory()->create([
@@ -447,6 +816,8 @@ it('revalidates an identical stale locale in guidance refresh batches', function
     $result['info_markdown'] = guidanceApplyText('Updated');
     $result['translations'] = [[
         'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+        'saponification_name' => null,
         'info_markdown' => $storedFrench,
     ]];
     $batch = IngredientEnrichmentBatch::factory()->create([
@@ -485,12 +856,11 @@ it('revalidates an identical stale locale in guidance refresh batches', function
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
         ->and($french->info_markdown)->toBe($beforeFrench->info_markdown)
         ->and($french->display_name)->toBe($beforeFrench->display_name)
-        ->and($french->source_fingerprint)->toBe($currentFingerprint)
-        ->and($french->source_fingerprint)->not->toBe($beforeFrench->source_fingerprint)
-        ->and($french->origin)->toBe(IngredientTranslationOrigin::AiGenerated)
-        ->and($french->prompt_version)->toBe('ingredient-guidance-localization-v1')
+        ->and($french->source_fingerprint)->toBe($beforeFrench->source_fingerprint)
+        ->and($french->origin)->toBe($beforeFrench->origin)
+        ->and($french->prompt_version)->toBe($beforeFrench->prompt_version)
         ->and(data_get($ingredient->source_data, 'enrichment.guidance.guidance_prompt_version'))->toBe('ingredient-guidance-v1')
-        ->and(data_get($ingredient->source_data, 'enrichment.guidance.localization_prompt_version'))->toBe('ingredient-guidance-localization-v1')
+        ->and(data_get($ingredient->source_data, 'enrichment.guidance.localization_prompt_version'))->toBe('stored-localization-v1')
         ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied);
 });
@@ -542,14 +912,70 @@ it('persists approved guidance evidence when prose is identical', function (): v
 
     app(ApproveIngredientGuidanceProposal::class)->handle($admin, $item);
     $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+    $expectedEvidence = app(IngredientGuidanceEvidencePolicy::class)->reconcilePersisted(
+        $firstEvidence,
+        $secondEvidence,
+    );
 
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
         ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))
-        ->toBe(app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($secondEvidence))
+        ->toBe($expectedEvidence)
+        ->and($item->fresh()->result['guidance_evidence'])->toBe($expectedEvidence)
         ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied)
         ->and($item->fresh()->applied_by_user_id)->toBe($admin->id)
         ->and($item->fresh()->applied_at)->not->toBeNull();
+});
+
+it('replaces the prior evidence bank when applying a fresh research batch', function (): void {
+    $admin = User::factory()->admin()->create();
+    $priorEvidence = [[
+        'source_name' => 'Prior source',
+        'source_url' => 'https://example.test/prior',
+        'summary' => 'Prior evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $freshEvidence = [[
+        'source_name' => 'Fresh source',
+        'source_url' => 'https://example.test/fresh',
+        'summary' => 'Fresh evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-09-04T00:00:00+00:00',
+    ]];
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => guidanceApplyText('Original'),
+        'source_data' => ['enrichment' => ['guidance' => ['evidence' => $priorEvidence]]],
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = guidanceResult($ingredient, $sourceFingerprint);
+    $result['info_markdown'] = guidanceApplyText('Original');
+    $result['guidance_evidence'] = $freshEvidence;
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'fresh_research' => true,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Approved,
+        'source_fingerprint' => $sourceFingerprint,
+        'result' => $result,
+        'research_stages' => [
+            'ai_guidance_research' => [
+                'status' => 'completed',
+                'data' => ['guidance_evidence' => $freshEvidence],
+            ],
+        ],
+        'approved_by_user_id' => $admin->id,
+        'approved_at' => now(),
+    ]);
+
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch);
+    $normalizedFreshEvidence = app(IngredientGuidanceEvidencePolicy::class)->normalizePersisted($freshEvidence);
+
+    expect($totals['applied'])->toBe(1)
+        ->and(data_get($ingredient->fresh()->source_data, 'enrichment.guidance.evidence'))->toBe($normalizedFreshEvidence)
+        ->and($item->fresh()->result['guidance_evidence'])->toBe($normalizedFreshEvidence);
 });
 
 it('rejects identity fields in a guidance proposal and marks stale items before approval', function (): void {
@@ -624,6 +1050,8 @@ function guidanceResult(Ingredient $ingredient, string $sourceFingerprint): arra
         'info_markdown' => guidanceApplyText('Generated'),
         'translations' => [[
             'locale' => 'fr',
+            'display_name' => 'Huile d’olive',
+            'saponification_name' => $ingredient->saponification_name === null ? null : 'Savon d’huile',
             'info_markdown' => guidanceApplyTranslationText('Généré'),
         ]],
         'guidance_evidence' => [[
@@ -644,7 +1072,7 @@ function guidanceResult(Ingredient $ingredient, string $sourceFingerprint): arra
 }
 
 /**
- * @param  list<array{locale: string, info_markdown: string}>  $translations
+ * @param  list<array{locale: string, info_markdown: string, display_name?: string, saponification_name?: string|null}>  $translations
  * @return array<string, mixed>
  */
 function guidanceResultWithLocales(
@@ -659,7 +1087,20 @@ function guidanceResultWithLocales(
         'subject_public_id' => (string) $ingredient->public_id,
         'source_fingerprint' => $sourceFingerprint,
         'info_markdown' => guidanceApplyText('Generated'),
-        'translations' => $translations,
+        'translations' => collect($translations)->map(function (array $translation) use ($ingredient): array {
+            $locale = (string) ($translation['locale'] ?? '');
+
+            return [
+                'locale' => $locale,
+                'display_name' => is_string($translation['display_name'] ?? null)
+                    ? $translation['display_name']
+                    : "Localized {$locale}",
+                'saponification_name' => array_key_exists('saponification_name', $translation)
+                    ? $translation['saponification_name']
+                    : ($ingredient->saponification_name === null ? null : 'Localized soap name'),
+                'info_markdown' => (string) ($translation['info_markdown'] ?? ''),
+            ];
+        })->values()->all(),
         'guidance_evidence' => [[
             'source_name' => 'COSMILE Europe',
             'source_url' => 'https://cosmileeurope.eu/example',

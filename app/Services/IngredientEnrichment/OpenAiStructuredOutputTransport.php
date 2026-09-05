@@ -20,6 +20,8 @@ class OpenAiStructuredOutputTransport
         string $input,
         string $schemaName,
         array $schema,
+        ?string $model = null,
+        ?string $reasoningEffort = null,
     ): OpenAiStructuredOutputResponse {
         $apiKey = trim((string) config('ingredient-enrichment.openai.api_key'));
         if ($apiKey === '') {
@@ -40,8 +42,8 @@ class OpenAiStructuredOutputTransport
                             && ($exception->response->status() === 429 || $exception->response->serverError()));
                 }, throw: false)
                 ->post($url, [
-                    'model' => config('ingredient-enrichment.openai.model'),
-                    'reasoning' => ['effort' => config('ingredient-enrichment.openai.reasoning_effort')],
+                    'model' => $model ?? config('ingredient-enrichment.openai.model'),
+                    'reasoning' => ['effort' => $reasoningEffort ?? config('ingredient-enrichment.openai.reasoning_effort')],
                     'instructions' => $instructions,
                     'input' => $input,
                     'text' => [

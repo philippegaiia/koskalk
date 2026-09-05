@@ -19,11 +19,11 @@ class IngredientGuidanceContextBuilder
      *
      * @return array<string, mixed>
      */
-    public function build(Ingredient $ingredient): array
+    public function build(Ingredient $ingredient, bool $freshResearch = false): array
     {
         $snapshot = $this->snapshots->snapshot($ingredient);
-        $persistedEvidence = $this->persistedEvidence($ingredient);
-        $legacyEvidence = $persistedEvidence === [] ? $this->legacyBatchEvidence($ingredient) : [];
+        $persistedEvidence = $freshResearch ? [] : $this->persistedEvidence($ingredient);
+        $legacyEvidence = ! $freshResearch && $persistedEvidence === [] ? $this->legacyBatchEvidence($ingredient) : [];
         $evidence = $persistedEvidence !== [] ? $persistedEvidence : $legacyEvidence;
         $warnings = $evidence === []
             ? [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')]
@@ -35,6 +35,7 @@ class IngredientGuidanceContextBuilder
             'current' => $snapshot,
             'guidance_evidence' => $evidence,
             'prior_guidance_evidence' => $evidence,
+            'fresh_research' => $freshResearch,
             'warnings' => $warnings,
             'requested_output' => [
                 'guidance' => config('ingredient-enrichment.guidance'),

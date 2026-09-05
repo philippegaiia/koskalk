@@ -16,8 +16,9 @@ use Carbon\CarbonImmutable;
  * `approved_secondary` with `source_confirmed` provenance listing every
  * corroborating URL.
  *
- * Independence is measured by consulted host, not URL: two pages on one
- * publisher's domain are a single authority, so they never corroborate.
+ * Independence is measured by registrable publisher domain, not URL: two
+ * pages on one publisher's domain are a single authority, so they never
+ * corroborate.
  * Official-precedence is value-level (owner decision): only an identifier the
  * official record already carries is skipped; a different value of the same
  * scheme may still enter when independent sources print it.
@@ -26,6 +27,8 @@ class CorroboratedIngredientIdentifierService
 {
     /** @var list<string> */
     private const CORROBORATED_SCHEMES = ['cas', 'ec'];
+
+    public function __construct(private readonly SourcePublisherDomainResolver $publisherDomainResolver) {}
 
     /**
      * @param  array<string, mixed>  $facts
@@ -56,7 +59,7 @@ class CorroboratedIngredientIdentifierService
 
         $accepted = $entries
             ->groupBy(fn (array $entry): string => $entry['scheme'].':'.mb_strtolower($entry['value']))
-            ->filter(fn ($group): bool => count($this->authorityHosts($group->pluck('source_url')->all())) >= 2)
+            ->filter(fn ($group): bool => count($this->publisherDomains($group->pluck('source_url')->all())) >= 2)
             ->map(function ($group): array {
                 $first = $group->first();
 
@@ -144,28 +147,20 @@ class CorroboratedIngredientIdentifierService
     }
 
     /**
-     * Distinct consulted hosts for a list of source URLs. URLs without a
-     * parseable host never count as an authority, and the `www.` prefix is
-     * ignored so `www.supplier.example` and `supplier.example` are one host.
+     * Distinct registrable publisher domains for a list of source URLs. URLs
+     * without a resolvable public suffix never count as an authority.
      *
      * @param  array<mixed>  $urls
      * @return list<string>
      */
-    private function authorityHosts(array $urls): array
+    private function publisherDomains(array $urls): array
     {
-        $hosts = [];
-        foreach ($urls as $url) {
-            if (! is_string($url) || trim($url) === '') {
-                continue;
-            }
-
-            $host = mb_strtolower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
-            $host = trim((string) preg_replace('/^www\./u', '', $host) ?? $host);
-            if ($host !== '') {
-                $hosts[$host] = true;
-            }
-        }
-
-        return array_keys($hosts);
+        return collect($urls)
+            ->filter(fn (mixed $url): bool => is_string($url) && trim($url) !== '')
+            ->map(fn (string $url): ?string => $this->publisherDomainResolver->resolve($url))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

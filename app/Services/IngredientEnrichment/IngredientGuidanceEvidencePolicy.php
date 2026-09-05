@@ -9,6 +9,8 @@ use RuntimeException;
 
 class IngredientGuidanceEvidencePolicy
 {
+    private const string DEFAULT_RETRIEVED_AT = '1970-01-01T00:00:00+00:00';
+
     public const array REJECTION_CODES = [
         'invalid_shape',
         'invalid_field',
@@ -129,51 +131,127 @@ class IngredientGuidanceEvidencePolicy
             return [];
         }
 
-        $fallback = ($fallbackRetrievedAt ?? CarbonImmutable::now())->toIso8601String();
+        $fallback = ($fallbackRetrievedAt ?? CarbonImmutable::parse(self::DEFAULT_RETRIEVED_AT))->toIso8601String();
 
         return collect($rows)
             ->filter(fn (mixed $row): bool => is_array($row))
-            ->map(function (array $row) use ($fallback): ?array {
-                $sourceName = trim((string) ($row['source_name'] ?? ''));
-                $sourceUrl = trim((string) ($row['source_url'] ?? ''));
-                $summary = trim((string) ($row['summary'] ?? ''));
-
-                if ($sourceName === '' || $sourceUrl === '' || $summary === '') {
-                    return $row;
-                }
-
-                if ($this->hasSomeClassifications($row) && ! $this->hasAllClassifications($row)) {
-                    return $row;
-                }
-
-                $retrievedAt = is_string($row['retrieved_at'] ?? null)
-                    && trim($row['retrieved_at']) !== ''
-                    ? trim($row['retrieved_at'])
-                    : $fallback;
-
-                $hasClassifications = $this->hasAllClassifications($row);
-
-                return [
-                    'source_name' => $sourceName,
-                    'source_url' => $sourceUrl,
-                    'summary' => $summary,
-                    'source_tier' => is_string($row['source_tier'] ?? null)
-                        ? trim($row['source_tier'])
-                        : 'editorial',
-                    'retrieved_at' => $retrievedAt,
-                    'claim_type' => $hasClassifications ? $row['claim_type'] : 'origin',
-                    'source_kind' => $hasClassifications ? $row['source_kind'] : 'legacy_editorial',
-                    'scope' => $hasClassifications ? $row['scope'] : 'material',
-                    'evidence_kind' => $hasClassifications ? $row['evidence_kind'] : 'fact',
-                    'usage_application' => $hasClassifications ? $row['usage_application'] : 'not_applicable',
-                    'recommended_min_percent' => $hasClassifications ? $row['recommended_min_percent'] : null,
-                    'recommended_max_percent' => $hasClassifications ? $row['recommended_max_percent'] : null,
-                    'percentage_basis' => $hasClassifications ? $row['percentage_basis'] : 'not_applicable',
-                ];
-            })
-            ->filter()
+            ->map(fn (array $row): ?array => $this->normalizePersistedRow($row, $fallback))
+            ->filter(fn (mixed $row): bool => is_array($row))
             ->values()
             ->all();
+    }
+
+    /**
+     * Normalize valid rows for result validation while retaining malformed rows
+     * so the result validator can report the generated output that failed.
+     *
+     * Strict persisted normalization remains the quarantine boundary used for
+     * historical evidence and reconciliation.
+     *
+     * @return array<int|string, array<string, mixed>>
+     */
+    public function normalizeForValidation(mixed $rows, ?CarbonImmutable $fallbackRetrievedAt = null): array
+    {
+        if (! is_array($rows)) {
+            return [];
+        }
+
+        $allowedKeys = [
+            'source_name', 'source_url', 'summary', 'source_tier', 'retrieved_at',
+            'claim_type', 'source_kind', 'scope', 'evidence_kind', 'usage_application',
+            'recommended_min_percent', 'recommended_max_percent', 'percentage_basis',
+        ];
+        $normalized = [];
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            if (array_diff(array_keys($row), $allowedKeys) !== []) {
+                $normalized[$index] = $row;
+
+                continue;
+            }
+
+            $strict = $this->normalizePersisted([$row], $fallbackRetrievedAt);
+            $normalized[$index] = $strict[0] ?? $row;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Reconcile a prior persisted evidence bank with a fresh research bank.
+     *
+     * A logical row is identified by its canonical source URL, whitespace- and
+     * case-normalized summary, claim classifications, usage application, normalized
+     * decimal bounds, and percentage basis. Refresh metadata (source name, source
+     * tier, and retrieval time) is intentionally excluded, so a fresh logical
+     * duplicate replaces the prior row in its existing position. Prior rows retain
+     * their order, while distinct fresh rows append in research order.
+     *
+     * @param  list<array<string, mixed>>  $prior
+     * @param  list<array<string, mixed>>  $fresh
+     * @return list<array<string, mixed>>
+     */
+    public function reconcilePersisted(array $prior, array $fresh): array
+    {
+        $merged = [];
+        $indexes = [];
+
+        foreach ($this->normalizePersisted($prior) as $row) {
+            $key = $this->logicalEvidenceKey($row);
+            if (isset($indexes[$key])) {
+                continue;
+            }
+
+            $indexes[$key] = count($merged);
+            $merged[] = $row;
+        }
+
+        foreach ($this->normalizePersisted($fresh) as $row) {
+            $key = $this->logicalEvidenceKey($row);
+            if (isset($indexes[$key])) {
+                $merged[$indexes[$key]] = $row;
+
+                continue;
+            }
+
+            $indexes[$key] = count($merged);
+            $merged[] = $row;
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Return candidate rows whose logical keys do not occur in prior evidence.
+     * Metadata is excluded from the key, matching reconciliation semantics, so
+     * stale inherited rows cannot overwrite current metadata in legacy results.
+     *
+     * @param  list<array<string, mixed>>  $prior
+     * @param  list<array<string, mixed>>  $candidate
+     * @return list<array<string, mixed>>
+     */
+    public function logicalDifference(array $prior, array $candidate): array
+    {
+        $seen = [];
+        foreach ($this->normalizePersisted($prior) as $row) {
+            $seen[$this->logicalEvidenceKey($row)] = true;
+        }
+
+        $difference = [];
+        foreach ($this->normalizePersisted($candidate) as $row) {
+            $key = $this->logicalEvidenceKey($row);
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $difference[] = $row;
+        }
+
+        return $difference;
     }
 
     /**
@@ -515,6 +593,153 @@ class IngredientGuidanceEvidencePolicy
             'recommended_max_percent',
             'percentage_basis',
         ])->contains(fn (string $key): bool => array_key_exists($key, $row));
+    }
+
+    /**
+     * Normalize one persisted row, quarantining rows that cannot be represented
+     * as either a complete classified row or a complete legacy editorial row.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>|null
+     */
+    private function normalizePersistedRow(array $row, string $fallbackRetrievedAt): ?array
+    {
+        foreach (['source_name', 'source_url', 'summary'] as $field) {
+            if (! is_string($row[$field] ?? null) || trim($row[$field]) === '') {
+                return null;
+            }
+        }
+
+        $sourceName = trim($row['source_name']);
+        $sourceUrl = trim($row['source_url']);
+        $summary = trim($row['summary']);
+        if ($this->canonicalUrl($sourceUrl) === null) {
+            return null;
+        }
+
+        if (array_key_exists('source_tier', $row)
+            && (! is_string($row['source_tier']) || trim($row['source_tier']) !== 'editorial')) {
+            return null;
+        }
+
+        if (array_key_exists('retrieved_at', $row)
+            && (! is_string($row['retrieved_at'])
+                || trim($row['retrieved_at']) === ''
+                || ! $this->isParsableDateTime($row['retrieved_at']))) {
+            return null;
+        }
+
+        if ($this->hasSomeClassifications($row) && ! $this->hasAllClassifications($row)) {
+            return null;
+        }
+
+        $hasClassifications = $this->hasAllClassifications($row);
+        if ($hasClassifications && ! $this->hasValidPersistedClassifications($row)) {
+            return null;
+        }
+
+        return [
+            'source_name' => $sourceName,
+            'source_url' => $sourceUrl,
+            'summary' => $summary,
+            'source_tier' => 'editorial',
+            'retrieved_at' => array_key_exists('retrieved_at', $row)
+                ? trim($row['retrieved_at'])
+                : $fallbackRetrievedAt,
+            'claim_type' => $hasClassifications ? $row['claim_type'] : 'origin',
+            'source_kind' => $hasClassifications ? $row['source_kind'] : 'legacy_editorial',
+            'scope' => $hasClassifications ? $row['scope'] : 'material',
+            'evidence_kind' => $hasClassifications ? $row['evidence_kind'] : 'fact',
+            'usage_application' => $hasClassifications ? $row['usage_application'] : 'not_applicable',
+            'recommended_min_percent' => $hasClassifications ? $row['recommended_min_percent'] : null,
+            'recommended_max_percent' => $hasClassifications ? $row['recommended_max_percent'] : null,
+            'percentage_basis' => $hasClassifications ? $row['percentage_basis'] : 'not_applicable',
+        ];
+    }
+
+    /** @param array<string, mixed> $row */
+    private function hasValidPersistedClassifications(array $row): bool
+    {
+        foreach ([
+            'claim_type' => 'allowed_claim_types',
+            'source_kind' => 'allowed_source_kinds',
+            'scope' => 'allowed_scopes',
+            'evidence_kind' => 'allowed_evidence_kinds',
+            'usage_application' => 'allowed_usage_applications',
+            'percentage_basis' => 'allowed_percentage_bases',
+        ] as $field => $configKey) {
+            $allowedValues = config("ingredient-enrichment.openai.guidance_research.{$configKey}", []);
+            if ($field === 'source_kind') {
+                $allowedValues[] = 'legacy_editorial';
+            }
+            if (! is_string($row[$field] ?? null)
+                || ! in_array($row[$field], $allowedValues, true)) {
+                return false;
+            }
+        }
+
+        return collect(['recommended_min_percent', 'recommended_max_percent'])
+            ->every(fn (string $field): bool => $row[$field] === null || is_string($row[$field]))
+            && $this->hasValidPercentageEvidence($row);
+    }
+
+    private function isParsableDateTime(string $value): bool
+    {
+        try {
+            CarbonImmutable::parse($value);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function logicalEvidenceKey(array $row): string
+    {
+        return json_encode([
+            'source_url' => $this->canonicalUrl($row['source_url'] ?? null)
+                ?? mb_strtolower(trim((string) ($row['source_url'] ?? ''))),
+            'summary' => $this->normalizedSummary($row['summary'] ?? null),
+            'claim_type' => $this->normalizedKeyValue($row['claim_type'] ?? null),
+            'source_kind' => $this->normalizedKeyValue($row['source_kind'] ?? null),
+            'scope' => $this->normalizedKeyValue($row['scope'] ?? null),
+            'evidence_kind' => $this->normalizedKeyValue($row['evidence_kind'] ?? null),
+            'usage_application' => $this->normalizedKeyValue($row['usage_application'] ?? null),
+            'recommended_min_percent' => $this->normalizedDecimalBound($row['recommended_min_percent'] ?? null),
+            'recommended_max_percent' => $this->normalizedDecimalBound($row['recommended_max_percent'] ?? null),
+            'percentage_basis' => $this->normalizedKeyValue($row['percentage_basis'] ?? null),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    }
+
+    private function normalizedSummary(mixed $summary): string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim((string) $summary));
+
+        return mb_strtolower($normalized ?? '');
+    }
+
+    private function normalizedKeyValue(mixed $value): ?string
+    {
+        return is_string($value) ? mb_strtolower(trim($value)) : null;
+    }
+
+    private function normalizedDecimalBound(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+        if (preg_match('/^(?:0|[1-9]\d*)(?:\.\d+)?$/', $value) !== 1) {
+            return $value;
+        }
+
+        [$integer, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+        $integer = ltrim($integer, '0') ?: '0';
+        $fraction = rtrim($fraction, '0');
+
+        return $fraction === '' ? $integer : $integer.'.'.$fraction;
     }
 
     private function invalidResponse(): never

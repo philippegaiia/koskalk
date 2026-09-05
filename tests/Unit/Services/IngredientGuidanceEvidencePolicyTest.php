@@ -255,6 +255,81 @@ it('converts accepted and legacy evidence to the persisted guidance shape', func
         ]);
 });
 
+it('quarantines malformed rows and deterministically normalizes legacy rows without timestamps', function (): void {
+    $policy = guidanceEvidencePolicy();
+    $legacy = [[
+        'source_name' => 'Legacy source',
+        'source_url' => 'https://legacy.example/apricot-oil',
+        'summary' => 'A legacy editorial observation.',
+        'source_tier' => 'editorial',
+    ]];
+    $malformed = [
+        [
+            'source_name' => '',
+            'source_url' => 'https://malformed.example/first',
+            'summary' => 'Missing source name.',
+            'source_tier' => 'editorial',
+        ],
+        [
+            'source_name' => 'Partial source',
+            'source_url' => 'https://malformed.example/second',
+            'summary' => 'Partially classified evidence.',
+            'source_tier' => 'editorial',
+            'claim_type' => 'usage',
+        ],
+    ];
+
+    $normalized = $policy->normalizePersisted([...$legacy, ...$malformed]);
+    $normalizedAgain = $policy->normalizePersisted([...$legacy, ...$malformed]);
+
+    expect($normalized)->toHaveCount(1)
+        ->and($normalized)->toBe($normalizedAgain)
+        ->and($normalized[0])->toMatchArray([
+            'source_name' => 'Legacy source',
+            'source_url' => 'https://legacy.example/apricot-oil',
+            'summary' => 'A legacy editorial observation.',
+            'source_tier' => 'editorial',
+            'retrieved_at' => '1970-01-01T00:00:00+00:00',
+            'claim_type' => 'origin',
+            'source_kind' => 'legacy_editorial',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ])
+        ->and($policy->reconcilePersisted($malformed, []))->toBe([]);
+});
+
+it('returns only logical candidate rows absent from prior evidence', function (): void {
+    $policy = guidanceEvidencePolicy();
+    $prior = [[
+        'source_name' => 'Current source',
+        'source_url' => 'https://example.test/shared',
+        'summary' => 'The shared evidence.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-01T00:00:00+00:00',
+    ]];
+    $staleDuplicate = [[
+        'source_name' => 'Stale inherited source',
+        'source_url' => 'HTTPS://EXAMPLE.TEST/shared/',
+        'summary' => '  THE shared evidence. ',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-02T00:00:00+00:00',
+    ]];
+    $distinct = [[
+        'source_name' => 'New source',
+        'source_url' => 'https://example.test/distinct',
+        'summary' => 'A distinct evidence row.',
+        'source_tier' => 'editorial',
+        'retrieved_at' => '2026-08-03T00:00:00+00:00',
+    ]];
+
+    expect($policy->logicalDifference($prior, [...$staleDuplicate, ...$distinct, ...$distinct]))
+        ->toBe($policy->normalizePersisted($distinct));
+});
+
 it('matches consulted URLs canonically while removing fragments and a sole trailing slash', function (): void {
     $candidate = guidanceEvidenceCandidate([
         'source_url' => 'HTTPS://Supplier.Example/technical/apricot-oil.pdf',
@@ -266,6 +341,93 @@ it('matches consulted URLs canonically while removing fragments and a sole trail
     ]]);
 
     expect($accepted)->toHaveCount(1);
+});
+
+it('reconciles prior evidence in place while replacing logical duplicates with fresh metadata', function (): void {
+    $policy = guidanceEvidencePolicy();
+    $priorRetrievedAt = CarbonImmutable::parse('2026-08-01T00:00:00+00:00');
+    $freshRetrievedAt = CarbonImmutable::parse('2026-09-01T00:00:00+00:00');
+    $prior = $policy->toPersisted([
+        guidanceEvidenceCandidate([
+            'source_name' => 'Prior first source',
+            'source_url' => 'https://first.example/apricot-oil',
+            'summary' => 'A distinct first source observation.',
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'scientific',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Stale source name',
+            'summary' => 'The exact product grade is recommended at 1–10% in cosmetic formulations.',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Prior last source',
+            'source_url' => 'https://last.example/apricot-oil',
+            'summary' => 'A distinct last source observation.',
+            'claim_type' => 'formulation_role',
+            'source_kind' => 'scientific',
+            'scope' => 'material',
+            'evidence_kind' => 'fact',
+            'usage_application' => 'not_applicable',
+            'recommended_min_percent' => null,
+            'recommended_max_percent' => null,
+            'percentage_basis' => 'not_applicable',
+        ]),
+    ], $priorRetrievedAt);
+    $fresh = $policy->toPersisted([
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh source name',
+            'source_url' => 'HTTPS://Supplier.Example/technical/apricot-oil.pdf/#page=2',
+            'summary' => '  THE exact product grade is recommended at 1–10% in cosmetic formulations.  ',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh cosmetics conflict',
+            'recommended_min_percent' => '11',
+            'recommended_max_percent' => '20',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh soapmaking application',
+            'usage_application' => 'soapmaking',
+            'recommended_min_percent' => '5',
+            'recommended_max_percent' => '30',
+            'percentage_basis' => 'soap_oils',
+        ]),
+        guidanceEvidenceCandidate([
+            'source_name' => 'Fresh distinct URL',
+            'source_url' => 'https://another.example/apricot-oil',
+        ]),
+    ], $freshRetrievedAt);
+
+    $merged = $policy->reconcilePersisted($prior, $fresh);
+
+    expect($merged)->toHaveCount(6)
+        ->and(array_column($merged, 'source_name'))->toBe([
+            'Prior first source',
+            'Fresh source name',
+            'Prior last source',
+            'Fresh cosmetics conflict',
+            'Fresh soapmaking application',
+            'Fresh distinct URL',
+        ])
+        ->and($merged[1]['source_url'])->toBe('HTTPS://Supplier.Example/technical/apricot-oil.pdf/#page=2')
+        ->and($merged[1]['retrieved_at'])->toBe($freshRetrievedAt->toIso8601String())
+        ->and($merged[3])->toMatchArray([
+            'recommended_min_percent' => '11',
+            'recommended_max_percent' => '20',
+            'usage_application' => 'cosmetics',
+            'percentage_basis' => 'total_formula',
+        ])
+        ->and($merged[4])->toMatchArray([
+            'recommended_min_percent' => '5',
+            'recommended_max_percent' => '30',
+            'usage_application' => 'soapmaking',
+            'percentage_basis' => 'soap_oils',
+        ]);
 });
 
 /** @param array<string, mixed> $overrides @return array<string, mixed> */

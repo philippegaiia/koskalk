@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'prompt_version',
     'schema_version',
     'mode',
+    'fresh_research',
     'total_count',
     'pending_count',
     'researching_count',
@@ -51,6 +52,7 @@ class IngredientEnrichmentBatch extends Model
     protected $attributes = [
         'status' => IngredientEnrichmentBatchStatus::Pending->value,
         'mode' => 'fill_missing',
+        'fresh_research' => false,
         'structured_source_calls' => 0,
     ];
 
@@ -69,6 +71,7 @@ class IngredientEnrichmentBatch extends Model
         return [
             'status' => IngredientEnrichmentBatchStatus::class,
             'mode' => IngredientEnrichmentBatchMode::class,
+            'fresh_research' => 'boolean',
             'schema_version' => 'integer',
             'total_count' => 'integer',
             'pending_count' => 'integer',

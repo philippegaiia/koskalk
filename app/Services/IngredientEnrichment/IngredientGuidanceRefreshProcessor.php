@@ -53,6 +53,19 @@ class IngredientGuidanceRefreshProcessor
                 return null;
             }
 
+            if ($mode === IngredientEnrichmentBatchMode::GuidanceRefresh
+                && ! (bool) config('ingredient-enrichment.openai.guidance_generation.enabled', false)) {
+                $item->update([
+                    'status' => IngredientEnrichmentItemStatus::Cancelled,
+                    'failure_code' => 'guidance_generation_disabled',
+                    'failure_message' => __('ingredient_enrichment_admin.validation.guidance_generation_disabled'),
+                    'research_completed_at' => now(),
+                ]);
+                $this->batches->refresh($item->ingredient_enrichment_batch_id);
+
+                return null;
+            }
+
             $item->update([
                 'status' => IngredientEnrichmentItemStatus::Researching,
                 'attempt_count' => $item->attempt_count + 1,
@@ -100,50 +113,56 @@ class IngredientGuidanceRefreshProcessor
                 $englishGuidance,
                 (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
             );
-            $metadataTranslations = $this->metadataTranslations($context);
-            $localization = $this->stages->run(
-                $itemId,
-                IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                function (array $stageContext) use ($englishGuidance, $metadataTranslations): IngredientSourceStageResult {
-                    $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
-                    $response = $this->localization->localize([
-                        'locales' => $stageContext['expected_locales'],
-                        'english_guidance' => $englishGuidance,
-                        'soapmaking_relevant' => $stageContext['soapmaking_relevant'],
-                        'localized_headings' => is_array($providerConfiguration['localized_headings'] ?? null)
-                            ? $providerConfiguration['localized_headings']
-                            : [],
-                        'metadata_translations' => $metadataTranslations,
-                    ]);
+            $localization = null;
+            if ($mode === IngredientEnrichmentBatchMode::GuidanceLocalization) {
+                $localization = $this->stages->run(
+                    $itemId,
+                    IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                    function (array $stageContext) use ($englishGuidance): IngredientSourceStageResult {
+                        $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
+                        $response = $this->localization->localize([
+                            'locales' => $stageContext['expected_locales'],
+                            'english_guidance' => $englishGuidance,
+                            'soapmaking_relevant' => $stageContext['soapmaking_relevant'],
+                            'localized_headings' => is_array($providerConfiguration['localized_headings'] ?? null)
+                                ? $providerConfiguration['localized_headings']
+                                : [],
+                        ]);
 
-                    return new IngredientSourceStageResult(
-                        stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                        status: 'completed',
-                        data: [
-                            'translations' => $response->translations,
-                            'provider_response_id' => $response->responseId,
-                            'provider_request_id' => $response->requestId,
-                            'provider_model' => $response->model,
-                            'input_tokens' => $response->inputTokens,
-                            'output_tokens' => $response->outputTokens,
-                        ],
-                    );
-                },
-            );
+                        return new IngredientSourceStageResult(
+                            stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                            status: 'completed',
+                            data: [
+                                'translations' => $response->translations,
+                                'provider_response_id' => $response->responseId,
+                                'provider_request_id' => $response->requestId,
+                                'provider_model' => $response->model,
+                                'input_tokens' => $response->inputTokens,
+                                'output_tokens' => $response->outputTokens,
+                            ],
+                        );
+                    },
+                );
+            }
 
-            $translations = $this->normalizedTranslations($localization, $soapmakingRelevant);
+            $translations = $localization instanceof IngredientSourceStageResult
+                ? $this->normalizedTranslations($localization, $soapmakingRelevant)
+                : [];
             $guidance = $this->authoringGuidance($authoring);
             $validation = $this->stages->run(
                 $itemId,
                 IngredientEnrichmentResearchStage::Validation,
-                function (array $stageContext) use ($mode, $ingredient, $sourceFingerprint, $englishGuidance, $translations, $guidanceContext, $guidance, $research): IngredientSourceStageResult {
+                function (array $stageContext) use ($mode, $ingredient, $sourceFingerprint, $englishGuidance, $translations, $guidanceContext, $guidance, $research, $authoring, $localization): IngredientSourceStageResult {
                     $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::Validation->value] ?? [];
-                    $promptVersions = [
-                        'guidance' => (string) ($providerConfiguration['guidance_prompt_version']
-                            ?? config('ingredient-enrichment.openai.guidance_prompt_version')),
-                        'localization' => (string) ($providerConfiguration['localization_prompt_version']
-                            ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version')),
-                    ];
+                    $promptVersions = [];
+                    if ($authoring instanceof IngredientSourceStageResult) {
+                        $promptVersions['guidance'] = (string) ($providerConfiguration['guidance_prompt_version']
+                            ?? config('ingredient-enrichment.openai.guidance_prompt_version'));
+                    }
+                    if ($localization instanceof IngredientSourceStageResult) {
+                        $promptVersions['localization'] = (string) ($providerConfiguration['localization_prompt_version']
+                            ?? config('ingredient-enrichment.openai.guidance_localization_prompt_version'));
+                    }
                     if ($research instanceof IngredientSourceStageResult) {
                         $promptVersions['research'] = (string) config('ingredient-enrichment.openai.guidance_research.prompt_version');
                     }
@@ -185,6 +204,9 @@ class IngredientGuidanceRefreshProcessor
             $normalized = $this->normalizedResult($validation);
             $validationReport = $this->validationReport($validation, $normalized);
             $providerData = $this->providerData($research, $authoring, $localization);
+            $sourceEvidence = array_key_exists('fresh_guidance_evidence', $guidanceContext)
+                ? $guidanceContext['fresh_guidance_evidence']
+                : ($normalized['guidance_evidence'] ?? []);
 
             DB::transaction(function () use (
                 $itemId,
@@ -194,6 +216,7 @@ class IngredientGuidanceRefreshProcessor
                 $normalized,
                 $validationReport,
                 $providerData,
+                $sourceEvidence,
             ): void {
                 $item = IngredientEnrichmentBatchItem::query()->lockForUpdate()->findOrFail($itemId);
                 $currentIngredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($ingredient->id);
@@ -221,7 +244,7 @@ class IngredientGuidanceRefreshProcessor
                     'plan' => $plan,
                     'warnings' => $warnings,
                     'unresolved_questions' => $normalized['unresolved_questions'],
-                    'sources' => collect($normalized['guidance_evidence'] ?? [])
+                    'sources' => collect(is_array($sourceEvidence) ? $sourceEvidence : [])
                         ->filter(fn (mixed $evidence): bool => is_array($evidence))
                         ->map(fn (array $evidence): array => [
                             'url' => (string) ($evidence['source_url'] ?? ''),
@@ -275,7 +298,8 @@ class IngredientGuidanceRefreshProcessor
             $itemId,
             IngredientEnrichmentResearchStage::AiGuidanceResearch,
             function (array $stageContext) use ($context): IngredientSourceStageResult {
-                if (! (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true)) {
+                if (! ($context['fresh_research'] ?? false)
+                    && ! (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true)) {
                     return new IngredientSourceStageResult(
                         stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
                         status: 'completed',
@@ -284,7 +308,9 @@ class IngredientGuidanceRefreshProcessor
                             'candidate_evidence' => [],
                             'guidance_evidence' => [],
                             'rejected_evidence' => [],
-                            'warnings' => [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
+                            'warnings' => $this->hasPriorGuidanceEvidence($context)
+                                ? []
+                                : [(string) __('ingredient_enrichment.warnings.guidance_evidence_missing')],
                             'unresolved_questions' => [],
                             'sources' => [],
                             'provider_response_id' => '',
@@ -300,6 +326,7 @@ class IngredientGuidanceRefreshProcessor
 
                 $response = $this->guidanceResearch->research([
                     ...$context,
+                    'fresh_research_override' => (bool) ($context['fresh_research'] ?? false),
                     'guidance_research_prompt_version' => $stageContext['provider_configuration']['guidance_research_prompt_version'] ?? null,
                 ]);
                 $validation = $this->guidanceEvidencePolicy->partitionCandidates(
@@ -319,7 +346,7 @@ class IngredientGuidanceRefreshProcessor
                             ['count' => count($validation->rejected)],
                         ),
                     ))
-                    ->when($candidateEvidence === [], fn ($warnings) => $warnings->push(
+                    ->when($candidateEvidence === [] && ! $this->hasPriorGuidanceEvidence($context), fn ($warnings) => $warnings->push(
                         __('ingredient_enrichment.warnings.guidance_evidence_none_accepted'),
                     ))
                     ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
@@ -352,18 +379,35 @@ class IngredientGuidanceRefreshProcessor
     }
 
     /** @param array<string,mixed> $context */
+    private function hasPriorGuidanceEvidence(array $context): bool
+    {
+        $evidence = is_array($context['prior_guidance_evidence'] ?? null)
+            ? $context['prior_guidance_evidence']
+            : ($context['guidance_evidence'] ?? []);
+
+        return is_array($evidence) && $evidence !== [];
+    }
+
+    /** @param array<string,mixed> $context */
     private function contextWithFreshResearch(
         array $context,
         IngredientSourceStageResult $research,
     ): array {
         $researchData = $research->data;
-        $evidence = is_array($researchData['guidance_evidence'] ?? null)
+        $freshEvidence = is_array($researchData['guidance_evidence'] ?? null)
             ? $researchData['guidance_evidence']
             : [];
+        $priorEvidence = is_array($context['prior_guidance_evidence'] ?? null)
+            ? $context['prior_guidance_evidence']
+            : (is_array($context['guidance_evidence'] ?? null) ? $context['guidance_evidence'] : []);
+        $evidence = ($context['fresh_research'] ?? false)
+            ? $this->guidanceEvidencePolicy->normalizePersisted($freshEvidence)
+            : $this->guidanceEvidencePolicy->reconcilePersisted($priorEvidence, $freshEvidence);
 
         return [
             ...$context,
             'guidance_evidence' => $evidence,
+            'fresh_guidance_evidence' => $this->guidanceEvidencePolicy->normalizePersisted($freshEvidence),
             'guidance_research' => $researchData,
             'guidance_research_prompt_version' => (string) config('ingredient-enrichment.openai.guidance_research.prompt_version'),
             'warnings' => is_array($researchData['warnings'] ?? null) ? $researchData['warnings'] : [],
@@ -426,18 +470,6 @@ class IngredientGuidanceRefreshProcessor
         return is_string($englishGuidance) && trim($englishGuidance) !== ''
             ? $englishGuidance
             : (string) ($ingredient->info_markdown ?? '');
-    }
-
-    /** @param array<string,mixed> $context @return list<array<string,mixed>> */
-    private function metadataTranslations(array $context): array
-    {
-        return collect(data_get($context, 'current.translations', []))
-            ->filter(fn (mixed $translation): bool => is_array($translation))
-            ->map(fn (array $translation): array => collect($translation)->only([
-                'locale', 'display_name', 'saponification_name',
-            ])->all())
-            ->values()
-            ->all();
     }
 
     /** @return list<array{locale:string,info_markdown:string}> */
@@ -509,11 +541,11 @@ class IngredientGuidanceRefreshProcessor
     private function providerData(
         ?IngredientSourceStageResult $research,
         ?IngredientSourceStageResult $authoring,
-        IngredientSourceStageResult $localization,
+        ?IngredientSourceStageResult $localization,
     ): array {
         $researchData = is_array($research?->data) ? $research->data : [];
         $authoringData = is_array($authoring?->data) ? $authoring->data : [];
-        $localizationData = $localization->data;
+        $localizationData = is_array($localization?->data) ? $localization->data : [];
         $providerResponseId = (string) ($authoringData['provider_response_id'] ?? '');
         $providerRequestId = (string) ($authoringData['provider_request_id'] ?? '');
         $providerModel = (string) ($authoringData['provider_model'] ?? '');

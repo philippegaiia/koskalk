@@ -27,8 +27,6 @@ class IngredientGuidanceProposalReviewService
         IngredientEnrichmentBatchItem $item,
         array $proposal,
     ): IngredientEnrichmentBatchItem {
-        $this->assertAllowed($proposal);
-
         $outcome = DB::transaction(function () use ($actor, $item, $proposal): array {
             $locked = IngredientEnrichmentBatchItem::query()
                 ->lockForUpdate()
@@ -51,6 +49,8 @@ class IngredientGuidanceProposalReviewService
                 ]);
             }
 
+            $this->assertAllowed($proposal, $mode);
+
             if ($this->snapshots->fingerprint($ingredient) !== $locked->source_fingerprint) {
                 $locked->update(['status' => IngredientEnrichmentItemStatus::Stale]);
                 $this->batches->refresh($locked->ingredient_enrichment_batch_id);
@@ -72,9 +72,18 @@ class IngredientGuidanceProposalReviewService
                 $candidate['info_markdown'] = $proposal['info_markdown'];
             }
             if (array_key_exists('translations', $proposal)) {
-                $candidate['translations'] = collect($current['translations'] ?? [])
-                    ->keyBy('locale')
-                    ->merge(collect($proposal['translations'])->keyBy('locale'))
+                $currentTranslations = collect($current['translations'] ?? [])->keyBy('locale');
+                $proposalTranslations = collect($proposal['translations'])->keyBy('locale');
+                $candidate['translations'] = $currentTranslations
+                    ->map(function (array $translation, string $locale) use ($proposalTranslations): array {
+                        $proposalTranslation = $proposalTranslations->get($locale);
+
+                        return [
+                            ...$translation,
+                            ...(is_array($proposalTranslation) ? $proposalTranslation : []),
+                        ];
+                    })
+                    ->union($proposalTranslations)
                     ->values()
                     ->all();
             }
@@ -190,7 +199,7 @@ class IngredientGuidanceProposalReviewService
     /**
      * @param  array<string, mixed>  $proposal
      */
-    private function assertAllowed(array $proposal): void
+    private function assertAllowed(array $proposal, IngredientEnrichmentBatchMode $mode): void
     {
         if (array_diff(array_keys($proposal), ['info_markdown', 'translations']) !== []) {
             throw ValidationException::withMessages([
@@ -222,7 +231,10 @@ class IngredientGuidanceProposalReviewService
                     $path => __('ingredient_enrichment_admin.validation.guidance_translation_row'),
                 ]);
             }
-            if (array_diff(array_keys($translation), ['locale', 'info_markdown']) !== []) {
+            $allowedTranslationFields = $mode->isLocalizationOnly()
+                ? ['locale', 'info_markdown']
+                : ['locale', 'display_name', 'saponification_name', 'info_markdown'];
+            if (array_diff(array_keys($translation), $allowedTranslationFields) !== []) {
                 throw ValidationException::withMessages([
                     $path => __('ingredient_enrichment_admin.validation.guidance_translation_fields'),
                 ]);
@@ -234,9 +246,18 @@ class IngredientGuidanceProposalReviewService
                     "{$path}.locale" => __('ingredient_enrichment_admin.validation.guidance_translation_locale'),
                 ]);
             }
-            if (! is_string($translation['info_markdown'] ?? null)) {
+            foreach (['display_name', 'info_markdown'] as $field) {
+                if (array_key_exists($field, $translation) && ! is_string($translation[$field])) {
+                    throw ValidationException::withMessages([
+                        "{$path}.{$field}" => __('ingredient_enrichment_admin.validation.guidance_translation_text'),
+                    ]);
+                }
+            }
+            if (array_key_exists('saponification_name', $translation)
+                && $translation['saponification_name'] !== null
+                && ! is_string($translation['saponification_name'])) {
                 throw ValidationException::withMessages([
-                    "{$path}.info_markdown" => __('ingredient_enrichment_admin.validation.guidance_translation_text'),
+                    "{$path}.saponification_name" => __('ingredient_enrichment_admin.validation.guidance_translation_text'),
                 ]);
             }
         }
@@ -266,14 +287,17 @@ class IngredientGuidanceProposalReviewService
         $beforeTranslations = collect($before['translations'] ?? [])->keyBy('locale');
         $translationChanges = collect($after['translations'] ?? [])
             ->filter(fn (mixed $translation): bool => is_array($translation))
-            ->map(function (array $translation) use ($beforeTranslations): ?string {
+            ->flatMap(function (array $translation) use ($beforeTranslations): array {
                 $locale = (string) ($translation['locale'] ?? '');
+                $before = $beforeTranslations->get($locale, []);
 
-                return ($beforeTranslations->get($locale)['info_markdown'] ?? null) !== ($translation['info_markdown'] ?? null)
-                    ? "proposal.translations.{$locale}.info_markdown"
-                    : null;
+                return collect(['display_name', 'saponification_name', 'info_markdown'])
+                    ->filter(fn (string $field): bool => array_key_exists($field, $translation)
+                        && ($before[$field] ?? null) !== $translation[$field])
+                    ->map(fn (string $field): string => "proposal.translations.{$locale}.{$field}")
+                    ->values()
+                    ->all();
             })
-            ->filter(fn (mixed $path): bool => is_string($path))
             ->values()
             ->all();
 

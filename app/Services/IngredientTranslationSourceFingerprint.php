@@ -9,8 +9,6 @@ class IngredientTranslationSourceFingerprint
     public function forIngredient(Ingredient $ingredient): string
     {
         return hash('sha256', json_encode([
-            'display_name' => $this->normalize($ingredient->display_name),
-            'saponification_name' => $this->normalize($ingredient->saponification_name),
             'info_markdown' => $this->normalize($ingredient->info_markdown),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
     }

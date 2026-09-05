@@ -65,12 +65,21 @@ class IngredientGuidanceRefreshResultValidator
         $english = $guidanceReport['normalized'];
         $soapmakingRelevant = $guidanceReport['soapmaking_relevant'];
 
-        $translationsReport = $this->validateTranslations($result['translations'] ?? null, $expectedLocales, $soapmakingRelevant);
+        $resultTranslations = $result['translations'] ?? null;
+        $translationsReport = $this->validateTranslations(
+            $resultTranslations,
+            $mode->isLocalizationOnly() || (is_array($resultTranslations) && $resultTranslations !== [])
+                ? $expectedLocales
+                : [],
+            $soapmakingRelevant,
+            $this->nullableString($ingredient->saponification_name),
+            false,
+        );
         $errors = [...$errors, ...$translationsReport['errors']];
         $warnings = [...$warnings, ...$translationsReport['warnings']];
         $translations = $translationsReport['normalized'];
         $guidanceEvidence = $this->normalizeEvidence($result['guidance_evidence'] ?? null, $errors);
-        $promptVersions = $this->normalizePromptVersions($result['prompt_versions'] ?? null, $errors);
+        $promptVersions = $this->normalizePromptVersions($result['prompt_versions'] ?? null, $mode, $errors);
         $this->validateStringList($result['warnings'] ?? null, 'warnings', $errors);
         $this->validateStringList($result['unresolved_questions'] ?? null, 'unresolved_questions', $errors);
 
@@ -150,12 +159,14 @@ class IngredientGuidanceRefreshResultValidator
 
     /**
      * @param  list<string>|null  $expectedLocales
-     * @return array{valid:bool,errors:array<string,list<string>>,warnings:list<string>,normalized:list<array{locale:string,info_markdown:string}>}
+     * @return array{valid:bool,errors:array<string,list<string>>,warnings:list<string>,normalized:list<array{locale:string,display_name?:string,saponification_name?:string|null,info_markdown:string}>}
      */
     public function validateTranslations(
         mixed $translations,
         ?array $expectedLocales,
         bool $soapmakingRelevant,
+        ?string $canonicalSaponificationName = null,
+        bool $requireLocalizedNames = true,
     ): array {
         $errors = [];
         $warnings = [];
@@ -164,7 +175,9 @@ class IngredientGuidanceRefreshResultValidator
             $errors,
             $expectedLocales,
             $soapmakingRelevant,
+            $canonicalSaponificationName,
             $warnings,
+            $requireLocalizedNames,
         );
 
         return [
@@ -186,19 +199,31 @@ class IngredientGuidanceRefreshResultValidator
         $expected = $soapmakingRelevant ? [...$required, $soapmakingHeading] : $required;
         if ($headings !== $expected) {
             $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_headings'));
+        } else {
+            foreach ($required as $heading) {
+                $pattern = '/^##\h+'.preg_quote((string) $heading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
+                if (preg_match($pattern, $guidance, $section) !== 1 || trim($section[1]) === '') {
+                    $this->error($errors, 'info_markdown', (string) __('ingredient_enrichment.validation.guidance_required_section_body'));
+
+                    break;
+                }
+            }
         }
+        $this->validateLength($guidance, 'info_markdown', $errors);
         $this->warnOnWordCount($guidance, 'info_markdown', $warnings);
 
         return $soapmakingRelevant;
     }
 
-    /** @param array<string,list<string>> $errors @param list<string> $warnings @return list<array{locale:string,info_markdown:string}> */
+    /** @param array<string,list<string>> $errors @param list<string> $warnings @return list<array{locale:string,display_name?:string,saponification_name?:string|null,info_markdown:string}> */
     private function normalizeTranslations(
         mixed $rows,
         array &$errors,
         ?array $expectedLocales,
         bool $soapmakingRelevant,
+        ?string $canonicalSaponificationName,
         array &$warnings,
+        bool $requireLocalizedNames,
     ): array {
         if (! is_array($rows)) {
             $this->error($errors, 'translations', (string) __('ingredient_enrichment.validation.guidance_translations_array'));
@@ -216,7 +241,14 @@ class IngredientGuidanceRefreshResultValidator
 
                 continue;
             }
-            $this->validateExactKeys($row, ['locale', 'info_markdown'], $path, $errors);
+            $allowedKeys = ['locale', 'display_name', 'saponification_name', 'info_markdown'];
+            if ($requireLocalizedNames) {
+                $this->validateExactKeys($row, $allowedKeys, $path, $errors);
+            } else {
+                foreach (array_diff(array_keys($row), $allowedKeys) as $unknown) {
+                    $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_unknown_field', ['field' => $unknown]));
+                }
+            }
             $locale = is_string($row['locale'] ?? null) ? trim($row['locale']) : '';
             if (! in_array($locale, $expectedLocales, true)) {
                 $this->error($errors, "{$path}.locale", (string) __('ingredient_enrichment.validation.guidance_translation_locale'));
@@ -225,14 +257,43 @@ class IngredientGuidanceRefreshResultValidator
                 $this->error($errors, "{$path}.locale", (string) __('ingredient_enrichment.validation.guidance_translation_duplicate'));
             }
             $seen[$locale] = true;
+            $displayName = is_string($row['display_name'] ?? null) ? trim($row['display_name']) : '';
+            if ($requireLocalizedNames && $displayName === '') {
+                $this->error($errors, "{$path}.display_name", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
+            }
+            $saponificationName = $row['saponification_name'] ?? null;
+            if ($saponificationName !== null && ! is_string($saponificationName)) {
+                $this->error($errors, "{$path}.saponification_name", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
+                $saponificationName = null;
+            } elseif (is_string($saponificationName)) {
+                $saponificationName = trim($saponificationName);
+            }
+            if ($requireLocalizedNames && $canonicalSaponificationName === null) {
+                if ($saponificationName !== null) {
+                    $this->error($errors, "{$path}.saponification_name", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
+                }
+            } elseif ($requireLocalizedNames && (! is_string($saponificationName) || $saponificationName === '')) {
+                $this->error($errors, "{$path}.saponification_name", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
+            }
             $guidance = is_string($row['info_markdown'] ?? null) ? trim($row['info_markdown']) : '';
             if ($guidance === '') {
                 $this->error($errors, "{$path}.info_markdown", (string) __('ingredient_enrichment.validation.guidance_translation_required'));
             } else {
                 $this->validateTranslatedHeadings($guidance, $locale, $soapmakingRelevant, "{$path}.info_markdown", $errors);
+                $this->validateLength($guidance, "{$path}.info_markdown", $errors);
                 $this->warnOnWordCount($guidance, "{$path}.info_markdown", $warnings);
             }
-            $normalized[] = ['locale' => $locale, 'info_markdown' => $guidance];
+            $normalizedRow = [
+                'locale' => $locale,
+            ];
+            if ($requireLocalizedNames || array_key_exists('display_name', $row)) {
+                $normalizedRow['display_name'] = $displayName;
+            }
+            if ($requireLocalizedNames || array_key_exists('saponification_name', $row)) {
+                $normalizedRow['saponification_name'] = $saponificationName;
+            }
+            $normalizedRow['info_markdown'] = $guidance;
+            $normalized[] = $normalizedRow;
         }
 
         foreach (array_diff($expectedLocales, array_keys($seen)) as $locale) {
@@ -270,6 +331,11 @@ class IngredientGuidanceRefreshResultValidator
 
             return [];
         }
+        if (! array_is_list($rows)) {
+            $this->error($errors, 'guidance_evidence', (string) __('ingredient_enrichment.validation.guidance_evidence_array'));
+
+            return [];
+        }
         foreach ($rows as $index => $row) {
             $path = "guidance_evidence.{$index}";
             if (! is_array($row)) {
@@ -277,7 +343,7 @@ class IngredientGuidanceRefreshResultValidator
             }
         }
 
-        $normalized = $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        $normalized = $this->guidanceEvidencePolicy->normalizeForValidation($rows);
         $allowedSourceKinds = [
             ...config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds', []),
             'legacy_editorial',
@@ -384,25 +450,28 @@ class IngredientGuidanceRefreshResultValidator
         return strcmp(str_pad($leftFraction, $length, '0'), str_pad($rightFraction, $length, '0')) <=> 0;
     }
 
-    /** @param array<string,list<string>> $errors @return array{guidance:string,localization:string,research:string} */
-    private function normalizePromptVersions(mixed $versions, array &$errors): array
-    {
+    /** @param array<string,list<string>> $errors @return array<string,string> */
+    private function normalizePromptVersions(
+        mixed $versions,
+        IngredientEnrichmentBatchMode $mode,
+        array &$errors,
+    ): array {
         if (! is_array($versions)) {
             $this->error($errors, 'prompt_versions', (string) __('ingredient_enrichment.validation.guidance_prompt_versions'));
 
-            return ['guidance' => '', 'localization' => '', 'research' => ''];
+            return [];
         }
-        foreach (['guidance', 'localization'] as $field) {
+        $requiredFields = $mode->isLocalizationOnly() ? ['localization'] : ['guidance'];
+        foreach ($requiredFields as $field) {
             if (! is_string($versions[$field] ?? null) || trim($versions[$field]) === '') {
                 $this->error($errors, "prompt_versions.{$field}", (string) __('ingredient_enrichment.validation.guidance_prompt_version'));
             }
         }
 
-        return [
-            'guidance' => trim((string) ($versions['guidance'] ?? '')),
-            'localization' => trim((string) ($versions['localization'] ?? '')),
-            'research' => trim((string) ($versions['research'] ?? '')),
-        ];
+        return collect(['guidance', 'localization', 'research'])
+            ->filter(fn (string $field): bool => array_key_exists($field, $versions))
+            ->mapWithKeys(fn (string $field): array => [$field => trim((string) $versions[$field])])
+            ->all();
     }
 
     /** @param array<string,list<string>> $errors */
@@ -439,6 +508,47 @@ class IngredientGuidanceRefreshResultValidator
             ->all();
     }
 
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    /** @param array<string,list<string>> $errors */
+    private function validateLength(string $value, string $path, array &$errors): void
+    {
+        $wordCount = preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}’\'\-]*/u', strip_tags($value));
+        $wordCount = is_int($wordCount) ? $wordCount : 0;
+        $maximumWords = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_words', 1500);
+        if ($maximumWords > 0 && $wordCount > $maximumWords) {
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_maximum_words', [
+                'maximum' => $maximumWords,
+            ]));
+        }
+
+        $maximumCharacters = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_characters', 10000);
+        if ($maximumCharacters > 0 && $this->visibleCharacterCount($value) > $maximumCharacters) {
+            $this->error($errors, $path, (string) __('ingredient_enrichment.validation.guidance_maximum_characters', [
+                'maximum' => $maximumCharacters,
+            ]));
+        }
+    }
+
+    private function visibleCharacterCount(string $markdown): int
+    {
+        $text = preg_replace('/^#{1,6}\h+/mu', '', strip_tags($markdown)) ?? $markdown;
+        $text = preg_replace('/\[([^\]]+)]\([^)]*\)/u', '$1', $text) ?? $text;
+        $text = preg_replace('/[*_~`]/u', '', $text) ?? $text;
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return mb_strlen(trim($text));
+    }
+
     /** @param list<string> $warnings */
     private function warnOnWordCount(string $value, string $path, array &$warnings): void
     {
@@ -446,7 +556,7 @@ class IngredientGuidanceRefreshResultValidator
         $count = is_int($count) ? $count : 0;
         $minimum = (int) data_get(config('ingredient-enrichment.guidance'), 'minimum_words', 80);
         $maximum = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_words', 160);
-        if ($count < $minimum || $count > $maximum) {
+        if ($count < $minimum || ($maximum > 0 && $count > $maximum)) {
             $warnings[] = (string) __('ingredient_enrichment.warnings.word_count', [
                 'path' => $path,
                 'count' => $count,

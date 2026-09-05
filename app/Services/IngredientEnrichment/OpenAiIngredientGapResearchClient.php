@@ -21,8 +21,12 @@ class OpenAiIngredientGapResearchClient implements IngredientGuidanceResearchCli
      */
     public function research(array $facts): IngredientGapResearchResponse
     {
+        $freshResearchOverride = (bool) ($facts['fresh_research_override'] ?? false);
+        unset($facts['fresh_research_override']);
+
         if (! config('ingredient-enrichment.openai.gap_research.enabled')
-            && ! config('ingredient-enrichment.openai.guidance_research.enabled')) {
+            && ! config('ingredient-enrichment.openai.guidance_research.enabled')
+            && ! $freshResearchOverride) {
             throw new RuntimeException(__('ingredient_enrichment_admin.validation.gap_research_disabled'));
         }
 
@@ -136,6 +140,8 @@ Optimize for practical usefulness, ingredient relevance, and concise coverage ra
 Do not use patents as guidance evidence. Treat isolated narrow studies as low-priority evidence: retain one only when its tested conditions map directly to a useful formulation decision, and keep that observation explicitly bounded to those conditions. Prefer broadly applicable practical guidance over novel processes, experimental systems, or one paper's sample formula.
 
 Prefer material-wide guidance. Retain a product-grade observation only when it supplies an actionable limitation or recommendation that is worth showing with its scope in the evidence record. Omit supplier manufacturing details, generic storage boilerplate, isolated sample-formula processing conditions, experimental recipe scores, and sensory descriptions that do not change a formulation decision. Stop researching once you have enough evidence for a short overview and two or three useful formulation or soapmaking decisions. Returning a few strong rows, or no rows, is better than filling every claim type with marginal facts.
+
+For a botanical material, when an otherwise suitable consulted source clearly identifies the plant part and its native or principal cultivated region, retain one concise material-wide `origin` evidence row for the overview. Do not spend an additional search solely to find geography. Omit uncertain or disputed geography, exhaustive distribution lists, traditional-use narratives, therapeutic claims, sustainability claims, and marketing origin stories.
 
 Classify each finding as a material-wide fact or a product-grade observation. A product-grade recommendation must remain qualified to that grade. Classify experimental observations separately and never turn them into general recommendations. A recommended percentage is allowed only when the exact source explicitly presents it as formulation guidance from a manufacturer, supplier, professional, or specialist source. Record the correct application (`cosmetics` or `soapmaking`), lower and upper bounds without guessing or converting, and the percentage basis (`total_formula`, `oil_phase`, or `soap_oils`). Keep conflicting ranges as separate rows. If one source gives separate cosmetics and soapmaking ranges, return separate rows. Reported-use and experimental concentrations are not recommendations.
 

@@ -50,7 +50,7 @@ class IngredientEnrichmentResultSchema
                 'saponification_name' => $this->nullableString(),
                 'soap_inci_naoh_name' => $this->nullableString(),
                 'soap_inci_koh_name' => $this->nullableString(),
-                'info_markdown' => $this->string(),
+                'info_markdown' => $this->nullableString(),
                 'soapmaking_relevant' => ['type' => 'boolean'],
                 'aliases' => $this->array($this->object([
                     'locale' => $this->string(),
@@ -72,7 +72,6 @@ class IngredientEnrichmentResultSchema
                     'locale' => $this->string(enum: array_values(config('interface-translations.catalogue_locales', []))),
                     'display_name' => $this->string(),
                     'saponification_name' => $this->nullableString(),
-                    'info_markdown' => $this->string(),
                 ])),
                 'market_labels' => $this->array($this->object([
                     'market_code' => $this->string(enum: collect(IngredientLabelMarket::cases())->map->value->all()),

@@ -21,6 +21,7 @@ class IngredientEnrichmentResultValidator
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
         private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
+        private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
     /**
@@ -250,10 +251,15 @@ class IngredientEnrichmentResultValidator
         ];
         $this->validateExactKeys($proposal, $allowed, 'proposal', $errors);
 
-        foreach (['display_name', 'info_markdown'] as $field) {
+        foreach (['display_name'] as $field) {
             if (! is_string($proposal[$field] ?? null) || trim($proposal[$field]) === '') {
                 $this->error($errors, "proposal.{$field}", $this->message('required_non_empty'));
             }
+        }
+
+        if (($proposal['info_markdown'] ?? null) !== null
+            && (! is_string($proposal['info_markdown']) || trim($proposal['info_markdown']) === '')) {
+            $this->error($errors, 'proposal.info_markdown', $this->message('string_or_null'));
         }
 
         $hasInciName = is_string($proposal['inci_name'] ?? null) && trim($proposal['inci_name']) !== '';
@@ -307,13 +313,16 @@ class IngredientEnrichmentResultValidator
             $this->error($errors, 'proposal.inci_name', $this->message('ci_reserved'));
         }
 
-        $this->validateGuidance($proposal, $errors, $warnings);
+        if (is_string($proposal['info_markdown'] ?? null)) {
+            $this->validateGuidance($proposal, $errors, $warnings);
+        }
         $this->validateAliases($proposal['aliases'] ?? [], $errors);
         $this->validateIdentifiers($proposal['identifiers'] ?? null, $errors);
         $this->validateCosIngFunctions($proposal['cosing_functions'] ?? null, $errors);
         $this->validateTranslations(
             $proposal['translations'] ?? null,
             (bool) ($proposal['soapmaking_relevant'] ?? false),
+            $this->nullableString($proposal['saponification_name'] ?? null),
             $errors,
             $warnings,
         );
@@ -345,7 +354,9 @@ class IngredientEnrichmentResultValidator
             'soap_inci_koh_name' => is_string($proposal['soap_inci_koh_name'] ?? null)
                 ? $this->normalizeInciName($proposal['soap_inci_koh_name'])
                 : null,
-            'info_markdown' => trim((string) ($proposal['info_markdown'] ?? '')),
+            'info_markdown' => is_string($proposal['info_markdown'] ?? null)
+                ? trim($proposal['info_markdown'])
+                : null,
             'soapmaking_relevant' => (bool) ($proposal['soapmaking_relevant'] ?? false),
             'aliases' => $this->normalizeRows($proposal['aliases'] ?? null, [
                 'locale', 'name', 'kind', ...$this->sourceStringFields(),
@@ -441,6 +452,15 @@ class IngredientEnrichmentResultValidator
             : $required;
         if ($headings !== $expectedHeadings) {
             $this->error($errors, 'proposal.info_markdown', $this->message('guidance_headings'));
+        } else {
+            foreach ($required as $heading) {
+                $pattern = '/^##\h+'.preg_quote((string) $heading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
+                if (preg_match($pattern, $guidance, $section) !== 1 || trim($section[1]) === '') {
+                    $this->error($errors, 'proposal.info_markdown', $this->message('guidance_required_section_body'));
+
+                    break;
+                }
+            }
         }
 
         $this->warnOnWordCount($guidance, 'proposal.info_markdown', $warnings);
@@ -479,11 +499,16 @@ class IngredientEnrichmentResultValidator
                 $this->error($errors, "{$path}.is_primary", $this->message('identifier_primary_boolean'));
             }
             $this->validateSourceFields($row, $path, $errors);
-            $key = ($scheme?->value ?? '').'|'.strtoupper($value);
-            if (isset($seen[$key])) {
-                $this->error($errors, "{$path}.value", $this->message('identifier_duplicate'));
+            if ($scheme instanceof IngredientIdentifierScheme) {
+                $key = $this->evidenceReconciler->identifierKey([
+                    'scheme' => $scheme->value,
+                    'value' => $value,
+                ]);
+                if (isset($seen[$key])) {
+                    $this->error($errors, "{$path}.value", $this->message('identifier_duplicate'));
+                }
+                $seen[$key] = true;
             }
-            $seen[$key] = true;
             if (($row['is_primary'] ?? false) === true && isset($primary[$scheme?->value])) {
                 $this->error($errors, "{$path}.is_primary", $this->message('identifier_primary_unique'));
             }
@@ -579,8 +604,17 @@ class IngredientEnrichmentResultValidator
      * @param  array<string, list<string>>  $errors
      * @param  list<string>  $warnings
      */
-    private function validateTranslations(mixed $rows, bool $soapmakingRelevant, array &$errors, array &$warnings): void
-    {
+    private function validateTranslations(
+        mixed $rows,
+        bool $soapmakingRelevant,
+        ?string $canonicalSaponificationName,
+        array &$errors,
+        array &$warnings,
+    ): void {
+        if ($rows === null || $rows === []) {
+            return;
+        }
+
         if (! is_array($rows)) {
             $this->error($errors, 'proposal.translations', $this->message('translations_array'));
 
@@ -608,24 +642,34 @@ class IngredientEnrichmentResultValidator
             if (! is_string($row['display_name'] ?? null) || trim($row['display_name']) === '') {
                 $this->error($errors, "{$path}.display_name", $this->message('translation_display_name'));
             }
-            if (! is_string($row['info_markdown'] ?? null) || trim($row['info_markdown']) === '') {
+            $hasGuidance = array_key_exists('info_markdown', $row);
+            if ($hasGuidance && (! is_string($row['info_markdown']) || trim($row['info_markdown']) === '')) {
                 $this->error($errors, "{$path}.info_markdown", $this->message('translation_guidance'));
             }
             if (($row['saponification_name'] ?? null) !== null && ! is_string($row['saponification_name'])) {
                 $this->error($errors, "{$path}.saponification_name", $this->message('string_or_null'));
             }
-            if ($soapmakingRelevant
+            if (! $hasGuidance && $canonicalSaponificationName !== null
                 && (! is_string($row['saponification_name'] ?? null) || trim($row['saponification_name']) === '')) {
                 $this->error($errors, "{$path}.saponification_name", $this->message('saponification_name_required'));
             }
-            $this->validateTranslatedGuidance(
-                is_string($row['info_markdown'] ?? null) ? $row['info_markdown'] : '',
-                "{$path}.info_markdown",
-                $locale,
-                $soapmakingRelevant,
-                $errors,
-                $warnings,
-            );
+            if (! $hasGuidance && $canonicalSaponificationName === null && ($row['saponification_name'] ?? null) !== null) {
+                $this->error($errors, "{$path}.saponification_name", $this->message('string_or_null'));
+            }
+            if ($hasGuidance) {
+                if ($soapmakingRelevant
+                    && (! is_string($row['saponification_name'] ?? null) || trim($row['saponification_name']) === '')) {
+                    $this->error($errors, "{$path}.saponification_name", $this->message('saponification_name_required'));
+                }
+                $this->validateTranslatedGuidance(
+                    is_string($row['info_markdown'] ?? null) ? $row['info_markdown'] : '',
+                    "{$path}.info_markdown",
+                    $locale,
+                    $soapmakingRelevant,
+                    $errors,
+                    $warnings,
+                );
+            }
         }
 
         foreach (array_diff($expectedLocales, array_keys($seen)) as $locale) {
@@ -819,6 +863,11 @@ class IngredientEnrichmentResultValidator
 
             return [];
         }
+        if (! array_is_list($rows)) {
+            $this->error($errors, 'guidance_evidence', $this->message('guidance_evidence_array'));
+
+            return [];
+        }
 
         foreach ($rows as $index => $row) {
             if (! is_array($row)) {
@@ -826,7 +875,7 @@ class IngredientEnrichmentResultValidator
             }
         }
 
-        return $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        return $this->guidanceEvidencePolicy->normalizeForValidation($rows);
     }
 
     /**
@@ -1300,7 +1349,7 @@ class IngredientEnrichmentResultValidator
         $minimum = (int) data_get(config('ingredient-enrichment.guidance'), 'minimum_words', 80);
         $maximum = (int) data_get(config('ingredient-enrichment.guidance'), 'maximum_words', 220);
 
-        if ($wordCount < $minimum || $wordCount > $maximum) {
+        if ($wordCount < $minimum || ($maximum > 0 && $wordCount > $maximum)) {
             $warnings[] = (string) __('ingredient_enrichment.warnings.word_count', [
                 'path' => $path,
                 'count' => $wordCount,

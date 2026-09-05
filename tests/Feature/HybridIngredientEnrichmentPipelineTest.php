@@ -3,21 +3,47 @@
 use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceResearchClient;
+use App\Contracts\IngredientIdentityNameLocalizationClient;
 use App\Data\IngredientEditorialResponse;
 use App\Data\IngredientGapResearchResponse;
 use App\Data\IngredientGuidanceAuthoringResponse;
+use App\Data\IngredientIdentityNameLocalizationResponse;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Enums\IngredientSubcategory;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientFunction;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPipeline;
+use App\Services\IngredientEnrichment\IngredientEnrichmentResultValidator;
 use App\Services\IngredientEnrichment\IngredientSourceException;
 use App\Services\IngredientEnrichment\UsIngredientDeclarationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    app()->instance(IngredientIdentityNameLocalizationClient::class, new class implements IngredientIdentityNameLocalizationClient
+    {
+        public function localize(array $context): IngredientIdentityNameLocalizationResponse
+        {
+            $hasSaponificationName = filled(data_get($context, 'canonical.saponification_name'));
+
+            return new IngredientIdentityNameLocalizationResponse(
+                translations: collect($context['locales'] ?? [])->map(fn (string $locale): array => [
+                    'locale' => $locale,
+                    'display_name' => "Localized {$locale}",
+                    'saponification_name' => $hasSaponificationName ? "Localized soap {$locale}" : null,
+                ])->all(),
+                responseId: 'resp-identity-localization',
+                requestId: 'req-identity-localization',
+                model: 'gpt-test',
+                inputTokens: 0,
+                outputTokens: 0,
+            );
+        }
+    });
+});
 
 it('adds identifiers corroborated by two independent consulted sources to the proposal', function (): void {
     seedHybridCosingFunctions();
@@ -39,7 +65,7 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
         'percentage_basis' => 'not_applicable',
         'identifiers' => ['cas' => ['68956-68-3'], 'ec' => []],
     ];
-    $singleRow = $row('https://single.example/technical/argan-oil.pdf', 'Single source');
+    $singleRow = $row('https://single.com/technical/argan-oil.pdf', 'Single source');
     $singleRow['identifiers'] = ['cas' => ['99999-99-9'], 'ec' => []];
     app()->instance(IngredientGuidanceResearchClient::class, new class($row, $singleRow) implements IngredientGuidanceResearchClient
     {
@@ -49,8 +75,8 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
         {
             return new IngredientGapResearchResponse(
                 candidateEvidence: [
-                    ($this->row)('https://supplier-a.example/technical/argan-oil.pdf', 'Supplier A'),
-                    ($this->row)('https://supplier-b.example/technical/argan-oil.pdf', 'Supplier B'),
+                    ($this->row)('https://supplier-a.com/technical/argan-oil.pdf', 'Supplier A'),
+                    ($this->row)('https://supplier-b.com/technical/argan-oil.pdf', 'Supplier B'),
                     $this->singleRow,
                 ],
                 warnings: [],
@@ -62,9 +88,9 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
                 outputTokens: 5,
                 webSearchCalls: 1,
                 sources: [
-                    ['url' => 'https://supplier-a.example/technical/argan-oil.pdf', 'title' => 'Supplier A'],
-                    ['url' => 'https://supplier-b.example/technical/argan-oil.pdf', 'title' => 'Supplier B'],
-                    ['url' => 'https://single.example/technical/argan-oil.pdf', 'title' => 'Single'],
+                    ['url' => 'https://supplier-a.com/technical/argan-oil.pdf', 'title' => 'Supplier A'],
+                    ['url' => 'https://supplier-b.com/technical/argan-oil.pdf', 'title' => 'Supplier B'],
+                    ['url' => 'https://single.com/technical/argan-oil.pdf', 'title' => 'Single'],
                 ],
             );
         }
@@ -86,8 +112,8 @@ it('adds identifiers corroborated by two independent consulted sources to the pr
         ->toMatchArray([
             'kind' => 'source_confirmed',
             'source_urls' => [
-                'https://supplier-a.example/technical/argan-oil.pdf',
-                'https://supplier-b.example/technical/argan-oil.pdf',
+                'https://supplier-a.com/technical/argan-oil.pdf',
+                'https://supplier-b.com/technical/argan-oil.pdf',
             ],
         ])
         ->and($single)->toBeNull();
@@ -128,8 +154,58 @@ it('stops before guidance when identity cannot be confirmed against the registri
         ->and($response->webSearchCalls)->toBe(0)
         ->and(data_get($fresh->research_stages, 'ai_guidance_research.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'ai_guidance_authoring.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_identity_name_localization.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'ai_guidance_localization.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'validation.status'))->toBe('skipped');
+});
+
+it('keeps identity enrichment and identity translations without generating guidance', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    fakeHybridEditorialClient();
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', false);
+    app()->instance(IngredientGuidanceResearchClient::class, new class implements IngredientGuidanceResearchClient
+    {
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            throw new RuntimeException('guidance research must not run');
+        }
+    });
+    app()->instance(IngredientGuidanceAuthoringClient::class, new class implements IngredientGuidanceAuthoringClient
+    {
+        public function author(array $context): IngredientGuidanceAuthoringResponse
+        {
+            throw new RuntimeException('guidance authoring must not run');
+        }
+    });
+    $item = hybridPipelineItem('argan_external_guidance', 'Argan oil');
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', false);
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+    $fresh = $item->fresh();
+    $validation = app(IngredientEnrichmentResultValidator::class)->validate(
+        $response->result,
+    );
+
+    expect($validation['errors'])->toBe([])
+        ->and($validation['valid'])->toBeTrue()
+        ->and($response->result['proposal']['inci_name'])->toBe('ARGANIA SPINOSA KERNEL OIL')
+        ->and($response->result['proposal']['info_markdown'])->toBeNull()
+        ->and($response->result['proposal']['translations'])->toHaveCount(1)
+        ->and($response->result['proposal']['translations'][0])->toMatchArray([
+            'locale' => 'fr',
+            'display_name' => 'Localized fr',
+        ])
+        ->and(data_get($fresh->research_stages, 'ai_guidance_research.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_research.data.reason'))->toBe('external_guidance_workflow')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_authoring.status'))->toBe('skipped')
+        ->and(data_get($fresh->research_stages, 'ai_guidance_localization.status'))->toBe('skipped')
+        ->and(collect($response->result['field_confidence'])->firstWhere('field', 'proposal.info_markdown'))
+        ->toMatchArray(['confidence' => 'unresolved'])
+        ->and(collect($response->result['value_provenance'])->firstWhere('field', 'proposal.info_markdown'))
+        ->toMatchArray(['kind' => 'unresolved']);
 });
 
 it('assembles precise argan facts from deterministic eu and us sources before editorial work', function (): void {
@@ -184,7 +260,7 @@ it('retains all apricot identifiers and keeps eu and us declarations distinct', 
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
             'perfuming', 'skin_conditioning',
         ])
-        ->and($response->structuredSourceCalls)->toBe(7)
+        ->and($response->structuredSourceCalls)->toBe(8)
         ->and($response->webSearchCalls)->toBe(0)
         ->and($editorial->calls)->toBe(1);
 });
@@ -749,6 +825,7 @@ function hybridPipelineItem(
     ?string $researchFamily = null,
     ?array $trustedSoapChemistry = null,
 ): IngredientEnrichmentBatchItem {
+    config()->set('ingredient-enrichment.openai.guidance_generation.enabled', true);
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
 
     return IngredientEnrichmentBatchItem::factory()->create([

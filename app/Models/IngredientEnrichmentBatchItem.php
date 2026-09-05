@@ -117,7 +117,10 @@ class IngredientEnrichmentBatchItem extends Model
 
         $orderedStages = $effectiveMode?->guidanceStages() ?? [];
         if ($orderedStages === []) {
-            $orderedStages = IngredientEnrichmentResearchStage::ordered();
+            $orderedStages = collect(IngredientEnrichmentResearchStage::ordered())
+                ->reject(fn (IngredientEnrichmentResearchStage $stage): bool => $stage === IngredientEnrichmentResearchStage::AiGuidanceLocalization)
+                ->values()
+                ->all();
         }
 
         foreach ($orderedStages as $stage) {

@@ -21,8 +21,10 @@ class IngredientGuidanceDraftRenderer
             'formulation_use' => $this->heading('formulation_use'),
             'soapmaking' => (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
         ];
-        $blocks = [];
+        $sectionTexts = [];
+        $acceptedUsageClaims = [];
         $skippedClaims = 0;
+        $renderedClaims = 0;
 
         foreach ($sections as $section => $heading) {
             $claims = $draft[$section];
@@ -31,6 +33,8 @@ class IngredientGuidanceDraftRenderer
             }
 
             if ($section === 'soapmaking' && $claims === []) {
+                $sectionTexts[$section] = [];
+
                 continue;
             }
 
@@ -48,6 +52,40 @@ class IngredientGuidanceDraftRenderer
                 }
 
                 $texts[] = $text;
+                $renderedClaims++;
+                if (($claim['claim_type'] ?? null) === 'usage'
+                    && ($claim['support_type'] ?? null) === 'evidence') {
+                    $acceptedUsageClaims[$section][] = $claim;
+                }
+            }
+
+            $sectionTexts[$section] = $texts;
+        }
+
+        foreach ($this->baselineUseLevelSentences($context, $sections, $skippedClaims) as $baseline) {
+            $section = $baseline['section'];
+            $sentence = $baseline['text'];
+            if (($sectionTexts[$section] ?? []) === []
+                || ! $this->containsRenderedSentence($sectionTexts[$section], $sentence)) {
+                if ($this->isContradictedBaselineUseLevel(
+                    $sentence,
+                    $section,
+                    $acceptedUsageClaims[$section] ?? [],
+                    $context,
+                )) {
+                    continue;
+                }
+
+                $sectionTexts[$section][] = $sentence;
+                $renderedClaims++;
+            }
+        }
+
+        $blocks = [];
+        foreach ($sections as $section => $heading) {
+            $texts = $sectionTexts[$section] ?? [];
+            if ($section === 'soapmaking' && $texts === []) {
+                continue;
             }
 
             $blocks[] = '## '.$heading.($texts === [] ? '' : "\n\n".implode(' ', $texts));
@@ -66,6 +104,14 @@ class IngredientGuidanceDraftRenderer
         $warnings = $this->stringList($draft['warnings']);
         if ($skippedClaims > 0) {
             $warnings[] = (string) __('ingredient_enrichment.warnings.guidance_claim_omitted');
+        }
+
+        if ($renderedClaims === 0) {
+            return [
+                'info_markdown' => '',
+                'warnings' => array_values(array_unique($warnings)),
+                'unresolved_questions' => $this->stringList($draft['unresolved_questions']),
+            ];
         }
 
         return [
@@ -116,6 +162,7 @@ class IngredientGuidanceDraftRenderer
             || str_contains($text, '##')
             || preg_match_all('/[.!?](?=\s|$)/u', $text) > 1
             || $this->isCatalogueMetaClaim($text)
+            || $this->isEvidenceMetaClaim($text)
             || ! is_string($claimType)
             || ! in_array($claimType, config('ingredient-enrichment.openai.guidance_research.allowed_claim_types', []), true)
             || ! is_string($supportType)
@@ -345,6 +392,259 @@ class IngredientGuidanceDraftRenderer
 
         return preg_match('/\b(?:classified|categorized)\s+as\b/u', $lower) === 1
             || preg_match('/\bwithin\s+the\s+[\w\s-]{1,24}\s+category\b/u', $lower) === 1;
+    }
+
+    private function isEvidenceMetaClaim(string $text): bool
+    {
+        $lower = mb_strtolower($text);
+
+        if (preg_match('/\bthis[-\s]+(?:(?:particular|specific)[-\s]+)?(?:product[-\s]+)?grade\b/u', $lower) === 1) {
+            return true;
+        }
+
+        $evidenceAdjectives = '(?:cited|documented|specified|referenced|supplied|reported|listed|verified)';
+        $evidenceSubject = '(?:materials?|(?:product[-\s]+)?grades?|profiles?|data)';
+
+        if (preg_match('/\b'.$evidenceAdjectives.'[-\s,;:]+(?:[\p{L}\p{N}][\p{L}\p{N}-]*[-\s,;:]+){0,3}'.$evidenceSubject.'\b/u', $lower) === 1
+            || preg_match('/\b'.$evidenceSubject.'\b[^.!?]{0,24}\b(?:is|was|are|were)\s+(?:not\s+)?'.$evidenceAdjectives.'\b/u', $lower) === 1) {
+            return true;
+        }
+
+        $sourceNarrationVerbs = '(?:'.implode('|', [
+            'recommend',
+            'recommends',
+            'recommended',
+            'recommending',
+            'describe',
+            'describes',
+            'described',
+            'describing',
+            'report',
+            'reports',
+            'reported',
+            'reporting',
+            'list',
+            'lists',
+            'listed',
+            'listing',
+            'specify',
+            'specifies',
+            'specified',
+            'specifying',
+            'state',
+            'states',
+            'stated',
+            'stating',
+            'note',
+            'notes',
+            'noted',
+            'noting',
+            'advise',
+            'advises',
+            'advised',
+            'advising',
+            'say',
+            'says',
+            'said',
+            'saying',
+            'suggest',
+            'suggests',
+            'suggested',
+            'suggesting',
+            'indicate',
+            'indicates',
+            'indicated',
+            'indicating',
+        ]).')';
+        $sourceSubject = '(?:supplier|manufacturer)s?';
+        $sourceArticle = '(?:a|the|one|some|multiple)?\s*';
+        $sourceSeparator = '[-\s,:;–—]+';
+        $sourceQualifierWord = '[\p{L}\p{M}\p{N}&.\'’\-]+';
+        $qualifiedSourceSubject = '(?:supplier|manufacturer|vendor|brand|company|producer)s?'
+            .$sourceSeparator.$sourceQualifierWord
+            .'(?:'.$sourceSeparator.$sourceQualifierWord.'){0,3}';
+        $sourceAdverb = '(?:[\p{L}\p{M}]{1,24}ly|also|often|still|indeed)';
+        $sourceDocument = '(?:(?:technical|product|material)[-\s]+)?(?:data[-\s]+sheet|datasheet|sheet|document|specification)s?';
+
+        $namedSourceWord = '(?:[\p{Lu}][\p{L}\p{M}\p{N}&.\'’\-]*|[A-Z]{2,}[A-Z0-9&.\'’\-]*)';
+        $namedSource = '(?:'.$namedSourceWord.'(?:\s+'.$namedSourceWord.'){0,3})';
+        $namedSourceAdverbs = '(?:\s+'.$sourceAdverb.'){0,2}';
+
+        return preg_match('/\b'.$sourceArticle.$sourceSubject.'(?:'.$sourceSeparator.$sourceAdverb.'){0,2}'.$sourceSeparator.$sourceNarrationVerbs.'\b/u', $lower) === 1
+            || preg_match('/\b'.$sourceArticle.$qualifiedSourceSubject.$sourceSeparator.$sourceNarrationVerbs.'\b/u', $lower) === 1
+            || preg_match('/\b'.$sourceArticle.$sourceSubject."['’]s?\s+".$sourceDocument.'\s+'.$sourceNarrationVerbs.'\b/u', $lower) === 1
+            || preg_match('/\b'.$sourceNarrationVerbs.'\b[^.!?]{0,80}\bby\s+'.$sourceArticle.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1
+            || preg_match('/\baccording\s+to\s+'.$sourceArticle.$sourceSubject.'(?![-\p{L}\p{N}_])/u', $lower) === 1
+            || preg_match('/\b'.$namedSource.$namedSourceAdverbs.'\s+'.$sourceNarrationVerbs.'\b/u', $text) === 1
+            || preg_match('/\b'.$namedSource."['’]s?\s+".$sourceDocument.'\s+'.$sourceNarrationVerbs.'\b/u', $text) === 1
+            || preg_match('/\b'.$sourceNarrationVerbs.'\b[^.!?]{0,80}\bby\s+(?:the\s+)?'.$namedSource.'(?![-\p{L}\p{N}_])/u', $text) === 1
+            || preg_match('/\baccording\s+to\s+(?:the\s+)?'.$namedSource.'(?![-\p{L}\p{N}_])/u', $text) === 1
+            || preg_match('/\b'.$namedSource.'-'.$sourceNarrationVerbs.'\b/u', $text) === 1;
+    }
+
+    /**
+     * @param  array<string, string>  $sections
+     * @return list<array{section:string,text:string}>
+     */
+    private function baselineUseLevelSentences(array $context, array $sections, int &$skippedClaims): array
+    {
+        $baseline = Arr::get($context, 'current.canonical.info_markdown');
+        if (! is_string($baseline) || trim($baseline) === '') {
+            return [];
+        }
+
+        $sectionByHeading = collect($sections)
+            ->mapWithKeys(fn (string $heading, string $section): array => [mb_strtolower(trim($heading)) => $section])
+            ->all();
+        $sectionLines = [];
+        $currentSection = null;
+        foreach (preg_split('/\R/u', $baseline) ?: [] as $line) {
+            if (preg_match('/^##\s+(.+)$/u', trim($line), $matches) === 1) {
+                $currentSection = $sectionByHeading[mb_strtolower(trim($matches[1]))] ?? null;
+
+                continue;
+            }
+
+            if (is_string($currentSection)) {
+                $sectionLines[$currentSection][] = $line;
+            }
+        }
+
+        $sentences = [];
+        foreach ($sectionLines as $section => $lines) {
+            $content = trim(implode("\n", $lines));
+            foreach (preg_split('/(?<=[.!?])\s+/u', $content) ?: [] as $sentence) {
+                $sentence = trim($sentence);
+                if ($sentence === ''
+                    || preg_match('/\btypical\s+use\s+level\b/iu', $sentence) !== 1
+                    || preg_match('/\b\d+(?:\.\d+)?\s*%/u', $sentence) !== 1) {
+                    continue;
+                }
+
+                if ($this->isEvidenceMetaClaim($sentence)) {
+                    $skippedClaims++;
+
+                    continue;
+                }
+
+                $sentences[] = ['section' => $section, 'text' => $sentence];
+            }
+        }
+
+        return $sentences;
+    }
+
+    /** @param list<string> $texts */
+    private function containsRenderedSentence(array $texts, string $sentence): bool
+    {
+        foreach ($texts as $text) {
+            if (str_contains($text, $sentence)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $acceptedUsageClaims
+     * @param  array<string, mixed>  $context
+     */
+    private function isContradictedBaselineUseLevel(
+        string $sentence,
+        string $section,
+        array $acceptedUsageClaims,
+        array $context,
+    ): bool {
+        $baselineBounds = $this->usageBounds($sentence);
+        if ($baselineBounds === null) {
+            return false;
+        }
+
+        $application = $section === 'soapmaking' ? 'soapmaking' : 'cosmetics';
+        foreach ($acceptedUsageClaims as $claim) {
+            if (($claim['usage_application'] ?? null) !== $application) {
+                continue;
+            }
+
+            $claimBounds = $this->usageBounds((string) ($claim['text'] ?? ''));
+            if ($claimBounds !== null && $claimBounds !== $baselineBounds) {
+                return true;
+            }
+        }
+
+        $evidenceRows = array_key_exists('fresh_guidance_evidence', $context)
+            ? $context['fresh_guidance_evidence']
+            : ($context['guidance_evidence'] ?? []);
+        foreach (is_array($evidenceRows) ? $evidenceRows : [] as $evidence) {
+            if (! is_array($evidence)
+                || ($evidence['claim_type'] ?? null) !== 'usage'
+                || ($evidence['usage_application'] ?? null) !== $application) {
+                continue;
+            }
+
+            $evidenceBounds = $this->usageBoundsFromEvidence($evidence);
+            if ($evidenceBounds !== null && $evidenceBounds !== $baselineBounds) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return array{minimum:?string,maximum:?string,basis:?string}|null */
+    private function usageBounds(string $text): ?array
+    {
+        $text = mb_strtolower($text);
+        $basis = match (true) {
+            preg_match('/\btotal\s+formula\b/u', $text) === 1 => 'total_formula',
+            preg_match('/\boil\s+phase\b/u', $text) === 1 => 'oil_phase',
+            preg_match('/\b(?:soap[-\s]?oil(?:s)?|oil)\s+blend\b/u', $text) === 1 => 'soap_oils',
+            default => null,
+        };
+        $number = '\\d+(?:\\.\\d+)?';
+        if (preg_match('/\\b(?<minimum>'.$number.')\\s*%?\\s*(?:-|–|—|to)\\s*(?<maximum>'.$number.')\\s*%/u', $text, $matches) === 1) {
+            return [
+                'minimum' => $this->normalizeUsageNumber($matches['minimum']),
+                'maximum' => $this->normalizeUsageNumber($matches['maximum']),
+                'basis' => $basis,
+            ];
+        }
+        if (preg_match('/\\b(?:at\\s+least|minimum(?:\\s+of)?|from)\\s+(?<minimum>'.$number.')\\s*%/u', $text, $matches) === 1) {
+            return ['minimum' => $this->normalizeUsageNumber($matches['minimum']), 'maximum' => null, 'basis' => $basis];
+        }
+        if (preg_match('/\\b(?:up\\s+to|at\\s+most|maximum(?:\\s+of)?)\\s+(?<maximum>'.$number.')\\s*%/u', $text, $matches) === 1) {
+            return ['minimum' => null, 'maximum' => $this->normalizeUsageNumber($matches['maximum']), 'basis' => $basis];
+        }
+
+        return null;
+    }
+
+    /** @param array<string, mixed> $evidence @return array{minimum:?string,maximum:?string,basis:?string}|null */
+    private function usageBoundsFromEvidence(array $evidence): ?array
+    {
+        $minimum = $evidence['recommended_min_percent'] ?? null;
+        $maximum = $evidence['recommended_max_percent'] ?? null;
+        if (! is_string($minimum) && ! is_string($maximum)) {
+            return null;
+        }
+
+        return [
+            'minimum' => is_string($minimum) ? $this->normalizeUsageNumber($minimum) : null,
+            'maximum' => is_string($maximum) ? $this->normalizeUsageNumber($maximum) : null,
+            'basis' => is_string($evidence['percentage_basis'] ?? null)
+                ? $evidence['percentage_basis']
+                : null,
+        ];
+    }
+
+    private function normalizeUsageNumber(string $value): string
+    {
+        [$integer, $fraction] = array_pad(explode('.', trim($value), 2), 2, '');
+        $integer = ltrim($integer, '0') ?: '0';
+        $fraction = rtrim($fraction, '0');
+
+        return $fraction === '' ? $integer : $integer.'.'.$fraction;
     }
 
     /** @param array<string, mixed> $claim @param array<string, mixed> $context */

@@ -45,7 +45,10 @@ MEDIA_QUEUE=media
 IMAGE_DRIVER=imagick
 
 QUEUE_CONNECTION=database
-DB_QUEUE_RETRY_AFTER=360
+DB_QUEUE_RETRY_AFTER=2100
+INGREDIENT_ENRICHMENT_QUEUE=enrichment
+INGREDIENT_ENRICHMENT_JOB_TIMEOUT=2000
+INGREDIENT_ENRICHMENT_TIMEOUT=600
 DB_SSLMODE=prefer
 ```
 
@@ -56,7 +59,7 @@ Use `DB_SSLMODE=require` when PostgreSQL is on the second server. Generate a uni
 ## Deploy and application
 
 - Deploy only over HTTPS. Put the application in maintenance mode, take the verified backup, run `php artisan migrate --force`, then run `php artisan app:migrate-recipe-media-to-private`. The media command copies and verifies every legacy formula file, updates database references transactionally, and only then removes the old public/private legacy paths; it is safe to rerun. Cache production configuration, routes, events, and views afterward.
-- Run the existing persistent Forge queue worker plus one dedicated worker for the `media` queue using `--queue=media --tries=1 --timeout=300`, starting with a single media process to control image-processing memory usage. Keep `DB_QUEUE_RETRY_AFTER=360`, configure the scheduler every minute, and restart all workers after each deployment.
+- Run the existing persistent Forge queue worker for the normal application queue, one dedicated worker for the `enrichment` queue, and one dedicated worker for the `media` queue. The enrichment worker must use the job's own timeout: `php artisan queue:work database --queue=enrichment --tries=3 --timeout=0 --sleep=3`. Do not omit `--timeout=0` or replace it with a value below the configured 2,000-second enrichment job timeout. Keep `DB_QUEUE_RETRY_AFTER=2100`, which leaves a 100-second reservation margin after the enrichment job timeout. During staging acceptance, force one provider timeout and verify that the item is marked failed and no stale `WithoutOverlapping` lock remains before requeueing it. Preserve the media worker command as `php artisan queue:work database --queue=media --tries=1 --timeout=300 --sleep=3`, starting with a single media process to control image-processing memory usage. Configure the scheduler every minute and restart all workers after each deployment.
 - Before enabling uploads, verify that production Imagick reports both HEIC and HEIF support (for example, through `Imagick::queryFormats()`). A deployment without either codec does not satisfy the media-library requirements; the application will reject that format with a clear processing failure instead of leaving the asset or quota reservation stuck.
 - Provision the initial verified owner interactively with `php artisan app:provision-workspace-owner owner@example.com`; never pass its password on the command line.
 - Confirm `/register`, `/calculator`, and `/calculator/draft` return 404; unverified accounts cannot enter the dashboard.

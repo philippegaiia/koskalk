@@ -3,10 +3,13 @@
 namespace App\Filament\Resources\IngredientEnrichmentBatches\Tables;
 
 use App\Actions\IngredientEnrichment\DeleteIngredientEnrichmentBatch as DeleteIngredientEnrichmentBatchAction;
+use App\Actions\IngredientEnrichment\DeleteIngredientEnrichmentBatches as DeleteIngredientEnrichmentBatchesAction;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -14,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Validation\ValidationException;
+use Livewire\Component;
 use Throwable;
 
 class IngredientEnrichmentBatchesTable
@@ -84,6 +88,65 @@ class IngredientEnrichmentBatchesTable
                             ->status($cleanupComplete ? 'success' : 'warning')
                             ->send();
                     }),
-            ])->defaultSort('created_at', 'desc');
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('deleteSelected')
+                        ->label(__('ingredient_enrichment_admin.actions.delete_selected'))
+                        ->color('danger')
+                        ->icon(Heroicon::Trash)
+                        ->modalIcon(Heroicon::OutlinedTrash)
+                        ->modalHeading(__('ingredient_enrichment_admin.actions.delete_selected_heading'))
+                        ->modalDescription(__('ingredient_enrichment_admin.actions.delete_selected_description'))
+                        ->modalSubmitActionLabel(__('ingredient_enrichment_admin.actions.delete_selected_submit'))
+                        ->requiresConfirmation()
+                        ->action(function (BulkAction $action, Component $livewire, DeleteIngredientEnrichmentBatchesAction $deleteBatches): void {
+                            $actor = auth()->user();
+
+                            abort_unless($actor instanceof User, 403);
+
+                            try {
+                                $cleanupComplete = $deleteBatches->handle(
+                                    $actor,
+                                    collect(data_get($livewire, 'selectedTableRecords', [])),
+                                );
+                            } catch (ValidationException $exception) {
+                                Notification::make()
+                                    ->title(__('ingredient_enrichment_admin.notifications.delete_selected_failed'))
+                                    ->body($exception->errors()['batch'][0] ?? __('ingredient_enrichment_admin.notifications.delete_selected_failed'))
+                                    ->danger()
+                                    ->send();
+
+                                $action->halt();
+
+                                return;
+                            } catch (Throwable $exception) {
+                                report($exception);
+
+                                Notification::make()
+                                    ->title(__('ingredient_enrichment_admin.notifications.delete_selected_failed'))
+                                    ->danger()
+                                    ->send();
+
+                                $action->halt();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title(__($cleanupComplete
+                                    ? 'ingredient_enrichment_admin.notifications.deleted_selected'
+                                    : 'ingredient_enrichment_admin.notifications.deleted_selected_with_cleanup_warning'))
+                                ->body($cleanupComplete ? null : __('ingredient_enrichment_admin.notifications.cleanup_warning'))
+                                ->status($cleanupComplete ? 'success' : 'warning')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ])
+            ->checkIfRecordIsSelectableUsing(
+                fn (IngredientEnrichmentBatch $record): bool => $record->status->isTerminal(),
+            )
+            ->defaultSort('created_at', 'desc');
     }
 }

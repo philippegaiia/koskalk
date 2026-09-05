@@ -64,3 +64,29 @@ it('returns a concrete warning when no reusable evidence exists', function (): v
     expect($context['guidance_evidence'])->toBe([])
         ->and($context['warnings'][0])->toContain('No persisted guidance evidence');
 });
+
+it('keeps reviewed English but excludes reusable evidence for fresh research', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'info_markdown' => "## Overview\nReviewed baseline.\n\n## Formulation use\nReviewed use guidance.",
+        'source_data' => [
+            'enrichment' => [
+                'guidance' => [
+                    'evidence' => [[
+                        'source_name' => 'Prior source',
+                        'source_url' => 'https://example.test/prior',
+                        'summary' => 'Prior evidence.',
+                        'source_tier' => 'editorial',
+                        'retrieved_at' => '2026-08-28T00:00:00+00:00',
+                    ]],
+                ],
+            ],
+        ],
+    ]);
+
+    $context = app(IngredientGuidanceContextBuilder::class)->build($ingredient, freshResearch: true);
+
+    expect(data_get($context, 'current.canonical.info_markdown'))->toContain('Reviewed baseline.')
+        ->and($context['guidance_evidence'])->toBe([])
+        ->and($context['prior_guidance_evidence'])->toBe([])
+        ->and($context['fresh_research'])->toBeTrue();
+});

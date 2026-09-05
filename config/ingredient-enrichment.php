@@ -46,8 +46,8 @@ return [
     ],
     'guidance' => [
         'minimum_words' => 0,
-        'maximum_words' => 240,
-        'maximum_characters' => 2000,
+        'maximum_words' => 0,
+        'maximum_characters' => 10000,
         'required_headings' => ['Overview', 'Formulation use'],
         'soapmaking_heading' => 'Soapmaking',
         'localized_headings' => [
@@ -61,7 +61,7 @@ return [
     ],
     'direct_ai' => [
         'enabled' => env('INGREDIENT_ENRICHMENT_AI_ENABLED', false),
-        'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'default'),
+        'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'enrichment'),
         'default_batch_size' => (int) env('INGREDIENT_ENRICHMENT_DEFAULT_BATCH_SIZE', 10),
         'maximum_batch_size' => (int) env('INGREDIENT_ENRICHMENT_MAXIMUM_BATCH_SIZE', 25),
         'job_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_JOB_TIMEOUT', 2000),
@@ -97,12 +97,15 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'model' => env('INGREDIENT_ENRICHMENT_MODEL', 'gpt-5.6-terra'),
         'reasoning_effort' => env('INGREDIENT_ENRICHMENT_REASONING_EFFORT', 'low'),
+        'localization_model' => env('INGREDIENT_ENRICHMENT_LOCALIZATION_MODEL', 'gpt-5.6-luna'),
+        'localization_reasoning_effort' => env('INGREDIENT_ENRICHMENT_LOCALIZATION_REASONING_EFFORT', 'xhigh'),
         'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 600),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
-        'guidance_prompt_version' => 'ingredient-guidance-v11',
-        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v1',
+        'guidance_prompt_version' => 'ingredient-guidance-v16',
+        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v5',
+        'identity_name_localization_prompt_version' => 'ingredient-identity-name-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',
             'single-market-economy.ec.europa.eu',
@@ -119,9 +122,12 @@ return [
         'gap_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GAP_RESEARCH_ENABLED', false),
         ],
+        'guidance_generation' => [
+            'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_GENERATION_ENABLED', false),
+        ],
         'guidance_research' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_RESEARCH_ENABLED', true),
-            'prompt_version' => 'ingredient-guidance-research-v6',
+            'prompt_version' => 'ingredient-guidance-research-v7',
             'maximum_tool_calls' => (int) env('INGREDIENT_ENRICHMENT_GUIDANCE_MAX_TOOL_CALLS', 5),
             'blocked_domains' => [
                 'amazon.com',

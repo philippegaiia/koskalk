@@ -264,16 +264,16 @@ it('organizes the complete ingredient editor into persistent top-level tabs with
     $displayName = $form->getComponent('current_version.display_name');
     $euDeclaration = $form->getComponent('market_labels.eu.declaration_name', withHidden: true);
     $euOverrideToggle = $form->getComponent('market_labels.eu.use_override');
-    $guidance = $form->getComponent('info_markdown');
-    $saponificationName = $form->getComponent('current_version.saponification_name');
-    $allergens = $form->getComponent('allergen_entries');
-    $substances = $form->getComponent('substance_entries');
-    $ifraLimits = $form->getComponent('ifra.limits');
-    $components = $form->getComponent('components');
+    $guidance = $form->getComponentByStatePath('info_markdown', withHidden: true);
+    $saponificationName = $form->getComponent('current_version.saponification_name', withHidden: true);
+    $allergens = $form->getComponent('allergen_entries', withHidden: true);
+    $substances = $form->getComponent('substance_entries', withHidden: true);
+    $ifraLimits = $form->getComponent('ifra.limits', withHidden: true);
+    $components = $form->getComponent('components', withHidden: true);
     $additionalIdentifiers = $form->getComponent('additional_identifiers');
     $aliases = $form->getComponent('aliases');
-    $translations = $form->getComponent('translations');
-    $fattyAcids = $form->getComponent('fatty_acid_entries');
+    $translations = $form->getComponent('translations', withHidden: true);
+    $fattyAcids = $form->getComponent('fatty_acid_entries', withHidden: true);
     $classificationSection = $category->getContainer()->getParentComponent();
     $generalTab = $classificationSection->getContainer()->getParentComponent();
 
@@ -482,11 +482,11 @@ it('keeps original upload names in the admin ingredient form state', function ()
     $featuredField = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
         ->instance()
         ->form
-        ->getComponent('featured_image_path');
+        ->getComponentByStatePath('featured_image_path', withHidden: true);
     $iconField = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
         ->instance()
         ->form
-        ->getComponent('icon_image_path');
+        ->getComponentByStatePath('icon_image_path', withHidden: true);
     Storage::disk($featuredField->getDiskName())->put($ingredient->featured_image_path, 'public-image');
     Storage::disk($iconField->getDiskName())->put($ingredient->icon_image_path, 'public-image');
     $featuredField->rawState([$ingredient->featured_image_path => $ingredient->featured_image_path]);

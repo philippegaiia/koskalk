@@ -8,6 +8,7 @@ use App\Filament\Resources\Ingredients\IngredientResource;
 use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientClassificationPrompt;
 use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientDataEntry;
 use App\Models\Ingredient;
+use App\Models\User;
 use App\Services\IngredientDataEntryService;
 use App\Services\IngredientMarketLabelService;
 use App\Services\IngredientTranslationService;

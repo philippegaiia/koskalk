@@ -79,6 +79,47 @@ it('rechecks workspace ownership after the quota lock opens', function (): void 
         ->and($ingredient->fresh()->workspace_id)->toBe($workspaceB->id);
 });
 
+it('holds the quota lock through a legacy three-argument update', function (): void {
+    $user = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $workspaceA = Workspace::factory()->for($user, 'owner')->create();
+    $workspaceB = Workspace::factory()->for($otherOwner, 'owner')->create();
+    $authoringService = app(UserIngredientAuthoringService::class);
+    $ingredient = $authoringService->createInWorkspace([
+        'name' => 'Before legacy reassignment',
+        'category' => IngredientCategory::Other->value,
+    ], $user, $workspaceA);
+    $state = [
+        ...$authoringService->formData($ingredient->fresh()),
+        'name' => 'Must not persist from legacy update',
+    ];
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('withinWorkspaceQuotaLock')
+        ->once()
+        ->withArgs(fn (Workspace $workspace, Closure $callback): bool => $workspace->is($workspaceA))
+        ->andReturnUsing(function (Workspace $workspace, Closure $callback) use ($ingredient, $workspaceB): Ingredient {
+            $ingredient->forceFill([
+                'owner_type' => OwnerType::Workspace,
+                'owner_id' => $workspaceB->id,
+                'workspace_id' => $workspaceB->id,
+            ])->save();
+
+            return $callback($workspace);
+        });
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->update(
+        $ingredient,
+        $state,
+        $user,
+    ))->toThrow(AuthorizationException::class);
+
+    expect($ingredient->fresh()->display_name)->toBe('Before legacy reassignment')
+        ->and($ingredient->fresh()->workspace_id)->toBe($workspaceB->id);
+});
+
 it('rejects an explicit null create after another user instance provisions a workspace', function (): void {
     $user = User::factory()->create();
     $warmedUser = User::query()->findOrFail($user->id);

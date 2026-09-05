@@ -84,7 +84,7 @@ class IngredientController extends Controller
 
         $ingredient = Ingredient::query()->findOrFail($validated['ingredient_id']);
         try {
-            $workspace = $this->boundDuplicateDestination($user, $validated);
+            $workspace = $this->boundWorkspaceDestination($user, $validated);
         } catch (AuthorizationException) {
             return response()->json(['ok' => false], 404);
         }
@@ -194,7 +194,7 @@ class IngredientController extends Controller
         $source = Ingredient::query()->findOrFail($validated['ingredient_id']);
 
         try {
-            $destinationWorkspace = $this->boundDuplicateDestination($user, $validated);
+            $destinationWorkspace = $this->boundWorkspaceDestination($user, $validated);
 
             $copy = app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
                 $source,
@@ -218,7 +218,7 @@ class IngredientController extends Controller
     /**
      * @param  array{destination_workspace_id?: int|null, destination_workspace_signature?: string|null}  $validated
      */
-    private function boundDuplicateDestination(User $user, array $validated): ?Workspace
+    private function boundWorkspaceDestination(User $user, array $validated): ?Workspace
     {
         $destinationWorkspaceId = $validated['destination_workspace_id'] ?? null;
         $signature = $validated['destination_workspace_signature'] ?? null;

@@ -189,43 +189,66 @@ class UserIngredientAuthoringService
         User $user,
         ?Workspace $workspace = null,
     ): Ingredient {
-        $ingredientId = $ingredient->getKey();
+        $ingredientId = (int) $ingredient->getKey();
 
         if (! Ingredient::query()->whereKey($ingredientId)->exists()) {
             throw new AuthorizationException;
         }
 
+        if (! $workspace instanceof Workspace) {
+            $workspaceId = Ingredient::query()->whereKey($ingredientId)->value('workspace_id');
+
+            if ($workspaceId !== null) {
+                $workspace = Workspace::withoutGlobalScopes()->find((int) $workspaceId);
+
+                if (! $workspace instanceof Workspace) {
+                    throw new AuthorizationException;
+                }
+            }
+        }
+
         if ($workspace instanceof Workspace) {
-            return $this->entitlementService->withinWorkspaceQuotaLock(
-                $workspace,
-                function (Workspace $lockedWorkspace) use ($ingredientId, $state, $user): Ingredient {
-                    $lockedIngredient = Ingredient::query()
-                        ->lockForUpdate()
-                        ->find($ingredientId);
-
-                    if (! $lockedIngredient instanceof Ingredient
-                        || (int) $lockedIngredient->workspace_id !== (int) $lockedWorkspace->id) {
-                        throw new AuthorizationException;
-                    }
-
-                    Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
-
-                    return $this->persistUpdate($lockedIngredient, $state, $user);
-                },
-            );
+            return $this->updateInWorkspace($ingredientId, $state, $user, $workspace);
         }
 
-        $lockedIngredient = Ingredient::query()
-            ->lockForUpdate()
-            ->find($ingredientId);
+        return DB::transaction(function () use ($ingredientId, $state, $user): Ingredient {
+            $lockedIngredient = Ingredient::query()
+                ->lockForUpdate()
+                ->find($ingredientId);
 
-        if (! $lockedIngredient instanceof Ingredient) {
-            throw new AuthorizationException;
-        }
+            if (! $lockedIngredient instanceof Ingredient) {
+                throw new AuthorizationException;
+            }
 
-        Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+            Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
 
-        return $this->persistUpdate($lockedIngredient, $state, $user);
+            return $this->persistUpdate($lockedIngredient, $state, $user);
+        });
+    }
+
+    private function updateInWorkspace(
+        int $ingredientId,
+        array $state,
+        User $user,
+        Workspace $workspace,
+    ): Ingredient {
+        return $this->entitlementService->withinWorkspaceQuotaLock(
+            $workspace,
+            function (Workspace $lockedWorkspace) use ($ingredientId, $state, $user): Ingredient {
+                $lockedIngredient = Ingredient::query()
+                    ->lockForUpdate()
+                    ->find($ingredientId);
+
+                if (! $lockedIngredient instanceof Ingredient
+                    || (int) $lockedIngredient->workspace_id !== (int) $lockedWorkspace->id) {
+                    throw new AuthorizationException;
+                }
+
+                Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+
+                return $this->persistUpdate($lockedIngredient, $state, $user);
+            },
+        );
     }
 
     public function duplicate(Ingredient $source, User $user): Ingredient

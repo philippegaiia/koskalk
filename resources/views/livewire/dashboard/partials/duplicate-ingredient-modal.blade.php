@@ -16,6 +16,8 @@
             'duplicateFailed' => __('ingredients.duplicate.errors.duplicate_failed'),
             'invalidResponse' => __('ingredients.duplicate.errors.invalid_response'),
             'reloadGuidance' => __('ingredients.duplicate.errors.reload_guidance'),
+            'review' => __('ingredients.duplicate.preview.review'),
+            'source' => __('ingredients.duplicate.preview.source'),
             'unavailable' => __('ingredients.duplicate.preview.unavailable'),
         ]),
     })"
@@ -116,7 +118,7 @@
                                     <span
                                         class="shrink-0 text-xs font-medium"
                                         :class="item.duplication.available ? 'text-[var(--color-accent-strong)]' : 'text-[var(--color-danger-strong)]'"
-                                        x-text="item.duplication.available ? '{{ __('ingredients.duplicate.preview.review') }}' : '{{ __('ingredients.duplicate.preview.unavailable') }}'"
+                                        x-text="item.duplication.available ? messages.review : messages.unavailable"
                                     ></span>
                                 </button>
                             </template>
@@ -191,11 +193,11 @@
                                                 <dl class="mt-2 grid gap-2 sm:grid-cols-3">
                                                     <div>
                                                         <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.koh_sap_range') }}</dt>
-                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.koh_sap.minimum}–${selected.duplication.chemistry.koh_sap.maximum} ({{ __('ingredients.duplicate.preview.source') }} ${selected.duplication.chemistry.koh_sap.original})`"></dd>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.koh_sap.minimum}–${selected.duplication.chemistry.koh_sap.maximum} (${messages.source} ${selected.duplication.chemistry.koh_sap.original})`"></dd>
                                                     </div>
                                                     <div>
                                                         <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.naoh_sap_range') }}</dt>
-                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.naoh_sap.minimum}–${selected.duplication.chemistry.naoh_sap.maximum} ({{ __('ingredients.duplicate.preview.source') }} ${selected.duplication.chemistry.naoh_sap.original})`"></dd>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.naoh_sap.minimum}–${selected.duplication.chemistry.naoh_sap.maximum} (${messages.source} ${selected.duplication.chemistry.naoh_sap.original})`"></dd>
                                                     </div>
                                                     <div>
                                                         <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.fatty_acid_total_range') }}</dt>
@@ -207,7 +209,7 @@
                                                         <p class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.fatty_acid_ranges') }}</p>
                                                         <ul class="mt-1 space-y-1">
                                                             <template x-for="fattyAcid in selected.duplication.chemistry.fatty_acids" :key="fattyAcid.id">
-                                                                <li class="numeric" x-text="fattyAcid.display || `${fattyAcid.name}: ${fattyAcid.minimum}%–${fattyAcid.maximum}% ({{ __('ingredients.duplicate.preview.source') }} ${fattyAcid.original}%)`"></li>
+                                                                <li class="numeric" x-text="fattyAcid.display || `${fattyAcid.name}: ${fattyAcid.minimum}%–${fattyAcid.maximum}% (${messages.source} ${fattyAcid.original}%)`"></li>
                                                             </template>
                                                         </ul>
                                                     </div>

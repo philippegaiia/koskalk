@@ -292,6 +292,18 @@ test('keeps trusted chemistry limit metadata bounded in the preview', () => {
     assert.equal(Object.hasOwn(modal.selected.duplication.chemistry, 'source_data'), false);
 });
 
+test('keeps punctuation safe when localized strings are supplied through the factory', () => {
+    const punctuationMessages = {
+        ...messages,
+        review: "Review O'Reilly `candidate` \\\\ café Ω",
+        source: "source's `value` \\\\ Ω",
+    };
+    const modal = createIngredientDuplicationModal({ messages: punctuationMessages });
+
+    assert.equal(modal.messages.review, punctuationMessages.review);
+    assert.equal(modal.messages.source, punctuationMessages.source);
+});
+
 test('bounds and normalizes optional preview metadata', async () => {
     let resolveSearch;
     const modal = createIngredientDuplicationModal({

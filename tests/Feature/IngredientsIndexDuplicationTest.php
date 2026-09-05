@@ -48,6 +48,9 @@ it('renders a preview-only accessible duplication dialog with its data disclosur
         ->assertSee('aria-modal="true"', false)
         ->assertSee('for="ingredient-duplication-search"', false)
         ->assertSee('ingredientDuplicationModal', false)
+        ->assertSee('JSON.parse(', false)
+        ->assertSee('messages.review', false)
+        ->assertSee('messages.source', false)
         ->assertSee('!confirming && closeModal()', false)
         ->assertSee('KOH SAP range')
         ->assertSee('NaOH SAP range')
@@ -66,7 +69,9 @@ it('registers the duplication factory and keeps dismissal guarded during confirm
         ->and($partial)->toContain('@click.self="!confirming && closeModal()"')
         ->and($partial)->toContain('@keydown.escape.window="!confirming && closeModal()"')
         ->and($partial)->toContain('selected.duplication.chemistry.koh_sap.minimum')
-        ->and($partial)->toContain('selected.duplication.chemistry.fatty_acids');
+        ->and($partial)->toContain('selected.duplication.chemistry.fatty_acids')
+        ->and($partial)->not->toContain("x-text=\"item.duplication.available ? '{{ __('")
+        ->and($partial)->not->toContain("{{ __('ingredients.duplicate.preview.source') }}");
 });
 
 it('searches platform ingredients for duplication', function () {

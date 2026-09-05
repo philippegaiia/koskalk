@@ -102,6 +102,16 @@ scrolls to the bottom Save will silently not save it — and vice versa.
 **Proposal:** unify. Either everything submits from one bar, or the two workspace overlays
 autosave on blur. Mixed models are what cause the lost-edit reports.
 
+> **Withdrawn 2026-09-05 (§7.1).** The premise is wrong. `blade.php:40` opens
+> `@if ($isPlatformIngredient)` and `:180` closes it, enclosing **both** customisation cards; the
+> main Save bar sits inside `@unless ($isPlatformIngredient)` at `:185`. The cards and the Save bar
+> are **mutually exclusive** and never appear together, so there are not three save models and
+> nothing "silently does not save". The unification proposal above is withdrawn. The underlying
+> complaint that survives is F2: `{{ $this->form }}` renders unconditionally at `:182-184`, so a
+> platform ingredient still shows a large disabled 5-tab form above two editable cards — an inert
+> surface adjacent to an editable one, which is a presentation problem, not a save-model conflict.
+> See §7.2(a).
+
 ---
 
 ### F4 — Workspace-scoped edits are not labelled as shared
@@ -406,6 +416,13 @@ This audit was written against the codebase and the design skills without first 
   reference surface should stay **concise**: badge-level facts (INCI, CAS/EC, allergens) plus a link
   out. Any proposal that expands this page into a full technical reference would violate the rule as
   well as lose the cheaper-fix argument.
+
+  > **Withdrawn 2026-09-05 (§7.1).** I over-applied this rule. It assigns WordPress the *public*
+  > marketing site, *editorial* content and *long-form end-user documentation*. Ingredient technical
+  > data — INCI, CAS/EC, allergens, SAP values, fatty-acid profiles — is **application domain data,
+  > not documentation**, and nothing in the rule prohibits displaying it in-app. The platform
+  > reference surface may legitimately be as rich as the data supports. The delete-first argument for
+  > F2 (§6.1) stands on the cheaper-fix ladder alone, not on this rule.
 - **`livewire.md` → checked and cleared, not filed.** The rule says *"Enforce with the throwing
   `authorize()` call… in controllers and Livewire"*, but `IngredientEditor.php:210` uses
   `abort_if($this->isReadOnly(), 403)`. Measured before ruling: `$this->authorize()` appears 12
@@ -416,3 +433,107 @@ This audit was written against the codebase and the design skills without first 
 
 **Process note for next time:** read `.ai/rules/index.md` and load every rule whose glob matches the
 file under review *before* writing findings — the same discipline as reading the governing spec.
+
+---
+
+## 7. Evaluation of the journey-based revision brief (2026-09-05)
+
+A review brief proposed reorganising this audit around **three journeys** — *customize a platform
+ingredient*, *duplicate a platform ingredient*, *create an ingredient* — and correcting six
+findings. Every correction was checked against the code. **All six hold up.** Two need refinement
+and one needs pushing back on before §4 is rewritten.
+
+### 7.1 Verified as correct
+
+**F1 — `isReadOnly()` is private.** Confirmed: `IngredientEditor.php:1380`
+`private function isReadOnly(): bool`. So §4 #1 ("gate the save bar on `isReadOnly()`") is **not
+implementable as written** — Blade cannot call it. `soapChemistryAvailable()` is private too
+(`:1389`). *Accepted.*
+
+**F5 — classification is already handled.** Confirmed: `IngredientEditor.php:749`
+`->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')`. The Composition tab
+already hides itself for single ingredients. My original F5 **framed designed behaviour as a bug**.
+*Accepted — F5 must be rewritten, not fixed.*
+
+**F2 — the WordPress rule does not prohibit in-app technical data.** Re-read `views.md`: it assigns
+WordPress the *"public soapkraft.com site, marketing, editorial content, and long-form end-user
+documentation"*; Laravel keeps *"concise task copy, contextual help, and visible safety/compliance
+warnings"*. INCI, CAS/EC, allergens and SAP values are **application domain data, not
+documentation**. I over-applied the rule in §6.7 to argue for capping the reference surface.
+*Accepted — §6.7's third bullet is wrong and is withdrawn.*
+
+**F3 — not three save models; the cards and the Save bar are mutually exclusive.** Confirmed.
+`blade.php:40` opens `@if ($isPlatformIngredient)` and `:180` closes it, enclosing the guidance card
+(`:91-148`) and the material-code card (`:150-179`). The main Save bar sits inside
+`@unless ($isPlatformIngredient)` at `:185`. A platform ingredient gets the cards and no Save bar;
+a user-owned ingredient gets the Save bar and no cards. *Accepted — F3 is withdrawn as stated.*
+
+**F6/F11 — reuse the whole dirty-state pattern, including navigation protection.** The existing
+pattern is broader than the indicator I proposed reusing: `component.js:1109`
+`dirtyStateRegistry.blocksNavigation()` and `:1138`
+`window.addEventListener('beforeunload', …)`. My §4 #2 ("adopt the indicator, with or without its
+autosave") would have taken the indicator and **discarded the protection**. *Accepted — an indicator
+alone does not prevent lost edits.*
+
+**F8 — trust belongs in the duplication journey, not only in a warning.** Confirmed, and the
+mechanism is richer than the brief states. `UserIngredientAuthoringService::duplicate()` (`:188`) is
+a first-class flow; `duplicateSourceData()` (`:545`) writes `user_authoring.trusted_koh_sap_value`
+**and** `trusted_fatty_acid_profile` into the copy's `source_data`, and `hasInheritedSoapChemistry()`
+(`IngredientEditor.php:1400`) reads exactly those keys. *Accepted.*
+
+### 7.2 Refinements the brief does not mention
+
+**(a) F3 dies, but F2 survives untouched — the two were entangled.** `blade.php:182-184` renders
+`{{ $this->form }}` **unconditionally**, for platform ingredients too. A platform ingredient
+therefore shows two editable cards, no Save bar, *and a large disabled 5-tab form*. That is not
+three save models — but it is still an editable surface sitting directly above an inert one.
+Withdrawing F3 does not touch F2.
+
+**(b) F5 has a real defect, just not the one I named.** `->visible()` reads
+`$get('ingredient_structure')` — **live form state, not the persisted model** — while
+`persistTabInQueryString('ingredient-tab')` (`:646`) stores the active tab in the URL. Switching a
+blend to single hides the tab but leaves the query string pointing at it, so on reload Filament is
+asked to activate a tab that no longer exists. And hiding ≠ clearing: the constituent rows are still
+in state. Both halves need handling.
+
+**(c) Duplication has hard guardrails that journey 2 must surface.** From
+`UserIngredientAuthoringService::duplicate()`:
+- only **platform** ingredients can be duplicated (`duplicate_platform_only`, `:190`);
+- the category must be workspace-authorable — **soapmaking alkalis are platform-only**
+  (`assertWorkspaceAuthorableCategory`, `:362`);
+- **a lipid with no `sapProfile->koh_sap_value` cannot be duplicated at all**
+  (`duplicate_soap_profile_required`, `:200`) — a hard blocker, absent from this audit entirely;
+- **images are dropped** (`featured_image_*` / `icon_image_*` → null, `:237-240`) and
+  `info_markdown` → null (`:235`), while platform guidance is copied across as a workspace override
+  (`:246-254`).
+
+Copied by `deepCopyRelations()` (`:294`): `sapProfile`, `fattyAcidEntries`, `components`,
+`allergenEntries`, `substanceEntries`, `functionAssignments`, `ifraCertificates` + `limits`, and up
+to 5 aliases. Reset: `public_id`, `catalog_key` (→ `USR…`), owner (→ workspace), `visibility`
+(→ Private), `requires_admin_review` (→ false).
+
+### 7.3 One pushback
+
+The brief says the `isReadOnly()` fix "needs adjustment because that method is currently private".
+Making it public would fix the Save bar, but it is the **wrong shape** for the journey model being
+requested. `isReadOnly()` (`:1380`) returns true for two different situations:
+
+1. a **platform** ingredient — the form is read-only permanently, *and* the user has two editable
+   workspace cards below it (journey 1);
+2. a **user-owned** ingredient the user may not edit (a **Viewer**) — *everything* is read-only and
+   there are no cards.
+
+A single boolean cannot express "read-only form **plus** editable cards" versus "read-only
+everything". If §4 is organised by journey, the view needs **two distinct signals** — e.g.
+`isPlatformReference()` and `canEditIngredient()` — rather than one widened `isReadOnly()`. Otherwise
+Viewers and platform-customisers keep rendering identically, which is exactly the permission
+inconsistency the brief ranks first.
+
+### 7.4 Verdict
+
+All six corrections are sound and accepted. Three refinements (§7.2) and one change of shape (§7.3)
+must be folded in before §4 is rewritten.
+
+**Not yet done:** §4 has **not** been reorganised around the three journeys; no expected behaviour or
+acceptance criteria have been written; §6.7's third bullet and F3 are still present and need
+withdrawing. This stage remains analysis-only — no application code changed.

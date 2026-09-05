@@ -38,6 +38,7 @@ use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -96,6 +97,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
      * @var array<string, mixed>
      */
     public array $data = [];
+
+    public bool $confirmCompositionRemoval = false;
 
     /**
      * @var array<string, mixed>
@@ -291,6 +294,15 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
+        if ($this->isCompositionRemovalPending() && ! $this->confirmCompositionRemoval) {
+            $this->addError(
+                'confirmCompositionRemoval',
+                __('ingredients.editor.validation.composition_removal_confirmation'),
+            );
+
+            return null;
+        }
+
         /** @var array<string, mixed> $state */
         $state = $this->mergeCustomCompositionState($this->form->getState());
         $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
@@ -402,6 +414,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 ? $workspaceIngredientGuidances->recordFor($workspace, $ingredient)?->guidance_html
                 : null;
         $this->form->fill($refreshedState);
+        $this->confirmCompositionRemoval = false;
 
         if (! $wasEditing) {
             session()->flash('status', $statusMessage);
@@ -710,6 +723,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function updatedData(mixed $value, ?string $key): void
     {
+        if ($key === 'ingredient_structure') {
+            $this->confirmCompositionRemoval = false;
+            $this->resetErrorBag('confirmCompositionRemoval');
+
+            return;
+        }
+
         if (! is_string($key) || ! preg_match('/^components\.\d+\.percentage_in_parent$/', $key)) {
             return;
         }
@@ -770,6 +790,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->required()
                                             ->live()
                                             ->helperText(__('ingredients.editor.details.type.helper'))
+                                            ->columnSpanFull(),
+                                        SchemaView::make('livewire.dashboard.partials.ingredient-composition-removal-confirmation')
+                                            ->visible(fn (): bool => $this->isCompositionRemovalPending())
                                             ->columnSpanFull(),
                                     ]),
                                 Grid::make([
@@ -1092,6 +1115,16 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->statePath('data')
             ->disabled(! $this->canEditIngredientData())
             ->model($this->currentIngredient() ?? Ingredient::class);
+    }
+
+    public function compositionRemovalConfirmationForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Checkbox::make('confirmCompositionRemoval')
+                    ->label(__('ingredients.editor.details.composition_removal_confirmation'))
+                    ->live(),
+            ]);
     }
 
     public function workspaceGuidanceForm(Schema $schema): Schema
@@ -1741,6 +1774,30 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $state['composition_source_notes'] = $this->data['composition_source_notes'] ?? null;
 
         return $state;
+    }
+
+    public function isCompositionRemovalPending(): bool
+    {
+        if (($this->data['ingredient_structure'] ?? null) !== 'ingredient') {
+            return false;
+        }
+
+        $hasDraftComponents = collect($this->data['components'] ?? [])
+            ->contains(fn (mixed $row): bool => is_array($row) && filled($row['component_ingredient_id'] ?? null));
+
+        if ($hasDraftComponents) {
+            return true;
+        }
+
+        $ingredient = $this->currentIngredient();
+
+        if (! $ingredient instanceof Ingredient) {
+            return false;
+        }
+
+        $ingredient->loadMissing('components');
+
+        return $ingredient->components->isNotEmpty();
     }
 
     public function componentIngredientHelperText(mixed $ingredientId): Htmlable|string

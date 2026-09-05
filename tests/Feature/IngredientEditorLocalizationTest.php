@@ -681,6 +681,40 @@ it('uses the approved blend composition copy', function () {
         ->assertSeeText('Composition source');
 });
 
+it('shows the translated blend removal warning and acknowledgement in the details tab', function (): void {
+    $user = User::factory()->create();
+    $componentIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => 'private',
+        'is_active' => true,
+    ]);
+    $blend = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Saved blend for warning',
+        'category' => IngredientCategory::Other->value,
+        'ingredient_structure' => 'blend',
+        'components' => [[
+            'component_ingredient_id' => $componentIngredient->id,
+            'percentage_in_parent' => 100,
+        ]],
+    ], $user);
+
+    $this->actingAs($user);
+
+    Livewire::withQueryParams(['ingredient-tab' => 'composition'])
+        ->test(IngredientEditor::class, ['ingredient' => $blend])
+        ->set('data.ingredient_structure', 'ingredient')
+        ->assertDontSeeText('Blend composition')
+        ->assertSeeText('Saving as a single ingredient will remove its blend composition. Switch back to Blend to keep it.')
+        ->assertSeeText('Remove blend composition when saving')
+        ->assertSeeHtml('wire:model.live="confirmCompositionRemoval"')
+        ->set('confirmCompositionRemoval', true)
+        ->set('data.ingredient_structure', 'blend')
+        ->assertDontSeeText('Saving as a single ingredient will remove its blend composition. Switch back to Blend to keep it.')
+        ->assertDontSeeText('Remove blend composition when saving')
+        ->assertSet('confirmCompositionRemoval', false);
+});
+
 it('does not let a manually created ingredient expose soap chemistry', function () {
     $user = User::factory()->create();
 
@@ -892,6 +926,8 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.details.type.label',
         'editor.details.type.single',
         'editor.details.type.blend',
+        'editor.details.composition_removal_warning',
+        'editor.details.composition_removal_confirmation',
         'editor.supplier.section',
         'editor.media.section',
         'editor.composition.section',
@@ -905,6 +941,7 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.status.created',
         'editor.status.saved',
         'editor.validation.component_unavailable',
+        'editor.validation.composition_removal_confirmation',
         'editor.validation.component_limit',
         'editor.validation.component_duplicate',
         'editor.validation.component_share',

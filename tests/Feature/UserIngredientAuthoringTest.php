@@ -775,6 +775,143 @@ it('saves a blend composition and its source from the custom editor rows', funct
         ->and($blend->composition_source_notes)->toBe('Supplier blend spec');
 });
 
+it('refuses to discard a saved blend composition without confirmation', function (): void {
+    $user = User::factory()->create();
+    $firstComponent = Ingredient::factory()->create([
+        'display_name' => 'First Blend Component',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $secondComponent = Ingredient::factory()->create([
+        'display_name' => 'Second Blend Component',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $service = app(UserIngredientAuthoringService::class);
+    $blend = $service->create([
+        'name' => 'Saved Blend',
+        'category' => IngredientCategory::Other->value,
+        'ingredient_structure' => 'blend',
+        'notes' => 'Original notes',
+        'composition_source_notes' => 'Original supplier source',
+        'components' => [
+            [
+                'component_ingredient_id' => $firstComponent->id,
+                'percentage_in_parent' => 60,
+            ],
+            [
+                'component_ingredient_id' => $secondComponent->id,
+                'percentage_in_parent' => 40,
+            ],
+        ],
+    ], $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $blend])
+        ->set('data.name', 'Edited name')
+        ->set('data.notes', 'Edited notes')
+        ->set('data.composition_source_notes', 'Edited source')
+        ->set('data.ingredient_structure', 'ingredient')
+        ->call('save')
+        ->assertHasErrors([
+            'confirmCompositionRemoval' => __('ingredients.editor.validation.composition_removal_confirmation'),
+        ])
+        ->assertSet('data.name', 'Edited name')
+        ->assertSet('confirmCompositionRemoval', false);
+
+    $persistedBlend = $blend->fresh(['components']);
+
+    expect($persistedBlend->display_name)->toBe('Saved Blend')
+        ->and($persistedBlend->notes)->toBe('Original notes')
+        ->and($persistedBlend->composition_source_notes)->toBe('Original supplier source')
+        ->and($service->formData($persistedBlend)['ingredient_structure'])->toBe('blend')
+        ->and($persistedBlend->components)->toHaveCount(2)
+        ->and($persistedBlend->components->pluck('component_ingredient_id')->all())
+        ->toBe([$firstComponent->id, $secondComponent->id])
+        ->and($persistedBlend->components->pluck('percentage_in_parent')->map(fn (mixed $percentage): float => (float) $percentage)->all())
+        ->toBe([60.0, 40.0]);
+});
+
+it('removes a saved blend composition after confirmation', function (): void {
+    $user = User::factory()->create();
+    $firstComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $secondComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $service = app(UserIngredientAuthoringService::class);
+    $blend = $service->create([
+        'name' => 'Blend to Convert',
+        'category' => IngredientCategory::Other->value,
+        'ingredient_structure' => 'blend',
+        'composition_source_notes' => 'Supplier specification',
+        'components' => [
+            ['component_ingredient_id' => $firstComponent->id, 'percentage_in_parent' => 55],
+            ['component_ingredient_id' => $secondComponent->id, 'percentage_in_parent' => 45],
+        ],
+    ], $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $blend])
+        ->set('data.ingredient_structure', 'ingredient')
+        ->set('confirmCompositionRemoval', true)
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('confirmCompositionRemoval', false);
+
+    $persistedIngredient = $blend->fresh(['components']);
+
+    expect($persistedIngredient->components)->toHaveCount(0)
+        ->and($persistedIngredient->composition_source_notes)->toBeNull()
+        ->and($service->formData($persistedIngredient)['ingredient_structure'])->toBe('ingredient');
+});
+
+it('keeps draft blend constituents when switching back from a single ingredient', function (): void {
+    $user = User::factory()->create();
+    $firstComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $secondComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('addComponent', $firstComponent->id)
+        ->call('addComponent', $secondComponent->id)
+        ->set('data.components.0.percentage_in_parent', '55')
+        ->set('data.components.1.percentage_in_parent', '45')
+        ->set('confirmCompositionRemoval', true)
+        ->set('data.ingredient_structure', 'ingredient')
+        ->assertSet('confirmCompositionRemoval', false)
+        ->set('data.ingredient_structure', 'blend')
+        ->assertSet('data.components.0.component_ingredient_id', $firstComponent->id)
+        ->assertSet('data.components.0.percentage_in_parent', '55')
+        ->assertSet('data.components.1.component_ingredient_id', $secondComponent->id)
+        ->assertSet('data.components.1.percentage_in_parent', '45');
+});
+
 it('shows an immediate error when a component share is outside the allowed range', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

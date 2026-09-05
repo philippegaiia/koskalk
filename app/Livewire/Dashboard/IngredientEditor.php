@@ -529,26 +529,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function canEditWorkspaceGuidance(): bool
     {
-        $user = $this->freshAuthenticatedUser();
-        $ingredient = $this->ingredientId === null
-            ? null
-            : Ingredient::query()->find($this->ingredientId);
-
-        if (! $user instanceof User
-            || ! $ingredient instanceof Ingredient
-            || ! $this->isPlatformIngredient($ingredient)
-            || ! $ingredient->is_active) {
-            return false;
-        }
-
         try {
-            $workspace = $this->authorizeDestinationWorkspace($user);
+            $this->authorizePlatformWorkspaceContext();
         } catch (AuthorizationException) {
             return false;
         }
 
-        return $workspace instanceof Workspace
-            && Gate::forUser($user)->allows('createInWorkspace', [Ingredient::class, $workspace]);
+        return true;
     }
 
     public function addComponent(int $ingredientId): void
@@ -1558,26 +1545,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function canEditWorkspaceMaterialCode(): bool
     {
-        $user = $this->freshAuthenticatedUser();
-        $ingredient = $this->ingredientId === null
-            ? null
-            : Ingredient::query()->find($this->ingredientId);
-
-        if (! $user instanceof User
-            || ! $ingredient instanceof Ingredient
-            || ! $this->isPlatformIngredient($ingredient)
-            || ! $ingredient->is_active) {
-            return false;
-        }
-
         try {
-            $workspace = $this->authorizeDestinationWorkspace($user);
+            $this->authorizePlatformWorkspaceContext();
         } catch (AuthorizationException) {
             return false;
         }
 
-        return $workspace instanceof Workspace
-            && Gate::forUser($user)->allows('createInWorkspace', [Ingredient::class, $workspace]);
+        return true;
     }
 
     private function isEditing(): bool

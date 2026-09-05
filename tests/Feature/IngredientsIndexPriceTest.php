@@ -2,7 +2,9 @@
 
 use App\Enums\IngredientCategory;
 use App\Enums\MassDisplaySystem;
+use App\Enums\MaterialPriceSource;
 use App\Enums\OwnerType;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
@@ -12,6 +14,8 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\Services\CurrentMaterialPriceService;
 use App\Services\IngredientFormulaUsageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
@@ -21,6 +25,21 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+/**
+ * @return array{destination_workspace_id: int, destination_workspace_signature: string}
+ */
+function signedPriceDestinationPayload(User $user, Workspace $workspace): array
+{
+    return [
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => hash_hmac(
+            'sha256',
+            (string) $user->id.'|'.$workspace->id,
+            (string) config('app.key'),
+        ),
+    ];
+}
 
 it('shows platform ingredients whether or not the user has priced them', function () {
     $user = User::factory()->create();
@@ -399,12 +418,14 @@ it('updates a user ingredient price via the price endpoint', function () {
     ]);
 
     rememberIngredientPriceForWorkspace($user, $olive, '5.25', 'EUR');
+    $workspace = Workspace::withoutGlobalScopes()->where('owner_user_id', $user->id)->firstOrFail();
 
     actingAs($user);
 
     $response = $this->postJson(route('ingredients.update-price'), [
         'ingredient_id' => $olive->id,
         'price_per_kg' => '6.5000',
+        ...signedPriceDestinationPayload($user, $workspace),
     ]);
 
     $response->assertSuccessful();
@@ -421,6 +442,7 @@ it('updates a user ingredient price via the price endpoint', function () {
 it('does not allow pricing another users private ingredient through the endpoint', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
 
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Other User Lavender',
@@ -435,6 +457,7 @@ it('does not allow pricing another users private ingredient through the endpoint
     $this->postJson(route('ingredients.update-price'), [
         'ingredient_id' => $ingredient->id,
         'price_per_kg' => '6.5000',
+        ...signedPriceDestinationPayload($user, $workspace),
     ])->assertNotFound();
 
     expect(CurrentMaterialPrice::query()
@@ -445,7 +468,7 @@ it('does not allow pricing another users private ingredient through the endpoint
 
 it('uses the users default currency when creating a price via the price endpoint', function () {
     $user = User::factory()->create();
-    Workspace::factory()->create([
+    $workspace = Workspace::factory()->create([
         'owner_user_id' => $user->id,
         'default_currency' => 'USD',
     ]);
@@ -463,6 +486,7 @@ it('uses the users default currency when creating a price via the price endpoint
     $this->postJson(route('ingredients.update-price'), [
         'ingredient_id' => $olive->id,
         'price_per_kg' => '6.5000',
+        ...signedPriceDestinationPayload($user, $workspace),
     ])->assertSuccessful();
 
     expect(CurrentMaterialPrice::query()
@@ -473,7 +497,7 @@ it('uses the users default currency when creating a price via the price endpoint
 
 it('uses the workspace currency when updating via the price endpoint', function () {
     $user = User::factory()->create();
-    Workspace::factory()->create([
+    $workspace = Workspace::factory()->create([
         'owner_user_id' => $user->id,
         'default_currency' => 'USD',
     ]);
@@ -493,12 +517,146 @@ it('uses the workspace currency when updating via the price endpoint', function 
     $this->postJson(route('ingredients.update-price'), [
         'ingredient_id' => $olive->id,
         'price_per_kg' => '6.5000',
+        ...signedPriceDestinationPayload($user, $workspace),
     ])->assertSuccessful();
 
     expect(CurrentMaterialPrice::query()
         ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $olive->id)
         ->value('currency'))->toBe('USD');
+});
+
+it('rejects a stale captured price destination without changing either workspace', function (): void {
+    $user = User::factory()->create();
+    $workspaceA = Workspace::factory()->for($user, 'owner')->create();
+    $workspaceB = Workspace::factory()->create();
+    WorkspaceMember::factory()->for($workspaceB)->for($user)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Stale price ingredient',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+
+    app(CurrentMaterialPriceService::class)->rememberIngredient(
+        workspace: $workspaceA,
+        ingredient: $ingredient,
+        pricePerMassUnit: '5.25',
+        massUnit: 'kg',
+        currency: 'EUR',
+        source: MaterialPriceSource::ManualCosting,
+        sourceId: null,
+        actor: $user,
+    );
+    app(CurrentMaterialPriceService::class)->rememberIngredient(
+        workspace: $workspaceB,
+        ingredient: $ingredient,
+        pricePerMassUnit: '7.50',
+        massUnit: 'kg',
+        currency: 'EUR',
+        source: MaterialPriceSource::ManualCosting,
+        sourceId: null,
+        actor: $user,
+    );
+
+    $recipeVersionA = RecipeVersion::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspaceA->id,
+        'workspace_id' => $workspaceA->id,
+    ]);
+    $costingA = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $recipeVersionA->id,
+        'user_id' => $user->id,
+        'currency' => 'EUR',
+    ]);
+    $costingItemA = RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costingA->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+        'price_per_kg' => '5.2500',
+    ]);
+    $recipeVersionB = RecipeVersion::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspaceB->id,
+        'workspace_id' => $workspaceB->id,
+    ]);
+    $costingB = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $recipeVersionB->id,
+        'user_id' => $user->id,
+        'currency' => 'EUR',
+    ]);
+    $costingItemB = RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costingB->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+        'price_per_kg' => '7.5000',
+    ]);
+
+    $user->forceFill(['active_workspace_id' => $workspaceA->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+    actingAs($user);
+    $signature = Livewire::test(IngredientsIndex::class)
+        ->instance()
+        ->duplicateDestinationSignature();
+
+    $user->forceFill(['active_workspace_id' => $workspaceB->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    $this->postJson(route('ingredients.update-price'), [
+        'ingredient_id' => $ingredient->id,
+        'price_per_kg' => '99.0000',
+        'destination_workspace_id' => $workspaceA->id,
+        'destination_workspace_signature' => $signature,
+    ])->assertNotFound();
+
+    expect(CurrentMaterialPrice::query()
+        ->where('workspace_id', $workspaceA->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->value('price_per_canonical_unit'))->toBe('0.005250000000')
+        ->and(CurrentMaterialPrice::query()
+            ->where('workspace_id', $workspaceB->id)
+            ->where('ingredient_id', $ingredient->id)
+            ->value('price_per_canonical_unit'))->toBe('0.007500000000')
+        ->and($costingItemA->fresh()->price_per_kg)->toBe('5.2500')
+        ->and($costingItemB->fresh()->price_per_kg)->toBe('7.5000');
+});
+
+it('rejects a price update without a captured destination', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    $initialPrice = app(CurrentMaterialPriceService::class)->rememberIngredient(
+        workspace: $workspace,
+        ingredient: $ingredient,
+        pricePerMassUnit: '5.25',
+        massUnit: 'kg',
+        currency: 'EUR',
+        source: MaterialPriceSource::ManualCosting,
+        sourceId: null,
+        actor: $user,
+    );
+
+    actingAs($user);
+
+    $this->postJson(route('ingredients.update-price'), [
+        'ingredient_id' => $ingredient->id,
+        'price_per_kg' => '99.0000',
+    ])->assertNotFound();
+
+    expect(CurrentMaterialPrice::query()->whereKey($initialPrice->id)->value('price_per_canonical_unit'))
+        ->toBe('0.005250000000');
 });
 
 it('uses the users default currency when creating a price from the ingredient table', function () {

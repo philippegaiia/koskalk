@@ -132,28 +132,43 @@ class UserIngredientAuthoringService
         ];
     }
 
-    public function create(array $state, User $user, ?Workspace $workspace = null): Ingredient
+    public function create(array $state, User $user): Ingredient
     {
-        return $this->createInWorkspace(
-            $state,
-            $user,
-            func_num_args() >= 3 ? $workspace : $user->company(),
-        );
+        return $this->createInWorkspace($state, $user, $user->company());
     }
 
     public function createInWorkspace(array $state, User $user, ?Workspace $workspace): Ingredient
     {
         if (! $workspace instanceof Workspace) {
-            Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, null]);
+            $ingredient = DB::transaction(function () use ($state, $user): Ingredient {
+                $lockedUser = User::query()->lockForUpdate()->find($user->id);
 
-            return $this->entitlementService->withinCompanyQuotaLock(
-                $user,
-                function (Workspace $lockedWorkspace) use ($state, $user): Ingredient {
-                    Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $lockedWorkspace]);
+                if (! $lockedUser instanceof User) {
+                    throw new AuthorizationException;
+                }
 
-                    return $this->createInLockedWorkspace($state, $user, $lockedWorkspace);
-                },
-            );
+                $lockedUser->forgetAccessibleWorkspaceIds();
+
+                if ($lockedUser->active_workspace_id !== null || $lockedUser->company() instanceof Workspace) {
+                    throw new AuthorizationException;
+                }
+
+                Gate::forUser($lockedUser)->authorize('createInWorkspace', [Ingredient::class, null]);
+
+                return $this->entitlementService->withinCompanyQuotaLock(
+                    $lockedUser,
+                    function (Workspace $lockedWorkspace) use ($state, $lockedUser): Ingredient {
+                        Gate::forUser($lockedUser)->authorize('createInWorkspace', [Ingredient::class, $lockedWorkspace]);
+
+                        return $this->createInLockedWorkspace($state, $lockedUser, $lockedWorkspace);
+                    },
+                );
+            }, attempts: 5);
+
+            $user->refresh();
+            $user->forgetAccessibleWorkspaceIds();
+
+            return $ingredient;
         }
 
         Gate::forUser($user)->authorize('createInWorkspace', [Ingredient::class, $workspace]);
@@ -174,24 +189,22 @@ class UserIngredientAuthoringService
         User $user,
         ?Workspace $workspace = null,
     ): Ingredient {
-        $lockedIngredient = Ingredient::query()->find($ingredient->getKey());
+        $ingredientId = $ingredient->getKey();
 
-        if (! $lockedIngredient instanceof Ingredient) {
+        if (! Ingredient::query()->whereKey($ingredientId)->exists()) {
             throw new AuthorizationException;
         }
-
-        if ($workspace instanceof Workspace
-            && (int) $lockedIngredient->workspace_id !== (int) $workspace->id) {
-            throw new AuthorizationException;
-        }
-
-        Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
 
         if ($workspace instanceof Workspace) {
             return $this->entitlementService->withinWorkspaceQuotaLock(
                 $workspace,
-                function (Workspace $lockedWorkspace) use ($lockedIngredient, $state, $user): Ingredient {
-                    if ((int) $lockedIngredient->workspace_id !== (int) $lockedWorkspace->id) {
+                function (Workspace $lockedWorkspace) use ($ingredientId, $state, $user): Ingredient {
+                    $lockedIngredient = Ingredient::query()
+                        ->lockForUpdate()
+                        ->find($ingredientId);
+
+                    if (! $lockedIngredient instanceof Ingredient
+                        || (int) $lockedIngredient->workspace_id !== (int) $lockedWorkspace->id) {
                         throw new AuthorizationException;
                     }
 
@@ -202,16 +215,22 @@ class UserIngredientAuthoringService
             );
         }
 
+        $lockedIngredient = Ingredient::query()
+            ->lockForUpdate()
+            ->find($ingredientId);
+
+        if (! $lockedIngredient instanceof Ingredient) {
+            throw new AuthorizationException;
+        }
+
+        Gate::forUser($user)->authorize('editWorkspaceIngredient', $lockedIngredient);
+
         return $this->persistUpdate($lockedIngredient, $state, $user);
     }
 
-    public function duplicate(Ingredient $source, User $user, ?Workspace $workspace = null): Ingredient
+    public function duplicate(Ingredient $source, User $user): Ingredient
     {
-        return $this->duplicateIntoWorkspace(
-            $source,
-            $user,
-            func_num_args() >= 3 ? $workspace : $user->company(),
-        );
+        return $this->duplicateIntoWorkspace($source, $user, $user->company());
     }
 
     public function duplicateIntoWorkspace(
@@ -219,46 +238,96 @@ class UserIngredientAuthoringService
         User $user,
         ?Workspace $workspace,
     ): Ingredient {
-        $lockedSource = Ingredient::query()->find($source->getKey());
-
-        if (! $lockedSource instanceof Ingredient) {
-            throw new AuthorizationException;
-        }
-
-        Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$lockedSource, $workspace]);
-
-        if ($lockedSource->category instanceof IngredientCategory) {
-            $this->assertWorkspaceAuthorableCategory($lockedSource->category);
-        }
-
-        if (
-            $lockedSource->category === IngredientCategory::Lipids
-            && $lockedSource->sapProfile?->koh_sap_value === null
-        ) {
-            throw ValidationException::withMessages([
-                'ingredient' => __('ingredients.editor.validation.duplicate_soap_profile_required'),
-            ]);
-        }
+        $sourceId = $source->getKey();
 
         if ($workspace instanceof Workspace) {
+            $sourceSnapshot = Ingredient::query()->find($sourceId);
+
+            if (! $sourceSnapshot instanceof Ingredient) {
+                throw new AuthorizationException;
+            }
+
+            $this->authorizeDuplicateSource($user, $sourceSnapshot, $workspace);
+
             return $this->entitlementService->withinWorkspaceQuotaLock(
                 $workspace,
-                function (Workspace $lockedWorkspace) use ($lockedSource, $user): Ingredient {
-                    Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$lockedSource, $lockedWorkspace]);
+                function (Workspace $lockedWorkspace) use ($sourceId, $user): Ingredient {
+                    $lockedSource = Ingredient::query()
+                        ->lockForUpdate()
+                        ->find($sourceId);
+
+                    if (! $lockedSource instanceof Ingredient) {
+                        throw new AuthorizationException;
+                    }
+
+                    $this->authorizeDuplicateSource($user, $lockedSource, $lockedWorkspace);
 
                     return $this->duplicateInLockedWorkspace($lockedSource, $user, $lockedWorkspace);
                 },
             );
         }
 
-        return $this->entitlementService->withinCompanyQuotaLock(
-            $user,
-            function (Workspace $lockedWorkspace) use ($lockedSource, $user): Ingredient {
-                Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$lockedSource, $lockedWorkspace]);
+        $copy = DB::transaction(function () use ($sourceId, $user): Ingredient {
+            $lockedUser = User::query()->lockForUpdate()->find($user->id);
 
-                return $this->duplicateInLockedWorkspace($lockedSource, $user, $lockedWorkspace);
-            },
-        );
+            if (! $lockedUser instanceof User) {
+                throw new AuthorizationException;
+            }
+
+            $lockedUser->forgetAccessibleWorkspaceIds();
+
+            if ($lockedUser->active_workspace_id !== null || $lockedUser->company() instanceof Workspace) {
+                throw new AuthorizationException;
+            }
+
+            $sourceSnapshot = Ingredient::query()->find($sourceId);
+
+            if (! $sourceSnapshot instanceof Ingredient) {
+                throw new AuthorizationException;
+            }
+
+            $this->authorizeDuplicateSource($lockedUser, $sourceSnapshot, null);
+
+            return $this->entitlementService->withinCompanyQuotaLock(
+                $lockedUser,
+                function (Workspace $lockedWorkspace) use ($sourceId, $lockedUser): Ingredient {
+                    $lockedSource = Ingredient::query()
+                        ->lockForUpdate()
+                        ->find($sourceId);
+
+                    if (! $lockedSource instanceof Ingredient) {
+                        throw new AuthorizationException;
+                    }
+
+                    $this->authorizeDuplicateSource($lockedUser, $lockedSource, $lockedWorkspace);
+
+                    return $this->duplicateInLockedWorkspace($lockedSource, $lockedUser, $lockedWorkspace);
+                },
+            );
+        }, attempts: 5);
+
+        $user->refresh();
+        $user->forgetAccessibleWorkspaceIds();
+
+        return $copy;
+    }
+
+    private function authorizeDuplicateSource(User $user, Ingredient $source, ?Workspace $workspace): void
+    {
+        Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$source, $workspace]);
+
+        if ($source->category instanceof IngredientCategory) {
+            $this->assertWorkspaceAuthorableCategory($source->category);
+        }
+
+        if (
+            $source->category === IngredientCategory::Lipids
+            && $source->sapProfile?->koh_sap_value === null
+        ) {
+            throw ValidationException::withMessages([
+                'ingredient' => __('ingredients.editor.validation.duplicate_soap_profile_required'),
+            ]);
+        }
     }
 
     private function createInLockedWorkspace(array $state, User $user, Workspace $workspace): Ingredient

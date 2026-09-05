@@ -9,16 +9,154 @@ use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\IngredientTranslation;
+use App\Models\ProductionOutputSetting;
 use App\Models\Substance;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
+use App\Models\WorkspaceMember;
+use App\Services\EntitlementService;
 use App\Services\UserIngredientAuthoringService;
+use App\Services\WorkspaceProvisioner;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
+use function Pest\Laravel\mock;
+
 uses(RefreshDatabase::class);
+
+it('rechecks platform source activity after the duplication quota lock opens', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('withinWorkspaceQuotaLock')
+        ->once()
+        ->withArgs(fn (Workspace $destination, Closure $callback): bool => $destination->is($workspace))
+        ->andReturnUsing(function (Workspace $destination, Closure $callback) use ($source): Ingredient {
+            $source->forceFill(['is_active' => false])->save();
+
+            return $callback($destination);
+        });
+    $entitlementService
+        ->shouldReceive('assertCanCreatePrivateIngredientInWorkspace')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $user,
+        $workspace,
+    ))->toThrow(AuthorizationException::class);
+
+    expect($source->fresh()->is_active)->toBeFalse()
+        ->and(Ingredient::query()
+            ->where('owner_type', OwnerType::Workspace)
+            ->where('owner_id', $workspace->id)
+            ->exists())->toBeFalse();
+});
+
+it('rechecks platform source ownership after the duplication quota lock opens', function (): void {
+    $user = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $otherWorkspace = Workspace::factory()->for($otherOwner, 'owner')->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('withinWorkspaceQuotaLock')
+        ->once()
+        ->withArgs(fn (Workspace $destination, Closure $callback): bool => $destination->is($workspace))
+        ->andReturnUsing(function (Workspace $destination, Closure $callback) use ($source, $otherWorkspace): Ingredient {
+            $source->forceFill([
+                'owner_type' => OwnerType::Workspace,
+                'owner_id' => $otherWorkspace->id,
+                'workspace_id' => $otherWorkspace->id,
+                'visibility' => Visibility::Private,
+            ])->save();
+
+            return $callback($destination);
+        });
+    $entitlementService
+        ->shouldReceive('assertCanCreatePrivateIngredientInWorkspace')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $user,
+        $workspace,
+    ))->toThrow(AuthorizationException::class);
+
+    expect($source->fresh()->owner_type)->toBe(OwnerType::Workspace)
+        ->and($source->fresh()->workspace_id)->toBe($otherWorkspace->id)
+        ->and(Ingredient::query()
+            ->where('owner_type', OwnerType::Workspace)
+            ->where('owner_id', $workspace->id)
+            ->exists())->toBeFalse();
+});
+
+it('rejects an explicit null duplicate after another user instance provisions a workspace', function (): void {
+    $user = User::factory()->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+    $warmedUser = User::query()->findOrFail($user->id);
+
+    expect($warmedUser->company())->toBeNull()
+        ->and($warmedUser->accessibleWorkspaceIds())->toBe([]);
+
+    $otherInstance = User::query()->findOrFail($user->id);
+    app(WorkspaceProvisioner::class)->ensureOwnerWorkspace($otherInstance);
+
+    $before = [
+        'workspaces' => Workspace::withoutGlobalScopes()->count(),
+        'memberships' => WorkspaceMember::withoutGlobalScopes()->count(),
+        'settings' => ProductionOutputSetting::query()->count(),
+        'active_workspace_id' => User::query()->whereKey($user->id)->value('active_workspace_id'),
+    ];
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $warmedUser,
+        null,
+    ))->toThrow(AuthorizationException::class);
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->exists())->toBeFalse()
+        ->and(Workspace::withoutGlobalScopes()->count())->toBe($before['workspaces'])
+        ->and(WorkspaceMember::withoutGlobalScopes()->count())->toBe($before['memberships'])
+        ->and(ProductionOutputSetting::query()->count())->toBe($before['settings'])
+        ->and(User::query()->whereKey($user->id)->value('active_workspace_id'))
+        ->toBe($before['active_workspace_id']);
+});
 
 it('duplicates a platform ingredient into a workspace-owned copy with all data except images', function () {
     $user = User::factory()->create();

@@ -26,7 +26,12 @@
                             fetch('{{ route('ingredients.update-price') }}', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                                body: JSON.stringify({ ingredient_id: {{ $ingredient->id }}, price_per_kg: price })
+                                body: JSON.stringify({
+                                    ingredient_id: {{ $ingredient->id }},
+                                    price_per_kg: price,
+                                    destination_workspace_id: @json($destinationWorkspaceId ?? null),
+                                    destination_workspace_signature: @json($duplicateDestinationSignature ?? null),
+                                })
                             })
                         "
                         type="text"

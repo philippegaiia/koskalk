@@ -232,7 +232,7 @@ it('denies a viewer before creating an ingredient in the supplied workspace', fu
         'role' => WorkspaceMemberRole::Viewer,
     ]);
 
-    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->create([
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->createInWorkspace([
         'name' => 'Viewer draft',
         'category' => 'other',
     ], $viewer, $workspace))
@@ -244,7 +244,7 @@ it('denies a viewer before creating an ingredient in the supplied workspace', fu
 it('does not create a replacement when an opened ingredient is deleted', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
-    $ingredient = app(UserIngredientAuthoringService::class)->create([
+    $ingredient = app(UserIngredientAuthoringService::class)->createInWorkspace([
         'name' => 'Opened ingredient',
         'category' => 'other',
     ], $owner, $workspace);

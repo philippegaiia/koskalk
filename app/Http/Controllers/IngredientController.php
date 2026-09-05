@@ -66,13 +66,28 @@ class IngredientController extends Controller
             return response()->json(['ok' => false], 403);
         }
 
-        $validated = $request->validate([
-            'ingredient_id' => ['required', 'integer', 'exists:ingredients,id'],
-            'price_per_kg' => ['required', 'numeric', 'min:0'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'ingredient_id' => ['required', 'integer', 'exists:ingredients,id'],
+                'price_per_kg' => ['required', 'numeric', 'min:0'],
+                'destination_workspace_id' => ['present', 'nullable', 'integer'],
+                'destination_workspace_signature' => ['required', 'string', 'size:64'],
+            ]);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('destination_workspace_id', $exception->errors())
+                || array_key_exists('destination_workspace_signature', $exception->errors())) {
+                return response()->json(['ok' => false], 404);
+            }
+
+            throw $exception;
+        }
 
         $ingredient = Ingredient::query()->findOrFail($validated['ingredient_id']);
-        $workspace = $user->company();
+        try {
+            $workspace = $this->boundDuplicateDestination($user, $validated);
+        } catch (AuthorizationException) {
+            return response()->json(['ok' => false], 404);
+        }
 
         abort_unless($workspace instanceof Workspace, 404);
 

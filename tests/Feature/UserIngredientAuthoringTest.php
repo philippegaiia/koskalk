@@ -13,6 +13,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\IngredientTranslation;
 use App\Models\Plan;
+use App\Models\ProductionOutputSetting;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
@@ -20,9 +21,11 @@ use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
+use App\Services\EntitlementService;
 use App\Services\LocalePreferenceResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
+use App\Services\WorkspaceProvisioner;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +33,81 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
+use function Pest\Laravel\mock;
+
 uses(RefreshDatabase::class);
+
+it('rechecks workspace ownership after the quota lock opens', function (): void {
+    $user = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $workspaceA = Workspace::factory()->for($user, 'owner')->create();
+    $workspaceB = Workspace::factory()->for($otherOwner, 'owner')->create();
+    $authoringService = app(UserIngredientAuthoringService::class);
+    $ingredient = $authoringService->createInWorkspace([
+        'name' => 'Before reassignment',
+        'category' => IngredientCategory::Other->value,
+    ], $user, $workspaceA);
+    $state = [
+        ...$authoringService->formData($ingredient->fresh()),
+        'name' => 'Must not persist',
+    ];
+
+    $entitlementService = mock(EntitlementService::class);
+    $entitlementService
+        ->shouldReceive('withinWorkspaceQuotaLock')
+        ->once()
+        ->withArgs(fn (Workspace $workspace, Closure $callback): bool => $workspace->is($workspaceA))
+        ->andReturnUsing(function (Workspace $workspace, Closure $callback) use ($ingredient, $workspaceB): Ingredient {
+            $ingredient->forceFill([
+                'owner_type' => OwnerType::Workspace,
+                'owner_id' => $workspaceB->id,
+                'workspace_id' => $workspaceB->id,
+            ])->save();
+
+            return $callback($workspace);
+        });
+    app()->instance(EntitlementService::class, $entitlementService);
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->update(
+        $ingredient,
+        $state,
+        $user,
+        $workspaceA,
+    ))->toThrow(AuthorizationException::class);
+
+    expect($ingredient->fresh()->display_name)->toBe('Before reassignment')
+        ->and($ingredient->fresh()->workspace_id)->toBe($workspaceB->id);
+});
+
+it('rejects an explicit null create after another user instance provisions a workspace', function (): void {
+    $user = User::factory()->create();
+    $warmedUser = User::query()->findOrFail($user->id);
+
+    expect($warmedUser->company())->toBeNull()
+        ->and($warmedUser->accessibleWorkspaceIds())->toBe([]);
+
+    $otherInstance = User::query()->findOrFail($user->id);
+    app(WorkspaceProvisioner::class)->ensureOwnerWorkspace($otherInstance);
+
+    $before = [
+        'workspaces' => Workspace::withoutGlobalScopes()->count(),
+        'memberships' => WorkspaceMember::withoutGlobalScopes()->count(),
+        'settings' => ProductionOutputSetting::query()->count(),
+        'active_workspace_id' => User::query()->whereKey($user->id)->value('active_workspace_id'),
+    ];
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->createInWorkspace([
+        'name' => 'Rejected warmed draft',
+        'category' => IngredientCategory::Other->value,
+    ], $warmedUser, null))->toThrow(AuthorizationException::class);
+
+    expect(Ingredient::query()->where('display_name', 'Rejected warmed draft')->exists())->toBeFalse()
+        ->and(Workspace::withoutGlobalScopes()->count())->toBe($before['workspaces'])
+        ->and(WorkspaceMember::withoutGlobalScopes()->count())->toBe($before['memberships'])
+        ->and(ProductionOutputSetting::query()->count())->toBe($before['settings'])
+        ->and(User::query()->whereKey($user->id)->value('active_workspace_id'))
+        ->toBe($before['active_workspace_id']);
+});
 
 it('generates a classification prompt from the latest ingredient identity', function (): void {
     $user = User::factory()->create();

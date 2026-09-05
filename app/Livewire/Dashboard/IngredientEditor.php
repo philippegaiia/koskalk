@@ -25,6 +25,7 @@ use App\Models\Substance;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceIngredientGuidance;
 use App\Services\CurrentAppUserResolver;
 use App\Services\IngredientClassificationPromptBuilder;
 use App\Services\IngredientIdentitySynchronizer;
@@ -410,6 +411,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $this->refreshAuthenticatedUserContext($user);
         $this->ingredientId = $ingredient->id;
+        $this->resolvedCurrentIngredient = $ingredient;
+        $this->resolvedCurrentIngredientId = $ingredient->id;
+        $this->hasResolvedCurrentIngredient = true;
+        $this->canEditIngredientDataCacheKey = null;
         $statusMessage = $wasEditing
             ? __('ingredients.editor.status.saved')
             : __('ingredients.editor.status.created');
@@ -1250,9 +1255,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function initializeReferenceState(Ingredient $ingredient, ?User $user): void
     {
         $this->data = [];
-        $this->referenceData = $user instanceof User
-            ? $this->referenceDataFor($ingredient, $user)
-            : [];
+        $this->referenceData = [];
         $this->workspaceMaterialCode = null;
         $this->workspaceGuidance = ['html' => null];
         $this->isEditingWorkspaceGuidance = false;
@@ -1280,9 +1283,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
      *
      * @return array<string, mixed>
      */
-    private function referenceDataFor(Ingredient $ingredient, User $user): array
-    {
-        $ingredient->load([
+    private function referenceDataFor(
+        Ingredient $ingredient,
+        User $user,
+        ?Workspace $workspace,
+        ?WorkspaceIngredientGuidance $guidanceRecord,
+    ): array {
+        $ingredient->loadMissing([
             'translations',
             'identifiers',
             'aliases',
@@ -1301,7 +1308,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $category = $ingredient->category;
         $subcategory = $ingredient->subcategory;
         $structure = $ingredient->components->isNotEmpty() ? 'blend' : 'ingredient';
-        $workspace = $this->referenceWorkspaceFor($ingredient, $user);
         $canSeePrivateData = $this->canSeePrivateReferenceData($ingredient, $user, $workspace);
         $canSeeTechnicalData = $canSeePrivateData || $ingredient->isPublicCatalog();
         $aliases = $canSeePrivateData ? ($identityState['aliases'] ?? []) : [];
@@ -1393,7 +1399,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $soap = $this->referenceSoapData($ingredient, $canSeePrivateData, $canSeeTechnicalData);
         $ifra = $this->referenceIfraData($ingredient, $canSeePrivateData, $canSeeTechnicalData);
-        $guidance = $this->referenceGuidanceData($ingredient, $workspace, $canSeePrivateData);
+        $guidance = $this->referenceGuidanceData($ingredient, $workspace, $canSeePrivateData, $guidanceRecord);
         $materialCode = ! $this->isPlatformIngredient($ingredient)
             && $canSeePrivateData
             && $workspace instanceof Workspace
@@ -1464,11 +1470,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
         ];
     }
 
-    private function referenceWorkspaceFor(Ingredient $ingredient, User $user): ?Workspace
-    {
-        return $this->destinationWorkspaceForDisplay($ingredient, $user);
-    }
-
     private function canSeePrivateReferenceData(
         Ingredient $ingredient,
         User $user,
@@ -1486,21 +1487,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
         Ingredient $ingredient,
         ?Workspace $workspace,
         bool $canSeePrivateData,
+        ?WorkspaceIngredientGuidance $override,
     ): ?array {
         $guidances = app(WorkspaceIngredientGuidanceService::class);
         $html = null;
         $source = null;
 
         if ($this->isPlatformIngredient($ingredient)) {
-            $override = $workspace instanceof Workspace
-                ? $guidances->recordFor($workspace, $ingredient)
-                : null;
-            $html = $workspace instanceof Workspace
-                ? $guidances->effectiveHtml($workspace, $ingredient, app()->getLocale())
+            $html = $override?->is_active
+                ? $override->guidance_html
                 : $guidances->platformHtml($ingredient->localizedInfoMarkdown(app()->getLocale()));
             $source = $override?->is_active ? 'workspace' : 'platform';
         } elseif ($canSeePrivateData && $workspace instanceof Workspace) {
-            $override = $guidances->recordFor($workspace, $ingredient);
             $html = $override?->is_active ? $override->guidance_html : null;
             $source = $html === null ? null : 'workspace';
         }
@@ -1626,12 +1624,19 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $ingredient = $this->currentIngredient();
         $canEditIngredientData = $this->canEditIngredientData();
         $isReferenceView = $this->isReferenceViewFor($ingredient, $canEditIngredientData);
+        $workspace = $ingredient instanceof Ingredient
+            ? $this->destinationWorkspaceForDisplay($ingredient)
+            : $this->workspaceForIngredientSettings($ingredient);
+        $guidanceRecord = $isReferenceView && $ingredient instanceof Ingredient
+            && $workspace instanceof Workspace
+                ? app(WorkspaceIngredientGuidanceService::class)->recordFor($workspace, $ingredient)
+                : null;
 
         if ($isReferenceView && $ingredient instanceof Ingredient) {
             $user = $this->freshAuthenticatedUser();
             $this->data = [];
             $this->referenceData = $user instanceof User
-                ? $this->referenceDataFor($ingredient, $user)
+                ? $this->referenceDataFor($ingredient, $user, $workspace, $guidanceRecord)
                 : [];
 
             if (! $this->isPlatformIngredient($ingredient)) {
@@ -1643,9 +1648,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         $ingredient?->loadMissing('allergenEntries.allergen');
-        $workspace = $ingredient instanceof Ingredient
-            ? $this->destinationWorkspaceForDisplay($ingredient)
-            : $this->workspaceForIngredientSettings($ingredient);
         $canEditWorkspaceMaterialCode = $this->canEditWorkspaceMaterialCode();
         if ($isReferenceView && $ingredient instanceof Ingredient && $this->isPlatformIngredient($ingredient)) {
             if ($workspace instanceof Workspace) {
@@ -1663,16 +1665,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $workspaceGuidanceOverride = $ingredient instanceof Ingredient
             && $this->isPlatformIngredient($ingredient)
             && $workspace instanceof Workspace
-                ? app(WorkspaceIngredientGuidanceService::class)->recordFor($workspace, $ingredient)
+                ? $guidanceRecord
                 : null;
         $effectiveWorkspaceGuidance = $ingredient instanceof Ingredient
             && $this->isPlatformIngredient($ingredient)
             && $workspace instanceof Workspace
-                ? app(WorkspaceIngredientGuidanceService::class)->effectiveHtml(
-                    $workspace,
-                    $ingredient,
-                    app()->getLocale(),
-                )
+                ? ($this->referenceData['guidance']['html'] ?? null)
                 : null;
         $identityState = $ingredient instanceof Ingredient && ! $isReferenceView
             ? app(IngredientIdentitySynchronizer::class)->formState($ingredient)
@@ -1693,7 +1691,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'canEditWorkspaceMaterialCode' => $canEditWorkspaceMaterialCode,
             'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
             'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
-            'canEditWorkspaceGuidance' => $this->canEditWorkspaceGuidance(),
+            'canEditWorkspaceGuidance' => $canEditWorkspaceMaterialCode,
             'workspaceName' => $workspace?->name,
         ]);
     }
@@ -2146,7 +2144,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        $destinationWorkspace = Workspace::withoutGlobalScopes()->find($this->destinationWorkspaceId);
+        $activeWorkspace = $user->company();
+        $destinationWorkspace = $activeWorkspace?->id === $this->destinationWorkspaceId
+            ? $activeWorkspace
+            : Workspace::withoutGlobalScopes()->find($this->destinationWorkspaceId);
 
         if (! $destinationWorkspace instanceof Workspace || ! $destinationWorkspace->hasMember($user)) {
             return null;
@@ -2158,8 +2159,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 ? $destinationWorkspace
                 : null;
         }
-
-        $activeWorkspace = $user->company();
 
         return $activeWorkspace instanceof Workspace
             && (int) $activeWorkspace->id === (int) $destinationWorkspace->id

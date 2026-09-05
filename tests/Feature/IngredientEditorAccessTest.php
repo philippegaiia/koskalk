@@ -58,6 +58,41 @@ it('keeps the initial workspace ingredient edit request within its query budget'
         ->and($ingredientReloads->count())->toBeLessThan(3);
 });
 
+it('loads platform reference data and guidance without repeated reads', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'info_markdown' => 'Platform reference guidance.',
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'guidance_html' => '<p>Workspace reference guidance.</p>',
+        'is_active' => true,
+    ]);
+    $this->actingAs($owner);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    try {
+        $response = $this->get(route('ingredients.edit', $ingredient));
+        $queries = collect(DB::getQueryLog());
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $response->assertSuccessful()->assertSee('Workspace reference guidance.');
+
+    expect($queries->filter(fn (array $query): bool => str_contains($query['query'], 'from "ingredient_translations"'))->count())->toBe(1)
+        ->and($queries->filter(fn (array $query): bool => str_contains($query['query'], 'from "workspace_ingredient_guidances"'))->count())->toBeLessThanOrEqual(2)
+        ->and($queries->count())->toBeLessThan(40);
+});
+
 it('allows workspace editors to author ingredients through the dedicated ability', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -426,7 +461,8 @@ it('keeps platform capabilities tied to the active workspace while preserving th
     Livewire::test(IngredientEditor::class, ['ingredient' => $workspaceIngredient])
         ->set('data.name', 'Edited from owning workspace')
         ->call('save')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertSeeText('Edited from owning workspace');
 
     expect($workspaceIngredient->refresh()->display_name)->toBe('Edited from owning workspace');
 });

@@ -16,6 +16,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class IngredientController extends Controller
 {
@@ -157,21 +158,28 @@ class IngredientController extends Controller
             return response()->json(['ok' => false, 'message' => 'Sign in required.'], 403);
         }
 
-        $validated = $request->validate([
-            'ingredient_id' => ['required', 'integer', 'exists:ingredients,id'],
-            'destination_workspace_id' => ['nullable', 'integer'],
-            'destination_workspace_signature' => ['nullable', 'string', 'size:64'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'ingredient_id' => ['required', 'integer', 'exists:ingredients,id'],
+                'destination_workspace_id' => ['present', 'nullable', 'integer'],
+                'destination_workspace_signature' => ['required', 'string', 'size:64'],
+            ]);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('destination_workspace_id', $exception->errors())
+                || array_key_exists('destination_workspace_signature', $exception->errors())) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => __('ingredients.editor.validation.stale_workspace'),
+                ], 403);
+            }
+
+            throw $exception;
+        }
 
         $source = Ingredient::query()->findOrFail($validated['ingredient_id']);
 
         try {
-            $requestData = $request->all();
-            $hasBoundDestination = array_key_exists('destination_workspace_id', $requestData)
-                || array_key_exists('destination_workspace_signature', $requestData);
-            $destinationWorkspace = $hasBoundDestination
-                ? $this->boundDuplicateDestination($user, $validated)
-                : $user->company();
+            $destinationWorkspace = $this->boundDuplicateDestination($user, $validated);
 
             $copy = app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
                 $source,

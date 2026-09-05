@@ -620,3 +620,71 @@ it('rejects an opened platform ingredient after it is deactivated without creati
             ->where('ingredient_id', $platform->id)
             ->exists())->toBeFalse();
 });
+
+it('rejects duplicate requests that omit the captured destination after a workspace switch', function (): void {
+    $user = User::factory()->create();
+    $workspaceA = Workspace::factory()->for($user, 'owner')->create();
+    $workspaceB = Workspace::factory()->create();
+    WorkspaceMember::factory()->for($workspaceB)->for($user)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'display_name' => 'Omitted destination source',
+    ]);
+
+    $user->forceFill(['active_workspace_id' => $workspaceA->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSet('destinationWorkspaceId', $workspaceA->id);
+
+    $user->forceFill(['active_workspace_id' => $workspaceB->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $platform->id,
+    ])
+        ->assertForbidden()
+        ->assertJsonPath('message', __('ingredients.editor.validation.stale_workspace'));
+
+    expect(Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspaceB->id)
+        ->where('display_name', 'Omitted destination source')
+        ->exists())->toBeFalse();
+});
+
+it('binds a first-workspace inline creation before allowing more writes', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $editor = Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('data.name', 'First Workspace Blend')
+        ->set('data.category', 'other')
+        ->set('quickComponentName', 'First Inline Component')
+        ->set('quickComponentCategory', 'other')
+        ->call('createAndAddComponent')
+        ->assertHasNoErrors()
+        ->set('quickComponentName', 'Second Inline Component')
+        ->set('quickComponentCategory', 'other')
+        ->call('createAndAddComponent')
+        ->assertHasNoErrors();
+
+    $editor
+        ->set('data.components.0.percentage_in_parent', 50)
+        ->set('data.components.1.percentage_in_parent', 50)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $workspace = $user->refresh()->company();
+
+    expect($workspace)->toBeInstanceOf(Workspace::class)
+        ->and($editor->instance()->destinationWorkspaceId)->toBe($workspace->id)
+        ->and(Ingredient::query()->where('display_name', 'First Workspace Blend')->exists())->toBeTrue();
+});

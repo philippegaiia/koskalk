@@ -644,6 +644,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return;
         }
 
+        if ($this->destinationWorkspaceId === null && $ingredient->workspace_id !== null) {
+            $this->destinationWorkspaceId = (int) $ingredient->workspace_id;
+            $this->refreshAuthenticatedUserContext($user);
+        }
+
         $this->addComponent($ingredient->id);
         $this->quickComponentName = '';
         $this->quickComponentCategory = null;

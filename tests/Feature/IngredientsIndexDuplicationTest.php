@@ -115,6 +115,12 @@ it('creates a workspace-owned copy when duplicating a platform ingredient', func
 
     $response = $this->postJson(route('ingredients.duplicate'), [
         'ingredient_id' => $source->id,
+        'destination_workspace_id' => null,
+        'destination_workspace_signature' => hash_hmac(
+            'sha256',
+            $user->id.'|none',
+            (string) config('app.key'),
+        ),
     ]);
 
     $response->assertSuccessful();

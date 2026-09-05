@@ -122,6 +122,20 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public ?string $generatedClassificationPrompt = null;
 
+    private bool $hasResolvedFreshAuthenticatedUser = false;
+
+    private ?User $resolvedFreshAuthenticatedUser = null;
+
+    private bool $hasResolvedCurrentIngredient = false;
+
+    private ?int $resolvedCurrentIngredientId = null;
+
+    private ?Ingredient $resolvedCurrentIngredient = null;
+
+    private ?string $canEditIngredientDataCacheKey = null;
+
+    private bool $resolvedCanEditIngredientData = false;
+
     public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
     {
         $name = trim((string) ($this->data['name'] ?? ''));
@@ -1886,6 +1900,24 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function canEditIngredientData(): bool
     {
+        $cacheKey = implode('|', [
+            auth()->id() ?? 'guest',
+            $this->ingredientId ?? 'new',
+            $this->destinationWorkspaceId ?? 'personal',
+        ]);
+
+        if ($this->canEditIngredientDataCacheKey === $cacheKey) {
+            return $this->resolvedCanEditIngredientData;
+        }
+
+        $this->canEditIngredientDataCacheKey = $cacheKey;
+        $this->resolvedCanEditIngredientData = $this->resolveCanEditIngredientData();
+
+        return $this->resolvedCanEditIngredientData;
+    }
+
+    private function resolveCanEditIngredientData(): bool
+    {
         $user = $this->freshAuthenticatedUser();
 
         if (! $user instanceof User) {
@@ -1905,7 +1937,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             );
         }
 
-        $ingredient = Ingredient::query()->find($this->ingredientId);
+        $ingredient = $this->currentIngredient();
 
         if (! $ingredient instanceof Ingredient) {
             return false;
@@ -1924,9 +1956,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     private function freshAuthenticatedUser(): ?User
     {
+        if ($this->hasResolvedFreshAuthenticatedUser) {
+            return $this->resolvedFreshAuthenticatedUser;
+        }
+
         $userId = auth()->id();
 
-        return $userId === null ? null : User::query()->find($userId);
+        $this->resolvedFreshAuthenticatedUser = $userId === null
+            ? null
+            : User::query()->find($userId);
+        $this->hasResolvedFreshAuthenticatedUser = true;
+
+        return $this->resolvedFreshAuthenticatedUser;
     }
 
     private function refreshAuthenticatedUserContext(User $freshUser): void
@@ -1966,9 +2007,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function authorizePlatformWorkspaceContext(): array
     {
         $user = $this->freshAuthenticatedUser();
-        $ingredient = $this->ingredientId === null
-            ? null
-            : Ingredient::query()->find($this->ingredientId);
+        $ingredient = $this->currentIngredient();
 
         if (! $user instanceof User
             || ! $ingredient instanceof Ingredient
@@ -2042,27 +2081,35 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     private function currentIngredient(): ?Ingredient
     {
-        if ($this->ingredientId === null) {
-            return null;
+        if ($this->hasResolvedCurrentIngredient
+            && $this->resolvedCurrentIngredientId === $this->ingredientId) {
+            return $this->resolvedCurrentIngredient;
         }
 
-        $user = $this->currentUser();
+        $this->resolvedCurrentIngredientId = $this->ingredientId;
+        $this->hasResolvedCurrentIngredient = true;
+
+        if ($this->ingredientId === null) {
+            return $this->resolvedCurrentIngredient = null;
+        }
+
+        $user = $this->freshAuthenticatedUser();
 
         if (! $user instanceof User) {
-            return null;
+            return $this->resolvedCurrentIngredient = null;
         }
 
         $ingredient = Ingredient::query()->find($this->ingredientId);
 
         if (! $ingredient instanceof Ingredient) {
-            return null;
+            return $this->resolvedCurrentIngredient = null;
         }
 
         if ($this->isPlatformIngredient($ingredient)) {
-            return $ingredient->is_active ? $ingredient : null;
+            return $this->resolvedCurrentIngredient = $ingredient->is_active ? $ingredient : null;
         }
 
-        return $ingredient->isAccessibleBy($user) ? $ingredient : null;
+        return $this->resolvedCurrentIngredient = $ingredient->isAccessibleBy($user) ? $ingredient : null;
     }
 
     private function currentUser(): ?User

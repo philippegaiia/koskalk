@@ -18,11 +18,45 @@ use App\Policies\IngredientPolicy;
 use App\Services\UserIngredientAuthoringService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('keeps the initial workspace ingredient edit request within its query budget', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($owner);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $response = $this->get(route('ingredients.edit', $ingredient));
+    $queries = collect(DB::getQueryLog());
+
+    DB::disableQueryLog();
+
+    $ingredientReloads = $queries->filter(fn (array $query): bool => str_contains(
+        $query['query'],
+        'from "ingredients" where "ingredients"."id" = ? limit 1',
+    ));
+
+    $response->assertSuccessful();
+
+    expect($queries->count())->toBeLessThan(55)
+        ->and($ingredientReloads->count())->toBeLessThan(3);
+});
 
 it('allows workspace editors to author ingredients through the dedicated ability', function (): void {
     $owner = User::factory()->create();

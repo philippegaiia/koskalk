@@ -837,6 +837,65 @@ it('refuses to discard a saved blend composition without confirmation', function
         ->toBe([60.0, 40.0]);
 });
 
+it('refuses removal when persisted blend relations are missing from the draft state', function (): void {
+    $user = User::factory()->create();
+    $firstComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $secondComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $service = app(UserIngredientAuthoringService::class);
+    $blend = $service->create([
+        'name' => 'Persisted Relation Fallback Blend',
+        'category' => IngredientCategory::Other->value,
+        'ingredient_structure' => 'blend',
+        'notes' => 'Persisted notes',
+        'composition_source_notes' => 'Persisted supplier source',
+        'components' => [
+            [
+                'component_ingredient_id' => $firstComponent->id,
+                'percentage_in_parent' => 65,
+            ],
+            [
+                'component_ingredient_id' => $secondComponent->id,
+                'percentage_in_parent' => 35,
+            ],
+        ],
+    ], $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $blend])
+        ->set('data.components', [])
+        ->set('data.ingredient_structure', 'ingredient')
+        ->set('data.notes', 'Edited notes that must not persist')
+        ->call('save')
+        ->assertHasErrors([
+            'confirmCompositionRemoval' => __('ingredients.editor.validation.composition_removal_confirmation'),
+        ])
+        ->assertSet('data.notes', 'Edited notes that must not persist')
+        ->assertSet('confirmCompositionRemoval', false);
+
+    $persistedBlend = $blend->fresh(['components']);
+
+    expect($persistedBlend->display_name)->toBe('Persisted Relation Fallback Blend')
+        ->and($persistedBlend->notes)->toBe('Persisted notes')
+        ->and($persistedBlend->composition_source_notes)->toBe('Persisted supplier source')
+        ->and($service->formData($persistedBlend)['ingredient_structure'])->toBe('blend')
+        ->and($persistedBlend->components)->toHaveCount(2)
+        ->and($persistedBlend->components->pluck('component_ingredient_id')->all())
+        ->toBe([$firstComponent->id, $secondComponent->id])
+        ->and($persistedBlend->components->pluck('percentage_in_parent')->map(fn (mixed $percentage): float => (float) $percentage)->all())
+        ->toBe([65.0, 35.0]);
+});
+
 it('removes a saved blend composition after confirmation', function (): void {
     $user = User::factory()->create();
     $firstComponent = Ingredient::factory()->create([

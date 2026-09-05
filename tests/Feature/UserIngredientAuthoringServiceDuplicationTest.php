@@ -379,6 +379,148 @@ it('duplicates a workspace ingredient with its guidance and original trusted che
         ->toBe('<p>Private workspace guidance.</p>');
 });
 
+it('previews inherited chemistry limits for an edited trusted workspace source', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
+    $palmitic = FattyAcid::factory()->create(['key' => 'palmitic', 'name' => 'Palmitic']);
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Edited private olive oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.188,
+                'trusted_fatty_acid_profile' => [
+                    $oleic->id => 70.0,
+                    $palmitic->id => 20.0,
+                ],
+            ],
+        ],
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->createMany([
+        ['fatty_acid_id' => $oleic->id, 'percentage' => 70.0],
+        ['fatty_acid_id' => $palmitic->id, 'percentage' => 20.0],
+    ]);
+    $source->sapProfile()->update(['koh_sap_value' => 0.19]);
+    $source->fattyAcidEntries()->where('fatty_acid_id', $oleic->id)->update(['percentage' => 60.0]);
+    $source->fattyAcidEntries()->where('fatty_acid_id', $palmitic->id)->update(['percentage' => 21.0]);
+    $source->load(['sapProfile', 'fattyAcidEntries.fattyAcid']);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $preview = $service->duplicationChemistryPreview($source);
+
+    expect($preview)->not->toBeNull()
+        ->and($preview['koh_sap'])->toMatchArray([
+            'minimum' => 0.18236,
+            'maximum' => 0.19364,
+            'original' => 0.188,
+        ]);
+
+    $fattyAcids = collect($preview['fatty_acids'])->keyBy('id');
+
+    expect($fattyAcids->get($oleic->id))->toMatchArray([
+        'name' => 'Oleic',
+        'minimum' => 56.0,
+        'maximum' => 84.0,
+        'original' => 70.0,
+    ])->and($fattyAcids->get($palmitic->id))->toMatchArray([
+        'name' => 'Palmitic',
+        'minimum' => 16.0,
+        'maximum' => 24.0,
+        'original' => 20.0,
+    ]);
+
+    $copy = $service->duplicateIntoWorkspace($source, $owner, $workspace);
+
+    expect((float) data_get($copy->source_data, 'user_authoring.trusted_koh_sap_value'))->toBe(0.188)
+        ->and((float) data_get($copy->source_data, 'user_authoring.trusted_fatty_acid_profile.'.$oleic->id))->toBe(70.0);
+});
+
+it('previews current chemistry limits for a trusted platform source', function (): void {
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Platform olive oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->create(['fatty_acid_id' => $oleic->id, 'percentage' => 70.0]);
+    $source->load(['sapProfile', 'fattyAcidEntries.fattyAcid']);
+
+    $preview = app(UserIngredientAuthoringService::class)->duplicationChemistryPreview($source);
+
+    expect($preview)->not->toBeNull()
+        ->and($preview['koh_sap'])->toMatchArray([
+            'minimum' => 0.18236,
+            'maximum' => 0.19364,
+            'original' => 0.188,
+        ])
+        ->and($preview['fatty_acids'][0])->toMatchArray([
+            'name' => 'Oleic',
+            'minimum' => 56.0,
+            'maximum' => 84.0,
+            'original' => 70.0,
+        ]);
+});
+
+it('previews inherited chemistry limits for an edited trusted user-owned source', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Edited user olive oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.188,
+                'trusted_fatty_acid_profile' => [$oleic->id => 70.0],
+            ],
+        ],
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.19]);
+    $source->fattyAcidEntries()->create(['fatty_acid_id' => $oleic->id, 'percentage' => 60.0]);
+    $source->load(['sapProfile', 'fattyAcidEntries.fattyAcid']);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $preview = $service->duplicationChemistryPreview($source);
+
+    expect($preview)->not->toBeNull()
+        ->and($preview['koh_sap']['original'])->toBe(0.188)
+        ->and($preview['fatty_acids'][0])->toMatchArray([
+            'name' => 'Oleic',
+            'minimum' => 56.0,
+            'maximum' => 84.0,
+            'original' => 70.0,
+        ]);
+
+    $copy = $service->duplicateIntoWorkspace($source, $owner, $workspace);
+
+    expect($copy->owner_type)->toBe(OwnerType::Workspace)
+        ->and((float) data_get($copy->source_data, 'user_authoring.trusted_koh_sap_value'))->toBe(0.188);
+});
+
 it('duplicates localized identity and substance data into an independent workspace copy', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $user = User::factory()->create(['locale' => 'fr']);

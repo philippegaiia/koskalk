@@ -1046,19 +1046,37 @@ class UserIngredientAuthoringService
             return null;
         }
 
-        $kohSapValue = $ingredient->sapProfile?->koh_sap_value;
+        $usesStoredTrustedProfile = ! $this->isPlatformIngredient($ingredient)
+            && $this->canRetainUserSoapTrust($ingredient);
+        $kohSapValue = $usesStoredTrustedProfile
+            ? Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value')
+            : $ingredient->sapProfile?->koh_sap_value;
 
         if (! is_numeric($kohSapValue)) {
             return null;
         }
 
         $kohSapRange = $this->kohSapRange((float) $kohSapValue);
+        $trustedFattyAcidProfile = collect($usesStoredTrustedProfile
+            ? Arr::get($ingredient->source_data, 'user_authoring.trusted_fatty_acid_profile', [])
+            : [])
+            ->mapWithKeys(fn (mixed $percentage, mixed $fattyAcidId): array => [
+                (int) $fattyAcidId => $percentage,
+            ]);
         $fattyAcidEntries = $ingredient->fattyAcidEntries->loadMissing('fattyAcid:id,name');
         $fattyAcids = $fattyAcidEntries
-            ->filter(fn ($entry): bool => filled($entry->fattyAcid?->name) && is_numeric($entry->percentage))
+            ->filter(function ($entry) use ($usesStoredTrustedProfile, $trustedFattyAcidProfile): bool {
+                $original = $usesStoredTrustedProfile
+                    ? $trustedFattyAcidProfile->get((int) $entry->fatty_acid_id)
+                    : $entry->percentage;
+
+                return filled($entry->fattyAcid?->name) && is_numeric($original);
+            })
             ->take(20)
-            ->map(function ($entry): array {
-                $original = (float) $entry->percentage;
+            ->map(function ($entry) use ($usesStoredTrustedProfile, $trustedFattyAcidProfile): array {
+                $original = (float) ($usesStoredTrustedProfile
+                    ? $trustedFattyAcidProfile->get((int) $entry->fatty_acid_id)
+                    : $entry->percentage);
                 [$minimum, $maximum] = $this->fattyAcidRange($original);
 
                 return [

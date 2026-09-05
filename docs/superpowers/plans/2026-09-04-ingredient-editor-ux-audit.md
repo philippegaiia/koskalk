@@ -1,14 +1,19 @@
 # UX audit — user-side ingredient editor
 
 **Status:** analysis only, nothing built (owner asked for analysis, 2026-09-04)
-**Revised three times since:** §6 (`better-interface` / `better-accessibility` review), §6.7
-(`.ai/rules`), and §7 + a full §4 rewrite (journey-based revision brief, 2026-09-05).
+**Revised four times since:** §6 (`better-interface` / `better-accessibility` review), §6.7
+(`.ai/rules`), §7 + a full §4 rewrite (journey-based revision brief, 2026-09-05), and the
+**F1 / §4.5 correction** establishing that the `Viewer` role is vestigial (2026-09-05).
 
 > **§4 is the authoritative recommendation.** It is organised around three user journeys —
 > *customize a platform ingredient*, *duplicate a platform ingredient*, *create an ingredient* —
-> plus Viewer behaviour, and it **supersedes §2 and §3 wherever they disagree**. §2 is retained as
-> the record of how each finding was reached, including the ones since withdrawn (F3, F7) or
-> rewritten (F1, F5, F8).
+> plus **read-only visitor** behaviour, and it **supersedes §2 and §3 wherever they disagree**.
+> §2 is retained as the record of how each finding was reached, including the ones since withdrawn
+> (F3, F7) or rewritten (F1, F5, F8).
+>
+> **Naming note.** Earlier revisions of this document said "Viewer". No such user exists —
+> `WorkspaceMemberRole::Viewer` is declared and never used (F1, §4.5). Read "Viewer" in the older
+> sections as *"a user with no edit capability"*, which today means a **non-member**.
 
 **Surface:** `app/Livewire/Dashboard/IngredientEditor.php` +
 `resources/views/livewire/dashboard/ingredient-editor.blade.php`
@@ -50,12 +55,20 @@ The two gates disagree:
 isReadOnly()  // owner_type === null || ! $user || ! $ingredient->isEditableBy($user)
 ```
 
-`isEditableBy()` (Ingredient.php:392) returns **false** for a `Viewer` member of the owning
-workspace. So a Viewer opening a *workspace-owned* ingredient gets:
+`isEditableBy()` (Ingredient.php:392) admits only **Owner, Admin or Editor** in the owning
+workspace. So the reachable actor is *not* a `Viewer` — see the correction below — it is **any
+logged-in user with no membership in the owning workspace** who opens a **public, workspace-owned**
+ingredient:
 
 - `owner_type !== null` → **not** "platform" → **Save bar is rendered**
-- `isEditableBy() === false` → **`isReadOnly()` is true → form fully disabled**
+- `workspaceRoleFor()` returns `null` → not in [Owner, Admin, Editor] → **`isReadOnly()` true →
+  form fully disabled**
 - Clicking Save → `abort_if($this->isReadOnly(), 403)` (IngredientEditor.php:210) → **403**
+
+The route admits them because `IngredientController::edit()` (`:38-41`) lets any authenticated user
+through when `isAccessibleBy()` holds, and `Ingredient::isAccessibleBy()` (`:387`) is satisfied by
+`isPublicCatalog()` alone — that is, by `visibility === Public` (`:352`) — with no membership
+condition.
 
 They also get none of the editable cards, because those are gated on `@if ($isPlatformIngredient)`
 too. Result: a dead form and a button that errors.
@@ -63,7 +76,25 @@ too. Result: a dead form and a button that errors.
 The index sends them here deliberately — `$canEdit` is false (blade.php:122), so they get the
 **eye** icon labelled "view" (blade.php:256). The destination contradicts that promise.
 
-**Verify with a Viewer-role account before fixing** — I traced this statically, not by logging in.
+> **Correction (2026-09-05) — the actor is not a Viewer, and never could be one.**
+> I originally wrote this as "a `Viewer` member of the owning workspace". **That user cannot
+> exist.** `WorkspaceMemberRole::Viewer` (`app/Enums/WorkspaceMemberRole.php:10`) is declared and
+> then referenced **nowhere** — not in `app/`, `resources/`, `routes/`, `database/` or `tests/`.
+> The only code that creates a membership row assigns `Owner` (`SettingsIndex.php:167`);
+> `WorkspaceMemberFactory` defaults to `Editor`; there is no member-management UI in Filament or
+> Livewire; and the local database holds **2 membership rows, both `owner`**. Every capability
+> check in the codebase names only Owner, Admin and Editor. The role is vestigial — an enum case
+> waiting for an invite flow that does not exist.
+>
+> This changes F1's **likelihood**, not its **validity**. The two gates still disagree, and the
+> reachable actor is the non-member above. No public workspace-owned ingredient exists in the local
+> database today, but `visibility` is user-settable, so the path is live rather than theoretical.
+> It also changes the *reason* to fix it: §4.1's capability-based gate is correct for **the role
+> set that exists now**, and it stays correct if `Viewer` is ever wired up.
+
+**Unverified — still traced statically, never reproduced in a browser.** Reproducing it does *not*
+need a Viewer account, since one cannot be created: set a workspace-owned ingredient to **Public**,
+then open it authenticated as a user who is not a member of that workspace.
 
 **Fix (superseded — see §4.1 and §4.5).** The original suggestion here was
 `@unless ($this->isReadOnly())`, which **cannot work**: `isReadOnly()` is `private`
@@ -356,8 +387,9 @@ must change are the two places that use origin as a stand-in for permission:
 
 **Acceptance criteria**
 
-- A Viewer and an Editor see the **same layout** on a platform ingredient; only the cards' controls
-  differ.
+- A read-only visitor and an Editor see the **same layout** on a platform ingredient; only the
+  cards' controls differ. *(Stated as "Viewer" before 2026-09-05 — see the naming note in the
+  header.)*
 - No Save bar on this journey, for any role.
 - No disabled `<input>` / `<select>` — technical data renders as text.
 - Both cards name the workspace and state that edits are shared.
@@ -414,7 +446,7 @@ below is **existing behaviour, not an endorsement of it.**
 - After duplicating an untrusted ingredient, the absence of soap chemistry is explained and the
   trust rule is named.
 - Any data dropped by duplication is disclosed at the point of duplication.
-- A Viewer never sees the duplicate control.
+- A read-only visitor never sees the duplicate control.
 
 ### 4.4 Journey C — Create an ingredient
 
@@ -446,27 +478,38 @@ Restrictions are encountered only when hit:
 - Non-workspace-authorable categories are excluded from the picker, or the refusal is explained.
 - Quota exhaustion produces an actionable message, not a generic failure.
 
-### 4.5 Viewers, across all three journeys
+### 4.5 Read-only visitors, across all three journeys
 
-**Current:** `isEditableBy()` is false for a Viewer, and both workspace capability methods require
-Owner/Admin/Editor — so a Viewer has **no capability anywhere**. The UI does not consistently say
-so:
+> **Correction (2026-09-05) — this section was titled "Viewers".** The `Viewer` role is
+> **vestigial**: `WorkspaceMemberRole::Viewer` (`app/Enums/WorkspaceMemberRole.php:10`) is declared
+> and referenced nowhere, nothing can assign it, and no such member exists in the database. Full
+> evidence in F1. The section is kept because the capability model still has to be right and
+> `Viewer` is plainly meant to be wired up later — but the reachable read-only case today is the
+> one described below, and it is not a Viewer.
 
-- on a **platform** ingredient the Save bar is already hidden (`:185`), so the page is coherent;
-- on a **workspace-owned** ingredient the Save bar **is** rendered, while the form is disabled
-  (`:1002`) and `save()` aborts with a bare 403 (`:210`). **This is F1.**
+**Current:** `isEditableBy()` (Ingredient.php:392) admits only Owner, Admin and Editor, and both
+workspace capability methods require Owner/Admin/Editor — so a user with **no membership** in the
+owning workspace has **no capability anywhere**. The UI does not consistently say so:
+
+- on a **platform** ingredient the Save bar is already hidden (`:185`), so the page is coherent —
+  and this is the case that essentially every read-only visitor hits today;
+- on a **public, workspace-owned** ingredient opened by someone who is **not a member** of that
+  workspace, the Save bar **is** rendered, while the form is disabled (`:1002`) and `save()` aborts
+  with a bare 403 (`:210`). **This is F1.**
 
 **Recommended:** heading, controls and actions all derive from the same capability checks, so a
-Viewer never sees an enabled action. Concretely: gate `:185` on the ingredient-data capability
-rather than on origin (§4.1).
+read-only visitor never sees an enabled action. Concretely: gate `:185` on the ingredient-data
+capability rather than on origin (§4.1). Do this for **the role set that exists now**, not for a
+hypothetical one — the one change fixes both cases above.
 
 **Acceptance criteria**
 
-- A Viewer opening a workspace-owned ingredient sees no Save bar, a read-only heading, and no
-  enabled control.
-- No Viewer-reachable path produces a 403 from `save()`.
-- A Viewer on a platform ingredient sees the two workspace cards read-only, with the same
-  blast-radius labelling.
+- A non-member opening a public workspace-owned ingredient sees no Save bar, a read-only heading,
+  and no enabled control.
+- No reachable path produces a 403 from `save()`.
+- A read-only visitor on a platform ingredient sees the two workspace cards read-only, with the
+  same blast-radius labelling.
+- *If `Viewer` is later wired up:* the same criteria apply unchanged, with no further gate edits.
 
 ### 4.6 Composition visibility (F5)
 
@@ -550,7 +593,9 @@ that already exist and changes two Blade gates.
 
 ### 4.9 Unverified — must be confirmed before any of this is built
 
-- **F1's Viewer path** — traced statically, never reproduced with a real Viewer account.
+- **F1's read-only path** — traced statically, never reproduced in a browser. Note the actor is
+  **not** a Viewer: no such role can be created (F1, §4.5). Reproduce it as a **non-member opening
+  a public, workspace-owned ingredient**.
 - **§4.6(1) stale tab after a type switch** — traced, not reproduced.
 - **§4.6(2) constituent retention** — a product decision, not yet taken.
 - **Images dropped on duplication** — observed in code, **not** endorsed as desirable.
@@ -563,9 +608,14 @@ that already exist and changes two Blade gates.
 
 **Still open**
 
-1. Should **Viewers** reach this page at all, or should the index route them to a read-only detail
-   page? This decides whether §4.5 is a fix or a redirect. **Blocked on reproducing F1 with a real
-   Viewer account** — it is still traced statically only.
+1. **Is `WorkspaceMemberRole::Viewer` meant to be wired up?** It is declared
+   (`WorkspaceMemberRole.php:10`) and referenced nowhere: no invite flow, no member UI, and no
+   capability check names it. If multi-member workspaces are planned, §4.1's capability model
+   already covers them with no further change; if they are not, the case should be **deleted**
+   rather than left as a dead enum value. Separately: should a **non-member** reach a public
+   workspace-owned ingredient's editor at all, or be routed to a read-only detail page? That
+   decides whether F1 is a gate fix or a redirect. **Both branches are blocked on reproducing F1 in
+   a browser** — it is still traced statically only.
 2. Is the **material code** workspace-scoped *only* for platform ingredients by design?
    `canEditWorkspaceMaterialCode()` (`:1343`) requires `owner_type === null`, so workspace-owned
    ingredients have no material code by construction. Whether that is intended is not recorded.
@@ -639,8 +689,8 @@ Four changes to section 4, all from `better-interface`'s cheaper-fix ladder
   is different: **neither escalation trigger applies**. Each link carries a contextual `aria-label`
   **and** a `title` (`ingredients-index.blade.php:189`, `:256`), so it is neither unnamed nor
   truncated-with-no-full-value. What remains is genuinely minor — edit vs. view is carried by icon
-  literacy alone, and the two are mutually exclusive (`@if ($canEdit)`), so the eye is a Viewer's
-  only entry point. Since nothing escalates, the proposed fix (visible text labels) is ladder
+  literacy alone, and the two are mutually exclusive (`@if ($canEdit)`), so the eye is a
+  read-only visitor's only entry point. Since nothing escalates, the proposed fix (visible text labels) is ladder
   **step 5**, the most expensive rung, for a non-problem. Dropped, not deferred.
 - **Tab ARIA: not a finding.** CLAUDE.md:181 documents a hand-written tab pattern
   (`role="tablist"` / `role="tab"` / `role="tabpanel"`), but these tabs are Filament
@@ -704,9 +754,11 @@ Verified by reading source: heading order and its `@if` scoping; Filament's `rol
 text-labelled; `wire:confirm` present on `:131` and absent on `:120`; the guidance branch chain;
 `dirtyStateRegistry` existing only in the workbench.
 
-**Not verified:** F1 was traced statically and never reproduced with a real Viewer-role account —
-it remains the one finding that should be confirmed against a live session before it is acted on.
-No browser check was performed (the Vite dev server is down; see memory).
+**Not verified:** F1 was traced statically and never reproduced in a browser — it remains the one
+finding that should be confirmed against a live session before it is acted on. *(This said "with a
+real Viewer-role account" until 2026-09-05; no such account can exist — §7.5. The reproduction is
+now the non-member case described in F1.)* No browser check was performed (the Vite dev server is
+down; see memory).
 
 ### 6.6 Verdict
 
@@ -843,14 +895,15 @@ requested. `isReadOnly()` (`:1380`) returns true for two different situations:
 
 1. a **platform** ingredient — the form is read-only permanently, *and* the user has two editable
    workspace cards below it (journey 1);
-2. a **user-owned** ingredient the user may not edit (a **Viewer**) — *everything* is read-only and
-   there are no cards.
+2. a **workspace-owned** ingredient the user may not edit — today that means a **non-member**; the
+   `Viewer` role I originally named here cannot exist (§7.5) — *everything* is read-only and there
+   are no cards.
 
 A single boolean cannot express "read-only form **plus** editable cards" versus "read-only
 everything". If §4 is organised by journey, the view needs **two distinct signals** — e.g.
 `isPlatformReference()` and `canEditIngredient()` — rather than one widened `isReadOnly()`. Otherwise
-Viewers and platform-customisers keep rendering identically, which is exactly the permission
-inconsistency the brief ranks first.
+read-only visitors and platform-customisers keep rendering identically, which is exactly the
+permission inconsistency the brief ranks first.
 
 ### 7.4 Verdict
 
@@ -860,8 +913,8 @@ were folded in when §4 was rewritten.
 **Done 2026-09-05:**
 
 - **§4 rewritten** around the three journeys (§4.2 customize, §4.3 duplicate, §4.4 create) plus
-  Viewer behaviour (§4.5), each with expected behaviour and acceptance criteria, and revised
-  priorities (§4.8).
+  read-only-visitor behaviour (§4.5 — retitled from "Viewers", see §7.5), each with expected
+  behaviour and acceptance criteria, and revised priorities (§4.8).
 - **§7.3 resolved without new booleans.** Rather than prescribe a number of flags, §4.1 separates
   **origin** from **capability** and reuses the three checks that already exist and are already
   public: `Ingredient::isEditableBy()`, `canEditWorkspaceGuidance()` and
@@ -875,4 +928,27 @@ were folded in when §4 was rewritten.
 - **§6.6 marked superseded** by §4.8.
 
 **Still analysis-only** — no application code changed. Two items remain unverified and are recorded
-in §4.9: F1's Viewer path, and the stale-tab behaviour in §4.6(1).
+in §4.9: F1's read-only path, and the stale-tab behaviour in §4.6(1).
+
+### 7.5 Correction to the brief's Viewer premise (2026-09-05)
+
+The brief instructs: *"Apply Viewer permissions across these journeys."* I applied them as asked,
+and **the premise is mistaken — but the instruction was still worth following.**
+
+`WorkspaceMemberRole::Viewer` (`app/Enums/WorkspaceMemberRole.php:10`) is declared and then
+referenced **nowhere**: no invite flow, no member-management UI in Filament or Livewire, and no
+capability check names it. Every check in the codebase admits only Owner, Admin and Editor. The
+only code path that creates a membership row assigns `Owner` (`SettingsIndex.php:167`);
+`WorkspaceMemberFactory` defaults to `Editor`; the local database holds **2 rows, both `owner`**.
+A Viewer cannot be created, so F1 could never have been reproduced with one — my §4.9 note asking
+for a "real Viewer account" was asking for something that does not exist.
+
+What the brief's instruction got right, though, is the **shape** of the fix. Designing the journeys
+around *capability* rather than *origin* is what makes the page correct for the read-only case that
+**is** reachable — a non-member opening a public, workspace-owned ingredient — and it means that if
+`Viewer` is ever wired up, no gate has to change. The permission work in §4.1 and §4.5 stands; only
+the actor's name was wrong.
+
+This is the second time in this audit that a finding named an actor rather than a condition. The
+lesson carried forward: **state the condition the code actually evaluates**
+(`workspaceRoleFor()` ∉ [Owner, Admin, Editor]), not a role label that may or may not be reachable.

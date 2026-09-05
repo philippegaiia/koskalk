@@ -193,6 +193,15 @@
  <form wire:submit="save" data-ingredient-scope="ingredient" class="space-y-4 pb-24">
  {{ $this->form }}
 
+ @error('data.plan')
+ <div data-ingredient-plan-error role="alert" class="rounded-lg border border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-danger-strong)]">
+ <p>{{ $message }}</p>
+ <a href="{{ route('ingredients.index') }}" wire:navigate class="mt-2 inline-flex font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-accent)] underline-offset-2 hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+ {{ __('ingredients.editor.quota.review_private_ingredients') }}
+ </a>
+ </div>
+ @enderror
+
  @if ($canEditIngredientData)
  <x-workflow-action-bar data-ingredient-save-bar>
  <x-slot:leading>

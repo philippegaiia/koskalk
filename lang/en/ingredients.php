@@ -597,6 +597,9 @@ return [
             'new_ingredient' => 'New ingredient',
             'not_available' => 'Not available',
         ],
+        'quota' => [
+            'review_private_ingredients' => 'Review private ingredients',
+        ],
         'create' => [
             'page_title' => 'Add ingredient',
             'heading' => 'Add an ingredient to your library.',

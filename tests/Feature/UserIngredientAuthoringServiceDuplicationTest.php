@@ -515,8 +515,11 @@ it('accepts duplicated carrier oil KOH SAP edits at both trusted boundaries', fu
         $state = $service->formData($copy);
         $state['sap_profile']['koh_sap_value'] = $kohSapValue;
 
-        expect($service->update($copy, $state, $user))->toBeInstanceOf(Ingredient::class);
+        expect($service->update($copy, $state, $user))->toBeInstanceOf(Ingredient::class)
+            ->and((float) $copy->fresh('sapProfile')->sapProfile->koh_sap_value)->toBe((float) $kohSapValue);
     }
+
+    expect((float) $source->fresh('sapProfile')->sapProfile->koh_sap_value)->toBe(0.188);
 });
 
 it('refuses to duplicate a carrier oil without a KOH SAP value', function () {

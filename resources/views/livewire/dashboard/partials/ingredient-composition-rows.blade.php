@@ -7,13 +7,19 @@
         ->values()
         ->all();
     $total = $editor->componentPercentageTotal();
+    $numberLocale = auth()->user()?->number_locale;
+    $formattedTotal = \App\Support\NumberLocale::formatDecimal($total, 2, $numberLocale);
     $isBalanced = round(abs($total - 100.0), 12) <= 0.01;
     if ($isBalanced) {
         $totalStatus = __('ingredients.editor.composition.total_complete');
     } elseif ($total < 100.0) {
-        $totalStatus = __('ingredients.editor.composition.total_add', ['remaining' => number_format(100.0 - $total, 2, '.', '')]);
+        $totalStatus = __('ingredients.editor.composition.total_add', [
+            'remaining' => \App\Support\NumberLocale::formatDecimal(100.0 - $total, 2, $numberLocale),
+        ]);
     } else {
-        $totalStatus = __('ingredients.editor.composition.total_remove', ['excess' => number_format($total - 100.0, 2, '.', '')]);
+        $totalStatus = __('ingredients.editor.composition.total_remove', [
+            'excess' => \App\Support\NumberLocale::formatDecimal($total - 100.0, 2, $numberLocale),
+        ]);
     }
 @endphp
 
@@ -25,7 +31,7 @@
         </div>
         <p role="status" aria-live="polite" class="shrink-0 rounded-full bg-[var(--color-field-muted)] px-3 py-1.5 text-sm">
             <span class="text-[var(--color-ink-soft)]">{{ __('ingredients.editor.composition.total') }} </span>
-            <span class="numeric font-medium" style="color: {{ $isBalanced ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' }}">{{ number_format($total, 2, '.', '') }}%</span>
+            <span class="numeric font-medium" style="color: {{ $isBalanced ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' }}">{{ $formattedTotal }}%</span>
             <span class="ml-1 text-xs font-medium" style="color: {{ $isBalanced ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' }}">{{ $totalStatus }}</span>
         </p>
     </div>

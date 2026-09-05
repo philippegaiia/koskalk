@@ -1189,6 +1189,30 @@ it('shows composition totals with the server tolerance and an actionable status'
         ->assertSeeText('Remove 0.02%');
 });
 
+it('formats composition totals and adjustments with the user number locale', function (): void {
+    $user = User::factory()->create(['number_locale' => 'fr_FR']);
+    $componentIngredient = Ingredient::factory()->create(['is_active' => true]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('data.components', [[
+            'component_ingredient_id' => $componentIngredient->id,
+            'percentage_in_parent' => '99.96',
+        ]]);
+
+    $component
+        ->assertSeeText('99,96%')
+        ->assertSeeText('Add 0,04%');
+
+    $component->set('data.components.0.percentage_in_parent', '100.02');
+
+    $component
+        ->assertSeeText('100,02%')
+        ->assertSeeText('Remove 0,02%');
+});
+
 it('quick creates an active private ingredient and immediately adds it to the composition', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

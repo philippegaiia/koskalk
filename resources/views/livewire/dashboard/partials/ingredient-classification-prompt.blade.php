@@ -57,8 +57,6 @@
             x-cloak
             x-show="copyFailed"
             role="alert"
-            aria-live="assertive"
-            aria-atomic="true"
             class="mt-3 text-sm text-[var(--color-danger-strong)]"
         >
             {{ __('ingredients.editor.classification_prompt.copy_failed') }}

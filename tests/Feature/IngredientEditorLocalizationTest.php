@@ -797,13 +797,23 @@ it('keeps clipboard recovery visible outside the collapsed classification prompt
         ->set('data.name', 'Test ingredient')
         ->call('generateClassificationPrompt');
     $response = $component->html();
+    $messagePosition = strpos($response, 'Could not copy. Open the prompt and copy the text manually.');
+    $alertMarkup = substr(
+        $response,
+        strrpos(substr($response, 0, $messagePosition), '<p'),
+        strpos($response, '</p>', $messagePosition) + 4 - strrpos(substr($response, 0, $messagePosition), '<p'),
+    );
 
     expect($response)
         ->toContain('Could not copy. Open the prompt and copy the text manually.')
         ->toContain('role="alert"')
-        ->toContain('aria-live="assertive"')
         ->and(strpos($response, 'Could not copy. Open the prompt and copy the text manually.'))
         ->toBeGreaterThan(strpos($response, '</details>'));
+
+    expect($alertMarkup)
+        ->toContain('role="alert"')
+        ->not->toContain('aria-live="assertive"')
+        ->not->toContain('aria-atomic="true"');
 });
 
 it('shows the translated blend removal warning and acknowledgement in the details tab', function (): void {

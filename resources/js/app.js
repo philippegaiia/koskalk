@@ -2,7 +2,7 @@ import './bootstrap';
 import { createAppNotification } from './app-notification';
 import { createClassificationPrompt } from './classification-prompt';
 import { createDirtyStateRegistry } from './dirty-state-registry';
-import { createIngredientEditor } from './ingredient-editor';
+import { consumeIngredientEditorNotification, createIngredientEditor } from './ingredient-editor';
 import { createMediaAssetPicker } from './media-asset-picker';
 import { createMediaLibraryUploader } from './media-library-uploader';
 import { createRecipeContentAutosave } from './recipe-content-autosave';
@@ -109,4 +109,7 @@ document.addEventListener('click', (event) => {
 
 window.addEventListener('resize', initializeSidebar);
 document.addEventListener('DOMContentLoaded', initializeSidebar);
-document.addEventListener('livewire:navigated', initializeSidebar);
+document.addEventListener('livewire:navigated', () => {
+    initializeSidebar();
+    queueMicrotask(() => consumeIngredientEditorNotification());
+});

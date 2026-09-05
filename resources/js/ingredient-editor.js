@@ -9,6 +9,7 @@ const SAVED_EVENT = 'ingredient-editor:saved';
 const CREATED_EVENT = 'ingredient-editor:created';
 const CANCELLED_EVENT = 'ingredient-editor:cancelled';
 const BASELINE_EVENT = 'ingredient-editor:baseline';
+const CREATE_NOTIFICATION_STORAGE_KEY = 'koskalk:ingredient-editor:created-notification';
 const SAVE_METHODS = {
     ingredient: 'save',
     guidance: 'saveWorkspaceGuidance',
@@ -32,6 +33,90 @@ const DEFAULT_LABELS = {
     replaceGuidance: 'You have an unsaved guidance draft. Replace it?',
     cancelGuidance: 'You have an unsaved guidance draft. Discard it?',
 };
+
+function dispatchAppNotification(detail) {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent('app-notification', { detail }));
+}
+
+function sessionStorageFor(candidate = null) {
+    if (candidate !== null && candidate !== undefined) {
+        return candidate;
+    }
+
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        return window.sessionStorage;
+    } catch (error) {
+        void error;
+
+        return null;
+    }
+}
+
+function clearStoredCreateNotification(storage) {
+    try {
+        storage?.removeItem?.(CREATE_NOTIFICATION_STORAGE_KEY);
+    } catch (error) {
+        void error;
+    }
+}
+
+function storeCreateNotification(storage, detail) {
+    if (!storage || typeof storage.setItem !== 'function') {
+        return;
+    }
+
+    try {
+        storage.setItem(CREATE_NOTIFICATION_STORAGE_KEY, JSON.stringify(detail));
+    } catch (error) {
+        void error;
+    }
+}
+
+export function consumeIngredientEditorNotification(storage = null, dispatch = dispatchAppNotification) {
+    const storageTarget = sessionStorageFor(storage);
+    if (!storageTarget || typeof storageTarget.getItem !== 'function') {
+        return false;
+    }
+
+    let rawDetail;
+
+    try {
+        rawDetail = storageTarget.getItem(CREATE_NOTIFICATION_STORAGE_KEY);
+    } catch (error) {
+        void error;
+
+        return false;
+    }
+
+    if (!rawDetail) {
+        return false;
+    }
+
+    clearStoredCreateNotification(storageTarget);
+
+    try {
+        const detail = JSON.parse(rawDetail);
+        if (typeof detail?.message !== 'string' || detail.message === '') {
+            return false;
+        }
+
+        dispatch(detail);
+
+        return true;
+    } catch (error) {
+        void error;
+
+        return false;
+    }
+}
 
 function cloneValue(value) {
     if (value === undefined || value === null) {
@@ -190,17 +275,21 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
         return undefined;
     });
+    const dispatchNotification = options.dispatchNotification ?? dispatchAppNotification;
+    const notificationStorage = sessionStorageFor(options.sessionStorage);
     const confirm = options.confirm ?? defaultConfirm;
 
     const scopeBaselines = {};
     const scopeValues = {};
     const scopeSequences = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
+    const scopeEditVersions = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
     const pendingSaves = new Map();
     const pendingCancels = new Map();
     const createAcknowledgements = new Map();
     const unsubscriptions = [];
     let boundEventTarget = null;
     let navigationAllowance = false;
+    let pendingNavigationCleanup = null;
 
     const editor = {
         registry,
@@ -358,6 +447,8 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             this.isDestroyed = true;
 
             this.restoreCreateForm();
+            pendingNavigationCleanup?.();
+            pendingNavigationCleanup = null;
 
             if (boundEventTarget) {
                 boundEventTarget.removeEventListener('input', this.inputHandler, true);
@@ -449,6 +540,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             scopeSequences[scope] += 1;
+            scopeEditVersions[scope] += 1;
 
             if (!['saving', 'failed'].includes(this.stateFor(scope))) {
                 this.setScopeState(scope, 'dirty');
@@ -468,6 +560,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             pendingSaves.set(scope, {
                 sequence: scopeSequences[scope],
+                editVersion: scopeEditVersions[scope],
                 value: cloneValue(scopeValues[scope]),
             });
             this.setScopeState(scope, 'saving');
@@ -496,6 +589,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             this.captureValue(scope);
             pending.sequence = scopeSequences[scope];
+            pending.editVersion = scopeEditVersions[scope];
             pending.value = cloneValue(scopeValues[scope]);
         },
 
@@ -534,7 +628,9 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             this.restoreCreateForm();
 
             if (this.stateFor('ingredient') === 'saved') {
-                this.navigateAfterCreate(detail.redirect);
+                this.navigateAfterCreate(detail.redirect, detail.message);
+            } else if (typeof detail.message === 'string' && detail.message !== '') {
+                dispatchNotification({ message: detail.message, type: 'success' });
             }
         },
 
@@ -558,8 +654,15 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             const submittedSignature = pending === undefined
                 ? null
                 : stableSerialize(pending.value);
+            const editedDuringSave = pending !== undefined
+                && pending.editVersion !== scopeEditVersions[scope];
 
-            if (hasCanonicalBaseline && pending !== undefined && currentSignature === submittedSignature) {
+            if (
+                hasCanonicalBaseline
+                && pending !== undefined
+                && !editedDuringSave
+                && currentSignature === submittedSignature
+            ) {
                 scopeValues[scope] = cloneValue(savedValue);
             }
 
@@ -568,7 +671,9 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             this.setScopeState(
                 scope,
-                stableSerialize(scopeValues[scope]) === stableSerialize(savedValue) ? 'saved' : 'dirty',
+                !editedDuringSave && stableSerialize(scopeValues[scope]) === stableSerialize(savedValue)
+                    ? 'saved'
+                    : 'dirty',
             );
 
             if (scope === 'ingredient' && this.isCreate) {
@@ -580,9 +685,51 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
         },
 
-        navigateAfterCreate(url) {
+        navigateAfterCreate(url, message = null) {
+            const notify = () => {
+                if (typeof message !== 'string' || message === '') {
+                    return;
+                }
+
+                dispatchNotification({ message, type: 'success' });
+            };
+
             if (typeof url !== 'string' || url === '') {
+                notify();
+
                 return;
+            }
+
+            pendingNavigationCleanup?.();
+            pendingNavigationCleanup = null;
+
+            let notified = false;
+            const onNavigated = () => {
+                if (notified) {
+                    return;
+                }
+
+                notified = true;
+                cleanup();
+                if (!consumeIngredientEditorNotification(notificationStorage, dispatchNotification)) {
+                    notify();
+                }
+            };
+            const cleanup = () => {
+                navigationTarget?.removeEventListener('livewire:navigated', onNavigated);
+
+                if (pendingNavigationCleanup === cleanup) {
+                    pendingNavigationCleanup = null;
+                }
+            };
+
+            if (typeof navigationTarget?.addEventListener === 'function') {
+                storeCreateNotification(notificationStorage, {
+                    message,
+                    type: 'success',
+                });
+                navigationTarget.addEventListener('livewire:navigated', onNavigated);
+                pendingNavigationCleanup = cleanup;
             }
 
             navigationAllowance = true;
@@ -591,6 +738,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 navigate(url);
             } catch (error) {
                 void error;
+                cleanup();
+                clearStoredCreateNotification(notificationStorage);
+                navigationAllowance = false;
+                notify();
             } finally {
                 queueMicrotask(() => {
                     navigationAllowance = false;

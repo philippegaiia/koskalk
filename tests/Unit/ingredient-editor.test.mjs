@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createDirtyStateRegistry } from '../../resources/js/dirty-state-registry.js';
-import { createIngredientEditor, stableSerialize } from '../../resources/js/ingredient-editor.js';
+import {
+    consumeIngredientEditorNotification,
+    createIngredientEditor,
+    stableSerialize,
+} from '../../resources/js/ingredient-editor.js';
 
 class FakeEventTarget {
     constructor() {
@@ -55,6 +59,24 @@ class FakeEventTarget {
         }
 
         return [...this.listeners.values()].reduce((total, listeners) => total + listeners.length, 0);
+    }
+}
+
+class FakeStorage {
+    constructor() {
+        this.values = new Map();
+    }
+
+    getItem(key) {
+        return this.values.get(key) ?? null;
+    }
+
+    setItem(key, value) {
+        this.values.set(key, String(value));
+    }
+
+    removeItem(key) {
+        this.values.delete(key);
     }
 }
 
@@ -508,6 +530,56 @@ test('keeps a newer material code edit dirty against the canonical saved value',
     assert.equal(setup.editor.currentFor('material-code'), 'newer-02');
 });
 
+test('keeps a buffered material code input dirty after an in-flight save succeeds', () => {
+    const setup = makeEditor();
+
+    setup.editor.init();
+    edit(setup.wire, 'workspaceMaterialCode', 'code-01');
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('material-code') });
+    setup.wire.startCommit('saveWorkspaceMaterialCode');
+
+    // The DOM has received a newer input, but Livewire has not flushed it into
+    // the component state yet.
+    setup.eventTarget.dispatch('input', { target: new FakeElement('material-code') });
+    setup.wire.emit('ingredient-editor:saved', {
+        scope: 'material-code',
+        baseline: 'CODE-01',
+    });
+    setup.wire.completeCommit();
+
+    assert.equal(setup.editor.stateFor('material-code'), 'dirty');
+    assert.equal(setup.editor.baselineFor('material-code'), 'CODE-01');
+    assert.equal(setup.editor.currentFor('material-code'), 'code-01');
+    assert.equal(setup.registry.blocksNavigation(), true);
+});
+
+test('adopts the raw nested ingredient state emitted after persistence', () => {
+    const setup = makeEditor();
+    const rawState = {
+        ...structuredClone(setup.state.data),
+        components: [{
+            ...structuredClone(setup.state.data.components[0]),
+            percentage: '60,0',
+            repeaterKey: 'row-1',
+        }],
+        hiddenFormState: { compositionRemovalConfirmed: false },
+    };
+
+    setup.editor.init();
+    edit(setup.wire, 'data', rawState);
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('ingredient') });
+    setup.wire.startCommit();
+    setup.wire.emit('ingredient-editor:saved', {
+        scope: 'ingredient',
+        baseline: structuredClone(rawState),
+    });
+    setup.wire.completeCommit();
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'saved');
+    assert.deepEqual(setup.editor.baselineFor('ingredient'), rawState);
+    assert.deepEqual(setup.editor.currentFor('ingredient'), rawState);
+});
+
 test('installs one navigation guard and removes every listener on destroy', () => {
     const { editor, wire, eventTarget, windowTarget, navigationTarget, registry } = makeEditor();
 
@@ -665,6 +737,75 @@ test('acknowledges an initial create from its explicit success event and navigat
     assert.equal(controls[2].getAttribute('contenteditable'), 'true');
     assert.deepEqual(navigations, ['/ingredients/1']);
     assert.equal(setup.confirmations.length, 0);
+});
+
+test('shows an explicit create success notification once after navigation', () => {
+    const form = new FakeForm('ingredient', [new FakeControl('input')]);
+    const notifications = [];
+    let setup;
+    setup = makeEditor({
+        isCreate: true,
+        dispatchNotification(detail) {
+            notifications.push(detail);
+        },
+        navigate(url) {
+            assert.equal(url, '/ingredients/1');
+            setup.navigationTarget.dispatch('livewire:navigate');
+            setup.navigationTarget.dispatch('livewire:navigated');
+        },
+    });
+
+    setup.editor.init();
+    setup.state.data.name = 'New ingredient';
+    setup.eventTarget.dispatch('submit', { target: form });
+    setup.wire.startCommit();
+    setup.wire.emit('ingredient-editor:created', {
+        scope: 'ingredient',
+        baseline: structuredClone(setup.state.data),
+        redirect: '/ingredients/1',
+        message: 'Ingredient created.',
+    });
+    setup.wire.completeCommit();
+
+    assert.deepEqual(notifications, [{ message: 'Ingredient created.', type: 'success' }]);
+    assert.equal(setup.navigationTarget.listenerCount('livewire:navigated'), 0);
+
+    setup.navigationTarget.dispatch('livewire:navigated');
+    assert.equal(notifications.length, 1);
+});
+
+test('keeps a create notification available when the editor is destroyed during navigation', () => {
+    const storage = new FakeStorage();
+    const notifications = [];
+    let setup;
+    setup = makeEditor({
+        isCreate: true,
+        sessionStorage: storage,
+        dispatchNotification(detail) {
+            notifications.push(detail);
+        },
+        navigate() {
+            setup.navigationTarget.dispatch('livewire:navigate');
+            setup.editor.destroy();
+        },
+    });
+    const form = new FakeForm('ingredient', [new FakeControl('input')]);
+
+    setup.editor.init();
+    setup.eventTarget.dispatch('submit', { target: form });
+    setup.wire.startCommit();
+    setup.wire.emit('ingredient-editor:created', {
+        scope: 'ingredient',
+        baseline: structuredClone(setup.state.data),
+        redirect: '/ingredients/1',
+        message: 'Ingredient created.',
+    });
+    setup.wire.completeCommit();
+
+    assert.equal(notifications.length, 0);
+    assert.equal(consumeIngredientEditorNotification(storage, (detail) => notifications.push(detail)), true);
+    assert.deepEqual(notifications, [{ message: 'Ingredient created.', type: 'success' }]);
+    assert.equal(consumeIngredientEditorNotification(storage, (detail) => notifications.push(detail)), false);
 });
 
 test('does not treat a transport redirect as a successful initial create', () => {

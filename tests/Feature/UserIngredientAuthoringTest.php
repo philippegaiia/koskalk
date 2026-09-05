@@ -234,7 +234,8 @@ it('creates a minimal private user ingredient from the public editor', function 
         return $event === 'ingredient-editor:created'
             && $payload['scope'] === 'ingredient'
             && $payload['baseline']['name'] === 'French Green Clay'
-            && $payload['redirect'] === route('ingredients.edit', $ingredient);
+            && $payload['redirect'] === route('ingredients.edit', $ingredient)
+            && $payload['message'] === __('ingredients.editor.status.created');
     });
 
     expect($ingredient)->not->toBeNull()
@@ -780,7 +781,7 @@ it('saves a blend composition and its source from the custom editor rows', funct
         'is_active' => true,
     ]);
 
-    Livewire::test(IngredientEditor::class)
+    $component = Livewire::test(IngredientEditor::class)
         ->set('data.name', 'My Blend')
         ->set('data.category', IngredientCategory::Lipids->value)
         ->set('data.ingredient_structure', 'blend')
@@ -789,6 +790,14 @@ it('saves a blend composition and its source from the custom editor rows', funct
         ->set('data.composition_source_notes', 'Supplier blend spec')
         ->call('save')
         ->assertHasNoErrors();
+
+    $canonicalData = json_decode(json_encode($component->instance()->data), true, 512, JSON_THROW_ON_ERROR);
+    $component->assertDispatched('ingredient-editor:created', function (string $event, array $payload) use ($canonicalData): bool {
+        return $event === 'ingredient-editor:created'
+            && $payload['scope'] === 'ingredient'
+            && $payload['baseline'] === $canonicalData
+            && isset($payload['baseline']['components'][0]['percentage_in_parent']);
+    });
 
     $workspace = $user->refresh()->company();
     $blend = Ingredient::query()

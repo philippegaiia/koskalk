@@ -399,7 +399,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $statusMessage = $wasEditing
             ? __('ingredients.editor.status.saved')
             : __('ingredients.editor.status.created');
-        $this->showAppNotification($statusMessage);
 
         $refreshedState = $userIngredientAuthoringService->formData($ingredient);
         $workspace = $destinationWorkspace instanceof Workspace
@@ -421,7 +420,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->confirmCompositionRemoval = false;
 
         /** @var array<string, mixed> $canonicalState */
-        $canonicalState = $this->form->getState();
+        $canonicalState = $this->data;
 
         if (! $wasEditing) {
             session()->flash('status', $statusMessage);
@@ -439,11 +438,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 scope: 'ingredient',
                 baseline: $canonicalState,
                 redirect: $redirect,
+                message: $statusMessage,
             );
 
             return null;
         }
 
+        $this->showAppNotification($statusMessage);
         $this->dispatch(
             'ingredient-editor:saved',
             scope: 'ingredient',

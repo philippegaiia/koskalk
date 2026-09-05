@@ -784,6 +784,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
         );
     }
 
+    public function quickComponentWorkspaceLabel(): string
+    {
+        return $this->destinationWorkspaceForDisplay($this->currentIngredient())?->name
+            ?? __('ingredients.editor.composition.workspace_fallback');
+    }
+
     public function removeComponentRow(int $index): void
     {
         unset($this->data['components'][$index]);

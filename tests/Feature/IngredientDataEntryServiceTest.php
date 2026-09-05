@@ -501,6 +501,36 @@ it('rejects composite components that do not reference catalog ingredients', fun
     ]))->toThrow(ValidationException::class, 'Each blend row must use an ingredient from your catalogue.');
 });
 
+it('accepts a composition total at the server tolerance boundary', function (): void {
+    $blend = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'catalog_key' => 'MAC-TOLERANCE',
+        'is_active' => true,
+    ]);
+    $component = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'catalog_key' => 'CMP-TOLERANCE',
+        'is_active' => true,
+    ]);
+
+    app(IngredientDataEntryService::class)->syncCurrentData($blend, [
+        'current_version' => [
+            'display_name' => 'Tolerance Blend',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'components' => [[
+            'component_ingredient_id' => $component->id,
+            'percentage_in_parent' => 99.99,
+        ]],
+    ]);
+
+    expect($blend->fresh()->components)->toHaveCount(1);
+});
+
 it('preserves specialist data when an ingredient is reclassified', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,

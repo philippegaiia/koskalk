@@ -16,6 +16,7 @@
      isCreate: @js($isCreate),
      labels: @js([
          'saved' => __('ingredients.editor.status.all_saved'),
+         'notCreated' => __('ingredients.editor.status.not_created'),
          'dirty' => __('ingredients.editor.status.unsaved'),
          'saving' => __('ingredients.editor.status.saving'),
          'failed' => __('ingredients.editor.status.save_failed'),

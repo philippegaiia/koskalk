@@ -26,6 +26,7 @@ const CANCEL_METHODS = {
 
 const DEFAULT_LABELS = {
     saved: 'All changes saved',
+    notCreated: 'Not created yet',
     dirty: 'Unsaved changes',
     saving: 'Saving…',
     failed: 'Save failed',
@@ -310,6 +311,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
         paths,
         labels,
         isCreate: Boolean(options.isCreate),
+        createHasBeenPersisted: false,
         scopeStates: Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 'saved'])),
         scopeBaselines,
         scopeValues,
@@ -507,6 +509,15 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
         },
 
         statusText(scope) {
+            if (
+                this.isCreate
+                && scope === 'ingredient'
+                && this.stateFor(scope) === 'saved'
+                && !this.createHasBeenPersisted
+            ) {
+                return labels.notCreated ?? labels.saved;
+            }
+
             return labels[this.stateFor(scope)] ?? labels.saved;
         },
 
@@ -677,6 +688,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
+            this.createHasBeenPersisted = true;
             createAcknowledgements.set('ingredient', cloneValue(detail.baseline));
             this.completeSave('ingredient', { baseline: detail.baseline });
             this.restoreCreateForm();

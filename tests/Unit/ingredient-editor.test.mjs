@@ -425,6 +425,22 @@ test('keeps a dirty structure choice protected when the composition editor re-re
     assert.equal(setup.confirmations.length, 1);
 });
 
+test('describes a clean ingredient creation as not created without blocking navigation', () => {
+    const setup = makeEditor({ isCreate: true, confirm: () => false });
+
+    setup.editor.init();
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'saved');
+    assert.equal(setup.editor.statusText('ingredient'), 'Not created yet');
+    assert.equal(setup.registry.blocksNavigation(), false);
+
+    edit(setup.wire, 'data.name', 'New ingredient');
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
+    assert.equal(setup.editor.statusText('ingredient'), 'Unsaved changes');
+    assert.equal(setup.registry.blocksNavigation(), true);
+});
+
 test('uses server-provided labels for statuses and confirmation prompts', () => {
     const labels = {
         saved: 'Server saved label',

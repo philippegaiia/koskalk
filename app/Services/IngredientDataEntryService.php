@@ -655,7 +655,7 @@ class IngredientDataEntryService
 
         $totalPercentage = $components->sum(fn (array $row): float => (float) ($row['percentage_in_parent'] ?? 0));
 
-        if (abs($totalPercentage - 100.0) > 0.01) {
+        if (round(abs($totalPercentage - 100.0), 12) > 0.01) {
             throw ValidationException::withMessages([
                 'components' => __('ingredients.editor.validation.composition_total'),
             ]);

@@ -52,9 +52,16 @@
                 aria-label="{{ __('ingredients.editor.classification_prompt.preview') }}"
                 class="mt-3 h-56 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] p-3 text-xs leading-5 text-[var(--color-ink-strong)]"
             >{{ $editor->generatedClassificationPrompt }}</textarea>
-            <p x-cloak x-show="copyFailed" class="mt-3 text-sm text-[var(--color-danger-strong)]">
-                {{ __('ingredients.editor.classification_prompt.copy_failed') }}
-            </p>
         </details>
+        <p
+            x-cloak
+            x-show="copyFailed"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            class="mt-3 text-sm text-[var(--color-danger-strong)]"
+        >
+            {{ __('ingredients.editor.classification_prompt.copy_failed') }}
+        </p>
     @endif
 </section>

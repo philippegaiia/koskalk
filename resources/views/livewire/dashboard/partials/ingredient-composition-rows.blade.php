@@ -7,7 +7,14 @@
         ->values()
         ->all();
     $total = $editor->componentPercentageTotal();
-    $isBalanced = abs($total - 100.0) < 0.01;
+    $isBalanced = round(abs($total - 100.0), 12) <= 0.01;
+    if ($isBalanced) {
+        $totalStatus = __('ingredients.editor.composition.total_complete');
+    } elseif ($total < 100.0) {
+        $totalStatus = __('ingredients.editor.composition.total_add', ['remaining' => number_format(100.0 - $total, 2, '.', '')]);
+    } else {
+        $totalStatus = __('ingredients.editor.composition.total_remove', ['excess' => number_format($total - 100.0, 2, '.', '')]);
+    }
 @endphp
 
 <section class="overflow-visible sk-card" aria-labelledby="composition-heading">
@@ -18,7 +25,8 @@
         </div>
         <p role="status" aria-live="polite" class="shrink-0 rounded-full bg-[var(--color-field-muted)] px-3 py-1.5 text-sm">
             <span class="text-[var(--color-ink-soft)]">{{ __('ingredients.editor.composition.total') }} </span>
-            <span class="numeric font-medium" style="color: {{ $isBalanced ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' }}">{{ number_format($total, 1, '.', '') }}%</span>
+            <span class="numeric font-medium" style="color: {{ $isBalanced ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' }}">{{ number_format($total, 2, '.', '') }}%</span>
+            <span class="ml-1 text-xs font-medium" style="color: {{ $isBalanced ? 'var(--color-success-strong)' : 'var(--color-danger-strong)' }}">{{ $totalStatus }}</span>
         </p>
     </div>
 
@@ -55,7 +63,7 @@
             <div x-cloak x-show="creating" class="sk-inset max-w-2xl space-y-4 p-4">
                 <div>
                     <p class="font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.composition.quick_heading') }}</p>
-                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.composition.quick_description') }}</p>
+                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.composition.quick_description', ['workspace' => $editor->quickComponentWorkspaceLabel()]) }}</p>
                 </div>
                 @error('plan')
                     <p role="alert" class="rounded-lg border border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>

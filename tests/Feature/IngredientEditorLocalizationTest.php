@@ -601,6 +601,7 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
         ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertSeeText('Add ingredient')
+        ->assertSee('Not created yet')
         ->assertSeeText('Add an ingredient to your library.')
         ->assertSeeText('Start with the ingredient name and INCI. Add classification, reference information, and compliance details only when relevant.')
         ->assertSeeText('Overview')
@@ -768,9 +769,41 @@ it('uses the approved blend composition copy', function () {
         ->assertSeeText('Add an ingredient')
         ->assertSee('placeholder="Search by name or INCI"', false)
         ->assertSeeText('Add a new ingredient')
-        ->assertSeeText('Enter the basic details now. You can complete the ingredient later.')
+        ->assertSeeText('Create and add ingredient')
+        ->assertSeeText('Creates an ingredient in Your ingredient library immediately, then adds it to this blend. It stays there if you cancel this blend.')
         ->assertSeeText('No ingredients added yet')
         ->assertSeeText('Composition source');
+});
+
+it('discloses the resolved workspace for composition quick-create', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create(['name' => 'Studio workspace']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->assertSeeText('Create and add ingredient')
+        ->assertSeeText('Creates an ingredient in Studio workspace immediately, then adds it to this blend. It stays there if you cancel this blend.');
+});
+
+it('keeps clipboard recovery visible outside the collapsed classification prompt preview', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'Test ingredient')
+        ->call('generateClassificationPrompt');
+    $response = $component->html();
+
+    expect($response)
+        ->toContain('Could not copy. Open the prompt and copy the text manually.')
+        ->toContain('role="alert"')
+        ->toContain('aria-live="assertive"')
+        ->and(strpos($response, 'Could not copy. Open the prompt and copy the text manually.'))
+        ->toBeGreaterThan(strpos($response, '</details>'));
 });
 
 it('shows the translated blend removal warning and acknowledgement in the details tab', function (): void {

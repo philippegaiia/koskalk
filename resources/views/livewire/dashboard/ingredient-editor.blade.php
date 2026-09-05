@@ -11,6 +11,8 @@
 
 <div
  x-data="ingredientEditor({
+     element: $el,
+     isCreate: @js($isCreate),
      baselines: @js([
          'ingredient' => $data,
          'guidance' => $workspaceGuidance,
@@ -124,7 +126,7 @@
  <button type="button" wire:click="startWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="startWorkspaceGuidanceCustomization" class="sk-btn sk-btn-secondary">
  {{ __('ingredients.editor.workspace_guidance.edit') }}
  </button>
- <button type="button" wire:click="usePlatformGuidance" data-ingredient-guidance-replace="usePlatformGuidance" wire:confirm="{{ __('ingredients.editor.workspace_guidance.platform_confirm') }}" wire:loading.attr="disabled" wire:target="usePlatformGuidance" class="sk-btn sk-btn-ghost">
+ <button type="button" wire:click="usePlatformGuidance" data-ingredient-guidance-replace="usePlatformGuidance" data-ingredient-guidance-confirm="{{ __('ingredients.editor.workspace_guidance.platform_confirm') }}" wire:confirm="{{ __('ingredients.editor.workspace_guidance.platform_confirm') }}" wire:loading.attr="disabled" wire:target="usePlatformGuidance" class="sk-btn sk-btn-ghost">
  {{ __('ingredients.editor.workspace_guidance.use_platform') }}
  </button>
  @elseif ($workspaceGuidanceOverride)

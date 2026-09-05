@@ -59,10 +59,12 @@ class FakeEventTarget {
 }
 
 class FakeElement {
-    constructor(scope, action = null) {
+    constructor(scope, action = null, localCancel = false, confirmation = null) {
         this.dataset = {
             ingredientScope: scope,
             ingredientGuidanceReplace: action,
+            ingredientGuidanceConfirm: confirmation,
+            ingredientEditorLocalCancel: localCancel ? scope : null,
         };
         this.parentElement = null;
     }
@@ -76,7 +78,31 @@ class FakeElement {
             return this.dataset.ingredientGuidanceReplace === null ? null : this;
         }
 
+        if (selector === '[data-ingredient-editor-local-cancel]') {
+            return this.dataset.ingredientEditorLocalCancel === null ? null : this;
+        }
+
         return null;
+    }
+}
+
+class FakeControl {
+    constructor(tagName = 'input') {
+        this.tagName = tagName.toUpperCase();
+        this.disabled = false;
+        this.readOnly = false;
+        this.contentEditable = tagName === 'contenteditable' ? 'true' : 'false';
+    }
+}
+
+class FakeForm extends FakeElement {
+    constructor(scope, controls = []) {
+        super(scope);
+        this.controls = controls;
+    }
+
+    querySelectorAll() {
+        return this.controls;
     }
 }
 
@@ -86,7 +112,7 @@ class FakeWire {
         this.watchers = new Map();
         this.listeners = new Map();
         this.hooks = new Map();
-        this.pendingCommit = null;
+        this.pendingCommits = [];
     }
 
     $watch(path, callback) {
@@ -156,21 +182,19 @@ class FakeWire {
             },
         });
 
-        this.pendingCommit = { succeed, fail };
+        this.pendingCommits.push({ succeed, fail });
     }
 
-    completeCommit(effects = {}) {
-        const commit = this.pendingCommit;
-        this.pendingCommit = null;
+    completeCommit(effects = {}, index = 0) {
+        const [commit] = this.pendingCommits.splice(index, 1);
 
         for (const callback of commit?.succeed ?? []) {
             callback({ effects });
         }
     }
 
-    failCommit(error = new Error('Network failure')) {
-        const commit = this.pendingCommit;
-        this.pendingCommit = null;
+    failCommit(error = new Error('Network failure'), index = 0) {
+        const [commit] = this.pendingCommits.splice(index, 1);
 
         for (const callback of commit?.fail ?? []) {
             callback(error);
@@ -195,6 +219,7 @@ function makeEditor(overrides = {}) {
     const navigationTarget = new FakeEventTarget();
     const confirmations = [];
     const registry = createDirtyStateRegistry();
+    const confirmOverride = overrides.confirm;
 
     const editor = createIngredientEditor({
         registry,
@@ -212,12 +237,12 @@ function makeEditor(overrides = {}) {
             guidance: true,
             'material-code': true,
         },
+        ...overrides,
         confirm(message) {
             confirmations.push(message);
 
-            return true;
+            return typeof confirmOverride === 'function' ? confirmOverride(message) : true;
         },
-        ...overrides,
     });
 
     return { editor, state, wire, eventTarget, windowTarget, navigationTarget, confirmations, registry };
@@ -333,6 +358,17 @@ test('uses input and change fallback events for buffered fields and rich editors
     assert.equal(registry.blocksNavigation(), true);
 });
 
+test('binds production listeners from the Alpine root instead of requiring an injected target', () => {
+    const setup = makeEditor({ eventTarget: null });
+    setup.editor.$el = setup.eventTarget;
+
+    setup.editor.init();
+    setup.eventTarget.dispatch('input', { target: new FakeElement('guidance') });
+
+    assert.equal(setup.eventTarget.listenerCount('input'), 1);
+    assert.equal(setup.editor.stateFor('guidance'), 'dirty');
+});
+
 test('captures buffered state after submit has flushed before marking it saved', () => {
     const { editor, state, wire, eventTarget } = makeEditor();
 
@@ -379,6 +415,38 @@ test('installs one navigation guard and removes every listener on destroy', () =
     assert.equal(registry.blocksNavigation(), false);
 });
 
+test('rejects a local guidance cancel without running its Livewire action', () => {
+    const { editor, eventTarget, confirmations, registry } = makeEditor({
+        confirm: () => false,
+    });
+
+    editor.init();
+    editor.markDirty('guidance');
+    const event = eventTarget.dispatch('click', { target: new FakeElement('guidance', null, true) });
+
+    assert.equal(event.defaultPrevented, true);
+    assert.equal(confirmations.length, 1);
+    assert.equal(editor.stateFor('guidance'), 'dirty');
+    assert.equal(registry.blocksNavigation(), true);
+});
+
+test('accepts a local guidance cancel and clears only guidance state', () => {
+    const { editor, eventTarget, confirmations, registry } = makeEditor({
+        confirm: () => true,
+    });
+
+    editor.init();
+    editor.markDirty('guidance');
+    editor.markDirty('ingredient');
+    const event = eventTarget.dispatch('click', { target: new FakeElement('guidance', null, true) });
+
+    assert.equal(event.defaultPrevented, false);
+    assert.equal(confirmations.length, 1);
+    assert.equal(editor.stateFor('guidance'), 'saved');
+    assert.equal(editor.stateFor('ingredient'), 'dirty');
+    assert.equal(registry.blocksNavigation(), true);
+});
+
 test('confirms replacing an unsaved guidance draft and starts only that save', () => {
     const { editor, eventTarget, wire, confirmations, registry } = makeEditor();
 
@@ -397,9 +465,138 @@ test('confirms replacing an unsaved guidance draft and starts only that save', (
     assert.equal(wire.listeners.get('ingredient-editor:saved').length, 1);
 });
 
+test('keeps platform guidance confirmation after accepting an unsaved draft warning', () => {
+    const { editor, eventTarget, confirmations } = makeEditor();
+
+    editor.init();
+    editor.markDirty('guidance');
+    eventTarget.dispatch('click', {
+        target: new FakeElement('guidance', 'usePlatformGuidance', false, 'Confirm platform guidance?'),
+    });
+
+    assert.equal(confirmations.length, 2);
+    assert.match(confirmations[0], /unsaved/i);
+    assert.equal(confirmations[1], 'Confirm platform guidance?');
+    assert.equal(editor.stateFor('guidance'), 'saving');
+});
+
+test('adopts inherited guidance when customization opens, then tracks later edits', () => {
+    const setup = makeEditor({
+        baselines: {
+            ingredient: structuredClone(setupPlaceholder().data),
+            guidance: { html: null },
+            'material-code': 'ARGAN-01',
+        },
+    });
+
+    setup.editor.init();
+    setup.state.workspaceGuidance.html = '<p>Inherited platform guidance.</p>';
+    setup.wire.set('workspaceGuidance', setup.state.workspaceGuidance);
+    setup.wire.emit('ingredient-editor:baseline', {
+        scope: 'guidance',
+        baseline: { html: '<p>Inherited platform guidance.</p>' },
+    });
+
+    assert.equal(setup.editor.stateFor('guidance'), 'saved');
+    setup.wire.set('workspaceGuidance.html', '<p>Edited guidance.</p>');
+    assert.equal(setup.editor.stateFor('guidance'), 'dirty');
+});
+
+test('allows an initial create redirect from its submitted baseline without prompting', () => {
+    const controls = [new FakeControl('input'), new FakeControl('textarea'), new FakeControl('contenteditable')];
+    const setup = makeEditor({ isCreate: true });
+    const form = new FakeForm('ingredient', controls);
+
+    setup.editor.init();
+    setup.state.data.name = 'New ingredient';
+    setup.eventTarget.dispatch('submit', { target: form });
+    setup.wire.startCommit();
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'saving');
+    assert.equal(controls[0].disabled, true);
+    assert.equal(controls[1].readOnly, true);
+    assert.equal(controls[2].readOnly, true);
+
+    setup.wire.completeCommit({ redirect: '/ingredients/1' });
+    const navigation = setup.navigationTarget.dispatch('livewire:navigate');
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'saved');
+    assert.equal(navigation.defaultPrevented, false);
+    assert.equal(setup.confirmations.length, 0);
+});
+
+test('keeps newer create edits protected when a redirect arrives', async () => {
+    const controls = [new FakeControl('input')];
+    const setup = makeEditor({ isCreate: true, confirm: () => false });
+    const form = new FakeForm('ingredient', controls);
+
+    setup.editor.init();
+    setup.state.data.name = 'Submitted ingredient';
+    setup.eventTarget.dispatch('submit', { target: form });
+    setup.wire.startCommit();
+    edit(setup.wire, 'data.name', 'Newer ingredient edit');
+    setup.wire.completeCommit({ redirect: '/ingredients/1' });
+    await new Promise((resolve) => queueMicrotask(resolve));
+
+    assert.equal(controls[0].disabled, false);
+    assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
+    const navigation = setup.navigationTarget.dispatch('livewire:navigate');
+
+    assert.equal(navigation.defaultPrevented, true);
+});
+
+test('unfreezes and keeps an initial create dirty after a failed commit', () => {
+    const controls = [new FakeControl('input'), new FakeControl('contenteditable')];
+    const setup = makeEditor({ isCreate: true });
+    const form = new FakeForm('ingredient', controls);
+
+    setup.editor.init();
+    setup.state.data.name = 'Failed ingredient';
+    setup.eventTarget.dispatch('submit', { target: form });
+    setup.wire.startCommit();
+    setup.wire.failCommit();
+
+    assert.equal(controls[0].disabled, false);
+    assert.equal(controls[1].readOnly, false);
+    assert.equal(setup.editor.stateFor('ingredient'), 'failed');
+    assert.equal(setup.registry.blocksNavigation(), true);
+});
+
+test('does not rewrite the first submitted snapshot during an overlapping second scope commit', () => {
+    const setup = makeEditor();
+
+    setup.editor.init();
+    edit(setup.wire, 'data.name', 'First submitted name');
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('ingredient') });
+    setup.wire.startCommit();
+
+    edit(setup.wire, 'data.name', 'Newer ingredient edit');
+    edit(setup.wire, 'workspaceGuidance.html', '<p>Submitted guidance.</p>');
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('guidance') });
+    setup.wire.startCommit();
+
+    setup.wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
+    setup.wire.completeCommit({}, 0);
+
+    assert.equal(setup.editor.baselineFor('ingredient').name, 'First submitted name');
+    assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
+    assert.equal(setup.registry.blocksNavigation(), true);
+});
+
 test('serializes nested values with stable object-key order', () => {
     const left = { rich: { type: 'doc', content: [{ attrs: { level: 2, align: null } }] }, media: [{ id: 1, role: 'featured' }] };
     const right = { media: [{ role: 'featured', id: 1 }], rich: { content: [{ attrs: { align: null, level: 2 } }], type: 'doc' } };
 
     assert.equal(stableSerialize(left), stableSerialize(right));
 });
+
+function setupPlaceholder() {
+    return {
+        data: {
+            name: 'Argan oil',
+            components: [{ ingredient_id: 1, percentage: 60 }],
+            media: [{ id: 10, role: 'featured' }],
+            description: { type: 'doc', content: [{ type: 'paragraph', content: [{ text: 'Useful.' }] }] },
+        },
+    };
+}

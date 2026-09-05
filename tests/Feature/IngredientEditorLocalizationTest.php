@@ -664,6 +664,27 @@ it('starts with a single ingredient and places identity before classification', 
         ->assertDontSeeText('Composition');
 });
 
+it('keeps the editor baseline mounted when a blend composition re-renders', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class);
+    $html = $component->html();
+    $editorMarker = strpos($html, 'data-ingredient-editor');
+    $editorRootStart = strrpos(substr($html, 0, $editorMarker), '<div');
+    $editorRootEnd = strpos($html, '>', $editorMarker);
+    $editorRoot = substr($html, $editorRootStart, $editorRootEnd - $editorRootStart + 1);
+
+    expect($editorRoot)->toContain('wire:ignore.self');
+
+    $component
+        ->set('data.ingredient_structure', 'blend')
+        ->assertSet('data.ingredient_structure', 'blend')
+        ->assertSeeText('Blend composition')
+        ->assertSeeHtml('wire:ignore.self');
+});
+
 it('explains why manually created lipids cannot use saponification and links to duplication', function (): void {
     $user = User::factory()->create();
 

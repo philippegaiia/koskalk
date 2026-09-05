@@ -9,6 +9,7 @@
  $isCarrierOil = \App\Enums\IngredientCategory::tryFrom((string) ($data['category'] ?? '')) === \App\Enums\IngredientCategory::Lipids;
 @endphp
 
+<div>
 <div
  x-data="ingredientEditor({
      element: $el,
@@ -31,6 +32,7 @@
      invoke: (method) => $wire[method](),
  })"
  x-init="init()"
+ wire:ignore.self
  data-ingredient-editor
  class="mx-auto w-full max-w-app space-y-6">
  <section aria-labelledby="ingredient-editor-title">
@@ -224,4 +226,5 @@
  @endif
 
  <x-filament-actions::modals />
+</div>
 </div>

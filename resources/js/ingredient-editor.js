@@ -170,6 +170,18 @@ export function stableSerialize(value) {
     return JSON.stringify(stableValue(value));
 }
 
+function canonicalScopeValue(scope, value) {
+    if (scope === 'material-code' && value === '') {
+        return null;
+    }
+
+    return value;
+}
+
+function scopeSignature(scope, value) {
+    return stableSerialize(canonicalScopeValue(scope, value));
+}
+
 function fallbackRegistry() {
     const states = new Map();
 
@@ -328,8 +340,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                     ? initialBaselines[scope]
                     : read(scope);
 
-                scopeBaselines[scope] = cloneValue(baseline);
-                scopeValues[scope] = cloneValue(baseline);
+                const canonicalBaseline = canonicalScopeValue(scope, baseline);
+
+                scopeBaselines[scope] = cloneValue(canonicalBaseline);
+                scopeValues[scope] = cloneValue(canonicalBaseline);
                 this.setScopeState(scope, 'saved');
 
                 if (!isEditable(editable, scope)) {
@@ -514,10 +528,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
-            const nextValue = cloneValue(value);
-            const previousSignature = stableSerialize(scopeValues[scope]);
-            const nextSignature = stableSerialize(nextValue);
-            const baselineSignature = stableSerialize(scopeBaselines[scope]);
+            const nextValue = canonicalScopeValue(scope, cloneValue(value));
+            const previousSignature = scopeSignature(scope, scopeValues[scope]);
+            const nextSignature = scopeSignature(scope, nextValue);
+            const baselineSignature = scopeSignature(scope, scopeBaselines[scope]);
             const bufferedEdit = unresolvedBufferedEdits.get(scope);
 
             if (previousSignature !== nextSignature) {
@@ -562,7 +576,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             this.setScopeState(
                 scope,
-                stableSerialize(scopeBaselines[scope]) === nextSignature ? 'saved' : 'dirty',
+                scopeSignature(scope, scopeBaselines[scope]) === nextSignature ? 'saved' : 'dirty',
             );
         },
 
@@ -612,8 +626,8 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
-            const nextValue = cloneValue(value);
-            if (stableSerialize(scopeValues[scope]) !== stableSerialize(nextValue)) {
+            const nextValue = canonicalScopeValue(scope, cloneValue(value));
+            if (scopeSignature(scope, scopeValues[scope]) !== scopeSignature(scope, nextValue)) {
                 scopeSequences[scope] += 1;
             }
             scopeValues[scope] = nextValue;
@@ -685,16 +699,19 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             const hasCanonicalBaseline = Object.prototype.hasOwnProperty.call(detail, 'baseline');
-            const savedValue = hasCanonicalBaseline
-                ? detail.baseline
-                : pending !== undefined
-                    ? pending.value
-                    : scopeValues[scope] ?? read(scope);
-            const currentSignature = stableSerialize(scopeValues[scope]);
+            const savedValue = canonicalScopeValue(
+                scope,
+                hasCanonicalBaseline
+                    ? detail.baseline
+                    : pending !== undefined
+                        ? pending.value
+                        : scopeValues[scope] ?? read(scope),
+            );
+            const currentSignature = scopeSignature(scope, scopeValues[scope]);
             const submittedSignature = pending === undefined
                 ? null
-                : stableSerialize(pending.value);
-            const savedSignature = stableSerialize(savedValue);
+                : scopeSignature(scope, pending.value);
+            const savedSignature = scopeSignature(scope, savedValue);
             const editedDuringSave = pending !== undefined
                 && pending.editVersion !== scopeEditVersions[scope];
             const newerValueWasObservedDuringSave = editedDuringSave
@@ -725,7 +742,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             this.setScopeState(
                 scope,
-                !editedDuringSave && stableSerialize(scopeValues[scope]) === stableSerialize(savedValue)
+                !editedDuringSave && scopeSignature(scope, scopeValues[scope]) === scopeSignature(scope, savedValue)
                     ? 'saved'
                     : 'dirty',
             );
@@ -829,18 +846,21 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             unresolvedBufferedEdits.delete(scope);
 
-            const baseline = Object.prototype.hasOwnProperty.call(detail, 'baseline')
-                ? detail.baseline
-                : read(scope);
-            const current = read(scope) ?? baseline;
-            const currentSignature = stableSerialize(current);
+            const baseline = canonicalScopeValue(
+                scope,
+                Object.prototype.hasOwnProperty.call(detail, 'baseline')
+                    ? detail.baseline
+                    : read(scope),
+            );
+            const current = canonicalScopeValue(scope, read(scope) ?? baseline);
+            const currentSignature = scopeSignature(scope, current);
 
             scopeBaselines[scope] = cloneValue(baseline);
             scopeValues[scope] = cloneValue(current);
 
             this.setScopeState(
                 scope,
-                stableSerialize(baseline) === currentSignature ? 'saved' : 'dirty',
+                scopeSignature(scope, baseline) === currentSignature ? 'saved' : 'dirty',
             );
         },
 
@@ -849,9 +869,12 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
-            const currentValue = Object.prototype.hasOwnProperty.call(detail, 'baseline')
-                ? detail.baseline
-                : read(scope) ?? scopeValues[scope];
+            const currentValue = canonicalScopeValue(
+                scope,
+                Object.prototype.hasOwnProperty.call(detail, 'baseline')
+                    ? detail.baseline
+                    : read(scope) ?? scopeValues[scope],
+            );
 
             scopeBaselines[scope] = cloneValue(currentValue);
             scopeValues[scope] = cloneValue(currentValue);

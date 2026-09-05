@@ -293,16 +293,19 @@ class FakeWire {
     }
 }
 
-function makeEditor(overrides = {}) {
+function makeEditor(overrides = {}, stateOverrides = {}) {
     const state = {
         data: {
             name: 'Argan oil',
             components: [{ ingredient_id: 1, percentage: 60 }],
             media: [{ id: 10, role: 'featured' }],
             description: { type: 'doc', content: [{ type: 'paragraph', content: [{ text: 'Useful.' }] }] },
+            ...(stateOverrides.data ?? {}),
         },
-        workspaceGuidance: { html: '<p>Use in the oil phase.</p>' },
-        workspaceMaterialCode: 'ARGAN-01',
+        workspaceGuidance: stateOverrides.workspaceGuidance ?? { html: '<p>Use in the oil phase.</p>' },
+        workspaceMaterialCode: Object.prototype.hasOwnProperty.call(stateOverrides, 'workspaceMaterialCode')
+            ? stateOverrides.workspaceMaterialCode
+            : 'ARGAN-01',
     };
     const wire = new FakeWire(state);
     const eventTarget = new FakeEventTarget();
@@ -378,6 +381,48 @@ test('returns a scope to clean after editing back to its stable baseline', () =>
 
     assert.equal(editor.stateFor('ingredient'), 'saved');
     assert.equal(registry.blocksNavigation(), false);
+});
+
+test('treats an emptied material code as equivalent to a null baseline', () => {
+    const setup = makeEditor({ confirm: () => false }, { workspaceMaterialCode: null });
+
+    setup.editor.init();
+    edit(setup.wire, 'workspaceMaterialCode', 'TMP-UNSAVED');
+    assert.equal(setup.editor.stateFor('material-code'), 'dirty');
+    assert.equal(setup.registry.blocksNavigation(), true);
+
+    edit(setup.wire, 'workspaceMaterialCode', '');
+
+    assert.equal(setup.editor.stateFor('material-code'), 'saved');
+    assert.equal(setup.registry.blocksNavigation(), false);
+
+    const navigation = setup.navigationTarget.dispatch('livewire:navigate');
+    assert.equal(navigation.defaultPrevented, false);
+    assert.equal(setup.confirmations.length, 0);
+});
+
+test('keeps a dirty structure choice protected when the composition editor re-renders', () => {
+    const setup = makeEditor({ isCreate: true, confirm: () => false });
+
+    setup.editor.init();
+    edit(setup.wire, 'data.ingredient_structure', 'blend');
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
+    assert.equal(setup.registry.blocksNavigation(), true);
+
+    // A reactive Livewire response updates the complete data scope as it adds the composition UI.
+    edit(setup.wire, 'data', {
+        ...setup.state.data,
+        ingredient_structure: 'blend',
+        components: [],
+    });
+
+    assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
+    assert.equal(setup.registry.blocksNavigation(), true);
+
+    const navigation = setup.navigationTarget.dispatch('livewire:navigate');
+    assert.equal(navigation.defaultPrevented, true);
+    assert.equal(setup.confirmations.length, 1);
 });
 
 test('keeps validation and network failures blocking after a submit', async () => {

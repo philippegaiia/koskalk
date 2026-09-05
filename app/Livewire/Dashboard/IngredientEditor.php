@@ -419,6 +419,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 : null;
         $this->form->fill($refreshedState);
         $this->confirmCompositionRemoval = false;
+        $this->dispatch('ingredient-editor:saved', scope: 'ingredient');
 
         if (! $wasEditing) {
             session()->flash('status', $statusMessage);
@@ -465,6 +466,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $this->workspaceMaterialCode = $workspaceIngredientCodes->codeFor($workspace, $ingredient);
         $this->showAppNotification(__('ingredients.editor.material_code.saved'));
+        $this->dispatch('ingredient-editor:saved', scope: 'material-code');
     }
 
     public function startWorkspaceGuidanceCustomization(
@@ -502,6 +504,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         ]);
         $this->isEditingWorkspaceGuidance = false;
         $this->resetErrorBag('workspaceGuidance.html');
+        $this->dispatch('ingredient-editor:cancelled', scope: 'guidance');
     }
 
     public function saveWorkspaceGuidance(
@@ -538,6 +541,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->isEditingWorkspaceGuidance = false;
         $this->resetErrorBag('workspaceGuidance.html');
         $this->showAppNotification(__('ingredients.editor.workspace_guidance.saved'));
+        $this->dispatch('ingredient-editor:saved', scope: 'guidance');
     }
 
     public function usePlatformGuidance(
@@ -568,6 +572,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->isEditingWorkspaceGuidance = false;
         $this->resetErrorBag('workspaceGuidance.html');
         $this->showAppNotification(__('ingredients.editor.workspace_guidance.platform_selected'));
+        $this->dispatch('ingredient-editor:saved', scope: 'guidance');
     }
 
     public function useWorkspaceGuidance(
@@ -597,6 +602,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->isEditingWorkspaceGuidance = false;
         $this->resetErrorBag('workspaceGuidance.html');
         $this->showAppNotification(__('ingredients.editor.workspace_guidance.workspace_selected'));
+        $this->dispatch('ingredient-editor:saved', scope: 'guidance');
     }
 
     public function canEditWorkspaceGuidance(): bool

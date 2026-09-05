@@ -9,7 +9,27 @@
  $isCarrierOil = \App\Enums\IngredientCategory::tryFrom((string) ($data['category'] ?? '')) === \App\Enums\IngredientCategory::Lipids;
 @endphp
 
-<div class="mx-auto w-full max-w-app space-y-6">
+<div
+ x-data="ingredientEditor({
+     baselines: @js([
+         'ingredient' => $data,
+         'guidance' => $workspaceGuidance,
+         'material-code' => $workspaceMaterialCode,
+     ]),
+     editable: @js([
+         'ingredient' => $canEditIngredientData,
+         'guidance' => $canEditWorkspaceGuidance,
+         'material-code' => $canEditWorkspaceMaterialCode,
+     ]),
+     read: (scope) => $wire.get(scope === 'ingredient' ? 'data' : (scope === 'guidance' ? 'workspaceGuidance' : 'workspaceMaterialCode')),
+     watch: (path, callback) => $wire.$watch(path, callback),
+     on: (event, callback) => $wire.$on(event, callback),
+     hook: (event, callback) => $wire.$hook(event, callback),
+     invoke: (method) => $wire[method](),
+ })"
+ x-init="init()"
+ data-ingredient-editor
+ class="mx-auto w-full max-w-app space-y-6">
  <section aria-labelledby="ingredient-editor-title">
  <nav aria-label="{{ __('ingredients.editor.common.breadcrumb') }}" class="flex min-h-10 flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-ink-soft)]">
  <a href="{{ route('ingredients.index') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-md text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
@@ -86,13 +106,14 @@
  </div>
 
  @if ($isEditingWorkspaceGuidance && $canEditWorkspaceGuidance)
- <form wire:submit="saveWorkspaceGuidance" class="mt-5 max-w-2xl space-y-3">
+ <form wire:submit="saveWorkspaceGuidance" data-ingredient-scope="guidance" class="mt-5 max-w-2xl space-y-3">
  {{ $this->workspaceGuidanceForm }}
  <div class="flex flex-wrap gap-3">
+ <p data-ingredient-editor-status="guidance" class="mr-auto self-center text-sm text-[var(--color-ink-soft)]" role="status" aria-live="polite" aria-atomic="true" x-text="statusText('guidance')"></p>
  <button type="submit" wire:loading.attr="disabled" wire:target="saveWorkspaceGuidance" class="sk-btn sk-btn-primary">
  {{ __('ingredients.editor.workspace_guidance.save') }}
  </button>
- <button type="button" wire:click="cancelWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="cancelWorkspaceGuidanceCustomization" class="sk-btn sk-btn-ghost">
+ <button type="button" wire:click="cancelWorkspaceGuidanceCustomization" data-ingredient-editor-local-cancel="guidance" wire:loading.attr="disabled" wire:target="cancelWorkspaceGuidanceCustomization" class="sk-btn sk-btn-ghost">
  {{ __('ingredients.editor.workspace_guidance.cancel') }}
  </button>
  </div>
@@ -103,14 +124,14 @@
  <button type="button" wire:click="startWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="startWorkspaceGuidanceCustomization" class="sk-btn sk-btn-secondary">
  {{ __('ingredients.editor.workspace_guidance.edit') }}
  </button>
- <button type="button" wire:click="usePlatformGuidance" wire:confirm="{{ __('ingredients.editor.workspace_guidance.platform_confirm') }}" wire:loading.attr="disabled" wire:target="usePlatformGuidance" class="sk-btn sk-btn-ghost">
+ <button type="button" wire:click="usePlatformGuidance" data-ingredient-guidance-replace="usePlatformGuidance" wire:confirm="{{ __('ingredients.editor.workspace_guidance.platform_confirm') }}" wire:loading.attr="disabled" wire:target="usePlatformGuidance" class="sk-btn sk-btn-ghost">
  {{ __('ingredients.editor.workspace_guidance.use_platform') }}
  </button>
  @elseif ($workspaceGuidanceOverride)
  <button type="button" wire:click="startWorkspaceGuidanceCustomization" wire:loading.attr="disabled" wire:target="startWorkspaceGuidanceCustomization" class="sk-btn sk-btn-secondary">
  {{ __('ingredients.editor.workspace_guidance.edit') }}
  </button>
- <button type="button" wire:click="useWorkspaceGuidance" wire:loading.attr="disabled" wire:target="useWorkspaceGuidance" class="sk-btn sk-btn-primary">
+ <button type="button" wire:click="useWorkspaceGuidance" data-ingredient-guidance-replace="useWorkspaceGuidance" wire:loading.attr="disabled" wire:target="useWorkspaceGuidance" class="sk-btn sk-btn-primary">
  {{ __('ingredients.editor.workspace_guidance.use_workspace') }}
  </button>
 @else
@@ -129,7 +150,7 @@
  <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.workspace_helper') }}</p>
  </div>
  @if ($canEditWorkspaceMaterialCode)
- <form wire:submit="saveWorkspaceMaterialCode" class="mt-5 max-w-xl space-y-3">
+ <form wire:submit="saveWorkspaceMaterialCode" data-ingredient-scope="material-code" class="mt-5 max-w-xl space-y-3">
  <label for="workspace-material-code" class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.label') }}</label>
  <input
  id="workspace-material-code"
@@ -145,9 +166,12 @@
  @error('workspaceMaterialCode')
  <p class="text-sm text-[var(--color-danger-strong)]" role="alert">{{ $message }}</p>
  @enderror
+ <div class="flex flex-wrap items-center gap-3">
+ <p data-ingredient-editor-status="material-code" class="mr-auto text-sm text-[var(--color-ink-soft)]" role="status" aria-live="polite" aria-atomic="true" x-text="statusText('material-code')"></p>
  <button type="submit" wire:loading.attr="disabled" wire:target="saveWorkspaceMaterialCode" class="sk-btn sk-btn-primary">
  {{ __('ingredients.editor.material_code.save') }}
  </button>
+ </div>
  </form>
  @else
  <dl class="mt-5 max-w-xl rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
@@ -160,11 +184,14 @@
  @endif
 
  @if (! $isReferenceView)
- <form wire:submit="save" class="space-y-4 pb-24">
+ <form wire:submit="save" data-ingredient-scope="ingredient" class="space-y-4 pb-24">
  {{ $this->form }}
 
  @if ($canEditIngredientData)
  <x-workflow-action-bar data-ingredient-save-bar>
+ <x-slot:leading>
+ <p data-ingredient-editor-status="ingredient" class="text-sm text-[var(--color-ink-soft)]" role="status" aria-live="polite" aria-atomic="true" x-text="statusText('ingredient')"></p>
+ </x-slot:leading>
  <a href="{{ route('ingredients.index') }}" wire:navigate class="sk-btn sk-btn-ghost">
  {{ __('ingredients.actions.cancel') }}
  </a>

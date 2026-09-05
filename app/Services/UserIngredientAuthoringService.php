@@ -6,6 +6,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -1064,29 +1065,70 @@ class UserIngredientAuthoringService
                 (int) $fattyAcidId => $percentage,
             ]);
         $fattyAcidEntries = $ingredient->fattyAcidEntries->loadMissing('fattyAcid:id,name');
-        $fattyAcids = $fattyAcidEntries
-            ->filter(function ($entry) use ($usesStoredTrustedProfile, $trustedFattyAcidProfile): bool {
-                $original = $usesStoredTrustedProfile
-                    ? $trustedFattyAcidProfile->get((int) $entry->fatty_acid_id)
-                    : $entry->percentage;
+        $fattyAcidValues = $fattyAcidEntries->mapWithKeys(fn ($entry): array => [
+            (int) $entry->fatty_acid_id => $entry->percentage,
+        ]);
+        $fattyAcidNames = $fattyAcidEntries
+            ->filter(fn ($entry): bool => filled($entry->fattyAcid?->name))
+            ->mapWithKeys(fn ($entry): array => [
+                (int) $entry->fatty_acid_id => (string) $entry->fattyAcid->name,
+            ]);
+        $storedFattyAcidIds = $trustedFattyAcidProfile->keys()
+            ->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)
+            ->filter(fn (int $fattyAcidId): bool => $fattyAcidId > 0)
+            ->values();
 
-                return filled($entry->fattyAcid?->name) && is_numeric($original);
-            })
-            ->take(20)
-            ->map(function ($entry) use ($usesStoredTrustedProfile, $trustedFattyAcidProfile): array {
-                $original = (float) ($usesStoredTrustedProfile
-                    ? $trustedFattyAcidProfile->get((int) $entry->fatty_acid_id)
-                    : $entry->percentage);
+        if ($usesStoredTrustedProfile) {
+            $missingStoredFattyAcidIds = $storedFattyAcidIds
+                ->reject(fn (int $fattyAcidId): bool => $fattyAcidNames->has($fattyAcidId))
+                ->values();
+
+            if ($missingStoredFattyAcidIds->isNotEmpty()) {
+                $fattyAcidNames = $fattyAcidNames->union(
+                    FattyAcid::query()
+                        ->whereKey($missingStoredFattyAcidIds->all())
+                        ->pluck('name', 'id')
+                        ->mapWithKeys(fn (mixed $name, mixed $fattyAcidId): array => [
+                            (int) $fattyAcidId => (string) $name,
+                        ]),
+                );
+            }
+        }
+
+        $fattyAcidIds = $fattyAcidEntries
+            ->pluck('fatty_acid_id')
+            ->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)
+            ->when($usesStoredTrustedProfile, fn ($ids) => $ids->merge($storedFattyAcidIds))
+            ->unique()
+            ->values();
+        $fattyAcids = $fattyAcidIds
+            ->map(function (int $fattyAcidId) use (
+                $fattyAcidNames,
+                $fattyAcidValues,
+                $usesStoredTrustedProfile,
+                $trustedFattyAcidProfile,
+            ): ?array {
+                $original = $usesStoredTrustedProfile
+                    ? $trustedFattyAcidProfile->get($fattyAcidId, 0)
+                    : $fattyAcidValues->get($fattyAcidId);
+
+                if (! filled($fattyAcidNames->get($fattyAcidId)) || ! is_numeric($original)) {
+                    return null;
+                }
+
+                $original = (float) $original;
                 [$minimum, $maximum] = $this->fattyAcidRange($original);
 
                 return [
-                    'id' => (int) $entry->fatty_acid_id,
-                    'name' => (string) $entry->fattyAcid->name,
+                    'id' => $fattyAcidId,
+                    'name' => (string) $fattyAcidNames->get($fattyAcidId),
                     'minimum' => $minimum,
                     'maximum' => $maximum,
                     'original' => $original,
                 ];
             })
+            ->filter()
+            ->take(20)
             ->values()
             ->all();
 

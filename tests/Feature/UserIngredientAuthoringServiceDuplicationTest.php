@@ -379,13 +379,14 @@ it('duplicates a workspace ingredient with its guidance and original trusted che
         ->toBe('<p>Private workspace guidance.</p>');
 });
 
-it('previews inherited chemistry limits for an edited trusted workspace source', function (): void {
+it('previews inherited chemistry limits and newly added acids for an edited trusted workspace source', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
     $owner->forgetAccessibleWorkspaceIds();
     $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
     $palmitic = FattyAcid::factory()->create(['key' => 'palmitic', 'name' => 'Palmitic']);
+    $linoleic = FattyAcid::factory()->create(['key' => 'linoleic', 'name' => 'Linoleic']);
     $source = Ingredient::factory()->create([
         'display_name' => 'Edited private olive oil',
         'category' => IngredientCategory::Lipids,
@@ -409,6 +410,7 @@ it('previews inherited chemistry limits for an edited trusted workspace source',
     $source->fattyAcidEntries()->createMany([
         ['fatty_acid_id' => $oleic->id, 'percentage' => 70.0],
         ['fatty_acid_id' => $palmitic->id, 'percentage' => 20.0],
+        ['fatty_acid_id' => $linoleic->id, 'percentage' => 4.0],
     ]);
     $source->sapProfile()->update(['koh_sap_value' => 0.19]);
     $source->fattyAcidEntries()->where('fatty_acid_id', $oleic->id)->update(['percentage' => 60.0]);
@@ -437,6 +439,17 @@ it('previews inherited chemistry limits for an edited trusted workspace source',
         'minimum' => 16.0,
         'maximum' => 24.0,
         'original' => 20.0,
+    ])->and($fattyAcids->get($linoleic->id))->toMatchArray([
+        'name' => 'Linoleic',
+        'minimum' => 0.0,
+        'maximum' => 5.0,
+        'original' => 0.0,
+    ]);
+
+    expect($service->trustedFattyAcidRange($source, $linoleic->id))->toMatchArray([
+        'minimum' => 0.0,
+        'maximum' => 5.0,
+        'original' => 0.0,
     ]);
 
     $copy = $service->duplicateIntoWorkspace($source, $owner, $workspace);

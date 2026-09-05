@@ -31,6 +31,24 @@ it('shows a duplicate action in the ingredients page header', function () {
         ->assertSee('Duplicate a Soapkraft ingredient');
 });
 
+it('renders a preview-only accessible duplication dialog with its data disclosures', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user);
+
+    $this->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee('Create a private copy in your private ingredient library. You can edit its details. The platform ingredient stays unchanged.')
+        ->assertSee('Create private copy')
+        ->assertSee('Legacy ingredient images are reset in the private copy.')
+        ->assertSee('Documents and media usages are not copied.')
+        ->assertSee('Approved guidance becomes a workspace override.')
+        ->assertSee('role="dialog"', false)
+        ->assertSee('aria-modal="true"', false)
+        ->assertSee('for="ingredient-duplication-search"', false)
+        ->assertDontSee('info_markdown');
+});
+
 it('searches platform ingredients for duplication', function () {
     $user = User::factory()->create();
 

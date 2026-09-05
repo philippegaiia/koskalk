@@ -1,99 +1,219 @@
-<div x-data="duplicateModal()" class="inline-flex">
-    <button type="button" @click="open = true" class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+@php
+    $duplicateDestinationLabel = $destinationWorkspaceName ?? __('ingredients.duplicate.preview.private_library');
+@endphp
+
+<div
+    x-data="ingredientDuplicationModal({
+        searchUrl: @js(route('ingredients.search-platform')),
+        duplicateUrl: @js(route('ingredients.duplicate')),
+        destinationWorkspaceId: @js($destinationWorkspaceId),
+        destinationWorkspaceSignature: @js($duplicateDestinationSignature),
+        destinationLabel: @js($duplicateDestinationLabel),
+        lipidCategoryLabel: @js(__('ingredients.categories.lipids.label')),
+        messages: @js([
+            'searchFailed' => __('ingredients.duplicate.errors.search_failed'),
+            'authExpired' => __('ingredients.duplicate.errors.auth_expired'),
+            'duplicateFailed' => __('ingredients.duplicate.errors.duplicate_failed'),
+            'invalidResponse' => __('ingredients.duplicate.errors.invalid_response'),
+            'reloadGuidance' => __('ingredients.duplicate.errors.reload_guidance'),
+            'unavailable' => __('ingredients.duplicate.preview.unavailable'),
+        ]),
+    })"
+    class="inline-flex"
+>
+    <button
+        x-ref="opener"
+        type="button"
+        @click="openModal()"
+        aria-haspopup="dialog"
+        :aria-expanded="open.toString()"
+        class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+    >
         {{ __('ingredients.duplicate.button') }}
     </button>
 
     <template x-if="open">
-        <div class="fixed inset-0 z-40 flex items-center justify-center bg-[color:oklch(from_var(--color-surface-strong)_l_c_h_/_0.55)] px-4 py-6" @click.self="open = false" @keydown.escape.window="open = false">
-            <div class="w-full max-w-lg sk-card p-6" @click.stop>
+        <div
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center bg-[color:oklch(from_var(--color-surface-strong)_l_c_h_/_0.55)] px-4 py-6"
+            @click.self="closeModal()"
+            @keydown.escape.window="closeModal()"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ingredient-duplication-dialog-heading"
+            aria-describedby="ingredient-duplication-dialog-description"
+        >
+            <div
+                x-ref="dialog"
+                tabindex="-1"
+                @click.stop
+                @keydown="trapFocus($event)"
+                class="max-h-[calc(100dvh-3rem)] w-full max-w-2xl overflow-y-auto sk-card p-5 sm:p-6"
+            >
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="sk-eyebrow">{{ __('ingredients.duplicate.eyebrow') }}</p>
-                        <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.duplicate.heading') }}</h3>
-                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.description') }}</p>
+                        <h3 id="ingredient-duplication-dialog-heading" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.duplicate.heading') }}</h3>
+                        <p id="ingredient-duplication-dialog-description" class="mt-2 max-w-xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.description') }}</p>
                     </div>
-                    <button type="button" @click="open = false" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">{{ __('ingredients.actions.cancel') }}</button>
+                    <button type="button" @click="closeModal()" class="sk-btn sk-btn-ghost shrink-0">{{ __('ingredients.actions.cancel') }}</button>
                 </div>
 
                 <div class="mt-5">
+                    <label for="ingredient-duplication-search" class="sk-eyebrow">{{ __('ingredients.duplicate.search_label') }}</label>
                     <input
+                        id="ingredient-duplication-search"
+                        x-ref="searchInput"
                         x-model="query"
                         @input.debounce.300ms="search()"
-                        type="text"
+                        type="search"
+                        autocomplete="off"
                         placeholder="{{ __('ingredients.duplicate.search_placeholder') }}"
-                        class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
-                        x-ref="searchInput"
+                        :aria-invalid="searchError ? 'true' : 'false'"
+                        aria-describedby="ingredient-duplication-search-error"
+                        class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition placeholder:text-[var(--color-ink-soft)] focus:outline-2 focus:outline-[var(--color-accent)]"
                     />
                 </div>
 
-                <div class="mt-4 max-h-64 overflow-y-auto divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)]">
-                    <template x-if="loading">
-                        <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.searching') }}</div>
-                    </template>
+                <p
+                    x-cloak
+                    x-show="searchError"
+                    id="ingredient-duplication-search-error"
+                    role="alert"
+                    aria-live="assertive"
+                    class="mt-3 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm leading-6 text-[var(--color-danger-strong)]"
+                    x-text="searchError"
+                ></p>
 
-                    <template x-if="!loading && results.length === 0 && query.length >= 2">
-                        <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.no_matches') }}</div>
-                    </template>
+                <template x-if="!selected">
+                    <div class="mt-4">
+                        <div class="max-h-64 overflow-y-auto divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)]" role="listbox" aria-label="{{ __('ingredients.duplicate.results_label') }}">
+                            <template x-if="loading">
+                                <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]" role="status">{{ __('ingredients.duplicate.searching') }}</div>
+                            </template>
 
-                    <template x-if="!loading && results.length === 0 && query.length < 2">
-                        <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.minimum_characters') }}</div>
-                    </template>
+                            <template x-if="!loading && results.length === 0 && query.trim().length >= 2 && !searchError">
+                                <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.no_matches') }}</div>
+                            </template>
 
-                    <template x-for="item in results" :key="item.id">
-                        <button type="button" @click="duplicate(item.id)" class="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-[var(--color-panel)]">
+                            <template x-if="!loading && results.length === 0 && query.trim().length < 2 && !searchError">
+                                <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.minimum_characters') }}</div>
+                            </template>
+
+                            <template x-for="item in results" :key="item.id">
+                                <button
+                                    type="button"
+                                    role="option"
+                                    :aria-selected="selected?.id === item.id ? 'true' : 'false'"
+                                    @click="selectCandidate(item)"
+                                    class="flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition hover:bg-[var(--color-field-muted)] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]"
+                                >
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
+                                        <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category].filter(Boolean).join(' · ')"></span>
+                                    </span>
+                                    <span
+                                        class="shrink-0 text-xs font-medium"
+                                        :class="item.duplication.available ? 'text-[var(--color-accent-strong)]' : 'text-[var(--color-danger-strong)]'"
+                                        x-text="item.duplication.available ? '{{ __('ingredients.duplicate.preview.review') }}' : '{{ __('ingredients.duplicate.preview.unavailable') }}'"
+                                    ></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="selected">
+                    <section class="mt-5" aria-labelledby="ingredient-duplication-preview-heading">
+                        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-line)] pb-4">
                             <div>
-                                <p class="text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></p>
-                                <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category].filter(Boolean).join(' · ')"></p>
+                                <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.eyebrow') }}</p>
+                                <h4 x-ref="previewHeading" id="ingredient-duplication-preview-heading" tabindex="-1" class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)] focus:outline-none" x-text="selected.name"></h4>
                             </div>
-                            <span class="shrink-0 text-xs font-medium text-[var(--color-accent)]">{{ __('ingredients.duplicate.action') }}</span>
-                        </button>
-                    </template>
-                </div>
+                            <button type="button" @click="chooseAnother()" class="sk-btn sk-btn-outline">{{ __('ingredients.duplicate.preview.choose_another') }}</button>
+                        </div>
+
+                        <p class="mt-4 rounded-lg bg-[var(--color-accent-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)]">
+                            {{ __('ingredients.duplicate.preview.copy', ['workspace' => $duplicateDestinationLabel]) }}
+                        </p>
+
+                        <dl class="mt-4 grid gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] p-4 sm:grid-cols-2">
+                            <div x-show="selected.category">
+                                <dt class="sk-eyebrow">{{ __('ingredients.duplicate.preview.category') }}</dt>
+                                <dd class="mt-1 text-sm text-[var(--color-ink-strong)]" x-text="selected.category"></dd>
+                            </div>
+                            <div x-show="selected.inci_name">
+                                <dt class="sk-eyebrow">{{ __('ingredients.duplicate.preview.inci_name') }}</dt>
+                                <dd class="mt-1 text-sm text-[var(--color-ink-strong)]" x-text="selected.inci_name"></dd>
+                            </div>
+                            <div x-show="selected.identifiers.length" class="sm:col-span-2">
+                                <dt class="sk-eyebrow">{{ __('ingredients.duplicate.preview.identifiers') }}</dt>
+                                <dd class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-ink-strong)]">
+                                    <template x-for="identifier in selected.identifiers" :key="`${identifier.scheme}-${identifier.value}`">
+                                        <span class="numeric" x-text="`${String(identifier.scheme ?? '').toUpperCase()}: ${identifier.value ?? ''}`"></span>
+                                    </template>
+                                </dd>
+                            </div>
+                            <div x-show="selected.aliases.length" class="sm:col-span-2">
+                                <dt class="sk-eyebrow">{{ __('ingredients.duplicate.preview.aliases') }}</dt>
+                                <dd class="mt-1 text-sm text-[var(--color-ink-strong)]" x-text="selected.aliases.join(' · ')"></dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-4 rounded-lg border border-[var(--color-line)] p-4">
+                            <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.destination') }}</p>
+                            <p class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]" x-text="destinationLabel"></p>
+                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.destination_help') }}</p>
+                        </div>
+
+                        <template x-if="!selected.duplication.available">
+                            <p role="alert" class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-danger-strong)]" x-text="selected.duplication.reason || messages.unavailable"></p>
+                        </template>
+
+                        <template x-if="selected.duplication.available">
+                            <div class="mt-4 space-y-4">
+                                <div class="rounded-lg border border-[var(--color-line)] p-4">
+                                    <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.restrictions') }}</p>
+                                    <ul class="mt-2 space-y-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                                        <li>{{ __('ingredients.duplicate.preview.images_reset') }}</li>
+                                        <li>{{ __('ingredients.duplicate.preview.media_not_copied') }}</li>
+                                        <li>{{ __('ingredients.duplicate.preview.guidance_override') }}</li>
+                                    </ul>
+                                </div>
+
+                                <template x-if="chemistryState() === 'inherited'">
+                                    <p class="rounded-lg bg-[var(--color-chemistry-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)]">{{ __('ingredients.duplicate.preview.inherited_chemistry') }}</p>
+                                </template>
+                                <template x-if="chemistryState() === 'untrusted'">
+                                    <p class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.untrusted_chemistry') }}</p>
+                                </template>
+                            </div>
+                        </template>
+
+                        <p
+                            x-cloak
+                            x-show="duplicateError"
+                            role="alert"
+                            aria-live="assertive"
+                            class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-danger-strong)]"
+                            x-text="duplicateError"
+                        ></p>
+
+                        <div class="mt-5 flex flex-col-reverse gap-2 border-t border-[var(--color-line)] pt-4 sm:flex-row sm:justify-end">
+                            <button type="button" @click="closeModal()" class="sk-btn sk-btn-outline">{{ __('ingredients.actions.cancel') }}</button>
+                            <button
+                                type="button"
+                                @click="confirmDuplicate()"
+                                :disabled="!selected.duplication.available || confirming"
+                                class="sk-btn sk-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <span x-show="!confirming">{{ __('ingredients.duplicate.preview.confirm') }}</span>
+                                <span x-show="confirming" x-cloak>{{ __('ingredients.duplicate.preview.confirming') }}</span>
+                            </button>
+                        </div>
+                    </section>
+                </template>
             </div>
         </div>
     </template>
 </div>
-
-<script>
-function duplicateModal() {
-    return {
-        open: false,
-        query: '',
-        results: [],
-        loading: false,
-
-        async search() {
-            if (this.query.length < 2) {
-                this.results = [];
-                return;
-            }
-            this.loading = true;
-            const response = await fetch('{{ route("ingredients.search-platform") }}?q=' + encodeURIComponent(this.query), {
-                headers: { 'Accept': 'application/json' }
-            });
-            this.results = await response.json();
-            this.loading = false;
-        },
-
-        async duplicate(ingredientId) {
-            const response = await fetch('{{ route("ingredients.duplicate") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    ingredient_id: ingredientId,
-                    destination_workspace_id: @json($destinationWorkspaceId),
-                    destination_workspace_signature: @json($duplicateDestinationSignature),
-                }),
-            });
-            const data = await response.json();
-            if (data.ok && data.redirect) {
-                window.location.href = data.redirect;
-            }
-        }
-    };
-}
-</script>

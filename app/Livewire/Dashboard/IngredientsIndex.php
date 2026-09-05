@@ -156,6 +156,7 @@ class IngredientsIndex extends Component
             'canDuplicateIngredients' => $canCreateIngredients,
             'canEditPrices' => $canCreateIngredients,
             'duplicateDestinationSignature' => $this->duplicateDestinationSignature(),
+            'destinationWorkspaceName' => $currentUser?->company()?->name,
             'ingredients' => $ingredients,
             'privateIngredientUsage' => $privateIngredientUsage,
             'formulaUsageByIngredient' => $formulaUsageByIngredient,

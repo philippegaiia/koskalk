@@ -328,6 +328,57 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect(Ingredient::query()->count())->toBe(2);
 });
 
+it('duplicates a workspace ingredient with its guidance and original trusted chemistry limits', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Private olive oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.188,
+                'trusted_fatty_acid_profile' => [],
+            ],
+        ],
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.19]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'guidance_html' => '<p>Private workspace guidance.</p>',
+        'is_active' => true,
+        'created_by_user_id' => $owner->id,
+        'updated_by_user_id' => $owner->id,
+    ]);
+
+    $copy = app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $owner,
+        $workspace,
+    );
+
+    expect($copy->id)->not->toBe($source->id)
+        ->and($copy->owner_type)->toBe(OwnerType::Workspace)
+        ->and($copy->owner_id)->toBe($workspace->id)
+        ->and(data_get($copy->source_data, 'user_authoring.trusted_koh_sap_value'))->toBe(0.188)
+        ->and((float) $copy->sapProfile->koh_sap_value)->toBe(0.19);
+
+    expect(WorkspaceIngredientGuidance::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $copy->id)
+        ->value('guidance_html'))
+        ->toBe('<p>Private workspace guidance.</p>');
+});
+
 it('duplicates localized identity and substance data into an independent workspace copy', function (): void {
     $this->seed(SupportedLocaleSeeder::class);
     $user = User::factory()->create(['locale' => 'fr']);

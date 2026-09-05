@@ -22,14 +22,19 @@ use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
-it('shows a duplicate action in the ingredients page header', function () {
+it('shows matching add and duplicate actions together in the ingredient catalog header', function () {
     $user = User::factory()->create();
 
     actingAs($user);
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Duplicate a Soapkraft ingredient');
+        ->assertSeeInOrder([
+            'Ingredient catalog',
+            'Duplicate ingredient',
+            'Add ingredient',
+        ])
+        ->assertDontSee('Duplicate a Soapkraft ingredient');
 });
 
 it('renders a preview-only accessible duplication dialog with its data disclosures', function (): void {
@@ -39,11 +44,11 @@ it('renders a preview-only accessible duplication dialog with its data disclosur
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Create a private copy in your private ingredient library. You can edit its details. The platform ingredient stays unchanged.')
+        ->assertSee('Create a private copy in your private ingredient library. You can edit its details. The source ingredient stays unchanged.')
         ->assertSee('Create private copy')
         ->assertSee('Legacy ingredient images are reset in the private copy.')
         ->assertSee('Documents and media usages are not copied.')
-        ->assertSee('Approved guidance becomes a workspace override.')
+        ->assertSee('Available guidance is copied to the new ingredient.')
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
         ->assertSee('<ul', false)
@@ -107,7 +112,38 @@ it('searches platform ingredients for duplication', function () {
     expect($results[0]['name'])->toBe('Lavender 40/42');
 });
 
-it('searches platform ingredients by curated aliases and typed identifiers without leaking workspace rows', function (): void {
+it('searches the active workspace ingredients without leaking another workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $otherWorkspace = Workspace::factory()->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+
+    $workspaceIngredient = Ingredient::factory()->create([
+        'display_name' => 'Workspace duplicate source',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_active' => true,
+    ]);
+    Ingredient::factory()->create([
+        'display_name' => 'Workspace duplicate source elsewhere',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $otherWorkspace->id,
+        'workspace_id' => $otherWorkspace->id,
+        'is_active' => true,
+    ]);
+
+    actingAs($owner);
+
+    $this->getJson(route('ingredients.search-platform').'?q=workspace%20duplicate%20source')
+        ->assertSuccessful()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.id', $workspaceIngredient->id)
+        ->assertJsonPath('0.source', 'workspace');
+});
+
+it('searches platform ingredients by curated aliases and identifiers without leaking unrelated workspace rows', function (): void {
     $user = User::factory()->create();
 
     $platform = Ingredient::factory()->create([
@@ -130,11 +166,12 @@ it('searches platform ingredients by curated aliases and typed identifiers witho
     ]);
 
     $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $otherWorkspace = Workspace::factory()->create();
     $private = Ingredient::factory()->create([
         'display_name' => 'Private alias ingredient',
         'owner_type' => OwnerType::Workspace,
-        'owner_id' => $workspace->id,
-        'workspace_id' => $workspace->id,
+        'owner_id' => $otherWorkspace->id,
+        'workspace_id' => $otherWorkspace->id,
         'is_active' => true,
     ]);
     $private->aliases()->create([
@@ -366,14 +403,15 @@ it('reports role denial in search metadata and does not create a copy', function
     ])->toBe($before);
 });
 
-it('rejects a nonplatform source without creating a copy', function (): void {
+it('rejects a source owned by another workspace without creating a copy', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $otherWorkspace = Workspace::factory()->create();
     $source = Ingredient::factory()->create([
-        'display_name' => 'Workspace source cannot be duplicated',
+        'display_name' => 'Other workspace source cannot be duplicated',
         'owner_type' => OwnerType::Workspace,
-        'owner_id' => $workspace->id,
-        'workspace_id' => $workspace->id,
+        'owner_id' => $otherWorkspace->id,
+        'workspace_id' => $otherWorkspace->id,
         'is_active' => true,
     ]);
     $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
@@ -686,4 +724,45 @@ it('creates a workspace-owned copy when duplicating a platform ingredient', func
     expect($copy->owner_id)->toBe($workspace->id);
     expect($copy->workspace_id)->toBe($workspace->id);
     expect($copy->featured_image_path)->toBeNull();
+});
+
+it('creates a workspace-owned copy when duplicating an ingredient from that workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Private rosemary extract',
+        'category' => IngredientCategory::BotanicalsExtracts,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_active' => true,
+    ]);
+
+    actingAs($owner);
+
+    $response = $this->postJson(route('ingredients.duplicate'), [
+        'ingredient_id' => $source->id,
+        'destination_workspace_id' => $workspace->id,
+        'destination_workspace_signature' => hash_hmac(
+            'sha256',
+            $owner->id.'|'.$workspace->id,
+            (string) config('app.key'),
+        ),
+    ]);
+
+    $response
+        ->assertSuccessful()
+        ->assertJsonPath('ok', true);
+
+    $copy = Ingredient::query()
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
+        ->whereKeyNot($source->id)
+        ->firstOrFail();
+
+    expect($copy->display_name)->toBe('Private rosemary extract')
+        ->and($copy->workspace_id)->toBe($workspace->id)
+        ->and($response->json('redirect'))->toBe(route('ingredients.edit', $copy));
 });

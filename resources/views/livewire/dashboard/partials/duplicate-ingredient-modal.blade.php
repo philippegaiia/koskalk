@@ -29,7 +29,7 @@
         @click="openModal()"
         aria-haspopup="dialog"
         :aria-expanded="open.toString()"
-        class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        class="sk-btn sk-btn-primary justify-center"
     >
         {{ __('ingredients.duplicate.button') }}
     </button>
@@ -112,7 +112,7 @@
                                     >
                                         <span class="min-w-0">
                                             <span class="block truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
-                                            <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category].filter(Boolean).join(' · ')"></span>
+                                            <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category, item.source === 'workspace' ? @js(__('ingredients.table.source.yours')) : @js(__('ingredients.table.source.soapkraft'))].filter(Boolean).join(' · ')"></span>
                                         </span>
                                         <span
                                             class="shrink-0 text-xs font-medium"

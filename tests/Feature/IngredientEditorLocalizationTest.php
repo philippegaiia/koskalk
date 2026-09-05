@@ -716,7 +716,7 @@ it('explains why manually created lipids cannot use saponification and links to 
     $component = Livewire::test(IngredientEditor::class)
         ->set('data.category', IngredientCategory::Lipids->value)
         ->assertSeeText('This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.')
-        ->assertSeeText('Duplicate a Soapkraft ingredient');
+        ->assertSeeText('Duplicate ingredient');
 
     $warningHtml = $component->html();
     $warningStart = strpos($warningHtml, 'data-ingredient-carrier-oil-warning');

@@ -13,10 +13,6 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3 lg:justify-end">
-                @if ($canDuplicateIngredients)
-                    @include('livewire.dashboard.partials.duplicate-ingredient-modal')
-                @endif
-
                 <a href="{{ route('dashboard') }}" wire:navigate class="sk-btn sk-btn-outline">
                     {{ __('ingredients.actions.back_to_dashboard') }}
                 </a>
@@ -38,9 +34,15 @@
                         <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.catalog.description') }}</p>
                     </div>
 
-                    @if ($canCreateIngredients)
-                        <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('ingredients.actions.add') }}</a>
-                    @endif
+                    <div class="flex flex-wrap items-center gap-2">
+                        @if ($canDuplicateIngredients)
+                            @include('livewire.dashboard.partials.duplicate-ingredient-modal')
+                        @endif
+
+                        @if ($canCreateIngredients)
+                            <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('ingredients.actions.add') }}</a>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between" aria-label="{{ __('ingredients.catalog.filters_label') }}">

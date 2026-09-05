@@ -337,7 +337,7 @@ it('hides catalogue write actions from app administrators without a customer wor
 
     Livewire::test(IngredientsIndex::class)
         ->assertSee('Platform reference')
-        ->assertDontSee('Duplicate a Soapkraft ingredient')
+        ->assertDontSee('Duplicate ingredient')
         ->assertDontSee('Add ingredient');
 });
 

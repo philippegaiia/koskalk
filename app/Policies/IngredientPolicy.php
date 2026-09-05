@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -22,10 +23,20 @@ class IngredientPolicy
 
     public function duplicateIntoWorkspace(User $user, Ingredient $ingredient, ?Workspace $workspace): bool
     {
-        if ($ingredient->owner_type !== null
-            || $ingredient->owner_id !== null
-            || $ingredient->workspace_id !== null
-            || ! $ingredient->is_active) {
+        if (! $ingredient->is_active) {
+            return false;
+        }
+
+        $isPlatformIngredient = $ingredient->owner_type === null
+            && $ingredient->owner_id === null
+            && $ingredient->workspace_id === null;
+        $isOwnedByUser = $ingredient->owner_type === OwnerType::User
+            && (int) $ingredient->owner_id === (int) $user->id;
+        $isOwnedByDestinationWorkspace = $workspace instanceof Workspace
+            && $ingredient->owner_type === OwnerType::Workspace
+            && (int) $ingredient->owner_id === (int) $workspace->id;
+
+        if (! $isPlatformIngredient && ! $isOwnedByUser && ! $isOwnedByDestinationWorkspace) {
             return false;
         }
 

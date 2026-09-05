@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MaterialPriceSource;
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -14,6 +15,7 @@ use App\Services\UserIngredientAuthoringService;
 use App\Support\NumberLocale;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -147,9 +149,32 @@ class IngredientController extends Controller
                 'sapProfile',
                 'fattyAcidEntries.fattyAcid',
             ])
-            ->whereNull('owner_type')
-            ->whereNull('owner_id')
-            ->whereNull('workspace_id')
+            ->where(function (Builder $sourceQuery) use ($user, $workspace): void {
+                $sourceQuery->where(function (Builder $platformQuery): void {
+                    $platformQuery
+                        ->whereNull('owner_type')
+                        ->whereNull('owner_id')
+                        ->whereNull('workspace_id');
+                });
+
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                $sourceQuery->orWhere(function (Builder $userQuery) use ($user): void {
+                    $userQuery
+                        ->where('owner_type', OwnerType::User->value)
+                        ->where('owner_id', $user->id);
+                });
+
+                if ($workspace instanceof Workspace) {
+                    $sourceQuery->orWhere(function (Builder $workspaceQuery) use ($workspace): void {
+                        $workspaceQuery
+                            ->where('owner_type', OwnerType::Workspace->value)
+                            ->where('owner_id', $workspace->id);
+                    });
+                }
+            })
             ->where('is_active', true)
             ->when(filled($query), fn ($q) => $catalogSearch->apply($q, $query, $translationLocales))
             ->limit(20)
@@ -160,8 +185,14 @@ class IngredientController extends Controller
                 $userIngredientAuthoringService,
                 $destinationDuplicationBlocker,
                 $numberLocale,
+                $user,
+                $workspace,
             ): array {
-                $duplicationReason = $userIngredientAuthoringService->duplicateSourceBlocker($ingredient)
+                $duplicationReason = $userIngredientAuthoringService->duplicateSourceBlocker(
+                    $ingredient,
+                    $user,
+                    $workspace,
+                )
                     ?? $destinationDuplicationBlocker;
                 $chemistry = $userIngredientAuthoringService->duplicationChemistryPreview($ingredient);
 
@@ -170,6 +201,7 @@ class IngredientController extends Controller
                     'name' => $ingredient->localizedDisplayName(),
                     'inci_name' => $ingredient->inci_name,
                     'category' => $ingredient->category?->getLabel(),
+                    'source' => $this->isPlatformIngredient($ingredient) ? 'platform' : 'workspace',
                     'identifiers' => $ingredient->identifiers->map(fn ($identifier): array => [
                         'scheme' => $identifier->scheme->value,
                         'value' => $identifier->value,

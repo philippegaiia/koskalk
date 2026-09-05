@@ -283,7 +283,7 @@ class UserIngredientAuthoringService
         ?User $user = null,
         ?Workspace $workspace = null,
     ): ?string {
-        $sourceBlocker = $this->duplicateSourceBlocker($source);
+        $sourceBlocker = $this->duplicateSourceBlocker($source, $user, $workspace);
 
         if ($sourceBlocker !== null || ! $user instanceof User) {
             return $sourceBlocker;
@@ -424,7 +424,7 @@ class UserIngredientAuthoringService
     {
         Gate::forUser($user)->authorize('duplicateIntoWorkspace', [$source, $workspace]);
 
-        $blocker = $this->duplicateSourceBlocker($source);
+        $blocker = $this->duplicateSourceBlocker($source, $user, $workspace);
 
         if ($blocker === null) {
             return;
@@ -445,14 +445,21 @@ class UserIngredientAuthoringService
         throw new AuthorizationException;
     }
 
-    public function duplicateSourceBlocker(Ingredient $source): ?string
-    {
-        if (! $this->isPlatformIngredient($source)) {
-            return __('ingredients.editor.validation.duplicate_platform_only');
-        }
-
+    public function duplicateSourceBlocker(
+        Ingredient $source,
+        ?User $user = null,
+        ?Workspace $workspace = null,
+    ): ?string {
         if (! $source->is_active) {
             return __('ingredients.status.unavailable');
+        }
+
+        $isPlatformIngredient = $this->isPlatformIngredient($source);
+
+        if (! $isPlatformIngredient
+            && (! $user instanceof User
+                || ! Gate::forUser($user)->allows('duplicateIntoWorkspace', [$source, $workspace]))) {
+            return __('ingredients.editor.validation.stale_workspace');
         }
 
         if ($source->category === IngredientCategory::SoapmakingAlkalis) {
@@ -460,7 +467,8 @@ class UserIngredientAuthoringService
         }
 
         if (
-            $source->category === IngredientCategory::Lipids
+            $isPlatformIngredient
+            && $source->category === IngredientCategory::Lipids
             && $source->sapProfile?->koh_sap_value === null
         ) {
             return __('ingredients.editor.validation.duplicate_soap_profile_required');
@@ -580,14 +588,22 @@ class UserIngredientAuthoringService
         $this->deepCopyRelations($source, $copy);
         $this->ingredientIdentitySynchronizer->sync($copy, $this->localizedIdentityState($source, $user));
 
-        $localizedGuidance = $source->localizedInfoMarkdown($user->locale);
+        $localizedGuidance = $this->isPlatformIngredient($source)
+            ? $this->workspaceIngredientGuidanceService->platformHtml(
+                $source->localizedInfoMarkdown($user->locale),
+            )
+            : $this->workspaceIngredientGuidanceService->effectiveHtml(
+                $workspace,
+                $source,
+                $user->locale,
+            );
 
         if (filled($localizedGuidance)) {
             $this->workspaceIngredientGuidanceService->save(
                 $user,
                 $workspace,
                 $copy,
-                $this->workspaceIngredientGuidanceService->platformHtml($localizedGuidance),
+                $localizedGuidance,
             );
         }
 
@@ -889,6 +905,11 @@ class UserIngredientAuthoringService
     private function duplicateSourceData(Ingredient $source): ?array
     {
         $sourceData = is_array($source->source_data) ? $source->source_data : [];
+
+        if (! $this->isPlatformIngredient($source)) {
+            return $sourceData === [] ? null : $sourceData;
+        }
+
         $trustedKohSapValue = $source->sapProfile?->koh_sap_value;
 
         if (

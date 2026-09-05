@@ -1189,7 +1189,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'translations',
             'identifiers',
             'aliases',
-            'components.componentIngredient',
+            'components.componentIngredient.translations',
             'functions',
             'sapProfile',
             'fattyAcidEntries.fattyAcid',
@@ -1197,7 +1197,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'substanceEntries.substance',
             'ifraCertificates.ifraAmendment',
             'ifraCertificates.limits.ifraProductCategory',
-            'mediaAssetUsages.mediaAsset',
+            'mediaAssetUsages.mediaAsset.workspace',
         ]);
 
         $identityState = app(IngredientIdentitySynchronizer::class)->formState($ingredient);
@@ -1549,10 +1549,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $workspace = $ingredient instanceof Ingredient
             ? $this->destinationWorkspaceForDisplay($ingredient)
             : $this->workspaceForIngredientSettings($ingredient);
+        $canEditWorkspaceMaterialCode = $this->canEditWorkspaceMaterialCode();
         if ($isReferenceView && $ingredient instanceof Ingredient && $this->isPlatformIngredient($ingredient)) {
             if ($workspace instanceof Workspace) {
-                $this->workspaceMaterialCode = app(WorkspaceIngredientCodeService::class)
-                    ->codeFor($workspace, $ingredient);
+                if (! $canEditWorkspaceMaterialCode) {
+                    $this->workspaceMaterialCode = app(WorkspaceIngredientCodeService::class)
+                        ->codeFor($workspace, $ingredient);
+                }
             } else {
                 $this->workspaceMaterialCode = null;
                 $this->workspaceGuidance = ['html' => null];
@@ -1590,7 +1593,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'isReferenceView' => $isReferenceView,
             'referenceData' => $this->referenceData,
             'hasSoapChemistry' => $this->soapChemistryAvailable(),
-            'canEditWorkspaceMaterialCode' => $this->canEditWorkspaceMaterialCode(),
+            'canEditWorkspaceMaterialCode' => $canEditWorkspaceMaterialCode,
             'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
             'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
             'canEditWorkspaceGuidance' => $this->canEditWorkspaceGuidance(),

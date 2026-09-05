@@ -222,6 +222,49 @@ it('shows a sparse reference without inventing composition or chemistry', functi
         ->and($component->instance()->referenceData['soap'])->toBeNull();
 });
 
+it('renders zero chemistry and IFRA values instead of treating them as unavailable', function (): void {
+    $user = User::factory()->create();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Zero value platform ingredient',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => true,
+    ]);
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $platform->id,
+        'koh_sap_value' => 0.2,
+        'iodine_value' => 0,
+        'ins_value' => 0,
+    ]);
+    $certificate = IfraCertificate::factory()->create([
+        'ingredient_id' => $platform->id,
+        'certificate_name' => 'Zero value IFRA certificate',
+        'is_current' => true,
+        'peroxide_value' => 0,
+    ]);
+    $category = IfraProductCategory::factory()->create([
+        'code' => 'ZERO',
+        'name' => 'Zero value category',
+    ]);
+    IfraCertificateLimit::factory()->create([
+        'ifra_certificate_id' => $certificate->id,
+        'ifra_product_category_id' => $category->id,
+        'max_percentage' => 0,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+    $component->assertSeeHtml('<dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">0</dd>');
+
+    expect($component->instance()->referenceData['soap']['iodine_value'])->toBe(0.0)
+        ->and($component->instance()->referenceData['soap']['ins_value'])->toBe(0.0)
+        ->and($component->instance()->referenceData['ifra']['peroxide_value'])->toBe(0.0)
+        ->and($component->instance()->referenceData['ifra']['limits'][0]['max_percentage'])->toBe(0.0);
+});
+
 it('clears platform workspace state when its destination loses authorization', function (): void {
     $workspaceOwner = User::factory()->create();
     $user = User::factory()->create();

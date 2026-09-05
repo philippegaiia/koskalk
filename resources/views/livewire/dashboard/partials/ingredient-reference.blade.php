@@ -12,6 +12,16 @@
 
         return $formatted === '' ? '' : $formatted.'%';
     };
+    $displayReferenceNumber = static function (mixed $value) use ($formatReferenceNumber, $notAvailable): string {
+        $formatted = $formatReferenceNumber($value);
+
+        return $formatted === '' ? $notAvailable : $formatted;
+    };
+    $displayReferencePercentage = static function (mixed $value) use ($formatReferencePercentage, $notAvailable): string {
+        $formatted = $formatReferencePercentage($value);
+
+        return $formatted === '' ? $notAvailable : $formatted;
+    };
     $classification = $referenceData['classification'] ?? [];
     $identity = $referenceData['identity'] ?? [];
 @endphp
@@ -152,7 +162,7 @@
                                         <span class="block text-xs font-normal text-[var(--color-ink-soft)]">{{ $component['inci_name'] }}</span>
                                     @endif
                                 </th>
-                                <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $formatReferencePercentage($component['percentage'] ?? null) ?: $notAvailable }}</td>
+                                <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $displayReferencePercentage($component['percentage'] ?? null) }}</td>
                                 <td class="py-3 text-[var(--color-ink-soft)]">{{ $component['source_notes'] ?: $notAvailable }}</td>
                             </tr>
                         @endforeach
@@ -210,19 +220,19 @@
         <dl class="mt-5 grid gap-4 sm:grid-cols-2">
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.koh_sap') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $formatReferenceNumber($referenceData['soap']['koh_sap_value'] ?? null) ?: $notAvailable }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['koh_sap_value'] ?? null) }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.naoh_sap') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $formatReferenceNumber($referenceData['soap']['naoh_sap_value'] ?? null) ?: $notAvailable }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['naoh_sap_value'] ?? null) }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.iodine') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $formatReferenceNumber($referenceData['soap']['iodine_value'] ?? null) ?: $notAvailable }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['iodine_value'] ?? null) }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.ins') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $formatReferenceNumber($referenceData['soap']['ins_value'] ?? null) ?: $notAvailable }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['ins_value'] ?? null) }}</dd>
             </div>
         </dl>
         @if (filled($referenceData['soap']['source_notes'] ?? null))
@@ -248,7 +258,7 @@
                             @foreach ($referenceData['soap']['fatty_acids'] as $fattyAcid)
                                 <tr>
                                     <th scope="row" class="py-3 pr-4 font-medium text-[var(--color-ink-strong)]">{{ $fattyAcid['name'] }}</th>
-                                    <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $formatReferencePercentage($fattyAcid['percentage'] ?? null) ?: $notAvailable }}</td>
+                                    <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $displayReferencePercentage($fattyAcid['percentage'] ?? null) }}</td>
                                     <td class="py-3 text-[var(--color-ink-soft)]">{{ $fattyAcid['source_notes'] ?: $notAvailable }}</td>
                                 </tr>
                             @endforeach
@@ -270,7 +280,7 @@
             @foreach ($referenceData['allergens'] as $allergen)
                 <li class="flex flex-wrap items-baseline justify-between gap-3 py-3 first:pt-0 last:pb-0">
                     <span class="font-medium text-[var(--color-ink-strong)]">{{ $allergen['name'] }}</span>
-                    <span class="tabular-nums text-[var(--color-ink-soft)]">{{ $formatReferencePercentage($allergen['concentration'] ?? null) ?: $notAvailable }}</span>
+                    <span class="tabular-nums text-[var(--color-ink-soft)]">{{ $displayReferencePercentage($allergen['concentration'] ?? null) }}</span>
                     @if (filled($allergen['source_notes'] ?? null))
                         <span class="basis-full text-[var(--color-ink-soft)]">{{ $allergen['source_notes'] }}</span>
                     @endif
@@ -296,7 +306,7 @@
             @foreach ($referenceData['substances'] as $substance)
                 <li class="flex flex-wrap items-baseline justify-between gap-3 py-3 first:pt-0 last:pb-0">
                     <span class="font-medium text-[var(--color-ink-strong)]">{{ $substance['name'] }}</span>
-                    <span class="tabular-nums text-[var(--color-ink-soft)]">{{ $formatReferencePercentage($substance['concentration'] ?? null) ?: $notAvailable }}</span>
+                    <span class="tabular-nums text-[var(--color-ink-soft)]">{{ $displayReferencePercentage($substance['concentration'] ?? null) }}</span>
                     @if (filled($substance['source_notes'] ?? null))
                         <span class="basis-full text-[var(--color-ink-soft)]">{{ $substance['source_notes'] }}</span>
                     @endif
@@ -323,7 +333,7 @@
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.peroxide') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $formatReferenceNumber($referenceData['ifra']['peroxide_value'] ?? null) ?: $notAvailable }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['ifra']['peroxide_value'] ?? null) }}</dd>
             </div>
         </dl>
         @if (filled($referenceData['ifra']['source_notes'] ?? null))
@@ -347,7 +357,7 @@
                         @foreach ($referenceData['ifra']['limits'] as $limit)
                             <tr>
                                 <th scope="row" class="py-3 pr-4 font-medium text-[var(--color-ink-strong)]">{{ $limit['category'] ?: ($limit['code'] ?: $notAvailable) }}</th>
-                                <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $formatReferencePercentage($limit['max_percentage'] ?? null) ?: $notAvailable }}</td>
+                                <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $displayReferencePercentage($limit['max_percentage'] ?? null) }}</td>
                                 <td class="py-3 text-[var(--color-ink-soft)]">{{ $limit['restriction_note'] ?: $notAvailable }}</td>
                             </tr>
                         @endforeach

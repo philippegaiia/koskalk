@@ -345,6 +345,9 @@ it('lets an editor assign a platform material code in the active workspace', fun
     Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
         ->assertSet('workspaceMaterialCode', null)
         ->set('workspaceMaterialCode', 'PLAT-01')
+        ->assertSet('workspaceMaterialCode', 'PLAT-01')
+        ->set('statusMessage', 'An unrelated update')
+        ->assertSet('workspaceMaterialCode', 'PLAT-01')
         ->call('saveWorkspaceMaterialCode')
         ->assertHasNoErrors();
 
@@ -352,6 +355,29 @@ it('lets an editor assign a platform material code in the active workspace', fun
         ->where('workspace_id', $workspace->id)
         ->where('ingredient_id', $platform->id)
         ->value('material_code'))->toBe('PLAT-01');
+});
+
+it('keeps an invalid platform material code visible after validation fails', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($editor);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->set('workspaceMaterialCode', 'INVALID CODE')
+        ->call('saveWorkspaceMaterialCode')
+        ->assertHasErrors(['workspaceMaterialCode'])
+        ->assertSet('workspaceMaterialCode', 'INVALID CODE');
 });
 
 it('does not let a workspace viewer save a platform material code', function (): void {

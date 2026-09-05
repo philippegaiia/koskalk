@@ -670,19 +670,42 @@ it('keeps the editor baseline mounted when a blend composition re-renders', func
     $this->actingAs($user);
 
     $component = Livewire::test(IngredientEditor::class);
-    $html = $component->html();
-    $editorMarker = strpos($html, 'data-ingredient-editor');
-    $editorRootStart = strrpos(substr($html, 0, $editorMarker), '<div');
-    $editorRootEnd = strpos($html, '>', $editorMarker);
-    $editorRoot = substr($html, $editorRootStart, $editorRootEnd - $editorRootStart + 1);
+    $parseEditorRoots = static function (string $html): array {
+        $previousLibxmlSetting = libxml_use_internal_errors(true);
+        $document = new DOMDocument;
+        $document->loadHTML($html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousLibxmlSetting);
 
-    expect($editorRoot)->toContain('wire:ignore.self');
+        $outerRoot = (new DOMXPath($document))->query('//body/*[1]')->item(0);
+        expect($outerRoot)->toBeInstanceOf(DOMElement::class);
+
+        $editorRoot = $outerRoot->firstElementChild;
+        expect($editorRoot)->toBeInstanceOf(DOMElement::class);
+
+        return [$outerRoot, $editorRoot];
+    };
+
+    [$outerRoot, $editorRoot] = $parseEditorRoots($component->html());
+
+    expect($outerRoot->hasAttribute('x-data'))->toBeFalse()
+        ->and($outerRoot->hasAttribute('data-ingredient-editor'))->toBeFalse()
+        ->and($outerRoot->hasAttribute('wire:ignore.self'))->toBeFalse()
+        ->and($editorRoot->hasAttribute('data-ingredient-editor'))->toBeTrue()
+        ->and($editorRoot->hasAttribute('wire:ignore.self'))->toBeTrue()
+        ->and($editorRoot->firstElementChild)->toBeInstanceOf(DOMElement::class);
 
     $component
         ->set('data.ingredient_structure', 'blend')
         ->assertSet('data.ingredient_structure', 'blend')
-        ->assertSeeText('Blend composition')
-        ->assertSeeHtml('wire:ignore.self');
+        ->assertSeeText('Blend composition');
+
+    [$updatedOuterRoot, $updatedEditorRoot] = $parseEditorRoots($component->html());
+
+    expect($updatedOuterRoot->firstElementChild)->toBe($updatedEditorRoot)
+        ->and($updatedEditorRoot->hasAttribute('data-ingredient-editor'))->toBeTrue()
+        ->and($updatedEditorRoot->hasAttribute('wire:ignore.self'))->toBeTrue()
+        ->and($updatedEditorRoot->firstElementChild)->toBeInstanceOf(DOMElement::class);
 });
 
 it('explains why manually created lipids cannot use saponification and links to duplication', function (): void {

@@ -70,6 +70,25 @@
     @endif
 </section>
 
+@if (filled($referenceData['material_code'] ?? null))
+    <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-material-code">
+        <p class="sk-eyebrow">{{ __('ingredients.editor.material_code.workspace_eyebrow') }}</p>
+        <h2 id="ingredient-reference-material-code" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
+            {{ __('ingredients.editor.material_code.workspace_heading') }}
+        </h2>
+        @if (filled($workspaceName ?? null))
+            <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+                {{ __('ingredients.editor.workspace_scope', ['workspace' => $workspaceName]) }}
+            </p>
+        @endif
+        <dl class="mt-5 max-w-xl rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
+            <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.label') }}</dt>
+            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $referenceData['material_code'] }}</dd>
+        </dl>
+        <p class="mt-3 max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.workspace_read_only') }}</p>
+    </section>
+@endif
+
 <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-classification">
     <p class="sk-eyebrow">{{ __('ingredients.editor.reference.section') }}</p>
     <h2 id="ingredient-reference-classification" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">

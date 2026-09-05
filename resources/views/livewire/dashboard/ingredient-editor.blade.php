@@ -38,6 +38,11 @@
  {{ __('ingredients.editor.create.intro') }}
  @endif
  </p>
+ @if (! $isCreate && $ingredient?->workspace_id !== null && filled($workspaceName))
+ <p class="mt-2 max-w-[70ch] text-xs leading-5 text-[var(--color-ink-soft)]">
+ {{ __('ingredients.editor.workspace_scope', ['workspace' => $workspaceName]) }}
+ </p>
+ @endif
 
  @if (! $isPlatformIngredient && $isCarrierOil && ! $hasSoapChemistry)
  <aside class="mt-4 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-warning-strong)]" aria-labelledby="carrier-oil-guidance-title">
@@ -49,7 +54,7 @@
  </section>
 
  @if ($isReferenceView)
- @include('livewire.dashboard.partials.ingredient-reference', ['referenceData' => $referenceData])
+ @include('livewire.dashboard.partials.ingredient-reference', ['referenceData' => $referenceData, 'workspaceName' => $workspaceName])
  @endif
 
  @if ($isPlatformIngredient)

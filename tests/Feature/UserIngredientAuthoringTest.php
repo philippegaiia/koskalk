@@ -497,6 +497,38 @@ it('lets an editor customize and switch between localized platform and workspace
     app()->setLocale('en');
 });
 
+it('keeps guidance editing open through a draft and validation error', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $platform = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Platform guidance',
+    ]);
+
+    $this->actingAs($owner);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->call('startWorkspaceGuidanceCustomization')
+        ->assertSet('isEditingWorkspaceGuidance', true)
+        ->set('workspaceGuidance.html', '<p>Draft guidance</p>')
+        ->assertSet('isEditingWorkspaceGuidance', true)
+        ->call('saveWorkspaceGuidance')
+        ->assertHasNoErrors()
+        ->assertSet('isEditingWorkspaceGuidance', false);
+
+    $component
+        ->call('startWorkspaceGuidanceCustomization')
+        ->set('workspaceGuidance.html', null)
+        ->assertSet('isEditingWorkspaceGuidance', true)
+        ->call('saveWorkspaceGuidance')
+        ->assertHasErrors(['workspaceGuidance.html'])
+        ->assertSet('isEditingWorkspaceGuidance', true)
+        ->assertSeeText('Enter ingredient guidance before saving.');
+});
+
 it('keeps workspace guidance read-only for viewers', function (): void {
     app()->setLocale('en');
     $owner = User::factory()->create();

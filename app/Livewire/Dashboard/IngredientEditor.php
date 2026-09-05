@@ -216,17 +216,39 @@ class IngredientEditor extends Component implements HasActions, HasForms
     {
         $ingredient = $this->currentIngredient();
 
-        if (! $ingredient instanceof Ingredient || ! $this->isReferenceViewFor($ingredient)) {
+        if (! $ingredient instanceof Ingredient) {
+            if ($this->ingredientId !== null) {
+                $this->data = [];
+                $this->referenceData = [];
+                $this->workspaceMaterialCode = null;
+                $this->workspaceGuidance = ['html' => null];
+                $this->workspaceGuidanceForm->fill(['html' => null]);
+                $this->isEditingWorkspaceGuidance = false;
+            }
+
+            return;
+        }
+
+        if (! $this->isReferenceViewFor($ingredient)) {
             return;
         }
 
         $this->data = [];
         $this->referenceData = [];
-        $this->isEditingWorkspaceGuidance = false;
 
         if (! $this->isPlatformIngredient($ingredient)) {
             $this->workspaceMaterialCode = null;
             $this->workspaceGuidance = ['html' => null];
+            $this->workspaceGuidanceForm->fill(['html' => null]);
+
+            return;
+        }
+
+        if (! ($this->destinationWorkspaceForDisplay($ingredient) instanceof Workspace)) {
+            $this->workspaceMaterialCode = null;
+            $this->workspaceGuidance = ['html' => null];
+            $this->workspaceGuidanceForm->fill(['html' => null]);
+            $this->isEditingWorkspaceGuidance = false;
         }
     }
 
@@ -1142,7 +1164,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return;
         }
 
-        $workspace = $this->workspaceForIngredientSettings($ingredient);
+        $workspace = $this->destinationWorkspaceForDisplay($ingredient, $user);
 
         if (! $workspace instanceof Workspace) {
             return;
@@ -1184,6 +1206,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $structure = $ingredient->components->isNotEmpty() ? 'blend' : 'ingredient';
         $workspace = $this->referenceWorkspaceFor($ingredient, $user);
         $canSeePrivateData = $this->canSeePrivateReferenceData($ingredient, $user, $workspace);
+        $canSeeTechnicalData = $canSeePrivateData || $ingredient->isPublicCatalog();
         $aliases = $canSeePrivateData ? ($identityState['aliases'] ?? []) : [];
         $additionalIdentifiers = collect($identityState['additional_identifiers'] ?? [])
             ->map(function (array $identifier): array {
@@ -1271,9 +1294,14 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->values()
             ->all();
 
-        $soap = $this->referenceSoapData($ingredient, $canSeePrivateData);
-        $ifra = $this->referenceIfraData($ingredient, $canSeePrivateData);
+        $soap = $this->referenceSoapData($ingredient, $canSeePrivateData, $canSeeTechnicalData);
+        $ifra = $this->referenceIfraData($ingredient, $canSeePrivateData, $canSeeTechnicalData);
         $guidance = $this->referenceGuidanceData($ingredient, $workspace, $canSeePrivateData);
+        $materialCode = ! $this->isPlatformIngredient($ingredient)
+            && $canSeePrivateData
+            && $workspace instanceof Workspace
+                ? app(WorkspaceIngredientCodeService::class)->codeFor($workspace, $ingredient)
+                : null;
         $documents = $ingredient->mediaAssetsForRole(MediaAssetUsageRole::IngredientDocument)
             ->filter(fn (MediaAsset $asset): bool => Gate::forUser($user)->allows('view', $asset))
             ->map(fn (MediaAsset $asset): array => [
@@ -1297,6 +1325,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'ingredient_structure' => $structure,
             'identity' => $identity,
             'name' => $identity['name'],
+            'material_code' => $materialCode,
             'inci_name' => $identity['inci_name'],
             'cas_number' => $identity['cas_number'],
             'ec_number' => $identity['ec_number'],
@@ -1340,19 +1369,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     private function referenceWorkspaceFor(Ingredient $ingredient, User $user): ?Workspace
     {
-        if ($this->isPlatformIngredient($ingredient)) {
-            return $this->workspaceForIngredientSettings($ingredient);
-        }
-
-        if ($ingredient->workspace_id === null) {
-            return null;
-        }
-
-        $workspace = Workspace::withoutGlobalScopes()->find((int) $ingredient->workspace_id);
-
-        return $workspace instanceof Workspace && $workspace->hasMember($user)
-            ? $workspace
-            : null;
+        return $this->destinationWorkspaceForDisplay($ingredient, $user);
     }
 
     private function canSeePrivateReferenceData(
@@ -1404,9 +1421,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
     /**
      * @return array<string, mixed>|null
      */
-    private function referenceSoapData(Ingredient $ingredient, bool $canSeePrivateData): ?array
-    {
-        if (! $ingredient->is_soap_saponification_trusted || ! $canSeePrivateData) {
+    private function referenceSoapData(
+        Ingredient $ingredient,
+        bool $canSeePrivateData,
+        bool $canSeeTechnicalData,
+    ): ?array {
+        if (! $ingredient->is_soap_saponification_trusted || ! $canSeeTechnicalData) {
             return null;
         }
 
@@ -1430,7 +1450,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->map(fn ($entry): array => [
                 'name' => $entry->fattyAcid?->name,
                 'percentage' => $entry->percentage === null ? null : (float) $entry->percentage,
-                'source_notes' => $entry->source_notes,
+                'source_notes' => $canSeePrivateData ? $entry->source_notes : null,
             ])
             ->filter(fn (array $entry): bool => filled($entry['name']))
             ->values()
@@ -1441,7 +1461,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'naoh_sap_value' => round(SoapSap::deriveNaohFromKoh((float) $koh), 6),
             'iodine_value' => $profile?->iodine_value === null ? null : (float) $profile->iodine_value,
             'ins_value' => $profile?->ins_value === null ? null : (float) $profile->ins_value,
-            'source_notes' => $profile?->source_notes,
+            'source_notes' => $canSeePrivateData ? $profile?->source_notes : null,
             'fatty_acids' => $fattyAcids,
         ];
     }
@@ -1449,9 +1469,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
     /**
      * @return array<string, mixed>|null
      */
-    private function referenceIfraData(Ingredient $ingredient, bool $canSeePrivateData): ?array
-    {
-        if (! $ingredient->requires_aromatic_compliance || ! $canSeePrivateData) {
+    private function referenceIfraData(
+        Ingredient $ingredient,
+        bool $canSeePrivateData,
+        bool $canSeeTechnicalData,
+    ): ?array {
+        if (! $ingredient->requires_aromatic_compliance || ! $canSeeTechnicalData) {
             return null;
         }
 
@@ -1473,7 +1496,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 'max_percentage' => $limit->max_percentage === null
                     ? null
                     : (float) $limit->max_percentage,
-                'restriction_note' => $limit->restriction_note,
+                'restriction_note' => $canSeePrivateData ? $limit->restriction_note : null,
             ])
             ->values()
             ->all();
@@ -1486,7 +1509,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'peroxide_value' => $certificate->peroxide_value === null
                 ? null
                 : (float) $certificate->peroxide_value,
-            'source_notes' => $certificate->source_notes,
+            'source_notes' => $canSeePrivateData ? $certificate->source_notes : null,
             'limits' => $limits,
         ];
     }
@@ -1523,11 +1546,19 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         $ingredient?->loadMissing('allergenEntries.allergen');
-        $workspace = $this->workspaceForIngredientSettings($ingredient);
+        $workspace = $ingredient instanceof Ingredient
+            ? $this->destinationWorkspaceForDisplay($ingredient)
+            : $this->workspaceForIngredientSettings($ingredient);
         if ($isReferenceView && $ingredient instanceof Ingredient && $this->isPlatformIngredient($ingredient)) {
-            $this->workspaceMaterialCode = $workspace instanceof Workspace
-                ? app(WorkspaceIngredientCodeService::class)->codeFor($workspace, $ingredient)
-                : null;
+            if ($workspace instanceof Workspace) {
+                $this->workspaceMaterialCode = app(WorkspaceIngredientCodeService::class)
+                    ->codeFor($workspace, $ingredient);
+            } else {
+                $this->workspaceMaterialCode = null;
+                $this->workspaceGuidance = ['html' => null];
+                $this->workspaceGuidanceForm->fill(['html' => null]);
+                $this->isEditingWorkspaceGuidance = false;
+            }
         }
         $workspaceGuidanceOverride = $ingredient instanceof Ingredient
             && $this->isPlatformIngredient($ingredient)
@@ -1946,6 +1977,37 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         return $user->company();
+    }
+
+    private function destinationWorkspaceForDisplay(
+        ?Ingredient $ingredient = null,
+        ?User $user = null,
+    ): ?Workspace {
+        $user ??= $this->freshAuthenticatedUser();
+
+        if (! $user instanceof User || $this->destinationWorkspaceId === null) {
+            return null;
+        }
+
+        $destinationWorkspace = Workspace::withoutGlobalScopes()->find($this->destinationWorkspaceId);
+
+        if (! $destinationWorkspace instanceof Workspace || ! $destinationWorkspace->hasMember($user)) {
+            return null;
+        }
+
+        if ($ingredient instanceof Ingredient && ! $this->isPlatformIngredient($ingredient)) {
+            return $ingredient->workspace_id !== null
+                && (int) $ingredient->workspace_id === (int) $destinationWorkspace->id
+                ? $destinationWorkspace
+                : null;
+        }
+
+        $activeWorkspace = $user->company();
+
+        return $activeWorkspace instanceof Workspace
+            && (int) $activeWorkspace->id === (int) $destinationWorkspace->id
+                ? $destinationWorkspace
+                : null;
     }
 
     /**

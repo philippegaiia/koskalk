@@ -222,6 +222,63 @@ it('shows a sparse reference without inventing composition or chemistry', functi
         ->and($component->instance()->referenceData['soap'])->toBeNull();
 });
 
+it('clears platform workspace state when its destination loses authorization', function (): void {
+    $workspaceOwner = User::factory()->create();
+    $user = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $workspace = Workspace::factory()->for($workspaceOwner, 'owner')->create([
+        'name' => 'Original workspace',
+    ]);
+    $otherWorkspace = Workspace::factory()->for($otherOwner, 'owner')->create([
+        'name' => 'Replacement workspace',
+    ]);
+    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => 'editor']);
+    WorkspaceMember::factory()->for($otherWorkspace)->for($user)->create(['role' => 'viewer']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Platform state ingredient',
+        'info_markdown' => 'Platform guidance',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $platform->id,
+        'material_code' => 'PRIVATE-CODE-SENTINEL',
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $platform->id,
+        'guidance_html' => '<p>PRIVATE GUIDANCE SENTINEL</p>',
+    ]);
+
+    $this->actingAs($user);
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    expect($component->instance()->workspaceMaterialCode)->toBe('PRIVATE-CODE-SENTINEL')
+        ->and(json_encode($component->instance()->workspaceGuidance))->toContain('PRIVATE GUIDANCE SENTINEL');
+
+    WorkspaceMember::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('user_id', $user->id)
+        ->delete();
+    $user->forceFill(['active_workspace_id' => $otherWorkspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    $component
+        ->refresh()
+        ->assertDontSeeText('PRIVATE-CODE-SENTINEL')
+        ->assertDontSeeText('PRIVATE GUIDANCE SENTINEL');
+
+    expect($component->instance()->workspaceMaterialCode)->toBeNull()
+        ->and(json_encode($component->instance()->workspaceGuidance))->not->toContain('PRIVATE GUIDANCE SENTINEL')
+        ->and(json_encode($component->instance()->workspaceGuidanceForm->getState()))->not->toContain('PRIVATE GUIDANCE SENTINEL')
+        ->and($component->html())->not->toContain('PRIVATE-CODE-SENTINEL')
+        ->and($component->html())->not->toContain('PRIVATE GUIDANCE SENTINEL');
+});
+
 it('keeps a single ingredient reference separate from blend composition', function (): void {
     $user = User::factory()->create();
     $platform = Ingredient::factory()->create([
@@ -316,6 +373,145 @@ it('filters workspace overrides and media links independently for a public non-m
     expect($public->instance()->data)->toBe([])
         ->and($public->instance()->workspaceMaterialCode)->toBeNull()
         ->and($public->instance()->workspaceGuidance)->toBe(['html' => null]);
+});
+
+it('retains public technical chemistry and IFRA limits without private source notes', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Public technical oil',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => 'public',
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => true,
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.187,
+            ],
+        ],
+    ]);
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'koh_sap_value' => 0.187,
+        'iodine_value' => 83.4,
+        'ins_value' => 99.2,
+        'source_notes' => 'PRIVATE SAP SOURCE SENTINEL',
+    ]);
+    $fattyAcid = FattyAcid::factory()->create(['name' => 'Public oleic acid']);
+    IngredientFattyAcid::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'fatty_acid_id' => $fattyAcid->id,
+        'percentage' => 44.5,
+        'source_notes' => 'PRIVATE FATTY ACID SOURCE SENTINEL',
+    ]);
+    $amendment = IfraAmendment::factory()->create(['code' => '52']);
+    $certificate = IfraCertificate::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'ifra_amendment_id' => $amendment->id,
+        'certificate_name' => 'Public technical IFRA certificate',
+        'source_amendment_label' => 'Amendment 52',
+        'peroxide_value' => 1.8,
+        'source_notes' => 'PRIVATE IFRA SOURCE SENTINEL',
+    ]);
+    $ifraCategory = IfraProductCategory::factory()->create([
+        'code' => '10A',
+        'name' => 'Public IFRA category',
+    ]);
+    IfraCertificateLimit::factory()->create([
+        'ifra_certificate_id' => $certificate->id,
+        'ifra_product_category_id' => $ifraCategory->id,
+        'max_percentage' => 8.75,
+        'restriction_note' => 'PRIVATE IFRA LIMIT SOURCE SENTINEL',
+    ]);
+
+    $publicUser = User::factory()->create();
+    $this->actingAs($publicUser);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+
+    $component
+        ->assertSeeText('0.187')
+        ->assertSeeText('83.4')
+        ->assertSeeText('Public oleic acid')
+        ->assertSeeText('44.5%')
+        ->assertSeeText('Public technical IFRA certificate')
+        ->assertSeeText('8.75%')
+        ->assertDontSeeText('PRIVATE SAP SOURCE SENTINEL')
+        ->assertDontSeeText('PRIVATE FATTY ACID SOURCE SENTINEL')
+        ->assertDontSeeText('PRIVATE IFRA SOURCE SENTINEL')
+        ->assertDontSeeText('PRIVATE IFRA LIMIT SOURCE SENTINEL');
+
+    expect($component->instance()->referenceData['soap']['koh_sap_value'])->toBe(0.187)
+        ->and($component->instance()->referenceData['soap']['fatty_acids'][0]['source_notes'])->toBeNull()
+        ->and($component->instance()->referenceData['ifra']['limits'][0]['max_percentage'])->toBe(8.75)
+        ->and($component->instance()->referenceData['ifra']['source_notes'])->toBeNull()
+        ->and($component->instance()->referenceData['ifra']['limits'][0]['restriction_note'])->toBeNull();
+});
+
+it('shows an owning workspace scope while keeping its locked destination after a workspace switch', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create([
+        'name' => 'Owning workspace',
+    ]);
+    $otherWorkspace = Workspace::factory()->create(['name' => 'Active workspace']);
+    WorkspaceMember::factory()->for($otherWorkspace)->for($owner)->create(['role' => 'viewer']);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Workspace owned ingredient',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => 'private',
+    ]);
+
+    $this->actingAs($owner);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->assertSet('destinationWorkspaceId', $workspace->id)
+        ->assertSeeText('Changes are shared with everyone in Owning workspace.');
+
+    $owner->forceFill(['active_workspace_id' => $otherWorkspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+
+    $component
+        ->refresh()
+        ->assertSet('destinationWorkspaceId', $workspace->id)
+        ->assertSeeText('Changes are shared with everyone in Owning workspace.')
+        ->assertDontSeeText('Changes are shared with everyone in Active workspace.');
+});
+
+it('shows a workspace material code as plain text to a workspace viewer', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => 'viewer']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Viewer workspace ingredient',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => 'private',
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'material_code' => 'VIEWER-MATERIAL-CODE',
+    ]);
+    $viewer->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $viewer->forgetAccessibleWorkspaceIds();
+
+    $this->actingAs($viewer);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+
+    $component
+        ->assertSeeText('VIEWER-MATERIAL-CODE')
+        ->assertDontSeeHtml('<input id="workspace-material-code"');
+
+    expect($component->instance()->referenceData['material_code'])->toBe('VIEWER-MATERIAL-CODE');
 });
 
 it('shows localized platform content while preserving authored workspace names', function (): void {

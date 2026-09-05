@@ -672,8 +672,20 @@ it('explains why manually created lipids cannot use saponification and links to 
     $component = Livewire::test(IngredientEditor::class)
         ->set('data.category', IngredientCategory::Lipids->value)
         ->assertSeeText('This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.')
-        ->assertSeeText('Duplicate a Soapkraft ingredient')
-        ->assertSeeHtml('href="'.route('ingredients.index').'"');
+        ->assertSeeText('Duplicate a Soapkraft ingredient');
+
+    $warningHtml = $component->html();
+    $warningStart = strpos($warningHtml, 'data-ingredient-carrier-oil-warning');
+    $warningEnd = strpos($warningHtml, '</aside>', $warningStart);
+    $warning = substr($warningHtml, $warningStart, $warningEnd - $warningStart);
+    $duplicationLinkMarker = strpos($warning, 'data-ingredient-carrier-oil-duplication-link');
+    $duplicationLinkStart = strrpos(substr($warning, 0, $duplicationLinkMarker), '<a');
+    $duplicationLinkEnd = strpos($warning, '>', $duplicationLinkMarker);
+    $duplicationLink = substr($warning, $duplicationLinkStart, $duplicationLinkEnd - $duplicationLinkStart + 1);
+
+    expect($warning)
+        ->toContain('This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.')
+        ->and($duplicationLink)->toContain('href="'.route('ingredients.index').'"');
 
     $component
         ->set('data.category', IngredientCategory::Other->value)

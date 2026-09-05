@@ -1222,7 +1222,7 @@ it('keeps every ingredient draft field after a create quota error', function ():
     expect(app(EntitlementService::class)->usageFor($user)['private_ingredients'])
         ->toMatchArray(['used' => 1, 'limit' => 1, 'allowed' => false]);
 
-    Livewire::test(IngredientEditor::class)
+    $component = Livewire::test(IngredientEditor::class)
         ->set('data.name', 'Draft lipid')
         ->set('data.inci_name', 'DRAFT LIPID')
         ->set('data.category', IngredientCategory::Lipids->value)
@@ -1234,13 +1234,25 @@ it('keeps every ingredient draft field after a create quota error', function ():
             'value' => 'DRAFT-UNII',
             'is_primary' => true,
         ]])
-        ->call('save')
+        ->call('save');
+
+    $planErrorHtml = $component->html();
+    $planErrorStart = strpos($planErrorHtml, 'data-ingredient-plan-error');
+    $planErrorEnd = strpos($planErrorHtml, '</div>', $planErrorStart);
+    $planError = substr($planErrorHtml, $planErrorStart, $planErrorEnd - $planErrorStart);
+    $recoveryLinkMarker = strpos($planError, 'data-ingredient-plan-recovery-link');
+    $recoveryLinkStart = strrpos(substr($planError, 0, $recoveryLinkMarker), '<a');
+    $recoveryLinkEnd = strpos($planError, '>', $recoveryLinkMarker);
+    $recoveryLink = substr($planError, $recoveryLinkStart, $recoveryLinkEnd - $recoveryLinkStart + 1);
+
+    expect($planError)
+        ->toContain('role="alert"')
+        ->toContain('Your current plan allows 1 private ingredient.')
+        ->toContain('Review private ingredients')
+        ->and($recoveryLink)->toContain('href="'.route('ingredients.index').'"');
+
+    $component
         ->assertHasErrors(['data.plan'])
-        ->assertSee('Your current plan allows 1 private ingredient.')
-        ->assertSee('Review private ingredients')
-        ->assertSeeHtml('data-ingredient-plan-error')
-        ->assertSeeHtml('role="alert"')
-        ->assertSeeHtml('href="'.route('ingredients.index').'"')
         ->assertSet('data.name', 'Draft lipid')
         ->assertSet('data.inci_name', 'DRAFT LIPID')
         ->assertSet('data.category', IngredientCategory::Lipids->value)

@@ -283,6 +283,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const scopeValues = {};
     const scopeSequences = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
     const scopeEditVersions = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
+    const unresolvedBufferedEdits = new Map();
     const pendingSaves = new Map();
     const pendingCancels = new Map();
     const createAcknowledgements = new Map();
@@ -465,6 +466,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             pendingSaves.clear();
             pendingCancels.clear();
+            unresolvedBufferedEdits.clear();
             createAcknowledgements.clear();
             navigationAllowance = false;
 
@@ -514,17 +516,45 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             const nextValue = cloneValue(value);
             const previousSignature = stableSerialize(scopeValues[scope]);
             const nextSignature = stableSerialize(nextValue);
-            scopeValues[scope] = nextValue;
+            const baselineSignature = stableSerialize(scopeBaselines[scope]);
+            const bufferedEdit = unresolvedBufferedEdits.get(scope);
 
             if (previousSignature !== nextSignature) {
                 scopeSequences[scope] += 1;
             }
+
+            if (
+                bufferedEdit !== undefined
+                && !pendingSaves.has(scope)
+                && nextSignature === baselineSignature
+                && !bufferedEdit.observedNewerValue
+            ) {
+                this.setScopeState(scope, 'dirty');
+
+                return;
+            }
+
+            scopeValues[scope] = nextValue;
 
             if (!isEditable(editable, scope) || pendingSaves.has(scope) || pendingCancels.has(scope)) {
                 return;
             }
 
             if (this.stateFor(scope) === 'failed') {
+                return;
+            }
+
+            if (bufferedEdit !== undefined) {
+                if (nextSignature === baselineSignature && bufferedEdit.observedNewerValue) {
+                    unresolvedBufferedEdits.delete(scope);
+                    this.setScopeState(scope, 'saved');
+
+                    return;
+                }
+
+                bufferedEdit.observedNewerValue = true;
+                this.setScopeState(scope, 'dirty');
+
                 return;
             }
 
@@ -542,6 +572,11 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             scopeSequences[scope] += 1;
             scopeEditVersions[scope] += 1;
 
+            const bufferedEdit = unresolvedBufferedEdits.get(scope);
+            if (bufferedEdit !== undefined) {
+                bufferedEdit.editVersion = scopeEditVersions[scope];
+            }
+
             if (!['saving', 'failed'].includes(this.stateFor(scope))) {
                 this.setScopeState(scope, 'dirty');
             }
@@ -553,6 +588,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             createAcknowledgements.delete(scope);
+            unresolvedBufferedEdits.delete(scope);
 
             if (captureValue) {
                 this.captureValue(scope);
@@ -657,6 +693,15 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             const editedDuringSave = pending !== undefined
                 && pending.editVersion !== scopeEditVersions[scope];
 
+            if (editedDuringSave) {
+                unresolvedBufferedEdits.set(scope, {
+                    editVersion: scopeEditVersions[scope],
+                    observedNewerValue: false,
+                });
+            } else {
+                unresolvedBufferedEdits.delete(scope);
+            }
+
             if (
                 hasCanonicalBaseline
                 && pending !== undefined
@@ -756,6 +801,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             pendingSaves.delete(scope);
             createAcknowledgements.delete(scope);
+            unresolvedBufferedEdits.delete(scope);
             this.setScopeState(scope, 'failed');
 
             if (scope === 'ingredient' && this.isCreate) {
@@ -771,6 +817,8 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             if (pendingSaves.has(scope) || pendingCancels.has(scope)) {
                 return;
             }
+
+            unresolvedBufferedEdits.delete(scope);
 
             const baseline = Object.prototype.hasOwnProperty.call(detail, 'baseline')
                 ? detail.baseline
@@ -801,6 +849,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             pendingSaves.delete(scope);
             pendingCancels.delete(scope);
             createAcknowledgements.delete(scope);
+            unresolvedBufferedEdits.delete(scope);
             this.setScopeState(scope, 'saved');
         },
 

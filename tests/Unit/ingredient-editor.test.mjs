@@ -551,6 +551,20 @@ test('keeps a buffered material code input dirty after an in-flight save succeed
     assert.equal(setup.editor.baselineFor('material-code'), 'CODE-01');
     assert.equal(setup.editor.currentFor('material-code'), 'code-01');
     assert.equal(setup.registry.blocksNavigation(), true);
+
+    // The response watcher echoes the submitted canonical value before the
+    // buffered DOM value reaches Livewire.
+    edit(setup.wire, 'workspaceMaterialCode', 'CODE-01');
+    assert.equal(setup.editor.stateFor('material-code'), 'dirty');
+    assert.equal(setup.registry.blocksNavigation(), true);
+
+    edit(setup.wire, 'workspaceMaterialCode', 'newer-02');
+    assert.equal(setup.editor.stateFor('material-code'), 'dirty');
+    assert.equal(setup.editor.currentFor('material-code'), 'newer-02');
+
+    edit(setup.wire, 'workspaceMaterialCode', 'CODE-01');
+    assert.equal(setup.editor.stateFor('material-code'), 'saved');
+    assert.equal(setup.registry.blocksNavigation(), false);
 });
 
 test('adopts the raw nested ingredient state emitted after persistence', () => {

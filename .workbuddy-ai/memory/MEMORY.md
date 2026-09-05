@@ -37,6 +37,16 @@ queue-timeout contract mismatch, `--timeout=0` vs expected `300`).
   also hand you the *remedy* for another finding. **Measure the owner's own compliance before
   filing a rule violation** — `livewire.md` says enforce with `authorize()`, but all 12 calls sit
   in one component while 4 others use `abort(403)`.
+- **Name the condition the code evaluates, never a role label.** "A Viewer sees X" is a claim about
+  an actor *and* about reachability. `WorkspaceMemberRole::Viewer` is declared in
+  `app/Enums/WorkspaceMemberRole.php:10` and referenced **nowhere** — no invite flow, no member UI,
+  no check names it; the only code creating a membership row assigns `Owner`
+  (`SettingsIndex.php:167`), the factory defaults to `Editor`, and the DB held 2 rows both `owner`.
+  So "reproduce with a Viewer account" was asking for something that cannot exist. Before naming an
+  actor, grep the enum/method for *assignment* sites, not just definitions. The reachable
+  read-only case was a **non-member** opening a **public workspace-owned** ingredient
+  (`isPublicCatalog()` at `Ingredient.php:352` satisfies the route gate at
+  `IngredientController.php:38-41`).
 - **When amending a findings doc, re-check its summary/proposal section too.** Mine kept the
   superseded advice and contradicted the new sections in 4 places (§4 still said "surface the
   soap-trust state" while the amended F8 said do not unhide it). State in the header which section

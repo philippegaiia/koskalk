@@ -1,13 +1,22 @@
 # UX audit — user-side ingredient editor
 
 **Status:** analysis only, nothing built (owner asked for analysis, 2026-09-04)
-**Revised twice since:** §6 (review against `better-interface` / `better-accessibility`) and
-§6.7 (review against `.ai/rules`). **§4 is the current recommendation** — it supersedes the
-per-finding proposals in §2 where the two disagree. F8 was amended and F7 dropped; see §6.2.
+**Revised three times since:** §6 (`better-interface` / `better-accessibility` review), §6.7
+(`.ai/rules`), and §7 + a full §4 rewrite (journey-based revision brief, 2026-09-05).
+
+> **§4 is the authoritative recommendation.** It is organised around three user journeys —
+> *customize a platform ingredient*, *duplicate a platform ingredient*, *create an ingredient* —
+> plus Viewer behaviour, and it **supersedes §2 and §3 wherever they disagree**. §2 is retained as
+> the record of how each finding was reached, including the ones since withdrawn (F3, F7) or
+> rewritten (F1, F5, F8).
+
 **Surface:** `app/Livewire/Dashboard/IngredientEditor.php` +
 `resources/views/livewire/dashboard/ingredient-editor.blade.php`
 **Entry points:** `ingredients-index.blade.php:189` (pencil) and `:256` (eye)
-**Related:** `app/Models/Ingredient::isEditableBy()` (392), `routes` → `ingredients.edit`
+**Related:** `app/Models/Ingredient::isEditableBy()` (392),
+`app/Services/UserIngredientAuthoringService::duplicate()` (188), `routes` → `ingredients.edit`
+**Permission model:** *origin* (`owner_type`) is separate from *capability*
+(`isEditableBy()`, `canEditWorkspaceGuidance()`, `canEditWorkspaceMaterialCode()`) — see §4.1.
 
 ---
 
@@ -56,14 +65,19 @@ The index sends them here deliberately — `$canEdit` is false (blade.php:122), 
 
 **Verify with a Viewer-role account before fixing** — I traced this statically, not by logging in.
 
-**Fix:** gate the bar on the same predicate that disables the form.
+**Fix (superseded — see §4.1 and §4.5).** The original suggestion here was
+`@unless ($this->isReadOnly())`, which **cannot work**: `isReadOnly()` is `private`
+(`IngredientEditor.php:1380`) and is not callable from Blade.
 
-```blade
-@unless ($this->isReadOnly())
-```
+The corrected fix is to gate on the **ingredient-data capability that already exists and is already
+public** — `$ingredient->isEditableBy($user)` (`Ingredient.php:392`), surfaced through a public
+accessor on the component if one is preferred. Origin (`$isPlatformIngredient`) stays in charge of
+*layout*; capability decides *controls*. Read-only visitors additionally get a "Back to ingredients"
+button and an inline note explaining why nothing is editable.
 
-and give read-only visitors a "Back to ingredients" button plus an inline note explaining why
-nothing is editable.
+Note also that §4.5 corrects the scope of this finding: fixing the Save bar alone is insufficient.
+The **heading** and the **read-only presentation** must reflect the same capability, or the page
+still promises editing it cannot deliver.
 
 ---
 
@@ -82,9 +96,19 @@ Three consequences:
    `<h1>` and the intro paragraph, both far above the form. Nothing on the form itself says why.
 3. **Affordance noise.** Five tab labels read as editable destinations. Users will click them.
 
-**Proposal:** stop rendering the Filament *form* for platform ingredients. Render the technical
-data as read-only description lists (an infolist), or collapse it behind a
-"Full technical data" disclosure. Keep the two genuinely editable cards at the top.
+**Proposal (aligned with §4.2, which is authoritative):** stop rendering the Filament *form* for
+platform ingredients and render the technical data as **readable information** — description lists
+or an infolist — instead of disabled controls. Keep the two genuinely editable cards at the top.
+
+Two clarifications added 2026-09-05:
+
+- **The data is preserved, not hidden.** Composition (when the ingredient is a blend), documents and
+  Soap chemistry all remain on the page. The earlier option of collapsing everything behind a
+  "Full technical data" disclosure is **withdrawn** — it was justified by the WordPress rule in
+  `views.md`, and §7.1 established that rule does not apply to in-app ingredient data. This change
+  is about *how* the data renders, not how much of it survives.
+- **Disabled controls are the actual defect.** An input carrying `disabled` still looks focusable,
+  still announces as a form control, and still implies a save that will never come.
 
 ---
 
@@ -125,18 +149,34 @@ not *blast radius*.
 
 ---
 
-### F5 — The Composition tab vanishes when the type changes
+### F5 — Composition: classification already drives visibility *(rewritten 2026-09-05)*
 
 ```php
 Tab::make(...)->visible(fn (Get $get) => $get('ingredient_structure') === 'blend')
 ```
+`IngredientEditor.php:749`
 
-Switch type from *blend* to *single* while sitting on Composition and the tab disappears
-underneath you. Combined with `persistTabInQueryString('ingredient-tab')`, the query string can
-hold a tab that no longer exists.
+**The original framing of this finding was wrong.** It treated the tab disappearing on a type change
+as a defect. It is not: visibility is **classification-driven by design**, so Composition correctly
+hides itself for a single ingredient such as coconut oil and shows only for ingredients made from
+other ingredients. That behaviour is what the editor *should* do and needs no change.
 
-**Proposal:** keep the tab present but disabled with "Only for blends", or redirect focus to
-Details when the current tab becomes invalid.
+Two things remain open, and **both are unverified — traced from source, never reproduced in a
+browser**:
+
+1. **Stale tab in the URL.** `persistTabInQueryString('ingredient-tab')` (`:646`) stores the active
+   tab, while visibility is computed from **live form state**. Switching blend → single hides the
+   tab but leaves the URL pointing at it; on reload Filament may be asked to activate a tab that no
+   longer exists. **Reproduce before fixing.**
+2. **Fate of existing constituents.** Hiding a tab does not clear state, so constituent rows persist
+   while invisible. Whether they should be retained, discarded, or parked behind an explicit notice
+   is a **product decision this audit deliberately does not make**. Recommended default: retain and
+   disclose — do not silently discard entered data, and do not silently keep it invisible either.
+
+**Proposal (revised):** keep classification-driven visibility exactly as it is. Separately,
+reproduce (1) and settle (2) with the owner — see **§4.6**, which is authoritative. The previous
+suggestion here ("keep the tab present but disabled with 'Only for blends'") is **withdrawn**: it
+would show Composition for single ingredients, which is the opposite of the desired rule.
 
 ---
 
@@ -148,10 +188,21 @@ a form this long.
 
 **Proposal:** a `beforeunload` / `wire:navigate` dirty guard, or autosave per section.
 
-> **Refined 2026-09-04 (§4 #2).** Prefer **reuse** over invention: the workbench already ships the
-> indicator (`dirtyStateRegistry` + `<x-workflow-action-bar role="status">`,
-> `partials/recipe-workbench/instructions-media.blade.php:8-34`). Adopt the indicator, with or
-> without its autosave. CLAUDE.md requires it ("Clear unsaved state indicator always visible").
+> **Corrected 2026-09-05 — see §4.7, which is authoritative.** The 2026-09-04 refinement below
+> understated the existing pattern and its advice was wrong in one respect.
+>
+> - **Reuse, but reuse all of it.** The workbench ships the indicator *and* navigation protection:
+>   `dirtyStateRegistry` + `<x-workflow-action-bar role="status">`
+>   (`instructions-media.blade.php:8-34`), `blocksNavigation()`
+>   (`component.js:1109`) and a `beforeunload` listener (`component.js:1138`).
+> - **"With or without its autosave" is withdrawn.** An indicator alone **does not prevent lost
+>   edits** — it tells you, it does not stop you. Navigation blocking is the part that matters, and
+>   CLAUDE.md's *"Clear unsaved state indicator always visible"* is a floor, not the goal.
+> - **No autosave is introduced** anywhere in this audit; unsaved-state handling is orthogonal to
+>   save timing (§4.4, §5).
+> - **Cancel confirms only when it would discard changes** (F11) — prompt if dirty, stay silent if
+>   clean. `blade.php:120` currently discards with no confirmation while its sibling `:131` has
+>   `wire:confirm`.
 
 ---
 
@@ -192,6 +243,22 @@ communicated. `better-interface` escalates errors that name no recovery.
 to get editable soap chemistry — rather than only warning that something is off. Do **not** unhide
 the flag.
 
+> **Integrated 2026-09-05 — see §4.3 and §4.4, which are authoritative.** The brief corrected this
+> finding: trust should not be explained *only* as a remedy inside a warning, but built into the
+> duplication and creation journeys. The mechanism, confirmed in code:
+>
+> - `duplicateSourceData()` (`UserIngredientAuthoringService.php:545`) writes
+>   `user_authoring.trusted_koh_sap_value` **and** `trusted_fatty_acid_profile` into the copy's
+>   `source_data`, but **only** when the source is trusted *and* has a `sapProfile->koh_sap_value`.
+> - `hasInheritedSoapChemistry()` (`IngredientEditor.php:1400`) reads exactly those keys, so the
+>   duplicate keeps an **editable** Soap chemistry tab.
+> - A manually created ingredient has no `source_data`, so it can never be trusted — which is why
+>   journey C must state the restriction up front rather than let it be discovered.
+>
+> Note the interaction with §4.3: a **lipid with no SAP value cannot be duplicated at all**
+> (`duplicate_soap_profile_required`), so the remedy named in the warning is not always available.
+> The warning must not promise a route that the blocker can refuse.
+
 ---
 
 ### F9 — "Carrier oil" is hard-coded to one category
@@ -223,57 +290,306 @@ Worth naming, because these are the patterns the fixes should extend rather than
 
 ---
 
-## 4. Proposals, in order
+## 4. Recommendation (authoritative)
 
-**Quick wins (independent, low risk)**
-1. **F1** — gate the save bar on `isReadOnly()`, not `$isPlatformIngredient`. One line; removes
-   a reachable 403. *(Ladder step 4: correct the value, no new machinery.)*
-2. **F6** — **reuse** the workbench's unsaved-state indicator rather than designing a guard:
-   `dirtyStateRegistry` + `<x-workflow-action-bar role="status" aria-live="polite">`
-   (`partials/recipe-workbench/instructions-media.blade.php:8-34`). Required by CLAUDE.md's
-   *"Clear unsaved state indicator always visible"*. *(Ladder step 3.)*
-3. **F4** — add a "shared with your workspace" marker to both override cards.
-4. **F5** — validate the persisted Composition tab on load (`persistTabInQueryString` can hold a
-   tab that no longer exists).
-5. **F11** — add `wire:confirm` to Cancel at `blade.php:120`, copying `:131`. One attribute.
-6. **F10** — `<h4>` → `<h2>` at `blade.php:43`. Platform branch only; if #7 lands first, this
-   dissolves into it.
+*Rewritten 2026-09-05 around three user journeys. **This section supersedes §2 and §3** wherever
+they disagree. Behaviour labelled **Current** is what the code does today; **Recommended** is what
+this audit proposes. **Nothing here has been implemented** — this stage is analysis only.*
 
-**Structural (the real win)**
-7. **F2** — **delete** the disabled form from the platform branch first, and let the summary card
-   that already exists (`blade.php:41`) carry INCI / CAS / EC / allergens. *(Ladder step 1.)* Only
-   if that proves insufficient should a separate reference route be considered — and per
-   `.ai/rules/views.md` it must stay **concise** (task copy, safety warnings) and link to WordPress
-   for depth rather than duplicate it.
+### 4.1 Permission model — origin is not permission
 
-**Follow-ups**
-8. **F8** — make the carrier-oil warning state the remedy: soap chemistry is editable only on a
-   **duplicate of a trusted platform ingredient** carrying `user_authoring.trusted_koh_sap_value`.
-   **Do not unhide the flag** — `.ai/rules/dashboard.md` requires it hidden.
-9. **F12** — derive the guidance card's action set from state explicitly, so the primary button
-   stops changing meaning invisibly (`blade.php:113-147`).
-10. **F9** — decouple carrier-oil detection from the `Lipids` category.
-11. **F13** — add a `title` to the truncating breadcrumb (`blade.php:14`).
+The editor currently conflates two independent things:
+
+- **Origin** — where the ingredient came from: `owner_type === null` (platform) vs workspace-owned.
+  A property of the ingredient, not of the user.
+- **Capability** — what this user may do. Three checks already exist, and **all three are public**:
+
+| Capability | Existing check | True when |
+|---|---|---|
+| Edit ingredient data | `Ingredient::isEditableBy(User)` (`Ingredient.php:392`) | owner, or workspace Owner/Admin/Editor |
+| Edit workspace guidance | `canEditWorkspaceGuidance()` (`:522`) | platform + active + Owner/Admin/Editor |
+| Edit material code | `canEditWorkspaceMaterialCode()` (`:1343`) | platform + active + Owner/Admin/Editor |
+
+`isReadOnly()` (`:1380`) is **private** and *derived*: true when the ingredient is platform **or**
+not editable. Because it folds origin and capability together, it cannot express "the form is
+read-only *and* two cards below it are editable" — yet that is exactly journey A.
+
+**Recommended:** branch on **origin** for layout and on the **three capability methods** for
+controls. No new flags are needed — the methods are public and already called from the view. What
+must change are the two places that use origin as a stand-in for permission:
+
+- `blade.php:185` — `@unless ($isPlatformIngredient)` gates the **Save bar** on origin. It should be
+  gated on the ingredient-data capability instead. This single change removes the reachable 403.
+- `blade.php:40` — `@if ($isPlatformIngredient)` gates the two workspace cards on origin, which is
+  correct; their *controls* should be gated on the capability methods (already partly true).
+
+### 4.2 Journey A — Customize a platform ingredient
+
+**Who:** any signed-in member. **Origin:** platform. **Data capability:** none, ever.
+**Guidance / material-code capability:** Owner/Admin/Editor only.
+
+**Current**
+
+- Two cards render — guidance (`:91-148`) and material code (`:150-179`) — each with its own
+  Save/Cancel.
+- The full 5-tab Filament form renders below them, **disabled** (`->disabled($this->isReadOnly())`,
+  `:1002`), with no Save bar (`:185`).
+- A regulatory summary card above shows INCI / CAS / EC / allergens (`:41-89`).
+- The guidance badge indicates *source* (workspace vs platform), not blast radius.
+
+**Recommended**
+
+1. **Replace the disabled form with readable technical data** (F2, kept). The data already exists:
+   identity (INCI / CAS / EC / additional identifiers), allergens, documents, Soap chemistry, and
+   Composition when the ingredient is a blend. Render as description lists, not as inputs carrying
+   `disabled`. Disabled controls still look focusable, still announce as form controls, and still
+   imply a save that will never come.
+2. Keep the two workspace cards where they are — they are the editable part of this journey.
+3. **Label blast radius** (F4): both cards state that changes are shared with everyone in the
+   workspace, and that platform data itself cannot be changed here.
+4. **Heading and presentation follow capability** (F1): the page reads as a reference page, not
+   "Edit ingredient"; no Save bar; nothing that looks actionable but is not.
+5. **Fix the heading level** (F10): `<h4>` → `<h2>` at `:43`. Platform branch only; user-owned
+   ingredients already render a clean `h1 → h2 → h2`.
+6. **Derive the guidance action set from state** (F12) so the primary button stops changing meaning
+   between the four branches at `:113-147`.
+
+**Acceptance criteria**
+
+- A Viewer and an Editor see the **same layout** on a platform ingredient; only the cards' controls
+  differ.
+- No Save bar on this journey, for any role.
+- No disabled `<input>` / `<select>` — technical data renders as text.
+- Both cards name the workspace and state that edits are shared.
+- Guidance Save/Cancel is the only save affordance on the page.
+- Heading order is `h1 → h2 → h2` with no skipped level.
+- `IngredientEditorLocalizationTest` still passes.
+
+### 4.3 Journey B — Duplicate a platform ingredient
+
+**Who:** Owner/Admin/Editor. **Result:** a new workspace-owned, **Private** ingredient.
+
+**Current** — `UserIngredientAuthoringService::duplicate()` (`:188`) already exists. Everything
+below is **existing behaviour, not an endorsement of it.**
+
+*Copied* (`deepCopyRelations()`, `:294`): `sapProfile`, `fattyAcidEntries`, `components`,
+`allergenEntries`, `substanceEntries`, `functionAssignments`, `ifraCertificates` with their
+`limits`, and up to 5 aliases; translations and identifiers are synced separately (`:244`).
+
+*Reset:* `public_id`, `catalog_key` (→ `USR…`), owner → workspace, `visibility` → Private,
+`requires_admin_review` → false.
+
+*Dropped:* **both images** (`featured_image_*` / `icon_image_*` → null, `:237-240`) and
+`info_markdown` (→ null, `:235`); platform guidance is copied in as a workspace override
+(`:246-254`).
+
+*Hard blockers:*
+- source must be a platform ingredient (`duplicate_platform_only`, `:190`);
+- category must be workspace-authorable — **soapmaking alkalis are platform-only**
+  (`assertWorkspaceAuthorableCategory`, `:362`);
+- **a lipid with no `sapProfile->koh_sap_value` cannot be duplicated at all**
+  (`duplicate_soap_profile_required`, `:200`);
+- private-ingredient quota applies (`assertCanCreatePrivateIngredientInWorkspace`, `:210`).
+
+**Recommended**
+
+1. **Surface blockers before the action, not after.** A control that can only fail should be
+   disabled *with the reason*, or the refusal should name the specific guardrail.
+2. **Disclose what duplication carries and what it drops.** A short pre-duplication summary:
+   chemistry and compliance data come across; **images and `info_markdown` do not**. Whether
+   dropping images *should* remain the behaviour is a product decision this audit does not make —
+   the finding is that it must not be **silent**.
+3. **Explain trust inheritance here, not only in a warning** (F8, kept, integrated into this
+   journey). If the source is trusted, `duplicateSourceData()` (`:545`) writes
+   `user_authoring.trusted_koh_sap_value` **and** `trusted_fatty_acid_profile` into the copy, and
+   `hasInheritedSoapChemistry()` (`:1400`) reads those keys — so the copy keeps an **editable**
+   Soap chemistry tab. If the source is not trusted, the copy has none and cannot be given one.
+4. **Name the result:** a Private, workspace-owned ingredient with a `USR` catalog key.
+
+**Acceptance criteria**
+
+- For a source that cannot be duplicated, the UI states which guardrail blocks it **before** the
+  user commits.
+- After duplicating a trusted lipid, the copy's Soap chemistry tab is present and editable.
+- After duplicating an untrusted ingredient, the absence of soap chemistry is explained and the
+  trust rule is named.
+- Any data dropped by duplication is disclosed at the point of duplication.
+- A Viewer never sees the duplicate control.
+
+### 4.4 Journey C — Create an ingredient
+
+**Who:** Owner/Admin/Editor. **Result:** a new workspace-owned, Private ingredient.
+
+**Current:** broad editing access across the five tabs, saved from the bottom Save bar.
+Restrictions are encountered only when hit:
+
+- soapmaking alkalis cannot be authored at all (`soapmaking_alkalis_platform_only`);
+- private-ingredient quota applies;
+- **a manually created ingredient can never be trusted for saponification** —
+  `.ai/rules/dashboard.md` requires the trust flag to stay hidden, and `hasInheritedSoapChemistry()`
+  needs `user_authoring.trusted_koh_sap_value`, which **only duplication can produce**.
+
+**Recommended**
+
+1. **State the saponification restriction up front**, rather than letting someone build an
+   ingredient and then find the chemistry tab missing.
+2. **Composition follows classification** — see §4.6.
+3. **Keep explicit save.** Do not introduce autosave here for the sake of uniformity; §4.7 covers
+   unsaved-state handling independently of save timing.
+4. **Decouple carrier-oil detection from the `Lipids` category** (F9, `blade.php:4`) so the warning
+   does not silently stop firing if the taxonomy gains a sibling.
+
+**Acceptance criteria**
+
+- A user creating a lipid learns, before saving, that soap chemistry will not be available and why.
+- The trust flag is never exposed as a control.
+- Non-workspace-authorable categories are excluded from the picker, or the refusal is explained.
+- Quota exhaustion produces an actionable message, not a generic failure.
+
+### 4.5 Viewers, across all three journeys
+
+**Current:** `isEditableBy()` is false for a Viewer, and both workspace capability methods require
+Owner/Admin/Editor — so a Viewer has **no capability anywhere**. The UI does not consistently say
+so:
+
+- on a **platform** ingredient the Save bar is already hidden (`:185`), so the page is coherent;
+- on a **workspace-owned** ingredient the Save bar **is** rendered, while the form is disabled
+  (`:1002`) and `save()` aborts with a bare 403 (`:210`). **This is F1.**
+
+**Recommended:** heading, controls and actions all derive from the same capability checks, so a
+Viewer never sees an enabled action. Concretely: gate `:185` on the ingredient-data capability
+rather than on origin (§4.1).
+
+**Acceptance criteria**
+
+- A Viewer opening a workspace-owned ingredient sees no Save bar, a read-only heading, and no
+  enabled control.
+- No Viewer-reachable path produces a 403 from `save()`.
+- A Viewer on a platform ingredient sees the two workspace cards read-only, with the same
+  blast-radius labelling.
+
+### 4.6 Composition visibility (F5)
+
+**Current:** visibility is *already* classification-driven —
+`->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')` (`:749`). The editor
+therefore already hides Composition for a single ingredient such as coconut oil. **That part is
+correct and needs no change.**
+
+Two things remain open. **Neither has been reproduced in a browser** — both are traced from source
+and must be confirmed before any fix is written:
+
+1. **Stale tab after a type switch.** `persistTabInQueryString('ingredient-tab')` (`:646`) keeps the
+   active tab in the URL, while visibility is computed from **live form state**. Switching a blend
+   to single hides Composition but leaves the URL pointing at it; on reload Filament may be asked to
+   activate a tab that is no longer visible. **Unverified — reproduce first.**
+2. **What happens to existing constituents.** Hiding a tab does not clear state, so constituent rows
+   persist while invisible. Whether they should be retained (so switching back restores them),
+   discarded, or parked behind an explicit *"N constituents are not applied while this is a single
+   ingredient"* notice is a **product decision this audit does not make**. Recommended default:
+   **retain and disclose** — do not silently discard entered data, and do not silently keep it
+   invisible either.
+
+**Acceptance criteria**
+
+- Composition is never shown when `ingredient_structure !== 'blend'`.
+- Fatty-acid profile stays under **Soap chemistry**, not Composition.
+- Switching type never *silently* loses constituent entries — whichever resolution is chosen, the UI
+  says what happened to them.
+- After a type switch the URL never resolves to a hidden tab *(pending reproduction of (1))*.
+
+### 4.7 Unsaved changes (F6, F11)
+
+**Recommended:** reuse the existing pattern **in full**, not just its indicator.
+`resources/js/recipe-workbench/component.js` provides `dirtyStateRegistry.blocksNavigation()`
+(`:1109`) and a `beforeunload` listener (`:1138`); the workbench wires it through
+`recipeContentAutosave` (`instructions-media.blade.php:8-34`).
+
+1. **Indicator** on every journey with an explicit save — guidance, material code, ingredient form.
+   Required by CLAUDE.md's *"Clear unsaved state indicator always visible"*.
+2. **Navigation protection** — the half that is missing. An indicator tells you; only
+   `blocksNavigation()` and `beforeunload` stop the edit being lost.
+3. **Cancel confirmation only when it would discard changes** — confirm if dirty, stay silent if
+   clean. `blade.php:120` currently discards with no confirmation at all, while its sibling `:131`
+   already carries `wire:confirm`.
+
+No autosave is introduced by this section.
+
+**Acceptance criteria**
+
+- Editing any field flips a visible unsaved indicator.
+- Navigating away with unsaved changes prompts; with no changes it does not.
+- Cancel prompts when dirty and does not prompt when clean.
+- Saving returns the indicator to a saved state.
+
+### 4.8 Revised priorities
+
+1. **Permission consistency** (§4.1, §4.5) — gate the Save bar on capability, not origin; derive
+   heading and controls from the same checks. Removes the only reachable 403.
+2. **Lost-edit protection** (§4.7) — indicator **plus** navigation blocking; conditional cancel
+   confirmation.
+3. **Composition** (§4.6) — classification already drives visibility; reproduce the stale-tab case
+   and settle constituent retention with the owner.
+4. **Platform reference presentation** (§4.2) — replace disabled controls with readable technical
+   data. Re-scoped by §7.1: the WordPress rule does **not** limit how much ingredient data may be
+   shown, so this is about *how* it renders, not how much.
+5. **Duplication and creation clarity** (§4.3, §4.4) — surface blockers, disclose copied/dropped
+   data, state the saponification restriction up front.
+6. **Blast-radius labelling** (F4) and the minor repairs — F10 heading level, F12 guidance action
+   set, F13 breadcrumb `title`, F9 carrier-oil coupling.
 
 **Dropped**
-- **F7** — leave as-is. The targets are 36×36px, clearing the WCAG 2.5.8 floor of 24×24px, and
-  both links already carry a contextual `aria-label` and a `title`. Adding text labels is the most
-  expensive rung on the ladder for something that isn't broken.
-- **F8 (first clause)** — the hidden `is_soap_saponification_trusted` flag is mandated by rule,
-  not a defect. See §6.7.
+
+- **F3** — withdrawn; the cards and the Save bar are mutually exclusive (§7.1).
+- **F7** — no escalation trigger applies (§6.2); 36×36px clears the 24×24px floor and both links
+  carry `aria-label` and `title`.
+- **F8 first clause** — the hidden trust flag is mandated by `.ai/rules/dashboard.md`. The second
+  clause is kept and folded into journeys B and C.
+
+**Not prescribed:** no specific number of new booleans. §4.1 reuses the three capability methods
+that already exist and changes two Blade gates.
+
+### 4.9 Unverified — must be confirmed before any of this is built
+
+- **F1's Viewer path** — traced statically, never reproduced with a real Viewer account.
+- **§4.6(1) stale tab after a type switch** — traced, not reproduced.
+- **§4.6(2) constituent retention** — a product decision, not yet taken.
+- **Images dropped on duplication** — observed in code, **not** endorsed as desirable.
 
 ---
 
 ## 5. Open questions for the owner
 
-- Should **Viewers** be able to reach this page at all, or should the index show a read-only
-  detail page instead? (Affects whether F1 is a fix or a redirect.)
-- Is the **material code** workspace-scoped *only* for platform ingredients by design, or should
-  workspace-owned ingredients get one too?
-- Should **guidance** and **material code** autosave, or keep explicit Save buttons?
-- How much of the technical data do users actually need on a platform ingredient? If most open it
-  just to check an INCI or an allergen, the reference card should lead and the rest should be
-  behind a disclosure.
+*Updated 2026-09-05 to reflect what the code investigation settled and what the §4 rewrite raised.*
+
+**Still open**
+
+1. Should **Viewers** reach this page at all, or should the index route them to a read-only detail
+   page? This decides whether §4.5 is a fix or a redirect. **Blocked on reproducing F1 with a real
+   Viewer account** — it is still traced statically only.
+2. Is the **material code** workspace-scoped *only* for platform ingredients by design?
+   `canEditWorkspaceMaterialCode()` (`:1343`) requires `owner_type === null`, so workspace-owned
+   ingredients have no material code by construction. Whether that is intended is not recorded.
+3. **What should happen to existing constituents when an ingredient switches type?** Retain,
+   discard, or park behind a notice? §4.6(2) recommends *retain and disclose* as a default but this
+   is a product decision, not one this audit takes.
+4. **Should duplication keep dropping images?** `duplicate()` nulls `featured_image_*` and
+   `icon_image_*` (`:237-240`). That is observed behaviour, **not** an endorsement — is it wanted?
+5. **Should a lipid with no SAP value remain impossible to duplicate?** The
+   `duplicate_soap_profile_required` blocker (`:200`) is severe: it makes some platform ingredients
+   simply not duplicable. Is that deliberate, or should duplication be allowed without chemistry?
+
+**Settled by investigation (no longer open)**
+
+- *Should guidance and material code autosave?* — **No.** Keep explicit save; do not introduce
+  autosave for uniformity (§4.4, §4.7). Unsaved-state handling is orthogonal to save timing.
+- *Does the WordPress rule cap how much ingredient data may be shown?* — **No.** `views.md` covers
+  public marketing, editorial and long-form documentation, not in-app ingredient domain data
+  (§7.1). How the data is *organised* is still a design choice, but there is no rule against
+  showing it.
+- *Should the `is_soap_saponification_trusted` flag be surfaced?* — **No.** `.ai/rules/dashboard.md`
+  requires it hidden (§7.1).
+- *Are the customisation cards and the Save bar competing?* — **No.** They are mutually exclusive
+  (§7.1); F3 is withdrawn.
 
 ---
 
@@ -393,6 +709,13 @@ it remains the one finding that should be confirmed against a live session befor
 No browser check was performed (the Vite dev server is down; see memory).
 
 ### 6.6 Verdict
+
+**Superseded 2026-09-05 — see §4.8 for the current priorities.** Retained for the record.
+
+The verdict below was written before the journey-based rewrite and is now partly stale:
+F5 no longer stands as written (§7.1 — classification was already correct), and F6's "copy the
+indicator" understated the pattern, which also carries navigation blocking (§7.1). The F2
+delete-first recommendation survives, but its justification no longer rests on the WordPress rule.
 
 **Approve the analysis as a basis for work; do not start from proposal 5.** Three of the four quick
 wins (F1, F4, F5) stand as written. F6 should be implemented by copying the workbench's existing
@@ -532,8 +855,24 @@ inconsistency the brief ranks first.
 ### 7.4 Verdict
 
 All six corrections are sound and accepted. Three refinements (§7.2) and one change of shape (§7.3)
-must be folded in before §4 is rewritten.
+were folded in when §4 was rewritten.
 
-**Not yet done:** §4 has **not** been reorganised around the three journeys; no expected behaviour or
-acceptance criteria have been written; §6.7's third bullet and F3 are still present and need
-withdrawing. This stage remains analysis-only — no application code changed.
+**Done 2026-09-05:**
+
+- **§4 rewritten** around the three journeys (§4.2 customize, §4.3 duplicate, §4.4 create) plus
+  Viewer behaviour (§4.5), each with expected behaviour and acceptance criteria, and revised
+  priorities (§4.8).
+- **§7.3 resolved without new booleans.** Rather than prescribe a number of flags, §4.1 separates
+  **origin** from **capability** and reuses the three checks that already exist and are already
+  public: `Ingredient::isEditableBy()`, `canEditWorkspaceGuidance()` and
+  `canEditWorkspaceMaterialCode()`. Only two Blade gates change.
+- **§6.7's third bullet withdrawn** (the WordPress rule does not cap in-app technical data).
+- **F3 withdrawn** as a finding, with the surviving complaint folded into F2.
+- **F1, F5 and F8 in §2 updated** to match: F1 no longer prescribes calling the private
+  `isReadOnly()`; F5 no longer calls correct classification a bug; F8's trust rules are integrated
+  into journeys B and C.
+- **§5 open questions refreshed** — five still open, four settled by investigation.
+- **§6.6 marked superseded** by §4.8.
+
+**Still analysis-only** — no application code changed. Two items remain unverified and are recorded
+in §4.9: F1's Viewer path, and the stale-tab behaviour in §4.6(1).

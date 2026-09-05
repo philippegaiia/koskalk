@@ -425,6 +425,44 @@ test('keeps a dirty structure choice protected when the composition editor re-re
     assert.equal(setup.confirmations.length, 1);
 });
 
+test('uses server-provided labels for statuses and confirmation prompts', () => {
+    const labels = {
+        saved: 'Server saved label',
+        dirty: 'Server dirty label',
+        saving: 'Server saving label',
+        failed: 'Server failed label',
+        leaveWarning: 'Server leave warning',
+        replaceGuidance: 'Server replace warning',
+        cancelGuidance: 'Server cancel warning',
+    };
+    const setup = makeEditor({ labels, confirm: () => false });
+
+    setup.editor.init();
+    assert.equal(setup.editor.statusText('ingredient'), labels.saved);
+
+    setup.editor.markDirty('ingredient');
+    assert.equal(setup.editor.statusText('ingredient'), labels.dirty);
+
+    setup.editor.beginSave('ingredient');
+    assert.equal(setup.editor.statusText('ingredient'), labels.saving);
+
+    setup.editor.failScope('ingredient');
+    assert.equal(setup.editor.statusText('ingredient'), labels.failed);
+
+    setup.editor.cancelScope('ingredient');
+    setup.editor.markDirty('ingredient');
+    setup.editor.markDirty('guidance');
+    setup.eventTarget.dispatch('click', { target: new FakeElement('guidance', null, true) });
+    setup.eventTarget.dispatch('click', { target: new FakeElement('guidance', 'usePlatformGuidance') });
+    setup.navigationTarget.dispatch('livewire:navigate');
+
+    assert.deepEqual(setup.confirmations, [
+        labels.cancelGuidance,
+        labels.replaceGuidance,
+        labels.leaveWarning,
+    ]);
+});
+
 test('keeps validation and network failures blocking after a submit', async () => {
     const validation = makeEditor();
     validation.editor.init();

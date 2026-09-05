@@ -994,6 +994,13 @@ return [
             'invalid' => 'Review the highlighted fields.',
             'created' => 'Ingredient added.',
             'saved' => 'Changes saved.',
+            'all_saved' => 'All changes saved',
+            'unsaved' => 'Unsaved changes',
+            'saving' => 'Saving…',
+            'save_failed' => 'Save failed',
+            'leave_warning' => 'You have unsaved changes. Leave this page?',
+            'replace_guidance' => 'You have an unsaved guidance draft. Replace it?',
+            'cancel_guidance' => 'You have an unsaved guidance draft. Discard it?',
         ],
         'validation' => [
             'component_unavailable' => 'This ingredient is no longer available to add.',

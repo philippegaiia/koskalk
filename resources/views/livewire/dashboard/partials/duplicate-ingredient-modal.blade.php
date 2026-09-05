@@ -90,39 +90,39 @@
 
                 <template x-if="!selected">
                     <div class="mt-4">
-                        <div class="max-h-64 overflow-y-auto divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)]" role="listbox" aria-label="{{ __('ingredients.duplicate.results_label') }}">
+                        <ul class="max-h-64 list-none overflow-y-auto divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)] p-0" aria-label="{{ __('ingredients.duplicate.results_label') }}">
                             <template x-if="loading">
-                                <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]" role="status">{{ __('ingredients.duplicate.searching') }}</div>
+                                <li class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]" role="status">{{ __('ingredients.duplicate.searching') }}</li>
                             </template>
 
                             <template x-if="!loading && results.length === 0 && query.trim().length >= 2 && !searchError">
-                                <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.no_matches') }}</div>
+                                <li class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.no_matches') }}</li>
                             </template>
 
                             <template x-if="!loading && results.length === 0 && query.trim().length < 2 && !searchError">
-                                <div class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.minimum_characters') }}</div>
+                                <li class="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.minimum_characters') }}</li>
                             </template>
 
                             <template x-for="item in results" :key="item.id">
-                                <button
-                                    type="button"
-                                    role="option"
-                                    :aria-selected="selected?.id === item.id ? 'true' : 'false'"
-                                    @click="selectCandidate(item)"
-                                    class="flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition hover:bg-[var(--color-field-muted)] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]"
-                                >
-                                    <span class="min-w-0">
-                                        <span class="block truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
-                                        <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category].filter(Boolean).join(' · ')"></span>
-                                    </span>
-                                    <span
-                                        class="shrink-0 text-xs font-medium"
-                                        :class="item.duplication.available ? 'text-[var(--color-accent-strong)]' : 'text-[var(--color-danger-strong)]'"
-                                        x-text="item.duplication.available ? messages.review : messages.unavailable"
-                                    ></span>
-                                </button>
+                                <li>
+                                    <button
+                                        type="button"
+                                        @click="selectCandidate(item)"
+                                        class="flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition hover:bg-[var(--color-field-muted)] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]"
+                                    >
+                                        <span class="min-w-0">
+                                            <span class="block truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
+                                            <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category].filter(Boolean).join(' · ')"></span>
+                                        </span>
+                                        <span
+                                            class="shrink-0 text-xs font-medium"
+                                            :class="item.duplication.available ? 'text-[var(--color-accent-strong)]' : 'text-[var(--color-danger-strong)]'"
+                                            x-text="item.duplication.available ? messages.review : messages.unavailable"
+                                        ></span>
+                                    </button>
+                                </li>
                             </template>
-                        </div>
+                        </ul>
                     </div>
                 </template>
 

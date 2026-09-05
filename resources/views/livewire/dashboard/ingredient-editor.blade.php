@@ -14,6 +14,15 @@
  x-data="ingredientEditor({
      element: $el,
      isCreate: @js($isCreate),
+     labels: @js([
+         'saved' => __('ingredients.editor.status.all_saved'),
+         'dirty' => __('ingredients.editor.status.unsaved'),
+         'saving' => __('ingredients.editor.status.saving'),
+         'failed' => __('ingredients.editor.status.save_failed'),
+         'leaveWarning' => __('ingredients.editor.status.leave_warning'),
+         'replaceGuidance' => __('ingredients.editor.status.replace_guidance'),
+         'cancelGuidance' => __('ingredients.editor.status.cancel_guidance'),
+     ]),
      baselines: @js([
          'ingredient' => $data,
          'guidance' => $workspaceGuidance,

@@ -995,6 +995,38 @@ it('shows translated validation feedback and a generic translated save alert', f
         );
 });
 
+it('passes translated dirty-state labels to the ingredient editor bootstrap', function (): void {
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+
+    $translations = [
+        'editor.status.all_saved' => 'Sauvegarde terminée',
+        'editor.status.unsaved' => 'Modifications non enregistrées',
+        'editor.status.saving' => 'Sauvegarde en cours',
+        'editor.status.save_failed' => 'Échec de sauvegarde',
+        'editor.status.leave_warning' => 'Quitter malgré les modifications ?',
+        'editor.status.replace_guidance' => 'Remplacer le brouillon ?',
+        'editor.status.cancel_guidance' => 'Supprimer le brouillon ?',
+    ];
+    $user = User::factory()->create(['locale' => 'fr']);
+
+    foreach ($translations as $key => $translation) {
+        InterfaceTranslation::query()->create([
+            'group' => 'ingredients',
+            'key' => $key,
+            'text' => ['fr' => $translation],
+        ]);
+    }
+
+    App::setLocale('fr');
+    $this->actingAs($user);
+
+    $html = Livewire::test(IngredientEditor::class)->html();
+
+    foreach ($translations as $translation) {
+        expect($html)->toContain($translation);
+    }
+});
+
 it('routes workspace ingredient authoring errors through translation keys', function () {
     $authoringSource = file_get_contents(app_path('Services/UserIngredientAuthoringService.php'));
     $dataEntrySource = file_get_contents(app_path('Services/IngredientDataEntryService.php'));
@@ -1030,6 +1062,13 @@ it('keeps every ingredient editor string in the ingredients translation group', 
     expect($copy)->toHaveKeys([
         'editor.workspace_scope',
         'editor.read_only_description',
+        'editor.status.all_saved',
+        'editor.status.unsaved',
+        'editor.status.saving',
+        'editor.status.save_failed',
+        'editor.status.leave_warning',
+        'editor.status.replace_guidance',
+        'editor.status.cancel_guidance',
         'editor.create.page_title',
         'editor.create.heading',
         'editor.create.intro',

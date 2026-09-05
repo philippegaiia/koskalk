@@ -185,6 +185,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
     const scopeSequences = Object.fromEntries(SCOPE_KEYS.map((scope) => [scope, 0]));
     const pendingSaves = new Map();
     const pendingCancels = new Map();
+    const redirectAcknowledgements = new Map();
     const unsubscriptions = [];
     let boundEventTarget = null;
 
@@ -355,6 +356,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
             pendingSaves.clear();
             pendingCancels.clear();
+            redirectAcknowledgements.clear();
 
             for (const scope of SCOPE_KEYS) {
                 registry.remove(scope);
@@ -439,6 +441,8 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                 return;
             }
 
+            redirectAcknowledgements.delete(scope);
+
             if (captureValue) {
                 this.captureValue(scope);
             }
@@ -482,13 +486,37 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             this.captureSubmittedValue(scope);
+            const pending = pendingSaves.get(scope);
+            const requestSnapshot = pending === undefined
+                ? null
+                : {
+                    sequence: pending.sequence,
+                    value: cloneValue(pending.value),
+                };
 
             onRedirect?.(({ preventDefault } = {}) => {
                 if (scope !== 'ingredient' || !this.isCreate || !this.createSubmission) {
                     return;
                 }
 
-                this.completeSave(scope);
+                redirectAcknowledgements.set(scope, requestSnapshot);
+
+                if (pendingSaves.has(scope)) {
+                    this.completeSave(scope);
+                } else if (requestSnapshot !== null) {
+                    const currentSignature = stableSerialize(scopeValues[scope]);
+                    const submittedSignature = stableSerialize(requestSnapshot.value);
+
+                    scopeBaselines[scope] = cloneValue(requestSnapshot.value);
+                    this.setScopeState(
+                        scope,
+                        requestSnapshot.sequence !== scopeSequences[scope]
+                            || currentSignature !== submittedSignature
+                            ? 'dirty'
+                            : 'saved',
+                    );
+                }
+
                 this.restoreCreateForm();
 
                 if (this.stateFor(scope) !== 'saved') {
@@ -503,6 +531,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             }
 
             const pending = pendingSaves.get(scope);
+            if (pending === undefined && redirectAcknowledgements.has(scope)) {
+                return;
+            }
+
             const savedValue = Object.prototype.hasOwnProperty.call(detail, 'baseline')
                 ? detail.baseline
                 : pending !== undefined
@@ -580,6 +612,7 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             scopeValues[scope] = cloneValue(currentValue);
             pendingSaves.delete(scope);
             pendingCancels.delete(scope);
+            redirectAcknowledgements.delete(scope);
             this.setScopeState(scope, 'saved');
         },
 

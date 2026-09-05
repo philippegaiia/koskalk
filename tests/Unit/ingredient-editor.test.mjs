@@ -610,7 +610,10 @@ test('allows an initial create redirect from its submitted baseline without prom
         assert.equal(controls[0].disabled, false);
     });
 
+    setup.wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
+
     assert.equal(setup.editor.stateFor('ingredient'), 'saved');
+    assert.equal(setup.editor.baselineFor('ingredient').name, 'New ingredient');
     assert.equal(controls[0].disabled, false);
     assert.equal(controls[1].readOnly, false);
     assert.equal(controls[2].getAttribute('contenteditable'), 'true');
@@ -629,10 +632,12 @@ test('keeps newer create edits protected when a redirect arrives', async () => {
     setup.wire.startCommit();
     edit(setup.wire, 'data.name', 'Newer ingredient edit');
     setup.wire.completeCommit({ redirect: '/ingredients/1' });
+    setup.wire.emit('ingredient-editor:saved', { scope: 'ingredient' });
     await new Promise((resolve) => queueMicrotask(resolve));
 
     assert.equal(controls[0].disabled, false);
     assert.equal(setup.editor.stateFor('ingredient'), 'dirty');
+    assert.equal(setup.editor.baselineFor('ingredient').name, 'Submitted ingredient');
     assert.equal(setup.wire.redirectPrevented, true);
 });
 

@@ -453,6 +453,13 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     // SAP profile is independent
     $copy->sapProfile->update(['koh_sap_value' => 0.195]);
     expect((float) $source->fresh()->sapProfile->koh_sap_value)->toBe(0.188);
+
+    $state = $service->formData($copy);
+    $state['sap_profile']['koh_sap_value'] = '0.19';
+    $service->update($copy, $state, $user);
+
+    expect((float) $copy->fresh()->sapProfile->koh_sap_value)->toBe(0.19)
+        ->and((float) $source->fresh()->sapProfile->koh_sap_value)->toBe(0.188);
 });
 
 it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', function () {
@@ -486,6 +493,30 @@ it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', fu
             'ins_value' => 102.8,
         ],
     ], $user))->toThrow(ValidationException::class);
+});
+
+it('accepts duplicated carrier oil KOH SAP edits at both trusted boundaries', function (): void {
+    $user = User::factory()->create();
+
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Boundary oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+        'is_active' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $user);
+
+    foreach (['0.18236', '0.19364'] as $kohSapValue) {
+        $state = $service->formData($copy);
+        $state['sap_profile']['koh_sap_value'] = $kohSapValue;
+
+        expect($service->update($copy, $state, $user))->toBeInstanceOf(Ingredient::class);
+    }
 });
 
 it('refuses to duplicate a carrier oil without a KOH SAP value', function () {

@@ -646,6 +646,42 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->toBeLessThan(strpos($html, 'data-ingredient-identity-section'));
 });
 
+it('starts with a single ingredient and places identity before classification', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class);
+
+    $html = $component->html();
+
+    expect($component->get('data.ingredient_structure'))->toBe('ingredient')
+        ->and(strpos($html, 'wire:model="data.name"'))->toBeLessThan(strpos($html, 'wire:model="data.inci_name"'))
+        ->and(strpos($html, 'wire:model="data.inci_name"'))->toBeLessThan(strpos($html, 'data-ingredient-classification-section'));
+
+    $component
+        ->assertDontSeeText('Trusted for soap saponification')
+        ->assertDontSeeText('Composition');
+});
+
+it('explains why manually created lipids cannot use saponification and links to duplication', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.category', IngredientCategory::Lipids->value)
+        ->assertSeeText('This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.')
+        ->assertSeeText('Duplicate a Soapkraft ingredient')
+        ->assertSeeHtml('href="'.route('ingredients.index').'"');
+
+    $component
+        ->set('data.category', IngredientCategory::Other->value)
+        ->assertDontSeeText('This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.')
+        ->set('data.category', IngredientCategory::Lipids->value)
+        ->assertSeeText('This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.');
+});
+
 it('keeps save and cancel actions sticky when editing a workspace ingredient', function () {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
@@ -747,6 +783,37 @@ it('shows inherited soap chemistry for a duplicated platform oil', function () {
         ->assertSeeText('Saponification values')
         ->assertSeeText('Add the values used to calculate this oil in soap formulas.')
         ->assertSeeText('Allowed KOH SAP range');
+});
+
+it('shows inherited chemistry limits in the duplicated lipid editor', function (): void {
+    $user = User::factory()->create();
+    $small = FattyAcid::factory()->create(['name' => 'Trace acid']);
+    $major = FattyAcid::factory()->create(['name' => 'Major acid']);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Boundary source oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->createMany([
+        ['fatty_acid_id' => $small->id, 'percentage' => 2],
+        ['fatty_acid_id' => $major->id, 'percentage' => 60],
+    ]);
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
+        ->assertSeeText('Soap calculation data inherited from Soapkraft.')
+        ->assertSeeText('Only private copies of eligible Soapkraft oils can use this chemistry.')
+        ->assertSeeText('Allowed KOH SAP range: 0.182360–0.193640')
+        ->assertSeeText('NaOH SAP')
+        ->assertSeeText('Calculated automatically from the KOH SAP.')
+        ->assertSeeText('Recommended total: 80–100%')
+        ->assertSeeText('Allowed: 0.0%–5.0%.')
+        ->assertSeeText('Allowed: 48.0%–72.0%.');
 });
 
 it('loads ingredient editor interface copy from the database', function () {

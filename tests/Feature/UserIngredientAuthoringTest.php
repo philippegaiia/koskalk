@@ -1199,6 +1199,54 @@ it('shows the plan limit when quick ingredient creation is rejected', function (
     expect(Ingredient::query()->where('display_name', 'Calendula Flowers')->exists())->toBeFalse();
 });
 
+it('keeps every ingredient draft field after a create quota error', function (): void {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 1)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user);
+
+    expect(app(EntitlementService::class)->usageFor($user)['private_ingredients'])
+        ->toMatchArray(['used' => 1, 'limit' => 1, 'allowed' => false]);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'Draft lipid')
+        ->set('data.inci_name', 'DRAFT LIPID')
+        ->set('data.category', IngredientCategory::Lipids->value)
+        ->set('data.subcategory', 'vegetable_oils')
+        ->set('data.requires_aromatic_compliance', true)
+        ->set('data.notes', 'Keep this draft after the quota message.')
+        ->set('data.additional_identifiers', [[
+            'scheme' => 'unii',
+            'value' => 'DRAFT-UNII',
+            'is_primary' => true,
+        ]])
+        ->call('save')
+        ->assertHasErrors(['data.plan'])
+        ->assertSet('data.name', 'Draft lipid')
+        ->assertSet('data.inci_name', 'DRAFT LIPID')
+        ->assertSet('data.category', IngredientCategory::Lipids->value)
+        ->assertSet('data.subcategory', 'vegetable_oils')
+        ->assertSet('data.requires_aromatic_compliance', true)
+        ->assertSet('data.notes', 'Keep this draft after the quota message.')
+        ->assertSet('data.additional_identifiers.0.value', 'DRAFT-UNII');
+
+    expect(Ingredient::query()->where('display_name', 'Draft lipid')->exists())->toBeFalse();
+});
+
 it('does not quick create an ingredient when the composition is full', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -1640,6 +1688,27 @@ it('keeps user carrier oils out of the soap saponification lane', function () {
         ->and($ingredient->availableWorkbenchPhases())
         ->toContain('additives')
         ->not->toContain('saponified_oils');
+});
+
+it('ignores a tampered soap trust flag when creating a manual lipid', function (): void {
+    $user = User::factory()->create();
+
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Tampered manual lipid',
+        'category' => IngredientCategory::Lipids->value,
+        'is_soap_saponification_trusted' => true,
+        'sap_profile' => [
+            'koh_sap_value' => 0.188,
+        ],
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.188,
+            ],
+        ],
+    ], $user);
+
+    expect($ingredient->is_soap_saponification_trusted)->toBeFalse()
+        ->and($ingredient->source_data)->not->toHaveKey('user_authoring');
 });
 
 it('preserves entered CAS and EC identifier values when saving a user ingredient', function () {

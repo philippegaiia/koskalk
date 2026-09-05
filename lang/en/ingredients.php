@@ -984,7 +984,7 @@ return [
         ],
         'carrier_oil_warning' => [
             'heading' => 'Using this oil in saponification',
-            'description' => 'A carrier oil created from scratch can be added to a formula, but it cannot be selected for saponification. To use it as a saponified oil, duplicate the matching Soapkraft carrier oil and edit your copy.',
+            'description' => 'This ingredient cannot be used for saponification calculations. To customize soap chemistry, duplicate a platform ingredient with trusted soap chemistry.',
         ],
         'status' => [
             'auth_required' => 'Sign in before saving an ingredient.',

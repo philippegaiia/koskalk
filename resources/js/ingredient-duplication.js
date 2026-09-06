@@ -9,6 +9,7 @@ const DEFAULT_MESSAGES = {
         platform: 'Soapkraft',
         user: 'Your ingredient',
         workspace: 'Workspace ingredient',
+        fallback: 'Ingredient',
     },
 };
 
@@ -264,9 +265,20 @@ export function createIngredientDuplicationModal(options = {}) {
         },
 
         sourceLabel(candidate) {
-            const source = String(candidate?.source ?? '').trim();
+            const rawSource = candidate?.source;
+            const source = typeof rawSource === 'string' ? rawSource.trim().toLowerCase() : '';
+            const sources = this.messages.sources ?? {};
+            const fallback = Object.prototype.hasOwnProperty.call(sources, 'fallback')
+                ? sources.fallback
+                : '';
 
-            return this.messages.sources?.[source] ?? this.messages.sources?.platform ?? '';
+            if (!['platform', 'user', 'workspace'].includes(source)) {
+                return fallback;
+            }
+
+            return Object.prototype.hasOwnProperty.call(sources, source)
+                ? sources[source]
+                : fallback;
         },
 
         destroy() {

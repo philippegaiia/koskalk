@@ -3612,43 +3612,7 @@
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.private_library",
-      "text": {
-        "de": "Deine Zutatenbibliothek",
-        "es": "Tu biblioteca de ingredientes",
-        "fr": "Votre bibliothèque d’ingrédients",
-        "it": "La tua libreria di ingredienti",
-        "nl": "Je ingrediëntenbibliotheek",
-        "pt_BR": "Sua biblioteca de ingredientes"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "duplicate.preview.destination_help",
-      "text": {
-        "de": "Das Quellmaterial bleibt unverändert.",
-        "es": "El ingrediente de origen no cambia.",
-        "fr": "L’ingrédient source reste inchangé.",
-        "it": "L’ingrediente di origine non cambia.",
-        "nl": "Het broningrediënt blijft ongewijzigd.",
-        "pt_BR": "O ingrediente de origem permanece inalterado."
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "duplicate.preview.images_reset",
-      "text": {
-        "de": "Bilder und Dokumente werden nicht kopiert.",
-        "es": "Las imágenes y los documentos no se copian.",
-        "fr": "Les images et les documents ne sont pas copiés.",
-        "it": "Immagini e documenti non vengono copiati.",
-        "nl": "Afbeeldingen en documenten worden niet gekopieerd.",
-        "pt_BR": "Imagens e documentos não são copiados."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "duplicate.preview.media_not_copied",
       "text": {
         "de": "Bilder und Dokumente werden nicht kopiert.",
         "es": "Las imágenes y los documentos no se copian.",
@@ -3728,6 +3692,18 @@
         "it": "Ingrediente dello spazio di lavoro",
         "nl": "Werkruimte-ingrediënt",
         "pt_BR": "Ingrediente do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_unknown",
+      "text": {
+        "de": "Zutat",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
       }
     },
     {

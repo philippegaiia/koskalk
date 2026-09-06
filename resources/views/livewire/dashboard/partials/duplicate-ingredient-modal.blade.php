@@ -27,6 +27,7 @@
                 'platform' => __('ingredients.duplicate.preview.source_soapkraft'),
                 'user' => __('ingredients.duplicate.preview.source_user'),
                 'workspace' => __('ingredients.duplicate.preview.source_workspace'),
+                'fallback' => __('ingredients.duplicate.preview.source_unknown'),
             ],
         ]),
     })"

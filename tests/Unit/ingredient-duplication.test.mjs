@@ -103,6 +103,28 @@ test('labels the safe duplication source discriminator for each visible source',
     assert.equal(modal.sourceLabel(candidate({ source: 'workspace' })), 'Workspace ingredient');
 });
 
+test('normalizes only known source discriminators and uses a neutral fallback otherwise', () => {
+    const modal = createIngredientDuplicationModal({
+        messages: {
+            ...messages,
+            sources: {
+                platform: 'Soapkraft',
+                user: 'Your ingredient',
+                workspace: 'Workspace ingredient',
+                fallback: 'Ingredient',
+            },
+        },
+    });
+
+    assert.equal(modal.sourceLabel(candidate({ source: ' Platform ' })), 'Soapkraft');
+    assert.equal(modal.sourceLabel(candidate({ source: 'USER' })), 'Your ingredient');
+    assert.equal(modal.sourceLabel(candidate({ source: ' workspace ' })), 'Workspace ingredient');
+
+    for (const source of [undefined, '', 'future', '__proto__', 'constructor']) {
+        assert.equal(modal.sourceLabel(candidate({ source })), 'Ingredient');
+    }
+});
+
 test('prevents a second confirmation while the first request is in flight', async () => {
     let resolveRequest;
     const redirects = [];

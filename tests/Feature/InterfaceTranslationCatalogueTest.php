@@ -433,17 +433,18 @@ it('keeps duplication journey copy translated with matching placeholders', funct
     $keys = [
         'ingredients.duplicate.preview.copy',
         'ingredients.duplicate.preview.library_copy',
-        'ingredients.duplicate.preview.private_library',
-        'ingredients.duplicate.preview.destination_help',
         'ingredients.duplicate.preview.images_reset',
-        'ingredients.duplicate.preview.media_not_copied',
         'ingredients.duplicate.preview.guidance_override',
         'ingredients.duplicate.preview.source_unchanged',
         'ingredients.duplicate.preview.inherited_chemistry',
         'ingredients.duplicate.preview.source_soapkraft',
         'ingredients.duplicate.preview.source_user',
         'ingredients.duplicate.preview.source_workspace',
+        'ingredients.duplicate.preview.source_unknown',
         'ingredients.editor.carrier_oil_warning.duplicate_link',
+    ];
+    $languageNeutralKeys = [
+        'ingredients.duplicate.preview.source_soapkraft',
     ];
 
     $placeholders = static function (string $text): array {
@@ -465,6 +466,11 @@ it('keeps duplication journey copy translated with matching placeholders', funct
             expect($translation, "{$fullKey} [{$locale}]")
                 ->not->toBe('')
                 ->and($placeholders($translation))->toBe($placeholders($english));
+
+            if (! in_array($fullKey, $languageNeutralKeys, true)) {
+                expect($translation, "{$fullKey} [{$locale}] must be localized")
+                    ->not->toBe($english);
+            }
         }
     }
 });

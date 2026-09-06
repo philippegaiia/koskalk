@@ -201,7 +201,7 @@ class IngredientController extends Controller
                     'name' => $ingredient->localizedDisplayName(),
                     'inci_name' => $ingredient->inci_name,
                     'category' => $ingredient->category?->getLabel(),
-                    'source' => $this->isPlatformIngredient($ingredient) ? 'platform' : 'workspace',
+                    'source' => $this->duplicationSource($ingredient, $user),
                     'identifiers' => $ingredient->identifiers->map(fn ($identifier): array => [
                         'scheme' => $identifier->scheme->value,
                         'value' => $identifier->value,
@@ -382,5 +382,20 @@ class IngredientController extends Controller
         return $ingredient->owner_type === null
             && $ingredient->owner_id === null
             && $ingredient->workspace_id === null;
+    }
+
+    private function duplicationSource(Ingredient $ingredient, ?User $user): string
+    {
+        if ($this->isPlatformIngredient($ingredient)) {
+            return 'platform';
+        }
+
+        if ($ingredient->owner_type === OwnerType::User
+            && $user instanceof User
+            && (int) $ingredient->owner_id === (int) $user->id) {
+            return 'user';
+        }
+
+        return 'workspace';
     }
 }

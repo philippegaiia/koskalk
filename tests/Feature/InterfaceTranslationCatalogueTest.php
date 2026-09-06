@@ -426,6 +426,49 @@ it('keeps changed ingredient editor catalogue copy and placeholders aligned', fu
     }
 });
 
+it('keeps duplication journey copy translated with matching placeholders', function (): void {
+    $source = app(EnglishTranslationSource::class);
+    $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+    $keys = [
+        'ingredients.duplicate.preview.copy',
+        'ingredients.duplicate.preview.library_copy',
+        'ingredients.duplicate.preview.private_library',
+        'ingredients.duplicate.preview.destination_help',
+        'ingredients.duplicate.preview.images_reset',
+        'ingredients.duplicate.preview.media_not_copied',
+        'ingredients.duplicate.preview.guidance_override',
+        'ingredients.duplicate.preview.source_unchanged',
+        'ingredients.duplicate.preview.inherited_chemistry',
+        'ingredients.duplicate.preview.source_soapkraft',
+        'ingredients.duplicate.preview.source_user',
+        'ingredients.duplicate.preview.source_workspace',
+        'ingredients.editor.carrier_oil_warning.duplicate_link',
+    ];
+
+    $placeholders = static function (string $text): array {
+        preg_match_all('/:([A-Za-z_][A-Za-z0-9_]*)/', $text, $matches);
+
+        return array_values(array_unique($matches[0]));
+    };
+
+    foreach ($keys as $fullKey) {
+        [$group, $key] = explode('.', $fullKey, 2);
+        $english = $source->get($group, $key);
+
+        expect($rows)->toHaveKey($fullKey)
+            ->and($english)->toBeString();
+
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+            $translation = trim((string) data_get($rows[$fullKey], "text.{$locale}"));
+
+            expect($translation, "{$fullKey} [{$locale}]")
+                ->not->toBe('')
+                ->and($placeholders($translation))->toBe($placeholders($english));
+        }
+    }
+});
+
 it('localizes the high-visibility Inventory UX keys into every supported locale', function (string $key): void {
     $fullKey = "production_bench.{$key}";
     $english = app(EnglishTranslationSource::class)->get('production_bench', $key);

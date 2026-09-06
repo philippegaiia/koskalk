@@ -3588,6 +3588,150 @@
     },
     {
       "group": "ingredients",
+      "key": "duplicate.preview.copy",
+      "text": {
+        "de": "Privat für :workspace. Eigentümer, Administratoren und Editoren des Arbeitsbereichs können die Kopie bearbeiten.",
+        "es": "Privado para :workspace. Los propietarios, administradores y editores del espacio de trabajo pueden editarlo.",
+        "fr": "Privé pour :workspace. Les propriétaires, administrateurs et éditeurs de l’espace de travail peuvent le modifier.",
+        "it": "Privato per :workspace. I proprietari, gli amministratori e gli editori dello spazio di lavoro possono modificarlo.",
+        "nl": "Privé voor :workspace. Eigenaren, beheerders en editors van de werkruimte kunnen dit bewerken.",
+        "pt_BR": "Privado para :workspace. Proprietários, administradores e editores do espaço de trabalho podem editá-lo."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.library_copy",
+      "text": {
+        "de": "Deine Zutatenbibliothek",
+        "es": "Tu biblioteca de ingredientes",
+        "fr": "Votre bibliothèque d’ingrédients",
+        "it": "La tua libreria di ingredienti",
+        "nl": "Je ingrediëntenbibliotheek",
+        "pt_BR": "Sua biblioteca de ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.private_library",
+      "text": {
+        "de": "Deine Zutatenbibliothek",
+        "es": "Tu biblioteca de ingredientes",
+        "fr": "Votre bibliothèque d’ingrédients",
+        "it": "La tua libreria di ingredienti",
+        "nl": "Je ingrediëntenbibliotheek",
+        "pt_BR": "Sua biblioteca de ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.destination_help",
+      "text": {
+        "de": "Das Quellmaterial bleibt unverändert.",
+        "es": "El ingrediente de origen no cambia.",
+        "fr": "L’ingrédient source reste inchangé.",
+        "it": "L’ingrediente di origine non cambia.",
+        "nl": "Het broningrediënt blijft ongewijzigd.",
+        "pt_BR": "O ingrediente de origem permanece inalterado."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.images_reset",
+      "text": {
+        "de": "Bilder und Dokumente werden nicht kopiert.",
+        "es": "Las imágenes y los documentos no se copian.",
+        "fr": "Les images et les documents ne sont pas copiés.",
+        "it": "Immagini e documenti non vengono copiati.",
+        "nl": "Afbeeldingen en documenten worden niet gekopieerd.",
+        "pt_BR": "Imagens e documentos não são copiados."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.media_not_copied",
+      "text": {
+        "de": "Bilder und Dokumente werden nicht kopiert.",
+        "es": "Las imágenes y los documentos no se copian.",
+        "fr": "Les images et les documents ne sont pas copiés.",
+        "it": "Immagini e documenti non vengono copiati.",
+        "nl": "Afbeeldingen en documenten worden niet gekopieerd.",
+        "pt_BR": "Imagens e documentos não são copiados."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.guidance_override",
+      "text": {
+        "de": "Verfügbare Hinweise werden in die Arbeitsbereichsüberschreibung kopiert.",
+        "es": "Las indicaciones disponibles se copian en la personalización del espacio de trabajo.",
+        "fr": "Les conseils disponibles sont copiés dans la personnalisation de l’espace de travail.",
+        "it": "Le indicazioni disponibili vengono copiate nella personalizzazione dello spazio di lavoro.",
+        "nl": "Beschikbare aanwijzingen worden naar de werkruimteoverschrijving gekopieerd.",
+        "pt_BR": "As orientações disponíveis são copiadas para a substituição do espaço de trabalho."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_unchanged",
+      "text": {
+        "de": "Das Quellmaterial bleibt unverändert.",
+        "es": "El ingrediente de origen no cambia.",
+        "fr": "L’ingrédient source reste inchangé.",
+        "it": "L’ingrediente di origine non cambia.",
+        "nl": "Het broningrediënt blijft ongewijzigd.",
+        "pt_BR": "O ingrediente de origem permanece inalterado."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.inherited_chemistry",
+      "text": {
+        "de": "Seifenwerte können innerhalb der geerbten Grenzen bearbeitet werden.",
+        "es": "Los valores de jabón se pueden editar dentro de los límites heredados.",
+        "fr": "Les valeurs de savon peuvent être modifiées dans les limites héritées.",
+        "it": "I valori del sapone possono essere modificati entro i limiti ereditati.",
+        "nl": "Zeepwaarden kunnen binnen de overgenomen grenzen worden bewerkt.",
+        "pt_BR": "Os valores de sabão podem ser editados dentro dos limites herdados."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_soapkraft",
+      "text": {
+        "de": "Soapkraft",
+        "es": "Soapkraft",
+        "fr": "Soapkraft",
+        "it": "Soapkraft",
+        "nl": "Soapkraft",
+        "pt_BR": "Soapkraft"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_user",
+      "text": {
+        "de": "Deine Zutat",
+        "es": "Tu ingrediente",
+        "fr": "Votre ingrédient",
+        "it": "Il tuo ingrediente",
+        "nl": "Jouw ingrediënt",
+        "pt_BR": "Seu ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_workspace",
+      "text": {
+        "de": "Arbeitsbereichszutat",
+        "es": "Ingrediente del espacio de trabajo",
+        "fr": "Ingrédient de l’espace de travail",
+        "it": "Ingrediente dello spazio di lavoro",
+        "nl": "Werkruimte-ingrediënt",
+        "pt_BR": "Ingrediente do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.actions.create",
       "text": {
         "de": "Zutat hinzufügen",
@@ -4616,6 +4760,18 @@
         "it": "Uso di questo olio nella saponificazione",
         "nl": "Deze olie gebruiken voor verzeping",
         "pt_BR": "Usando este óleo na saponificação"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.carrier_oil_warning.duplicate_link",
+      "text": {
+        "de": "Zutat zum Duplizieren finden",
+        "es": "Buscar un ingrediente para duplicar",
+        "fr": "Trouver un ingrédient à dupliquer",
+        "it": "Trova un ingrediente da duplicare",
+        "nl": "Zoek een ingrediënt om te dupliceren",
+        "pt_BR": "Encontrar um ingrediente para duplicar"
       }
     },
     {

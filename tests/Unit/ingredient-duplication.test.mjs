@@ -86,6 +86,23 @@ test('selecting a result opens its preview without making a write request', () =
     assert.equal(calls.length, 0);
 });
 
+test('labels the safe duplication source discriminator for each visible source', () => {
+    const modal = createIngredientDuplicationModal({
+        messages: {
+            ...messages,
+            sources: {
+                platform: 'Soapkraft',
+                user: 'Your ingredient',
+                workspace: 'Workspace ingredient',
+            },
+        },
+    });
+
+    assert.equal(modal.sourceLabel(candidate({ source: 'platform' })), 'Soapkraft');
+    assert.equal(modal.sourceLabel(candidate({ source: 'user' })), 'Your ingredient');
+    assert.equal(modal.sourceLabel(candidate({ source: 'workspace' })), 'Workspace ingredient');
+});
+
 test('prevents a second confirmation while the first request is in flight', async () => {
     let resolveRequest;
     const redirects = [];

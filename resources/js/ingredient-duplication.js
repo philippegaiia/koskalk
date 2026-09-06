@@ -5,6 +5,11 @@ const DEFAULT_MESSAGES = {
     invalidResponse: 'The server returned an unexpected response. Refresh the page and try again.',
     reloadGuidance: 'Refresh the page and try again.',
     unavailable: 'This ingredient is not available for duplication.',
+    sources: {
+        platform: 'Soapkraft',
+        user: 'Your ingredient',
+        workspace: 'Workspace ingredient',
+    },
 };
 
 const DEFAULT_MAX_IDENTIFIERS = 4;
@@ -219,7 +224,14 @@ function defaultNavigate(url) {
  * failure states can be tested without a browser or another dependency.
  */
 export function createIngredientDuplicationModal(options = {}) {
-    const messages = { ...DEFAULT_MESSAGES, ...(options.messages ?? {}) };
+    const messages = {
+        ...DEFAULT_MESSAGES,
+        ...(options.messages ?? {}),
+        sources: {
+            ...DEFAULT_MESSAGES.sources,
+            ...(options.messages?.sources ?? {}),
+        },
+    };
     const fetchImpl = options.fetch ?? globalThis.fetch?.bind(globalThis);
     const maxIdentifiers = options.maxIdentifiers ?? DEFAULT_MAX_IDENTIFIERS;
     const maxAliases = options.maxAliases ?? DEFAULT_MAX_ALIASES;
@@ -249,6 +261,12 @@ export function createIngredientDuplicationModal(options = {}) {
         init() {
             this.searchError = null;
             this.duplicateError = null;
+        },
+
+        sourceLabel(candidate) {
+            const source = String(candidate?.source ?? '').trim();
+
+            return this.messages.sources?.[source] ?? this.messages.sources?.platform ?? '';
         },
 
         destroy() {

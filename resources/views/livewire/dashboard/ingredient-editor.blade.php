@@ -89,7 +89,7 @@
  <p id="carrier-oil-guidance-title" class="font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.carrier_oil_warning.heading') }}</p>
  <p class="mt-1">
  {{ __('ingredients.editor.carrier_oil_warning.description') }}
- <a data-ingredient-carrier-oil-duplication-link href="{{ route('ingredients.index') }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-accent)] underline-offset-2 hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.duplicate.button') }}</a>
+ <a data-ingredient-carrier-oil-duplication-link href="{{ route('ingredients.index') }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-accent)] underline-offset-2 hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.editor.carrier_oil_warning.duplicate_link') }}</a>
  </p>
  </aside>
  @endif

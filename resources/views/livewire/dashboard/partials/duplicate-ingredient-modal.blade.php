@@ -1,5 +1,8 @@
 @php
-    $duplicateDestinationLabel = $destinationWorkspaceName ?? __('ingredients.duplicate.preview.private_library');
+    $hasDestinationWorkspace = filled($destinationWorkspaceName);
+    $duplicateDestinationCopy = $hasDestinationWorkspace
+        ? __('ingredients.duplicate.preview.copy', ['workspace' => $destinationWorkspaceName])
+        : __('ingredients.duplicate.preview.library_copy');
 @endphp
 
 <div
@@ -8,7 +11,6 @@
         duplicateUrl: @js(route('ingredients.duplicate')),
         destinationWorkspaceId: @js($destinationWorkspaceId),
         destinationWorkspaceSignature: @js($duplicateDestinationSignature),
-        destinationLabel: @js($duplicateDestinationLabel),
         lipidCategoryLabel: @js(__('ingredients.categories.lipids.label')),
         messages: @js([
             'searchFailed' => __('ingredients.duplicate.errors.search_failed'),
@@ -21,6 +23,11 @@
             'kohSapUnit' => __('ingredients.duplicate.preview.koh_sap_unit'),
             'naohSapUnit' => __('ingredients.duplicate.preview.naoh_sap_unit'),
             'unavailable' => __('ingredients.duplicate.preview.unavailable'),
+            'sources' => [
+                'platform' => __('ingredients.duplicate.preview.source_soapkraft'),
+                'user' => __('ingredients.duplicate.preview.source_user'),
+                'workspace' => __('ingredients.duplicate.preview.source_workspace'),
+            ],
         ]),
     })"
     class="inline-flex"
@@ -114,7 +121,7 @@
                                     >
                                         <span class="min-w-0">
                                             <span class="block truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
-                                            <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category, item.source === 'workspace' ? @js(__('ingredients.table.source.yours')) : @js(__('ingredients.table.source.soapkraft'))].filter(Boolean).join(' · ')"></span>
+                                            <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category, sourceLabel(item)].filter(Boolean).join(' · ')"></span>
                                         </span>
                                         <span
                                             class="shrink-0 text-xs font-medium"
@@ -139,7 +146,7 @@
                         </div>
 
                         <p class="mt-4 rounded-lg bg-[var(--color-accent-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)]">
-                            {{ __('ingredients.duplicate.preview.copy', ['workspace' => $duplicateDestinationLabel]) }}
+                            {{ $duplicateDestinationCopy }}
                         </p>
 
                         <dl class="mt-4 grid gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] p-4 sm:grid-cols-2">
@@ -165,12 +172,6 @@
                             </div>
                         </dl>
 
-                        <div class="mt-4 rounded-lg border border-[var(--color-line)] p-4">
-                            <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.destination') }}</p>
-                            <p class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]" x-text="destinationLabel"></p>
-                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.destination_help') }}</p>
-                        </div>
-
                         <template x-if="!selected.duplication.available">
                             <p role="alert" class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-danger-strong)]" x-text="selected.duplication.reason || messages.unavailable"></p>
                         </template>
@@ -181,8 +182,8 @@
                                     <p class="sk-eyebrow">{{ __('ingredients.duplicate.preview.restrictions') }}</p>
                                     <ul class="mt-2 space-y-2 text-sm leading-6 text-[var(--color-ink-soft)]">
                                         <li>{{ __('ingredients.duplicate.preview.images_reset') }}</li>
-                                        <li>{{ __('ingredients.duplicate.preview.media_not_copied') }}</li>
                                         <li>{{ __('ingredients.duplicate.preview.guidance_override') }}</li>
+                                        <li>{{ __('ingredients.duplicate.preview.source_unchanged') }}</li>
                                     </ul>
                                 </div>
 

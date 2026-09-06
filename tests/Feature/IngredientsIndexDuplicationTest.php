@@ -44,13 +44,15 @@ it('renders a preview-only accessible duplication dialog with its data disclosur
 
     actingAs($user);
 
-    $this->get(route('ingredients.index'))
+    $response = $this->get(route('ingredients.index'));
+
+    $response
         ->assertSuccessful()
-        ->assertSee('Create a private copy in your private ingredient library. You can edit its details. The source ingredient stays unchanged.')
+        ->assertSee('Your ingredient library')
         ->assertSee('Create private copy')
-        ->assertSee('Legacy ingredient images are reset in the private copy.')
-        ->assertSee('Documents and media usages are not copied.')
-        ->assertSee('Available guidance is copied to the new ingredient.')
+        ->assertSee('Images and documents are not copied.')
+        ->assertSee('Available guidance is copied into the workspace override.')
+        ->assertSee('The source ingredient remains unchanged.')
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
         ->assertSee('<ul', false)
@@ -68,7 +70,33 @@ it('renders a preview-only accessible duplication dialog with its data disclosur
         ->assertSee('Fatty acid total range')
         ->assertSee('selected.duplication.chemistry.koh_sap.minimum', false)
         ->assertSee('selected.duplication.chemistry.fatty_acids', false)
+        ->assertDontSee('Legacy ingredient images')
+        ->assertDontSee('Documents and media usages')
+        ->assertDontSee('workspace writers')
         ->assertDontSee('info_markdown');
+
+    expect(substr_count($response->getContent(), 'Your ingredient library'))->toBe(1);
+});
+
+it('shows the named destination workspace disclosure once', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create(['name' => 'North Star Soapworks']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    actingAs($user);
+
+    $response = $this->get(route('ingredients.index'));
+
+    $response
+        ->assertSuccessful()
+        ->assertSee('Private to North Star Soapworks. Workspace owners, admins and editors can edit it.')
+        ->assertDontSee('Your ingredient library')
+        ->assertDontSee('The copy is private to this workspace')
+        ->assertDontSee('workspace writers');
+
+    expect(substr_count($response->getContent(), 'Private to North Star Soapworks. Workspace owners, admins and editors can edit it.'))
+        ->toBe(1);
 });
 
 it('registers the duplication factory and keeps dismissal guarded during confirmation', function (): void {
@@ -268,6 +296,7 @@ it('reports duplication eligibility metadata for an eligible platform ingredient
 
     $response->assertSuccessful()
         ->assertJsonPath('0.id', $platform->id)
+        ->assertJsonPath('0.source', 'platform')
         ->assertJsonPath('0.duplication.available', true)
         ->assertJsonPath('0.duplication.reason', null)
         ->assertJsonPath('0.duplication.inherits_soap_chemistry', true)
@@ -297,6 +326,44 @@ it('reports duplication eligibility metadata for an eligible platform ingredient
         'requires_admin_review',
         'is_soap_saponification_trusted',
     ]);
+});
+
+it('distinguishes Soapkraft, personal, and destination workspace sources', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    Ingredient::factory()->create([
+        'display_name' => 'Source label Soapkraft',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    Ingredient::factory()->create([
+        'display_name' => 'Source label personal',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    Ingredient::factory()->create([
+        'display_name' => 'Source label workspace',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_active' => true,
+    ]);
+
+    actingAs($user);
+
+    $results = collect($this->getJson(route('ingredients.search-platform').'?q=source%20label')->json())
+        ->keyBy('name');
+
+    expect($results->get('Source label Soapkraft')['source'])->toBe('platform')
+        ->and($results->get('Source label personal')['source'])->toBe('user')
+        ->and($results->get('Source label workspace')['source'])->toBe('workspace');
 });
 
 it('evaluates destination duplication eligibility once for a bounded search', function (): void {

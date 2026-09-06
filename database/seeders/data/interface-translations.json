@@ -3432,18 +3432,6 @@
     },
     {
       "group": "ingredients",
-      "key": "duplicate.action",
-      "text": {
-        "de": "Duplizieren",
-        "es": "Duplicar",
-        "fr": "Dupliquer",
-        "it": "Duplica",
-        "nl": "Dupliceren",
-        "pt_BR": "Duplicar"
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "duplicate.button",
       "text": {
         "de": "Soapkraft-Zutat duplizieren",
@@ -3464,6 +3452,18 @@
         "it": "Cerca nella libreria Soapkraft e duplica un ingrediente per personalizzarne allergeni, limiti IFRA o composizione.",
         "nl": "Zoek in de Soapkraft-bibliotheek en dupliceer een ingrediënt om allergenen, IFRA-limieten of de samenstelling aan te passen.",
         "pt_BR": "Pesquise na biblioteca Soapkraft e duplique um ingrediente para personalizar seus alérgenos, limites IFRA ou composição."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.errors.auth_expired",
+      "text": {
+        "de": "Deine Sitzung ist abgelaufen. Lade die Seite neu, melde dich erneut an und öffne die Duplizierung wieder.",
+        "es": "Tu sesión ha caducado. Actualiza la página, vuelve a iniciar sesión y abre de nuevo la duplicación.",
+        "fr": "Votre session a expiré. Actualisez la page, reconnectez-vous et rouvrez la duplication.",
+        "it": "La sessione è scaduta. Ricarica la pagina, accedi di nuovo e riapri la duplicazione.",
+        "nl": "Je sessie is verlopen. Vernieuw de pagina, meld je opnieuw aan en open dupliceren opnieuw.",
+        "pt_BR": "Sua sessão expirou. Atualize a página, faça login novamente e reabra a duplicação."
       }
     },
     {

@@ -441,6 +441,7 @@ it('keeps duplication journey copy translated with matching placeholders', funct
         'ingredients.duplicate.preview.source_user',
         'ingredients.duplicate.preview.source_workspace',
         'ingredients.duplicate.preview.source_unknown',
+        'ingredients.duplicate.errors.auth_expired',
         'ingredients.editor.carrier_oil_warning.duplicate_link',
     ];
     $languageNeutralKeys = [
@@ -473,6 +474,8 @@ it('keeps duplication journey copy translated with matching placeholders', funct
             }
         }
     }
+
+    expect($rows)->not->toHaveKey('ingredients.duplicate.action');
 });
 
 it('localizes the high-visibility Inventory UX keys into every supported locale', function (string $key): void {

@@ -181,7 +181,7 @@ it('keeps the complete platform reference available as plain technical values', 
         ->assertSeeText('Neroli oil')
         ->assertSeeText('70%')
         ->assertSeeText('Emollient')
-        ->assertSeeText('0.185')
+        ->assertSeeText('0.185000')
         ->assertSeeText('Oleic acid')
         ->assertSeeText('42%')
         ->assertSeeText('LIMONENE')
@@ -249,11 +249,36 @@ it('renders zero soap and peroxide values with their units', function (): void {
         return trim(strip_tags($matches[1]));
     };
 
-    expect($referenceValue('KOH SAP (g KOH/g oil)'))->toBe('0')
+    expect($referenceValue('KOH SAP (g KOH/g oil)'))->toBe('0.000000')
         ->and($referenceValue('Peroxide value (meq O₂/kg)'))->toBe('0');
 
     expect($component->instance()->referenceData['soap']['koh_sap_value'])->toBe(0.0)
         ->and($component->instance()->referenceData['ifra']['peroxide_value'])->toBe(0.0);
+});
+
+it('formats reference SAP values with six decimals in the user number locale', function (): void {
+    $platform = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $platform->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $dotUser = User::factory()->create(['locale' => 'fr', 'number_locale' => 'en_US']);
+    $commaUser = User::factory()->create(['locale' => 'en', 'number_locale' => 'fr_FR']);
+
+    $this->actingAs($dotUser);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->assertSeeText('0.188000')
+        ->assertSeeText('0.134044');
+
+    $this->actingAs($commaUser);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->assertSeeText('0,188000')
+        ->assertSeeText('0,134044');
 });
 
 it('places platform workspace controls before technical reference and avoids duplicate guidance', function (): void {
@@ -1760,8 +1785,8 @@ it('shows inherited chemistry limits in the duplicated lipid editor', function (
         ->assertSeeText('Calculated automatically from KOH SAP as g NaOH/g oil.')
         ->assertSeeText('Soap data source notes')
         ->assertSeeText('Required total: 80–100%')
-        ->assertSeeText('Allowed: 0.0%–5.0%.')
-        ->assertSeeText('Allowed: 48.0%–72.0%.');
+        ->assertSeeText('Allowed: 0.0%–5.0%. Limits are based on the source oil.')
+        ->assertSeeText('Allowed: 48.0%–72.0%. Limits are based on the source oil.');
 });
 
 it('scopes user editor terminology without changing shared ingredient translations', function (): void {

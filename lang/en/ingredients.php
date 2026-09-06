@@ -980,7 +980,7 @@ return [
             'inherited_helper' => 'Only private copies of eligible Soapkraft oils can use this chemistry.',
             'koh_sap' => 'KOH SAP (g KOH/g oil)',
             'koh_helper' => 'Enter the canonical KOH SAP in g KOH/g oil, such as 0.245. Professional values such as 245 mg KOH/g oil are accepted and converted. NaOH SAP is calculated automatically.',
-            'koh_range' => 'Allowed KOH SAP range: :minimum–:maximum g KOH/g oil (:professional_minimum–:professional_maximum mg KOH/g oil). Soapkraft reference: :reference g KOH/g oil.',
+            'koh_range' => 'Allowed KOH SAP range: :minimum–:maximum g KOH/g oil (:professional_minimum–:professional_maximum mg KOH/g oil). Soapkraft reference: :reference g KOH/g oil. Limits are based on the source oil.',
             'naoh_sap' => 'NaOH SAP (g NaOH/g oil)',
             'naoh_helper' => 'Calculated automatically from KOH SAP as g NaOH/g oil.',
             'iodine' => 'Iodine value',
@@ -995,7 +995,7 @@ return [
             'remove_fatty_acid' => 'Remove fatty acid',
             'new_fatty_acid' => 'New fatty acid',
             'percentage' => 'Percentage',
-            'allowed_range' => 'Allowed: :minimum%–:maximum%.',
+            'allowed_range' => 'Allowed: :minimum%–:maximum%. Limits are based on the source oil.',
         ],
         'compliance' => [
             'allergens' => [

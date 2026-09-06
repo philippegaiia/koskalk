@@ -8030,12 +8030,12 @@
       "group": "ingredients",
       "key": "editor.soap.allowed_range",
       "text": {
-        "de": "Zulässig: :minimum %–:maximum %.",
-        "es": "Permitido: :minimum %–:maximum %.",
-        "fr": "Autorisé : :minimum %–:maximum %.",
-        "it": "Consentito: :minimum%–:maximum%.",
-        "nl": "Toegestaan: :minimum%–:maximum%.",
-        "pt_BR": "Permitido: :minimum%–:maximum%."
+        "de": "Zulässig: :minimum %–:maximum %. Die Grenzen basieren auf dem Quellöl.",
+        "es": "Permitido: :minimum %–:maximum %. Los límites se basan en el aceite de origen.",
+        "fr": "Autorisé : :minimum %–:maximum %. Les limites sont basées sur l’huile source.",
+        "it": "Consentito: :minimum%–:maximum%. I limiti si basano sull'olio di origine.",
+        "nl": "Toegestaan: :minimum%–:maximum%. De grenzen zijn gebaseerd op de bronolie.",
+        "pt_BR": "Permitido: :minimum%–:maximum%. Os limites são baseados no óleo de origem."
       }
     },
     {
@@ -8174,12 +8174,12 @@
       "group": "ingredients",
       "key": "editor.soap.koh_range",
       "text": {
-        "de": "Zulässiger KOH-VZ-Bereich: :minimum–:maximum g KOH/g Öl (:professional_minimum–:professional_maximum mg KOH/g Öl). Soapkraft-Referenz: :reference g KOH/g Öl.",
-        "es": "Intervalo SAP KOH permitido: :minimum–:maximum g KOH/g aceite (:professional_minimum–:professional_maximum mg KOH/g aceite). Referencia Soapkraft: :reference g KOH/g aceite.",
-        "fr": "Plage SAP KOH autorisée : :minimum–:maximum g KOH/g huile (:professional_minimum–:professional_maximum mg KOH/g huile). Référence Soapkraft : :reference g KOH/g huile.",
-        "it": "Intervallo SAP KOH consentito: :minimum–:maximum g KOH/g olio (:professional_minimum–:professional_maximum mg KOH/g olio). Riferimento Soapkraft: :reference g KOH/g olio.",
-        "nl": "Toegestaan KOH-VZ-bereik: :minimum–:maximum g KOH/g olie (:professional_minimum–:professional_maximum mg KOH/g olie). Soapkraft-referentie: :reference g KOH/g olie.",
-        "pt_BR": "Intervalo permitido de KOH SAP: :minimum–:maximum g KOH/g óleo (:professional_minimum–:professional_maximum mg KOH/g óleo). Referência Soapkraft: :reference g KOH/g óleo."
+        "de": "Zulässiger KOH-VZ-Bereich: :minimum–:maximum g KOH/g Öl (:professional_minimum–:professional_maximum mg KOH/g Öl). Soapkraft-Referenz: :reference g KOH/g Öl. Die Grenzen basieren auf dem Quellöl.",
+        "es": "Intervalo SAP KOH permitido: :minimum–:maximum g KOH/g aceite (:professional_minimum–:professional_maximum mg KOH/g aceite). Referencia Soapkraft: :reference g KOH/g aceite. Los límites se basan en el aceite de origen.",
+        "fr": "Plage SAP KOH autorisée : :minimum–:maximum g KOH/g huile (:professional_minimum–:professional_maximum mg KOH/g huile). Référence Soapkraft : :reference g KOH/g huile. Les limites sont basées sur l’huile source.",
+        "it": "Intervallo SAP KOH consentito: :minimum–:maximum g KOH/g olio (:professional_minimum–:professional_maximum mg KOH/g olio). Riferimento Soapkraft: :reference g KOH/g olio. I limiti si basano sull'olio di origine.",
+        "nl": "Toegestaan KOH-VZ-bereik: :minimum–:maximum g KOH/g olie (:professional_minimum–:professional_maximum mg KOH/g olie). Soapkraft-referentie: :reference g KOH/g olie. De grenzen zijn gebaseerd op de bronolie.",
+        "pt_BR": "Intervalo permitido de KOH SAP: :minimum–:maximum g KOH/g óleo (:professional_minimum–:professional_maximum mg KOH/g óleo). Referência Soapkraft: :reference g KOH/g óleo. Os limites são baseados no óleo de origem."
       }
     },
     {
@@ -14712,6 +14712,18 @@
     },
     {
       "group": "media_library",
+      "key": "picker.cancel",
+      "text": {
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
+      }
+    },
+    {
+      "group": "media_library",
       "key": "picker.choose",
       "text": {
         "de": "Aus der Medienbibliothek auswählen",
@@ -14828,6 +14840,18 @@
         "it": "Non è stato possibile caricare il documento. Riprova.",
         "nl": "Het document kon niet worden geüpload. Probeer het opnieuw.",
         "pt_BR": "Não foi possível enviar o documento. Tente novamente."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "picker.document_upload_requirements",
+      "text": {
+        "de": ":formats. Bilder bis :max MB; PDFs bis :pdfMax KB.",
+        "es": ":formats. Imágenes de hasta :max MB; PDF de hasta :pdfMax KB.",
+        "fr": ":formats. Images jusqu’à :max Mo ; PDF jusqu’à :pdfMax Ko.",
+        "it": ":formats. Immagini fino a :max MB; PDF fino a :pdfMax KB.",
+        "nl": ":formats. Afbeeldingen tot :max MB; pdf’s tot :pdfMax KB.",
+        "pt_BR": ":formats. Imagens de até :max MB; PDFs de até :pdfMax KB."
       }
     },
     {
@@ -15776,6 +15800,18 @@
         "it": "Scegli fino a :max immagini.",
         "nl": "Kies maximaal :max afbeeldingen.",
         "pt_BR": "Escolha até :max imagens."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "validation.pdf_size",
+      "text": {
+        "de": "Diese PDF überschreitet das Limit von :max KB. Komprimiere sie und versuche es erneut.",
+        "es": "Este PDF supera el límite de :max KB. Comprímelo e inténtalo de nuevo.",
+        "fr": "Ce PDF dépasse la limite de :max Ko. Compressez-le et réessayez.",
+        "it": "Questo PDF supera il limite di :max KB. Comprimilo e riprova.",
+        "nl": "Deze pdf overschrijdt de limiet van :max KB. Comprimeer het bestand en probeer het opnieuw.",
+        "pt_BR": "Este PDF excede o limite de :max KB. Comprima-o e tente novamente."
       }
     },
     {

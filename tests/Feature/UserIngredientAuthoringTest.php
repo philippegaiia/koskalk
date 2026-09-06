@@ -1926,7 +1926,8 @@ it('accepts comma decimals throughout user soap chemistry fields', function () {
 });
 
 it('derives the same NaOH SAP from decimal and professional KOH notation', function () {
-    $user = User::factory()->create(['number_locale' => 'fr_FR']);
+    $this->seed(SupportedLocaleSeeder::class);
+    $user = User::factory()->create(['locale' => 'fr', 'number_locale' => 'en_US']);
     $source = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,
         'owner_type' => null,
@@ -1951,6 +1952,48 @@ it('derives the same NaOH SAP from decimal and professional KOH notation', funct
         ->assertHasNoErrors();
 
     expect((float) $ingredient->fresh('sapProfile')->sapProfile->koh_sap_value)->toBe(0.176);
+});
+
+it('formats derived NaOH SAP with a comma when the number locale requires it', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $user = User::factory()->create(['locale' => 'en', 'number_locale' => 'fr_FR']);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.sap_profile.koh_sap_value', '0,188')
+        ->assertSee('0,134044');
+});
+
+it('shows a placeholder when the editable KOH SAP input is missing', function (): void {
+    $user = User::factory()->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.sap_profile.koh_sap_value', null)
+        ->assertSet('data.sap_profile.koh_sap_value', null);
+
+    $naohEntry = $component->instance()->form->getComponent('sap_profile.naoh_sap_value', withHidden: true);
+
+    expect($naohEntry->getState())->toBe('Not available')
+        ->and($component->html())->not->toContain('0.134044');
 });
 
 it('returns professional KOH notation to the canonical decimal scale', function () {
@@ -1992,7 +2035,8 @@ it('keeps invalid KOH input visible so validation can explain it', function () {
 });
 
 it('shows one live fatty acid profile total without repeating the total rule on every row', function () {
-    $user = User::factory()->create();
+    $this->seed(SupportedLocaleSeeder::class);
+    $user = User::factory()->create(['locale' => 'en', 'number_locale' => 'fr_FR']);
     $oleic = FattyAcid::factory()->create(['name' => 'Oleic', 'is_active' => true]);
     $lauric = FattyAcid::factory()->create(['name' => 'Lauric', 'is_active' => true]);
     $source = Ingredient::factory()->create([
@@ -2011,15 +2055,15 @@ it('shows one live fatty acid profile total without repeating the total rule on 
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
         ->assertSee('Fatty acid total')
-        ->assertSee('80.0%')
+        ->assertSee('80,0%')
         ->assertSee('Required total: 80–100%')
-        ->assertSee('Allowed: 48.0%–72.0%.')
+        ->assertSee('Allowed: 48,0%–72,0%.')
         ->assertDontSee('The complete profile must total 80%–100%.')
         ->set('data.fatty_acid_entries', [
             ['fatty_acid_id' => $oleic->id, 'percentage' => '60,5'],
             ['fatty_acid_id' => $lauric->id, 'percentage' => '24,5'],
         ])
-        ->assertSee('85.0%')
+        ->assertSee('85,0%')
         ->set('data.fatty_acid_entries', [])
         ->assertSee('No fatty-acid profile recorded. If you add one, its total must be 80–100%.')
         ->assertDontSee('Required total: 80–100%');

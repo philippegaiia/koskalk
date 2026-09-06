@@ -1809,6 +1809,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'canEditIngredientData' => $canEditIngredientData,
             'isReferenceView' => $isReferenceView,
             'referenceData' => $this->referenceData,
+            'numberLocale' => $this->currentUser()?->number_locale,
             'hasSoapChemistry' => $this->soapChemistryAvailable(),
             'canEditWorkspaceMaterialCode' => $canEditWorkspaceMaterialCode,
             'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
@@ -1867,7 +1868,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return __('ingredients.editor.common.not_available');
         }
 
-        return number_format(SoapSap::deriveNaohFromKoh($parsedKohSapValue), 6, '.', '');
+        return NumberLocale::formatDecimal(
+            SoapSap::deriveNaohFromKoh($parsedKohSapValue),
+            6,
+            $this->currentUser()?->number_locale,
+        );
     }
 
     private function canonicalKohSapDisplay(mixed $kohSapValue): ?string
@@ -1897,7 +1902,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $total = collect(is_array($entries) ? $entries : [])
             ->sum(fn (mixed $entry): float => $this->effectiveFattyAcidPercentage($entry));
 
-        return number_format($total, 1, '.', '').'%';
+        return NumberLocale::formatDecimal($total, 1, $this->currentUser()?->number_locale).'%';
     }
 
     private function effectiveFattyAcidPercentage(mixed $entry): float

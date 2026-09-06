@@ -1,5 +1,6 @@
 @php
     $notAvailable = __('ingredients.editor.common.not_available');
+    $numberLocale = $numberLocale ?? null;
     $formatReferenceNumber = static function (mixed $value): string {
         if (! is_numeric($value)) {
             return '';
@@ -21,6 +22,13 @@
         $formatted = $formatReferencePercentage($value);
 
         return $formatted === '' ? $notAvailable : $formatted;
+    };
+    $displayReferenceSapNumber = static function (mixed $value) use ($numberLocale, $notAvailable): string {
+        if (! is_numeric($value)) {
+            return $notAvailable;
+        }
+
+        return \App\Support\NumberLocale::formatDecimal($value, 6, $numberLocale);
     };
     $classification = $referenceData['classification'] ?? [];
 @endphp
@@ -168,11 +176,11 @@
         <dl class="mt-5 grid gap-4 sm:grid-cols-2">
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.koh_sap') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['koh_sap_value'] ?? null) }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceSapNumber($referenceData['soap']['koh_sap_value'] ?? null) }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.naoh_sap') }}</dt>
-                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['naoh_sap_value'] ?? null) }}</dd>
+                <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceSapNumber($referenceData['soap']['naoh_sap_value'] ?? null) }}</dd>
             </div>
             <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.iodine') }}</dt>

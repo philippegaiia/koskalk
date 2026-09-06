@@ -87,6 +87,7 @@ class FakeElement {
             ingredientGuidanceReplace: action,
             ingredientGuidanceConfirm: confirmation,
             ingredientEditorLocalCancel: localCancel ? scope : null,
+            ingredientEditorIgnoreDirty: null,
         };
         this.parentElement = null;
     }
@@ -102,6 +103,10 @@ class FakeElement {
 
         if (selector === '[data-ingredient-editor-local-cancel]') {
             return this.dataset.ingredientEditorLocalCancel === null ? null : this;
+        }
+
+        if (selector === '[data-ingredient-editor-ignore-dirty]') {
+            return this.dataset.ingredientEditorIgnoreDirty === null ? null : this;
         }
 
         return null;
@@ -546,6 +551,19 @@ test('uses input and change fallback events for buffered fields and rich editors
 
     assert.equal(editor.stateFor('guidance'), 'dirty');
     assert.equal(registry.blocksNavigation(), true);
+});
+
+test('ignores transient media picker file inputs in the dirty fallback', () => {
+    const { editor, eventTarget, registry } = makeEditor();
+    const uploadInput = new FakeElement('ingredient');
+    uploadInput.dataset.ingredientEditorIgnoreDirty = '';
+
+    editor.init();
+    eventTarget.dispatch('change', { target: uploadInput });
+    eventTarget.dispatch('input', { target: uploadInput });
+
+    assert.equal(editor.stateFor('ingredient'), 'saved');
+    assert.equal(registry.blocksNavigation(), false);
 });
 
 test('binds production listeners from the Alpine root instead of requiring an injected target', () => {

@@ -220,6 +220,10 @@ function stateFromEventTarget(target) {
     return SCOPE_KEYS.includes(scope) ? scope : null;
 }
 
+function isDirtyStateFallbackIgnored(target) {
+    return Boolean(target?.closest?.('[data-ingredient-editor-ignore-dirty]'));
+}
+
 function replaceActionFromEventTarget(target) {
     const actionElement = target?.closest?.('[data-ingredient-guidance-replace]');
     const action = actionElement?.dataset?.ingredientGuidanceReplace;
@@ -924,6 +928,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
         },
 
         handleInput(event) {
+            if (isDirtyStateFallbackIgnored(event.target)) {
+                return;
+            }
+
             const scope = stateFromEventTarget(event.target);
 
             if (scope === 'ingredient' && this.createSubmission) {

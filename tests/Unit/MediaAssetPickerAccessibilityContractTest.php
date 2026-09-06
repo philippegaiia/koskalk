@@ -99,6 +99,7 @@ it('exposes removable selections, upload persistence details, and readable filen
         ->toContain("__('media_library.picker.upload_requirements'")
         ->toContain('getFileAttachmentsAcceptedFileTypes()')
         ->toContain('getFileAttachmentsMaxSize()')
+        ->toContain('data-ingredient-editor-ignore-dirty')
         ->toContain('break-words')
         ->toContain('[overflow-wrap:anywhere]')
         ->not->toContain('class="block truncate px-2 pt-2 text-sm font-medium"')

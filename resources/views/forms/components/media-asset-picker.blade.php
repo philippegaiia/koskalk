@@ -140,6 +140,7 @@
                                         x-ref="uploadInput"
                                         x-on:change="selectUploadFile($event)"
                                         data-media-picker-file-input
+                                        data-ingredient-editor-ignore-dirty
                                         type="file"
                                         name="upload"
                                         accept="{{ $acceptsDocuments ? '.pdf,application/pdf' : '.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif' }}"

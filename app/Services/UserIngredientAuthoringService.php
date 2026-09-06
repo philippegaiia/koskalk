@@ -558,6 +558,7 @@ class UserIngredientAuthoringService
     private function duplicateInLockedWorkspace(Ingredient $source, User $user, Workspace $workspace): Ingredient
     {
         $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
+        $this->assertDuplicateComponentsAccessibleToWorkspace($source, $workspace);
 
         $source->loadMissing([
             'translations',
@@ -623,6 +624,41 @@ class UserIngredientAuthoringService
             'functions',
             'ifraCertificates.limits.ifraProductCategory',
         ]);
+    }
+
+    private function assertDuplicateComponentsAccessibleToWorkspace(Ingredient $source, Workspace $workspace): void
+    {
+        $componentIds = $source->components()
+            ->pluck('component_ingredient_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($componentIds->isEmpty()) {
+            return;
+        }
+
+        $accessibleCount = Ingredient::query()
+            ->whereKey($componentIds->all())
+            ->where('is_active', true)
+            ->where(function (Builder $query) use ($workspace): void {
+                $query->where('visibility', Visibility::Public->value)
+                    ->orWhereNull('owner_type')
+                    ->orWhere(function (Builder $workspaceQuery) use ($workspace): void {
+                        $workspaceQuery
+                            ->where('owner_type', OwnerType::Workspace->value)
+                            ->where('owner_id', $workspace->id);
+                    })
+                    ->orWhere('workspace_id', $workspace->id);
+            })
+            ->count();
+
+        if ($accessibleCount !== $componentIds->count()) {
+            throw ValidationException::withMessages([
+                'components' => __('ingredients.editor.validation.duplicate_component_workspace_forbidden'),
+            ]);
+        }
     }
 
     /**

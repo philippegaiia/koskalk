@@ -317,6 +317,33 @@ it('places platform workspace controls before technical reference and avoids dup
         ->not->toContain('data-ingredient-guidance-preview');
 });
 
+it('uses a guidance-specific empty state when no platform or workspace guidance exists', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create(['name' => 'North Star Soapworks']);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Guidance-free platform ingredient',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => null,
+    ]);
+
+    $this->actingAs($owner);
+
+    $html = Livewire::test(IngredientEditor::class, ['ingredient' => $platform])->html();
+    $guidanceStart = strpos($html, 'id="workspace-guidance-heading"');
+    $guidanceEnd = is_int($guidanceStart) ? strpos($html, '</section>', $guidanceStart) : false;
+    $guidanceSection = is_int($guidanceStart) && is_int($guidanceEnd)
+        ? substr($html, $guidanceStart, $guidanceEnd - $guidanceStart)
+        : '';
+
+    expect($guidanceSection)
+        ->toContain('No guidance added yet.')
+        ->not->toContain('Not available');
+});
+
 it('shows a sparse reference without inventing composition or chemistry', function (): void {
     $user = User::factory()->create();
     $platform = Ingredient::factory()->create([
@@ -2029,6 +2056,7 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.validation.subcategory_mismatch',
         'editor.validation.blend_required',
         'editor.validation.blend_component_unavailable',
+        'editor.validation.duplicate_component_workspace_forbidden',
         'editor.validation.soap_koh_required',
         'editor.validation.soap_koh_tolerance',
         'editor.validation.fatty_acid_total',

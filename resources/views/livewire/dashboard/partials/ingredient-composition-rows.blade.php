@@ -159,7 +159,7 @@
                         @php($shareField = 'data.components.'.$index.'.percentage_in_parent')
                         <div class="grid grid-cols-1 gap-3 bg-white p-3 text-sm lg:grid-cols-[minmax(0,1fr)_9rem_3.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0" wire:key="composition-row-{{ $index }}">
                             <div class="flex items-center bg-white lg:px-4 lg:py-3">
-                                <p class="min-w-0 truncate font-medium text-[var(--color-ink-strong)]" title="{{ $componentLabel }}">{{ $componentLabel }}</p>
+                                <p class="min-w-0 break-words font-medium text-[var(--color-ink-strong)]">{{ $componentLabel }}</p>
                             </div>
                             <div class="flex flex-col gap-2 bg-white lg:px-3 lg:py-3">
                                 <label for="composition-share-{{ $index }}" class="sk-eyebrow lg:sr-only">{{ __('ingredients.editor.composition.percentage_for', ['ingredient' => $componentLabel]) }}</label>

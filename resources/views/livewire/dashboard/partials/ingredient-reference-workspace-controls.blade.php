@@ -30,7 +30,7 @@
             @if (filled($displayWorkspaceGuidance))
                 {!! $displayWorkspaceGuidance !!}
             @else
-                <p class="text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.common.not_available') }}</p>
+                <p class="text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.workspace_guidance.empty') }}</p>
             @endif
         </div>
     @endif

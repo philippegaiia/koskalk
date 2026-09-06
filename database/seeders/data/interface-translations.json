@@ -8832,6 +8832,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.validation.duplicate_component_workspace_forbidden",
+      "text": {
+        "de": "Diese Mischung verwendet eine private Zutat außerhalb des Zielarbeitsbereichs. Ersetze sie, bevor du sie duplizierst.",
+        "es": "Esta mezcla utiliza un ingrediente privado fuera del espacio de trabajo de destino. Sustitúyelo antes de duplicarla.",
+        "fr": "Ce mélange utilise un ingrédient privé hors de l’espace de travail de destination. Remplacez-le avant de le dupliquer.",
+        "it": "Questa miscela utilizza un ingrediente privato esterno all'area di lavoro di destinazione. Sostituiscilo prima di duplicarla.",
+        "nl": "Dit mengsel gebruikt een privé-ingrediënt buiten de bestemmingswerkruimte. Vervang het voordat je het dupliceert.",
+        "pt_BR": "Esta mistura usa um ingrediente privado fora do espaço de trabalho de destino. Substitua-o antes de duplicá-la."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.validation.duplicate_platform_only",
       "text": {
         "de": "Nur Soapkraft-Zutaten können dupliziert werden.",
@@ -9272,6 +9284,18 @@
         "it": "Modifica le indicazioni",
         "nl": "Richtlijnen bewerken",
         "pt_BR": "Editar orientações"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_guidance.empty",
+      "text": {
+        "de": "Noch keine Hinweise hinzugefügt.",
+        "es": "Aún no se ha añadido ninguna guía.",
+        "fr": "Aucun conseil n’a encore été ajouté.",
+        "it": "Non è stata ancora aggiunta alcuna indicazione.",
+        "nl": "Er zijn nog geen richtlijnen toegevoegd.",
+        "pt_BR": "Nenhuma orientação foi adicionada ainda."
       }
     },
     {

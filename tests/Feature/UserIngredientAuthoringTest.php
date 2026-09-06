@@ -766,10 +766,17 @@ it('lets a workspace manage bounded identity aliases and declared substances', f
 
 it('shows composition only when the user chooses a blend', function () {
     $user = User::factory()->create();
+    $componentIngredient = Ingredient::factory()->create([
+        'display_name' => 'A very long component ingredient name that should wrap on narrow screens',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
 
     $this->actingAs($user);
 
-    Livewire::test(IngredientEditor::class)
+    $component = Livewire::test(IngredientEditor::class)
         ->assertSet('data.ingredient_structure', 'ingredient')
         ->assertDontSee('Search by name or INCI')
         ->set('data.ingredient_structure', 'blend')
@@ -784,6 +791,15 @@ it('shows composition only when the user chooses a blend', function () {
         ->assertSee('quickComponentName', false)
         ->assertSee('quickComponentCategory', false)
         ->assertSee('Add ingredient');
+
+    $component
+        ->call('addComponent', $componentIngredient->id)
+        ->assertSeeText($componentIngredient->display_name);
+
+    expect($component->html())
+        ->toContain('break-words')
+        ->not->toContain('class="min-w-0 truncate font-medium')
+        ->not->toContain('title="'.$componentIngredient->display_name.'"');
 });
 
 it('does not let a manually created ingredient enable soap chemistry', function () {

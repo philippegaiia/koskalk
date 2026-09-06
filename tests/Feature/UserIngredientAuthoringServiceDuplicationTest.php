@@ -937,6 +937,115 @@ it('duplicates a composite ingredient with components', function () {
     expect((float) $copy->components->first()->percentage_in_parent)->toBe(100.0);
 });
 
+it('rejects a blend component that is private outside the destination workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+
+    $privateComponent = Ingredient::factory()->create([
+        'display_name' => 'Private component',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Private component blend',
+        'category' => IngredientCategory::Other,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $source->components()->create([
+        'component_ingredient_id' => $privateComponent->id,
+        'percentage_in_parent' => 100.0,
+        'sort_order' => 1,
+    ]);
+    $beforeCount = Ingredient::query()->count();
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $owner,
+        $workspace,
+    ))->toThrow(
+        ValidationException::class,
+        __('ingredients.editor.validation.duplicate_component_workspace_forbidden'),
+    );
+
+    expect(Ingredient::query()->count())->toBe($beforeCount)
+        ->and(Ingredient::query()
+            ->where('owner_type', OwnerType::Workspace)
+            ->where('owner_id', $workspace->id)
+            ->exists())->toBeFalse();
+});
+
+it('rejects an inactive component reference while duplicating a blend', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $inactiveComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'visibility' => Visibility::Private,
+        'is_active' => false,
+    ]);
+    $source = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+    $source->components()->create([
+        'component_ingredient_id' => $inactiveComponent->id,
+        'percentage_in_parent' => 100.0,
+        'sort_order' => 1,
+    ]);
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $owner,
+        $workspace,
+    ))->toThrow(
+        ValidationException::class,
+        __('ingredients.editor.validation.duplicate_component_workspace_forbidden'),
+    );
+});
+
+it('duplicates a blend with a component assigned to the destination workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $assignedComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $source = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+    $source->components()->create([
+        'component_ingredient_id' => $assignedComponent->id,
+        'percentage_in_parent' => 100.0,
+        'sort_order' => 1,
+    ]);
+
+    $copy = app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $owner,
+        $workspace,
+    );
+
+    expect($copy->components)->toHaveCount(1)
+        ->and($copy->components->first()->component_ingredient_id)->toBe($assignedComponent->id);
+});
+
 it('refuses to duplicate a user-owned ingredient', function () {
     $owner = User::factory()->create();
     $otherUser = User::factory()->create();

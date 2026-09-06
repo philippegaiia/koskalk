@@ -12,7 +12,7 @@
     @else
         <details>
     @endif
-        <summary id="classification-prompt-title" class="cursor-pointer list-none px-4 py-4 text-base font-semibold text-[var(--color-ink-strong)] sm:px-5">
+        <summary id="classification-prompt-title" class="cursor-pointer px-4 py-4 text-base font-semibold text-[var(--color-ink-strong)] sm:px-5">
             {{ __('ingredients.editor.classification_prompt.heading') }}
         </summary>
         <div class="border-t border-[var(--color-line)] px-4 pb-4 pt-4 sm:px-5 sm:pb-5">

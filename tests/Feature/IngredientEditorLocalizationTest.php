@@ -720,26 +720,65 @@ it('exposes stable tab identifiers with the existing ingredient query key', func
         ->toBe(['overview', 'composition', 'guidance-files', 'soap-chemistry', 'regulatory-data']);
 });
 
-it('resolves legacy ingredient tab query values after the tab labels change', function (): void {
+it('resolves legacy ingredient tab query values against visible tabs', function (): void {
     $user = User::factory()->create();
+
+    $activeTabLabel = static function (mixed $component): string {
+        $tabs = collect($component->instance()->form->getComponents(withHidden: true))
+            ->first(fn (mixed $candidate): bool => $candidate instanceof Tabs);
+
+        $visibleTabs = collect($tabs->getChildSchema()->getComponents(withHidden: true))
+            ->filter(fn (mixed $tab): bool => $tab instanceof Tab && $tab->isVisible())
+            ->values();
+
+        return (string) $visibleTabs->get($tabs->getActiveTab() - 1)->getLabel();
+    };
 
     $this->actingAs($user);
 
-    $guidance = Livewire::withQueryParams(['ingredient-tab' => 'documents::tab'])
-        ->test(IngredientEditor::class);
-    $tabs = collect($guidance->instance()->form->getComponents(withHidden: true))
-        ->first(fn (mixed $component): bool => $component instanceof Tabs);
+    expect($activeTabLabel(
+        Livewire::withQueryParams(['ingredient-tab' => 'documents::tab'])
+            ->test(IngredientEditor::class),
+    ))->toBe('Guidance & files')
+        ->and($activeTabLabel(
+            Livewire::withQueryParams(['ingredient-tab' => 'compliance::tab'])
+                ->test(IngredientEditor::class),
+        ))->toBe('Regulatory data');
 
-    expect($tabs)->toBeInstanceOf(Tabs::class)
-        ->and($tabs->getActiveTab())->toBe(3);
+    expect($activeTabLabel(
+        Livewire::withQueryParams(['ingredient-tab' => 'documents::tab'])
+            ->test(IngredientEditor::class)
+            ->set('data.ingredient_structure', 'blend'),
+    ))->toBe('Guidance & files')
+        ->and($activeTabLabel(
+            Livewire::withQueryParams(['ingredient-tab' => 'compliance::tab'])
+                ->test(IngredientEditor::class)
+                ->set('data.ingredient_structure', 'blend'),
+        ))->toBe('Regulatory data');
 
-    $regulatory = Livewire::withQueryParams(['ingredient-tab' => 'compliance::tab'])
-        ->test(IngredientEditor::class);
-    $tabs = collect($regulatory->instance()->form->getComponents(withHidden: true))
-        ->first(fn (mixed $component): bool => $component instanceof Tabs);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+    $trustedIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_soap_saponification_trusted' => true,
+        'source_data' => [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => 0.187,
+            ],
+        ],
+    ]);
 
-    expect($tabs)->toBeInstanceOf(Tabs::class)
-        ->and($tabs->getActiveTab())->toBe(5);
+    expect($activeTabLabel(
+        Livewire::withQueryParams(['ingredient-tab' => 'documents::tab'])
+            ->test(IngredientEditor::class, ['ingredient' => $trustedIngredient]),
+    ))->toBe('Guidance & files')
+        ->and($activeTabLabel(
+            Livewire::withQueryParams(['ingredient-tab' => 'compliance::tab'])
+                ->test(IngredientEditor::class, ['ingredient' => $trustedIngredient]),
+        ))->toBe('Regulatory data');
 });
 
 it('starts with a single ingredient and places identity before classification', function (): void {
@@ -936,6 +975,21 @@ it('reopens the classification helper when a prompt is generated', function (): 
 
     expect(substr($generatedHtml, $generatedDetailsStart, $generatedDetailsEnd - $generatedDetailsStart + 1))
         ->toBe('<details open>');
+});
+
+it('keeps a visible native marker for the classification disclosure', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test(IngredientEditor::class)->html();
+    $summaryStart = strpos($html, '<summary id="classification-prompt-title"');
+    $summaryEnd = strpos($html, '>', $summaryStart);
+    $summary = substr($html, $summaryStart, $summaryEnd - $summaryStart + 1);
+
+    expect($summary)
+        ->toContain('<summary id="classification-prompt-title"')
+        ->not->toContain('list-none');
 });
 
 it('shows the translated blend removal warning and acknowledgement in the details tab', function (): void {

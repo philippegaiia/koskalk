@@ -4670,12 +4670,12 @@
       "group": "ingredients",
       "key": "editor.classification_prompt.heading",
       "text": {
-        "de": "Recherche-Prompt für eine Zutat vorbereiten",
-        "es": "Preparar un prompt de investigación del ingrediente",
-        "fr": "Préparer un prompt de recherche sur l’ingrédient",
-        "it": "Prepara un prompt di ricerca sull’ingrediente",
-        "nl": "Een onderzoeksprompt voor het ingrediënt voorbereiden",
-        "pt_BR": "Preparar um prompt de pesquisa do ingrediente"
+        "de": "Diese Zutat klassifizieren",
+        "es": "Ayuda a clasificar este ingrediente",
+        "fr": "Aidez à classer cet ingrédient",
+        "it": "Aiuta a classificare questo ingrediente",
+        "nl": "Help dit ingrediënt classificeren",
+        "pt_BR": "Ajude a classificar este ingrediente"
       }
     },
     {
@@ -5150,12 +5150,12 @@
       "group": "ingredients",
       "key": "editor.composition.create_and_add",
       "text": {
-        "de": "Zutat hinzufügen",
-        "es": "Añadir ingrediente",
-        "fr": "Ajouter l’ingrédient",
-        "it": "Aggiungi ingrediente",
-        "nl": "Ingrediënt toevoegen",
-        "pt_BR": "Adicionar ingrediente"
+        "de": "Zutat erstellen und hinzufügen",
+        "es": "Crear y añadir ingrediente",
+        "fr": "Créer et ajouter l’ingrédient",
+        "it": "Crea e aggiungi ingrediente",
+        "nl": "Ingrediënt maken en toevoegen",
+        "pt_BR": "Criar e adicionar ingrediente"
       }
     },
     {
@@ -5330,12 +5330,12 @@
       "group": "ingredients",
       "key": "editor.composition.quick_description",
       "text": {
-        "de": "Gib jetzt die grundlegenden Angaben ein. Du kannst die Zutat später vervollständigen.",
-        "es": "Introduce ahora los datos básicos. Podrás completar el ingrediente más adelante.",
-        "fr": "Saisissez maintenant les informations essentielles. Vous pourrez compléter l’ingrédient plus tard.",
-        "it": "Inserisci ora i dati essenziali. Potrai completare l’ingrediente in seguito.",
-        "nl": "Voer nu de basisgegevens in. Je kunt het ingrediënt later aanvullen.",
-        "pt_BR": "Informe os detalhes básicos agora. Você pode completar o ingrediente mais tarde."
+        "de": "Erstellt sofort eine Zutat in :workspace und fügt sie dieser Mischung hinzu. Sie bleibt dort, wenn du diese Mischung abbrichst.",
+        "es": "Crea un ingrediente en :workspace de inmediato y lo añade a esta mezcla. Permanecerá allí si cancelas esta mezcla.",
+        "fr": "Crée immédiatement un ingrédient dans :workspace, puis l’ajoute à ce mélange. Il y restera si vous annulez ce mélange.",
+        "it": "Crea subito un ingrediente in :workspace e lo aggiunge a questa miscela. Rimarrà lì se annulli questa miscela.",
+        "nl": "Maakt direct een ingrediënt aan in :workspace en voegt het toe aan deze blend. Het blijft daar staan als je deze blend annuleert.",
+        "pt_BR": "Cria imediatamente um ingrediente em :workspace e o adiciona a esta mistura. Ele permanecerá lá se você cancelar esta mistura."
       }
     },
     {
@@ -5462,24 +5462,24 @@
       "group": "ingredients",
       "key": "editor.create.heading",
       "text": {
-        "de": "Füge deiner Bibliothek eine Zutat hinzu.",
-        "es": "Añade un ingrediente a tu biblioteca.",
-        "fr": "Ajoutez un ingrédient à votre bibliothèque.",
-        "it": "Aggiungi un ingrediente alla tua libreria.",
-        "nl": "Voeg een ingrediënt toe aan je bibliotheek.",
-        "pt_BR": "Adicione um ingrediente à sua biblioteca."
+        "de": "Zutat hinzufügen",
+        "es": "Añadir ingrediente",
+        "fr": "Ajouter un ingrédient",
+        "it": "Aggiungi ingrediente",
+        "nl": "Ingrediënt toevoegen",
+        "pt_BR": "Adicionar ingrediente"
       }
     },
     {
       "group": "ingredients",
       "key": "editor.create.intro",
       "text": {
-        "de": "Beginne mit dem Namen der Zutat und der INCI-Bezeichnung. Ergänze Klassifizierung, Referenzangaben und Konformitätsdaten nur, wenn sie relevant sind.",
-        "es": "Empieza por el nombre del ingrediente y el INCI. Añade la clasificación, la información de referencia y los datos de conformidad solo cuando sean pertinentes.",
-        "fr": "Commencez par le nom de l’ingrédient et son INCI. Ajoutez la classification, les informations de référence et les données de conformité uniquement lorsqu’elles sont pertinentes.",
-        "it": "Inizia dal nome dell’ingrediente e dall’INCI. Aggiungi classificazione, informazioni di riferimento e dati di conformità solo quando sono pertinenti.",
-        "nl": "Begin met de ingrediëntnaam en INCI. Voeg classificatie, referentiegegevens en nalevingsinformatie alleen toe wanneer dat relevant is.",
-        "pt_BR": "Comece com o nome do ingrediente e o INCI. Adicione classificação, informações de referência e detalhes de conformidade somente quando forem relevantes."
+        "de": "Gib einen Namen ein und wähle eine Kategorie. Ergänze einen INCI-Namen und weitere Angaben, wenn sie verfügbar sind.",
+        "es": "Introduce un nombre y elige una categoría. Añade el nombre INCI y otros datos cuando estén disponibles.",
+        "fr": "Saisissez un nom et choisissez une catégorie. Ajoutez un nom INCI et des informations complémentaires si disponibles.",
+        "it": "Inserisci un nome e scegli una categoria. Aggiungi un nome INCI e altri dettagli quando disponibili.",
+        "nl": "Voer een naam in en kies een categorie. Voeg een INCI-naam en aanvullende gegevens toe wanneer die beschikbaar zijn.",
+        "pt_BR": "Informe um nome e escolha uma categoria. Adicione um nome INCI e outros detalhes quando estiverem disponíveis."
       }
     },
     {
@@ -5702,12 +5702,12 @@
       "group": "ingredients",
       "key": "editor.edit.heading",
       "text": {
-        "de": "Zutatendetails bearbeiten.",
-        "es": "Edita los datos del ingrediente.",
-        "fr": "Modifiez les détails de l’ingrédient.",
-        "it": "Modifica i dettagli dell’ingrediente.",
-        "nl": "Ingrediëntgegevens bewerken.",
-        "pt_BR": "Editar detalhes do ingrediente."
+        "de": "Zutat :ingredient bearbeiten",
+        "es": "Editar :ingredient",
+        "fr": "Modifier :ingredient",
+        "it": "Modifica :ingredient",
+        "nl": ":ingredient bewerken",
+        "pt_BR": "Editar :ingredient"
       }
     },
     {
@@ -7034,12 +7034,12 @@
       "group": "ingredients",
       "key": "editor.tabs.compliance",
       "text": {
-        "de": "Konformität",
-        "es": "Conformidad",
-        "fr": "Conformité",
-        "it": "Conformità",
-        "nl": "Naleving",
-        "pt_BR": "Conformidade"
+        "de": "Regulierungsdaten",
+        "es": "Datos regulatorios",
+        "fr": "Données réglementaires",
+        "it": "Dati normativi",
+        "nl": "Regelgevingsgegevens",
+        "pt_BR": "Dados regulatórios"
       }
     },
     {
@@ -7070,12 +7070,12 @@
       "group": "ingredients",
       "key": "editor.tabs.documents",
       "text": {
-        "de": "Dokumente",
-        "es": "Documentos",
-        "fr": "Documents",
-        "it": "Documenti",
-        "nl": "Documenten",
-        "pt_BR": "Documentos"
+        "de": "Leitfaden & Dateien",
+        "es": "Guía y archivos",
+        "fr": "Conseils et fichiers",
+        "it": "Indicazioni e file",
+        "nl": "Begeleiding en bestanden",
+        "pt_BR": "Orientações e arquivos"
       }
     },
     {

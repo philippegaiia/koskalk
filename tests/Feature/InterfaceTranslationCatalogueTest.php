@@ -77,6 +77,99 @@ it('commits a complete reviewed translation for every owned interface key', func
     }
 });
 
+it('keeps changed ingredient editor catalogue copy and placeholders aligned', function (): void {
+    $source = app(EnglishTranslationSource::class);
+    $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+    $expected = [
+        'ingredients.editor.create.heading' => [
+            'de' => 'Zutat hinzufügen',
+            'es' => 'Añadir ingrediente',
+            'fr' => 'Ajouter un ingrédient',
+            'it' => 'Aggiungi ingrediente',
+            'nl' => 'Ingrediënt toevoegen',
+            'pt_BR' => 'Adicionar ingrediente',
+        ],
+        'ingredients.editor.create.intro' => [
+            'de' => 'Gib einen Namen ein und wähle eine Kategorie. Ergänze einen INCI-Namen und weitere Angaben, wenn sie verfügbar sind.',
+            'es' => 'Introduce un nombre y elige una categoría. Añade el nombre INCI y otros datos cuando estén disponibles.',
+            'fr' => 'Saisissez un nom et choisissez une catégorie. Ajoutez un nom INCI et des informations complémentaires si disponibles.',
+            'it' => 'Inserisci un nome e scegli una categoria. Aggiungi un nome INCI e altri dettagli quando disponibili.',
+            'nl' => 'Voer een naam in en kies een categorie. Voeg een INCI-naam en aanvullende gegevens toe wanneer die beschikbaar zijn.',
+            'pt_BR' => 'Informe um nome e escolha uma categoria. Adicione um nome INCI e outros detalhes quando estiverem disponíveis.',
+        ],
+        'ingredients.editor.edit.heading' => [
+            'de' => 'Zutat :ingredient bearbeiten',
+            'es' => 'Editar :ingredient',
+            'fr' => 'Modifier :ingredient',
+            'it' => 'Modifica :ingredient',
+            'nl' => ':ingredient bewerken',
+            'pt_BR' => 'Editar :ingredient',
+        ],
+        'ingredients.editor.tabs.documents' => [
+            'de' => 'Leitfaden & Dateien',
+            'es' => 'Guía y archivos',
+            'fr' => 'Conseils et fichiers',
+            'it' => 'Indicazioni e file',
+            'nl' => 'Begeleiding en bestanden',
+            'pt_BR' => 'Orientações e arquivos',
+        ],
+        'ingredients.editor.tabs.compliance' => [
+            'de' => 'Regulierungsdaten',
+            'es' => 'Datos regulatorios',
+            'fr' => 'Données réglementaires',
+            'it' => 'Dati normativi',
+            'nl' => 'Regelgevingsgegevens',
+            'pt_BR' => 'Dados regulatórios',
+        ],
+        'ingredients.editor.classification_prompt.heading' => [
+            'de' => 'Diese Zutat klassifizieren',
+            'es' => 'Ayuda a clasificar este ingrediente',
+            'fr' => 'Aidez à classer cet ingrédient',
+            'it' => 'Aiuta a classificare questo ingrediente',
+            'nl' => 'Help dit ingrediënt classificeren',
+            'pt_BR' => 'Ajude a classificar este ingrediente',
+        ],
+        'ingredients.editor.composition.create_and_add' => [
+            'de' => 'Zutat erstellen und hinzufügen',
+            'es' => 'Crear y añadir ingrediente',
+            'fr' => 'Créer et ajouter l’ingrédient',
+            'it' => 'Crea e aggiungi ingrediente',
+            'nl' => 'Ingrediënt maken en toevoegen',
+            'pt_BR' => 'Criar e adicionar ingrediente',
+        ],
+        'ingredients.editor.composition.quick_description' => [
+            'de' => 'Erstellt sofort eine Zutat in :workspace und fügt sie dieser Mischung hinzu. Sie bleibt dort, wenn du diese Mischung abbrichst.',
+            'es' => 'Crea un ingrediente en :workspace de inmediato y lo añade a esta mezcla. Permanecerá allí si cancelas esta mezcla.',
+            'fr' => 'Crée immédiatement un ingrédient dans :workspace, puis l’ajoute à ce mélange. Il y restera si vous annulez ce mélange.',
+            'it' => 'Crea subito un ingrediente in :workspace e lo aggiunge a questa miscela. Rimarrà lì se annulli questa miscela.',
+            'nl' => 'Maakt direct een ingrediënt aan in :workspace en voegt het toe aan deze blend. Het blijft daar staan als je deze blend annuleert.',
+            'pt_BR' => 'Cria imediatamente um ingrediente em :workspace e o adiciona a esta mistura. Ele permanecerá lá se você cancelar esta mistura.',
+        ],
+    ];
+    $placeholders = static function (string $text): array {
+        preg_match_all('/:([A-Za-z_][A-Za-z0-9_]*)/', $text, $matches);
+
+        return array_values(array_unique($matches[0]));
+    };
+
+    foreach ($expected as $fullKey => $translations) {
+        [$group, $key] = explode('.', $fullKey, 2);
+        $english = $source->get($group, $key);
+
+        expect($rows)->toHaveKey($fullKey)
+            ->and($translations)->toBe($rows[$fullKey]['text'])
+            ->and($english)->toBeString();
+
+        $expectedPlaceholders = $placeholders($english);
+
+        foreach ($translations as $locale => $translation) {
+            expect($placeholders($translation), "{$fullKey} [{$locale}]")
+                ->toBe($expectedPlaceholders);
+        }
+    }
+});
+
 it('localizes the high-visibility Inventory UX keys into every supported locale', function (string $key): void {
     $fullKey = "production_bench.{$key}";
     $english = app(EnglishTranslationSource::class)->get('production_bench', $key);

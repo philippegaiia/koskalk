@@ -94,6 +94,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
     #[Locked]
     public ?string $returnSupplierPublicId = null;
 
+    #[Locked]
+    public ?string $legacyIngredientTab = null;
+
     /**
      * @var array<string, mixed>
      */
@@ -181,6 +184,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $settingsWorkspace = $this->workspaceForIngredientSettings($ingredient);
         $this->destinationWorkspaceId = $settingsWorkspace?->id;
         $this->mediaPublicId = (string) ($ingredient?->public_id ?? Str::uuid());
+        $this->legacyIngredientTab = match (request()->query('ingredient-tab')) {
+            'documents::tab', 'documents::data::tab' => 'documents',
+            'compliance::tab', 'compliance::data::tab' => 'compliance',
+            default => null,
+        };
 
         if ($ingredient === null && request()->query('return_to') === 'supplier_listing') {
             $this->returnTo = 'supplier_listing';
@@ -831,11 +839,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 Tabs::make('ingredient-editor')
                     ->contained(false)
                     ->persistTabInQueryString('ingredient-tab')
-                    ->activeTab(fn (): int => match (request()->query('ingredient-tab')) {
-                        'documents::tab', 'documents::data::tab' => 3,
-                        'compliance::tab', 'compliance::data::tab' => 5,
-                        default => 1,
-                    })
+                    ->activeTab(fn (): int => $this->legacyIngredientTabActivePosition())
                     ->tabs([
                         Tab::make(__('ingredients.editor.tabs.details'))
                             ->id('overview')
@@ -2258,6 +2262,42 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         return $this->isPlatformIngredient($ingredient) || $this->hasInheritedSoapChemistry();
+    }
+
+    private function legacyIngredientTabActivePosition(): int
+    {
+        $targetTabIndex = match ($this->legacyIngredientTab) {
+            'documents' => 3,
+            'compliance' => 5,
+            default => null,
+        };
+
+        if ($targetTabIndex === null) {
+            return 1;
+        }
+
+        $tabVisibility = [
+            1 => true,
+            2 => ($this->data['ingredient_structure'] ?? 'ingredient') === 'blend',
+            3 => true,
+            4 => $this->soapChemistryAvailable(),
+            5 => true,
+        ];
+        $visiblePosition = 0;
+
+        foreach ($tabVisibility as $tabIndex => $isVisible) {
+            if (! $isVisible) {
+                continue;
+            }
+
+            $visiblePosition++;
+
+            if ($tabIndex === $targetTabIndex) {
+                return $visiblePosition;
+            }
+        }
+
+        return 1;
     }
 
     private function hasInheritedSoapChemistry(): bool

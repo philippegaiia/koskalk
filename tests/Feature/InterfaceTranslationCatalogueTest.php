@@ -430,20 +430,11 @@ it('keeps duplication journey copy translated with matching placeholders', funct
     $source = app(EnglishTranslationSource::class);
     $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
         ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
-    $keys = [
-        'ingredients.duplicate.preview.copy',
-        'ingredients.duplicate.preview.library_copy',
-        'ingredients.duplicate.preview.images_reset',
-        'ingredients.duplicate.preview.guidance_override',
-        'ingredients.duplicate.preview.source_unchanged',
-        'ingredients.duplicate.preview.inherited_chemistry',
-        'ingredients.duplicate.preview.source_soapkraft',
-        'ingredients.duplicate.preview.source_user',
-        'ingredients.duplicate.preview.source_workspace',
-        'ingredients.duplicate.preview.source_unknown',
-        'ingredients.duplicate.errors.auth_expired',
-        'ingredients.editor.carrier_oil_warning.duplicate_link',
-    ];
+    $keys = collect($source->all())
+        ->filter(fn (string $value, string $fullKey): bool => str_starts_with($fullKey, 'ingredients.duplicate.'))
+        ->keys()
+        ->push('ingredients.editor.carrier_oil_warning.duplicate_link')
+        ->all();
     $languageNeutralKeys = [
         'ingredients.duplicate.preview.source_soapkraft',
     ];

@@ -3468,6 +3468,54 @@
     },
     {
       "group": "ingredients",
+      "key": "duplicate.errors.duplicate_failed",
+      "text": {
+        "de": "Die private Kopie konnte nicht erstellt werden. Lade die Seite neu und versuche es erneut.",
+        "es": "No se pudo crear la copia privada. Actualiza la página y vuelve a intentarlo.",
+        "fr": "La copie privée n’a pas pu être créée. Actualisez la page et réessayez.",
+        "it": "Non è stato possibile creare la copia privata. Ricarica la pagina e riprova.",
+        "nl": "De privékopie kon niet worden gemaakt. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Não foi possível criar a cópia privada. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.errors.invalid_response",
+      "text": {
+        "de": "Der Server hat eine unerwartete Antwort zurückgegeben. Lade die Seite neu und versuche es erneut.",
+        "es": "El servidor devolvió una respuesta inesperada. Actualiza la página y vuelve a intentarlo.",
+        "fr": "Le serveur a renvoyé une réponse inattendue. Actualisez la page et réessayez.",
+        "it": "Il server ha restituito una risposta inattesa. Ricarica la pagina e riprova.",
+        "nl": "De server gaf een onverwacht antwoord. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "O servidor retornou uma resposta inesperada. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.errors.reload_guidance",
+      "text": {
+        "de": "Lade die Seite neu und versuche es erneut.",
+        "es": "Actualiza la página y vuelve a intentarlo.",
+        "fr": "Actualisez la page et réessayez.",
+        "it": "Ricarica la pagina e riprova.",
+        "nl": "Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.errors.search_failed",
+      "text": {
+        "de": "Die Suche konnte nicht abgeschlossen werden. Lade die Seite neu und versuche es erneut.",
+        "es": "No se pudo completar la búsqueda. Actualiza la página y vuelve a intentarlo.",
+        "fr": "La recherche n’a pas pu être terminée. Actualisez la page et réessayez.",
+        "it": "Impossibile completare la ricerca. Ricarica la pagina e riprova.",
+        "nl": "De zoekopdracht kon niet worden voltooid. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Não foi possível concluir a pesquisa. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "duplicate.eyebrow",
       "text": {
         "de": "Duplizieren",
@@ -3516,74 +3564,74 @@
     },
     {
       "group": "ingredients",
-      "key": "duplicate.search_placeholder",
+      "key": "duplicate.preview.aliases",
       "text": {
-        "de": "Nach Name oder INCI suchen…",
-        "es": "Buscar por nombre o INCI…",
-        "fr": "Rechercher par nom ou INCI…",
-        "it": "Cerca per nome o INCI…",
-        "nl": "Zoeken op naam of INCI…",
-        "pt_BR": "Pesquisar por nome ou INCI…"
+        "de": "Alternative Namen",
+        "es": "Nombres alternativos",
+        "fr": "Noms alternatifs",
+        "it": "Nomi alternativi",
+        "nl": "Alternatieve namen",
+        "pt_BR": "Nomes alternativos"
       }
     },
     {
       "group": "ingredients",
-      "key": "duplicate.searching",
+      "key": "duplicate.preview.category",
       "text": {
-        "de": "Suche läuft…",
-        "es": "Buscando…",
-        "fr": "Recherche…",
-        "it": "Ricerca in corso…",
-        "nl": "Bezig met zoeken…",
-        "pt_BR": "Pesquisando…"
+        "de": "Kategorie",
+        "es": "Categoría",
+        "fr": "Catégorie",
+        "it": "Categoria",
+        "nl": "Categorie",
+        "pt_BR": "Categoria"
       }
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.koh_sap_range",
+      "key": "duplicate.preview.chemistry_limits",
       "text": {
-        "de": "KOH-VZ-Bereich (g KOH/g Öl)",
-        "es": "Intervalo SAP KOH (g KOH/g aceite)",
-        "fr": "Plage SAP KOH (g KOH/g huile)",
-        "it": "Intervallo SAP KOH (g KOH/g olio)",
-        "nl": "KOH-VZ-bereik (g KOH/g olie)",
-        "pt_BR": "Intervalo KOH SAP (g KOH/g óleo)"
+        "de": "Grenzen der geerbten Chemie",
+        "es": "Límites de la química heredada",
+        "fr": "Limites de la chimie héritée",
+        "it": "Limiti della chimica ereditata",
+        "nl": "Grenzen van overgenomen chemie",
+        "pt_BR": "Limites da química herdada"
       }
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.naoh_sap_range",
+      "key": "duplicate.preview.choose_another",
       "text": {
-        "de": "NaOH-VZ-Bereich (g NaOH/g Öl)",
-        "es": "Intervalo SAP NaOH (g NaOH/g aceite)",
-        "fr": "Plage SAP NaOH (g NaOH/g huile)",
-        "it": "Intervallo SAP NaOH (g NaOH/g olio)",
-        "nl": "NaOH-VZ-bereik (g NaOH/g olie)",
-        "pt_BR": "Intervalo NaOH SAP (g NaOH/g óleo)"
+        "de": "Eine andere Zutat auswählen",
+        "es": "Elegir otro ingrediente",
+        "fr": "Choisir un autre ingrédient",
+        "it": "Scegli un altro ingrediente",
+        "nl": "Kies een ander ingrediënt",
+        "pt_BR": "Escolher outro ingrediente"
       }
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.koh_sap_unit",
+      "key": "duplicate.preview.confirm",
       "text": {
-        "de": "g KOH/g Öl",
-        "es": "g KOH/g aceite",
-        "fr": "g KOH/g huile",
-        "it": "g KOH/g olio",
-        "nl": "g KOH/g olie",
-        "pt_BR": "g KOH/g óleo"
+        "de": "Private Kopie erstellen",
+        "es": "Crear copia privada",
+        "fr": "Créer une copie privée",
+        "it": "Crea copia privata",
+        "nl": "Privékopie maken",
+        "pt_BR": "Criar cópia privada"
       }
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.naoh_sap_unit",
+      "key": "duplicate.preview.confirming",
       "text": {
-        "de": "g NaOH/g Öl",
-        "es": "g NaOH/g aceite",
-        "fr": "g NaOH/g huile",
-        "it": "g NaOH/g olio",
-        "nl": "g NaOH/g olie",
-        "pt_BR": "g NaOH/g óleo"
+        "de": "Private Kopie wird erstellt…",
+        "es": "Creando copia privada…",
+        "fr": "Création de la copie privée…",
+        "it": "Creazione della copia privata…",
+        "nl": "Privékopie wordt gemaakt…",
+        "pt_BR": "Criando cópia privada…"
       }
     },
     {
@@ -3600,26 +3648,62 @@
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.library_copy",
+      "key": "duplicate.preview.destination",
       "text": {
-        "de": "Deine Zutatenbibliothek",
-        "es": "Tu biblioteca de ingredientes",
-        "fr": "Votre bibliothèque d’ingrédients",
-        "it": "La tua libreria di ingredienti",
-        "nl": "Je ingrediëntenbibliotheek",
-        "pt_BR": "Sua biblioteca de ingredientes"
+        "de": "Ziel",
+        "es": "Destino",
+        "fr": "Cible",
+        "it": "Destinazione",
+        "nl": "Bestemming",
+        "pt_BR": "Destino"
       }
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.images_reset",
+      "key": "duplicate.preview.eyebrow",
       "text": {
-        "de": "Bilder und Dokumente werden nicht kopiert.",
-        "es": "Las imágenes y los documentos no se copian.",
-        "fr": "Les images et les documents ne sont pas copiés.",
-        "it": "Immagini e documenti non vengono copiati.",
-        "nl": "Afbeeldingen en documenten worden niet gekopieerd.",
-        "pt_BR": "Imagens e documentos não são copiados."
+        "de": "Vorschau der privaten Kopie",
+        "es": "Vista previa de la copia privada",
+        "fr": "Aperçu de la copie privée",
+        "it": "Anteprima della copia privata",
+        "nl": "Voorbeeld van privékopie",
+        "pt_BR": "Prévia da cópia privada"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.fatty_acid_range",
+      "text": {
+        "de": ":name: :minimum%–:maximum% (Quelle :original%).",
+        "es": ":name: :minimum%–:maximum% (origen :original%).",
+        "fr": ":name: :minimum%–:maximum% (origine :original%).",
+        "it": ":name: :minimum%–:maximum% (origine :original%).",
+        "nl": ":name: :minimum%–:maximum% (bron :original%).",
+        "pt_BR": ":name: :minimum%–:maximum% (origem :original%)."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.fatty_acid_ranges",
+      "text": {
+        "de": "Geerbte Fettsäuren bleiben innerhalb dieser Quellbereiche bearbeitbar.",
+        "es": "Los ácidos grasos heredados siguen siendo editables dentro de estos rangos de origen.",
+        "fr": "Les acides gras hérités restent modifiables dans ces plages de la source.",
+        "it": "Gli acidi grassi ereditati restano modificabili entro questi intervalli della fonte.",
+        "nl": "Overgenomen vetzuren blijven binnen deze bronbereiken bewerkbaar.",
+        "pt_BR": "Os ácidos graxos herdados continuam editáveis dentro destas faixas da fonte."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.fatty_acid_total_range",
+      "text": {
+        "de": "Bereich der Fettsäurensumme",
+        "es": "Rango del total de ácidos grasos",
+        "fr": "Plage du total des acides gras",
+        "it": "Intervallo del totale degli acidi grassi",
+        "nl": "Bereik van het vetzuurtotaal",
+        "pt_BR": "Faixa do total de ácidos graxos"
       }
     },
     {
@@ -3636,14 +3720,38 @@
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.source_unchanged",
+      "key": "duplicate.preview.identifiers",
       "text": {
-        "de": "Das Quellmaterial bleibt unverändert.",
-        "es": "El ingrediente de origen no cambia.",
-        "fr": "L’ingrédient source reste inchangé.",
-        "it": "L’ingrediente di origine non cambia.",
-        "nl": "Het broningrediënt blijft ongewijzigd.",
-        "pt_BR": "O ingrediente de origem permanece inalterado."
+        "de": "Kennungen",
+        "es": "Identificadores",
+        "fr": "Identifiants",
+        "it": "Identificatori",
+        "nl": "Identificatiegegevens",
+        "pt_BR": "Identificadores"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.images_reset",
+      "text": {
+        "de": "Bilder und Dokumente werden nicht kopiert.",
+        "es": "Las imágenes y los documentos no se copian.",
+        "fr": "Les images et les documents ne sont pas copiés.",
+        "it": "Immagini e documenti non vengono copiati.",
+        "nl": "Afbeeldingen en documenten worden niet gekopieerd.",
+        "pt_BR": "Imagens e documentos não são copiados."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.inci_name",
+      "text": {
+        "de": "INCI-Name",
+        "es": "Nombre INCI",
+        "fr": "Nom INCI",
+        "it": "Nome INCI",
+        "nl": "INCI-naam",
+        "pt_BR": "Nome INCI"
       }
     },
     {
@@ -3660,6 +3768,102 @@
     },
     {
       "group": "ingredients",
+      "key": "duplicate.preview.koh_sap_range",
+      "text": {
+        "de": "KOH-VZ-Bereich (g KOH/g Öl)",
+        "es": "Intervalo SAP KOH (g KOH/g aceite)",
+        "fr": "Plage SAP KOH (g KOH/g huile)",
+        "it": "Intervallo SAP KOH (g KOH/g olio)",
+        "nl": "KOH-VZ-bereik (g KOH/g olie)",
+        "pt_BR": "Intervalo KOH SAP (g KOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.koh_sap_unit",
+      "text": {
+        "de": "g KOH/g Öl",
+        "es": "g KOH/g aceite",
+        "fr": "g KOH/g huile",
+        "it": "g KOH/g olio",
+        "nl": "g KOH/g olie",
+        "pt_BR": "g KOH/g óleo"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.library_copy",
+      "text": {
+        "de": "Deine Zutatenbibliothek",
+        "es": "Tu biblioteca de ingredientes",
+        "fr": "Votre bibliothèque d’ingrédients",
+        "it": "La tua libreria di ingredienti",
+        "nl": "Je ingrediëntenbibliotheek",
+        "pt_BR": "Sua biblioteca de ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.naoh_sap_range",
+      "text": {
+        "de": "NaOH-VZ-Bereich (g NaOH/g Öl)",
+        "es": "Intervalo SAP NaOH (g NaOH/g aceite)",
+        "fr": "Plage SAP NaOH (g NaOH/g huile)",
+        "it": "Intervallo SAP NaOH (g NaOH/g olio)",
+        "nl": "NaOH-VZ-bereik (g NaOH/g olie)",
+        "pt_BR": "Intervalo NaOH SAP (g NaOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.naoh_sap_unit",
+      "text": {
+        "de": "g NaOH/g Öl",
+        "es": "g NaOH/g aceite",
+        "fr": "g NaOH/g huile",
+        "it": "g NaOH/g olio",
+        "nl": "g NaOH/g olie",
+        "pt_BR": "g NaOH/g óleo"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.restrictions",
+      "text": {
+        "de": "Was übernommen wird und was sich ändert",
+        "es": "Qué se conserva y qué cambia",
+        "fr": "Ce qui est conservé et ce qui change",
+        "it": "Cosa viene trasferito e cosa cambia",
+        "nl": "Wat wordt overgenomen en wat verandert",
+        "pt_BR": "O que é copiado e o que muda"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.review",
+      "text": {
+        "de": "Überprüfen",
+        "es": "Revisar",
+        "fr": "Vérifier",
+        "it": "Rivedi",
+        "nl": "Controleren",
+        "pt_BR": "Revisar"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source",
+      "text": {
+        "de": "Quelle",
+        "es": "origen",
+        "fr": "origine",
+        "it": "origine",
+        "nl": "bron",
+        "pt_BR": "fonte"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "duplicate.preview.source_soapkraft",
       "text": {
         "de": "Soapkraft",
@@ -3668,6 +3872,30 @@
         "it": "Soapkraft",
         "nl": "Soapkraft",
         "pt_BR": "Soapkraft"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_unchanged",
+      "text": {
+        "de": "Das Quellmaterial bleibt unverändert.",
+        "es": "El ingrediente de origen no cambia.",
+        "fr": "L’ingrédient source reste inchangé.",
+        "it": "L’ingrediente di origine non cambia.",
+        "nl": "Het broningrediënt blijft ongewijzigd.",
+        "pt_BR": "O ingrediente de origem permanece inalterado."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.source_unknown",
+      "text": {
+        "de": "Zutat",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
       }
     },
     {
@@ -3696,14 +3924,74 @@
     },
     {
       "group": "ingredients",
-      "key": "duplicate.preview.source_unknown",
+      "key": "duplicate.preview.unavailable",
       "text": {
-        "de": "Zutat",
-        "es": "Ingrediente",
-        "fr": "Ingrédient",
-        "it": "Ingrediente",
-        "nl": "Ingrediënt",
-        "pt_BR": "Ingrediente"
+        "de": "Nicht zur Duplizierung verfügbar",
+        "es": "No disponible para duplicar",
+        "fr": "Indisponible pour la duplication",
+        "it": "Non disponibile per la duplicazione",
+        "nl": "Niet beschikbaar voor dupliceren",
+        "pt_BR": "Indisponível para duplicação"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.untrusted_chemistry",
+      "text": {
+        "de": "Dieses Lipid verfügt nicht über geerbte Seifenchemie, da die Quelle nicht für die Verseifung vertrauenswürdig ist.",
+        "es": "Este lípido no tiene química de jabón heredada porque la fuente no es fiable para la saponificación.",
+        "fr": "Ce lipide ne dispose pas d’une chimie de savon héritée, car la source n’est pas considérée comme fiable pour la saponification.",
+        "it": "Questo lipide non dispone di chimica del sapone ereditata perché la fonte non è considerata affidabile per la saponificazione.",
+        "nl": "Dit lipide heeft geen overgenomen zeepchemie omdat de bron niet betrouwbaar is voor verzeping.",
+        "pt_BR": "Este lipídio não tem química de sabão herdada porque a fonte não é confiável para saponificação."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.results_label",
+      "text": {
+        "de": "Suchergebnisse",
+        "es": "Resultados de búsqueda",
+        "fr": "Résultats de recherche",
+        "it": "Risultati della ricerca",
+        "nl": "Zoekresultaten",
+        "pt_BR": "Resultados da pesquisa"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.search_label",
+      "text": {
+        "de": "Zutaten suchen",
+        "es": "Buscar ingredientes",
+        "fr": "Rechercher des ingrédients",
+        "it": "Cerca ingredienti",
+        "nl": "Ingrediënten zoeken",
+        "pt_BR": "Pesquisar ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.search_placeholder",
+      "text": {
+        "de": "Nach Name oder INCI suchen…",
+        "es": "Buscar por nombre o INCI…",
+        "fr": "Rechercher par nom ou INCI…",
+        "it": "Cerca per nome o INCI…",
+        "nl": "Zoeken op naam of INCI…",
+        "pt_BR": "Pesquisar por nome ou INCI…"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.searching",
+      "text": {
+        "de": "Suche läuft…",
+        "es": "Buscando…",
+        "fr": "Recherche…",
+        "it": "Ricerca in corso…",
+        "nl": "Bezig met zoeken…",
+        "pt_BR": "Pesquisando…"
       }
     },
     {
@@ -4728,18 +5016,6 @@
     },
     {
       "group": "ingredients",
-      "key": "editor.carrier_oil_warning.heading",
-      "text": {
-        "de": "Dieses Öl für die Verseifung verwenden",
-        "es": "Uso de este aceite en la saponificación",
-        "fr": "Utiliser cette huile en saponification",
-        "it": "Uso di questo olio nella saponificazione",
-        "nl": "Deze olie gebruiken voor verzeping",
-        "pt_BR": "Usando este óleo na saponificação"
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "editor.carrier_oil_warning.duplicate_link",
       "text": {
         "de": "Zutat zum Duplizieren finden",
@@ -4748,6 +5024,18 @@
         "it": "Trova un ingrediente da duplicare",
         "nl": "Zoek een ingrediënt om te dupliceren",
         "pt_BR": "Encontrar um ingrediente para duplicar"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.carrier_oil_warning.heading",
+      "text": {
+        "de": "Dieses Öl für die Verseifung verwenden",
+        "es": "Uso de este aceite en la saponificación",
+        "fr": "Utiliser cette huile en saponification",
+        "it": "Uso di questo olio nella saponificazione",
+        "nl": "Deze olie gebruiken voor verzeping",
+        "pt_BR": "Usando este óleo na saponificação"
       }
     },
     {
@@ -7068,42 +7356,6 @@
     },
     {
       "group": "ingredients",
-      "key": "editor.reference.koh_sap",
-      "text": {
-        "de": "KOH-VZ (g KOH/g Öl)",
-        "es": "SAP KOH (g KOH/g aceite)",
-        "fr": "SAP KOH (g KOH/g huile)",
-        "it": "SAP KOH (g KOH/g olio)",
-        "nl": "KOH-VZ (g KOH/g olie)",
-        "pt_BR": "KOH SAP (g KOH/g óleo)"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.reference.naoh_sap",
-      "text": {
-        "de": "NaOH-VZ (g NaOH/g Öl)",
-        "es": "SAP NaOH (g NaOH/g aceite)",
-        "fr": "SAP NaOH (g NaOH/g huile)",
-        "it": "SAP NaOH (g NaOH/g olio)",
-        "nl": "NaOH-VZ (g NaOH/g olie)",
-        "pt_BR": "NaOH SAP (g NaOH/g óleo)"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "editor.reference.peroxide",
-      "text": {
-        "de": "Peroxidzahl (meq O₂/kg)",
-        "es": "Índice de peróxidos (meq O₂/kg)",
-        "fr": "Indice de peroxyde (meq O₂/kg)",
-        "it": "Numero di perossidi (meq O₂/kg)",
-        "nl": "Peroxidegetal (meq O₂/kg)",
-        "pt_BR": "Índice de peróxido (meq O₂/kg)"
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "editor.reference.additional_identifiers",
       "text": {
         "de": "Zusätzliche Identifikatoren",
@@ -7248,6 +7500,30 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.reference.koh_sap",
+      "text": {
+        "de": "KOH-VZ (g KOH/g Öl)",
+        "es": "SAP KOH (g KOH/g aceite)",
+        "fr": "SAP KOH (g KOH/g huile)",
+        "it": "SAP KOH (g KOH/g olio)",
+        "nl": "KOH-VZ (g KOH/g olie)",
+        "pt_BR": "KOH SAP (g KOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.naoh_sap",
+      "text": {
+        "de": "NaOH-VZ (g NaOH/g Öl)",
+        "es": "SAP NaOH (g NaOH/g aceite)",
+        "fr": "SAP NaOH (g NaOH/g huile)",
+        "it": "SAP NaOH (g NaOH/g olio)",
+        "nl": "NaOH-VZ (g NaOH/g olie)",
+        "pt_BR": "NaOH SAP (g NaOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.reference.no_allergens",
       "text": {
         "de": "Es ist keine Allergenzusammensetzung hinterlegt.",
@@ -7280,6 +7556,18 @@
         "it": "Note sulla fonte",
         "nl": "Bronnotities",
         "pt_BR": "Notas da fonte"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.peroxide",
+      "text": {
+        "de": "Peroxidzahl (meq O₂/kg)",
+        "es": "Índice de peróxidos (meq O₂/kg)",
+        "fr": "Indice de peroxyde (meq O₂/kg)",
+        "it": "Numero di perossidi (meq O₂/kg)",
+        "nl": "Peroxidegetal (meq O₂/kg)",
+        "pt_BR": "Índice de peróxido (meq O₂/kg)"
       }
     },
     {
@@ -7536,18 +7824,6 @@
     },
     {
       "group": "ingredients",
-      "key": "editor.soap.notes",
-      "text": {
-        "de": "Quellennotizen zu Seifendaten",
-        "es": "Notas de la fuente de datos del jabón",
-        "fr": "Notes de source des données de savon",
-        "it": "Note sulla fonte dei dati del sapone",
-        "nl": "Bronnotities voor zeepgegevens",
-        "pt_BR": "Notas da fonte dos dados de sabão"
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "editor.soap.new_fatty_acid",
       "text": {
         "de": "Neue Fettsäure",
@@ -7556,6 +7832,18 @@
         "it": "Nuovo acido grasso",
         "nl": "Nieuw vetzuur",
         "pt_BR": "Novo ácido graxo"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.soap.notes",
+      "text": {
+        "de": "Quellennotizen zu Seifendaten",
+        "es": "Notas de la fuente de datos del jabón",
+        "fr": "Notes de source des données de savon",
+        "it": "Note sulla fonte dei dati del sapone",
+        "nl": "Bronnotities voor zeepgegevens",
+        "pt_BR": "Notas da fonte dos dados de sabão"
       }
     },
     {
@@ -13944,18 +14232,6 @@
     },
     {
       "group": "media_library",
-      "key": "picker.remove_selection_help",
-      "text": {
-        "de": "Das Entfernen ausgewählter Dateien aus diesem Formular löscht sie nicht aus deiner Medienbibliothek.",
-        "es": "Quitar los archivos seleccionados de este formulario no los elimina de tu biblioteca multimedia.",
-        "fr": "Retirer les fichiers sélectionnés de ce formulaire ne les supprime pas de votre médiathèque.",
-        "it": "Rimuovere i file selezionati da questo modulo non li elimina dalla tua libreria multimediale.",
-        "nl": "Geselecteerde bestanden uit dit formulier verwijderen, verwijdert ze niet uit je mediabibliotheek.",
-        "pt_BR": "Remover os arquivos selecionados deste formulário não os exclui da sua Biblioteca de mídia."
-      }
-    },
-    {
-      "group": "media_library",
       "key": "picker.close",
       "text": {
         "de": "Medienauswahl schließen",
@@ -14256,6 +14532,18 @@
     },
     {
       "group": "media_library",
+      "key": "picker.remove_selection_help",
+      "text": {
+        "de": "Das Entfernen ausgewählter Dateien aus diesem Formular löscht sie nicht aus deiner Medienbibliothek.",
+        "es": "Quitar los archivos seleccionados de este formulario no los elimina de tu biblioteca multimedia.",
+        "fr": "Retirer les fichiers sélectionnés de ce formulaire ne les supprime pas de votre médiathèque.",
+        "it": "Rimuovere i file selezionati da questo modulo non li elimina dalla tua libreria multimediale.",
+        "nl": "Geselecteerde bestanden uit dit formulier verwijderen, verwijdert ze niet uit je mediabibliotheek.",
+        "pt_BR": "Remover os arquivos selecionados deste formulário não os exclui da sua Biblioteca de mídia."
+      }
+    },
+    {
+      "group": "media_library",
       "key": "picker.retry",
       "text": {
         "de": "Erneut versuchen",
@@ -14352,18 +14640,6 @@
     },
     {
       "group": "media_library",
-      "key": "picker.upload_requirements",
-      "text": {
-        "de": "Zulässige Formate: :formats. Maximale Größe: :max MB.",
-        "es": "Formatos aceptados: :formats. Tamaño máximo: :max MB.",
-        "fr": "Formats acceptés : :formats. Taille maximale : :max Mo.",
-        "it": "Formati accettati: :formats. Dimensione massima: :max MB.",
-        "nl": "Geaccepteerde formaten: :formats. Maximale grootte: :max MB.",
-        "pt_BR": "Formatos aceitos: :formats. Tamanho máximo: :max MB."
-      }
-    },
-    {
-      "group": "media_library",
       "key": "picker.upload_failed",
       "text": {
         "de": "Das Bild konnte nicht hochgeladen werden. Versuche es erneut.",
@@ -14408,6 +14684,18 @@
         "it": "Carica PDF",
         "nl": "PDF uploaden",
         "pt_BR": "Enviar PDF"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "picker.upload_requirements",
+      "text": {
+        "de": "Zulässige Formate: :formats. Maximale Größe: :max MB.",
+        "es": "Formatos aceptados: :formats. Tamaño máximo: :max MB.",
+        "fr": "Formats acceptés : :formats. Taille maximale : :max Mo.",
+        "it": "Formati accettati: :formats. Dimensione massima: :max MB.",
+        "nl": "Geaccepteerde formaten: :formats. Maximale grootte: :max MB.",
+        "pt_BR": "Formatos aceitos: :formats. Tamanho máximo: :max MB."
       }
     },
     {

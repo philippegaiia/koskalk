@@ -17,6 +17,7 @@ use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\IfraAmendment;
+use App\Models\IfraCertificate;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
@@ -2007,10 +2008,16 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 $query->where('is_active', true);
 
                 if ($currentIngredient instanceof Ingredient) {
-                    $query->orWhereHas('certificateLimits.certificate', function (Builder $query) use ($currentIngredient): void {
-                        $query
-                            ->where('ingredient_id', $currentIngredient->id)
-                            ->where('is_current', true);
+                    $query->orWhereHas('certificateLimits', function (Builder $query) use ($currentIngredient): void {
+                        $query->whereIn(
+                            'ifra_certificate_id',
+                            IfraCertificate::query()
+                                ->select('id')
+                                ->where('ingredient_id', $currentIngredient->id)
+                                ->where('is_current', true)
+                                ->latest('id')
+                                ->limit(1),
+                        );
                     });
                 }
             })

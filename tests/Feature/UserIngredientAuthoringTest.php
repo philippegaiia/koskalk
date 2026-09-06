@@ -29,6 +29,7 @@ use App\Services\WorkspaceProvisioner;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -1794,7 +1795,10 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
 
 it('keeps persisted inactive IFRA categories and rejects untrusted category ids', function (): void {
     $user = User::factory()->create();
-    $inactiveCategory = IfraProductCategory::factory()->create([
+    $olderInactiveCategory = IfraProductCategory::factory()->create([
+        'is_active' => false,
+    ]);
+    $latestInactiveCategory = IfraProductCategory::factory()->create([
         'is_active' => false,
     ]);
     $untrustedInactiveCategory = IfraProductCategory::factory()->create([
@@ -1808,31 +1812,49 @@ it('keeps persisted inactive IFRA categories and rejects untrusted category ids'
         'visibility' => Visibility::Private,
         'requires_aromatic_compliance' => true,
     ]);
-    $certificate = $ingredient->ifraCertificates()->create([
-        'certificate_name' => 'Legacy IFRA certificate',
+    $olderCertificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Older IFRA certificate',
         'is_current' => true,
     ]);
-    $certificate->limits()->create([
-        'ifra_product_category_id' => $inactiveCategory->id,
+    $olderCertificate->limits()->create([
+        'ifra_product_category_id' => $olderInactiveCategory->id,
+        'max_percentage' => 0,
+    ]);
+    $latestCertificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Latest IFRA certificate',
+        'is_current' => true,
+    ]);
+    $latestCertificate->limits()->create([
+        'ifra_product_category_id' => $latestInactiveCategory->id,
         'max_percentage' => 0,
     ]);
 
     $service = app(UserIngredientAuthoringService::class);
     $state = $service->formData($ingredient->fresh());
 
+    DB::enableQueryLog();
     $updated = $service->update($ingredient, $state, $user);
+    $categoryValidationQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains(strtolower($query['query']), 'select "id" from "ifra_product_categories"'));
+    DB::disableQueryLog();
 
-    expect($updated->fresh('ifraCertificates.limits')->ifraCertificates->first()?->limits)
+    $updatedLatestCertificate = $updated->fresh('ifraCertificates.limits')->ifraCertificates->sortByDesc('id')->first();
+
+    expect($updatedLatestCertificate?->limits)
         ->toHaveCount(1)
-        ->and($updated->fresh('ifraCertificates.limits')->ifraCertificates->first()?->limits->first()?->ifra_product_category_id)
-        ->toBe($inactiveCategory->id);
+        ->and($updatedLatestCertificate?->limits->first()?->ifra_product_category_id)
+        ->toBe($latestInactiveCategory->id)
+        ->and($categoryValidationQueries)->toHaveCount(1);
+
+    expect($updated->requires_aromatic_compliance)->toBeTrue()
+        ->and(data_get($state, 'ifra.limits.0.ifra_product_category_id'))->toBe($latestInactiveCategory->id);
 
     $assertRejectedCategory = function (int $categoryId) use ($service, $updated, $state, $user): void {
         $state['ifra']['limits'][0]['ifra_product_category_id'] = $categoryId;
 
         try {
             $service->update($updated, $state, $user);
-            fail('An untrusted IFRA category should be rejected before persistence.');
+            test()->fail('An untrusted IFRA category should be rejected before persistence.');
         } catch (ValidationException $exception) {
             expect($exception->errors())
                 ->toHaveKey('ifra.limits')
@@ -1845,7 +1867,8 @@ it('keeps persisted inactive IFRA categories and rejects untrusted category ids'
     };
 
     $assertRejectedCategory($untrustedInactiveCategory->id);
-    $assertRejectedCategory($inactiveCategory->id + 100000);
+    $assertRejectedCategory($olderInactiveCategory->id);
+    $assertRejectedCategory($latestInactiveCategory->id + 100000);
 });
 
 it('accepts comma decimals throughout user soap chemistry fields', function () {

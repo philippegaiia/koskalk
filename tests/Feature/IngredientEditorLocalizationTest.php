@@ -1156,13 +1156,18 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
         'name' => 'Soap products',
         'is_active' => true,
     ]);
-    $inactiveCategory = IfraProductCategory::factory()->create([
+    $olderInactiveCategory = IfraProductCategory::factory()->create([
         'code' => '4',
-        'name' => 'Legacy products',
+        'name' => 'Older legacy products',
+        'is_active' => false,
+    ]);
+    $latestInactiveCategory = IfraProductCategory::factory()->create([
+        'code' => '5',
+        'name' => 'Latest legacy products',
         'is_active' => false,
     ]);
     $unpersistedInactiveCategory = IfraProductCategory::factory()->create([
-        'code' => '5',
+        'code' => '6',
         'name' => 'Unavailable products',
         'is_active' => false,
     ]);
@@ -1172,12 +1177,20 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
         'owner_id' => $user->id,
         'requires_aromatic_compliance' => true,
     ]);
-    $certificate = $ingredient->ifraCertificates()->create([
-        'certificate_name' => 'Legacy IFRA certificate',
+    $olderCertificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Older IFRA certificate',
         'is_current' => true,
     ]);
-    $certificate->limits()->create([
-        'ifra_product_category_id' => $inactiveCategory->id,
+    $olderCertificate->limits()->create([
+        'ifra_product_category_id' => $olderInactiveCategory->id,
+        'max_percentage' => 1.5,
+    ]);
+    $latestCertificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Latest IFRA certificate',
+        'is_current' => true,
+    ]);
+    $latestCertificate->limits()->create([
+        'ifra_product_category_id' => $latestInactiveCategory->id,
         'max_percentage' => 2.5,
     ]);
 
@@ -1196,12 +1209,13 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
     expect($limits->getAddActionLabel())->toBe('Add category limit')
         ->and($limits->getDeleteAction()->getLabel())->toBe('Remove category limit')
         ->and($limits->isReorderable())->toBeFalse()
-        ->and($limits->getItemLabel($rowKey, 0))->toBe($inactiveCategory->optionLabel())
+        ->and($limits->getItemLabel($rowKey, 0))->toBe($latestInactiveCategory->optionLabel())
         ->and($rowSelect->isLive())->toBeTrue()
         ->and($rowSelect->getOptions())->toHaveKey($activeCategory->id)
-        ->and($rowSelect->getOptions())->toHaveKey($inactiveCategory->id)
+        ->and($rowSelect->getOptions())->toHaveKey($latestInactiveCategory->id)
+        ->and($rowSelect->getOptions())->not->toHaveKey($olderInactiveCategory->id)
         ->and($rowSelect->getOptions())->not->toHaveKey($unpersistedInactiveCategory->id)
-        ->and($rowSelect->isOptionDisabled($inactiveCategory->id, $inactiveCategory->optionLabel()))->toBeFalse()
+        ->and($rowSelect->isOptionDisabled($latestInactiveCategory->id, $latestInactiveCategory->optionLabel()))->toBeFalse()
         ->and($reference->getLabel())->toBe('Reference label (optional)')
         ->and($sourceNotes->getLabel())->toBe('IFRA source notes')
         ->and($maximum->getLabel())->toBe('Maximum concentration (%)');
@@ -1210,7 +1224,7 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
     $newSelect = $limits->getChildSchema('new-item')->getComponent('ifra_product_category_id');
 
     expect($limits->getItemLabel('new-item', 1))->toBe('New category limit')
-        ->and($newSelect->isOptionDisabled($inactiveCategory->id, $inactiveCategory->optionLabel()))->toBeTrue();
+        ->and($newSelect->isOptionDisabled($latestInactiveCategory->id, $latestInactiveCategory->optionLabel()))->toBeTrue();
 
     $limits->getItemLabel($rowKey, 0);
     $newSelect->getOptions();

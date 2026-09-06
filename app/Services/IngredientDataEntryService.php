@@ -16,6 +16,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\Substance;
 use App\Support\NumberLocale;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -112,20 +113,32 @@ class IngredientDataEntryService
 
     /**
      * @param  array<string, mixed>  $state
+     * @param  Closure(list<int>): array<string, array<int, string>>|null  $ifraCategoryValidationMessageFactory
      */
-    public function syncCurrentData(Ingredient $ingredient, array $state): Ingredient
-    {
+    public function syncCurrentData(
+        Ingredient $ingredient,
+        array $state,
+        ?Closure $ifraCategoryValidationMessageFactory = null,
+    ): Ingredient {
         return DB::transaction(
-            fn (): Ingredient => $this->syncCurrentDataWithinTransaction($ingredient, $state),
+            fn (): Ingredient => $this->syncCurrentDataWithinTransaction(
+                $ingredient,
+                $state,
+                $ifraCategoryValidationMessageFactory,
+            ),
             attempts: 5,
         );
     }
 
     /**
      * @param  array<string, mixed>  $state
+     * @param  Closure(list<int>): array<string, array<int, string>>|null  $ifraCategoryValidationMessageFactory
      */
-    private function syncCurrentDataWithinTransaction(Ingredient $ingredient, array $state): Ingredient
-    {
+    private function syncCurrentDataWithinTransaction(
+        Ingredient $ingredient,
+        array $state,
+        ?Closure $ifraCategoryValidationMessageFactory = null,
+    ): Ingredient {
         $hasSapProfileState = array_key_exists('sap_profile', $state);
         $hasFattyAcidEntriesState = array_key_exists('fatty_acid_entries', $state);
         $hasAllergenEntriesState = array_key_exists('allergen_entries', $state);
@@ -224,7 +237,11 @@ class IngredientDataEntryService
         }
 
         if ($hasIfraState && $ingredient->requiresAromaticCompliance()) {
-            $this->syncIfra($ingredient, is_array($state['ifra'] ?? null) ? $state['ifra'] : []);
+            $this->syncIfra(
+                $ingredient,
+                is_array($state['ifra'] ?? null) ? $state['ifra'] : [],
+                $ifraCategoryValidationMessageFactory,
+            );
         }
 
         return $ingredient->fresh([
@@ -270,9 +287,15 @@ class IngredientDataEntryService
         ];
     }
 
-    /** @param array<string, mixed> $state */
-    private function syncIfra(Ingredient $ingredient, array $state): void
-    {
+    /**
+     * @param  array<string, mixed>  $state
+     * @param  Closure(list<int>): array<string, array<int, string>>|null  $ifraCategoryValidationMessageFactory
+     */
+    private function syncIfra(
+        Ingredient $ingredient,
+        array $state,
+        ?Closure $ifraCategoryValidationMessageFactory = null,
+    ): void {
         $peroxideValue = NumberLocale::parseDecimalInput($state['peroxide_value'] ?? null);
         if ($peroxideValue !== null && $peroxideValue < 0) {
             throw ValidationException::withMessages([
@@ -280,17 +303,17 @@ class IngredientDataEntryService
             ]);
         }
 
-        $limits = collect($state['limits'] ?? [])
+        $submittedLimits = collect($state['limits'] ?? [])
             ->filter(fn (mixed $row): bool => is_array($row) && filled($row['ifra_product_category_id'] ?? null))
-            ->map(fn (array $row): array => [
+            ->map(fn (array $row, int|string $index): array => [
+                '_state_index' => (int) $index,
                 'ifra_product_category_id' => (int) $row['ifra_product_category_id'],
                 'max_percentage' => NumberLocale::parseDecimalInput($row['max_percentage'] ?? null),
                 'restriction_note' => filled($row['restriction_note'] ?? null)
                     ? trim((string) $row['restriction_note'])
                     : null,
-            ])
-            ->unique('ifra_product_category_id')
-            ->values();
+            ]);
+        $limits = $submittedLimits->unique('ifra_product_category_id')->values();
 
         foreach ($limits as $index => $limit) {
             if ($limit['max_percentage'] === null || $limit['max_percentage'] < 0 || $limit['max_percentage'] > 100) {
@@ -300,35 +323,39 @@ class IngredientDataEntryService
             }
         }
 
+        $certificate = $ingredient->ifraCertificates()
+            ->where('is_current', true)
+            ->latest('id')
+            ->first();
         $categoryIds = $limits->pluck('ifra_product_category_id')->all();
         $persistedCategoryIds = IfraCertificateLimit::query()
             ->select('ifra_product_category_id')
-            ->whereIn(
-                'ifra_certificate_id',
-                IfraCertificate::query()
-                    ->select('id')
-                    ->where('ingredient_id', $ingredient->id)
-                    ->where('is_current', true),
-            );
-        $validCategoryCount = IfraProductCategory::query()
+            ->where('ifra_certificate_id', $certificate?->id ?? 0);
+        $validCategoryIds = IfraProductCategory::query()
             ->whereIn('id', $categoryIds)
             ->where(function (Builder $query) use ($persistedCategoryIds): void {
                 $query
                     ->where('is_active', true)
                     ->orWhereIn('id', $persistedCategoryIds);
             })
-            ->count();
+            ->pluck('id')
+            ->map(fn (int|string $id): int => (int) $id)
+            ->all();
 
-        if ($validCategoryCount !== count($categoryIds)) {
-            throw ValidationException::withMessages([
-                'ifra.limits' => __('ingredients.editor.compliance.ifra.invalid_category'),
-            ]);
+        $invalidLimits = $submittedLimits->filter(
+            fn (array $limit): bool => ! in_array($limit['ifra_product_category_id'], $validCategoryIds, true),
+        );
+
+        if ($invalidLimits->isNotEmpty()) {
+            $messages = $ifraCategoryValidationMessageFactory instanceof Closure
+                ? $ifraCategoryValidationMessageFactory(
+                    $invalidLimits->pluck('_state_index')->map(fn (mixed $index): int => (int) $index)->all(),
+                )
+                : ['ifra.limits' => [__('ingredients.editor.compliance.ifra.invalid_category')]];
+
+            throw ValidationException::withMessages($messages);
         }
 
-        $certificate = $ingredient->ifraCertificates()
-            ->where('is_current', true)
-            ->latest('id')
-            ->first();
         $ifraAmendmentId = filled($state['ifra_amendment_id'] ?? null)
             ? (int) $state['ifra_amendment_id']
             : null;
@@ -367,7 +394,11 @@ class IngredientDataEntryService
         ]);
         $certificate->save();
         $certificate->limits()->delete();
-        $limits->each(fn (array $limit): IfraCertificateLimit => $certificate->limits()->create($limit));
+        $limits->each(function (array $limit) use ($certificate): IfraCertificateLimit {
+            unset($limit['_state_index']);
+
+            return $certificate->limits()->create($limit);
+        });
     }
 
     /**

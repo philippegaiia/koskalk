@@ -163,22 +163,31 @@ it('round trips a persisted inactive IFRA category from the ingredient entry ser
         'category' => IngredientCategory::AromaticMaterials,
         'requires_aromatic_compliance' => true,
     ]);
-    $category = IfraProductCategory::factory()->create(['is_active' => false]);
-    $certificate = $ingredient->ifraCertificates()->create([
-        'certificate_name' => 'Legacy IFRA certificate',
+    $olderCategory = IfraProductCategory::factory()->create(['is_active' => false]);
+    $latestCategory = IfraProductCategory::factory()->create(['is_active' => false]);
+    $olderCertificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Older IFRA certificate',
         'is_current' => true,
     ]);
-    $certificate->limits()->create([
-        'ifra_product_category_id' => $category->id,
+    $olderCertificate->limits()->create([
+        'ifra_product_category_id' => $olderCategory->id,
+        'max_percentage' => 0,
+    ]);
+    $latestCertificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Latest IFRA certificate',
+        'is_current' => true,
+    ]);
+    $latestCertificate->limits()->create([
+        'ifra_product_category_id' => $latestCategory->id,
         'max_percentage' => 0,
     ]);
 
     $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
         'current_version' => ['display_name' => 'Legacy aromatic ingredient'],
         'ifra' => [
-            'reference_label' => 'Legacy IFRA certificate',
+            'reference_label' => 'Latest IFRA certificate',
             'limits' => [[
-                'ifra_product_category_id' => $category->id,
+                'ifra_product_category_id' => $latestCategory->id,
                 'max_percentage' => 0,
             ]],
         ],
@@ -186,8 +195,19 @@ it('round trips a persisted inactive IFRA category from the ingredient entry ser
 
     $state = app(IngredientDataEntryService::class)->formData($savedIngredient);
 
-    expect(data_get($state, 'ifra.limits.0.ifra_product_category_id'))->toBe($category->id)
+    expect(data_get($state, 'ifra.limits.0.ifra_product_category_id'))->toBe($latestCategory->id)
         ->and((float) data_get($state, 'ifra.limits.0.max_percentage'))->toBe(0.0);
+
+    expect(fn () => app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Legacy aromatic ingredient'],
+        'ifra' => [
+            'reference_label' => 'Latest IFRA certificate',
+            'limits' => [[
+                'ifra_product_category_id' => $olderCategory->id,
+                'max_percentage' => 0,
+            ]],
+        ],
+    ]))->toThrow(ValidationException::class, __('ingredients.editor.compliance.ifra.invalid_category'));
 });
 
 it('rejects an unpersisted inactive IFRA category from the ingredient entry service', function (): void {

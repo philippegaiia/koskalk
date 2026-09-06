@@ -1,12 +1,14 @@
 # Ingredient interface refinement plan
 
-**Status:** Plan only. No application changes authorized by this document.
+**Status:** Implemented on `codex/ingredient-editor-ux`. Automated verification is complete; live browser acceptance remains pending because the local Herd web and DNS services are unavailable.
 
 **Goal:** Make every user-facing ingredient field, action, and state understandable while retaining the detail needed for professional formulation.
 
 **Baseline:** `codex/ingredient-editor-ux`, commit `2bf21562`, reviewed on 5 September 2026. Implementation work belongs in the existing ingredient-editor worktree, not an unrelated checkout.
 
 **Re-evaluation:** 6 September 2026, same code baseline. One source-based review corrected the fatty-acid empty-profile exception, the aromatic setting's wider effects, destination fallbacks and missing workflow checks. Application code remains untouched. The corrected plan is ready for implementation; browser acceptance remains part of implementation, not a completed result of this review.
+
+**Implementation update:** 6 September 2026. Tasks 1–5 were implemented and reviewed in bounded commits. The affected backend and interface suites pass, production assets build, Pint and `git diff --check` pass, and the graph was refreshed. The dedicated Herd link points to this worktree, but Herd's installed CLI reports a corrupted PHAR and its local web/DNS services are not listening, so the browser-only scenarios below have not been marked complete.
 
 **Original reference:** [2026-09-04 ingredient editor UX audit](2026-09-04-ingredient-editor-ux-audit.md). This is a follow-up to its implemented three-journey design. Historical findings in that document are not automatically current defects. In particular, platform references now use a reference view, composition is already conditional, and save surfaces have separate scopes.
 
@@ -242,12 +244,12 @@ The tables distinguish three types of work: confirmed defects must be fixed; spe
 
 **Modify:** `lang/en/ingredients.php`, `app/Livewire/Dashboard/IngredientEditor.php`, `resources/views/livewire/dashboard/ingredient-editor.blade.php`, `resources/js/ingredient-editor.js`, `resources/js/classification-prompt.js`, `resources/views/livewire/dashboard/partials/ingredient-classification-prompt.blade.php`, `resources/views/livewire/dashboard/partials/ingredient-composition-rows.blade.php`, `app/Services/UserIngredientAuthoringService.php`.
 
-- [ ] Correct creation status without changing the dirty-state baseline or leave-page behavior.
-- [ ] Correct conditional required-total and quick-create wording, including resolved destination/fallback. Preserve both-empty fatty-acid profiles as valid.
-- [ ] Make copy failure visible and recoverable with preview closed.
-- [ ] Align displayed blend total/status with the existing server tolerance; preserve numeric precision.
-- [ ] For workspace-copy previews, use inherited SAP/fatty-acid baselines; retain current platform-source behavior. Keep current values separately if shown.
-- [ ] Add focused regressions in `tests/Unit/ingredient-editor.test.mjs`, `tests/Feature/UserIngredientAuthoringServiceDuplicationTest.php`, and `tests/Feature/UserIngredientAuthoringTest.php`. A clipboard-helper unit test alone cannot prove a message is visible outside a collapsed disclosure: verify that rendered failure state in the browser as well. Add `tests/Unit/classification-prompt.test.mjs` only if helper behavior changes need coverage.
+- [x] Correct creation status without changing the dirty-state baseline or leave-page behavior.
+- [x] Correct conditional required-total and quick-create wording, including resolved destination/fallback. Preserve both-empty fatty-acid profiles as valid.
+- [x] Make copy failure visible and recoverable with preview closed.
+- [x] Align displayed blend total/status with the existing server tolerance; preserve numeric precision.
+- [x] For workspace-copy previews, use inherited SAP/fatty-acid baselines; retain current platform-source behavior. Keep current values separately if shown.
+- [ ] Add focused regressions in `tests/Unit/ingredient-editor.test.mjs`, `tests/Feature/UserIngredientAuthoringServiceDuplicationTest.php`, and `tests/Feature/UserIngredientAuthoringTest.php`. Automated regressions are complete; the rendered browser check remains pending. Add `tests/Unit/classification-prompt.test.mjs` only if helper behavior changes need coverage.
 
 **Acceptance examples:** untouched creation never claims persistence; edited trusted source shows the same allowed range before and after duplication; 99.96 never looks complete; a failed copy action is visible without opening preview; quick-create clearly discloses its independent save.
 
@@ -255,12 +257,12 @@ The tables distinguish three types of work: confirmed defects must be fixed; spe
 
 **Modify:** `app/Livewire/Dashboard/IngredientEditor.php`, `resources/views/livewire/dashboard/ingredient-editor.blade.php`, `resources/views/livewire/dashboard/partials/ingredient-classification-prompt.blade.php`, `lang/en/ingredients.php`; ingredient-specific configuration of `app/Forms/Components/IngredientIdentityFields.php` only where needed.
 
-- [ ] Move required basics before optional classification detail and research assistance.
-- [ ] Add explicit creation workspace scope; use task/name headings and correct introductory text.
-- [ ] Rename tabs/fields per §5, with stable tab identity and recovery for old query-string links.
-- [ ] Group guidance, source notes and files; retain all existing fields and validation.
-- [ ] Make advanced identity rows readable, with localized summaries and consistent terms.
-- [ ] Verify category/subcategory changes. Preserve aromatic setting behavior and saved allergen/IFRA records through off/on transitions; use the corrected domain-setting copy rather than the withdrawn display-only wording.
+- [x] Move required basics before optional classification detail and research assistance.
+- [x] Add explicit creation workspace scope; use task/name headings and correct introductory text.
+- [x] Rename tabs/fields per §5, with stable tab identity and recovery for old query-string links.
+- [x] Group guidance, source notes and files; retain all existing fields and validation.
+- [x] Make advanced identity rows readable, with localized summaries and consistent terms.
+- [x] Verify category/subcategory changes. Preserve aromatic setting behavior and saved allergen/IFRA records through off/on transitions; use the corrected domain-setting copy rather than the withdrawn display-only wording.
 
 **Checks:** extend `tests/Feature/IngredientEditorLocalizationTest.php` and relevant cases in `tests/Feature/UserIngredientAuthoringTest.php`. Verify no user-side schema option unintentionally changes the admin identity editor.
 
@@ -268,11 +270,11 @@ The tables distinguish three types of work: confirmed defects must be fixed; spe
 
 **Modify:** `resources/views/livewire/dashboard/ingredient-editor.blade.php`, `resources/views/livewire/dashboard/partials/ingredient-reference.blade.php`, `lang/en/ingredients.php`; adjust the existing reference builder only if its presentation data needs a small addition.
 
-- [ ] Put ingredient identity and authorized workspace controls before the long reference sections.
-- [ ] Keep guidance source and material-code save scopes independent; reduce duplicate guidance preview while editing.
-- [ ] Inspect navigation after reordering; add section links only if still needed, using existing authorized data and unique heading IDs.
-- [ ] Replace ambiguous reference headings/empty values and add units without hiding technical content.
-- [ ] Keep all privacy filtering before rendering. Do not load new records merely to populate navigation links.
+- [x] Put ingredient identity and authorized workspace controls before the long reference sections.
+- [x] Keep guidance source and material-code save scopes independent; reduce duplicate guidance preview while editing.
+- [x] Inspect navigation after reordering; add section links only if still needed, using existing authorized data and unique heading IDs.
+- [x] Replace ambiguous reference headings/empty values and add units without hiding technical content.
+- [x] Keep all privacy filtering before rendering. Do not load new records merely to populate navigation links.
 
 **Checks:** relevant cases in `tests/Feature/IngredientEditorAccessTest.php`, `tests/Feature/WorkspaceIngredientCodeTest.php`, `tests/Feature/WorkspaceIngredientGuidanceTest.php`. Browser checks include empty guidance, custom guidance, long platform data and public non-member reference.
 
@@ -280,11 +282,11 @@ The tables distinguish three types of work: confirmed defects must be fixed; spe
 
 **Modify:** `app/Livewire/Dashboard/IngredientEditor.php`, composition partial, `lang/en/ingredients.php`, with minimal local JS support for focus only if required.
 
-- [ ] Add explicit repeater actions, contextual concentration labels and understandable range/total feedback.
-- [ ] Preserve blend-only visibility and confirmed constituent removal; ensure active-tab fallback is valid.
-- [ ] Associate custom errors with inputs; preserve focus after adding/removing rows.
-- [ ] Keep units and current/inherited values consistent across editor and reference.
-- [ ] Keep existing IFRA maximum/reference terminology unless a verified semantic improvement is available; retain scientific rules and do not expand into a regulatory-model investigation.
+- [x] Add explicit repeater actions, contextual concentration labels and understandable range/total feedback.
+- [x] Preserve blend-only visibility and confirmed constituent removal; ensure active-tab fallback is valid.
+- [x] Associate custom errors with inputs; preserve focus after adding/removing rows.
+- [x] Keep units and current/inherited values consistent across editor and reference.
+- [x] Keep existing IFRA maximum/reference terminology unless a verified semantic improvement is available; retain scientific rules and do not expand into a regulatory-model investigation.
 
 **Checks:** add only changed behavior/failure cases to `tests/Feature/UserIngredientAuthoringTest.php` and existing ingredient JS tests. Test empty rows, duplicate selections, invalid/unknown percentages, valid zero, localized decimals and inherited limits. Do not expand this into new chemistry validation.
 
@@ -292,20 +294,20 @@ The tables distinguish three types of work: confirmed defects must be fixed; spe
 
 **Modify:** `resources/views/livewire/dashboard/partials/duplicate-ingredient-modal.blade.php`, `resources/js/ingredient-duplication.js` only for demonstrated interaction gaps, `lang/en/ingredients.php`, ingredient media configuration in `app/Livewire/Dashboard/IngredientEditor.php`; shared `resources/views/forms/components/media-asset-picker.blade.php` or `lang/en/media_library.php` only if a shared defect is reproduced.
 
-- [ ] Simplify destination/copy-consequence text and disclose the correct inherited ranges from Task 1.
-- [ ] Keep the two entry buttons' matching treatment and existing permission/blocked-source behavior.
-- [ ] Check picker labels, file selection versus upload persistence, progress/error announcements and long names.
-- [ ] Check keyboard focus, field errors, tab error recovery and action-bar wrapping in the complete form.
-- [ ] Make the smallest scoped fixes; do not rewrite functioning dialog/focus/dirty-state machinery.
+- [x] Simplify destination/copy-consequence text and disclose the correct inherited ranges from Task 1.
+- [x] Keep the two entry buttons' matching treatment and existing permission/blocked-source behavior.
+- [x] Check picker labels, file selection versus upload persistence, progress/error announcements and long names.
+- [ ] Check keyboard focus, field errors, tab error recovery and action-bar wrapping in the complete form. Automated accessibility contracts pass; live browser interaction and responsive inspection remain pending.
+- [x] Make the smallest scoped fixes; do not rewrite functioning dialog/focus/dirty-state machinery.
 
 **Checks:** `tests/Feature/IngredientsIndexDuplicationTest.php`, `tests/Unit/ingredient-duplication.test.mjs`, and `tests/Unit/MediaAssetPickerAccessibilityContractTest.php` if that shared control changes. Preserve repeated-submit, stale workspace and redirect protections.
 
 ### Task 6 — Validate the finished interfaces once
 
-- [ ] Confirm installed package versions and use scoped Boost documentation before version-sensitive component changes. Reuse adequate documentation already obtained.
-- [ ] Use canonical English dotted keys in `lang/en/ingredients.php`; check DB translation overrides/localized output so revised copy actually appears. Do not edit framework JSON translation files.
-- [ ] Run the narrowest affected PHP and Node tests. Run Pint for modified PHP. Run Filacheck only if `app/Filament` was actually modified. Follow the repository's graph-update instruction if application code changed.
-- [ ] Build assets when frontend changes require it; verify the actual feature worktree is served. Do not start another HTTP server under Herd.
+- [x] Confirm installed package versions and use scoped Boost documentation before version-sensitive component changes. Reuse adequate documentation already obtained.
+- [x] Use canonical English dotted keys in `lang/en/ingredients.php`; check DB translation overrides/localized output so revised copy actually appears. Do not edit framework JSON translation files.
+- [x] Run the narrowest affected PHP and Node tests. Run Pint for modified PHP. Run Filacheck only if `app/Filament` was actually modified. Follow the repository's graph-update instruction if application code changed.
+- [ ] Build assets when frontend changes require it; verify the actual feature worktree is served. The production build passes and the dedicated link is correct; Herd service failure blocks the serving check. Do not start another HTTP server under Herd.
 - [ ] Complete the scenario matrix below. Record only measured outcomes, unresolved defects and useful screenshots.
 - [ ] Present the final diff and verification results. Do not deploy, merge or start another optimization pass as an implicit extension of this plan.
 
@@ -346,4 +348,4 @@ No tests or builds were run for this document-only planning pass.
 | Keyboard and screen reader | Logical heading/focus order, reachable disclosure/combobox controls, dialog focus return, associated errors and meaningful announcements |
 | English and a longer supported translation | Consistent terminology; no raw keys/enums, hidden button text or sentence-fragment interpolation |
 
-**Review decision: Ready to implement the corrected plan; not yet accepted as completed work.** Resolve the HIGH findings and exercise relevant visual/accessibility acceptance before declaring completion. One re-evaluation was performed on 6 September; it was a targeted source review, not a fresh full browser audit. No application files, tests or build artifacts changed.
+**Review decision: Implementation and automated verification are complete; live browser acceptance is still required.** Final Sol review found no P1 issues and identified three P2 gaps; all three were corrected and covered by focused tests. Do not merge until the browser scenarios can run against the linked feature worktree.

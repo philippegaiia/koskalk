@@ -143,7 +143,7 @@
                                         data-ingredient-editor-ignore-dirty
                                         type="file"
                                         name="upload"
-                                        accept="{{ $acceptsDocuments ? '.pdf,application/pdf' : '.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif' }}"
+                                        accept="{{ $acceptsDocuments ? '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif' : '.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif' }}"
                                         class="peer sr-only"
                                     />
                                     <div class="flex min-h-12 flex-wrap items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-2">

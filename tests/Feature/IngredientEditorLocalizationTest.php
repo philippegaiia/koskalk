@@ -916,7 +916,7 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeText('Add supplier or source details that may help identify and classify this ingredient.')
         ->assertSeeText('Images & documents')
         ->assertSeeText('Certificates and technical documents')
-        ->assertSeeText('Attach up to 8 PDFs, such as certificates of analysis, safety data sheets or technical data sheets.')
+        ->assertSeeText('Attach up to 8 certificates of analysis, safety data sheets or technical data sheets as PDF, JPEG, PNG, WebP, HEIC, or HEIF files.')
         ->assertDontSeeText('Identifiers and functions')
         ->assertDontSeeText('Trusted for soap saponification')
         ->assertSeeText('Add ingredient')
@@ -993,7 +993,7 @@ it('groups guidance and files into ordered editor sections', function (): void {
         ->toContain('data.icon_media_asset_id')
         ->toContain('data.document_media_asset_ids')
         ->toContain('Certificates and technical documents')
-        ->toContain('Attach up to 8 PDFs, such as certificates of analysis, safety data sheets or technical data sheets.');
+        ->toContain('Attach up to 8 certificates of analysis, safety data sheets or technical data sheets as PDF, JPEG, PNG, WebP, HEIC, or HEIF files.');
 });
 
 it('shows the destination workspace on create and edit pages', function (): void {

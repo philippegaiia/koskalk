@@ -6398,12 +6398,12 @@
       "group": "ingredients",
       "key": "editor.guidance_files.documents_helper",
       "text": {
-        "de": "Füge bis zu 8 PDFs hinzu, etwa Analysezertifikate, Sicherheitsdatenblätter oder technische Datenblätter.",
-        "es": "Adjunta hasta 8 PDF, como certificados de análisis, fichas de datos de seguridad o fichas técnicas.",
-        "fr": "Joignez jusqu’à 8 PDF, tels que des certificats d’analyse, des fiches de données de sécurité ou des fiches techniques.",
-        "it": "Allega fino a 8 PDF, come certificati di analisi, schede di dati di sicurezza o schede tecniche.",
-        "nl": "Voeg maximaal 8 pdf’s toe, zoals analysecertificaten, veiligheidsinformatiebladen of technische gegevensbladen.",
-        "pt_BR": "Anexe até 8 PDFs, como certificados de análise, fichas de dados de segurança ou fichas técnicas."
+        "de": "Füge bis zu 8 Analysezertifikate, Sicherheitsdatenblätter oder technische Datenblätter als PDF-, JPEG-, PNG-, WebP-, HEIC- oder HEIF-Dateien hinzu.",
+        "es": "Adjunta hasta 8 certificados de análisis, fichas de datos de seguridad o fichas técnicas en archivos PDF, JPEG, PNG, WebP, HEIC o HEIF.",
+        "fr": "Joignez jusqu’à 8 certificats d’analyse, fiches de données de sécurité ou fiches techniques au format PDF, JPEG, PNG, WebP, HEIC ou HEIF.",
+        "it": "Allega fino a 8 certificati di analisi, schede di dati di sicurezza o schede tecniche in formato PDF, JPEG, PNG, WebP, HEIC o HEIF.",
+        "nl": "Voeg maximaal 8 analysecertificaten, veiligheidsinformatiebladen of technische gegevensbladen toe als PDF-, JPEG-, PNG-, WebP-, HEIC- of HEIF-bestanden.",
+        "pt_BR": "Anexe até 8 certificados de análise, fichas de dados de segurança ou fichas técnicas em arquivos PDF, JPEG, PNG, WebP, HEIC ou HEIF."
       }
     },
     {
@@ -7190,12 +7190,12 @@
       "group": "ingredients",
       "key": "editor.media.documents_helper",
       "text": {
-        "de": "Füge bis zu 8 PDF-Zertifikate, Sicherheitsdatenblätter oder technische Datenblätter hinzu.",
-        "es": "Adjunta hasta 8 certificados, fichas de seguridad o fichas técnicas en PDF.",
-        "fr": "Joignez jusqu’à 8 certificats, fiches de données de sécurité ou fiches techniques au format PDF.",
-        "it": "Allega fino a 8 certificati, schede di sicurezza o schede tecniche in PDF.",
-        "nl": "Voeg maximaal 8 PDF-certificaten, veiligheidsinformatiebladen of technische fiches toe.",
-        "pt_BR": "Anexe até 8 certificados, fichas de segurança ou fichas técnicas em PDF."
+        "de": "Füge bis zu 8 Zertifikate, Sicherheitsdatenblätter oder technische Datenblätter als PDF-, JPEG-, PNG-, WebP-, HEIC- oder HEIF-Dateien hinzu.",
+        "es": "Adjunta hasta 8 certificados, fichas de seguridad o fichas técnicas en archivos PDF, JPEG, PNG, WebP, HEIC o HEIF.",
+        "fr": "Joignez jusqu’à 8 certificats, fiches de données de sécurité ou fiches techniques au format PDF, JPEG, PNG, WebP, HEIC ou HEIF.",
+        "it": "Allega fino a 8 certificati, schede di sicurezza o schede tecniche in formato PDF, JPEG, PNG, WebP, HEIC o HEIF.",
+        "nl": "Voeg maximaal 8 certificaten, veiligheidsinformatiebladen of technische gegevensbladen toe als PDF-, JPEG-, PNG-, WebP-, HEIC- of HEIF-bestanden.",
+        "pt_BR": "Anexe até 8 certificados, fichas de segurança ou fichas técnicas em arquivos PDF, JPEG, PNG, WebP, HEIC ou HEIF."
       }
     },
     {
@@ -14006,12 +14006,12 @@
       "group": "media_library",
       "key": "documents.upload",
       "text": {
-        "de": "PDF hochladen",
-        "es": "Subir PDF",
-        "fr": "Importer un PDF",
-        "it": "Carica PDF",
-        "nl": "PDF uploaden",
-        "pt_BR": "Enviar PDF"
+        "de": "Dokument hochladen",
+        "es": "Subir documento",
+        "fr": "Importer un document",
+        "it": "Carica documento",
+        "nl": "Document uploaden",
+        "pt_BR": "Enviar documento"
       }
     },
     {
@@ -14726,12 +14726,12 @@
       "group": "media_library",
       "key": "picker.choose_document",
       "text": {
-        "de": "PDF auswählen",
-        "es": "Elegir PDF",
-        "fr": "Choisir un PDF",
-        "it": "Scegli PDF",
-        "nl": "PDF kiezen",
-        "pt_BR": "Escolher PDF"
+        "de": "Dokument auswählen",
+        "es": "Elegir documento",
+        "fr": "Choisir un document",
+        "it": "Scegli documento",
+        "nl": "Document kiezen",
+        "pt_BR": "Escolher documento"
       }
     },
     {
@@ -14798,36 +14798,36 @@
       "group": "media_library",
       "key": "picker.document",
       "text": {
-        "de": "PDF-Dokument",
-        "es": "Documento PDF",
-        "fr": "Document PDF",
-        "it": "Documento PDF",
-        "nl": "PDF-document",
-        "pt_BR": "Documento PDF"
+        "de": "Dokument",
+        "es": "Documento",
+        "fr": "Document",
+        "it": "Documento",
+        "nl": "Document",
+        "pt_BR": "Documento"
       }
     },
     {
       "group": "media_library",
       "key": "picker.document_failed",
       "text": {
-        "de": "PDF-Verarbeitung fehlgeschlagen",
-        "es": "Error al procesar el PDF",
-        "fr": "Échec du traitement du PDF",
-        "it": "Elaborazione del PDF non riuscita",
-        "nl": "PDF-verwerking mislukt",
-        "pt_BR": "Falha no processamento do PDF"
+        "de": "Dokumentverarbeitung fehlgeschlagen",
+        "es": "Error al procesar el documento",
+        "fr": "Échec du traitement du document",
+        "it": "Elaborazione del documento non riuscita",
+        "nl": "Documentverwerking mislukt",
+        "pt_BR": "Falha no processamento do documento"
       }
     },
     {
       "group": "media_library",
       "key": "picker.document_upload_failed",
       "text": {
-        "de": "Die PDF-Datei konnte nicht hochgeladen werden. Versuche es erneut.",
-        "es": "No se pudo cargar el PDF. Inténtalo de nuevo.",
-        "fr": "Le PDF n’a pas pu être importé. Réessayez.",
-        "it": "Non è stato possibile caricare il PDF. Riprova.",
-        "nl": "De PDF kon niet worden geüpload. Probeer het opnieuw.",
-        "pt_BR": "Não foi possível enviar o PDF. Tente novamente."
+        "de": "Das Dokument konnte nicht hochgeladen werden. Versuche es erneut.",
+        "es": "No se pudo cargar el documento. Inténtalo de nuevo.",
+        "fr": "Le document n’a pas pu être importé. Réessayez.",
+        "it": "Non è stato possibile caricare il documento. Riprova.",
+        "nl": "Het document kon niet worden geüpload. Probeer het opnieuw.",
+        "pt_BR": "Não foi possível enviar o documento. Tente novamente."
       }
     },
     {
@@ -14858,12 +14858,12 @@
       "group": "media_library",
       "key": "picker.empty_documents_description",
       "text": {
-        "de": "Lade ein PDF-Dokument in die Medienbibliothek hoch und wähle es anschließend hier aus.",
-        "es": "Sube un documento PDF a la biblioteca multimedia y vuelve aquí para seleccionarlo.",
-        "fr": "Importez un document PDF dans la médiathèque, puis revenez ici pour le sélectionner.",
-        "it": "Carica un documento PDF nella libreria multimediale, quindi torna qui per selezionarlo.",
-        "nl": "Upload een PDF-document naar de mediabibliotheek en selecteer het daarna hier.",
-        "pt_BR": "Envie um documento PDF para a biblioteca e volte aqui para selecioná-lo."
+        "de": "Lade ein Dokument in die Medienbibliothek hoch und wähle es anschließend hier aus.",
+        "es": "Sube un documento a la biblioteca multimedia y vuelve aquí para seleccionarlo.",
+        "fr": "Importez un document dans la médiathèque, puis revenez ici pour le sélectionner.",
+        "it": "Carica un documento nella libreria multimediale, quindi torna qui per selezionarlo.",
+        "nl": "Upload een document naar de mediabibliotheek en selecteer het daarna hier.",
+        "pt_BR": "Envie um documento para a biblioteca e volte aqui para selecioná-lo."
       }
     },
     {
@@ -14954,12 +14954,12 @@
       "group": "media_library",
       "key": "picker.no_document_selected",
       "text": {
-        "de": "Keine PDF ausgewählt",
-        "es": "Ningún PDF seleccionado",
-        "fr": "Aucun PDF sélectionné",
-        "it": "Nessun PDF selezionato",
-        "nl": "Geen PDF geselecteerd",
-        "pt_BR": "Nenhum PDF selecionado"
+        "de": "Kein Dokument ausgewählt",
+        "es": "Ningún documento seleccionado",
+        "fr": "Aucun document sélectionné",
+        "it": "Nessun documento selezionato",
+        "nl": "Geen document geselecteerd",
+        "pt_BR": "Nenhum documento selecionado"
       }
     },
     {
@@ -15026,12 +15026,12 @@
       "group": "media_library",
       "key": "picker.processing_document",
       "text": {
-        "de": "Hochgeladene PDF wird verarbeitet",
-        "es": "Procesando el PDF cargado",
-        "fr": "Traitement du PDF importé",
-        "it": "Elaborazione del PDF caricato",
-        "nl": "Geüploade PDF wordt verwerkt",
-        "pt_BR": "Processando PDF enviado"
+        "de": "Hochgeladenes Dokument wird verarbeitet",
+        "es": "Procesando el documento cargado",
+        "fr": "Traitement du document importé",
+        "it": "Elaborazione del documento caricato",
+        "nl": "Geüpload document wordt verwerkt",
+        "pt_BR": "Processando documento enviado"
       }
     },
     {
@@ -15134,12 +15134,12 @@
       "group": "media_library",
       "key": "picker.select_documents",
       "text": {
-        "de": "Wähle bis zu :count verfügbare PDF-Dokumente aus.",
-        "es": "Selecciona hasta :count documentos PDF disponibles.",
-        "fr": "Sélectionnez jusqu’à :count documents PDF disponibles.",
-        "it": "Seleziona fino a :count documenti PDF disponibili.",
-        "nl": "Selecteer maximaal :count beschikbare PDF-documenten.",
-        "pt_BR": "Selecione até :count documentos PDF prontos."
+        "de": "Wähle bis zu :count verfügbare Dokumente aus.",
+        "es": "Selecciona hasta :count documentos disponibles.",
+        "fr": "Sélectionnez jusqu’à :count documents disponibles.",
+        "it": "Seleziona fino a :count documenti pronti.",
+        "nl": "Selecteer maximaal :count beschikbare documenten.",
+        "pt_BR": "Selecione até :count documentos prontos."
       }
     },
     {
@@ -15230,12 +15230,12 @@
       "group": "media_library",
       "key": "picker.upload_new_document",
       "text": {
-        "de": "PDF hochladen",
-        "es": "Subir PDF",
-        "fr": "Importer un PDF",
-        "it": "Carica PDF",
-        "nl": "PDF uploaden",
-        "pt_BR": "Enviar PDF"
+        "de": "Dokument hochladen",
+        "es": "Subir documento",
+        "fr": "Importer un document",
+        "it": "Carica documento",
+        "nl": "Document uploaden",
+        "pt_BR": "Enviar documento"
       }
     },
     {
@@ -15758,12 +15758,12 @@
       "group": "media_library",
       "key": "validation.maximum_documents",
       "text": {
-        "de": "Wähle bis zu :max PDF-Dokumente aus.",
-        "es": "Elige hasta :max documentos PDF.",
-        "fr": "Choisissez jusqu’à :max documents PDF.",
-        "it": "Scegli fino a :max documenti PDF.",
-        "nl": "Kies maximaal :max PDF-documenten.",
-        "pt_BR": "Escolha até :max documentos PDF."
+        "de": "Wähle bis zu :max Dokumente aus.",
+        "es": "Elige hasta :max documentos.",
+        "fr": "Choisissez jusqu’à :max documents.",
+        "it": "Scegli fino a :max documenti.",
+        "nl": "Kies maximaal :max documenten.",
+        "pt_BR": "Escolha até :max documentos."
       }
     },
     {
@@ -33950,12 +33950,12 @@
       "group": "workbench",
       "key": "instructions.documents_help",
       "text": {
-        "de": "Hängen Sie bis zu 8 PDF-Verfahrensanweisungen, Checklisten oder Begleitdokumente an.",
-        "es": "Adjunta hasta 8 procedimientos, listas de comprobación o documentos de apoyo en PDF.",
-        "fr": "Joignez jusqu’à 8 procédures, listes de contrôle ou documents complémentaires au format PDF.",
-        "it": "Allega fino a 8 procedure, liste di controllo o documenti di supporto in PDF.",
-        "nl": "Voeg maximaal 8 PDF-procedures, checklijsten of ondersteunende documenten toe.",
-        "pt_BR": "Anexe até 8 procedimentos, checklists ou documentos de apoio em PDF."
+        "de": "Hänge bis zu 8 Verfahrensanweisungen, Checklisten oder Begleitdokumente als PDF-, JPEG-, PNG-, WebP-, HEIC- oder HEIF-Dateien an.",
+        "es": "Adjunta hasta 8 procedimientos, listas de comprobación o documentos de apoyo en archivos PDF, JPEG, PNG, WebP, HEIC o HEIF.",
+        "fr": "Joignez jusqu’à 8 procédures, listes de contrôle ou documents complémentaires au format PDF, JPEG, PNG, WebP, HEIC ou HEIF.",
+        "it": "Allega fino a 8 procedure, liste di controllo o documenti di supporto in formato PDF, JPEG, PNG, WebP, HEIC o HEIF.",
+        "nl": "Voeg maximaal 8 procedures, checklists of ondersteunende documenten toe als PDF-, JPEG-, PNG-, WebP-, HEIC- of HEIF-bestanden.",
+        "pt_BR": "Anexe até 8 procedimentos, checklists ou documentos de apoio em arquivos PDF, JPEG, PNG, WebP, HEIC ou HEIF."
       }
     },
     {

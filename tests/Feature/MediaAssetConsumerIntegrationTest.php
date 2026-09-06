@@ -62,9 +62,14 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->and($ingredientForm->getComponent('document_media_asset_ids'))
         ->toBeInstanceOf(MediaAssetPicker::class)
         ->and($ingredientForm->getComponent('document_media_asset_ids')->getAcceptedMediaAssetTypeValues())
-        ->toBe([MediaAssetType::Pdf->value])
+        ->toBe([MediaAssetType::Pdf->value, MediaAssetType::Image->value])
+        ->and($ingredientForm->getComponent('document_media_asset_ids')->getFileAttachmentsAcceptedFileTypes())
+        ->toContain('application/pdf')
+        ->toContain('image/jpeg')
         ->and($recipeForm->getComponent('sop_document_media_asset_ids'))
         ->toBeInstanceOf(MediaAssetPicker::class)
+        ->and($recipeForm->getComponent('sop_document_media_asset_ids')->getAcceptedMediaAssetTypeValues())
+        ->toBe([MediaAssetType::Pdf->value, MediaAssetType::Image->value])
         ->and($recipeForm->getComponent('sop_document_media_asset_ids')->getMaximumItems())
         ->toBe(8)
         ->and($recipeForm->getComponent('featured_media_asset_id')->shouldPreserveAspectRatio())
@@ -93,14 +98,14 @@ it('uses the shared media picker instead of record-owned image uploads', functio
     Livewire::test(IngredientEditor::class)
         ->assertSeeText('Choose documents')
         ->assertSeeText('No library documents selected.')
-        ->assertSeeText('Select up to 8 ready PDF documents.')
-        ->assertSeeText('Upload a PDF document to the library, then return here to select it.')
-        ->assertSeeText('Upload PDF')
-        ->assertSeeText('Choose PDF')
-        ->assertSeeText('Accepted formats: PDF. Maximum size: 10 MB.')
-        ->assertSeeHtml('No PDF selected')
-        ->assertSeeText('Processing uploaded PDF')
-        ->assertSeeText('PDF processing failed');
+        ->assertSeeText('Select up to 8 ready documents.')
+        ->assertSeeText('Upload a document to the library, then return here to select it.')
+        ->assertSeeText('Upload document')
+        ->assertSeeText('Choose document')
+        ->assertSeeText('Accepted formats: PDF, JPEG, PNG, WebP, HEIC, HEIF. Maximum size: 10 MB.')
+        ->assertSeeHtml('No document selected')
+        ->assertSeeText('Processing uploaded document')
+        ->assertSeeText('Document processing failed');
 });
 
 it('connects the remove-selection description to a rendered selected image', function (): void {
@@ -167,6 +172,11 @@ it('filters picker results by the component media type', function () {
         ->assertSuccessful()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.original_filename', 'product.jpg');
+
+    $this->actingAs($user)
+        ->getJson(route('media.picker-assets', ['types' => 'pdf,image']))
+        ->assertSuccessful()
+        ->assertJsonCount(2, 'data');
 });
 
 it('enforces media types and limits for ingredient and sop document roles', function () {
@@ -216,7 +226,52 @@ it('enforces media types and limits for ingredient and sop document roles', func
         [...$documents->pluck('id')->all(), $image->id],
         maximum: 8,
         expectedType: MediaAssetType::Pdf,
-    ))->toThrow(ValidationException::class, '8 PDF documents');
+    ))->toThrow(ValidationException::class, '8 documents');
+});
+
+it('accepts image assets for document roles when the document picker permits them', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
+    $image = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $picker = MediaAssetPicker::make('documents')->documents();
+
+    app(MediaAssetUsageService::class)->syncMany(
+        $user,
+        $ingredient,
+        MediaAssetUsageRole::IngredientDocument,
+        [$image->id],
+        maximum: 8,
+        expectedType: array_map(
+            fn (string $type): MediaAssetType => MediaAssetType::from($type),
+            $picker->getAcceptedMediaAssetTypeValues(),
+        ),
+    );
+    app(MediaAssetUsageService::class)->syncMany(
+        $user,
+        $recipe,
+        MediaAssetUsageRole::RecipeSopDocument,
+        [$image->id],
+        maximum: 8,
+        expectedType: array_map(
+            fn (string $type): MediaAssetType => MediaAssetType::from($type),
+            $picker->getAcceptedMediaAssetTypeValues(),
+        ),
+    );
+
+    expect(MediaAssetUsage::query()
+        ->where('usable_type', $ingredient->getMorphClass())
+        ->where('usable_id', $ingredient->id)
+        ->where('role', MediaAssetUsageRole::IngredientDocument)
+        ->where('media_asset_id', $image->id)
+        ->exists())->toBeTrue()
+        ->and(MediaAssetUsage::query()
+            ->where('usable_type', $recipe->getMorphClass())
+            ->where('usable_id', $recipe->id)
+            ->where('role', MediaAssetUsageRole::RecipeSopDocument)
+            ->where('media_asset_id', $image->id)
+            ->exists())->toBeTrue();
 });
 
 it('keeps product descriptions text-only and removes direct rich editor uploads', function () {

@@ -410,7 +410,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     MediaAssetUsageRole::IngredientDocument,
                     $documentMediaAssetIds,
                     maximum: 8,
-                    expectedType: MediaAssetType::Pdf,
+                    expectedType: [MediaAssetType::Pdf, MediaAssetType::Image],
                 );
 
                 return $ingredient;

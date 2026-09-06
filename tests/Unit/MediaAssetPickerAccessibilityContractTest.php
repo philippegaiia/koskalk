@@ -120,6 +120,16 @@ it('describes the remove action only while a picker selection exists', function 
         ->toBe('Removing selected files from this form does not delete them from your Media Library.');
 });
 
+it('offers common image and pdf formats for document uploads', function () {
+    $pickerView = file_get_contents(
+        resource_path('views/forms/components/media-asset-picker.blade.php'),
+    );
+
+    expect($pickerView)
+        ->toContain('$acceptsDocuments ? \'.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif\'')
+        ->toContain("'application/pdf'");
+});
+
 it('tracks and clears the single modal upload filename', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

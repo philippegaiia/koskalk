@@ -614,12 +614,12 @@ it('commits reviewed workspace ingredient alerts and document picker copy', func
         'nl' => 'Documenten kiezen',
         'pt_BR' => 'Escolher documentos',
     ])->and($translations['media_library.picker.document_upload_failed']['text'] ?? null)->toBe([
-        'de' => 'Die PDF-Datei konnte nicht hochgeladen werden. Versuche es erneut.',
-        'es' => 'No se pudo cargar el PDF. Inténtalo de nuevo.',
-        'fr' => 'Le PDF n’a pas pu être importé. Réessayez.',
-        'it' => 'Non è stato possibile caricare il PDF. Riprova.',
-        'nl' => 'De PDF kon niet worden geüpload. Probeer het opnieuw.',
-        'pt_BR' => 'Não foi possível enviar o PDF. Tente novamente.',
+        'de' => 'Das Dokument konnte nicht hochgeladen werden. Versuche es erneut.',
+        'es' => 'No se pudo cargar el documento. Inténtalo de nuevo.',
+        'fr' => 'Le document n’a pas pu être importé. Réessayez.',
+        'it' => 'Non è stato possibile caricare il documento. Riprova.',
+        'nl' => 'Het document kon niet worden geüpload. Probeer het opnieuw.',
+        'pt_BR' => 'Não foi possível enviar o documento. Tente novamente.',
     ]);
 });
 

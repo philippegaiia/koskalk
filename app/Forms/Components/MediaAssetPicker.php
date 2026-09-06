@@ -103,8 +103,18 @@ class MediaAssetPicker extends Field
 
     public function documents(): static
     {
-        $this->acceptedMediaAssetTypes = [MediaAssetType::Pdf];
-        $this->fileAttachmentsAcceptedFileTypes(['application/pdf']);
+        $this->acceptedMediaAssetTypes = [MediaAssetType::Pdf, MediaAssetType::Image];
+        $this->fileAttachmentsAcceptedFileTypes([
+            'application/pdf',
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/heic',
+            'image/heif',
+            'image/heic-sequence',
+            'image/heif-sequence',
+            'application/octet-stream',
+        ]);
 
         return $this;
     }

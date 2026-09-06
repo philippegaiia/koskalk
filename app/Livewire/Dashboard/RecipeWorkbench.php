@@ -580,7 +580,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 MediaAssetUsageRole::RecipeSopDocument,
                 $sopDocumentMediaAssetIds,
                 maximum: 8,
-                expectedType: MediaAssetType::Pdf,
+                expectedType: [MediaAssetType::Pdf, MediaAssetType::Image],
             );
         } catch (ValidationException $exception) {
             throw $exception;
@@ -874,7 +874,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                     MediaAssetUsageRole::RecipeSopDocument,
                     $sopDocumentMediaAssetIds,
                     maximum: 8,
-                    expectedType: MediaAssetType::Pdf,
+                    expectedType: [MediaAssetType::Pdf, MediaAssetType::Image],
                 );
                 $payload['manufacturing_instructions'] = $state['manufacturing_instructions'] ?? null;
             });

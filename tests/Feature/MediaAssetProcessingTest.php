@@ -3,6 +3,7 @@
 use App\Enums\MediaAssetStatus;
 use App\Enums\MediaAssetType;
 use App\Exceptions\MediaAssetProcessingException;
+use App\Forms\Components\MediaAssetPicker;
 use App\Jobs\NormalizeMediaAssetJob;
 use App\Jobs\RegenerateMediaAssetConversionsJob;
 use App\Models\MediaAsset;
@@ -119,6 +120,25 @@ it('keeps existing image pickers image-only by default', function () {
     ))->toThrow(ValidationException::class, 'file type');
 
     expect(MediaAsset::query()->count())->toBe(0);
+});
+
+it('accepts a jpeg upload through the document picker', function () {
+    Queue::fake();
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+    $picker = MediaAssetPicker::make('documents')->documents();
+    $allowedTypes = array_map(
+        fn (string $type): MediaAssetType => MediaAssetType::from($type),
+        $picker->getAcceptedMediaAssetTypeValues(),
+    );
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        UploadedFile::fake()->image('supplier-document.jpg'),
+        $allowedTypes,
+    );
+
+    expect($asset->type)->toBe(MediaAssetType::Image);
 });
 
 it('rejects a renamed payload and oversized files as pdf documents', function () {

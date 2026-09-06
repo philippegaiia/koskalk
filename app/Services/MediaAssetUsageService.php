@@ -68,6 +68,7 @@ class MediaAssetUsageService
 
     /**
      * @param  array<int, int|string>  $mediaAssetIds
+     * @param  MediaAssetType|array<int, MediaAssetType>  $expectedType
      */
     public function syncMany(
         User $user,
@@ -75,8 +76,14 @@ class MediaAssetUsageService
         MediaAssetUsageRole $role,
         array $mediaAssetIds,
         int $maximum,
-        MediaAssetType $expectedType = MediaAssetType::Image,
+        MediaAssetType|array $expectedType = MediaAssetType::Image,
     ): void {
+        $expectedTypes = is_array($expectedType) ? $expectedType : [$expectedType];
+        $expectedTypeValues = array_map(
+            fn (MediaAssetType $type): string => $type->value,
+            $expectedTypes,
+        );
+
         $ids = collect($mediaAssetIds)
             ->map(fn (int|string $id): int => (int) $id)
             ->filter()
@@ -86,7 +93,7 @@ class MediaAssetUsageService
         if ($ids->count() > $maximum) {
             throw ValidationException::withMessages([
                 'media' => __(
-                    $expectedType === MediaAssetType::Pdf
+                    in_array(MediaAssetType::Pdf->value, $expectedTypeValues, true)
                         ? 'media_library.validation.maximum_documents'
                         : 'media_library.validation.maximum_images',
                     ['max' => $maximum],
@@ -113,7 +120,7 @@ class MediaAssetUsageService
         $assets = MediaAsset::query()
             ->where('workspace_id', $workspace->id)
             ->where('status', MediaAssetStatus::Ready)
-            ->where('type', $expectedType)
+            ->whereIn('type', $expectedTypeValues)
             ->whereIn('id', $ids)
             ->get();
 

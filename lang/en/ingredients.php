@@ -914,7 +914,7 @@ return [
             'icon' => 'Ingredient icon',
             'icon_helper' => 'Optional compact image used in ingredient selectors. The main image is used when no icon is provided.',
             'documents' => 'COA and technical documents',
-            'documents_helper' => 'Attach up to 8 PDF certificates, safety sheets, or technical data sheets.',
+            'documents_helper' => 'Attach up to 8 certificates, safety sheets, or technical data sheets as PDF, JPEG, PNG, WebP, HEIC, or HEIF files.',
             'notes' => 'Formulation notes',
             'notes_helper' => 'Add formulation guidance or other practical notes for your workspace.',
         ],
@@ -934,7 +934,7 @@ return [
             'icon' => 'Ingredient icon',
             'icon_helper' => 'Optional compact image used in ingredient selectors. The main image is used when no icon is provided.',
             'documents' => 'Certificates and technical documents',
-            'documents_helper' => 'Attach up to 8 PDFs, such as certificates of analysis, safety data sheets or technical data sheets.',
+            'documents_helper' => 'Attach up to 8 certificates of analysis, safety data sheets or technical data sheets as PDF, JPEG, PNG, WebP, HEIC, or HEIF files.',
         ],
         'composition' => [
             'section' => 'Blend composition',

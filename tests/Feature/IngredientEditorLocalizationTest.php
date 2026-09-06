@@ -199,6 +199,59 @@ it('keeps the complete platform reference available as plain technical values', 
         ->and($component->instance()->workspaceMaterialCode)->toBeNull();
 });
 
+it('places platform workspace controls before technical reference and avoids duplicate guidance', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create(['name' => 'North Star Soapworks']);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Platform reference ingredient',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Platform guidance fallback.',
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $platform->id,
+        'guidance_html' => '<p>Workspace guidance preview.</p>',
+        'is_active' => true,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $platform->id,
+        'material_code' => 'NORTH-STAR-01',
+    ]);
+
+    $this->actingAs($owner);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+    $html = $component->html();
+
+    $identityPosition = strpos($html, 'ingredient-reference-identity');
+    $guidancePosition = strpos($html, 'workspace-guidance-heading');
+    $materialCodePosition = strpos($html, 'platform-material-code-heading');
+    $technicalPosition = strpos($html, 'ingredient-reference-classification');
+
+    expect($identityPosition)->toBeInt()
+        ->and($guidancePosition)->toBeInt()
+        ->and($materialCodePosition)->toBeInt()
+        ->and($technicalPosition)->toBeInt()
+        ->and($identityPosition)->toBeLessThan($guidancePosition)
+        ->and($guidancePosition)->toBeLessThan($materialCodePosition)
+        ->and($materialCodePosition)->toBeLessThan($technicalPosition)
+        ->and($html)->toContain('data-ingredient-guidance-preview')
+        ->and($html)->toContain('data-ingredient-editor-status="material-code"')
+        ->and($html)->not->toContain('ingredient-reference-guidance');
+
+    $component->call('startWorkspaceGuidanceCustomization');
+
+    expect($component->html())
+        ->toContain('data-ingredient-scope="guidance"')
+        ->toContain('data-ingredient-editor-status="guidance"')
+        ->not->toContain('data-ingredient-guidance-preview');
+});
+
 it('shows a sparse reference without inventing composition or chemistry', function (): void {
     $user = User::factory()->create();
     $platform = Ingredient::factory()->create([
@@ -222,6 +275,42 @@ it('shows a sparse reference without inventing composition or chemistry', functi
 
     expect($component->instance()->referenceData['components'])->toBe([])
         ->and($component->instance()->referenceData['soap'])->toBeNull();
+});
+
+it('keeps a non-member platform reference read-only without exposing workspace data', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Public platform reference',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Public platform guidance.',
+    ]);
+    WorkspaceIngredientGuidance::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $platform->id,
+        'guidance_html' => '<p>PRIVATE WORKSPACE GUIDANCE</p>',
+        'is_active' => true,
+    ]);
+    WorkspaceIngredientCode::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $platform->id,
+        'material_code' => 'PRIVATE-WORKSPACE-CODE',
+    ]);
+    $nonMember = User::factory()->create();
+
+    $this->actingAs($nonMember);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
+        ->assertSeeText('Soapkraft ingredient')
+        ->assertSeeText('Only workspace owners, admins, and editors can change this guidance.')
+        ->assertDontSeeText('PRIVATE WORKSPACE GUIDANCE')
+        ->assertDontSeeText('PRIVATE-WORKSPACE-CODE')
+        ->assertDontSeeHtml('<input id="workspace-material-code"')
+        ->assertDontSeeText('Edit workspace guidance');
 });
 
 it('renders zero chemistry and IFRA values instead of treating them as unavailable', function (): void {

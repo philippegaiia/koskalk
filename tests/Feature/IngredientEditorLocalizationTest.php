@@ -195,9 +195,15 @@ it('keeps the complete platform reference available as plain technical values', 
         ->assertSeeText('KOH SAP (g KOH/g oil)')
         ->assertSeeText('NaOH SAP (g NaOH/g oil)')
         ->assertSeeText('Peroxide value (meq O₂/kg)')
+        ->assertSeeText('Documents')
+        ->assertSeeText('PDF document')
         ->assertSeeText('Platform safety sheet')
         ->assertDontSeeHtml('<input disabled="disabled"')
         ->assertDontSeeText('Save changes');
+
+    expect($component->html())
+        ->toContain('break-words [overflow-wrap:anywhere]')
+        ->toContain('PDF document');
 
     expect($component->instance()->referenceData)->toHaveKey('documents')
         ->and($component->instance()->data)->toBe([])

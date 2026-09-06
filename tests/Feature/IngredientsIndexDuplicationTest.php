@@ -119,6 +119,16 @@ it('registers the duplication factory and keeps dismissal guarded during confirm
         ->and($partial)->not->toContain("{{ __('ingredients.duplicate.preview.source') }}");
 });
 
+it('keeps duplication search result details readable on narrow screens', function (): void {
+    $partial = (string) file_get_contents(base_path('resources/views/livewire/dashboard/partials/duplicate-ingredient-modal.blade.php'));
+
+    expect($partial)
+        ->toContain('x-text="item.name"')
+        ->toContain('break-words [overflow-wrap:anywhere]')
+        ->not->toContain('x-text="item.name" class="block truncate')
+        ->not->toContain('x-text="[item.inci_name, item.category, sourceLabel(item)].filter(Boolean).join(\' · \')" class="mt-0.5 block truncate');
+});
+
 it('renders localized chemistry units in the duplication modal contract', function (): void {
     foreach ([
         [

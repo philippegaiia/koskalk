@@ -87,6 +87,24 @@ it('uses the application accent color for upload progress', function () {
         ->not->toContain('<progress');
 });
 
+it('exposes removable selections, upload persistence details, and readable filenames', function () {
+    $pickerView = file_get_contents(
+        resource_path('views/forms/components/media-asset-picker.blade.php'),
+    );
+
+    expect($pickerView)
+        ->toContain("__('media_library.picker.clear')")
+        ->toContain("__('media_library.picker.remove_selection_help')")
+        ->toContain("__('media_library.picker.upload_description')")
+        ->toContain("__('media_library.picker.upload_requirements'")
+        ->toContain('getFileAttachmentsAcceptedFileTypes()')
+        ->toContain('getFileAttachmentsMaxSize()')
+        ->toContain('break-words')
+        ->toContain('[overflow-wrap:anywhere]')
+        ->not->toContain('class="block truncate px-2 pt-2 text-sm font-medium"')
+        ->not->toContain('class="block truncate px-2 pb-2 text-xs text-[var(--color-ink-soft)]"');
+});
+
 it('tracks and clears the single modal upload filename', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

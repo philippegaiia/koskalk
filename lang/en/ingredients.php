@@ -659,7 +659,7 @@ return [
             'composition_source' => 'Composition source',
             'source_notes' => 'Source notes',
             'guidance' => 'Ingredient guidance',
-            'documents' => 'Authorized documents',
+            'documents' => 'Documents',
             'soap_chemistry' => 'Soap chemistry',
             'koh_sap' => 'KOH SAP (g KOH/g oil)',
             'naoh_sap' => 'NaOH SAP (g NaOH/g oil)',

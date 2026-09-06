@@ -83,7 +83,12 @@ it('uses the shared media picker instead of record-owned image uploads', functio
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
         ->assertSee('Upload image')
         ->assertSee('Choose from Media Library')
-        ->assertSeeHtml('data-media-picker-upload-form');
+        ->assertSeeHtml('data-media-picker-upload-form')
+        ->assertSeeText('Remove selection')
+        ->assertSeeText('Removing this selection does not delete the file from your Media Library.')
+        ->assertSeeText('Uploads are saved to the Media Library immediately.')
+        ->assertSeeText('Accepted formats: JPEG, PNG, WebP, HEIC, HEIF.')
+        ->assertSeeText('Maximum size: 10 MB.');
 
     Livewire::test(IngredientEditor::class)
         ->assertSeeText('Choose documents')
@@ -92,6 +97,7 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->assertSeeText('Upload a PDF document to the library, then return here to select it.')
         ->assertSeeText('Upload PDF')
         ->assertSeeText('Choose PDF')
+        ->assertSeeText('Accepted formats: PDF. Maximum size: 10 MB.')
         ->assertSeeHtml('No PDF selected')
         ->assertSeeText('Processing uploaded PDF')
         ->assertSeeText('PDF processing failed');

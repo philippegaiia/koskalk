@@ -7176,6 +7176,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.reference.documents",
+      "text": {
+        "de": "Dokumente",
+        "es": "Documentos",
+        "fr": "Documents",
+        "it": "Documenti",
+        "nl": "Documenten",
+        "pt_BR": "Documentos"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.reference.ec_number",
       "text": {
         "de": "EG- / EINECS-Nummer",
@@ -13922,12 +13934,24 @@
       "group": "media_library",
       "key": "picker.clear",
       "text": {
-        "de": "Auswahl löschen",
-        "es": "Borrar",
-        "fr": "Effacer",
-        "it": "Cancella",
-        "nl": "Wissen",
-        "pt_BR": "Limpar"
+        "de": "Auswahl entfernen",
+        "es": "Quitar selección",
+        "fr": "Retirer la sélection",
+        "it": "Rimuovi selezione",
+        "nl": "Selectie verwijderen",
+        "pt_BR": "Remover seleção"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "picker.remove_selection_help",
+      "text": {
+        "de": "Wenn du die Auswahl entfernst, wird die Datei nicht aus deiner Medienbibliothek gelöscht.",
+        "es": "Quitar la selección no elimina el archivo de tu biblioteca multimedia.",
+        "fr": "Retirer la sélection ne supprime pas le fichier de votre médiathèque.",
+        "it": "Rimuovere la selezione non elimina il file dalla tua libreria multimediale.",
+        "nl": "De selectie verwijderen verwijdert het bestand niet uit je mediabibliotheek.",
+        "pt_BR": "Remover a seleção não exclui o arquivo da sua Biblioteca de mídia."
       }
     },
     {
@@ -14318,12 +14342,24 @@
       "group": "media_library",
       "key": "picker.upload_description",
       "text": {
-        "de": "Die Auswahl bleibt geöffnet, während das Bild verarbeitet wird. Sobald es fertig ist, wird es automatisch ausgewählt.",
-        "es": "El selector permanece abierto mientras se procesa la imagen. Se seleccionará automáticamente cuando esté lista.",
-        "fr": "Le sélecteur reste ouvert pendant le traitement de l’image. Elle sera sélectionnée automatiquement lorsqu’elle sera prête.",
-        "it": "Il selettore resta aperto durante l’elaborazione dell’immagine. Quando sarà pronta, verrà selezionata automaticamente.",
-        "nl": "De kiezer blijft open terwijl de afbeelding wordt verwerkt. Zodra deze klaar is, wordt deze automatisch geselecteerd.",
-        "pt_BR": "O seletor permanece aberto enquanto a imagem é processada. Ela será selecionada automaticamente quando estiver pronta."
+        "de": "Uploads werden sofort in der Medienbibliothek gespeichert. Speichere dieses Formular, um die ausgewählte Datei zu verknüpfen; beim Abbrechen wird das hochgeladene Medium nicht gelöscht.",
+        "es": "Las cargas se guardan inmediatamente en la biblioteca multimedia. Guarda este formulario para vincular el archivo seleccionado; cancelar este formulario no elimina el recurso subido.",
+        "fr": "Les importations sont enregistrées immédiatement dans la médiathèque. Enregistrez ce formulaire pour lier le fichier sélectionné ; annuler ce formulaire ne supprime pas le média importé.",
+        "it": "I caricamenti vengono salvati subito nella libreria multimediale. Salva questo modulo per collegare il file selezionato; annullare questo modulo non elimina il contenuto caricato.",
+        "nl": "Uploads worden direct opgeslagen in de mediabibliotheek. Sla dit formulier op om het geselecteerde bestand te koppelen; als je dit formulier annuleert, wordt het geüploade item niet verwijderd.",
+        "pt_BR": "Os envios são salvos imediatamente na Biblioteca de mídia. Salve este formulário para vincular o arquivo selecionado; cancelar este formulário não exclui o ativo enviado."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "picker.upload_requirements",
+      "text": {
+        "de": "Zulässige Formate: :formats. Maximale Größe: :max MB.",
+        "es": "Formatos aceptados: :formats. Tamaño máximo: :max MB.",
+        "fr": "Formats acceptés : :formats. Taille maximale : :max Mo.",
+        "it": "Formati accettati: :formats. Dimensione massima: :max MB.",
+        "nl": "Geaccepteerde formaten: :formats. Maximale grootte: :max MB.",
+        "pt_BR": "Formatos aceitos: :formats. Tamanho máximo: :max MB."
       }
     },
     {

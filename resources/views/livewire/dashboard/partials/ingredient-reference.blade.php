@@ -147,8 +147,11 @@
         <ul class="mt-5 space-y-3 text-sm">
             @foreach ($referenceData['documents'] as $document)
                 <li>
-                    <a href="{{ $document['download_url'] }}" class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-accent-soft)] underline-offset-2 hover:text-[var(--color-accent-hover)]">
-                        {{ $document['name'] ?: $notAvailable }}
+                    <a href="{{ $document['download_url'] }}" class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 break-words [overflow-wrap:anywhere] font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-accent-soft)] underline-offset-2 hover:text-[var(--color-accent-hover)]">
+                        <span class="break-words [overflow-wrap:anywhere]">{{ $document['name'] ?: $notAvailable }}</span>
+                        @if (($document['type'] ?? null) === 'pdf')
+                            <span class="shrink-0 text-xs font-normal no-underline">{{ __('media_library.documents.pdf') }}</span>
+                        @endif
                     </a>
                 </li>
             @endforeach

@@ -121,8 +121,8 @@
                                         class="flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition hover:bg-[var(--color-field-muted)] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]"
                                     >
                                         <span class="min-w-0">
-                                            <span class="block truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
-                                            <span class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category, sourceLabel(item)].filter(Boolean).join(' · ')"></span>
+                                            <span class="block break-words [overflow-wrap:anywhere] text-sm font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
+                                            <span class="mt-0.5 block break-words [overflow-wrap:anywhere] text-xs text-[var(--color-ink-soft)]" x-text="[item.inci_name, item.category, sourceLabel(item)].filter(Boolean).join(' · ')"></span>
                                         </span>
                                         <span
                                             class="shrink-0 text-xs font-medium"

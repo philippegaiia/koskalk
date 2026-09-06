@@ -9,6 +9,30 @@
     $embedded = $isEmbedded();
     $acceptedTypes = $getAcceptedMediaAssetTypeValues();
     $acceptsDocuments = $acceptsDocuments();
+    $acceptedFileTypes = $field->getFileAttachmentsAcceptedFileTypes() ?? [];
+    $acceptedFormatLabels = collect($acceptedFileTypes)
+        ->map(static fn (string $type): ?string => match ($type) {
+            'image/jpeg' => 'JPEG',
+            'image/png' => 'PNG',
+            'image/webp' => 'WebP',
+            'image/heic' => 'HEIC',
+            'image/heif' => 'HEIF',
+            'application/pdf' => 'PDF',
+            default => null,
+        })
+        ->filter()
+        ->unique()
+        ->values()
+        ->implode(', ');
+    $maximumUploadSizeKb = $field->getFileAttachmentsMaxSize();
+    $maximumUploadSizeMb = $maximumUploadSizeKb === null
+        ? '—'
+        : \App\Support\NumberLocale::formatAdaptiveDecimal(
+            $maximumUploadSizeKb / 1024,
+            0,
+            2,
+            auth()->user()?->number_locale,
+        );
     $pickerId = 'media-picker-'.$getId();
 @endphp
 
@@ -48,7 +72,7 @@
                             @else
                                 <span class="grid size-14 shrink-0 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-xs font-semibold text-[var(--color-ink-soft)]">PDF</span>
                             @endif
-                            <div class="min-w-0"><span class="block max-w-52 truncate text-sm font-medium text-[var(--color-ink-strong)]">{{ $asset->displayName() }}</span>@if (filled($asset->display_name) && $asset->display_name !== $asset->original_filename)<span class="block max-w-52 truncate text-xs text-[var(--color-ink-soft)]">{{ $asset->original_filename }}</span>@endif</div>
+                            <div class="min-w-0 max-w-full"><span class="block max-w-52 break-words [overflow-wrap:anywhere] text-sm font-medium text-[var(--color-ink-strong)]">{{ $asset->displayName() }}</span>@if (filled($asset->display_name) && $asset->display_name !== $asset->original_filename)<span class="block max-w-52 break-words [overflow-wrap:anywhere] text-xs text-[var(--color-ink-soft)]">{{ $asset->original_filename }}</span>@endif</div>
                         </div>
                     @endforeach
                 </div>
@@ -60,6 +84,7 @@
                 <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : ($isMultiple ? __('media_library.picker.choose_multiple') : __('media_library.picker.choose')) }}</button>
                 <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-on:click="state = multiple ? [] : null" class="sk-btn border border-[var(--color-line)] text-[var(--color-ink-soft)]">{{ __('media_library.picker.clear') }}</button>
             </div>
+            <p x-show="multiple ? (Array.isArray(state) && state.length) : state" class="max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.remove_selection_help') }}</p>
         @endunless
 
         @if ($isEmbedded())
@@ -96,8 +121,8 @@
                             <template x-for="asset in assets" x-bind:key="asset.id">
                                 <button type="button" data-media-picker-asset x-bind:data-media-picker-status="asset.status" x-bind:data-media-picker-selectable="asset.status === 'ready' ? 'true' : 'false'" x-bind:disabled="asset.status !== 'ready'" x-on:click="select(asset.id)" x-bind:aria-pressed="selected(asset.id)" x-bind:class="selected(asset.id) ? 'border-[var(--color-active)] ring-2 ring-[var(--color-active)]/25' : 'border-[var(--color-line)]'" class="overflow-hidden rounded-xl border text-left disabled:cursor-not-allowed disabled:opacity-65">
                                     <span x-bind:class="preserveAspectRatio ? 'aspect-[4/3]' : 'aspect-square'" class="grid place-items-center bg-[var(--color-panel-strong)]"><img x-show="asset.thumbnail_url" x-bind:src="preserveAspectRatio ? asset.master_url : asset.thumbnail_url" alt="" x-bind:class="preserveAspectRatio ? 'object-contain' : 'object-cover'" class="size-full" draggable="false" /><span x-show="! asset.thumbnail_url" class="text-xs font-semibold text-[var(--color-ink-soft)]" x-text="asset.status === 'processing' ? `${asset.progress}%` : (asset.type === 'pdf' && asset.status === 'ready' ? 'PDF' : messages.processingFailed)"></span></span>
-                                    <span class="block truncate px-2 pt-2 text-sm font-medium" x-text="asset.display_name"></span>
-                                    <span x-show="asset.display_name !== asset.original_filename" class="block truncate px-2 pb-2 text-xs text-[var(--color-ink-soft)]" x-text="asset.original_filename"></span>
+                                    <span class="block break-words [overflow-wrap:anywhere] px-2 pt-2 text-sm font-medium" x-text="asset.display_name"></span>
+                                    <span x-show="asset.display_name !== asset.original_filename" class="block break-words [overflow-wrap:anywhere] px-2 pb-2 text-xs text-[var(--color-ink-soft)]" x-text="asset.original_filename"></span>
                                 </button>
                             </template>
                         </div>
@@ -105,6 +130,8 @@
                     </div>
                     <div id="{{ $pickerId }}-upload-panel" aria-labelledby="{{ $pickerId }}-upload-tab" x-show="activeTab === 'upload'" role="tabpanel" class="space-y-4">
                         @if ($canUpload)
+                            <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_description') }}</p>
+                            <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_requirements', ['formats' => $acceptedFormatLabels, 'max' => $maximumUploadSizeMb]) }}</p>
                             <div data-media-picker-upload-form class="space-y-4">
                                 <div>
                                     <span class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ $acceptsDocuments ? __('media_library.picker.document') : __('media_library.picker.image') }}</span>
@@ -126,7 +153,7 @@
                                         >
                                             {{ $acceptsDocuments ? __('media_library.picker.choose_document') : __('media_library.picker.choose_file') }}
                                         </label>
-                                        <span class="min-w-0 flex-1 truncate text-sm text-[var(--color-ink-soft)]" x-text="uploadFilename || @js($acceptsDocuments ? __('media_library.picker.no_document_selected') : __('media_library.picker.no_file_selected'))"></span>
+                                        <span class="min-w-0 flex-1 break-words [overflow-wrap:anywhere] text-sm text-[var(--color-ink-soft)]" x-text="uploadFilename || @js($acceptsDocuments ? __('media_library.picker.no_document_selected') : __('media_library.picker.no_file_selected'))"></span>
                                     </div>
                                 </div>
                                 <p x-show="uploadError" x-text="uploadError" role="alert" class="text-sm text-[var(--color-danger)]"></p>

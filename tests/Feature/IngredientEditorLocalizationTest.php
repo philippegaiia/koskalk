@@ -37,6 +37,7 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -1007,6 +1008,61 @@ it('configures the fatty acid repeater with contextual controls', function (): v
         'Oleic acid',
         'New fatty acid',
     );
+});
+
+it('keeps selected inactive fatty acids visible but unavailable for new rows', function (): void {
+    $user = User::factory()->create();
+    $activeFattyAcid = FattyAcid::factory()->create([
+        'name' => 'Active acid',
+        'display_order' => 1,
+        'is_active' => true,
+    ]);
+    $inactiveFattyAcid = FattyAcid::factory()->create([
+        'name' => 'Legacy acid',
+        'display_order' => 2,
+        'is_active' => false,
+    ]);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.18]);
+    $source->fattyAcidEntries()->createMany([
+        ['fatty_acid_id' => $activeFattyAcid->id, 'percentage' => 20],
+        ['fatty_acid_id' => $inactiveFattyAcid->id, 'percentage' => 60],
+    ]);
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    $this->actingAs($user);
+    DB::enableQueryLog();
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $copy]);
+    $repeater = $component->instance()->form->getComponent('fatty_acid_entries', withHidden: true);
+    $rawState = $repeater->getRawState();
+    $rowKeys = array_keys($rawState);
+    $inactiveRowKey = collect($rowKeys)->first(fn (string $key): bool => (int) ($rawState[$key]['fatty_acid_id'] ?? 0) === $inactiveFattyAcid->id);
+    $inactiveSelect = $repeater->getChildSchema($inactiveRowKey)->getComponent('fatty_acid_id');
+
+    expect($repeater->getItemLabel($inactiveRowKey, 1))->toBe('Legacy acid')
+        ->and($inactiveSelect->isOptionDisabled($inactiveFattyAcid->id, 'Legacy acid'))->toBeFalse();
+
+    $repeater->rawState([...$rawState, 'new-item' => []]);
+    $newSelect = $repeater->getChildSchema('new-item')->getComponent('fatty_acid_id');
+
+    expect($newSelect->isOptionDisabled($inactiveFattyAcid->id, 'Legacy acid'))->toBeTrue();
+
+    $repeater->getItemLabel($rowKeys[0], 0);
+    $repeater->getItemLabel($rowKeys[1], 1);
+    $newSelect->getOptions();
+
+    $fattyAcidQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], ' from "fatty_acids"'));
+
+    DB::disableQueryLog();
+
+    expect($fattyAcidQueries)->toHaveCount(1);
 });
 
 it('resolves legacy ingredient tab query values against visible tabs', function (): void {

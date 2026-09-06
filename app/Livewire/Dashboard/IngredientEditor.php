@@ -62,6 +62,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
@@ -142,6 +143,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     /** @var array<int, string>|null */
     private ?array $fattyAcidOptionsCache = null;
+
+    /** @var array<int> */
+    private array $inactiveFattyAcidIdsCache = [];
 
     public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
     {
@@ -1120,6 +1124,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 Select::make('fatty_acid_id')
                                                     ->label(__('ingredients.editor.soap.fatty_acid'))
                                                     ->options(fn (): array => $this->fattyAcidOptions())
+                                                    ->disableOptionWhen(fn (Get $get, mixed $value): bool => $this->isInactiveFattyAcidOption(
+                                                        $value,
+                                                        $get('fatty_acid_id'),
+                                                    ))
                                                     ->searchable()
                                                     ->preload()
                                                     ->live()
@@ -1888,11 +1896,61 @@ class IngredientEditor extends Component implements HasActions, HasForms
      */
     private function fattyAcidOptions(): array
     {
-        return $this->fattyAcidOptionsCache ??= FattyAcid::query()
-            ->where('is_active', true)
-            ->orderBy('display_order')
-            ->pluck('name', 'id')
+        if ($this->fattyAcidOptionsCache !== null) {
+            return $this->fattyAcidOptionsCache;
+        }
+
+        $selectedFattyAcidIds = collect($this->data['fatty_acid_entries'] ?? [])
+            ->filter(fn (mixed $entry): bool => is_array($entry))
+            ->pluck('fatty_acid_id')
+            ->filter(fn (mixed $fattyAcidId): bool => filled($fattyAcidId) && is_numeric($fattyAcidId))
+            ->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)
+            ->unique()
+            ->values()
             ->all();
+        $fattyAcids = FattyAcid::query()
+            ->where(function (Builder $query) use ($selectedFattyAcidIds): void {
+                $query->where('is_active', true);
+
+                if ($selectedFattyAcidIds !== []) {
+                    $query->orWhereKey($selectedFattyAcidIds);
+                }
+            })
+            ->orderBy('display_order')
+            ->get(['id', 'name', 'is_active']);
+
+        $this->inactiveFattyAcidIdsCache = $fattyAcids
+            ->filter(fn (FattyAcid $fattyAcid): bool => ! $fattyAcid->is_active)
+            ->map(fn (FattyAcid $fattyAcid): int => (int) $fattyAcid->id)
+            ->values()
+            ->all();
+
+        return $this->fattyAcidOptionsCache = $fattyAcids
+            ->mapWithKeys(fn (FattyAcid $fattyAcid): array => [
+                (int) $fattyAcid->id => (string) $fattyAcid->name,
+            ])
+            ->all();
+    }
+
+    private function isInactiveFattyAcidOption(mixed $value, mixed $currentValue): bool
+    {
+        $fattyAcidId = (int) $value;
+
+        if (! in_array($fattyAcidId, $this->inactiveFattyAcidIds(), true)) {
+            return false;
+        }
+
+        return $fattyAcidId !== (int) $currentValue;
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function inactiveFattyAcidIds(): array
+    {
+        $this->fattyAcidOptions();
+
+        return $this->inactiveFattyAcidIdsCache;
     }
 
     /**

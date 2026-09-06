@@ -274,7 +274,7 @@ it('renders edit controls only for workspace writers and references for readers'
 
     $this->actingAs($owner);
     Livewire::test(IngredientEditor::class, ['ingredient' => $privateIngredient])
-        ->assertSee('Edit ingredient details.')
+        ->assertSee('Edit '.$privateIngredient->localizedDisplayName())
         ->assertSee('Save changes');
 
     $viewer->forceFill(['active_workspace_id' => $workspace->id])->save();

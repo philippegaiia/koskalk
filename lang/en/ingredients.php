@@ -602,11 +602,11 @@ return [
         ],
         'create' => [
             'page_title' => 'Add ingredient',
-            'heading' => 'Add an ingredient to your library.',
-            'intro' => 'Start with the ingredient name and INCI. Add classification, reference information, and compliance details only when relevant.',
+            'heading' => 'Add ingredient',
+            'intro' => 'Enter a name and choose a category. Add an INCI name and supporting details when available.',
         ],
         'edit' => [
-            'heading' => 'Edit ingredient details.',
+            'heading' => 'Edit :ingredient',
             'intro' => 'Update the information used in your formulas, calculations, and ingredient library.',
         ],
         'read_only' => [
@@ -662,7 +662,7 @@ return [
         ],
         'classification_prompt' => [
             'eyebrow' => 'AI research helper',
-            'heading' => 'Prepare an ingredient research prompt',
+            'heading' => 'Help classify this ingredient',
             'description' => 'Generate a prompt to research classification, identifiers, COSING functions, and concise professional notes. It will not change this form.',
             'generate' => 'Generate prompt',
             'copy' => 'Copy prompt',
@@ -679,9 +679,9 @@ return [
         'tabs' => [
             'details' => 'Overview',
             'composition' => 'Composition',
-            'documents' => 'Documents',
+            'documents' => 'Guidance & files',
             'soap_chemistry' => 'Soap chemistry',
-            'compliance' => 'Compliance',
+            'compliance' => 'Regulatory data',
         ],
         'details' => [
             'section' => 'Ingredient identity',

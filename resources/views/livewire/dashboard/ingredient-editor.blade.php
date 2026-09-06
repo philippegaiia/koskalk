@@ -7,6 +7,9 @@
  $isReadOnlyIngredient = ! $isCreate && ! $isPlatformIngredient && ! $canEditIngredientData;
  $ingredientContext = $ingredient?->localizedDisplayName() ?: __('ingredients.editor.common.new_ingredient');
  $isCarrierOil = \App\Enums\IngredientCategory::tryFrom((string) ($data['category'] ?? '')) === \App\Enums\IngredientCategory::Lipids;
+ $destinationWorkspaceName = filled($workspaceName)
+     ? $workspaceName
+     : __('ingredients.editor.composition.workspace_fallback');
 @endphp
 
 <div>
@@ -60,7 +63,9 @@
      ? __('ingredients.editor.reference.heading')
      : ($isReadOnlyIngredient
          ? __('ingredients.editor.read_only.heading')
-         : ($isCreate ? __('ingredients.editor.create.heading') : __('ingredients.editor.edit.heading'))) }}
+         : ($isCreate
+             ? __('ingredients.editor.create.heading')
+             : __('ingredients.editor.edit.heading', ['ingredient' => $ingredientContext]))) }}
  </h1>
  <p class="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--color-ink-soft)]">
  @if ($isPlatformIngredient)
@@ -73,9 +78,9 @@
  {{ __('ingredients.editor.create.intro') }}
  @endif
  </p>
- @if (! $isCreate && $ingredient?->workspace_id !== null && filled($workspaceName))
+ @if ((! $isPlatformIngredient && ! $isReadOnlyIngredient) || (! $isCreate && $ingredient?->workspace_id !== null && filled($workspaceName)))
  <p class="mt-2 max-w-[70ch] text-xs leading-5 text-[var(--color-ink-soft)]">
- {{ __('ingredients.editor.workspace_scope', ['workspace' => $workspaceName]) }}
+ {{ __('ingredients.editor.workspace_scope', ['workspace' => $destinationWorkspaceName]) }}
  </p>
  @endif
 

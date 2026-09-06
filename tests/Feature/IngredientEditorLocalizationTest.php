@@ -32,6 +32,8 @@ use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Livewire\Livewire;
@@ -602,8 +604,7 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertSeeText('Add ingredient')
         ->assertSee('Not created yet')
-        ->assertSeeText('Add an ingredient to your library.')
-        ->assertSeeText('Start with the ingredient name and INCI. Add classification, reference information, and compliance details only when relevant.')
+        ->assertSeeText('Enter a name and choose a category. Add an INCI name and supporting details when available.')
         ->assertSeeText('Overview')
         ->assertSeeText('Documents')
         ->assertSeeText('Ingredient identity')
@@ -614,11 +615,11 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeText('Choose Blend when this ingredient is made from several ingredients.')
         ->assertSeeText('Classification')
         ->assertSeeText('Reference identifiers')
+        ->assertSeeText('Help classify this ingredient')
         ->assertDontSeeText('Certified organic')
         ->assertDontSeeText('Verified COSING functions')
         ->assertSeeText('Functions used in your workspace')
         ->assertSeeText('AI research helper')
-        ->assertSeeText('Prepare an ingredient research prompt')
         ->assertSeeText('Generate a prompt to research classification, identifiers, COSING functions, and concise professional notes. It will not change this form.')
         ->assertSeeText('Generate prompt')
         ->assertSeeText('Copy prompt')
@@ -641,10 +642,82 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
 
     $html = $response->getContent();
 
-    expect(strpos($html, 'classification-prompt-title'))
-        ->toBeLessThan(strpos($html, 'data-ingredient-classification-section'))
-        ->and(strpos($html, 'data-ingredient-classification-section'))
-        ->toBeLessThan(strpos($html, 'data-ingredient-identity-section'));
+    expect(strpos($html, 'data-ingredient-classification-section'))
+        ->toBeLessThan(strpos($html, 'data-ingredient-identity-section'))
+        ->and(strpos($html, 'data-ingredient-identity-section'))
+        ->toBeLessThan(strpos($html, 'classification-prompt-title'));
+});
+
+it('uses the clarified editor headings and keeps the classification helper secondary', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $create = $this->get(route('ingredients.create'))
+        ->assertSuccessful()
+        ->assertSeeText('Add ingredient')
+        ->assertSeeText('Enter a name and choose a category. Add an INCI name and supporting details when available.')
+        ->assertSeeText('Your ingredient library')
+        ->assertSeeText('Overview')
+        ->assertSeeText('Guidance & files')
+        ->assertSeeText('Regulatory data')
+        ->assertSeeText('Help classify this ingredient')
+        ->assertSeeText('Documents and media');
+
+    $html = $create->getContent();
+
+    expect(strpos($html, 'data-ingredient-identity-section'))
+        ->toBeLessThan(strpos($html, 'Help classify this ingredient'))
+        ->and($html)->toContain('<details')
+        ->and($html)->toContain('classification-prompt-title');
+});
+
+it('shows the destination workspace on create and edit pages', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create(['name' => 'North Star Soapworks']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    $this->actingAs($user);
+
+    $this->get(route('ingredients.create'))
+        ->assertSuccessful()
+        ->assertSeeText('North Star Soapworks');
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'North Star Olive Oil',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+    ]);
+
+    $this->get(route('ingredients.edit', $ingredient))
+        ->assertSuccessful()
+        ->assertSeeText('Edit North Star Olive Oil')
+        ->assertSeeText('North Star Soapworks');
+});
+
+it('exposes stable tab identifiers with the existing ingredient query key', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class);
+    $tabs = collect($component->instance()->form->getComponents(withHidden: true))
+        ->first(fn (mixed $component): bool => $component instanceof Tabs);
+
+    expect($tabs)->toBeInstanceOf(Tabs::class)
+        ->and($tabs->getTabQueryStringKey())->toBe('ingredient-tab');
+
+    /** @var Tabs $tabs */
+    $tabComponents = $tabs->getChildSchema()->getComponents(withHidden: true);
+
+    expect(collect($tabComponents)->map(fn (Tab $tab): string => (string) $tab->getLabel())->all())
+        ->toBe(['Overview', 'Composition', 'Guidance & files', 'Soap chemistry', 'Regulatory data'])
+        ->and(collect($tabComponents)->map(fn (Tab $tab): ?string => $tab->getId())->all())
+        ->toBe(['overview', 'composition', 'guidance-files', 'soap-chemistry', 'regulatory-data'])
+        ->and(collect($tabComponents)->map(fn (Tab $tab): ?string => $tab->getKey(isAbsolute: false))->all())
+        ->toBe(['overview', 'composition', 'guidance-files', 'soap-chemistry', 'regulatory-data']);
 });
 
 it('starts with a single ingredient and places identity before classification', function (): void {
@@ -922,10 +995,10 @@ it('loads ingredient editor interface copy from the database', function () {
 
     foreach ([
         'editor.create.page_title' => 'Ajouter un ingrédient',
-        'editor.create.heading' => 'Ajoutez un ingrédient à votre bibliothèque.',
-        'editor.create.intro' => 'Commencez par les informations essentielles.',
+        'editor.create.heading' => 'Ajouter un ingrédient',
+        'editor.create.intro' => 'Saisissez un nom et choisissez une catégorie. Ajoutez un nom INCI et des informations complémentaires si disponibles.',
         'editor.tabs.details' => 'Vue d’ensemble',
-        'editor.tabs.documents' => 'Documents',
+        'editor.tabs.documents' => 'Conseils et fichiers',
         'editor.details.section' => 'Identité de l’ingrédient',
         'editor.details.type.label' => 'Type d’ingrédient',
         'editor.details.type.single' => 'Ingrédient simple',
@@ -939,6 +1012,7 @@ it('loads ingredient editor interface copy from the database', function () {
         'editor.supplier.verified_functions_helper' => 'Fonctions officielles en lecture seule.',
         'editor.supplier.additional_functions' => 'Fonctions utilisées dans votre espace de travail',
         'editor.classification_prompt.eyebrow' => 'Assistant de recherche IA',
+        'editor.classification_prompt.heading' => 'Aidez à classer cet ingrédient',
         'editor.classification_prompt.description' => 'Générez un prompt pour rechercher la classification, les identifiants, les fonctions COSING et de brèves notes professionnelles. Il ne modifiera pas ce formulaire.',
         'editor.actions.create' => 'Ajouter l’ingrédient',
     ] as $key => $translation) {
@@ -953,10 +1027,9 @@ it('loads ingredient editor interface copy from the database', function () {
         ->get(route('ingredients.create'))
         ->assertSuccessful()
         ->assertSeeText('Ajouter un ingrédient')
-        ->assertSeeText('Ajoutez un ingrédient à votre bibliothèque.')
-        ->assertSeeText('Commencez par les informations essentielles.')
+        ->assertSeeText('Saisissez un nom et choisissez une catégorie. Ajoutez un nom INCI et des informations complémentaires si disponibles.')
         ->assertSeeText('Vue d’ensemble')
-        ->assertSeeText('Documents')
+        ->assertSeeText('Conseils et fichiers')
         ->assertSeeText('Identité de l’ingrédient')
         ->assertSeeText('Type d’ingrédient')
         ->assertSeeText('Ingrédient simple')
@@ -969,6 +1042,7 @@ it('loads ingredient editor interface copy from the database', function () {
         ->assertDontSeeText('Fonctions officielles en lecture seule.')
         ->assertSeeText('Fonctions utilisées dans votre espace de travail')
         ->assertSeeText('Assistant de recherche IA')
+        ->assertSeeText('Aidez à classer cet ingrédient')
         ->assertSeeText('Générez un prompt pour rechercher la classification, les identifiants, les fonctions COSING et de brèves notes professionnelles. Il ne modifiera pas ce formulaire.')
         ->assertSeeText('Ajouter l’ingrédient');
 });
@@ -1106,6 +1180,7 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.workspace_scope',
         'editor.read_only_description',
         'editor.status.all_saved',
+        'editor.status.not_created',
         'editor.status.unsaved',
         'editor.status.saving',
         'editor.status.save_failed',

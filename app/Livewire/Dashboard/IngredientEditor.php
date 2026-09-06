@@ -833,6 +833,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     ->persistTabInQueryString('ingredient-tab')
                     ->tabs([
                         Tab::make(__('ingredients.editor.tabs.details'))
+                            ->id('overview')
+                            ->key('overview', isInheritable: false)
                             ->schema([
                                 Section::make(__('ingredients.editor.details.section'))
                                     ->description(__('ingredients.editor.details.description'))
@@ -854,9 +856,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->placeholder(__('ingredients.editor.material_code.placeholder'))
                                             ->maxLength(64)
                                             ->visible(fn (): bool => $this->canEditIngredientData()),
-                                        SchemaView::make('livewire.dashboard.partials.ingredient-classification-prompt')
-                                            ->visible(fn (): bool => $this->canEditIngredientData())
-                                            ->columnSpanFull(),
                                         Select::make('ingredient_structure')
                                             ->label(__('ingredients.editor.details.type.label'))
                                             ->options([
@@ -934,14 +933,21 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ]),
                                     ])
                                     ->columnSpanFull(),
+                                SchemaView::make('livewire.dashboard.partials.ingredient-classification-prompt')
+                                    ->visible(fn (): bool => $this->canEditIngredientData())
+                                    ->columnSpanFull(),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.composition'))
+                            ->id('composition')
+                            ->key('composition', isInheritable: false)
                             ->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')
                             ->schema([
                                 SchemaView::make('livewire.dashboard.partials.ingredient-composition-rows')
                                     ->columnSpanFull(),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.documents'))
+                            ->id('guidance-files')
+                            ->key('guidance-files', isInheritable: false)
                             ->schema([
                                 Section::make(__('ingredients.editor.media.section'))
                                     ->description(__('ingredients.editor.media.description'))
@@ -979,6 +985,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ]),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.soap_chemistry'))
+                            ->id('soap-chemistry')
+                            ->key('soap-chemistry', isInheritable: false)
                             ->visible(fn (): bool => $this->soapChemistryAvailable())
                             ->schema([
                                 Section::make(__('ingredients.editor.soap.section'))
@@ -1059,6 +1067,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ]),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.compliance'))
+                            ->id('regulatory-data')
+                            ->key('regulatory-data', isInheritable: false)
                             ->schema([
                                 Section::make(__('ingredients.editor.compliance.allergens.section'))
                                     ->description(__('ingredients.editor.compliance.allergens.description'))

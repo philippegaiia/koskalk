@@ -1160,7 +1160,7 @@ it('renders the public ingredient create page for signed in users', function () 
         ->assertSeeHtml('aria-current="page"')
         ->assertSeeText('Ingredients')
         ->assertSeeText('New ingredient')
-        ->assertSeeText('Add an ingredient to your library.')
+        ->assertSeeText('Enter a name and choose a category. Add an INCI name and supporting details when available.')
         ->assertDontSeeText('Back to ingredients')
         ->assertDontSeeText('Create the ingredient now, then enrich it on the next screen.')
         ->assertSee('Overview')
@@ -1186,7 +1186,7 @@ it('uses the ingredient name as compact edit-page context', function () {
         ->assertSeeHtml('aria-label="Breadcrumb"')
         ->assertSeeHtml('aria-current="page"')
         ->assertSeeText('My Glycerin')
-        ->assertSeeText('Edit ingredient details.')
+        ->assertSeeText('Edit My Glycerin')
         ->assertDontSeeText('Back to ingredients')
         ->assertDontSeeText('Refine the ingredient, its components, and optional aromatic compliance.');
 });

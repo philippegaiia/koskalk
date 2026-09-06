@@ -1065,6 +1065,28 @@ it('keeps selected inactive fatty acids visible but unavailable for new rows', f
     expect($fattyAcidQueries)->toHaveCount(1);
 });
 
+it('does not allow public state to add an inactive fatty acid option', function (): void {
+    $user = User::factory()->create();
+    $inactiveFattyAcid = FattyAcid::factory()->create([
+        'name' => 'Legacy public acid',
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.fatty_acid_entries', [[
+            'fatty_acid_id' => $inactiveFattyAcid->id,
+            'percentage' => 80,
+        ]]);
+    $repeater = $component->instance()->form->getComponent('fatty_acid_entries', withHidden: true);
+    $key = array_key_first($repeater->getRawState());
+    $select = $repeater->getChildSchema($key)->getComponent('fatty_acid_id');
+
+    expect($repeater->getItemLabel($key, 0))->toBe('New fatty acid')
+        ->and($select->getOptions())->not->toHaveKey($inactiveFattyAcid->id);
+});
+
 it('resolves legacy ingredient tab query values against visible tabs', function (): void {
     $user = User::factory()->create();
 

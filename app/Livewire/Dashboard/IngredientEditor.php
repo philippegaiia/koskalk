@@ -1900,20 +1900,16 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return $this->fattyAcidOptionsCache;
         }
 
-        $selectedFattyAcidIds = collect($this->data['fatty_acid_entries'] ?? [])
-            ->filter(fn (mixed $entry): bool => is_array($entry))
-            ->pluck('fatty_acid_id')
-            ->filter(fn (mixed $fattyAcidId): bool => filled($fattyAcidId) && is_numeric($fattyAcidId))
-            ->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)
-            ->unique()
-            ->values()
-            ->all();
+        $currentIngredient = $this->currentIngredient();
         $fattyAcids = FattyAcid::query()
-            ->where(function (Builder $query) use ($selectedFattyAcidIds): void {
+            ->where(function (Builder $query) use ($currentIngredient): void {
                 $query->where('is_active', true);
 
-                if ($selectedFattyAcidIds !== []) {
-                    $query->orWhereKey($selectedFattyAcidIds);
+                if ($currentIngredient instanceof Ingredient) {
+                    $query->orWhereIn(
+                        'id',
+                        $currentIngredient->fattyAcidEntries()->select('fatty_acid_id'),
+                    );
                 }
             })
             ->orderBy('display_order')

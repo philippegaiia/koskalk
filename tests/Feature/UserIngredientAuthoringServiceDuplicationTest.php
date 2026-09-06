@@ -845,6 +845,65 @@ it('validates duplicated carrier oil fatty acids against trusted ranges and tota
         ->toThrow(ValidationException::class, 'must total between 80% and 100%');
 });
 
+it('round trips persisted inactive fatty acids in trusted duplicated chemistry', function (): void {
+    $user = User::factory()->create();
+    $inactive = FattyAcid::factory()->create(['name' => 'Legacy acid', 'is_active' => false]);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Trusted oil with legacy acid',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->create([
+        'fatty_acid_id' => $inactive->id,
+        'percentage' => 80,
+    ]);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $user);
+    $state = $service->formData($copy);
+
+    expect($service->update($copy, $state, $user))->toBeInstanceOf(Ingredient::class)
+        ->and($copy->fresh('fattyAcidEntries')->fattyAcidEntries->pluck('fatty_acid_id')->all())
+        ->toBe([$inactive->id]);
+});
+
+it('rejects new inactive and nonexistent fatty acids before relation persistence', function (): void {
+    $user = User::factory()->create();
+    $active = FattyAcid::factory()->create(['name' => 'Active acid', 'is_active' => true]);
+    $inactive = FattyAcid::factory()->create(['name' => 'New legacy acid', 'is_active' => false]);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Trusted oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->create([
+        'fatty_acid_id' => $active->id,
+        'percentage' => 80,
+    ]);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $user);
+    $state = $service->formData($copy);
+    $state['fatty_acid_entries'][] = [
+        'fatty_acid_id' => $inactive->id,
+        'percentage' => 0,
+    ];
+
+    expect(fn (): Ingredient => $service->update($copy, $state, $user))
+        ->toThrow(ValidationException::class, __('ingredients.editor.validation.fatty_acid_unavailable'));
+
+    $state['fatty_acid_entries'][1]['fatty_acid_id'] = 999999;
+
+    expect(fn (): Ingredient => $service->update($copy, $state, $user))
+        ->toThrow(ValidationException::class, __('ingredients.editor.validation.fatty_acid_unavailable'));
+});
+
 it('duplicates a composite ingredient with components', function () {
     $user = User::factory()->create();
 

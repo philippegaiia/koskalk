@@ -13,6 +13,7 @@ use App\Models\Workspace;
 use App\SoapSap;
 use App\Support\NumberLocale;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -998,6 +999,11 @@ class UserIngredientAuthoringService
             return;
         }
 
+        $this->validateTrustedFattyAcidIds(
+            $ingredient,
+            $currentProfile->keys()->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)->all(),
+        );
+
         $total = $currentProfile->sum();
 
         if ($total < self::TRUSTED_FATTY_ACID_MIN_TOTAL || $total > self::TRUSTED_FATTY_ACID_MAX_TOTAL) {
@@ -1020,6 +1026,34 @@ class UserIngredientAuthoringService
                 ]);
             }
         }
+    }
+
+    /**
+     * @param  list<int>  $currentFattyAcidIds
+     */
+    private function validateTrustedFattyAcidIds(Ingredient $ingredient, array $currentFattyAcidIds): void
+    {
+        if ($currentFattyAcidIds === []) {
+            return;
+        }
+
+        $availableFattyAcidIds = FattyAcid::query()
+            ->whereIn('id', $currentFattyAcidIds)
+            ->where(function (Builder $query) use ($ingredient): void {
+                $query->where('is_active', true)
+                    ->orWhereIn('id', $ingredient->fattyAcidEntries()->select('fatty_acid_id'));
+            })
+            ->pluck('id')
+            ->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)
+            ->all();
+
+        if (collect($currentFattyAcidIds)->diff($availableFattyAcidIds)->isEmpty()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'fatty_acid_entries' => __('ingredients.editor.validation.fatty_acid_unavailable'),
+        ]);
     }
 
     /**

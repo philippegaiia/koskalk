@@ -1065,6 +1065,7 @@ return [
             'soap_koh_tolerance' => 'The KOH SAP must stay within ±:tolerance% of the Soapkraft value.',
             'fatty_acid_total' => 'Fatty acid percentages must total between 80% and 100%.',
             'fatty_acid_range' => 'A fatty acid value is outside its allowed range (:minimum%–:maximum%).',
+            'fatty_acid_unavailable' => 'Choose an active fatty acid, or keep an inactive fatty acid already saved on this ingredient.',
             'allergen_negative' => 'Allergen concentration cannot be negative.',
             'allergen_maximum' => 'Allergen concentration cannot exceed 100%.',
             'peroxide_negative' => 'Peroxide value cannot be negative.',

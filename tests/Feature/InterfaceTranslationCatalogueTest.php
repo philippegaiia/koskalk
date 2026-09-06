@@ -130,6 +130,14 @@ it('keeps changed ingredient editor catalogue copy and placeholders aligned', fu
             'nl' => 'Vetzuur verwijderen',
             'pt_BR' => 'Remover ácido graxo',
         ],
+        'ingredients.editor.validation.fatty_acid_unavailable' => [
+            'de' => 'Wähle eine aktive Fettsäure oder behalte eine in diesem Inhaltsstoff gespeicherte inaktive Fettsäure.',
+            'es' => 'Elige un ácido graso activo o conserva el ácido graso inactivo ya guardado en este ingrediente.',
+            'fr' => 'Choisissez un acide gras actif ou conservez l’acide gras inactif déjà enregistré sur cet ingrédient.',
+            'it' => 'Scegli un acido grasso attivo oppure conserva l’acido grasso inattivo già salvato su questo ingrediente.',
+            'nl' => 'Kies een actief vetzuur of behoud een inactief vetzuur dat al op dit ingrediënt is opgeslagen.',
+            'pt_BR' => 'Escolha um ácido graxo ativo ou mantenha o ácido graxo inativo já salvo neste ingrediente.',
+        ],
         'ingredients.editor.create.heading' => [
             'de' => 'Zutat hinzufügen',
             'es' => 'Añadir ingrediente',

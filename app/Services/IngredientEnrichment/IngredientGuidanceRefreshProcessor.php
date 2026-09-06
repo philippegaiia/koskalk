@@ -29,6 +29,7 @@ class IngredientGuidanceRefreshProcessor
         private readonly IngredientGuidanceStageRunner $stages,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly LocalizedGuidanceHeadings $headings,
+        private readonly IngredientGuidanceRefreshResultValidator $validator,
     ) {}
 
     public function handle(int $itemId): void
@@ -119,6 +120,7 @@ class IngredientGuidanceRefreshProcessor
                     $itemId,
                     IngredientEnrichmentResearchStage::AiGuidanceLocalization,
                     function (array $stageContext) use ($englishGuidance): IngredientSourceStageResult {
+                        $this->validateEnglishGuidanceBeforeLocalization($englishGuidance);
                         $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
                         $response = $this->localization->localize([
                             'locales' => $stageContext['expected_locales'],
@@ -277,6 +279,7 @@ class IngredientGuidanceRefreshProcessor
                 return;
             }
             report($exception);
+            $providerData = $this->providerDataFromStoredStages($item->research_stages);
             $item->update([
                 'status' => IngredientEnrichmentItemStatus::Failed,
                 'failure_code' => $exception instanceof IngredientResearchProviderException
@@ -285,6 +288,12 @@ class IngredientGuidanceRefreshProcessor
                 'failure_message' => $exception instanceof ValidationException
                     ? (string) (collect($exception->errors())->flatten()->first() ?? __('ingredient_enrichment_admin.validation.provider_failed'))
                     : __('ingredient_enrichment_admin.validation.provider_failed'),
+                'provider_response_id' => $providerData['response_id'],
+                'provider_request_id' => $providerData['request_id'],
+                'provider_model' => $providerData['model'],
+                'input_tokens' => $providerData['input_tokens'],
+                'output_tokens' => $providerData['output_tokens'],
+                'web_search_calls' => $providerData['web_search_calls'],
                 'research_completed_at' => now(),
             ]);
             $this->batches->refresh($item->ingredient_enrichment_batch_id);
@@ -472,6 +481,20 @@ class IngredientGuidanceRefreshProcessor
             : (string) ($ingredient->info_markdown ?? '');
     }
 
+    private function validateEnglishGuidanceBeforeLocalization(string $englishGuidance): void
+    {
+        $report = $this->validator->validateGuidance($englishGuidance);
+        if ($report['valid']) {
+            return;
+        }
+
+        throw ValidationException::withMessages(
+            collect($report['errors'])
+                ->map(fn (array $messages): string => $messages[0] ?? (string) __('ingredient_enrichment.validation.guidance_invalid_result'))
+                ->all(),
+        );
+    }
+
     /** @return list<array{locale:string,info_markdown:string}> */
     private function normalizedTranslations(IngredientSourceStageResult $localization, bool $soapmakingRelevant): array
     {
@@ -546,6 +569,35 @@ class IngredientGuidanceRefreshProcessor
         $researchData = is_array($research?->data) ? $research->data : [];
         $authoringData = is_array($authoring?->data) ? $authoring->data : [];
         $localizationData = is_array($localization?->data) ? $localization->data : [];
+
+        return $this->providerDataFromArrays($researchData, $authoringData, $localizationData);
+    }
+
+    /**
+     * @param  array<string,mixed>|null  $stages
+     * @return array{response_id:string,request_id:string,model:string,input_tokens:int,output_tokens:int,web_search_calls:int}
+     */
+    private function providerDataFromStoredStages(?array $stages): array
+    {
+        $completedData = collect($stages ?? [])
+            ->filter(fn (mixed $stage): bool => is_array($stage) && ($stage['status'] ?? null) === 'completed')
+            ->map(fn (array $stage): array => is_array($stage['data'] ?? null) ? $stage['data'] : []);
+
+        return $this->providerDataFromArrays(
+            $completedData->get(IngredientEnrichmentResearchStage::AiGuidanceResearch->value, []),
+            $completedData->get(IngredientEnrichmentResearchStage::AiGuidanceAuthoring->value, []),
+            $completedData->get(IngredientEnrichmentResearchStage::AiGuidanceLocalization->value, []),
+        );
+    }
+
+    /**
+     * @param  array<string,mixed>  $researchData
+     * @param  array<string,mixed>  $authoringData
+     * @param  array<string,mixed>  $localizationData
+     * @return array{response_id:string,request_id:string,model:string,input_tokens:int,output_tokens:int,web_search_calls:int}
+     */
+    private function providerDataFromArrays(array $researchData, array $authoringData, array $localizationData): array
+    {
         $providerResponseId = (string) ($authoringData['provider_response_id'] ?? '');
         $providerRequestId = (string) ($authoringData['provider_request_id'] ?? '');
         $providerModel = (string) ($authoringData['provider_model'] ?? '');

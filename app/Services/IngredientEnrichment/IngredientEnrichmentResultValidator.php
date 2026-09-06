@@ -22,6 +22,7 @@ class IngredientEnrichmentResultValidator
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
         private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
         private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
+        private readonly LocalizedGuidanceHeadings $headings,
     ) {}
 
     /**
@@ -435,7 +436,10 @@ class IngredientEnrichmentResultValidator
     {
         $guidance = is_string($proposal['info_markdown'] ?? null) ? trim($proposal['info_markdown']) : '';
         preg_match_all('/^##\s+(.+)$/m', $guidance, $matches);
-        $headings = array_map('trim', $matches[1] ?? []);
+        $sourceHeadings = array_map('trim', $matches[1] ?? []);
+        $headings = collect($sourceHeadings)
+            ->map(fn (string $heading): string => $this->headings->canonicalEnglishHeading($heading))
+            ->all();
         $required = data_get(config('ingredient-enrichment.guidance'), 'required_headings', []);
         $soapmakingHeading = (string) data_get(config('ingredient-enrichment.guidance'), 'soapmaking_heading', 'Soapmaking');
 
@@ -453,8 +457,9 @@ class IngredientEnrichmentResultValidator
         if ($headings !== $expectedHeadings) {
             $this->error($errors, 'proposal.info_markdown', $this->message('guidance_headings'));
         } else {
-            foreach ($required as $heading) {
-                $pattern = '/^##\h+'.preg_quote((string) $heading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
+            foreach ($required as $index => $heading) {
+                $sourceHeading = $sourceHeadings[$index] ?? $heading;
+                $pattern = '/^##\h+'.preg_quote((string) $sourceHeading, '/').'\h*(?:\R|\z)(.*?)(?=^##\h+|\z)/msu';
                 if (preg_match($pattern, $guidance, $section) !== 1 || trim($section[1]) === '') {
                     $this->error($errors, 'proposal.info_markdown', $this->message('guidance_required_section_body'));
 

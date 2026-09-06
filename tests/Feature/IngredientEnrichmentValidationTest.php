@@ -58,7 +58,7 @@ it('marks a structurally incomplete ingredient until guidance and configured tra
     expect($builder->isIncomplete($ingredient))->toBeTrue();
 
     $ingredient->update([
-        'info_markdown' => "## Overview\nA useful ingredient.\n\n## Formulation use\nUsed in simple formulas.",
+        'info_markdown' => "## Overview\nA useful ingredient.\n\n## Cosmetic formulation\nUsed in simple formulas.",
     ]);
     foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
         $headings = config("ingredient-enrichment.guidance.localized_headings.{$locale}");
@@ -127,6 +127,26 @@ it('accepts the bounded result contract for a non-colourant', function (): void 
 
     expect($report['valid'])->toBeTrue()
         ->and($report['normalized']['proposal']['display_name'])->toBe('Contract Ingredient');
+});
+
+it('accepts the external cosmetic formulation heading in a full enrichment result', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'ADM-EXTERNAL-GUIDANCE',
+        'category' => IngredientCategory::Other,
+    ]);
+    $result = enrichmentResult($ingredient->catalog_key);
+    $result['source_fingerprint'] = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result['proposal']['info_markdown'] = str_replace(
+        '## Formulation use',
+        '## Cosmetic formulation',
+        $result['proposal']['info_markdown'],
+    );
+
+    $report = app(IngredientEnrichmentResultValidator::class)->validate($result, $ingredient);
+
+    expect($report['valid'])->toBeTrue()
+        ->and($report['normalized']['proposal']['info_markdown'])
+        ->toContain('## Cosmetic formulation');
 });
 
 it('rejects full enrichment guidance with an empty required section', function (string $guidance): void {

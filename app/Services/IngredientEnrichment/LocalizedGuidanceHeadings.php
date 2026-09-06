@@ -4,6 +4,20 @@ namespace App\Services\IngredientEnrichment;
 
 class LocalizedGuidanceHeadings
 {
+    public function canonicalEnglishHeading(string $heading): string
+    {
+        $aliases = data_get(config('ingredient-enrichment.guidance'), 'heading_aliases', []);
+        foreach (is_array($aliases) ? $aliases : [] as $canonical => $acceptedAliases) {
+            if (is_string($canonical)
+                && is_array($acceptedAliases)
+                && in_array($heading, $acceptedAliases, true)) {
+                return $canonical;
+            }
+        }
+
+        return $heading;
+    }
+
     public function hasExactHeading(string $guidance, string $heading): bool
     {
         return preg_match(

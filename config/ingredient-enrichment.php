@@ -49,6 +49,9 @@ return [
         'maximum_words' => 0,
         'maximum_characters' => 10000,
         'required_headings' => ['Overview', 'Formulation use'],
+        'heading_aliases' => [
+            'Formulation use' => ['Cosmetic formulation'],
+        ],
         'soapmaking_heading' => 'Soapmaking',
         'localized_headings' => [
             'de' => ['overview' => 'Überblick', 'formulation_use' => 'Verwendung in Formulierungen', 'soapmaking' => 'Seifenherstellung'],

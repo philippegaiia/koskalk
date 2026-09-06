@@ -1263,7 +1263,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         LocalizedDecimalInput::make('ifra.peroxide_value')
                                             ->label(__('ingredients.editor.compliance.ifra.peroxide'))
                                             ->minValue(0)
-                                            ->suffix('meq O2/kg'),
+                                            ->suffix('meq O₂/kg'),
                                         Textarea::make('ifra.source_notes')
                                             ->label(__('ingredients.editor.compliance.ifra.notes'))
                                             ->rows(3)

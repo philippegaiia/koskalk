@@ -3540,6 +3540,30 @@
     },
     {
       "group": "ingredients",
+      "key": "duplicate.preview.koh_sap_range",
+      "text": {
+        "de": "KOH-VZ-Bereich (g KOH/g Öl)",
+        "es": "Intervalo SAP KOH (g KOH/g aceite)",
+        "fr": "Plage SAP KOH (g KOH/g huile)",
+        "it": "Intervallo SAP KOH (g KOH/g olio)",
+        "nl": "KOH-VZ-bereik (g KOH/g olie)",
+        "pt_BR": "Intervalo KOH SAP (g KOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.naoh_sap_range",
+      "text": {
+        "de": "NaOH-VZ-Bereich (g NaOH/g Öl)",
+        "es": "Intervalo SAP NaOH (g NaOH/g aceite)",
+        "fr": "Plage SAP NaOH (g NaOH/g huile)",
+        "it": "Intervallo SAP NaOH (g NaOH/g olio)",
+        "nl": "NaOH-VZ-bereik (g NaOH/g olie)",
+        "pt_BR": "Intervalo NaOH SAP (g NaOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.actions.create",
       "text": {
         "de": "Zutat hinzufügen",
@@ -6888,6 +6912,42 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.reference.koh_sap",
+      "text": {
+        "de": "KOH-VZ (g KOH/g Öl)",
+        "es": "SAP KOH (g KOH/g aceite)",
+        "fr": "SAP KOH (g KOH/g huile)",
+        "it": "SAP KOH (g KOH/g olio)",
+        "nl": "KOH-VZ (g KOH/g olie)",
+        "pt_BR": "KOH SAP (g KOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.naoh_sap",
+      "text": {
+        "de": "NaOH-VZ (g NaOH/g Öl)",
+        "es": "SAP NaOH (g NaOH/g aceite)",
+        "fr": "SAP NaOH (g NaOH/g huile)",
+        "it": "SAP NaOH (g NaOH/g olio)",
+        "nl": "NaOH-VZ (g NaOH/g olie)",
+        "pt_BR": "NaOH SAP (g NaOH/g óleo)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.peroxide",
+      "text": {
+        "de": "Peroxidzahl (meq O₂/kg)",
+        "es": "Índice de peróxidos (meq O₂/kg)",
+        "fr": "Indice de peroxyde (meq O₂/kg)",
+        "it": "Numero di perossidi (meq O₂/kg)",
+        "nl": "Peroxidegetal (meq O₂/kg)",
+        "pt_BR": "Índice de peróxido (meq O₂/kg)"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.reference.additional_identifiers",
       "text": {
         "de": "Zusätzliche Identifikatoren",
@@ -7250,60 +7310,60 @@
       "group": "ingredients",
       "key": "editor.soap.koh_helper",
       "text": {
-        "de": "Gib die KOH-VZ als 245 oder 0,245 ein. Die NaOH-VZ wird automatisch berechnet.",
-        "es": "Introduce el SAP KOH como 245 o 0,245. El SAP NaOH se calcula automáticamente.",
-        "fr": "Saisissez le SAP KOH sous la forme 245 ou 0,245. Le SAP NaOH est calculé automatiquement.",
-        "it": "Inserisci il SAP KOH come 245 o 0,245. Il SAP NaOH viene calcolato automaticamente.",
-        "nl": "Voer de KOH-VZ in als 245 of 0,245. De NaOH-VZ wordt automatisch berekend.",
-        "pt_BR": "Informe o KOH SAP como 245 ou 0.245. O SAP NaOH é calculado automaticamente."
+        "de": "Gib den kanonischen KOH-VZ-Wert in g KOH/g Öl ein, zum Beispiel 0,245. Professionelle Werte wie 245 mg KOH/g Öl werden akzeptiert und umgerechnet. Der NaOH-VZ-Wert wird automatisch berechnet.",
+        "es": "Introduce el SAP KOH canónico en g KOH/g aceite, por ejemplo 0,245. Se aceptan valores profesionales como 245 mg KOH/g aceite y se convierten. El SAP NaOH se calcula automáticamente.",
+        "fr": "Saisissez le SAP KOH canonique en g KOH/g huile, par exemple 0,245. Les valeurs professionnelles comme 245 mg KOH/g huile sont acceptées et converties. Le SAP NaOH est calculé automatiquement.",
+        "it": "Inserisci il SAP KOH canonico in g KOH/g olio, ad esempio 0,245. Sono accettati e convertiti valori professionali come 245 mg KOH/g olio. Il SAP NaOH viene calcolato automaticamente.",
+        "nl": "Voer de canonieke KOH-VZ in g KOH/g olie in, bijvoorbeeld 0,245. Professionele waarden zoals 245 mg KOH/g olie worden geaccepteerd en omgerekend. De NaOH-VZ wordt automatisch berekend.",
+        "pt_BR": "Informe o KOH SAP canônico em g KOH/g óleo, como 0,245. Valores profissionais como 245 mg KOH/g óleo são aceitos e convertidos. O SAP NaOH é calculado automaticamente."
       }
     },
     {
       "group": "ingredients",
       "key": "editor.soap.koh_range",
       "text": {
-        "de": "Zulässiger KOH-VZ-Bereich: :minimum–:maximum (:professional_minimum–:professional_maximum in professioneller Schreibweise). Soapkraft-Referenz: :reference.",
-        "es": "Intervalo SAP KOH permitido: :minimum–:maximum (:professional_minimum–:professional_maximum en notación profesional). Referencia Soapkraft: :reference.",
-        "fr": "Plage SAP KOH autorisée : :minimum–:maximum (:professional_minimum–:professional_maximum en notation professionnelle). Référence Soapkraft : :reference.",
-        "it": "Intervallo SAP KOH consentito: :minimum–:maximum (:professional_minimum–:professional_maximum in notazione professionale). Riferimento Soapkraft: :reference.",
-        "nl": "Toegestaan KOH-VZ-bereik: :minimum–:maximum (:professional_minimum–:professional_maximum in professionele notatie). Soapkraft-referentie: :reference.",
-        "pt_BR": "Intervalo permitido de KOH SAP: :minimum–:maximum (:professional_minimum–:professional_maximum na notação profissional). Referência Soapkraft: :reference."
+        "de": "Zulässiger KOH-VZ-Bereich: :minimum–:maximum g KOH/g Öl (:professional_minimum–:professional_maximum mg KOH/g Öl). Soapkraft-Referenz: :reference g KOH/g Öl.",
+        "es": "Intervalo SAP KOH permitido: :minimum–:maximum g KOH/g aceite (:professional_minimum–:professional_maximum mg KOH/g aceite). Referencia Soapkraft: :reference g KOH/g aceite.",
+        "fr": "Plage SAP KOH autorisée : :minimum–:maximum g KOH/g huile (:professional_minimum–:professional_maximum mg KOH/g huile). Référence Soapkraft : :reference g KOH/g huile.",
+        "it": "Intervallo SAP KOH consentito: :minimum–:maximum g KOH/g olio (:professional_minimum–:professional_maximum mg KOH/g olio). Riferimento Soapkraft: :reference g KOH/g olio.",
+        "nl": "Toegestaan KOH-VZ-bereik: :minimum–:maximum g KOH/g olie (:professional_minimum–:professional_maximum mg KOH/g olie). Soapkraft-referentie: :reference g KOH/g olie.",
+        "pt_BR": "Intervalo permitido de KOH SAP: :minimum–:maximum g KOH/g óleo (:professional_minimum–:professional_maximum mg KOH/g óleo). Referência Soapkraft: :reference g KOH/g óleo."
       }
     },
     {
       "group": "ingredients",
       "key": "editor.soap.koh_sap",
       "text": {
-        "de": "KOH-VZ",
-        "es": "SAP KOH",
-        "fr": "SAP KOH",
-        "it": "SAP KOH",
-        "nl": "KOH-VZ",
-        "pt_BR": "KOH SAP"
+        "de": "KOH-VZ (g KOH/g Öl)",
+        "es": "SAP KOH (g KOH/g aceite)",
+        "fr": "SAP KOH (g KOH/g huile)",
+        "it": "SAP KOH (g KOH/g olio)",
+        "nl": "KOH-VZ (g KOH/g olie)",
+        "pt_BR": "KOH SAP (g KOH/g óleo)"
       }
     },
     {
       "group": "ingredients",
       "key": "editor.soap.naoh_helper",
       "text": {
-        "de": "Wird automatisch aus der KOH-VZ berechnet.",
-        "es": "Se calcula automáticamente a partir del SAP KOH.",
-        "fr": "Calculé automatiquement à partir du SAP KOH.",
-        "it": "Calcolato automaticamente dal SAP KOH.",
-        "nl": "Wordt automatisch berekend op basis van de KOH-VZ.",
-        "pt_BR": "Calculado automaticamente a partir do KOH SAP."
+        "de": "Wird automatisch aus dem KOH-VZ-Wert berechnet und in g NaOH/g Öl angezeigt.",
+        "es": "Se calcula automáticamente a partir del SAP KOH y se muestra en g NaOH/g aceite.",
+        "fr": "Calculé automatiquement à partir du SAP KOH et affiché en g NaOH/g huile.",
+        "it": "Calcolato automaticamente dal SAP KOH e mostrato in g NaOH/g olio.",
+        "nl": "Wordt automatisch berekend op basis van KOH-VZ en weergegeven in g NaOH/g olie.",
+        "pt_BR": "Calculado automaticamente a partir do KOH SAP e exibido em g NaOH/g óleo."
       }
     },
     {
       "group": "ingredients",
       "key": "editor.soap.naoh_sap",
       "text": {
-        "de": "NaOH-VZ",
-        "es": "SAP NaOH",
-        "fr": "SAP NaOH",
-        "it": "SAP NaOH",
-        "nl": "NaOH-VZ",
-        "pt_BR": "NaOH SAP"
+        "de": "NaOH-VZ (g NaOH/g Öl)",
+        "es": "SAP NaOH (g NaOH/g aceite)",
+        "fr": "SAP NaOH (g NaOH/g huile)",
+        "it": "SAP NaOH (g NaOH/g olio)",
+        "nl": "NaOH-VZ (g NaOH/g olie)",
+        "pt_BR": "NaOH SAP (g NaOH/g óleo)"
       }
     },
     {

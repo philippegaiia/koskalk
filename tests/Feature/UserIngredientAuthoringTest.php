@@ -1916,6 +1916,7 @@ it('derives the same NaOH SAP from decimal and professional KOH notation', funct
         'owner_type' => null,
         'owner_id' => null,
         'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => true,
     ]);
     $source->sapProfile()->create(['koh_sap_value' => 0.176]);
     $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
@@ -1924,6 +1925,7 @@ it('derives the same NaOH SAP from decimal and professional KOH notation', funct
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.sap_profile.koh_sap_value', '0,176')
+        ->assertSee('meq O₂/kg')
         ->assertSee('0.125488')
         ->set('data.sap_profile.koh_sap_value', '0.176')
         ->assertSee('0.125488')
@@ -2055,7 +2057,7 @@ it('shows trusted KOH validation errors in the customer ingredient form without 
         ->set('data.sap_profile.koh_sap_value', '0.195')
         ->call('save')
         ->assertHasErrors(['data.sap_profile.koh_sap_value'])
-        ->assertSee('Allowed KOH SAP range');
+        ->assertSee('Allowed KOH SAP range: 0.182360–0.193640 g KOH/g oil');
 
     expect($copy->fresh()->display_name)->toBe('Platform olive oil');
 });

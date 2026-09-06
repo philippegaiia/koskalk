@@ -192,6 +192,9 @@ it('keeps the complete platform reference available as plain technical values', 
         ->assertSeeText('Amendment 51')
         ->assertSeeText('Category 4')
         ->assertSeeText('12.5%')
+        ->assertSeeText('KOH SAP (g KOH/g oil)')
+        ->assertSeeText('NaOH SAP (g NaOH/g oil)')
+        ->assertSeeText('Peroxide value (meq O₂/kg)')
         ->assertSeeText('Platform safety sheet')
         ->assertDontSeeHtml('<input disabled="disabled"')
         ->assertDontSeeText('Save changes');
@@ -199,6 +202,35 @@ it('keeps the complete platform reference available as plain technical values', 
     expect($component->instance()->referenceData)->toHaveKey('documents')
         ->and($component->instance()->data)->toBe([])
         ->and($component->instance()->workspaceMaterialCode)->toBeNull();
+});
+
+it('renders zero soap and peroxide values with their units', function (): void {
+    $user = User::factory()->create();
+    $platform = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $platform->sapProfile()->create(['koh_sap_value' => 0.0]);
+    IfraCertificate::factory()->create([
+        'ingredient_id' => $platform->id,
+        'peroxide_value' => 0.0,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
+        ->assertSeeText('KOH SAP (g KOH/g oil)')
+        ->assertSeeText('Peroxide value (meq O₂/kg)')
+        ->assertSeeText('0');
+
+    expect($component->instance()->referenceData['soap']['koh_sap_value'])->toBe(0.0)
+        ->and($component->instance()->referenceData['ifra']['peroxide_value'])->toBe(0.0);
 });
 
 it('places platform workspace controls before technical reference and avoids duplicate guidance', function (): void {
@@ -1640,7 +1672,8 @@ it('shows inherited soap chemistry for a duplicated platform oil', function () {
         ->assertSeeText('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
         ->assertSeeText('Saponification values')
         ->assertSeeText('Add the values used to calculate this oil in soap formulas.')
-        ->assertSeeText('Allowed KOH SAP range');
+        ->assertSeeText('Allowed KOH SAP range:')
+        ->assertSeeText('g KOH/g oil');
 });
 
 it('shows inherited chemistry limits in the duplicated lipid editor', function (): void {
@@ -1666,9 +1699,9 @@ it('shows inherited chemistry limits in the duplicated lipid editor', function (
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
         ->assertSeeText('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
         ->assertSeeText('Only private copies of eligible Soapkraft oils can use this chemistry.')
-        ->assertSeeText('Allowed KOH SAP range: 0.182360–0.193640')
-        ->assertSeeText('NaOH SAP')
-        ->assertSeeText('Calculated automatically from the KOH SAP.')
+        ->assertSeeText('Allowed KOH SAP range: 0.182360–0.193640 g KOH/g oil')
+        ->assertSeeText('NaOH SAP (g NaOH/g oil)')
+        ->assertSeeText('Calculated automatically from KOH SAP as g NaOH/g oil.')
         ->assertSeeText('Soap data source notes')
         ->assertSeeText('Required total: 80–100%')
         ->assertSeeText('Allowed: 0.0%–5.0%.')

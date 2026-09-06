@@ -616,6 +616,7 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeText('Blend')
         ->assertSeeText('Choose Blend when this material contains other ingredients.')
         ->assertSeeText('INCI name (optional)')
+        ->assertSeeText('Use the INCI name supplied for this ingredient, when available.')
         ->assertSeeText('Internal material code (optional)')
         ->assertSeeText('Classification')
         ->assertSeeText('Subcategory')
@@ -803,6 +804,8 @@ it('starts with a single ingredient and renders the editor groups in task order'
         ->and(strpos($html, 'wire:model.live="data.category"'))->toBeLessThan(strpos($html, 'wire:model.live="data.ingredient_structure"'))
         ->and(strpos($html, 'wire:model="data.ingredient_structure"'))->toBeLessThan(strpos($html, 'wire:model="data.inci_name"'))
         ->and(strpos($html, 'wire:model="data.inci_name"'))->toBeLessThan(strpos($html, 'wire:model="data.material_code"'))
+        ->and(strpos($html, 'Subcategory'))->toBeLessThan(strpos($html, 'Treat as an aromatic ingredient'))
+        ->and(strpos($html, 'Treat as an aromatic ingredient'))->toBeLessThan(strpos($html, 'Workspace functions (optional)'))
         ->and(strpos($html, 'data-ingredient-basics-section'))->toBeLessThan(strpos($html, 'data-ingredient-classification-section'))
         ->and(strpos($html, 'data-ingredient-classification-section'))->toBeLessThan(strpos($html, 'data-ingredient-identity-section'))
         ->and(strpos($html, 'data-ingredient-identity-section'))->toBeLessThan(strpos($html, 'classification-prompt-title'));
@@ -1067,7 +1070,7 @@ it('shows inherited soap chemistry for a duplicated platform oil', function () {
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
         ->assertDontSeeText('Trusted for soap saponification')
-        ->assertSeeText('Soap calculation data inherited from Soapkraft.')
+        ->assertSeeText('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
         ->assertSeeText('Saponification values')
         ->assertSeeText('Add the values used to calculate this oil in soap formulas.')
         ->assertSeeText('Allowed KOH SAP range');
@@ -1094,7 +1097,7 @@ it('shows inherited chemistry limits in the duplicated lipid editor', function (
     $this->actingAs($user);
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
-        ->assertSeeText('Soap calculation data inherited from Soapkraft.')
+        ->assertSeeText('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
         ->assertSeeText('Only private copies of eligible Soapkraft oils can use this chemistry.')
         ->assertSeeText('Allowed KOH SAP range: 0.182360–0.193640')
         ->assertSeeText('NaOH SAP')
@@ -1102,6 +1105,37 @@ it('shows inherited chemistry limits in the duplicated lipid editor', function (
         ->assertSeeText('Recommended total: 80–100%')
         ->assertSeeText('Allowed: 0.0%–5.0%.')
         ->assertSeeText('Allowed: 48.0%–72.0%.');
+});
+
+it('scopes user editor terminology without changing shared ingredient translations', function (): void {
+    $copy = require lang_path('en/ingredients.php');
+
+    expect($copy['editor']['details']['section'])->toBe('Ingredient identity')
+        ->and($copy['editor']['details']['name'])->toBe('Name')
+        ->and($copy['editor']['details']['type']['helper'])->toBe('Choose Blend when this ingredient is made from several ingredients.')
+        ->and($copy['editor']['details']['aromatic_compliance'])->toBe('Requires aromatic compliance')
+        ->and($copy['editor']['details']['aromatic_compliance_helper'])->toBe('Enables allergen and IFRA information independently of the material category.')
+        ->and($copy['editor']['details']['inci'])->toBe('INCI')
+        ->and($copy['editor']['material_code']['label'])->toBe('Internal material code')
+        ->and($copy['editor']['identity']['section'])->toBe('Reference identifiers')
+        ->and($copy['editor']['supplier']['verified_functions'])->toBe('Verified COSING functions')
+        ->and($copy['editor']['supplier']['additional_functions'])->toBe('Functions used in your workspace')
+        ->and($copy['editor']['overview']['name'])->toBe('Ingredient name')
+        ->and($copy['editor']['overview']['inci'])->toBe('INCI name (optional)')
+        ->and($copy['editor']['overview']['inci_helper'])->toBe('Use the INCI name supplied for this ingredient, when available.')
+        ->and($copy['editor']['overview']['inherited_soap'])->toBe('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
+        ->and($copy['editor']['overview']['identifiers_section'])->toBe('Identifiers and alternative names');
+
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->assertSeeText('Ingredient name')
+        ->assertSeeText('INCI name (optional)')
+        ->assertSeeText('Use the INCI name supplied for this ingredient, when available.')
+        ->assertSeeText('Treat as an aromatic ingredient')
+        ->assertSeeText('Identifiers and alternative names');
 });
 
 it('loads ingredient editor interface copy from the database', function () {
@@ -1115,18 +1149,23 @@ it('loads ingredient editor interface copy from the database', function () {
         'editor.create.intro' => 'Saisissez un nom et choisissez une catégorie. Ajoutez un nom INCI et des informations complémentaires si disponibles.',
         'editor.tabs.details' => 'Vue d’ensemble',
         'editor.tabs.documents' => 'Conseils et fichiers',
-        'editor.details.section' => 'Identité de l’ingrédient',
+        'editor.overview.basics_section' => 'Informations de base',
+        'editor.overview.name' => 'Nom de l’ingrédient',
+        'editor.overview.inci' => 'Nom INCI (facultatif)',
+        'editor.overview.inci_helper' => 'Utilisez le nom INCI fourni pour cet ingrédient, lorsqu’il est disponible.',
+        'editor.overview.type_helper' => 'Choisissez Mélange lorsque ce matériau contient d’autres ingrédients.',
+        'editor.overview.aromatic_compliance' => 'Traiter comme un ingrédient aromatique',
+        'editor.overview.aromatic_compliance_helper' => 'Utilise la phase parfumée dans l’atelier de formulation et active les enregistrements d’allergènes et IFRA.',
+        'editor.overview.material_code' => 'Code matière interne (facultatif)',
+        'editor.overview.identifiers_section' => 'Identifiants et noms alternatifs',
+        'editor.overview.verified_functions' => 'Fonctions vérifiées',
+        'editor.overview.workspace_functions' => 'Fonctions de l’espace de travail (facultatif)',
         'editor.details.type.label' => 'Type d’ingrédient',
         'editor.details.type.single' => 'Ingrédient simple',
         'editor.details.type.blend' => 'Mélange',
         'editor.classification.section' => 'Classification',
-        'editor.identity.section' => 'Identifiants de référence',
-        'editor.details.aromatic_compliance' => 'Conformité aromatique requise',
-        'editor.details.aromatic_compliance_helper' => 'Active les informations allergènes et IFRA.',
-        'editor.supplier.verified_functions' => 'Fonctions COSING vérifiées',
         'editor.supplier.none_verified' => 'Aucune fonction vérifiée',
         'editor.supplier.verified_functions_helper' => 'Fonctions officielles en lecture seule.',
-        'editor.supplier.additional_functions' => 'Fonctions utilisées dans votre espace de travail',
         'editor.classification_prompt.eyebrow' => 'Assistant de recherche IA',
         'editor.classification_prompt.heading' => 'Aidez à classer cet ingrédient',
         'editor.classification_prompt.description' => 'Générez un prompt pour rechercher la classification, les identifiants, les fonctions COSING et de brèves notes professionnelles. Il ne modifiera pas ce formulaire.',
@@ -1146,17 +1185,20 @@ it('loads ingredient editor interface copy from the database', function () {
         ->assertSeeText('Saisissez un nom et choisissez une catégorie. Ajoutez un nom INCI et des informations complémentaires si disponibles.')
         ->assertSeeText('Vue d’ensemble')
         ->assertSeeText('Conseils et fichiers')
-        ->assertSeeText('Identité de l’ingrédient')
+        ->assertSeeText('Informations de base')
+        ->assertSeeText('Nom de l’ingrédient')
+        ->assertSeeText('Nom INCI (facultatif)')
+        ->assertSeeText('Utilisez le nom INCI fourni pour cet ingrédient, lorsqu’il est disponible.')
         ->assertSeeText('Type d’ingrédient')
         ->assertSeeText('Ingrédient simple')
         ->assertSeeText('Mélange')
         ->assertSeeText('Classification')
-        ->assertSeeText('Identifiants de référence')
-        ->assertSeeText('Conformité aromatique requise')
-        ->assertSeeText('Active les informations allergènes et IFRA.')
+        ->assertSeeText('Identifiants et noms alternatifs')
+        ->assertSeeText('Traiter comme un ingrédient aromatique')
+        ->assertSeeText('Utilise la phase parfumée dans l’atelier de formulation et active les enregistrements d’allergènes et IFRA.')
         ->assertDontSeeText('Fonctions COSING vérifiées')
         ->assertDontSeeText('Fonctions officielles en lecture seule.')
-        ->assertSeeText('Fonctions utilisées dans votre espace de travail')
+        ->assertSeeText('Fonctions de l’espace de travail (facultatif)')
         ->assertSeeText('Assistant de recherche IA')
         ->assertSeeText('Aidez à classer cet ingrédient')
         ->assertSeeText('Générez un prompt pour rechercher la classification, les identifiants, les fonctions COSING et de brèves notes professionnelles. Il ne modifiera pas ce formulaire.')

@@ -1548,6 +1548,40 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ->and((float) $currentIfra?->peroxide_value)->toBe(2.5)
         ->and($currentIfra?->limits)->toHaveCount(1)
         ->and((float) $currentIfra?->limits->first()->max_percentage)->toBe(0.8);
+
+    $allergenIds = $freshIngredient?->allergenEntries->pluck('allergen_id')->all();
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $freshIngredient])
+        ->assertSet('data.requires_aromatic_compliance', true)
+        ->set('data.requires_aromatic_compliance', false)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $aromaticOff = $ingredient->fresh(['allergenEntries', 'ifraCertificates.limits']);
+
+    expect($aromaticOff?->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing($allergenIds)
+        ->and($aromaticOff?->ifraCertificates)->toHaveCount(1)
+        ->and($aromaticOff?->ifraCertificates->first()?->ifra_amendment_id)->toBe($amendment->id)
+        ->and((float) $aromaticOff?->ifraCertificates->first()?->peroxide_value)->toBe(2.5)
+        ->and($aromaticOff?->ifraCertificates->first()?->limits)->toHaveCount(1)
+        ->and((float) $aromaticOff?->ifraCertificates->first()?->limits->first()?->max_percentage)->toBe(0.8)
+        ->and($aromaticOff?->ifraCertificates->first()?->limits->first()?->restriction_note)->toBe('Rinse-off reference');
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $aromaticOff])
+        ->assertSet('data.requires_aromatic_compliance', false)
+        ->set('data.requires_aromatic_compliance', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $aromaticOn = $ingredient->fresh(['allergenEntries', 'ifraCertificates.limits']);
+
+    expect($aromaticOn?->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing($allergenIds)
+        ->and($aromaticOn?->ifraCertificates)->toHaveCount(1)
+        ->and($aromaticOn?->ifraCertificates->first()?->ifra_amendment_id)->toBe($amendment->id)
+        ->and((float) $aromaticOn?->ifraCertificates->first()?->peroxide_value)->toBe(2.5)
+        ->and($aromaticOn?->ifraCertificates->first()?->limits)->toHaveCount(1)
+        ->and((float) $aromaticOn?->ifraCertificates->first()?->limits->first()?->max_percentage)->toBe(0.8)
+        ->and($aromaticOn?->ifraCertificates->first()?->limits->first()?->restriction_note)->toBe('Rinse-off reference');
 });
 
 it('accepts comma decimals throughout user soap chemistry fields', function () {

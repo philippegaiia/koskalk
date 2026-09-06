@@ -844,7 +844,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->id('overview')
                             ->key('overview', isInheritable: false)
                             ->schema([
-                                Section::make(__('ingredients.editor.details.section'))
+                                Section::make(__('ingredients.editor.overview.basics_section'))
                                     ->description(__('ingredients.editor.details.description'))
                                     ->extraAttributes(['data-ingredient-basics-section' => true])
                                     ->columns([
@@ -853,7 +853,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ->schema([
                                         Hidden::make('is_soap_saponification_trusted'),
                                         TextInput::make('name')
-                                            ->label(__('ingredients.editor.details.name'))
+                                            ->label(__('ingredients.editor.overview.name'))
                                             ->required()
                                             ->maxLength(255),
                                         Select::make('category')
@@ -870,16 +870,17 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ])
                                             ->required()
                                             ->live()
-                                            ->helperText(__('ingredients.editor.details.type.helper'))
+                                            ->helperText(__('ingredients.editor.overview.type_helper'))
                                             ->columnSpanFull(),
                                         SchemaView::make('livewire.dashboard.partials.ingredient-composition-removal-confirmation')
                                             ->visible(fn (): bool => $this->isCompositionRemovalPending())
                                             ->columnSpanFull(),
                                         TextInput::make('inci_name')
-                                            ->label(__('ingredients.editor.details.inci'))
+                                            ->label(__('ingredients.editor.overview.inci'))
+                                            ->helperText(__('ingredients.editor.overview.inci_helper'))
                                             ->maxLength(255),
                                         TextInput::make('material_code')
-                                            ->label(__('ingredients.editor.material_code.label'))
+                                            ->label(__('ingredients.editor.overview.material_code'))
                                             ->helperText(__('ingredients.editor.material_code.helper'))
                                             ->placeholder(__('ingredients.editor.material_code.placeholder'))
                                             ->maxLength(64)
@@ -896,21 +897,21 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->live()
                                             ->helperText(__('ingredients.editor.details.subcategory_helper')),
                                         Toggle::make('requires_aromatic_compliance')
-                                            ->label(__('ingredients.editor.details.aromatic_compliance'))
-                                            ->helperText(__('ingredients.editor.details.aromatic_compliance_helper'))
+                                            ->label(__('ingredients.editor.overview.aromatic_compliance'))
+                                            ->helperText(__('ingredients.editor.overview.aromatic_compliance_helper'))
                                             ->live(),
                                         TextEntry::make('inherited_soap_chemistry')
                                             ->label(__('ingredients.editor.soap.inherited_label'))
-                                            ->state(__('ingredients.editor.soap.inherited'))
+                                            ->state(__('ingredients.editor.overview.inherited_soap'))
                                             ->belowContent(__('ingredients.editor.soap.inherited_helper'))
                                             ->visible(fn (): bool => $this->hasInheritedSoapChemistry()),
                                         TextEntry::make('verified_function_names')
-                                            ->label(__('ingredients.editor.supplier.verified_functions'))
+                                            ->label(__('ingredients.editor.overview.verified_functions'))
                                             ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', '))
                                             ->belowContent(__('ingredients.editor.supplier.verified_functions_helper'))
                                             ->visible(fn (Get $get): bool => collect($get('verified_function_names'))->filter()->isNotEmpty()),
                                         Select::make('function_ids')
-                                            ->label(__('ingredients.editor.supplier.additional_functions'))
+                                            ->label(__('ingredients.editor.overview.workspace_functions'))
                                             ->multiple()
                                             ->searchable()
                                             ->preload()
@@ -926,7 +927,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->helperText(__('ingredients.editor.supplier.functions_helper'))
                                             ->maxItems(10),
                                     ]),
-                                Section::make(__('ingredients.editor.identity.section'))
+                                Section::make(__('ingredients.editor.overview.identifiers_section'))
                                     ->description(__('ingredients.editor.identity.description'))
                                     ->extraAttributes(['data-ingredient-identity-section' => true])
                                     ->columns([

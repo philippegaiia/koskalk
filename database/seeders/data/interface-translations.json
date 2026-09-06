@@ -6984,6 +6984,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.soap.add_fatty_acid",
+      "text": {
+        "de": "Fettsäure hinzufügen",
+        "es": "Añadir ácido graso",
+        "fr": "Ajouter un acide gras",
+        "it": "Aggiungi acido grasso",
+        "nl": "Vetzuur toevoegen",
+        "pt_BR": "Adicionar ácido graxo"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.soap.allowed_range",
       "text": {
         "de": "Zulässig: :minimum %–:maximum %.",
@@ -7016,6 +7028,18 @@
         "it": "Acido grasso",
         "nl": "Vetzuur",
         "pt_BR": "Ácido graxo"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.soap.fatty_acid_empty",
+      "text": {
+        "de": "Noch kein Fettsäureprofil erfasst. Wenn du eines hinzufügst, muss die Summe 80–100 % betragen.",
+        "es": "No se ha registrado ningún perfil de ácidos grasos. Si añades uno, su total debe ser del 80–100 %.",
+        "fr": "Aucun profil d’acides gras n’est enregistré. Si vous en ajoutez un, son total doit être compris entre 80 et 100 %.",
+        "it": "Nessun profilo di acidi grassi registrato. Se ne aggiungi uno, il totale deve essere dell’80–100%.",
+        "nl": "Er is geen vetzuurprofiel vastgelegd. Als je er een toevoegt, moet het totaal 80–100% zijn.",
+        "pt_BR": "Nenhum perfil de ácidos graxos registrado. Se você adicionar um, o total deve ser de 80–100%."
       }
     },
     {
@@ -7166,12 +7190,24 @@
       "group": "ingredients",
       "key": "editor.soap.notes",
       "text": {
-        "de": "Seifennotizen",
-        "es": "Notas sobre el jabón",
-        "fr": "Notes sur le savon",
-        "it": "Note sul sapone",
-        "nl": "Zeepnotities",
-        "pt_BR": "Notas do sabonete"
+        "de": "Quellennotizen zu Seifendaten",
+        "es": "Notas de la fuente de datos del jabón",
+        "fr": "Notes de source des données de savon",
+        "it": "Note sulla fonte dei dati del sapone",
+        "nl": "Bronnotities voor zeepgegevens",
+        "pt_BR": "Notas da fonte dos dados de sabão"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.soap.new_fatty_acid",
+      "text": {
+        "de": "Neue Fettsäure",
+        "es": "Nuevo ácido graso",
+        "fr": "Nouvel acide gras",
+        "it": "Nuovo acido grasso",
+        "nl": "Nieuw vetzuur",
+        "pt_BR": "Novo ácido graxo"
       }
     },
     {
@@ -7190,12 +7226,24 @@
       "group": "ingredients",
       "key": "editor.soap.recommended_total",
       "text": {
-        "de": "Empfohlene Summe: 80–100 %",
-        "es": "Total recomendado: 80–100 %",
-        "fr": "Total recommandé : 80–100 %",
-        "it": "Totale consigliato: 80–100%",
-        "nl": "Aanbevolen totaal: 80–100%",
-        "pt_BR": "Total recomendado: 80–100%"
+        "de": "Erforderliche Summe: 80–100 %",
+        "es": "Total requerido: 80–100 %",
+        "fr": "Total requis : 80–100 %",
+        "it": "Totale richiesto: 80–100%",
+        "nl": "Vereist totaal: 80–100%",
+        "pt_BR": "Total exigido: 80–100%"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.soap.remove_fatty_acid",
+      "text": {
+        "de": "Fettsäure entfernen",
+        "es": "Eliminar ácido graso",
+        "fr": "Supprimer l’acide gras",
+        "it": "Rimuovi acido grasso",
+        "nl": "Vetzuur verwijderen",
+        "pt_BR": "Remover ácido graxo"
       }
     },
     {

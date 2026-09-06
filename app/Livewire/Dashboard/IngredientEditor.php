@@ -37,6 +37,7 @@ use App\Services\WorkspaceIngredientGuidanceService;
 use App\SoapSap;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
+use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Checkbox;
@@ -138,6 +139,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private ?string $canEditIngredientDataCacheKey = null;
 
     private bool $resolvedCanEditIngredientData = false;
+
+    /** @var array<int, string>|null */
+    private ?array $fattyAcidOptionsCache = null;
 
     public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
     {
@@ -1097,7 +1101,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 ->size('lg')
                                                 ->weight('semibold')
                                                 ->extraAttributes(['class' => 'numeric'])
-                                                ->belowContent(__('ingredients.editor.soap.recommended_total')),
+                                                ->belowContent(fn (Get $get): string => is_array($entries = $get('fatty_acid_entries')) && count($entries) > 0
+                                                    ? __('ingredients.editor.soap.recommended_total')
+                                                    : __('ingredients.editor.soap.fatty_acid_empty')),
                                         ])
                                             ->extraAttributes([
                                                 'class' => 'rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4',
@@ -1105,17 +1111,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->columnSpanFull(),
                                         Repeater::make('fatty_acid_entries')
                                             ->label(__('ingredients.editor.soap.fatty_acid_profile'))
+                                            ->itemLabel(fn (array $state): string => $this->fattyAcidOptions()[(int) ($state['fatty_acid_id'] ?? 0)]
+                                                ?? __('ingredients.editor.soap.new_fatty_acid'))
+                                            ->addActionLabel(__('ingredients.editor.soap.add_fatty_acid'))
+                                            ->deleteAction(fn (Action $action): Action => $action->label(__('ingredients.editor.soap.remove_fatty_acid')))
                                             ->schema([
                                                 Hidden::make('_original_percentage'),
                                                 Select::make('fatty_acid_id')
                                                     ->label(__('ingredients.editor.soap.fatty_acid'))
-                                                    ->options(fn (): array => FattyAcid::query()
-                                                        ->where('is_active', true)
-                                                        ->orderBy('display_order')
-                                                        ->pluck('name', 'id')
-                                                        ->all())
+                                                    ->options(fn (): array => $this->fattyAcidOptions())
                                                     ->searchable()
                                                     ->preload()
+                                                    ->live()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('percentage')
                                                     ->label(__('ingredients.editor.soap.percentage'))
@@ -1874,6 +1881,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return $original !== null && round($displayed, 1) === round($original, 1)
             ? $original
             : $displayed;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function fattyAcidOptions(): array
+    {
+        return $this->fattyAcidOptionsCache ??= FattyAcid::query()
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->pluck('name', 'id')
+            ->all();
     }
 
     /**

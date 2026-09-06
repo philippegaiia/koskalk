@@ -32,6 +32,7 @@ use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
 use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
+use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -960,6 +961,54 @@ it('exposes stable tab identifiers with the existing ingredient query key', func
         ->toBe(['overview', 'composition', 'guidance-files', 'soap-chemistry', 'regulatory-data']);
 });
 
+it('configures the fatty acid repeater with contextual controls', function (): void {
+    $user = User::factory()->create();
+    $fattyAcid = FattyAcid::factory()->create(['name' => 'Oleic acid', 'display_order' => 1]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.fatty_acid_entries', [[
+            'fatty_acid_id' => $fattyAcid->id,
+            'percentage' => 80,
+        ]]);
+
+    $repeater = static function (mixed $component, string $name): Repeater {
+        $repeater = $component->instance()->form->getComponent($name, withHidden: true);
+
+        expect($repeater)->toBeInstanceOf(Repeater::class);
+
+        return $repeater;
+    };
+
+    $assertRepeater = static function (Repeater $repeater, string $add, string $remove, string $itemLabel, string $fallback): void {
+        expect($repeater->getAddActionLabel())
+            ->toBe($add)
+            ->and($repeater->getDeleteAction()->getLabel())
+            ->toBe($remove)
+            ->and($repeater->isReorderable())
+            ->toBeFalse();
+
+        $key = array_key_first($repeater->getRawState() ?? []);
+
+        expect($key)->not->toBeNull()
+            ->and((string) $repeater->getItemLabel((string) $key, 0))
+            ->toBe($itemLabel);
+
+        $repeater->rawState([...($repeater->getRawState() ?? []), 'empty-item' => []]);
+
+        expect($repeater->getItemLabel('empty-item', 1))->toBe($fallback);
+    };
+
+    $assertRepeater(
+        $repeater($component, 'fatty_acid_entries'),
+        'Add fatty acid',
+        'Remove fatty acid',
+        'Oleic acid',
+        'New fatty acid',
+    );
+});
+
 it('resolves legacy ingredient tab query values against visible tabs', function (): void {
     $user = User::factory()->create();
 
@@ -1392,7 +1441,8 @@ it('shows inherited chemistry limits in the duplicated lipid editor', function (
         ->assertSeeText('Allowed KOH SAP range: 0.182360–0.193640')
         ->assertSeeText('NaOH SAP')
         ->assertSeeText('Calculated automatically from the KOH SAP.')
-        ->assertSeeText('Recommended total: 80–100%')
+        ->assertSeeText('Soap data source notes')
+        ->assertSeeText('Required total: 80–100%')
         ->assertSeeText('Allowed: 0.0%–5.0%.')
         ->assertSeeText('Allowed: 48.0%–72.0%.');
 });

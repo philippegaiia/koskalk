@@ -1915,14 +1915,17 @@ it('shows one live fatty acid profile total without repeating the total rule on 
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
         ->assertSee('Fatty acid total')
         ->assertSee('80.0%')
-        ->assertSee('Recommended total: 80–100%')
+        ->assertSee('Required total: 80–100%')
         ->assertSee('Allowed: 48.0%–72.0%.')
         ->assertDontSee('The complete profile must total 80%–100%.')
         ->set('data.fatty_acid_entries', [
             ['fatty_acid_id' => $oleic->id, 'percentage' => '60,5'],
             ['fatty_acid_id' => $lauric->id, 'percentage' => '24,5'],
         ])
-        ->assertSee('85.0%');
+        ->assertSee('85.0%')
+        ->set('data.fatty_acid_entries', [])
+        ->assertSee('No fatty-acid profile recorded. If you add one, its total must be 80–100%.')
+        ->assertDontSee('Required total: 80–100%');
 });
 
 it('presents fatty acid entries to one decimal without changing untouched stored precision', function () {

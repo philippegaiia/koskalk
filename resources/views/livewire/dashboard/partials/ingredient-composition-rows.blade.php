@@ -23,7 +23,13 @@
     }
 @endphp
 
-<section class="overflow-visible sk-card" aria-labelledby="composition-heading">
+<section
+    class="overflow-visible sk-card"
+    aria-labelledby="composition-heading"
+    x-data
+    x-on:ingredient-composition-added.window="$nextTick(() => document.getElementById($event.detail.targetId)?.focus())"
+    x-on:ingredient-composition-removed.window="$nextTick(() => document.getElementById($event.detail.targetId)?.focus())"
+>
     <div class="flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
             <h3 id="composition-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.composition.section') }}</h3>
@@ -85,9 +91,10 @@
                             wire:model="quickComponentName"
                             class="sk-input mt-1"
                             aria-invalid="{{ $errors->has('quickComponentName') ? 'true' : 'false' }}"
+                            @if ($errors->has('quickComponentName')) aria-describedby="quick-component-name-error" @endif
                         />
                         @error('quickComponentName')
-                            <p role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                            <p id="quick-component-name-error" role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
@@ -97,6 +104,7 @@
                             wire:model="quickComponentCategory"
                             class="sk-input mt-1"
                             aria-invalid="{{ $errors->has('quickComponentCategory') ? 'true' : 'false' }}"
+                            @if ($errors->has('quickComponentCategory')) aria-describedby="quick-component-category-error" @endif
                         >
                             <option value="">{{ __('ingredients.editor.composition.choose_category') }}</option>
                             @foreach (\App\Enums\IngredientCategory::workspaceAuthorableOptions() as $value => $label)
@@ -104,7 +112,7 @@
                             @endforeach
                         </select>
                         @error('quickComponentCategory')
-                            <p role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                            <p id="quick-component-category-error" role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
@@ -154,13 +162,13 @@
                                 <p class="min-w-0 truncate font-medium text-[var(--color-ink-strong)]" title="{{ $componentLabel }}">{{ $componentLabel }}</p>
                             </div>
                             <div class="flex flex-col gap-2 bg-white lg:px-3 lg:py-3">
-                                <label for="composition-share-{{ $index }}" class="sk-eyebrow lg:sr-only">{{ __('ingredients.editor.composition.percentage') }}</label>
+                                <label for="composition-share-{{ $index }}" class="sk-eyebrow lg:sr-only">{{ __('ingredients.editor.composition.percentage_for', ['ingredient' => $componentLabel]) }}</label>
                                 <div class="relative">
-                                    <input id="composition-share-{{ $index }}" type="text" inputmode="decimal" wire:model.live.debounce.300ms="data.components.{{ $index }}.percentage_in_parent" aria-label="{{ __('ingredients.editor.composition.percentage_for', ['ingredient' => $componentLabel]) }}" aria-invalid="{{ $errors->has($shareField) ? 'true' : 'false' }}" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 pr-9 text-right text-sm text-[var(--color-ink-strong)] transition" @error($shareField) style="border-color: var(--color-danger)" @enderror />
+                                    <input id="composition-share-{{ $index }}" type="text" inputmode="decimal" wire:model.live.debounce.300ms="data.components.{{ $index }}.percentage_in_parent" aria-label="{{ __('ingredients.editor.composition.percentage_for', ['ingredient' => $componentLabel]) }}" aria-invalid="{{ $errors->has($shareField) ? 'true' : 'false' }}" @if ($errors->has($shareField)) aria-describedby="composition-share-{{ $index }}-error" @endif class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 pr-9 text-right text-sm text-[var(--color-ink-strong)] transition" @error($shareField) style="border-color: var(--color-danger)" @enderror />
                                     <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-[var(--color-ink-soft)]">%</span>
                                 </div>
                                 @error($shareField)
-                                    <p role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                                    <p id="composition-share-{{ $index }}-error" role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="flex items-center justify-end bg-white lg:px-4 lg:py-3">

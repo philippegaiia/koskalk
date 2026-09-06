@@ -683,7 +683,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return true;
     }
 
-    public function addComponent(int $ingredientId): void
+    public function addComponent(int $ingredientId): bool
     {
         $user = $this->freshAuthenticatedUser();
 
@@ -697,26 +697,33 @@ class IngredientEditor extends Component implements HasActions, HasForms
         if (! $componentIsAccessible) {
             $this->addError('data.components', __('ingredients.editor.validation.component_unavailable'));
 
-            return;
+            return false;
         }
 
         if (count($this->data['components'] ?? []) >= 20) {
             $this->addError('data.components', __('ingredients.editor.validation.component_limit'));
 
-            return;
+            return false;
         }
 
         if (collect($this->data['components'] ?? [])
             ->contains(fn (mixed $row): bool => (int) ($row['component_ingredient_id'] ?? 0) === $ingredientId)) {
             $this->addError('data.components', __('ingredients.editor.validation.component_duplicate'));
 
-            return;
+            return false;
         }
 
+        $componentIndex = count($this->data['components'] ?? []);
         $this->data['components'][] = [
             'component_ingredient_id' => $ingredientId,
             'percentage_in_parent' => null,
         ];
+        $this->dispatch(
+            'ingredient-composition-added',
+            targetId: 'composition-share-'.$componentIndex,
+        );
+
+        return true;
     }
 
     public function createAndAddComponent(UserIngredientAuthoringService $userIngredientAuthoringService): void
@@ -781,7 +788,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
             $this->refreshAuthenticatedUserContext($user);
         }
 
-        $this->addComponent($ingredient->id);
+        if (! $this->addComponent($ingredient->id)) {
+            return;
+        }
+
         $this->quickComponentName = '';
         $this->quickComponentCategory = null;
         $this->dispatch(
@@ -799,9 +809,19 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function removeComponentRow(int $index): void
     {
+        if (! array_key_exists($index, $this->data['components'] ?? [])) {
+            return;
+        }
+
         unset($this->data['components'][$index]);
 
         $this->data['components'] = array_values($this->data['components']);
+        $remainingRows = count($this->data['components']);
+        $targetId = $remainingRows === 0
+            ? 'composition-ingredient-search'
+            : 'composition-share-'.min($index, $remainingRows - 1);
+
+        $this->dispatch('ingredient-composition-removed', targetId: $targetId);
     }
 
     public function updatedData(mixed $value, ?string $key): void

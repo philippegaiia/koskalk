@@ -777,6 +777,8 @@ it('shows composition only when the user chooses a blend', function () {
         ->assertSee('sk-combobox-control', false)
         ->assertSee('aria-autocomplete="list"', false)
         ->assertSee(':aria-activedescendant=', false)
+        ->assertSeeHtml('x-on:ingredient-composition-added.window')
+        ->assertSeeHtml('x-on:ingredient-composition-removed.window')
         ->assertSee('Add a new ingredient')
         ->assertSee('quickComponentName', false)
         ->assertSee('quickComponentCategory', false)
@@ -1144,6 +1146,109 @@ it('shows an immediate error when a component share is outside the allowed range
         ->assertHasNoErrors(['data.components.0.percentage_in_parent']);
 });
 
+it('associates composition and quick-create errors with stable controls', function (): void {
+    $user = User::factory()->create();
+    $componentIngredient = Ingredient::factory()->create([
+        'display_name' => 'Base Oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    $composition = Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('addComponent', $componentIngredient->id)
+        ->assertSeeText('Percentage for Base Oil')
+        ->assertDontSeeHtml('aria-describedby="composition-share-0-error"')
+        ->set('data.components.0.percentage_in_parent', '100,1')
+        ->assertSeeHtml('id="composition-share-0-error"')
+        ->assertSeeHtml('aria-describedby="composition-share-0-error"');
+
+    expect($composition->html())->toContain('for="composition-share-0"');
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('createAndAddComponent')
+        ->assertHasErrors([
+            'quickComponentName' => 'required',
+            'quickComponentCategory' => 'required',
+        ])
+        ->assertSeeHtml('id="quick-component-name-error"')
+        ->assertSeeHtml('aria-describedby="quick-component-name-error"')
+        ->assertSeeHtml('id="quick-component-category-error"')
+        ->assertSeeHtml('aria-describedby="quick-component-category-error"');
+});
+
+it('dispatches focus targets only for successful composition changes', function (): void {
+    $user = User::factory()->create();
+    $firstComponent = Ingredient::factory()->create([
+        'display_name' => 'First Oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $secondComponent = Ingredient::factory()->create([
+        'display_name' => 'Second Oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $inaccessibleComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => User::factory(),
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('addComponent', $firstComponent->id)
+        ->assertDispatched('ingredient-composition-added', function (string $event, array $payload): bool {
+            return $event === 'ingredient-composition-added'
+                && $payload['targetId'] === 'composition-share-0';
+        })
+        ->call('addComponent', $secondComponent->id)
+        ->assertDispatched('ingredient-composition-added', function (string $event, array $payload): bool {
+            return $event === 'ingredient-composition-added'
+                && $payload['targetId'] === 'composition-share-1';
+        })
+        ->call('removeComponentRow', 0)
+        ->assertDispatched('ingredient-composition-removed', function (string $event, array $payload): bool {
+            return $event === 'ingredient-composition-removed'
+                && $payload['targetId'] === 'composition-share-0';
+        })
+        ->call('removeComponentRow', 0)
+        ->assertDispatched('ingredient-composition-removed', function (string $event, array $payload): bool {
+            return $event === 'ingredient-composition-removed'
+                && $payload['targetId'] === 'composition-ingredient-search';
+        });
+
+    expect($component->instance()->data['components'])->toBe([]);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('addComponent', $inaccessibleComponent->id)
+        ->assertHasErrors(['data.components'])
+        ->assertNotDispatched('ingredient-composition-added');
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('data.components', [[
+            'component_ingredient_id' => $firstComponent->id,
+            'percentage_in_parent' => null,
+        ]])
+        ->call('removeComponentRow', 1)
+        ->assertNotDispatched('ingredient-composition-removed')
+        ->assertSet('data.components.0.component_ingredient_id', $firstComponent->id);
+});
+
 it('calculates composition totals with the server locale parser', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -1223,6 +1328,10 @@ it('quick creates an active private ingredient and immediately adds it to the co
         ->set('quickComponentCategory', IngredientCategory::BotanicalsExtracts->value)
         ->call('createAndAddComponent')
         ->assertHasNoErrors()
+        ->assertDispatched('ingredient-composition-added', function (string $event, array $payload): bool {
+            return $event === 'ingredient-composition-added'
+                && $payload['targetId'] === 'composition-share-0';
+        })
         ->assertSet('quickComponentName', '')
         ->assertSet('quickComponentCategory', null)
         ->assertSet('data.components.0.percentage_in_parent', null);
@@ -1244,7 +1353,8 @@ it('keeps quick create values when required data is missing', function () {
         ->set('quickComponentName', 'Calendula Flowers')
         ->call('createAndAddComponent')
         ->assertHasErrors(['quickComponentCategory' => 'required'])
-        ->assertSet('quickComponentName', 'Calendula Flowers');
+        ->assertSet('quickComponentName', 'Calendula Flowers')
+        ->assertNotDispatched('ingredient-composition-added');
 
     expect(Ingredient::query()->where('display_name', 'Calendula Flowers')->exists())->toBeFalse();
 });

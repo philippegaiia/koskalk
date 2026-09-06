@@ -816,12 +816,44 @@ class IngredientEditor extends Component implements HasActions, HasForms
         unset($this->data['components'][$index]);
 
         $this->data['components'] = array_values($this->data['components']);
+        $this->reindexComponentErrorsAfterRemoval($index);
         $remainingRows = count($this->data['components']);
         $targetId = $remainingRows === 0
             ? 'composition-ingredient-search'
             : 'composition-share-'.min($index, $remainingRows - 1);
 
         $this->dispatch('ingredient-composition-removed', targetId: $targetId);
+    }
+
+    private function reindexComponentErrorsAfterRemoval(int $removedIndex): void
+    {
+        /** @var array<string, array<int, string>> $errors */
+        $errors = $this->getErrorBag()->getMessages();
+        /** @var array<string, array<int, string>> $reindexedErrors */
+        $reindexedErrors = [];
+
+        foreach ($errors as $field => $messages) {
+            if (preg_match('/^data\.components\.(\d+)(\..+)$/', $field, $matches) !== 1) {
+                $reindexedErrors[$field] = $messages;
+
+                continue;
+            }
+
+            $componentIndex = (int) $matches[1];
+            if ($componentIndex === $removedIndex) {
+                continue;
+            }
+
+            $reindexedField = $componentIndex > $removedIndex
+                ? 'data.components.'.($componentIndex - 1).$matches[2]
+                : $field;
+            $reindexedErrors[$reindexedField] = [
+                ...($reindexedErrors[$reindexedField] ?? []),
+                ...$messages,
+            ];
+        }
+
+        $this->setErrorBag($reindexedErrors);
     }
 
     public function updatedData(mixed $value, ?string $key): void

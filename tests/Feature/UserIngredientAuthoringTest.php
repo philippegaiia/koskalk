@@ -1249,6 +1249,104 @@ it('dispatches focus targets only for successful composition changes', function 
         ->assertSet('data.components.0.component_ingredient_id', $firstComponent->id);
 });
 
+it('drops removed row errors while preserving aggregate composition errors', function (): void {
+    $user = User::factory()->create();
+    $firstComponent = Ingredient::factory()->create([
+        'display_name' => 'Invalid Oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $remainingComponent = Ingredient::factory()->create([
+        'display_name' => 'Remaining Oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $inaccessibleComponent = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => User::factory(),
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('data.components', [
+            ['component_ingredient_id' => $firstComponent->id, 'percentage_in_parent' => null],
+            ['component_ingredient_id' => $remainingComponent->id, 'percentage_in_parent' => '40'],
+        ])
+        ->call('createAndAddComponent')
+        ->assertHasErrors(['quickComponentName', 'quickComponentCategory'])
+        ->set('data.components.0.percentage_in_parent', '101')
+        ->call('addComponent', $inaccessibleComponent->id)
+        ->assertHasErrors([
+            'data.components.0.percentage_in_parent',
+            'data.components',
+        ])
+        ->call('removeComponentRow', 0)
+        ->assertSet('data.components.0.component_ingredient_id', $remainingComponent->id)
+        ->assertHasNoErrors(['data.components.0.percentage_in_parent'])
+        ->assertHasErrors(['data.components', 'quickComponentName', 'quickComponentCategory'])
+        ->assertDontSeeHtml('aria-describedby="composition-share-0-error"');
+});
+
+it('reindexes later row errors when an earlier component is removed', function (): void {
+    $user = User::factory()->create();
+    $components = collect([
+        Ingredient::factory()->create([
+            'display_name' => 'First Oil',
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+            'is_active' => true,
+        ]),
+        Ingredient::factory()->create([
+            'display_name' => 'Second Oil',
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+            'is_active' => true,
+        ]),
+        Ingredient::factory()->create([
+            'display_name' => 'Invalid Oil',
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+            'is_active' => true,
+        ]),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('data.components', [
+            ['component_ingredient_id' => $components[0]->id, 'percentage_in_parent' => '20'],
+            ['component_ingredient_id' => $components[1]->id, 'percentage_in_parent' => '30'],
+            ['component_ingredient_id' => $components[2]->id, 'percentage_in_parent' => null],
+        ])
+        ->set('data.components.2.percentage_in_parent', '101')
+        ->assertHasErrors(['data.components.2.percentage_in_parent'])
+        ->call('removeComponentRow', 0)
+        ->assertDispatched('ingredient-composition-removed', function (string $event, array $payload): bool {
+            return $event === 'ingredient-composition-removed'
+                && $payload['targetId'] === 'composition-share-0';
+        })
+        ->assertSet('data.components.0.component_ingredient_id', $components[1]->id)
+        ->assertSet('data.components.1.component_ingredient_id', $components[2]->id)
+        ->assertHasErrors(['data.components.1.percentage_in_parent'])
+        ->assertHasNoErrors(['data.components.2.percentage_in_parent'])
+        ->assertSeeHtml('id="composition-share-1-error"')
+        ->assertSeeHtml('aria-invalid="true"')
+        ->assertSeeHtml('aria-describedby="composition-share-1-error"')
+        ->assertDontSeeHtml('aria-describedby="composition-share-0-error"');
+});
+
 it('calculates composition totals with the server locale parser', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

@@ -306,6 +306,7 @@ it('keeps a non-member platform reference read-only without exposing workspace d
 
     $component
         ->assertSeeText('Soapkraft ingredient')
+        ->assertSeeText('Public platform guidance.')
         ->assertSeeText('Only workspace owners, admins, and editors can change this guidance.')
         ->assertDontSeeText('PRIVATE WORKSPACE GUIDANCE')
         ->assertDontSeeText('PRIVATE-WORKSPACE-CODE')

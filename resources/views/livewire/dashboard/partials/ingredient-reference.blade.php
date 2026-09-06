@@ -24,6 +24,11 @@
     };
     $classification = $referenceData['classification'] ?? [];
     $identity = $referenceData['identity'] ?? [];
+    $displayWorkspaceGuidance = $effectiveWorkspaceGuidance;
+
+    if ($displayWorkspaceGuidance === null && ! $workspaceGuidanceOverride?->is_active) {
+        $displayWorkspaceGuidance = data_get($referenceData, 'guidance.html');
+    }
 @endphp
 
 <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-identity">
@@ -102,8 +107,8 @@
 
         @if (! $isEditingWorkspaceGuidance)
             <div data-ingredient-guidance-preview class="sk-rich-content mt-5 max-w-none">
-                @if (filled($effectiveWorkspaceGuidance))
-                    {!! $effectiveWorkspaceGuidance !!}
+                @if (filled($displayWorkspaceGuidance))
+                    {!! $displayWorkspaceGuidance !!}
                 @else
                     <p class="text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.common.not_available') }}</p>
                 @endif

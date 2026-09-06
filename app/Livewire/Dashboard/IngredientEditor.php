@@ -147,6 +147,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
     /** @var array<int> */
     private array $inactiveFattyAcidIdsCache = [];
 
+    /** @var array<int, string>|null */
+    private ?array $allergenOptionsCache = null;
+
+    /** @var array<int, string>|null */
+    private ?array $substanceOptionsCache = null;
+
     public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
     {
         $name = trim((string) ($this->data['name'] ?? ''));
@@ -1159,15 +1165,17 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ->schema([
                                         Repeater::make('allergen_entries')
                                             ->label(__('ingredients.editor.compliance.allergens.composition'))
+                                            ->itemLabel(fn (array $state): string => $this->allergenOptions()[(int) ($state['allergen_id'] ?? 0)]
+                                                ?? __('ingredients.editor.compliance.allergens.new_allergen'))
+                                            ->addActionLabel(__('ingredients.editor.compliance.allergens.add'))
+                                            ->deleteAction(fn (Action $action): Action => $action->label(__('ingredients.editor.compliance.allergens.remove')))
                                             ->schema([
                                                 Select::make('allergen_id')
                                                     ->label(__('ingredients.editor.compliance.allergens.allergen'))
-                                                    ->options(fn (): array => Allergen::query()
-                                                        ->orderBy('inci_name')
-                                                        ->pluck('inci_name', 'id')
-                                                        ->all())
+                                                    ->options(fn (): array => $this->allergenOptions())
                                                     ->searchable()
                                                     ->preload()
+                                                    ->live()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('concentration_percent')
                                                     ->label(__('ingredients.editor.compliance.allergens.concentration'))
@@ -1180,6 +1188,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 'md' => 2,
                                             ])
                                             ->defaultItems(0)
+                                            ->reorderable(false)
                                             ->columnSpanFull(),
                                         Textarea::make('allergen_source_notes')
                                             ->label(__('ingredients.editor.compliance.allergens.source'))
@@ -1192,18 +1201,21 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ->schema([
                                         Repeater::make('substance_entries')
                                             ->label(__('ingredients.editor.compliance.substances.entries'))
+                                            ->itemLabel(fn (array $state): string => $this->substanceOptions()[(int) ($state['substance_id'] ?? 0)]
+                                                ?? __('ingredients.editor.compliance.substances.new_substance'))
+                                            ->addActionLabel(__('ingredients.editor.compliance.substances.add'))
+                                            ->deleteAction(fn (Action $action): Action => $action->label(__('ingredients.editor.compliance.substances.remove')))
                                             ->schema([
                                                 Select::make('substance_id')
                                                     ->label(__('ingredients.editor.compliance.substances.substance'))
-                                                    ->options(fn (): array => Substance::query()
-                                                        ->orderBy('name')
-                                                        ->pluck('name', 'id')
-                                                        ->all())
+                                                    ->options(fn (): array => $this->substanceOptions())
                                                     ->searchable()
                                                     ->preload()
+                                                    ->live()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('concentration_percent')
                                                     ->label(__('ingredients.editor.compliance.substances.concentration'))
+                                                    ->helperText(__('ingredients.editor.compliance.substances.concentration_helper'))
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100),
@@ -1947,6 +1959,28 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->fattyAcidOptions();
 
         return $this->inactiveFattyAcidIdsCache;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allergenOptions(): array
+    {
+        return $this->allergenOptionsCache ??= Allergen::query()
+            ->orderBy('inci_name')
+            ->pluck('inci_name', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function substanceOptions(): array
+    {
+        return $this->substanceOptionsCache ??= Substance::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
     }
 
     /**

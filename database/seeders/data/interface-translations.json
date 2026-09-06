@@ -4752,6 +4752,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.compliance.allergens.add",
+      "text": {
+        "de": "Allergen hinzufügen",
+        "es": "Añadir alérgeno",
+        "fr": "Ajouter un allergène",
+        "it": "Aggiungi allergene",
+        "nl": "Allergeen toevoegen",
+        "pt_BR": "Adicionar alérgeno"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.compliance.allergens.allergen",
       "text": {
         "de": "Allergen",
@@ -4778,12 +4790,12 @@
       "group": "ingredients",
       "key": "editor.compliance.allergens.concentration",
       "text": {
-        "de": "Konzentration",
-        "es": "Concentración",
-        "fr": "Concentration",
-        "it": "Concentrazione",
-        "nl": "Concentratie",
-        "pt_BR": "Concentração"
+        "de": "Konzentration im Inhaltsstoff (%)",
+        "es": "Concentración en el ingrediente (%)",
+        "fr": "Concentration dans l’ingrédient (%)",
+        "it": "Concentrazione nell’ingrediente (%)",
+        "nl": "Concentratie in ingrediënt (%)",
+        "pt_BR": "Concentração no ingrediente (%)"
       }
     },
     {
@@ -4796,6 +4808,30 @@
         "it": "Aggiungi la dichiarazione degli allergeni fornita per questo ingrediente aromatico.",
         "nl": "Voeg de meegeleverde allergenenverklaring voor dit aromatische ingrediënt toe.",
         "pt_BR": "Adicione a declaração de alérgenos fornecida para este ingrediente aromático."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.allergens.new_allergen",
+      "text": {
+        "de": "Neues Allergen",
+        "es": "Nuevo alérgeno",
+        "fr": "Nouvel allergène",
+        "it": "Nuovo allergene",
+        "nl": "Nieuw allergeen",
+        "pt_BR": "Novo alérgeno"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.allergens.remove",
+      "text": {
+        "de": "Allergen entfernen",
+        "es": "Eliminar alérgeno",
+        "fr": "Supprimer l’allergène",
+        "it": "Rimuovi allergene",
+        "nl": "Allergeen verwijderen",
+        "pt_BR": "Remover alérgeno"
       }
     },
     {
@@ -5016,14 +5052,38 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.compliance.substances.add",
+      "text": {
+        "de": "Substanz hinzufügen",
+        "es": "Añadir sustancia",
+        "fr": "Ajouter une substance",
+        "it": "Aggiungi sostanza",
+        "nl": "Stof toevoegen",
+        "pt_BR": "Adicionar substância"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.compliance.substances.concentration",
       "text": {
-        "de": "Konzentration",
-        "es": "Concentración",
-        "fr": "Concentration",
-        "it": "Concentrazione",
-        "nl": "Concentratie",
-        "pt_BR": "Concentração"
+        "de": "Konzentration im Inhaltsstoff (%)",
+        "es": "Concentración en el ingrediente (%)",
+        "fr": "Concentration dans l’ingrédient (%)",
+        "it": "Concentrazione nell’ingrediente (%)",
+        "nl": "Concentratie in ingrediënt (%)",
+        "pt_BR": "Concentração no ingrediente (%)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.substances.concentration_helper",
+      "text": {
+        "de": "Leer lassen, wenn unbekannt.",
+        "es": "Déjalo en blanco si se desconoce.",
+        "fr": "Laissez vide si la valeur est inconnue.",
+        "it": "Lascia vuoto se sconosciuto.",
+        "nl": "Laat leeg als het onbekend is.",
+        "pt_BR": "Deixe em branco se desconhecido."
       }
     },
     {
@@ -5048,6 +5108,30 @@
         "it": "Sostanze dichiarate",
         "nl": "Gedeclareerde stoffen",
         "pt_BR": "Substâncias declaradas"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.substances.new_substance",
+      "text": {
+        "de": "Neue Substanz",
+        "es": "Nueva sustancia",
+        "fr": "Nouvelle substance",
+        "it": "Nuova sostanza",
+        "nl": "Nieuwe stof",
+        "pt_BR": "Nova substância"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.substances.remove",
+      "text": {
+        "de": "Substanz entfernen",
+        "es": "Eliminar sustancia",
+        "fr": "Supprimer la substance",
+        "it": "Rimuovi sostanza",
+        "nl": "Stof verwijderen",
+        "pt_BR": "Remover substância"
       }
     },
     {

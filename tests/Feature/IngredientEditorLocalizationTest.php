@@ -1087,6 +1087,68 @@ it('does not allow public state to add an inactive fatty acid option', function 
         ->and($select->getOptions())->not->toHaveKey($inactiveFattyAcid->id);
 });
 
+it('configures allergen and substance repeaters with contextual controls', function (): void {
+    $user = User::factory()->create();
+    $allergen = Allergen::factory()->create(['inci_name' => 'LIMONENE']);
+    $substance = Substance::factory()->create(['name' => 'Linalool']);
+
+    $this->actingAs($user);
+    DB::enableQueryLog();
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data', [
+            'requires_aromatic_compliance' => true,
+            'allergen_entries' => [[
+                'allergen_id' => $allergen->id,
+                'concentration_percent' => 0,
+            ]],
+            'substance_entries' => [[
+                'substance_id' => $substance->id,
+                'concentration_percent' => 0,
+            ]],
+        ]);
+
+    $allergens = $component->instance()->form->getComponent('allergen_entries', withHidden: true);
+    $substances = $component->instance()->form->getComponent('substance_entries', withHidden: true);
+    $allergenKey = array_key_first($allergens->getRawState() ?? []);
+    $substanceKey = array_key_first($substances->getRawState() ?? []);
+    $allergenSelect = $allergens->getChildSchema($allergenKey)->getComponent('allergen_id');
+    $substanceSelect = $substances->getChildSchema($substanceKey)->getComponent('substance_id');
+
+    expect($allergens->getAddActionLabel())->toBe('Add allergen')
+        ->and($allergens->getDeleteAction()->getLabel())->toBe('Remove allergen')
+        ->and($allergens->isReorderable())->toBeFalse()
+        ->and($allergens->getItemLabel($allergenKey, 0))->toBe('LIMONENE')
+        ->and($allergenSelect->isLive())->toBeTrue()
+        ->and($allergens->getChildSchema($allergenKey)->getComponent('concentration_percent')->getLabel())
+        ->toBe('Concentration in ingredient (%)')
+        ->and($substances->getAddActionLabel())->toBe('Add substance')
+        ->and($substances->getDeleteAction()->getLabel())->toBe('Remove substance')
+        ->and($substances->isReorderable())->toBeFalse()
+        ->and($substances->getItemLabel($substanceKey, 0))->toBe('Linalool')
+        ->and($substanceSelect->isLive())->toBeTrue()
+        ->and($substances->getChildSchema($substanceKey)->getComponent('concentration_percent')->getLabel())
+        ->toBe('Concentration in ingredient (%)')
+        ->and($substances->getChildSchema($substanceKey)->getComponent('concentration_percent')->getChildSchema('below_content')->getComponents()[0]->getContent())
+        ->toBe('Leave blank if unknown.');
+
+    $allergens->rawState([...($allergens->getRawState() ?? []), 'empty-item' => []]);
+    $substances->rawState([...($substances->getRawState() ?? []), 'empty-item' => []]);
+
+    expect($allergens->getItemLabel('empty-item', 1))->toBe('New allergen')
+        ->and($substances->getItemLabel('empty-item', 1))->toBe('New substance');
+
+    $allergenQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], ' from "allergen_catalog"'));
+    $substanceQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], ' from "substance_catalog"'));
+
+    DB::disableQueryLog();
+
+    expect($allergenQueries)->toHaveCount(1)
+        ->and($substanceQueries)->toHaveCount(1);
+});
+
 it('resolves legacy ingredient tab query values against visible tabs', function (): void {
     $user = User::factory()->create();
 

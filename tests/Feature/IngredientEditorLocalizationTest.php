@@ -1189,6 +1189,9 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
     $rawState = $limits->getRawState();
     $rowKey = array_key_first($rawState);
     $rowSelect = $limits->getChildSchema($rowKey)->getComponent('ifra_product_category_id');
+    $reference = $component->instance()->form->getComponent('ifra.reference_label', withHidden: true);
+    $sourceNotes = $component->instance()->form->getComponent('ifra.source_notes', withHidden: true);
+    $maximum = $limits->getChildSchema($rowKey)->getComponent('max_percentage');
 
     expect($limits->getAddActionLabel())->toBe('Add category limit')
         ->and($limits->getDeleteAction()->getLabel())->toBe('Remove category limit')
@@ -1198,7 +1201,10 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
         ->and($rowSelect->getOptions())->toHaveKey($activeCategory->id)
         ->and($rowSelect->getOptions())->toHaveKey($inactiveCategory->id)
         ->and($rowSelect->getOptions())->not->toHaveKey($unpersistedInactiveCategory->id)
-        ->and($rowSelect->isOptionDisabled($inactiveCategory->id, $inactiveCategory->optionLabel()))->toBeFalse();
+        ->and($rowSelect->isOptionDisabled($inactiveCategory->id, $inactiveCategory->optionLabel()))->toBeFalse()
+        ->and($reference->getLabel())->toBe('Reference label (optional)')
+        ->and($sourceNotes->getLabel())->toBe('IFRA source notes')
+        ->and($maximum->getLabel())->toBe('Maximum concentration (%)');
 
     $limits->rawState([...$rawState, 'new-item' => []]);
     $newSelect = $limits->getChildSchema('new-item')->getComponent('ifra_product_category_id');

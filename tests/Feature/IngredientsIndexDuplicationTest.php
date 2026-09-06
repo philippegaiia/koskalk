@@ -199,6 +199,43 @@ it('searches platform ingredients for duplication', function () {
     expect($results[0]['name'])->toBe('Lavender 40/42');
 });
 
+it('loads one exact scoped source for editor duplication without leaking a foreign ingredient', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $foreignWorkspace = Workspace::factory()->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+
+    $visible = Ingredient::factory()->create([
+        'display_name' => 'Exact editor source',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_active' => true,
+    ]);
+    $foreign = Ingredient::factory()->create([
+        'display_name' => 'Foreign private source',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $foreignWorkspace->id,
+        'workspace_id' => $foreignWorkspace->id,
+        'is_active' => true,
+        'source_data' => ['private' => 'must not be returned'],
+    ]);
+
+    actingAs($owner);
+
+    $this->getJson(route('ingredients.search-platform', ['ingredient_id' => $visible->id]))
+        ->assertSuccessful()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.id', $visible->id)
+        ->assertJsonPath('0.name', 'Exact editor source');
+
+    $this->getJson(route('ingredients.search-platform', ['ingredient_id' => $foreign->id]))
+        ->assertSuccessful()
+        ->assertJsonCount(0)
+        ->assertDontSee('must not be returned');
+});
+
 it('searches the active workspace ingredients without leaking another workspace', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

@@ -295,6 +295,53 @@ it('renders edit controls only for workspace writers and references for readers'
         ->assertDontSee('Save changes');
 });
 
+it('shows duplication on eligible saved sources while hiding it for drafts and readonly visitors', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Platform source',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+    $workspaceIngredient = Ingredient::factory()->create([
+        'display_name' => 'Workspace source',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $owner->forgetAccessibleWorkspaceIds();
+
+    $this->actingAs($owner);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->assertSee('Duplicate ingredient')
+        ->assertSee('initialIngredientId', escape: false)
+        ->assertSee((string) $platform->id);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $workspaceIngredient])
+        ->assertSee('Duplicate ingredient')
+        ->assertSee((string) $workspaceIngredient->id);
+
+    Livewire::test(IngredientEditor::class)
+        ->assertDontSee('Duplicate ingredient');
+
+    $viewer->forgetAccessibleWorkspaceIds();
+    $this->actingAs($viewer);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $workspaceIngredient])
+        ->assertSee('Ingredient reference')
+        ->assertDontSee('Duplicate ingredient');
+});
+
 it('denies a viewer before creating an ingredient in the supplied workspace', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

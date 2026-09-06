@@ -1123,6 +1123,10 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
             return registry.blocksNavigation();
         },
 
+        hasPendingChanges() {
+            return Object.values(this.scopeStates).some((state) => ['dirty', 'saving', 'failed'].includes(state));
+        },
+
         installUnsavedChangesGuard() {
             if (this.beforeUnloadHandler || this.navigateHandler) {
                 return;

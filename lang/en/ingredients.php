@@ -515,7 +515,9 @@ return [
             'duplicate_failed' => 'The private copy could not be created. Refresh the page and try again.',
             'invalid_response' => 'The server returned an unexpected response. Refresh the page and try again.',
             'reload_guidance' => 'Refresh the page and try again.',
+            'source_unavailable' => 'This ingredient is no longer available for duplication. Refresh the page and try again.',
         ],
+        'unsaved_changes' => 'Save or discard your changes before duplicating.',
     ],
     'removal' => [
         'delete_heading' => 'Delete “:ingredient”?',
@@ -573,6 +575,7 @@ return [
             'description' => 'Manage workspace-specific guidance and material code for this ingredient.',
         ],
         'read_only_description' => 'You can view this ingredient, but you do not have permission to edit it.',
+        'duplicate_hint' => 'Create a separate editable private copy; the source ingredient remains unchanged.',
         'material_code' => [
             'label' => 'Internal material code',
             'helper' => 'Optional mnemonic reference used by your workspace, for example RM-OLIVE. It must be unique among your current materials.',
@@ -641,7 +644,8 @@ return [
         'reference' => [
             'source' => 'Soapkraft ingredient',
             'heading' => 'Soapkraft ingredient',
-            'intro' => 'This ingredient is maintained by Soapkraft. You can review its identity, chemistry, and regulatory references, but you cannot edit it here.',
+            'intro' => 'This ingredient is maintained by Soapkraft. Review its identity, chemistry, and regulatory references here.',
+            'workspace_intro' => 'Workspace guidance and material code can be customized for :workspace; the Soapkraft source remains unchanged.',
             'technical_eyebrow' => 'Technical reference',
             'section' => 'Regulatory identity',
             'description' => 'Identifiers and declared allergens',

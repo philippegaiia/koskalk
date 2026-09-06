@@ -1802,6 +1802,22 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 'additional_identifiers' => [],
                 'aliases' => [],
             ];
+        $duplicateDestinationWorkspace = null;
+        $canDuplicateIngredient = false;
+        $currentUser = $this->freshAuthenticatedUser();
+
+        if ($ingredient instanceof Ingredient && $currentUser instanceof User) {
+            try {
+                $duplicateDestinationWorkspace = $this->authorizeDestinationWorkspace($currentUser);
+
+                $canDuplicateIngredient = Gate::forUser($currentUser)->allows(
+                    'duplicateIntoWorkspace',
+                    [$ingredient, $duplicateDestinationWorkspace],
+                );
+            } catch (AuthorizationException) {
+                $duplicateDestinationWorkspace = null;
+            }
+        }
 
         return view('livewire.dashboard.ingredient-editor', [
             'ingredient' => $ingredient,
@@ -1816,7 +1832,19 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
             'canEditWorkspaceGuidance' => $canEditWorkspaceMaterialCode,
             'workspaceName' => $workspace?->name,
+            'canDuplicateIngredient' => $canDuplicateIngredient,
+            'duplicateDestinationWorkspaceName' => $duplicateDestinationWorkspace?->name,
+            'duplicateDestinationSignature' => $this->duplicateDestinationSignature(),
         ]);
+    }
+
+    public function duplicateDestinationSignature(): string
+    {
+        return hash_hmac(
+            'sha256',
+            (string) auth()->id().'|'.($this->destinationWorkspaceId ?? 'none'),
+            (string) config('app.key'),
+        );
     }
 
     private function kohSapHelperText(): string

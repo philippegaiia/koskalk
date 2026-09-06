@@ -3516,6 +3516,18 @@
     },
     {
       "group": "ingredients",
+      "key": "duplicate.errors.source_unavailable",
+      "text": {
+        "de": "Diese Zutat ist nicht mehr zum Duplizieren verfügbar. Lade die Seite neu und versuche es erneut.",
+        "es": "Este ingrediente ya no está disponible para duplicarlo. Actualiza la página y vuelve a intentarlo.",
+        "fr": "Cet ingrédient n’est plus disponible pour la duplication. Actualisez la page et réessayez.",
+        "it": "Questo ingrediente non è più disponibile per la duplicazione. Ricarica la pagina e riprova.",
+        "nl": "Dit ingrediënt is niet langer beschikbaar om te dupliceren. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Este ingrediente não está mais disponível para duplicação. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "duplicate.eyebrow",
       "text": {
         "de": "Duplizieren",
@@ -3992,6 +4004,18 @@
         "it": "Ricerca in corso…",
         "nl": "Bezig met zoeken…",
         "pt_BR": "Pesquisando…"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.unsaved_changes",
+      "text": {
+        "de": "Speichere deine Änderungen oder verwerfe sie, bevor du duplizierst.",
+        "es": "Guarda o descarta los cambios antes de duplicar.",
+        "fr": "Enregistrez ou abandonnez vos modifications avant de dupliquer.",
+        "it": "Salva o annulla le modifiche prima di duplicare.",
+        "nl": "Sla je wijzigingen op of verwerp ze voordat je dupliceert.",
+        "pt_BR": "Salve ou descarte suas alterações antes de duplicar."
       }
     },
     {
@@ -6360,6 +6384,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.duplicate_hint",
+      "text": {
+        "de": "Erstelle eine separate bearbeitbare private Kopie; die Quellzutat bleibt unverändert.",
+        "es": "Crea una copia privada editable independiente; el ingrediente de origen no cambia.",
+        "fr": "Créez une copie privée distincte et modifiable ; l’ingrédient source reste inchangé.",
+        "it": "Crea una copia privata separata e modificabile; l’ingrediente sorgente resta invariato.",
+        "nl": "Maak een aparte bewerkbare privékopie; het broningrediënt blijft ongewijzigd.",
+        "pt_BR": "Crie uma cópia privada separada e editável; o ingrediente de origem permanece inalterado."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.edit.heading",
       "text": {
         "de": "Zutat :ingredient bearbeiten",
@@ -7766,12 +7802,12 @@
       "group": "ingredients",
       "key": "editor.reference.intro",
       "text": {
-        "de": "Diese Zutat wird von Soapkraft gepflegt. Du kannst Identität, Chemie und regulatorische Angaben einsehen, sie hier aber nicht bearbeiten.",
-        "es": "Soapkraft mantiene este ingrediente. Puedes consultar su identidad, química y referencias reglamentarias, pero no editarlo aquí.",
-        "fr": "Cet ingrédient est géré par Soapkraft. Vous pouvez consulter son identité, sa chimie et ses références réglementaires, mais vous ne pouvez pas le modifier ici.",
-        "it": "Questo ingrediente è gestito da Soapkraft. Puoi consultarne identità, chimica e riferimenti normativi, ma non modificarlo qui.",
-        "nl": "Dit ingrediënt wordt door Soapkraft beheerd. Je kunt de identiteit, chemie en wettelijke referenties bekijken, maar het hier niet bewerken.",
-        "pt_BR": "Este ingrediente é mantido pela Soapkraft. Você pode revisar sua identidade, química e referências regulatórias, mas não pode editá-lo aqui."
+        "de": "Diese Zutat wird von Soapkraft gepflegt. Prüfe hier Identität, Chemie und regulatorische Angaben.",
+        "es": "Soapkraft mantiene este ingrediente. Consulta aquí su identidad, química y referencias reglamentarias.",
+        "fr": "Cet ingrédient est géré par Soapkraft. Consultez ici son identité, sa chimie et ses références réglementaires.",
+        "it": "Questo ingrediente è gestito da Soapkraft. Consulta qui identità, chimica e riferimenti normativi.",
+        "nl": "Dit ingrediënt wordt door Soapkraft beheerd. Bekijk hier de identiteit, chemie en wettelijke referenties.",
+        "pt_BR": "Este ingrediente é mantido pela Soapkraft. Consulte aqui sua identidade, química e referências regulatórias."
       }
     },
     {
@@ -8012,6 +8048,18 @@
         "it": "Allergene sconosciuto",
         "nl": "Onbekend allergeen",
         "pt_BR": "Alérgeno desconhecido"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.workspace_intro",
+      "text": {
+        "de": "Arbeitsbereichshinweise und Materialcode können für :workspace angepasst werden; die Soapkraft-Quelle bleibt unverändert.",
+        "es": "Las notas y el código de material del espacio de trabajo pueden personalizarse para :workspace; la fuente de Soapkraft no cambia.",
+        "fr": "Les indications et le code matière peuvent être personnalisés pour :workspace ; la source Soapkraft reste inchangée.",
+        "it": "Le indicazioni e il codice materiale possono essere personalizzati per :workspace; la fonte Soapkraft resta invariata.",
+        "nl": "Werkruimteaanwijzingen en materiaalcode kunnen voor :workspace worden aangepast; de Soapkraft-bron blijft ongewijzigd.",
+        "pt_BR": "As orientações e o código do material podem ser personalizados para :workspace; a fonte Soapkraft permanece inalterada."
       }
     },
     {

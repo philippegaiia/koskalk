@@ -1,4 +1,6 @@
 @php
+    $sourceIngredientId = $sourceIngredientId ?? null;
+    $editorDirtyGuard = $editorDirtyGuard ?? false;
     $hasDestinationWorkspace = filled($destinationWorkspaceName);
     $duplicateDestinationCopy = $hasDestinationWorkspace
         ? __('ingredients.duplicate.preview.copy', ['workspace' => $destinationWorkspaceName])
@@ -9,15 +11,19 @@
     x-data="ingredientDuplicationModal({
         searchUrl: @js(route('ingredients.search-platform')),
         duplicateUrl: @js(route('ingredients.duplicate')),
+        initialIngredientId: @js($sourceIngredientId),
         destinationWorkspaceId: @js($destinationWorkspaceId),
         destinationWorkspaceSignature: @js($duplicateDestinationSignature),
         lipidCategoryLabel: @js(__('ingredients.categories.lipids.label')),
+        isEditorDirty: @if ($editorDirtyGuard) () => hasPendingChanges() || blocksNavigation() @else null @endif,
         messages: @js([
             'searchFailed' => __('ingredients.duplicate.errors.search_failed'),
             'authExpired' => __('ingredients.duplicate.errors.auth_expired'),
             'duplicateFailed' => __('ingredients.duplicate.errors.duplicate_failed'),
             'invalidResponse' => __('ingredients.duplicate.errors.invalid_response'),
             'reloadGuidance' => __('ingredients.duplicate.errors.reload_guidance'),
+            'sourceUnavailable' => __('ingredients.duplicate.errors.source_unavailable'),
+            'unsavedChanges' => __('ingredients.duplicate.unsaved_changes'),
             'review' => __('ingredients.duplicate.preview.review'),
             'source' => __('ingredients.duplicate.preview.source'),
             'kohSapUnit' => __('ingredients.duplicate.preview.koh_sap_unit'),
@@ -31,18 +37,26 @@
             ],
         ]),
     })"
-    class="inline-flex"
+    data-ingredient-editor-ignore-dirty
+    class="inline-flex flex-col items-start gap-2"
 >
     <button
         x-ref="opener"
         type="button"
         @click="openModal()"
+        :disabled="isBlocked()"
         aria-haspopup="dialog"
         :aria-expanded="open.toString()"
-        class="sk-btn sk-btn-primary justify-center"
+        class="sk-btn sk-btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60"
     >
         {{ __('ingredients.duplicate.button') }}
     </button>
+    <p
+        x-cloak
+        x-show="isBlocked()"
+        class="max-w-xs text-xs leading-5 text-[var(--color-ink-soft)]"
+        x-text="messages.unsavedChanges"
+    ></p>
 
     <template x-if="open">
         <div

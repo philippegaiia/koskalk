@@ -35,12 +35,25 @@ function candidate(overrides = {}) {
     };
 }
 
+function deferred() {
+    let resolve;
+    let reject;
+    const promise = new Promise((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+
+    return { promise, resolve, reject };
+}
+
 const messages = {
     searchFailed: 'Search failed. Refresh the page and try again.',
     authExpired: 'Your session expired. Refresh the page and sign in again.',
     duplicateFailed: 'The private copy could not be created. Refresh the page and try again.',
     invalidResponse: 'The server returned an unexpected response. Refresh the page and try again.',
     reloadGuidance: 'Refresh the page and try again.',
+    sourceUnavailable: 'This ingredient is no longer available for duplication.',
+    unsavedChanges: 'Save or discard your changes before duplicating.',
 };
 
 test('never lets an older search replace newer results', async () => {
@@ -218,6 +231,74 @@ test('clears a pending search when the dialog closes and reopens', async () => {
     await search;
 
     assert.equal(modal.loading, false);
+    assert.deepEqual(modal.results, []);
+});
+
+test('preselects the exact source and blocks dirty editor duplication', async () => {
+    const requests = [];
+    let dirty = false;
+    const sourcePayload = [
+        candidate({ id: 7, name: 'Wrong result' }),
+        candidate({ id: 42, name: 'Exact result' }),
+    ];
+    const modal = createIngredientDuplicationModal({
+        initialIngredientId: 42,
+        searchUrl: '/dashboard/ingredients/search-platform',
+        fetch: async (url, options = {}) => {
+            requests.push({ url, method: options.method ?? 'GET' });
+
+            return response(sourcePayload);
+        },
+        isEditorDirty: () => dirty,
+        messages,
+    });
+    modal.$nextTick = (callback) => callback();
+
+    assert.equal(modal.openModal(), true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.deepEqual(requests, [{
+        url: '/dashboard/ingredients/search-platform?ingredient_id=42',
+        method: 'GET',
+    }]);
+    assert.equal(modal.selected.id, 42);
+    assert.equal(modal.selected.name, 'Exact result');
+
+    assert.equal(modal.closeModal(), true);
+    dirty = true;
+    assert.equal(modal.openModal(), false);
+
+    dirty = false;
+    assert.equal(modal.openModal(), true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(modal.selected.id, 42);
+
+    dirty = true;
+    assert.equal(await modal.confirmDuplicate(), null);
+    assert.equal(modal.duplicateError, messages.unsavedChanges);
+    assert.equal(requests.some((request) => request.method === 'POST'), false);
+});
+
+test('ignores a pending exact-source response after the dialog closes', async () => {
+    const pending = deferred();
+    const modal = createIngredientDuplicationModal({
+        initialIngredientId: 42,
+        searchUrl: '/dashboard/ingredients/search-platform',
+        fetch: () => pending.promise,
+        messages,
+    });
+    modal.$nextTick = (callback) => callback();
+
+    assert.equal(modal.openModal(), true);
+    assert.equal(modal.loading, true);
+    assert.equal(modal.closeModal(), true);
+
+    pending.resolve(response([candidate({ id: 42, name: 'Late result' })]));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(modal.open, false);
+    assert.equal(modal.loading, false);
+    assert.equal(modal.selected, null);
     assert.deepEqual(modal.results, []);
 });
 

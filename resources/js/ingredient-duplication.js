@@ -4,6 +4,8 @@ const DEFAULT_MESSAGES = {
     duplicateFailed: 'The private copy could not be created. Refresh the page and try again.',
     invalidResponse: 'The server returned an unexpected response. Refresh the page and try again.',
     reloadGuidance: 'Refresh the page and try again.',
+    sourceUnavailable: 'This ingredient is no longer available for duplication.',
+    unsavedChanges: 'Save or discard your changes before duplicating.',
     unavailable: 'This ingredient is not available for duplication.',
     sources: {
         platform: 'Soapkraft',
@@ -237,6 +239,13 @@ export function createIngredientDuplicationModal(options = {}) {
     const maxIdentifiers = options.maxIdentifiers ?? DEFAULT_MAX_IDENTIFIERS;
     const maxAliases = options.maxAliases ?? DEFAULT_MAX_ALIASES;
     const maxFattyAcids = options.maxFattyAcids ?? DEFAULT_MAX_FATTY_ACIDS;
+    const initialIngredientId = Number.isSafeInteger(Number(options.initialIngredientId))
+        && Number(options.initialIngredientId) > 0
+        ? Number(options.initialIngredientId)
+        : null;
+    const editorDirtyCheck = typeof options.isEditorDirty === 'function'
+        ? options.isEditorDirty
+        : () => false;
 
     return {
         open: false,
@@ -257,6 +266,7 @@ export function createIngredientDuplicationModal(options = {}) {
         destinationWorkspaceSignature: options.destinationWorkspaceSignature ?? '',
         destinationLabel: options.destinationLabel ?? '',
         lipidCategoryLabel: options.lipidCategoryLabel ?? 'Lipids',
+        initialIngredientId,
         messages,
 
         init() {
@@ -281,12 +291,16 @@ export function createIngredientDuplicationModal(options = {}) {
                 : fallback;
         },
 
+        isBlocked() {
+            return editorDirtyCheck() === true;
+        },
+
         destroy() {
             this.abortSearch();
         },
 
         openModal() {
-            if (this.open || this.confirming || this.redirecting) {
+            if (this.open || this.confirming || this.redirecting || this.isBlocked()) {
                 return false;
             }
 
@@ -297,7 +311,13 @@ export function createIngredientDuplicationModal(options = {}) {
             this.selected = null;
             this.searchError = null;
             this.duplicateError = null;
-            this.$nextTick?.(() => this.$refs?.searchInput?.focus());
+
+            if (this.initialIngredientId !== null) {
+                this.$nextTick?.(() => this.$refs?.dialog?.focus?.());
+                this.loadInitialSource();
+            } else {
+                this.$nextTick?.(() => this.$refs?.searchInput?.focus());
+            }
 
             return true;
         },
@@ -321,6 +341,74 @@ export function createIngredientDuplicationModal(options = {}) {
             this.$nextTick?.(() => opener?.focus?.());
 
             return true;
+        },
+
+        async loadInitialSource() {
+            if (this.confirming || this.redirecting || this.initialIngredientId === null) {
+                return [];
+            }
+
+            const generation = ++this.searchGeneration;
+            this.abortSearch();
+            this.loading = true;
+            this.searchError = null;
+
+            const separator = this.searchUrl.includes('?') ? '&' : '?';
+            const url = `${this.searchUrl}${separator}ingredient_id=${encodeURIComponent(this.initialIngredientId)}`;
+            const controller = typeof AbortController === 'function' ? new AbortController() : null;
+            this.searchController = controller;
+
+            try {
+                const payload = await this.requestJson(url, {
+                    method: 'GET',
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                    ...(controller ? { signal: controller.signal } : {}),
+                }, 'search');
+
+                if (generation !== this.searchGeneration) {
+                    return [];
+                }
+
+                if (!Array.isArray(payload)) {
+                    const invalidResponse = new Error(messages.invalidResponse);
+                    invalidResponse.unexpected = true;
+                    throw invalidResponse;
+                }
+
+                const candidates = payload
+                    .filter((candidate) => candidate !== null && typeof candidate === 'object')
+                    .map((candidate) => normalizedCandidate(candidate, maxIdentifiers, maxAliases, maxFattyAcids));
+                const selected = candidates.find((candidate) => Number(candidate.id) === this.initialIngredientId) ?? null;
+                this.results = selected === null ? [] : [selected];
+                this.selected = selected;
+
+                if (this.selected === null) {
+                    this.searchError = messages.sourceUnavailable ?? messages.searchFailed;
+                } else {
+                    this.$nextTick?.(() => this.$refs?.previewHeading?.focus());
+                }
+
+                return this.results;
+            } catch (error) {
+                if (generation !== this.searchGeneration || error?.name === 'AbortError') {
+                    return [];
+                }
+
+                this.results = [];
+                this.selected = null;
+                this.searchError = errorMessage(error, 'search', messages);
+
+                return [];
+            } finally {
+                if (generation === this.searchGeneration) {
+                    this.loading = false;
+
+                    if (this.searchController === controller) {
+                        this.searchController = null;
+                    }
+                }
+            }
         },
 
         chooseAnother() {
@@ -518,6 +606,12 @@ export function createIngredientDuplicationModal(options = {}) {
 
         async confirmDuplicate() {
             if (!this.selected || this.selected.duplication?.available !== true || this.confirming || this.redirecting) {
+                return null;
+            }
+
+            if (this.isBlocked()) {
+                this.duplicateError = messages.unsavedChanges;
+
                 return null;
             }
 

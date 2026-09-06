@@ -408,6 +408,28 @@ function submit(target, editor, wire) {
     wire.startCommit();
 }
 
+test('reports pending changes for dirty, saving, and failed scopes', () => {
+    const { editor } = makeEditor();
+
+    for (const state of ['dirty', 'saving', 'failed']) {
+        editor.scopeStates = {
+            ingredient: state,
+            guidance: 'saved',
+            'material-code': 'saved',
+        };
+
+        assert.equal(editor.hasPendingChanges(), true);
+    }
+
+    editor.scopeStates = {
+        ingredient: 'saved',
+        guidance: 'saved',
+        'material-code': 'saved',
+    };
+
+    assert.equal(editor.hasPendingChanges(), false);
+});
+
 test('keeps another dirty scope blocked when one scope saves', () => {
     const { editor, wire, eventTarget, registry } = makeEditor();
 

@@ -70,6 +70,9 @@
  <p class="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--color-ink-soft)]">
  @if ($isPlatformIngredient)
  {{ __('ingredients.editor.reference.intro') }}
+ @if ($canEditWorkspaceGuidance || $canEditWorkspaceMaterialCode)
+ <span class="mt-2 block">{{ __('ingredients.editor.reference.workspace_intro', ['workspace' => $workspaceName]) }}</span>
+ @endif
  @elseif ($isReadOnlyIngredient)
  {{ __('ingredients.editor.read_only_description') }}
  @elseif (! $isCreate)
@@ -94,6 +97,21 @@
  </aside>
  @endif
  </div>
+
+ @if ($canDuplicateIngredient)
+ <div class="mt-4">
+ @include('livewire.dashboard.partials.duplicate-ingredient-modal', [
+     'destinationWorkspaceId' => $destinationWorkspaceId,
+     'destinationWorkspaceName' => $duplicateDestinationWorkspaceName,
+     'duplicateDestinationSignature' => $duplicateDestinationSignature,
+     'sourceIngredientId' => $ingredient?->id,
+     'editorDirtyGuard' => true,
+ ])
+ <p class="mt-2 max-w-[70ch] text-xs leading-5 text-[var(--color-ink-soft)]">
+ {{ __('ingredients.editor.duplicate_hint') }}
+ </p>
+ </div>
+ @endif
  </section>
 
 @if ($isReferenceView)

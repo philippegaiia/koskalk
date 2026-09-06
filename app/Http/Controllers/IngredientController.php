@@ -129,6 +129,9 @@ class IngredientController extends Controller
         UserIngredientAuthoringService $userIngredientAuthoringService,
     ): JsonResponse {
         $query = (string) $request->query('q', '');
+        $ingredientId = $request->validate([
+            'ingredient_id' => ['sometimes', 'nullable', 'integer'],
+        ])['ingredient_id'] ?? null;
         $translationLocales = Ingredient::translationLocaleCandidates();
         $authenticatedUser = $request->user();
         $user = $authenticatedUser instanceof User
@@ -176,6 +179,7 @@ class IngredientController extends Controller
                 }
             })
             ->where('is_active', true)
+            ->when($ingredientId !== null, fn (Builder $sourceQuery) => $sourceQuery->whereKey($ingredientId))
             ->when(filled($query), fn ($q) => $catalogSearch->apply($q, $query, $translationLocales))
             ->limit(20)
             ->get()

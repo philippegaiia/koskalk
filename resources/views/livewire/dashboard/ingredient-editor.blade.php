@@ -101,7 +101,7 @@
         'referenceData' => $referenceData,
     ])
 
-    @if ($isPlatformIngredient && $workspaceName !== null)
+    @if ($isPlatformIngredient && filled($workspaceName))
         <section class="space-y-4" aria-labelledby="ingredient-workspace-context">
             <div>
                 <p class="sk-eyebrow">{{ __('ingredients.editor.workspace_context.eyebrow') }}</p>
@@ -131,7 +131,7 @@
     @include('livewire.dashboard.partials.ingredient-reference', [
         'referenceData' => $referenceData,
         'workspaceName' => $workspaceName,
-        'showGuidance' => ! $isPlatformIngredient || $workspaceName === null,
+        'showGuidance' => ! $isPlatformIngredient || ! filled($workspaceName),
     ])
 @endif
 

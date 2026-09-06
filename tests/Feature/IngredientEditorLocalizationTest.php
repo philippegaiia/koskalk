@@ -379,6 +379,7 @@ it('clarifies platform reference terminology and localizes empty identity values
 
     expect($identitySection)->toContain('Alternative names')
         ->and($identitySection)->toContain('Source notes')
+        ->and($identitySection)->toMatch('/PubChem CID<\/span>:\s*0/')
         ->and(substr_count($identitySection, '>Not available<'))->toBe(3)
         ->and($html)->toContain('Aromatic handling')
         ->and($html)->toContain('Enabled')
@@ -387,6 +388,31 @@ it('clarifies platform reference terminology and localizes empty identity values
         ->and($html)->not->toContain('Aromatic compliance')
         ->and($html)->not->toContain('Required')
         ->and($html)->not->toContain('Not required');
+});
+
+it('does not render a workspace context when the resolved workspace name is blank', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create(['name' => '']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Blank workspace name reference',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'info_markdown' => 'Blank workspace platform guidance.',
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+
+    $component
+        ->assertDontSeeHtml('ingredient-workspace-context')
+        ->assertDontSeeHtml('workspace-guidance-heading')
+        ->assertDontSeeHtml('platform-material-code-heading')
+        ->assertSeeText('Blank workspace platform guidance.');
+
+    expect(substr_count($component->html(), '>Blank workspace platform guidance.<'))->toBe(1);
 });
 
 it('renders zero chemistry and IFRA values instead of treating them as unavailable', function (): void {

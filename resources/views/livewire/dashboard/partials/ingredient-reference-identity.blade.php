@@ -36,7 +36,7 @@
                 @foreach ($referenceData['additional_identifiers'] as $identifier)
                     <li>
                         <span class="font-medium text-[var(--color-ink-strong)]">{{ $identifier['label'] ?? $identifier['scheme'] }}</span>:
-                        {{ $identifier['value'] ?: $notAvailable }}
+                        {{ filled($identifier['value'] ?? null) ? $identifier['value'] : $notAvailable }}
                     </li>
                 @endforeach
             </ul>

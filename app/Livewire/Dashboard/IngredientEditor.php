@@ -153,6 +153,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
     /** @var array<int, string>|null */
     private ?array $substanceOptionsCache = null;
 
+    /** @var array<int, string>|null */
+    private ?array $ifraProductCategoryOptionsCache = null;
+
+    /** @var array<int> */
+    private array $inactiveIfraProductCategoryIdsCache = [];
+
     public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
     {
         $name = trim((string) ($this->data['name'] ?? ''));
@@ -1263,19 +1269,21 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->columnSpanFull(),
                                         Repeater::make('ifra.limits')
                                             ->label(__('ingredients.editor.compliance.ifra.limits'))
+                                            ->itemLabel(fn (array $state): string => $this->ifraProductCategoryOptions()[(int) ($state['ifra_product_category_id'] ?? 0)]
+                                                ?? __('ingredients.editor.compliance.ifra.new_category_limit'))
+                                            ->addActionLabel(__('ingredients.editor.compliance.ifra.add_category_limit'))
+                                            ->deleteAction(fn (Action $action): Action => $action->label(__('ingredients.editor.compliance.ifra.remove_category_limit')))
                                             ->schema([
                                                 Select::make('ifra_product_category_id')
                                                     ->label(__('ingredients.editor.compliance.ifra.category'))
-                                                    ->options(fn (): array => IfraProductCategory::query()
-                                                        ->where('is_active', true)
-                                                        ->orderBy('code')
-                                                        ->get()
-                                                        ->mapWithKeys(fn (IfraProductCategory $category): array => [
-                                                            $category->id => $category->optionLabel(),
-                                                        ])
-                                                        ->all())
+                                                    ->options(fn (): array => $this->ifraProductCategoryOptions())
+                                                    ->disableOptionWhen(fn (Get $get, mixed $value): bool => $this->isInactiveIfraProductCategoryOption(
+                                                        $value,
+                                                        $get('ifra_product_category_id'),
+                                                    ))
                                                     ->searchable()
                                                     ->preload()
+                                                    ->live()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('max_percentage')
                                                     ->label(__('ingredients.editor.compliance.ifra.maximum'))
@@ -1288,6 +1296,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 'md' => 2,
                                             ])
                                             ->defaultItems(0)
+                                            ->reorderable(false)
                                             ->columnSpanFull(),
                                     ]),
                             ]),
@@ -1981,6 +1990,65 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function ifraProductCategoryOptions(): array
+    {
+        if ($this->ifraProductCategoryOptionsCache !== null) {
+            return $this->ifraProductCategoryOptionsCache;
+        }
+
+        $currentIngredient = $this->currentIngredient();
+        $categories = IfraProductCategory::query()
+            ->where(function (Builder $query) use ($currentIngredient): void {
+                $query->where('is_active', true);
+
+                if ($currentIngredient instanceof Ingredient) {
+                    $query->orWhereHas('certificateLimits.certificate', function (Builder $query) use ($currentIngredient): void {
+                        $query
+                            ->where('ingredient_id', $currentIngredient->id)
+                            ->where('is_current', true);
+                    });
+                }
+            })
+            ->orderBy('code')
+            ->get();
+
+        $this->inactiveIfraProductCategoryIdsCache = $categories
+            ->filter(fn (IfraProductCategory $category): bool => ! $category->is_active)
+            ->map(fn (IfraProductCategory $category): int => (int) $category->id)
+            ->values()
+            ->all();
+
+        return $this->ifraProductCategoryOptionsCache = $categories
+            ->mapWithKeys(fn (IfraProductCategory $category): array => [
+                (int) $category->id => $category->optionLabel(),
+            ])
+            ->all();
+    }
+
+    private function isInactiveIfraProductCategoryOption(mixed $value, mixed $currentValue): bool
+    {
+        $categoryId = (int) $value;
+
+        if (! in_array($categoryId, $this->inactiveIfraProductCategoryIds(), true)) {
+            return false;
+        }
+
+        return $categoryId !== (int) $currentValue;
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function inactiveIfraProductCategoryIds(): array
+    {
+        $this->ifraProductCategoryOptions();
+
+        return $this->inactiveIfraProductCategoryIdsCache;
     }
 
     /**

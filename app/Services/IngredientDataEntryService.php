@@ -16,6 +16,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\Substance;
 use App\Support\NumberLocale;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -300,7 +301,25 @@ class IngredientDataEntryService
         }
 
         $categoryIds = $limits->pluck('ifra_product_category_id')->all();
-        if (IfraProductCategory::query()->where('is_active', true)->whereIn('id', $categoryIds)->count() !== count($categoryIds)) {
+        $persistedCategoryIds = IfraCertificateLimit::query()
+            ->select('ifra_product_category_id')
+            ->whereIn(
+                'ifra_certificate_id',
+                IfraCertificate::query()
+                    ->select('id')
+                    ->where('ingredient_id', $ingredient->id)
+                    ->where('is_current', true),
+            );
+        $validCategoryCount = IfraProductCategory::query()
+            ->whereIn('id', $categoryIds)
+            ->where(function (Builder $query) use ($persistedCategoryIds): void {
+                $query
+                    ->where('is_active', true)
+                    ->orWhereIn('id', $persistedCategoryIds);
+            })
+            ->count();
+
+        if ($validCategoryCount !== count($categoryIds)) {
             throw ValidationException::withMessages([
                 'ifra.limits' => __('ingredients.editor.compliance.ifra.invalid_category'),
             ]);

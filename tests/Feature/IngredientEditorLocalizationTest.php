@@ -1149,6 +1149,74 @@ it('configures allergen and substance repeaters with contextual controls', funct
         ->and($substanceQueries)->toHaveCount(1);
 });
 
+it('configures IFRA category limits with cached labels and persisted inactive categories', function (): void {
+    $user = User::factory()->create();
+    $activeCategory = IfraProductCategory::factory()->create([
+        'code' => '3',
+        'name' => 'Soap products',
+        'is_active' => true,
+    ]);
+    $inactiveCategory = IfraProductCategory::factory()->create([
+        'code' => '4',
+        'name' => 'Legacy products',
+        'is_active' => false,
+    ]);
+    $unpersistedInactiveCategory = IfraProductCategory::factory()->create([
+        'code' => '5',
+        'name' => 'Unavailable products',
+        'is_active' => false,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $certificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Legacy IFRA certificate',
+        'is_current' => true,
+    ]);
+    $certificate->limits()->create([
+        'ifra_product_category_id' => $inactiveCategory->id,
+        'max_percentage' => 2.5,
+    ]);
+
+    $this->actingAs($user);
+    DB::enableQueryLog();
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+    $limits = $component->instance()->form->getComponent('ifra.limits', withHidden: true);
+    $rawState = $limits->getRawState();
+    $rowKey = array_key_first($rawState);
+    $rowSelect = $limits->getChildSchema($rowKey)->getComponent('ifra_product_category_id');
+
+    expect($limits->getAddActionLabel())->toBe('Add category limit')
+        ->and($limits->getDeleteAction()->getLabel())->toBe('Remove category limit')
+        ->and($limits->isReorderable())->toBeFalse()
+        ->and($limits->getItemLabel($rowKey, 0))->toBe($inactiveCategory->optionLabel())
+        ->and($rowSelect->isLive())->toBeTrue()
+        ->and($rowSelect->getOptions())->toHaveKey($activeCategory->id)
+        ->and($rowSelect->getOptions())->toHaveKey($inactiveCategory->id)
+        ->and($rowSelect->getOptions())->not->toHaveKey($unpersistedInactiveCategory->id)
+        ->and($rowSelect->isOptionDisabled($inactiveCategory->id, $inactiveCategory->optionLabel()))->toBeFalse();
+
+    $limits->rawState([...$rawState, 'new-item' => []]);
+    $newSelect = $limits->getChildSchema('new-item')->getComponent('ifra_product_category_id');
+
+    expect($limits->getItemLabel('new-item', 1))->toBe('New category limit')
+        ->and($newSelect->isOptionDisabled($inactiveCategory->id, $inactiveCategory->optionLabel()))->toBeTrue();
+
+    $limits->getItemLabel($rowKey, 0);
+    $newSelect->getOptions();
+
+    $categoryQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], ' from "ifra_product_categories"'));
+
+    DB::disableQueryLog();
+
+    expect($categoryQueries)->toHaveCount(1);
+});
+
 it('resolves legacy ingredient tab query values against visible tabs', function (): void {
     $user = User::factory()->create();
 

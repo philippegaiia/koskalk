@@ -1792,6 +1792,62 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ->and($aromaticOn?->ifraCertificates->first()?->limits->first()?->restriction_note)->toBe('Rinse-off reference');
 });
 
+it('keeps persisted inactive IFRA categories and rejects untrusted category ids', function (): void {
+    $user = User::factory()->create();
+    $inactiveCategory = IfraProductCategory::factory()->create([
+        'is_active' => false,
+    ]);
+    $untrustedInactiveCategory = IfraProductCategory::factory()->create([
+        'is_active' => false,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'display_name' => 'Legacy aromatic ingredient',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $certificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Legacy IFRA certificate',
+        'is_current' => true,
+    ]);
+    $certificate->limits()->create([
+        'ifra_product_category_id' => $inactiveCategory->id,
+        'max_percentage' => 0,
+    ]);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $state = $service->formData($ingredient->fresh());
+
+    $updated = $service->update($ingredient, $state, $user);
+
+    expect($updated->fresh('ifraCertificates.limits')->ifraCertificates->first()?->limits)
+        ->toHaveCount(1)
+        ->and($updated->fresh('ifraCertificates.limits')->ifraCertificates->first()?->limits->first()?->ifra_product_category_id)
+        ->toBe($inactiveCategory->id);
+
+    $assertRejectedCategory = function (int $categoryId) use ($service, $updated, $state, $user): void {
+        $state['ifra']['limits'][0]['ifra_product_category_id'] = $categoryId;
+
+        try {
+            $service->update($updated, $state, $user);
+            fail('An untrusted IFRA category should be rejected before persistence.');
+        } catch (ValidationException $exception) {
+            expect($exception->errors())
+                ->toHaveKey('ifra.limits')
+                ->toHaveKey('ifra.limits.0.ifra_product_category_id')
+                ->and($exception->errors()['ifra.limits'])
+                ->toContain(__('ingredients.editor.validation.ifra_category_unavailable'))
+                ->and($exception->errors()['ifra.limits.0.ifra_product_category_id'])
+                ->toContain(__('ingredients.editor.validation.ifra_category_unavailable'));
+        }
+    };
+
+    $assertRejectedCategory($untrustedInactiveCategory->id);
+    $assertRejectedCategory($inactiveCategory->id + 100000);
+});
+
 it('accepts comma decimals throughout user soap chemistry fields', function () {
     $user = User::factory()->create();
     $fattyAcid = FattyAcid::factory()->create(['is_active' => true]);

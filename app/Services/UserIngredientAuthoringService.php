@@ -7,6 +7,9 @@ use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Models\FattyAcid;
+use App\Models\IfraCertificate;
+use App\Models\IfraCertificateLimit;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -806,7 +809,7 @@ class UserIngredientAuthoringService
         );
 
         $this->validateAllergenEntries(Arr::get($state, 'allergen_entries', []));
-        $this->validateIfraState(Arr::get($state, 'ifra', []));
+        $this->validateIfraState($ingredient, Arr::get($state, 'ifra', []));
         $this->validateTrustedKohSapValue($ingredient, $state);
         $this->validateTrustedFattyAcidProfile($ingredient, $state);
         $this->validateBlendComponents($ingredient, $state, $user);
@@ -1257,7 +1260,7 @@ class UserIngredientAuthoringService
     /**
      * @param  array<string, mixed>  $state
      */
-    private function validateIfraState(array $state): void
+    private function validateIfraState(Ingredient $ingredient, array $state): void
     {
         $peroxideValue = Arr::get($state, 'peroxide_value');
 
@@ -1268,6 +1271,50 @@ class UserIngredientAuthoringService
         }
 
         $limits = collect(Arr::get($state, 'limits', []));
+        $categoryIds = $limits
+            ->filter(fn (mixed $limit): bool => is_array($limit) && filled($limit['ifra_product_category_id'] ?? null))
+            ->map(fn (array $limit): int => (int) $limit['ifra_product_category_id'])
+            ->unique()
+            ->values();
+        $persistedCategoryIds = IfraCertificateLimit::query()
+            ->select('ifra_product_category_id')
+            ->whereIn(
+                'ifra_certificate_id',
+                IfraCertificate::query()
+                    ->select('id')
+                    ->where('ingredient_id', $ingredient->id)
+                    ->where('is_current', true),
+            );
+        $validCategoryIds = IfraProductCategory::query()
+            ->whereIn('id', $categoryIds->all())
+            ->where(function (Builder $query) use ($persistedCategoryIds): void {
+                $query
+                    ->where('is_active', true)
+                    ->orWhereIn('id', $persistedCategoryIds);
+            })
+            ->pluck('id')
+            ->map(fn (int|string $id): int => (int) $id)
+            ->all();
+        $invalidCategoryMessages = [];
+
+        foreach ($limits as $index => $limit) {
+            if (! is_array($limit) || ! filled($limit['ifra_product_category_id'] ?? null)) {
+                continue;
+            }
+
+            if (in_array((int) $limit['ifra_product_category_id'], $validCategoryIds, true)) {
+                continue;
+            }
+
+            $invalidCategoryMessages["ifra.limits.{$index}.ifra_product_category_id"] = __('ingredients.editor.validation.ifra_category_unavailable');
+        }
+
+        if ($invalidCategoryMessages !== []) {
+            throw ValidationException::withMessages([
+                'ifra.limits' => __('ingredients.editor.validation.ifra_category_unavailable'),
+                ...$invalidCategoryMessages,
+            ]);
+        }
 
         foreach ($limits as $index => $limit) {
             $maxPercentage = (float) ($limit['max_percentage'] ?? 0);

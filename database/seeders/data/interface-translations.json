@@ -4872,6 +4872,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.compliance.ifra.add_category_limit",
+      "text": {
+        "de": "Kategoriegrenzwert hinzufügen",
+        "es": "Añadir límite de categoría",
+        "fr": "Ajouter une limite de catégorie",
+        "it": "Aggiungi limite di categoria",
+        "nl": "Categorielimiet toevoegen",
+        "pt_BR": "Adicionar limite de categoria"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.compliance.ifra.amendment",
       "text": {
         "de": "IFRA-Änderung",
@@ -4958,24 +4970,36 @@
       "group": "ingredients",
       "key": "editor.compliance.ifra.maximum",
       "text": {
-        "de": "Höchstkonzentration",
-        "es": "Concentración máxima",
-        "fr": "Concentration maximale",
-        "it": "Concentrazione massima",
-        "nl": "Maximale concentratie",
-        "pt_BR": "Concentração máxima"
+        "de": "Höchstkonzentration (%)",
+        "es": "Concentración máxima (%)",
+        "fr": "Concentration maximale (%)",
+        "it": "Concentrazione massima (%)",
+        "nl": "Maximale concentratie (%)",
+        "pt_BR": "Concentração máxima (%)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.ifra.new_category_limit",
+      "text": {
+        "de": "Neuer Kategoriegrenzwert",
+        "es": "Nuevo límite de categoría",
+        "fr": "Nouvelle limite de catégorie",
+        "it": "Nuovo limite di categoria",
+        "nl": "Nieuw categorielimiet",
+        "pt_BR": "Novo limite de categoria"
       }
     },
     {
       "group": "ingredients",
       "key": "editor.compliance.ifra.notes",
       "text": {
-        "de": "Notizen",
-        "es": "Notas",
-        "fr": "Notes",
-        "it": "Note",
-        "nl": "Notities",
-        "pt_BR": "Notas"
+        "de": "IFRA-Quellennotizen",
+        "es": "Notas de la fuente IFRA",
+        "fr": "Notes de source IFRA",
+        "it": "Note sulla fonte IFRA",
+        "nl": "IFRA-bronnotities",
+        "pt_BR": "Notas da fonte IFRA"
       }
     },
     {
@@ -4994,12 +5018,24 @@
       "group": "ingredients",
       "key": "editor.compliance.ifra.reference",
       "text": {
-        "de": "Referenzbezeichnung",
-        "es": "Etiqueta de referencia",
-        "fr": "Libellé de référence",
-        "it": "Etichetta di riferimento",
-        "nl": "Referentielabel",
-        "pt_BR": "Rótulo da referência"
+        "de": "Referenzbezeichnung (optional)",
+        "es": "Etiqueta de referencia (opcional)",
+        "fr": "Libellé de référence (facultatif)",
+        "it": "Etichetta di riferimento (facoltativa)",
+        "nl": "Referentielabel (optioneel)",
+        "pt_BR": "Rótulo da referência (opcional)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.ifra.remove_category_limit",
+      "text": {
+        "de": "Kategoriegrenzwert entfernen",
+        "es": "Eliminar límite de categoría",
+        "fr": "Supprimer la limite de catégorie",
+        "it": "Rimuovi limite di categoria",
+        "nl": "Categorielimiet verwijderen",
+        "pt_BR": "Remover limite de categoria"
       }
     },
     {
@@ -7832,6 +7868,18 @@
         "it": "Scegli un acido grasso attivo oppure conserva l’acido grasso inattivo già salvato su questo ingrediente.",
         "nl": "Kies een actief vetzuur of behoud een inactief vetzuur dat al op dit ingrediënt is opgeslagen.",
         "pt_BR": "Escolha um ácido graxo ativo ou mantenha o ácido graxo inativo já salvo neste ingrediente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.ifra_category_unavailable",
+      "text": {
+        "de": "Wähle eine aktive IFRA-Kategorie oder behalte eine in diesem Inhaltsstoff gespeicherte inaktive Kategorie.",
+        "es": "Elige una categoría IFRA activa o conserva una categoría inactiva ya guardada en este ingrediente.",
+        "fr": "Choisissez une catégorie IFRA active ou conservez une catégorie inactive déjà enregistrée sur cet ingrédient.",
+        "it": "Scegli una categoria IFRA attiva oppure conserva una categoria inattiva già salvata su questo ingrediente.",
+        "nl": "Kies een actieve IFRA-categorie of behoud een inactieve categorie die al op dit ingrediënt is opgeslagen.",
+        "pt_BR": "Escolha uma categoria IFRA ativa ou mantenha uma categoria inativa já salva neste ingrediente."
       }
     },
     {

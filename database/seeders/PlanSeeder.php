@@ -29,7 +29,7 @@ class PlanSeeder extends Seeder
             'formula_items_per_recipe' => 30,
             'production_batches' => 0,
             'saved_formula_history' => 0,
-            'media_assets' => 200,
+            'media_assets' => 100,
             'media_labels' => 20,
         ] as $key => $value) {
             $plan->limits()->firstOrCreate(

@@ -131,7 +131,7 @@
                     <div id="{{ $pickerId }}-upload-panel" aria-labelledby="{{ $pickerId }}-upload-tab" x-show="activeTab === 'upload'" role="tabpanel" class="space-y-4">
                         @if ($canUpload)
                             <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_description') }}</p>
-                            <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_requirements', ['formats' => $acceptedFormatLabels, 'max' => $maximumUploadSizeMb]) }}</p>
+                            <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __($acceptsDocuments ? 'media_library.picker.document_upload_requirements' : 'media_library.picker.upload_requirements', ['formats' => $acceptedFormatLabels, 'max' => $maximumUploadSizeMb, 'pdfMax' => config('media.asset_uploads.pdf.max_size_kb', 150)]) }}</p>
                             <div data-media-picker-upload-form class="space-y-4">
                                 <div>
                                     <span class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ $acceptsDocuments ? __('media_library.picker.document') : __('media_library.picker.image') }}</span>

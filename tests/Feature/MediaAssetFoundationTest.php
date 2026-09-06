@@ -276,7 +276,7 @@ it('authorizes workspace members by role', function () {
         ->and(Gate::forUser($editor)->allows('delete', $asset))->toBeFalse();
 });
 
-it('seeds a 200 asset limit for the free plan', function () {
+it('seeds a 100 asset limit for the free plan', function () {
     $this->seed(PlanSeeder::class);
 
     $plan = Plan::query()
@@ -285,7 +285,7 @@ it('seeds a 200 asset limit for the free plan', function () {
         ->firstOrFail();
 
     expect($plan->limits->pluck('value', 'key'))
-        ->get('media_assets')->toBe(200)
+        ->get('media_assets')->toBe(100)
         ->get('media_labels')->toBe(20);
 });
 

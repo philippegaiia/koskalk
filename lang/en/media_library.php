@@ -45,6 +45,7 @@ return [
     'search_placeholder' => 'Name or original filename',
     'search' => 'Search',
     'picker' => [
+        'document_upload_requirements' => ':formats. Images up to :max MB; PDFs up to :pdfMax KB.',
         'choose' => 'Choose from Media Library',
         'insert_from_media_library' => 'Insert from Media Library',
         'choose_multiple' => 'Choose images',
@@ -118,7 +119,7 @@ return [
     'detach_before_removing' => 'Detach this image everywhere before removing it.',
     'quota' => [
         'unlimited' => ':used media assets used · Unlimited',
-        'limited' => ':used of :limit media assets used',
+        'limited' => ':used/:limit',
     ],
     'filters' => [
         'aria_label' => 'Media filters',
@@ -187,6 +188,7 @@ return [
         'labels_updated' => 'Labels updated.',
     ],
     'validation' => [
+        'pdf_size' => 'This PDF exceeds the :max KB limit. Compress it and try again.',
         'asset_in_use_by_documents' => 'This file is attached to production or receipt documents and cannot be removed.',
         'display_name_required' => 'Enter a display name.',
         'display_name_max' => 'The display name must not be longer than 255 characters.',

@@ -51,7 +51,7 @@ it('shows only the active workspace media and its quota', function () {
         ->test(MediaLibraryIndex::class)
         ->assertSee($visible->original_filename)
         ->assertDontSee('Other workspace.jpg')
-        ->assertSee('1 of 3 media assets used');
+        ->assertSee('1/3');
 });
 
 it('searches filenames and filters used and unused assets', function () {
@@ -606,7 +606,7 @@ it('disables uploads at the media asset quota while retaining existing assets', 
 
     Livewire::actingAs($user)
         ->test(MediaLibraryIndex::class)
-        ->assertSee('1 of 1 media assets used')
+        ->assertSee('1/1')
         ->assertSee('Existing assets remain available')
         ->assertSeeHtml('data-media-upload-disabled');
 });

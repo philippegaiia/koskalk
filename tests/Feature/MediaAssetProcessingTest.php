@@ -159,7 +159,7 @@ it('rejects a renamed payload and oversized files as pdf documents', function ()
         $workspace,
         UploadedFile::fake()->create('large.pdf', 10241, 'application/pdf'),
         $allowedTypes,
-    ))->toThrow(ValidationException::class, '10 MB');
+    ))->toThrow(ValidationException::class, '150 KB');
 });
 
 beforeEach(function () {
@@ -168,6 +168,26 @@ beforeEach(function () {
     config()->set('media.asset_pending_disk', 'local');
     config()->set('media-library.disk_name', 'local');
     config()->set('media-library.conversions_disk_name', 'local');
+});
+
+it('accepts a PDF at 150 KB and rejects one byte above before reserving media', function () {
+    Queue::fake();
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+    $header = "%PDF-1.4\n";
+    $content = $header.str_repeat(' ', 150 * 1024 - strlen($header));
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user, $workspace, UploadedFile::fake()->createWithContent('coa.pdf', $content), [MediaAssetType::Pdf],
+    );
+    expect($asset->original_size)->toBe(153600);
+    Queue::assertPushed(NormalizeMediaAssetJob::class, 1);
+
+    expect(fn () => app(MediaAssetUploadService::class)->start(
+        $user, $workspace, UploadedFile::fake()->createWithContent('tds.pdf', $content.' '), [MediaAssetType::Pdf],
+    ))->toThrow(ValidationException::class, '150 KB');
+    expect(MediaAsset::query()->count())->toBe(1);
+    expect(Storage::disk('local')->allFiles('media-assets/pending'))->toHaveCount(1);
+    Queue::assertPushed(NormalizeMediaAssetJob::class, 1);
 });
 
 it('defaults media processing to a 25 megapixel limit', function () {

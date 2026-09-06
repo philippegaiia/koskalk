@@ -23,6 +23,7 @@ return [
         'accepted_image_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
         'accepted_document_extensions' => ['pdf'],
         'pdf' => [
+            'max_size_kb' => 150,
             'max_pages' => 50,
             'pdfinfo_binary' => env('PDFINFO_BINARY', 'pdfinfo'),
             'pdftoppm_binary' => env('PDFTOPPM_BINARY', 'pdftoppm'),

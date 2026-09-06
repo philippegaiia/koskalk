@@ -62,6 +62,58 @@ class FakeEventTarget {
     }
 }
 
+class FakeValidationControl {
+    constructor(path) {
+        this.path = path;
+        this.focused = false;
+        this.scrollOptions = null;
+    }
+
+    getAttributeNames() {
+        return ['wire:model'];
+    }
+
+    getAttribute(name) {
+        return {
+            'wire:model': this.path,
+        }[name] ?? null;
+    }
+
+    focus() {
+        this.focused = true;
+    }
+
+    scrollIntoView(options) {
+        this.scrollOptions = options;
+    }
+}
+
+class FakeValidationRoot extends FakeEventTarget {
+    constructor(tabButtons, controls) {
+        super();
+        this.tabButtons = tabButtons;
+        this.controls = controls;
+    }
+
+    querySelector(selector) {
+        const tabKey = selector.match(/\[data-tab-key="([^"]+)"\]/)?.[1];
+
+        return this.tabButtons[tabKey] ?? null;
+    }
+
+    querySelectorAll() {
+        return this.controls;
+    }
+}
+
+class FakeTabButton {
+    clicked = 0;
+
+    click() {
+        this.clicked += 1;
+    }
+}
+
 class FakeStorage {
     constructor() {
         this.values = new Map();
@@ -505,6 +557,48 @@ test('keeps validation and network failures blocking after a submit', async () =
 
     assert.equal(network.editor.stateFor('ingredient'), 'failed');
     assert.equal(network.registry.blocksNavigation(), true);
+});
+
+test('activates the validation tab and focuses the first invalid field', async () => {
+    const tabButton = new FakeTabButton();
+    const control = new FakeValidationControl('data.name');
+    const root = new FakeValidationRoot({ overview: tabButton }, [control]);
+    const setup = makeEditor({ eventTarget: root });
+
+    setup.editor.init();
+    setup.eventTarget.dispatch('submit', { target: new FakeElement('ingredient') });
+    setup.wire.startCommit();
+    setup.wire.completeCommit({ errors: { 'data.name': ['The name field is required.'] } });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(tabButton.clicked, 1);
+    assert.equal(control.focused, true);
+    assert.deepEqual(control.scrollOptions, { block: 'center', behavior: 'smooth' });
+});
+
+test('activates the correct tab for aggregate section validation errors', async () => {
+    for (const [field, tabKey] of [
+        ['data.components', 'composition'],
+        ['data.fatty_acid_entries', 'soap-chemistry'],
+        ['data.substance_entries', 'regulatory-data'],
+        ['data.document_media_asset_ids', 'guidance-files'],
+    ]) {
+        const tabButton = new FakeTabButton();
+        const control = new FakeValidationControl(field);
+        const root = new FakeValidationRoot({ [tabKey]: tabButton }, [control]);
+        const setup = makeEditor({ eventTarget: root });
+
+        setup.editor.init();
+        setup.eventTarget.dispatch('submit', { target: new FakeElement('ingredient') });
+        setup.wire.startCommit();
+        setup.wire.completeCommit({ errors: { [field]: ['Invalid section.'] } });
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        assert.equal(tabButton.clicked, 1, `${field} should activate ${tabKey}`);
+        assert.equal(control.focused, true, `${field} should focus its invalid control`);
+    }
 });
 
 test('keeps edits made during an in-flight save dirty after persistence succeeds', () => {

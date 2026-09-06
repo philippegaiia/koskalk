@@ -136,7 +136,7 @@
 @endif
 
  @if (! $isReferenceView)
- <form wire:submit="save" data-ingredient-scope="ingredient" class="space-y-4 pb-24">
+ <form wire:submit="save" data-ingredient-scope="ingredient" novalidate class="space-y-4 pb-24">
  {{ $this->form }}
 
  @error('data.plan')

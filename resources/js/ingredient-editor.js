@@ -244,6 +244,73 @@ function hasLocalCancelFromEventTarget(target) {
     return actionElement?.dataset?.ingredientEditorLocalCancel === 'guidance';
 }
 
+function validationControlPath(control) {
+    const attributeNames = control?.getAttributeNames?.() ?? [
+        'wire:model',
+        'wire:model.live',
+        'wire:model.blur',
+        'wire:model.defer',
+    ];
+
+    for (const attributeName of attributeNames) {
+        if (!attributeName.startsWith('wire:model')) {
+            continue;
+        }
+
+        const path = control.getAttribute?.(attributeName);
+        if (typeof path === 'string' && path !== '') {
+            return path;
+        }
+    }
+
+    return null;
+}
+
+function isInvalidValidationControl(control) {
+    const value = control?.getAttribute?.('aria-invalid');
+
+    return value === 'true' || value === '1';
+}
+
+function validationControlMatches(control, fields) {
+    const path = validationControlPath(control);
+
+    return path !== null && fields.some((field) => path === field || path.startsWith(`${field}.`));
+}
+
+function validationPathMatches(path, prefix) {
+    return path === prefix || path.startsWith(`${prefix}.`);
+}
+
+function validationTabForField(field) {
+    const path = field.startsWith('data.') ? field.slice(5) : field;
+
+    if (validationPathMatches(path, 'components')) {
+        return 'composition';
+    }
+
+    if (
+        ['guidance_html', 'notes', 'featured_media_asset_id', 'icon_media_asset_id', 'document_media_asset_ids', 'media']
+            .some((prefix) => validationPathMatches(path, prefix))
+        || validationPathMatches(path, 'workspaceGuidance')
+    ) {
+        return 'guidance-files';
+    }
+
+    if (['sap_profile', 'fatty_acid_entries'].some((prefix) => validationPathMatches(path, prefix))) {
+        return 'soap-chemistry';
+    }
+
+    if (
+        ['allergen_entries', 'substance_entries', 'ifra']
+            .some((prefix) => validationPathMatches(path, prefix))
+    ) {
+        return 'regulatory-data';
+    }
+
+    return 'overview';
+}
+
 export function createIngredientEditor(options = {}, createRegistry = null) {
     const registry = options.registry
         ?? (typeof createRegistry === 'function' ? createRegistry() : fallbackRegistry());
@@ -413,8 +480,12 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
                     ? [cancelScope]
                     : [];
 
-                succeed?.(() => {
+                succeed?.(({ effects = {} } = {}) => {
                     queueMicrotask(() => {
+                        if (commitScope === 'ingredient') {
+                            this.handleValidationErrors(effects.errors);
+                        }
+
                         for (const scope of pendingScopes) {
                             if (pendingSaves.has(scope)) {
                                 this.failScope(scope);
@@ -996,6 +1067,56 @@ export function createIngredientEditor(options = {}, createRegistry = null) {
 
                 return;
             }
+        },
+
+        handleValidationFailure(detail = {}) {
+            const tab = typeof detail.tab === 'string' ? detail.tab : null;
+            const fields = Array.isArray(detail.fields)
+                ? detail.fields.filter((field) => typeof field === 'string')
+                : [];
+            const root = boundEventTarget;
+
+            if (tab !== null) {
+                root?.querySelector?.(`[data-tab-key="${tab}"]`)?.click?.();
+            }
+
+            const focusFirstInvalidControl = () => {
+                const controls = [...(root?.querySelectorAll?.(
+                    '[aria-invalid="true"], [aria-invalid="1"], input, textarea, select, [contenteditable]',
+                ) ?? [])];
+                const target = controls.find((control) => validationControlMatches(control, fields))
+                    ?? controls.find((control) => isInvalidValidationControl(control));
+
+                if (!target) {
+                    return;
+                }
+
+                target.focus?.();
+                target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+            };
+
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(focusFirstInvalidControl);
+            } else {
+                queueMicrotask(focusFirstInvalidControl);
+            }
+        },
+
+        handleValidationErrors(errors) {
+            if (!errors || typeof errors !== 'object') {
+                return;
+            }
+
+            const fields = Object.keys(errors);
+
+            if (fields.length === 0) {
+                return;
+            }
+
+            this.handleValidationFailure({
+                tab: validationTabForField(fields[0]),
+                fields,
+            });
         },
 
         blocksNavigation() {

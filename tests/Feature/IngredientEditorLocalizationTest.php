@@ -1044,6 +1044,12 @@ it('exposes stable tab identifiers with the existing ingredient query key', func
         ->toBe(['overview', 'composition', 'guidance-files', 'soap-chemistry', 'regulatory-data']);
 });
 
+it('lets Livewire report validation errors from fields on hidden tabs', function (): void {
+    $view = file_get_contents(resource_path('views/livewire/dashboard/ingredient-editor.blade.php'));
+
+    expect($view)->toContain('data-ingredient-scope="ingredient" novalidate');
+});
+
 it('configures the fatty acid repeater with contextual controls', function (): void {
     $user = User::factory()->create();
     $fattyAcid = FattyAcid::factory()->create(['name' => 'Oleic acid', 'display_order' => 1]);

@@ -606,7 +606,7 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSee('Not created yet')
         ->assertSeeText('Enter a name and choose a category. Add an INCI name and supporting details when available.')
         ->assertSeeText('Overview')
-        ->assertSeeText('Documents')
+        ->assertSeeText('Guidance & files')
         ->assertSeeText('Basics')
         ->assertSeeText('Start with the name used in your workspace and the INCI when known.')
         ->assertSeeText('Ingredient name')
@@ -635,11 +635,13 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSee('disabled', escape: false)
         ->assertDontSeeText('Classify the cosmetic or soapmaking ingredient below.')
         ->assertDontSeeText('"name": null')
-        ->assertSeeText('Documents and media')
+        ->assertSeeText('Ingredient guidance')
+        ->assertSeeText('Add practical formulation and storage guidance for your workspace.')
         ->assertSeeText('Source notes')
         ->assertSeeText('Add supplier or source details that may help identify and classify this ingredient.')
-        ->assertSeeText('Formulation notes')
-        ->assertSeeText('Add formulation guidance or other practical notes for your workspace.')
+        ->assertSeeText('Images & documents')
+        ->assertSeeText('Certificates and technical documents')
+        ->assertSeeText('Attach up to 8 PDFs, such as certificates of analysis, safety data sheets or technical data sheets.')
         ->assertDontSeeText('Identifiers and functions')
         ->assertDontSeeText('Trusted for soap saponification')
         ->assertSeeText('Add ingredient')
@@ -670,7 +672,7 @@ it('uses the clarified editor headings and keeps the classification helper secon
         ->assertSeeText('Guidance & files')
         ->assertSeeText('Regulatory data')
         ->assertSeeText('Help classify this ingredient')
-        ->assertSeeText('Documents and media');
+        ->assertSeeText('Images & documents');
 
     $html = $create->getContent();
 
@@ -678,6 +680,45 @@ it('uses the clarified editor headings and keeps the classification helper secon
         ->toBeLessThan(strpos($html, 'Help classify this ingredient'))
         ->and($html)->toContain('<details')
         ->and($html)->toContain('classification-prompt-title');
+});
+
+it('groups guidance and files into ordered editor sections', function (): void {
+    $user = User::factory()->create();
+
+    $html = $this->actingAs($user)
+        ->get(route('ingredients.create'))
+        ->assertSuccessful()
+        ->getContent();
+
+    $guidancePosition = strpos($html, 'data-ingredient-guidance-section');
+    $sourcePosition = strpos($html, 'data-ingredient-source-notes-section');
+    $mediaPosition = strpos($html, 'data-ingredient-media-section');
+
+    expect($guidancePosition)->toBeInt()
+        ->and($sourcePosition)->toBeInt()
+        ->and($mediaPosition)->toBeInt()
+        ->and($guidancePosition)->toBeLessThan($sourcePosition)
+        ->and($sourcePosition)->toBeLessThan($mediaPosition);
+
+    $guidanceSection = substr($html, $guidancePosition, $sourcePosition - $guidancePosition);
+    $sourceSection = substr($html, $sourcePosition, $mediaPosition - $sourcePosition);
+    $mediaSection = substr($html, $mediaPosition);
+
+    expect($guidanceSection)
+        ->toContain('Ingredient guidance')
+        ->toContain('Add practical formulation and storage guidance for your workspace.')
+        ->toContain('data.guidance_html')
+        ->and($sourceSection)
+        ->toContain('Source notes')
+        ->toContain('Add supplier or source details that may help identify and classify this ingredient.')
+        ->toContain('data.notes')
+        ->and($mediaSection)
+        ->toContain('Images &amp; documents')
+        ->toContain('data.featured_media_asset_id')
+        ->toContain('data.icon_media_asset_id')
+        ->toContain('data.document_media_asset_ids')
+        ->toContain('Certificates and technical documents')
+        ->toContain('Attach up to 8 PDFs, such as certificates of analysis, safety data sheets or technical data sheets.');
 });
 
 it('shows the destination workspace on create and edit pages', function (): void {
@@ -1426,6 +1467,22 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.details.composition_removal_confirmation',
         'editor.supplier.section',
         'editor.media.section',
+        'editor.guidance_files.guidance_section',
+        'editor.guidance_files.guidance_description',
+        'editor.guidance_files.guidance',
+        'editor.guidance_files.guidance_helper',
+        'editor.guidance_files.source_notes_section',
+        'editor.guidance_files.source_notes_description',
+        'editor.guidance_files.source_notes',
+        'editor.guidance_files.source_notes_helper',
+        'editor.guidance_files.media_section',
+        'editor.guidance_files.media_description',
+        'editor.guidance_files.image',
+        'editor.guidance_files.image_helper',
+        'editor.guidance_files.icon',
+        'editor.guidance_files.icon_helper',
+        'editor.guidance_files.documents',
+        'editor.guidance_files.documents_helper',
         'editor.composition.section',
         'editor.soap.section',
         'editor.compliance.allergens.section',

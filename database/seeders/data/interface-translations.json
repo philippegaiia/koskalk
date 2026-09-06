@@ -5724,6 +5724,198 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.guidance_files.documents",
+      "text": {
+        "de": "Zertifikate und technische Dokumente",
+        "es": "Certificados y documentos técnicos",
+        "fr": "Certificats et documents techniques",
+        "it": "Certificati e documenti tecnici",
+        "nl": "Certificaten en technische documenten",
+        "pt_BR": "Certificados e documentos técnicos"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.documents_helper",
+      "text": {
+        "de": "Füge bis zu 8 PDFs hinzu, etwa Analysezertifikate, Sicherheitsdatenblätter oder technische Datenblätter.",
+        "es": "Adjunta hasta 8 PDF, como certificados de análisis, fichas de datos de seguridad o fichas técnicas.",
+        "fr": "Joignez jusqu’à 8 PDF, tels que des certificats d’analyse, des fiches de données de sécurité ou des fiches techniques.",
+        "it": "Allega fino a 8 PDF, come certificati di analisi, schede di dati di sicurezza o schede tecniche.",
+        "nl": "Voeg maximaal 8 pdf’s toe, zoals analysecertificaten, veiligheidsinformatiebladen of technische gegevensbladen.",
+        "pt_BR": "Anexe até 8 PDFs, como certificados de análise, fichas de dados de segurança ou fichas técnicas."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.guidance",
+      "text": {
+        "de": "Zutatenhinweise",
+        "es": "Guía del ingrediente",
+        "fr": "Conseils sur l’ingrédient",
+        "it": "Indicazioni sull’ingrediente",
+        "nl": "Ingrediëntbegeleiding",
+        "pt_BR": "Orientações do ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.guidance_description",
+      "text": {
+        "de": "Füge praktische Hinweise zur Formulierung und Lagerung für deinen Arbeitsbereich hinzu.",
+        "es": "Añade indicaciones prácticas de formulación y almacenamiento para tu espacio de trabajo.",
+        "fr": "Ajoutez des conseils pratiques de formulation et de stockage pour votre espace de travail.",
+        "it": "Aggiungi indicazioni pratiche sulla formulazione e la conservazione per il tuo spazio di lavoro.",
+        "nl": "Voeg praktische aanwijzingen voor formulering en opslag toe voor je werkruimte.",
+        "pt_BR": "Adicione orientações práticas de formulação e armazenamento para o seu espaço de trabalho."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.guidance_helper",
+      "text": {
+        "de": "Füge praktische Hinweise zur Formulierung und Lagerung für deinen Arbeitsbereich hinzu.",
+        "es": "Añade indicaciones prácticas de formulación y almacenamiento para tu espacio de trabajo.",
+        "fr": "Ajoutez des conseils pratiques de formulation et de stockage pour votre espace de travail.",
+        "it": "Aggiungi indicazioni pratiche sulla formulazione e la conservazione per il tuo spazio di lavoro.",
+        "nl": "Voeg praktische aanwijzingen voor formulering en opslag toe voor je werkruimte.",
+        "pt_BR": "Adicione orientações práticas de formulação e armazenamento para o seu espaço de trabalho."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.guidance_section",
+      "text": {
+        "de": "Zutatenhinweise",
+        "es": "Guía del ingrediente",
+        "fr": "Conseils sur l’ingrédient",
+        "it": "Indicazioni sull’ingrediente",
+        "nl": "Ingrediëntbegeleiding",
+        "pt_BR": "Orientações do ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.icon",
+      "text": {
+        "de": "Zutatensymbol",
+        "es": "Icono del ingrediente",
+        "fr": "Icône de l’ingrédient",
+        "it": "Icona dell’ingrediente",
+        "nl": "Ingrediëntpictogram",
+        "pt_BR": "Ícone do ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.icon_helper",
+      "text": {
+        "de": "Optionales kompaktes Bild für die Zutatenauswahl. Ohne eigenes Symbol wird das Hauptbild verwendet.",
+        "es": "Imagen compacta opcional utilizada en los selectores de ingredientes. Si no añades un icono, se utilizará la imagen principal.",
+        "fr": "Image compacte facultative utilisée dans les sélecteurs d’ingrédients. L’image principale est utilisée si aucune icône n’est fournie.",
+        "it": "Immagine compatta facoltativa utilizzata nei selettori degli ingredienti. Se non viene fornita un’icona, viene usata l’immagine principale.",
+        "nl": "Optionele compacte afbeelding voor ingrediëntenkeuzes. Zonder pictogram wordt de hoofdafbeelding gebruikt.",
+        "pt_BR": "Imagem compacta opcional usada nos seletores de ingredientes. A imagem principal é usada quando nenhum ícone é fornecido."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.image",
+      "text": {
+        "de": "Zutatenbild",
+        "es": "Imagen del ingrediente",
+        "fr": "Image de l’ingrédient",
+        "it": "Immagine dell’ingrediente",
+        "nl": "Afbeelding van het ingrediënt",
+        "pt_BR": "Imagem do ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.image_helper",
+      "text": {
+        "de": "Optionales quadratisches Bild für die Zutatenseite und deine Bibliothek.",
+        "es": "Imagen cuadrada opcional que se muestra en la ficha del ingrediente y en tu biblioteca.",
+        "fr": "Image carrée facultative affichée sur la fiche de l’ingrédient et dans votre bibliothèque.",
+        "it": "Immagine quadrata facoltativa mostrata nella scheda dell’ingrediente e nella libreria.",
+        "nl": "Optionele vierkante afbeelding op de ingrediëntpagina en in je bibliotheek.",
+        "pt_BR": "Imagem quadrada opcional exibida na página do ingrediente e na sua biblioteca."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.media_description",
+      "text": {
+        "de": "Bewahre hilfreiche Bilder und technische Dateien bei diesem Material auf.",
+        "es": "Guarda imágenes útiles y archivos técnicos junto a este material.",
+        "fr": "Conservez les images utiles et les fichiers techniques avec cette matière.",
+        "it": "Conserva immagini utili e file tecnici insieme a questo materiale.",
+        "nl": "Bewaar nuttige afbeeldingen en technische bestanden bij dit materiaal.",
+        "pt_BR": "Mantenha imagens úteis e arquivos técnicos junto deste material."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.media_section",
+      "text": {
+        "de": "Bilder und Dokumente",
+        "es": "Imágenes y documentos",
+        "fr": "Images et documents",
+        "it": "Immagini e documenti",
+        "nl": "Afbeeldingen en documenten",
+        "pt_BR": "Imagens e documentos"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.source_notes",
+      "text": {
+        "de": "Quellenangaben",
+        "es": "Notas de origen",
+        "fr": "Notes sur la source",
+        "it": "Note sulla fonte",
+        "nl": "Bronnotities",
+        "pt_BR": "Notas da fonte"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.source_notes_description",
+      "text": {
+        "de": "Erfasse Lieferanten- und Quellenangaben, die bei der Identifizierung der Zutat helfen und ihre Nachweise unterstützen.",
+        "es": "Registra datos del proveedor y de la fuente que ayuden a identificar el ingrediente y respalden sus evidencias.",
+        "fr": "Consignez les informations du fournisseur et de la source qui aident à identifier l’ingrédient et à étayer ses justificatifs.",
+        "it": "Registra i dettagli del fornitore e della fonte che aiutano a identificare l’ingrediente e a documentarne le prove.",
+        "nl": "Leg leveranciers- en brongegevens vast die het ingrediënt helpen identificeren en het bewijs ondersteunen.",
+        "pt_BR": "Registre detalhes do fornecedor e da fonte que ajudem a identificar o ingrediente e sustentem suas evidências."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.source_notes_helper",
+      "text": {
+        "de": "Füge Lieferanten- oder Quellenangaben hinzu, die bei der Identifizierung und Klassifizierung dieser Zutat helfen können.",
+        "es": "Añade datos del proveedor o de la fuente que puedan ayudar a identificar y clasificar este ingrediente.",
+        "fr": "Ajoutez les informations du fournisseur ou de la source pouvant aider à identifier et classer cet ingrédient.",
+        "it": "Aggiungi informazioni sul fornitore o sulla fonte che possano aiutare a identificare e classificare questo ingrediente.",
+        "nl": "Voeg leveranciers- of brongegevens toe die kunnen helpen dit ingrediënt te identificeren en classificeren.",
+        "pt_BR": "Adicione detalhes do fornecedor ou da fonte que possam ajudar a identificar e classificar este ingrediente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.guidance_files.source_notes_section",
+      "text": {
+        "de": "Quellenangaben",
+        "es": "Notas de origen",
+        "fr": "Notes sur la source",
+        "it": "Note sulla fonte",
+        "nl": "Bronnotities",
+        "pt_BR": "Notas da fonte"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.identity.add_alias",
       "text": {
         "de": "Alternativen Namen hinzufügen",

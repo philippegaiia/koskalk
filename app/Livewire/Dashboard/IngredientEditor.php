@@ -952,38 +952,49 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->id('guidance-files')
                             ->key('guidance-files', isInheritable: false)
                             ->schema([
-                                Section::make(__('ingredients.editor.media.section'))
-                                    ->description(__('ingredients.editor.media.description'))
+                                Section::make(__('ingredients.editor.guidance_files.guidance_section'))
+                                    ->description(__('ingredients.editor.guidance_files.guidance_description'))
+                                    ->extraAttributes(['data-ingredient-guidance-section' => true])
+                                    ->visible(fn (): bool => ! $this->isCurrentPlatformIngredient())
+                                    ->schema([
+                                        $this->guidanceRichEditor(
+                                            'guidance_html',
+                                            __('ingredients.editor.guidance_files.guidance'),
+                                            __('ingredients.editor.guidance_files.guidance_helper'),
+                                        )
+                                            ->columnSpanFull(),
+                                    ]),
+                                Section::make(__('ingredients.editor.guidance_files.source_notes_section'))
+                                    ->description(__('ingredients.editor.guidance_files.source_notes_description'))
+                                    ->extraAttributes(['data-ingredient-source-notes-section' => true])
+                                    ->schema([
+                                        Textarea::make('notes')
+                                            ->label(__('ingredients.editor.guidance_files.source_notes'))
+                                            ->helperText(__('ingredients.editor.guidance_files.source_notes_helper'))
+                                            ->rows(3)
+                                            ->columnSpanFull(),
+                                    ]),
+                                Section::make(__('ingredients.editor.guidance_files.media_section'))
+                                    ->description(__('ingredients.editor.guidance_files.media_description'))
+                                    ->extraAttributes(['data-ingredient-media-section' => true])
                                     ->columns([
                                         'md' => 2,
                                     ])
                                     ->schema([
-                                        Textarea::make('notes')
-                                            ->label(__('ingredients.editor.details.notes'))
-                                            ->helperText(__('ingredients.editor.details.notes_helper'))
-                                            ->rows(3)
-                                            ->columnSpanFull(),
                                         MediaAssetPicker::make('featured_media_asset_id')
-                                            ->label(__('ingredients.editor.media.image'))
-                                            ->helperText(__('ingredients.editor.media.image_helper'))
+                                            ->label(__('ingredients.editor.guidance_files.image'))
+                                            ->helperText(__('ingredients.editor.guidance_files.image_helper'))
                                             ->columnSpan(1),
                                         MediaAssetPicker::make('icon_media_asset_id')
-                                            ->label(__('ingredients.editor.media.icon'))
-                                            ->helperText(__('ingredients.editor.media.icon_helper'))
+                                            ->label(__('ingredients.editor.guidance_files.icon'))
+                                            ->helperText(__('ingredients.editor.guidance_files.icon_helper'))
                                             ->columnSpan(1),
                                         MediaAssetPicker::make('document_media_asset_ids')
-                                            ->label(__('ingredients.editor.media.documents'))
-                                            ->helperText(__('ingredients.editor.media.documents_helper'))
+                                            ->label(__('ingredients.editor.guidance_files.documents'))
+                                            ->helperText(__('ingredients.editor.guidance_files.documents_helper'))
                                             ->documents()
                                             ->multiple()
                                             ->maxItems(8)
-                                            ->columnSpanFull(),
-                                        $this->guidanceRichEditor(
-                                            'guidance_html',
-                                            __('ingredients.editor.media.notes'),
-                                            __('ingredients.editor.media.notes_helper'),
-                                        )
-                                            ->visible(fn (): bool => ! $this->isCurrentPlatformIngredient())
                                             ->columnSpanFull(),
                                     ]),
                             ]),

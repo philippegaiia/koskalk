@@ -960,7 +960,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         $this->guidanceRichEditor(
                                             'guidance_html',
                                             __('ingredients.editor.guidance_files.guidance'),
-                                            __('ingredients.editor.guidance_files.guidance_helper'),
+                                            __('ingredients.editor.guidance_files.guidance_helper', [
+                                                'max' => WorkspaceIngredientGuidanceService::MAX_LENGTH,
+                                            ]),
                                         )
                                             ->columnSpanFull(),
                                     ]),

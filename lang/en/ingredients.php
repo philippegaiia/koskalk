@@ -911,7 +911,7 @@ return [
             'guidance_section' => 'Ingredient guidance',
             'guidance_description' => 'Add practical formulation and storage guidance for your workspace.',
             'guidance' => 'Ingredient guidance',
-            'guidance_helper' => 'Add practical formulation and storage guidance for your workspace.',
+            'guidance_helper' => 'Add practical formulation and storage guidance for your workspace. Up to :max visible characters.',
             'source_notes_section' => 'Source notes',
             'source_notes_description' => 'Record supplier and source details that help identify the ingredient and support its evidence.',
             'source_notes' => 'Source notes',

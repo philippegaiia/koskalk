@@ -5774,12 +5774,12 @@
       "group": "ingredients",
       "key": "editor.guidance_files.guidance_helper",
       "text": {
-        "de": "Füge praktische Hinweise zur Formulierung und Lagerung für deinen Arbeitsbereich hinzu.",
-        "es": "Añade indicaciones prácticas de formulación y almacenamiento para tu espacio de trabajo.",
-        "fr": "Ajoutez des conseils pratiques de formulation et de stockage pour votre espace de travail.",
-        "it": "Aggiungi indicazioni pratiche sulla formulazione e la conservazione per il tuo spazio di lavoro.",
-        "nl": "Voeg praktische aanwijzingen voor formulering en opslag toe voor je werkruimte.",
-        "pt_BR": "Adicione orientações práticas de formulação e armazenamento para o seu espaço de trabalho."
+        "de": "Füge praktische Hinweise zur Formulierung und Lagerung für deinen Arbeitsbereich hinzu. Maximal :max sichtbare Zeichen.",
+        "es": "Añade indicaciones prácticas de formulación y almacenamiento para tu espacio de trabajo. Hasta :max caracteres visibles.",
+        "fr": "Ajoutez des conseils pratiques de formulation et de stockage pour votre espace de travail. Jusqu’à :max caractères visibles.",
+        "it": "Aggiungi indicazioni pratiche sulla formulazione e la conservazione per il tuo spazio di lavoro. Fino a :max caratteri visibili.",
+        "nl": "Voeg praktische aanwijzingen voor formulering en opslag toe voor je werkruimte. Maximaal :max zichtbare tekens.",
+        "pt_BR": "Adicione orientações práticas de formulação e armazenamento para o seu espaço de trabalho. Até :max caracteres visíveis."
       }
     },
     {

@@ -10,7 +10,7 @@
     <div class="flex flex-col gap-1">
         <p class="sk-eyebrow">{{ __('ingredients.editor.workspace_guidance.eyebrow') }}</p>
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="workspace-guidance-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.workspace_guidance.heading') }}</h2>
+            <h3 id="workspace-guidance-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.workspace_guidance.heading') }}</h3>
             <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
                 {{ $workspaceGuidanceOverride?->is_active ? __('ingredients.editor.workspace_guidance.workspace_badge') : __('ingredients.editor.workspace_guidance.platform_badge') }}
             </span>
@@ -76,7 +76,7 @@
 <section class="sk-card p-5 sm:p-6" aria-labelledby="platform-material-code-heading">
     <div class="flex flex-col gap-1">
         <p class="sk-eyebrow">{{ __('ingredients.editor.material_code.workspace_eyebrow') }}</p>
-        <h2 id="platform-material-code-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.workspace_heading') }}</h2>
+        <h3 id="platform-material-code-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.material_code.workspace_heading') }}</h3>
         <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.material_code.workspace_helper') }}</p>
     </div>
     @if ($canEditWorkspaceMaterialCode)

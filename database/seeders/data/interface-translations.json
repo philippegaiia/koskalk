@@ -6780,6 +6780,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.reference.aliases",
+      "text": {
+        "de": "Alternative Namen",
+        "es": "Nombres alternativos",
+        "fr": "Noms alternatifs",
+        "it": "Nomi alternativi",
+        "nl": "Alternatieve namen",
+        "pt_BR": "Nomes alternativos"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.reference.allergens",
       "text": {
         "de": "Deklarierte Allergene",
@@ -6788,6 +6800,18 @@
         "it": "Allergeni dichiarati",
         "nl": "Aangegeven allergenen",
         "pt_BR": "Alérgenos declarados"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.aromatic_compliance",
+      "text": {
+        "de": "Aromatische Handhabung",
+        "es": "Gestión aromática",
+        "fr": "Gestion aromatique",
+        "it": "Gestione aromatica",
+        "nl": "Aromatische verwerking",
+        "pt_BR": "Tratamento aromático"
       }
     },
     {
@@ -6824,6 +6848,18 @@
         "it": "Numero CE / EINECS",
         "nl": "EG- / EINECS-nummer",
         "pt_BR": "Número EC / EINECS"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.guidance",
+      "text": {
+        "de": "Zutatenhinweise",
+        "es": "Guía del ingrediente",
+        "fr": "Conseils sur l’ingrédient",
+        "it": "Indicazioni sull’ingrediente",
+        "nl": "Ingrediëntrichtlijnen",
+        "pt_BR": "Orientações sobre o ingrediente"
       }
     },
     {
@@ -6872,6 +6908,42 @@
         "it": "Non è registrata alcuna composizione degli allergeni.",
         "nl": "Er is geen allergenensamenstelling vastgelegd.",
         "pt_BR": "Nenhuma composição de alérgenos foi registrada."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.not_required",
+      "text": {
+        "de": "Nicht aktiviert",
+        "es": "No activado",
+        "fr": "Non activé",
+        "it": "Non abilitato",
+        "nl": "Niet ingeschakeld",
+        "pt_BR": "Não ativado"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.notes",
+      "text": {
+        "de": "Quellennotizen",
+        "es": "Notas de origen",
+        "fr": "Notes de source",
+        "it": "Note sulla fonte",
+        "nl": "Bronnotities",
+        "pt_BR": "Notas da fonte"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.reference.required",
+      "text": {
+        "de": "Aktiviert",
+        "es": "Activado",
+        "fr": "Activé",
+        "it": "Abilitato",
+        "nl": "Ingeschakeld",
+        "pt_BR": "Ativado"
       }
     },
     {
@@ -7904,6 +7976,42 @@
         "it": "Inserisci le indicazioni dell’ingrediente prima di salvarle.",
         "nl": "Voer ingrediëntrichtlijnen in voordat je ze opslaat.",
         "pt_BR": "Insira as orientações do ingrediente antes de salvar."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_context.description",
+      "text": {
+        "de": "Verwalte arbeitsbereichsspezifische Hinweise und den Materialcode für diese Zutat.",
+        "es": "Gestiona las indicaciones y el código de material específicos de este espacio de trabajo para este ingrediente.",
+        "fr": "Gérez les conseils et le code matière propres à cet espace de travail pour cet ingrédient.",
+        "it": "Gestisci le indicazioni e il codice materiale specifici di questo spazio di lavoro per questo ingrediente.",
+        "nl": "Beheer de werkruimterichtlijnen en materiaalcode voor dit ingrediënt.",
+        "pt_BR": "Gerencie as orientações e o código de material específicos deste espaço de trabalho para este ingrediente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_context.eyebrow",
+      "text": {
+        "de": "Arbeitsbereichseinstellungen",
+        "es": "Configuración del espacio de trabajo",
+        "fr": "Paramètres de l’espace de travail",
+        "it": "Impostazioni dello spazio di lavoro",
+        "nl": "Werkruimte-instellingen",
+        "pt_BR": "Configurações do espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.workspace_context.heading",
+      "text": {
+        "de": "In :workspace",
+        "es": "En :workspace",
+        "fr": "Dans :workspace",
+        "it": "In :workspace",
+        "nl": "In :workspace",
+        "pt_BR": "Em :workspace"
       }
     },
     {

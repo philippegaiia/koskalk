@@ -11,15 +11,15 @@
     <dl class="mt-5 grid gap-4 sm:grid-cols-2">
         <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
             <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.inci') }}</dt>
-            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identity['inci_name'] ?? $notAvailable }}</dd>
+            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ filled($identity['inci_name'] ?? null) ? $identity['inci_name'] : $notAvailable }}</dd>
         </div>
         <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
             <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.cas_number') }}</dt>
-            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identity['cas_number'] ?? $notAvailable }}</dd>
+            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ filled($identity['cas_number'] ?? null) ? $identity['cas_number'] : $notAvailable }}</dd>
         </div>
         <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
             <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.ec_number') }}</dt>
-            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identity['ec_number'] ?? $notAvailable }}</dd>
+            <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ filled($identity['ec_number'] ?? null) ? $identity['ec_number'] : $notAvailable }}</dd>
         </div>
         @if (filled($referenceData['notes'] ?? null))
             <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 sm:col-span-2">

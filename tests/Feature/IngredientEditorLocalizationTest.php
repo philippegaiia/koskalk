@@ -234,12 +234,20 @@ it('places platform workspace controls before technical reference and avoids dup
     $technicalPosition = strpos($html, 'ingredient-reference-classification');
 
     expect($identityPosition)->toBeInt()
+        ->and(strpos($html, 'ingredient-workspace-context'))->toBeInt()
         ->and($guidancePosition)->toBeInt()
         ->and($materialCodePosition)->toBeInt()
         ->and($technicalPosition)->toBeInt()
-        ->and($identityPosition)->toBeLessThan($guidancePosition)
+        ->and($identityPosition)->toBeLessThan(strpos($html, 'ingredient-workspace-context'))
+        ->and(strpos($html, 'ingredient-workspace-context'))->toBeLessThan($guidancePosition)
         ->and($guidancePosition)->toBeLessThan($materialCodePosition)
         ->and($materialCodePosition)->toBeLessThan($technicalPosition)
+        ->and($html)->toContain('In North Star Soapworks')
+        ->and($html)->toContain('Manage workspace-specific guidance and material code for this ingredient.')
+        ->and($html)->toContain('aria-labelledby="ingredient-workspace-context"')
+        ->and($html)->toContain('<h2 id="ingredient-workspace-context"')
+        ->and($html)->toContain('<h3 id="workspace-guidance-heading"')
+        ->and($html)->toContain('<h3 id="platform-material-code-heading"')
         ->and($html)->toContain('data-ingredient-guidance-preview')
         ->and($html)->toContain('data-ingredient-editor-status="material-code"')
         ->and($html)->not->toContain('ingredient-reference-guidance');
@@ -307,11 +315,78 @@ it('keeps a non-member platform reference read-only without exposing workspace d
     $component
         ->assertSeeText('Soapkraft ingredient')
         ->assertSeeText('Public platform guidance.')
-        ->assertSeeText('Only workspace owners, admins, and editors can change this guidance.')
         ->assertDontSeeText('PRIVATE WORKSPACE GUIDANCE')
         ->assertDontSeeText('PRIVATE-WORKSPACE-CODE')
         ->assertDontSeeHtml('<input id="workspace-material-code"')
-        ->assertDontSeeText('Edit workspace guidance');
+        ->assertDontSeeText('Edit workspace guidance')
+        ->assertDontSeeHtml('ingredient-workspace-context')
+        ->assertDontSeeHtml('workspace-guidance-heading')
+        ->assertDontSeeHtml('platform-material-code-heading')
+        ->assertDontSeeText('Only workspace owners, admins, and editors can change this guidance.')
+        ->assertDontSeeText('Only workspace owners, admins, and editors can change this reference.');
+
+    expect(substr_count($component->html(), '>Public platform guidance.<'))->toBe(1);
+});
+
+it('clarifies platform reference terminology and localizes empty identity values', function (): void {
+    $user = User::factory()->create();
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Terminology reference',
+        'inci_name' => '',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'requires_aromatic_compliance' => true,
+        'info_markdown' => 'Ingredient guidance reference.',
+        'notes' => 'Supplier source note.',
+    ]);
+    IngredientIdentifier::factory()->createMany([
+        [
+            'ingredient_id' => $platform->id,
+            'scheme' => 'cas',
+            'value' => '',
+            'normalized_value' => '',
+            'is_primary' => true,
+        ],
+        [
+            'ingredient_id' => $platform->id,
+            'scheme' => 'ec',
+            'value' => '',
+            'normalized_value' => '',
+            'is_primary' => true,
+        ],
+        [
+            'ingredient_id' => $platform->id,
+            'scheme' => 'pubchem_cid',
+            'value' => '0',
+            'normalized_value' => '0',
+            'is_primary' => false,
+        ],
+    ]);
+    IngredientAlias::factory()->create([
+        'ingredient_id' => $platform->id,
+        'name' => 'Terminology alias',
+        'normalized_name' => 'terminology alias',
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $platform]);
+    $html = $component->html();
+    $identityPosition = strpos($html, 'ingredient-reference-identity');
+    $classificationPosition = strpos($html, 'ingredient-reference-classification');
+    $identitySection = substr($html, $identityPosition, $classificationPosition - $identityPosition);
+
+    expect($identitySection)->toContain('Alternative names')
+        ->and($identitySection)->toContain('Source notes')
+        ->and(substr_count($identitySection, '>Not available<'))->toBe(3)
+        ->and($html)->toContain('Aromatic handling')
+        ->and($html)->toContain('Enabled')
+        ->and($html)->toContain('Ingredient guidance')
+        ->and($html)->not->toContain('Approved guidance')
+        ->and($html)->not->toContain('Aromatic compliance')
+        ->and($html)->not->toContain('Required')
+        ->and($html)->not->toContain('Not required');
 });
 
 it('renders zero chemistry and IFRA values instead of treating them as unavailable', function (): void {

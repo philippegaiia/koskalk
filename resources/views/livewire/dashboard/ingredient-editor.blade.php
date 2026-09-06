@@ -101,25 +101,37 @@
         'referenceData' => $referenceData,
     ])
 
-    @if ($isPlatformIngredient)
-        @include('livewire.dashboard.partials.ingredient-reference-workspace-controls', [
-            'referenceData' => $referenceData,
-            'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
-            'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
-            'canEditWorkspaceGuidance' => $canEditWorkspaceGuidance,
-            'workspaceName' => $workspaceName,
-            'isEditingWorkspaceGuidance' => $isEditingWorkspaceGuidance,
-            'workspaceGuidanceForm' => $this->workspaceGuidanceForm,
-            'canEditWorkspaceMaterialCode' => $canEditWorkspaceMaterialCode,
-            'workspaceMaterialCode' => $workspaceMaterialCode,
-            'errors' => $errors,
-        ])
+    @if ($isPlatformIngredient && $workspaceName !== null)
+        <section class="space-y-4" aria-labelledby="ingredient-workspace-context">
+            <div>
+                <p class="sk-eyebrow">{{ __('ingredients.editor.workspace_context.eyebrow') }}</p>
+                <h2 id="ingredient-workspace-context" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">
+                    {{ __('ingredients.editor.workspace_context.heading', ['workspace' => $workspaceName]) }}
+                </h2>
+                <p class="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--color-ink-soft)]">
+                    {{ __('ingredients.editor.workspace_context.description') }}
+                </p>
+            </div>
+
+            @include('livewire.dashboard.partials.ingredient-reference-workspace-controls', [
+                'referenceData' => $referenceData,
+                'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
+                'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
+                'canEditWorkspaceGuidance' => $canEditWorkspaceGuidance,
+                'workspaceName' => $workspaceName,
+                'isEditingWorkspaceGuidance' => $isEditingWorkspaceGuidance,
+                'workspaceGuidanceForm' => $this->workspaceGuidanceForm,
+                'canEditWorkspaceMaterialCode' => $canEditWorkspaceMaterialCode,
+                'workspaceMaterialCode' => $workspaceMaterialCode,
+                'errors' => $errors,
+            ])
+        </section>
     @endif
 
     @include('livewire.dashboard.partials.ingredient-reference', [
         'referenceData' => $referenceData,
         'workspaceName' => $workspaceName,
-        'showGuidance' => ! $isPlatformIngredient,
+        'showGuidance' => ! $isPlatformIngredient || $workspaceName === null,
     ])
 @endif
 

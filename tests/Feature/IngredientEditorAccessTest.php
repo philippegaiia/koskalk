@@ -606,6 +606,7 @@ it('rejects every editor write after a member is downgraded without creating rep
     $this->actingAs($editor);
 
     $platformEditor = Livewire::test(IngredientEditor::class, ['ingredient' => $platform])
+        ->call('startWorkspaceGuidanceCustomization')
         ->set('workspaceMaterialCode', 'DOWNGRADE-01')
         ->set('workspaceGuidance.html', '<p>Downgrade guidance</p>');
     $privateEditor = Livewire::test(IngredientEditor::class, ['ingredient' => $privateIngredient])
@@ -626,7 +627,11 @@ it('rejects every editor write after a member is downgraded without creating rep
         ->call('saveWorkspaceMaterialCode')
         ->assertHasErrors('workspaceMaterialCode')
         ->call('saveWorkspaceGuidance')
-        ->assertHasErrors('workspaceGuidance.html');
+        ->assertHasErrors('workspaceGuidance.html')
+        ->assertSeeHtml('data-ingredient-guidance-preview')
+        ->assertSeeText('Only workspace owners, admins, and editors can change this guidance.')
+        ->assertDontSeeHtml('wire:submit="saveWorkspaceGuidance"')
+        ->assertDontSeeText('Save guidance');
     $inlineEditor->call('createAndAddComponent')->assertHasErrors('quickComponentName');
 
     $this->postJson(route('ingredients.duplicate'), [

@@ -96,9 +96,32 @@
  </div>
  </section>
 
- @if ($isReferenceView)
- @include('livewire.dashboard.partials.ingredient-reference', ['referenceData' => $referenceData, 'workspaceName' => $workspaceName])
- @endif
+@if ($isReferenceView)
+    @include('livewire.dashboard.partials.ingredient-reference-identity', [
+        'referenceData' => $referenceData,
+    ])
+
+    @if ($isPlatformIngredient)
+        @include('livewire.dashboard.partials.ingredient-reference-workspace-controls', [
+            'referenceData' => $referenceData,
+            'effectiveWorkspaceGuidance' => $effectiveWorkspaceGuidance,
+            'workspaceGuidanceOverride' => $workspaceGuidanceOverride,
+            'canEditWorkspaceGuidance' => $canEditWorkspaceGuidance,
+            'workspaceName' => $workspaceName,
+            'isEditingWorkspaceGuidance' => $isEditingWorkspaceGuidance,
+            'workspaceGuidanceForm' => $this->workspaceGuidanceForm,
+            'canEditWorkspaceMaterialCode' => $canEditWorkspaceMaterialCode,
+            'workspaceMaterialCode' => $workspaceMaterialCode,
+            'errors' => $errors,
+        ])
+    @endif
+
+    @include('livewire.dashboard.partials.ingredient-reference', [
+        'referenceData' => $referenceData,
+        'workspaceName' => $workspaceName,
+        'showGuidance' => ! $isPlatformIngredient,
+    ])
+@endif
 
  @if (! $isReferenceView)
  <form wire:submit="save" data-ingredient-scope="ingredient" class="space-y-4 pb-24">

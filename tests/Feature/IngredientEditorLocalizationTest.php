@@ -1077,6 +1077,110 @@ it('lets Livewire report validation errors from fields on hidden tabs', function
     expect($view)->toContain('data-ingredient-scope="ingredient" novalidate');
 });
 
+it('shows ingredient tab validation badges after a failed save', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $substance = Substance::factory()->create(['name' => 'Waxes']);
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $user->forgetAccessibleWorkspaceIds();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.requires_aromatic_compliance', true)
+        ->set('data.substance_entries', [[
+            'substance_id' => null,
+            'concentration_percent' => null,
+        ]])
+        ->call('save');
+
+    $tabComponents = static function (mixed $component): array {
+        $tabs = collect($component->instance()->form->getComponents(withHidden: true))
+            ->first(fn (mixed $candidate): bool => $candidate instanceof Tabs);
+
+        return collect($tabs->getChildSchema()->getComponents(withHidden: true))
+            ->keyBy(fn (Tab $tab): ?string => $tab->getId())
+            ->all();
+    };
+
+    $tabs = $tabComponents($component);
+
+    expect($component->errors())->toHaveKeys([
+        'data.name',
+        'data.category',
+        'data.substance_entries.0.substance_id',
+    ])
+        ->and($tabs['overview']->getBadge())->toBe('2 errors')
+        ->and($tabs['overview']->getBadgeColor('2 errors'))->toBe('danger')
+        ->and($tabs['composition']->getBadge())->toBeNull()
+        ->and($tabs['guidance-files']->getBadge())->toBeNull()
+        ->and($tabs['soap-chemistry']->getBadge())->toBeNull()
+        ->and($tabs['regulatory-data']->getBadge())->toBe('1 error')
+        ->and($tabs['composition']->isVisible())->toBeFalse()
+        ->and($tabs['soap-chemistry']->isVisible())->toBeFalse()
+        ->and($component->html())->toContain('2 errors')
+        ->and($component->html())->toContain('1 error');
+
+    $component
+        ->set('data.name', 'Wax blend')
+        ->call('save');
+
+    $tabs = $tabComponents($component);
+
+    expect($tabs['overview']->getBadge())->toBe('1 error')
+        ->and($tabs['regulatory-data']->getBadge())->toBe('1 error')
+        ->and($tabs['composition']->getBadge())->toBeNull()
+        ->and($tabs['soap-chemistry']->getBadge())->toBeNull();
+
+    $component
+        ->set('data.category', IngredientCategory::Other->value)
+        ->set('data.substance_entries', [[
+            'substance_id' => $substance->id,
+            'concentration_percent' => null,
+        ]])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $tabs = $tabComponents($component);
+
+    expect(Ingredient::query()->where('display_name', 'Wax blend')->exists())->toBeTrue()
+        ->and($tabs['overview']->getBadge())->toBeNull()
+        ->and($tabs['composition']->getBadge())->toBeNull()
+        ->and($tabs['guidance-files']->getBadge())->toBeNull()
+        ->and($tabs['soap-chemistry']->getBadge())->toBeNull()
+        ->and($tabs['regulatory-data']->getBadge())->toBeNull();
+});
+
+it('counts unique tab fields and ignores non-tab context errors', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class);
+    $editor = $component->instance();
+    $editor->addError('data.components.0.percentage', 'First component error');
+    $editor->addError('data.components.0.percentage', 'Second component error');
+    $editor->addError('data.document_media_asset_ids.0', 'Document error');
+    $editor->addError('data.sap_profile.koh_sap_value', 'SAP error');
+    $editor->addError('data.fatty_acid_entries', 'Fatty acid total error');
+    $editor->addError('data.plan', 'Plan error');
+    $editor->addError('data', 'Stale workspace error');
+    $editor->addError('workspaceGuidance.html', 'Guidance context error');
+    $editor->addError('workspaceMaterialCode', 'Material code context error');
+
+    $tabs = collect($editor->form->getComponents(withHidden: true))
+        ->first(fn (mixed $candidate): bool => $candidate instanceof Tabs)
+        ->getChildSchema()
+        ->getComponents(withHidden: true);
+    $tabs = collect($tabs)->keyBy(fn (Tab $tab): ?string => $tab->getId());
+
+    expect($tabs['overview']->getBadge())->toBeNull()
+        ->and($tabs['composition']->getBadge())->toBe('1 error')
+        ->and($tabs['guidance-files']->getBadge())->toBe('1 error')
+        ->and($tabs['soap-chemistry']->getBadge())->toBe('2 errors')
+        ->and($tabs['regulatory-data']->getBadge())->toBeNull();
+});
+
 it('configures the fatty acid repeater with contextual controls', function (): void {
     $user = User::factory()->create();
     $fattyAcid = FattyAcid::factory()->create(['name' => 'Oleic acid', 'display_order' => 1]);
@@ -2041,6 +2145,7 @@ it('keeps every ingredient editor string in the ingredients translation group', 
         'editor.tabs.documents',
         'editor.tabs.soap_chemistry',
         'editor.tabs.compliance',
+        'editor.tabs.errors',
         'editor.details.section',
         'editor.details.notes_helper',
         'editor.classification.section',

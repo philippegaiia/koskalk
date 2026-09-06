@@ -623,6 +623,22 @@ it('commits reviewed workspace ingredient alerts and document picker copy', func
     ]);
 });
 
+it('commits localized ingredient tab error badges', function (): void {
+    $catalogue = app(InterfaceTranslationCatalogue::class)
+        ->read(database_path('seeders/data/interface-translations.json'));
+    $translations = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    expect($translations['ingredients.editor.tabs.errors']['text'] ?? null)->toBe([
+        'de' => '{1} :count Fehler|[2,*] :count Fehler',
+        'es' => '{1} :count error|[2,*] :count errores',
+        'fr' => '{1} :count erreur|[2,*] :count erreurs',
+        'it' => '{1} :count errore|[2,*] :count errori',
+        'nl' => '{1} :count fout|[2,*] :count fouten',
+        'pt_BR' => '{1} :count erro|[2,*] :count erros',
+    ]);
+});
+
 it('commits reviewed workspace ingredient guidance copy', function (): void {
     $catalogue = app(InterfaceTranslationCatalogue::class)
         ->read(database_path('seeders/data/interface-translations.json'));

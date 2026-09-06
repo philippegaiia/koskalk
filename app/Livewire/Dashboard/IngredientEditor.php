@@ -75,6 +75,14 @@ use Livewire\Component;
 
 class IngredientEditor extends Component implements HasActions, HasForms
 {
+    private const array INGREDIENT_EDITOR_TAB_KEYS = [
+        'overview',
+        'composition',
+        'guidance-files',
+        'soap-chemistry',
+        'regulatory-data',
+    ];
+
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
@@ -916,6 +924,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         Tab::make(__('ingredients.editor.tabs.details'))
                             ->id('overview')
                             ->key('overview', isInheritable: false)
+                            ->badge(fn (): ?string => $this->ingredientEditorTabErrorBadge('overview'))
+                            ->badgeColor('danger')
                             ->schema([
                                 Section::make(__('ingredients.editor.overview.basics_section'))
                                     ->description(__('ingredients.editor.details.description'))
@@ -1016,6 +1026,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         Tab::make(__('ingredients.editor.tabs.composition'))
                             ->id('composition')
                             ->key('composition', isInheritable: false)
+                            ->badge(fn (): ?string => $this->ingredientEditorTabErrorBadge('composition'))
+                            ->badgeColor('danger')
                             ->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')
                             ->schema([
                                 SchemaView::make('livewire.dashboard.partials.ingredient-composition-rows')
@@ -1024,6 +1036,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         Tab::make(__('ingredients.editor.tabs.documents'))
                             ->id('guidance-files')
                             ->key('guidance-files', isInheritable: false)
+                            ->badge(fn (): ?string => $this->ingredientEditorTabErrorBadge('guidance-files'))
+                            ->badgeColor('danger')
                             ->schema([
                                 Section::make(__('ingredients.editor.guidance_files.guidance_section'))
                                     ->description(__('ingredients.editor.guidance_files.guidance_description'))
@@ -1076,6 +1090,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         Tab::make(__('ingredients.editor.tabs.soap_chemistry'))
                             ->id('soap-chemistry')
                             ->key('soap-chemistry', isInheritable: false)
+                            ->badge(fn (): ?string => $this->ingredientEditorTabErrorBadge('soap-chemistry'))
+                            ->badgeColor('danger')
                             ->visible(fn (): bool => $this->soapChemistryAvailable())
                             ->schema([
                                 Section::make(__('ingredients.editor.soap.section'))
@@ -1165,6 +1181,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         Tab::make(__('ingredients.editor.tabs.compliance'))
                             ->id('regulatory-data')
                             ->key('regulatory-data', isInheritable: false)
+                            ->badge(fn (): ?string => $this->ingredientEditorTabErrorBadge('regulatory-data'))
+                            ->badgeColor('danger')
                             ->schema([
                                 Section::make(__('ingredients.editor.compliance.allergens.section'))
                                     ->description(__('ingredients.editor.compliance.allergens.description'))
@@ -1306,6 +1324,93 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->statePath('data')
             ->disabled(! $this->canEditIngredientData())
             ->model($this->currentIngredient() ?? Ingredient::class);
+    }
+
+    private function ingredientEditorTabErrorBadge(string $tabKey): ?string
+    {
+        $count = $this->ingredientEditorTabErrorCounts()[$tabKey] ?? 0;
+
+        return $count > 0
+            ? trans_choice('ingredients.editor.tabs.errors', $count, ['count' => $count])
+            : null;
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function ingredientEditorTabErrorCounts(): array
+    {
+        $counts = array_fill_keys(self::INGREDIENT_EDITOR_TAB_KEYS, 0);
+
+        foreach ($this->getErrorBag()->getMessages() as $field => $messages) {
+            if (collect($messages)->filter(fn (mixed $message): bool => filled($message))->isEmpty()) {
+                continue;
+            }
+
+            $tabKey = $this->ingredientEditorTabForErrorField($field);
+
+            if ($tabKey === null) {
+                continue;
+            }
+
+            $counts[$tabKey]++;
+        }
+
+        return $counts;
+    }
+
+    private function ingredientEditorTabForErrorField(string $field): ?string
+    {
+        if ($field === 'data'
+            || in_array($field, ['workspaceMaterialCode', 'workspaceGuidance'], true)) {
+            return null;
+        }
+
+        $path = str_starts_with($field, 'data.')
+            ? substr($field, 5)
+            : $field;
+
+        if ($path === 'data' || $path === 'plan') {
+            return null;
+        }
+
+        $matchesPath = static fn (string $prefix): bool => $path === $prefix
+            || str_starts_with($path, $prefix.'.');
+
+        if ($matchesPath('workspaceMaterialCode') || $matchesPath('workspaceGuidance')) {
+            return null;
+        }
+
+        if ($matchesPath('components')
+            || $matchesPath('quickComponentName')
+            || $matchesPath('quickComponentCategory')) {
+            return 'composition';
+        }
+
+        if ($matchesPath('guidance_html')
+            || $matchesPath('notes')
+            || $matchesPath('featured_media_asset_id')
+            || $matchesPath('icon_media_asset_id')
+            || $matchesPath('document_media_asset_ids')
+            || $matchesPath('media')) {
+            return 'guidance-files';
+        }
+
+        if ($matchesPath('sap_profile') || $matchesPath('fatty_acid_entries')) {
+            return 'soap-chemistry';
+        }
+
+        if ($matchesPath('allergen_entries')
+            || $matchesPath('substance_entries')
+            || $matchesPath('ifra')) {
+            return 'regulatory-data';
+        }
+
+        if ($matchesPath('confirmCompositionRemoval')) {
+            return 'overview';
+        }
+
+        return str_starts_with($field, 'data.') ? 'overview' : null;
     }
 
     public function compositionRemovalConfirmationForm(Schema $schema): Schema

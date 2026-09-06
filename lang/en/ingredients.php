@@ -711,6 +711,7 @@ return [
             'documents' => 'Guidance & files',
             'soap_chemistry' => 'Soap chemistry',
             'compliance' => 'Regulatory data',
+            'errors' => '{1} :count error|[2,*] :count errors',
         ],
         'details' => [
             'section' => 'Ingredient identity',

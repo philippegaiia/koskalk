@@ -909,7 +909,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.overview.verified_functions'))
                                             ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', '))
                                             ->belowContent(__('ingredients.editor.supplier.verified_functions_helper'))
-                                            ->visible(fn (Get $get): bool => collect($get('verified_function_names'))->filter()->isNotEmpty()),
+                                            ->visible(fn (): bool => collect($this->data['verified_function_names'] ?? [])->filter()->isNotEmpty()),
                                         Select::make('function_ids')
                                             ->label(__('ingredients.editor.overview.workspace_functions'))
                                             ->multiple()

@@ -815,6 +815,64 @@ it('starts with a single ingredient and renders the editor groups in task order'
         ->assertDontSeeText('Composition');
 });
 
+it('orders every classification field for a trusted duplicate with verified functions', function (): void {
+    $user = User::factory()->create();
+    $verifiedFunction = IngredientFunction::factory()->create([
+        'name' => 'Verified emollient',
+        'is_active' => true,
+    ]);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Trusted source oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->functions()->attach($verifiedFunction->id, [
+        'source' => IngredientFunctionSource::CosIng->value,
+    ]);
+
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    expect($copy->fresh('functions')->functions->first()?->pivot->source)
+        ->toBe(IngredientFunctionSource::Inherited->value);
+    expect(app(UserIngredientAuthoringService::class)->formData($copy)['verified_function_names'])
+        ->toContain('Verified emollient');
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $copy]);
+    expect($component->get('data.verified_function_names'))->toContain('Verified emollient');
+
+    $html = $component->html();
+    $classificationStart = strpos($html, 'data-ingredient-classification-section');
+    $identityStart = strpos($html, 'data-ingredient-identity-section');
+    $classification = substr($html, $classificationStart, $identityStart - $classificationStart);
+
+    expect($classification)->toContain('Subcategory')
+        ->toContain('Treat as an aromatic ingredient')
+        ->toContain('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
+        ->toContain('Verified functions')
+        ->toContain('Verified emollient')
+        ->toContain('Workspace functions (optional)');
+
+    $fieldLabels = [
+        'Subcategory',
+        'Treat as an aromatic ingredient',
+        'Soap data inherited from Soapkraft. Editable values stay within inherited limits.',
+        'Verified functions',
+        'Workspace functions (optional)',
+    ];
+
+    foreach (array_slice($fieldLabels, 0, -1) as $index => $label) {
+        expect(strpos($classification, $label))
+            ->toBeLessThan(strpos($classification, $fieldLabels[$index + 1]));
+    }
+});
+
 it('keeps the editor baseline mounted when a blend composition re-renders', function (): void {
     $user = User::factory()->create();
 

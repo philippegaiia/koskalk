@@ -57,7 +57,7 @@ return [
         'upload' => 'Upload',
         'upload_heading' => 'Upload to Media Library',
         'upload_description' => 'Uploads are saved to the Media Library immediately. Save this form to link the selected file; canceling this form does not delete the uploaded asset.',
-        'remove_selection_help' => 'Removing this selection does not delete the file from your Media Library.',
+        'remove_selection_help' => 'Removing selected files from this form does not delete them from your Media Library.',
         'upload_requirements' => 'Accepted formats: :formats. Maximum size: :max MB.',
         'image' => 'Image',
         'document' => 'PDF document',

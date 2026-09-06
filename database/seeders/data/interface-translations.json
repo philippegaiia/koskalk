@@ -13946,12 +13946,12 @@
       "group": "media_library",
       "key": "picker.remove_selection_help",
       "text": {
-        "de": "Wenn du die Auswahl entfernst, wird die Datei nicht aus deiner Medienbibliothek gelöscht.",
-        "es": "Quitar la selección no elimina el archivo de tu biblioteca multimedia.",
-        "fr": "Retirer la sélection ne supprime pas le fichier de votre médiathèque.",
-        "it": "Rimuovere la selezione non elimina il file dalla tua libreria multimediale.",
-        "nl": "De selectie verwijderen verwijdert het bestand niet uit je mediabibliotheek.",
-        "pt_BR": "Remover a seleção não exclui o arquivo da sua Biblioteca de mídia."
+        "de": "Das Entfernen ausgewählter Dateien aus diesem Formular löscht sie nicht aus deiner Medienbibliothek.",
+        "es": "Quitar los archivos seleccionados de este formulario no los elimina de tu biblioteca multimedia.",
+        "fr": "Retirer les fichiers sélectionnés de ce formulaire ne les supprime pas de votre médiathèque.",
+        "it": "Rimuovere i file selezionati da questo modulo non li elimina dalla tua libreria multimediale.",
+        "nl": "Geselecteerde bestanden uit dit formulier verwijderen, verwijdert ze niet uit je mediabibliotheek.",
+        "pt_BR": "Remover os arquivos selecionados deste formulário não os exclui da sua Biblioteca de mídia."
       }
     },
     {

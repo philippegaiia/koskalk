@@ -206,6 +206,8 @@ it('keeps the complete platform reference available as plain technical values', 
         ->toContain('PDF document');
 
     expect($component->instance()->referenceData)->toHaveKey('documents')
+        ->and($component->instance()->referenceData['documents'][0])->toHaveKey('type')
+        ->and($component->instance()->referenceData['documents'][0])->not->toHaveKey('role')
         ->and($component->instance()->data)->toBe([])
         ->and($component->instance()->workspaceMaterialCode)->toBeNull();
 });

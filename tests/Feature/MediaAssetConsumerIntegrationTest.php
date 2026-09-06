@@ -85,7 +85,7 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->assertSee('Choose from Media Library')
         ->assertSeeHtml('data-media-picker-upload-form')
         ->assertSeeText('Remove selection')
-        ->assertSeeText('Removing this selection does not delete the file from your Media Library.')
+        ->assertSeeText('Removing selected files from this form does not delete them from your Media Library.')
         ->assertSeeText('Uploads are saved to the Media Library immediately.')
         ->assertSeeText('Accepted formats: JPEG, PNG, WebP, HEIC, HEIF.')
         ->assertSeeText('Maximum size: 10 MB.');
@@ -101,6 +101,46 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->assertSeeHtml('No PDF selected')
         ->assertSeeText('Processing uploaded PDF')
         ->assertSeeText('PDF processing failed');
+});
+
+it('connects the remove-selection description to a rendered selected image', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $recipe = Recipe::factory()->create([
+        'owner_id' => $user->id,
+        'workspace_id' => $workspace->id,
+    ]);
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'a-very-long-image-filename-that-must-remain-readable-on-touch.png',
+        'display_name' => 'A very long image display name for narrow screens',
+    ]);
+    MediaAssetUsage::factory()->create([
+        'media_asset_id' => $asset->id,
+        'usable_type' => $recipe->getMorphClass(),
+        'usable_id' => $recipe->id,
+        'role' => MediaAssetUsageRole::RecipeFeatured,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])->html();
+
+    preg_match('/id="(media-picker-[^"]+-remove-selection-help)"/', $html, $helpMatches);
+    preg_match_all('/id="(media-picker-[^"]+-remove-selection-help)"/', $html, $allHelpMatches);
+
+    expect($html)
+        ->toContain('A very long image display name for narrow screens')
+        ->toContain('a-very-long-image-filename-that-must-remain-readable-on-touch.png')
+        ->toMatch('/id="(media-picker-[^"]+)-remove-selection-help"/')
+        ->toContain('x-bind:aria-describedby="(multiple ? (Array.isArray(state) && state.length) : state) ?')
+        ->toContain('-remove-selection-help')
+        ->toContain('x-show="multiple ? (Array.isArray(state) && state.length) : state"');
+
+    expect($helpMatches)->not->toBeEmpty()
+        ->and($allHelpMatches[1])->toHaveCount(2)
+        ->and(array_unique($allHelpMatches[1]))->toHaveCount(2)
+        ->and($html)->toContain("x-bind:aria-describedby=\"(multiple ? (Array.isArray(state) && state.length) : state) ? '{$helpMatches[1]}' : null\"");
 });
 
 it('filters picker results by the component media type', function () {

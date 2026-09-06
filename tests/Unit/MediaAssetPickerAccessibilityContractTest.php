@@ -105,6 +105,20 @@ it('exposes removable selections, upload persistence details, and readable filen
         ->not->toContain('class="block truncate px-2 pb-2 text-xs text-[var(--color-ink-soft)]"');
 });
 
+it('describes the remove action only while a picker selection exists', function () {
+    $pickerView = file_get_contents(
+        resource_path('views/forms/components/media-asset-picker.blade.php'),
+    );
+
+    expect($pickerView)
+        ->toContain('id="{{ $pickerId }}-remove-selection-help"')
+        ->toContain('x-bind:aria-describedby="(multiple ? (Array.isArray(state) && state.length) : state) ?')
+        ->toContain('x-show="multiple ? (Array.isArray(state) && state.length) : state"');
+
+    expect(__('media_library.picker.remove_selection_help'))
+        ->toBe('Removing selected files from this form does not delete them from your Media Library.');
+});
+
 it('tracks and clears the single modal upload filename', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

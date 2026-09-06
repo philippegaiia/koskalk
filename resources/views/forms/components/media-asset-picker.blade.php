@@ -82,9 +82,9 @@
 
             <div class="flex flex-wrap gap-2">
                 <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : ($isMultiple ? __('media_library.picker.choose_multiple') : __('media_library.picker.choose')) }}</button>
-                <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-on:click="state = multiple ? [] : null" class="sk-btn border border-[var(--color-line)] text-[var(--color-ink-soft)]">{{ __('media_library.picker.clear') }}</button>
+                <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-bind:aria-describedby="(multiple ? (Array.isArray(state) && state.length) : state) ? '{{ $pickerId }}-remove-selection-help' : null" x-on:click="state = multiple ? [] : null" class="sk-btn border border-[var(--color-line)] text-[var(--color-ink-soft)]">{{ __('media_library.picker.clear') }}</button>
             </div>
-            <p x-show="multiple ? (Array.isArray(state) && state.length) : state" class="max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.remove_selection_help') }}</p>
+            <p id="{{ $pickerId }}-remove-selection-help" x-show="multiple ? (Array.isArray(state) && state.length) : state" class="max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.remove_selection_help') }}</p>
         @endunless
 
         @if ($isEmbedded())

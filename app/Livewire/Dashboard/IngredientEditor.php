@@ -1533,7 +1533,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 'name' => $asset->displayName(),
                 'original_filename' => $asset->original_filename,
                 'type' => $asset->type instanceof MediaAssetType ? $asset->type->value : (string) $asset->type,
-                'role' => MediaAssetUsageRole::IngredientDocument->value,
                 'download_url' => route('media.download', $asset),
             ])
             ->values()

@@ -607,18 +607,25 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeText('Enter a name and choose a category. Add an INCI name and supporting details when available.')
         ->assertSeeText('Overview')
         ->assertSeeText('Documents')
-        ->assertSeeText('Ingredient identity')
+        ->assertSeeText('Basics')
         ->assertSeeText('Start with the name used in your workspace and the INCI when known.')
+        ->assertSeeText('Ingredient name')
+        ->assertSeeText('Category')
         ->assertSeeText('Ingredient type')
         ->assertSeeText('Single ingredient')
         ->assertSeeText('Blend')
-        ->assertSeeText('Choose Blend when this ingredient is made from several ingredients.')
+        ->assertSeeText('Choose Blend when this material contains other ingredients.')
+        ->assertSeeText('INCI name (optional)')
+        ->assertSeeText('Internal material code (optional)')
         ->assertSeeText('Classification')
-        ->assertSeeText('Reference identifiers')
+        ->assertSeeText('Subcategory')
+        ->assertSeeText('Treat as an aromatic ingredient')
+        ->assertSeeText('Uses the fragrance phase in the formula workbench and enables allergen and IFRA records.')
+        ->assertSeeText('Identifiers and alternative names')
         ->assertSeeText('Help classify this ingredient')
         ->assertDontSeeText('Certified organic')
         ->assertDontSeeText('Verified COSING functions')
-        ->assertSeeText('Functions used in your workspace')
+        ->assertSeeText('Workspace functions (optional)')
         ->assertSeeText('AI research helper')
         ->assertSeeText('Generate a prompt to research classification, identifiers, COSING functions, and concise professional notes. It will not change this form.')
         ->assertSeeText('Generate prompt')
@@ -781,7 +788,7 @@ it('resolves legacy ingredient tab query values against visible tabs', function 
         ))->toBe('Regulatory data');
 });
 
-it('starts with a single ingredient and places identity before classification', function (): void {
+it('starts with a single ingredient and renders the editor groups in task order', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user);
@@ -792,7 +799,13 @@ it('starts with a single ingredient and places identity before classification', 
 
     expect($component->get('data.ingredient_structure'))->toBe('ingredient')
         ->and(strpos($html, 'wire:model="data.name"'))->toBeLessThan(strpos($html, 'wire:model="data.inci_name"'))
-        ->and(strpos($html, 'wire:model="data.inci_name"'))->toBeLessThan(strpos($html, 'data-ingredient-classification-section'));
+        ->and(strpos($html, 'wire:model="data.name"'))->toBeLessThan(strpos($html, 'wire:model.live="data.category"'))
+        ->and(strpos($html, 'wire:model.live="data.category"'))->toBeLessThan(strpos($html, 'wire:model.live="data.ingredient_structure"'))
+        ->and(strpos($html, 'wire:model="data.ingredient_structure"'))->toBeLessThan(strpos($html, 'wire:model="data.inci_name"'))
+        ->and(strpos($html, 'wire:model="data.inci_name"'))->toBeLessThan(strpos($html, 'wire:model="data.material_code"'))
+        ->and(strpos($html, 'data-ingredient-basics-section'))->toBeLessThan(strpos($html, 'data-ingredient-classification-section'))
+        ->and(strpos($html, 'data-ingredient-classification-section'))->toBeLessThan(strpos($html, 'data-ingredient-identity-section'))
+        ->and(strpos($html, 'data-ingredient-identity-section'))->toBeLessThan(strpos($html, 'classification-prompt-title'));
 
     $component
         ->assertDontSeeText('Trusted for soap saponification')

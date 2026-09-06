@@ -5498,24 +5498,24 @@
       "group": "ingredients",
       "key": "editor.details.aromatic_compliance",
       "text": {
-        "de": "Aromatische Konformität erforderlich",
-        "es": "Requiere conformidad aromática",
-        "fr": "Conformité aromatique requise",
-        "it": "Richiede conformità aromatica",
-        "nl": "Aromatische naleving vereist",
-        "pt_BR": "Requer conformidade aromática"
+        "de": "Als aromatisches Material behandeln",
+        "es": "Tratar como ingrediente aromático",
+        "fr": "Traiter comme un ingrédient aromatique",
+        "it": "Tratta come ingrediente aromatico",
+        "nl": "Behandelen als aromatisch ingrediënt",
+        "pt_BR": "Tratar como ingrediente aromático"
       }
     },
     {
       "group": "ingredients",
       "key": "editor.details.aromatic_compliance_helper",
       "text": {
-        "de": "Aktiviert Allergen- und IFRA-Informationen unabhängig von der Materialkategorie.",
-        "es": "Activa la información de alérgenos e IFRA independientemente de la categoría del material.",
-        "fr": "Active les informations allergènes et IFRA indépendamment de la catégorie de matière.",
-        "it": "Attiva le informazioni su allergeni e IFRA indipendentemente dalla categoria del materiale.",
-        "nl": "Activeert allergenen- en IFRA-informatie onafhankelijk van de materiaalcategorie.",
-        "pt_BR": "Ativa informações de alérgenos e IFRA independentemente da categoria do material."
+        "de": "Verwendet die Duftphase im Formulierungsbereich und aktiviert Allergen- und IFRA-Einträge.",
+        "es": "Usa la fase de fragancia en el área de fórmulas y activa los registros de alérgenos e IFRA.",
+        "fr": "Utilise la phase parfumée dans l’atelier de formulation et active les enregistrements d’allergènes et IFRA.",
+        "it": "Usa la fase profumata nel workbench delle formule e abilita i record di allergeni e IFRA.",
+        "nl": "Gebruikt de geurfase in de formulewerkbank en schakelt allergenen- en IFRA-records in.",
+        "pt_BR": "Usa a fase de fragrância no workbench de fórmulas e habilita os registros de alérgenos e IFRA."
       }
     },
     {
@@ -5546,24 +5546,24 @@
       "group": "ingredients",
       "key": "editor.details.inci",
       "text": {
-        "de": "INCI",
-        "es": "INCI",
-        "fr": "INCI",
-        "it": "INCI",
-        "nl": "INCI",
-        "pt_BR": "INCI"
+        "de": "INCI-Name (optional)",
+        "es": "Nombre INCI (opcional)",
+        "fr": "Nom INCI (facultatif)",
+        "it": "Nome INCI (facoltativo)",
+        "nl": "INCI-naam (optioneel)",
+        "pt_BR": "Nome INCI (opcional)"
       }
     },
     {
       "group": "ingredients",
       "key": "editor.details.name",
       "text": {
-        "de": "Name",
-        "es": "Nombre",
-        "fr": "Nom",
-        "it": "Nome",
-        "nl": "Naam",
-        "pt_BR": "Nome"
+        "de": "Name der Zutat",
+        "es": "Nombre del ingrediente",
+        "fr": "Nom de l’ingrédient",
+        "it": "Nome dell’ingrediente",
+        "nl": "Ingrediëntnaam",
+        "pt_BR": "Nome do ingrediente"
       }
     },
     {
@@ -5594,12 +5594,12 @@
       "group": "ingredients",
       "key": "editor.details.section",
       "text": {
-        "de": "Zutatenidentität",
-        "es": "Identidad del ingrediente",
-        "fr": "Identité de l’ingrédient",
-        "it": "Identità dell’ingrediente",
-        "nl": "Ingrediëntidentiteit",
-        "pt_BR": "Identidade do ingrediente"
+        "de": "Grundangaben",
+        "es": "Datos básicos",
+        "fr": "Informations de base",
+        "it": "Informazioni di base",
+        "nl": "Basisgegevens",
+        "pt_BR": "Informações básicas"
       }
     },
     {
@@ -5666,12 +5666,12 @@
       "group": "ingredients",
       "key": "editor.details.type.helper",
       "text": {
-        "de": "Wähle Mischung, wenn diese Zutat aus mehreren Zutaten besteht.",
-        "es": "Elige Mezcla cuando este ingrediente esté compuesto por varios ingredientes.",
-        "fr": "Choisissez Mélange lorsque cet ingrédient est composé de plusieurs ingrédients.",
-        "it": "Scegli Miscela quando questo ingrediente è composto da più ingredienti.",
-        "nl": "Kies Mengsel wanneer dit ingrediënt uit meerdere ingrediënten bestaat.",
-        "pt_BR": "Escolha Mistura quando este ingrediente for composto por vários ingredientes."
+        "de": "Wähle Mischung, wenn dieses Material andere Zutaten enthält.",
+        "es": "Elige Mezcla cuando este material contenga otros ingredientes.",
+        "fr": "Choisissez Mélange lorsque ce matériau contient d’autres ingrédients.",
+        "it": "Scegli Miscela quando questo materiale contiene altri ingredienti.",
+        "nl": "Kies Mengsel wanneer dit materiaal andere ingrediënten bevat.",
+        "pt_BR": "Escolha Mistura quando este material contiver outros ingredientes."
       }
     },
     {
@@ -6098,12 +6098,12 @@
       "group": "ingredients",
       "key": "editor.identity.section",
       "text": {
-        "de": "Referenzkennungen",
-        "es": "Identificadores de referencia",
-        "fr": "Identifiants de référence",
-        "it": "Identificatori di riferimento",
-        "nl": "Referentie-identificaties",
-        "pt_BR": "Identificadores de referência"
+        "de": "Kennungen und alternative Namen",
+        "es": "Identificadores y nombres alternativos",
+        "fr": "Identifiants et noms alternatifs",
+        "it": "Identificatori e nomi alternativi",
+        "nl": "Identificaties en alternatieve namen",
+        "pt_BR": "Identificadores e nomes alternativos"
       }
     },
     {
@@ -6218,12 +6218,12 @@
       "group": "ingredients",
       "key": "editor.material_code.label",
       "text": {
-        "de": "Interner Materialcode",
-        "es": "Código interno de material",
-        "fr": "Code matière interne",
-        "it": "Codice materiale interno",
-        "nl": "Interne materiaalcode",
-        "pt_BR": "Código interno do material"
+        "de": "Interner Materialcode (optional)",
+        "es": "Código interno de material (opcional)",
+        "fr": "Code matière interne (facultatif)",
+        "it": "Codice materiale interno (facoltativo)",
+        "nl": "Interne materiaalcode (optioneel)",
+        "pt_BR": "Código interno do material (opcional)"
       }
     },
     {
@@ -6854,12 +6854,12 @@
       "group": "ingredients",
       "key": "editor.supplier.additional_functions",
       "text": {
-        "de": "In deinem Arbeitsbereich verwendete Funktionen",
-        "es": "Funciones utilizadas en tu espacio de trabajo",
-        "fr": "Fonctions utilisées dans votre espace de travail",
-        "it": "Funzioni utilizzate nel tuo spazio di lavoro",
-        "nl": "Functies die in je werkruimte worden gebruikt",
-        "pt_BR": "Funções usadas no seu espaço de trabalho"
+        "de": "Arbeitsbereichsfunktionen (optional)",
+        "es": "Funciones del espacio de trabajo (opcional)",
+        "fr": "Fonctions de l’espace de travail (facultatif)",
+        "it": "Funzioni dell’area di lavoro (facoltative)",
+        "nl": "Werkruimtefuncties (optioneel)",
+        "pt_BR": "Funções do espaço de trabalho (opcional)"
       }
     },
     {
@@ -7010,12 +7010,12 @@
       "group": "ingredients",
       "key": "editor.supplier.verified_functions",
       "text": {
-        "de": "Verifizierte COSING-Funktionen",
-        "es": "Funciones COSING verificadas",
-        "fr": "Fonctions COSING vérifiées",
-        "it": "Funzioni COSING verificate",
-        "nl": "Geverifieerde COSING-functies",
-        "pt_BR": "Funções COSING verificadas"
+        "de": "Verifizierte Funktionen",
+        "es": "Funciones verificadas",
+        "fr": "Fonctions vérifiées",
+        "it": "Funzioni verificate",
+        "nl": "Geverifieerde functies",
+        "pt_BR": "Funções verificadas"
       }
     },
     {

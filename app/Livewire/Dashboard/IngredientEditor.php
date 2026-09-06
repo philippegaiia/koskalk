@@ -50,7 +50,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -847,6 +846,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->schema([
                                 Section::make(__('ingredients.editor.details.section'))
                                     ->description(__('ingredients.editor.details.description'))
+                                    ->extraAttributes(['data-ingredient-basics-section' => true])
                                     ->columns([
                                         'md' => 2,
                                     ])
@@ -856,15 +856,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.details.name'))
                                             ->required()
                                             ->maxLength(255),
-                                        TextInput::make('inci_name')
-                                            ->label(__('ingredients.editor.details.inci'))
-                                            ->maxLength(255),
-                                        TextInput::make('material_code')
-                                            ->label(__('ingredients.editor.material_code.label'))
-                                            ->helperText(__('ingredients.editor.material_code.helper'))
-                                            ->placeholder(__('ingredients.editor.material_code.placeholder'))
-                                            ->maxLength(64)
-                                            ->visible(fn (): bool => $this->canEditIngredientData()),
+                                        Select::make('category')
+                                            ->label(__('ingredients.editor.details.category'))
+                                            ->options(IngredientCategory::workspaceAuthorableOptions())
+                                            ->required()
+                                            ->rules([Rule::enum(IngredientCategory::class)])
+                                            ->live(),
                                         Select::make('ingredient_structure')
                                             ->label(__('ingredients.editor.details.type.label'))
                                             ->options([
@@ -878,70 +875,66 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         SchemaView::make('livewire.dashboard.partials.ingredient-composition-removal-confirmation')
                                             ->visible(fn (): bool => $this->isCompositionRemovalPending())
                                             ->columnSpanFull(),
+                                        TextInput::make('inci_name')
+                                            ->label(__('ingredients.editor.details.inci'))
+                                            ->maxLength(255),
+                                        TextInput::make('material_code')
+                                            ->label(__('ingredients.editor.material_code.label'))
+                                            ->helperText(__('ingredients.editor.material_code.helper'))
+                                            ->placeholder(__('ingredients.editor.material_code.placeholder'))
+                                            ->maxLength(64)
+                                            ->visible(fn (): bool => $this->canEditIngredientData()),
                                     ]),
-                                Grid::make([
-                                    'default' => 1,
-                                    'xl' => 2,
-                                ])
+                                Section::make(__('ingredients.editor.classification.section'))
+                                    ->description(__('ingredients.editor.classification.description'))
+                                    ->extraAttributes(['data-ingredient-classification-section' => true])
                                     ->schema([
-                                        Section::make(__('ingredients.editor.classification.section'))
-                                            ->description(__('ingredients.editor.classification.description'))
-                                            ->extraAttributes(['data-ingredient-classification-section' => true])
-                                            ->schema([
-                                                Select::make('category')
-                                                    ->label(__('ingredients.editor.details.category'))
-                                                    ->options(IngredientCategory::workspaceAuthorableOptions())
-                                                    ->required()
-                                                    ->rules([Rule::enum(IngredientCategory::class)])
-                                                    ->live(),
-                                                Select::make('subcategory')
-                                                    ->label(__('ingredients.editor.details.subcategory'))
-                                                    ->options(fn (Get $get): array => IngredientSubcategory::optionsFor($get('category')))
-                                                    ->searchable()
-                                                    ->live()
-                                                    ->helperText(__('ingredients.editor.details.subcategory_helper')),
-                                                Toggle::make('requires_aromatic_compliance')
-                                                    ->label(__('ingredients.editor.details.aromatic_compliance'))
-                                                    ->helperText(__('ingredients.editor.details.aromatic_compliance_helper'))
-                                                    ->live(),
-                                                TextEntry::make('inherited_soap_chemistry')
-                                                    ->label(__('ingredients.editor.soap.inherited_label'))
-                                                    ->state(__('ingredients.editor.soap.inherited'))
-                                                    ->belowContent(__('ingredients.editor.soap.inherited_helper'))
-                                                    ->visible(fn (): bool => $this->hasInheritedSoapChemistry()),
-                                                TextEntry::make('verified_function_names')
-                                                    ->label(__('ingredients.editor.supplier.verified_functions'))
-                                                    ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', '))
-                                                    ->belowContent(__('ingredients.editor.supplier.verified_functions_helper'))
-                                                    ->visible(fn (Get $get): bool => collect($get('verified_function_names'))->filter()->isNotEmpty()),
-                                                Select::make('function_ids')
-                                                    ->label(__('ingredients.editor.supplier.additional_functions'))
-                                                    ->multiple()
-                                                    ->searchable()
-                                                    ->preload()
-                                                    ->options(fn (): array => IngredientFunction::query()
-                                                        ->where('is_active', true)
-                                                        ->orderBy('sort_order')
-                                                        ->orderBy('name')
-                                                        ->get()
-                                                        ->mapWithKeys(fn (IngredientFunction $function): array => [
-                                                            $function->id => $function->localizedName(),
-                                                        ])
-                                                        ->all())
-                                                    ->helperText(__('ingredients.editor.supplier.functions_helper'))
-                                                    ->maxItems(10),
-                                            ]),
-                                        Section::make(__('ingredients.editor.identity.section'))
-                                            ->description(__('ingredients.editor.identity.description'))
-                                            ->extraAttributes(['data-ingredient-identity-section' => true])
-                                            ->columns([
-                                                'md' => 2,
-                                            ])
-                                            ->schema([
-                                                ...IngredientIdentityFields::schema(platform: false),
-                                            ]),
+                                        Select::make('subcategory')
+                                            ->label(__('ingredients.editor.details.subcategory'))
+                                            ->options(fn (Get $get): array => IngredientSubcategory::optionsFor($get('category')))
+                                            ->searchable()
+                                            ->live()
+                                            ->helperText(__('ingredients.editor.details.subcategory_helper')),
+                                        Toggle::make('requires_aromatic_compliance')
+                                            ->label(__('ingredients.editor.details.aromatic_compliance'))
+                                            ->helperText(__('ingredients.editor.details.aromatic_compliance_helper'))
+                                            ->live(),
+                                        TextEntry::make('inherited_soap_chemistry')
+                                            ->label(__('ingredients.editor.soap.inherited_label'))
+                                            ->state(__('ingredients.editor.soap.inherited'))
+                                            ->belowContent(__('ingredients.editor.soap.inherited_helper'))
+                                            ->visible(fn (): bool => $this->hasInheritedSoapChemistry()),
+                                        TextEntry::make('verified_function_names')
+                                            ->label(__('ingredients.editor.supplier.verified_functions'))
+                                            ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', '))
+                                            ->belowContent(__('ingredients.editor.supplier.verified_functions_helper'))
+                                            ->visible(fn (Get $get): bool => collect($get('verified_function_names'))->filter()->isNotEmpty()),
+                                        Select::make('function_ids')
+                                            ->label(__('ingredients.editor.supplier.additional_functions'))
+                                            ->multiple()
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(fn (): array => IngredientFunction::query()
+                                                ->where('is_active', true)
+                                                ->orderBy('sort_order')
+                                                ->orderBy('name')
+                                                ->get()
+                                                ->mapWithKeys(fn (IngredientFunction $function): array => [
+                                                    $function->id => $function->localizedName(),
+                                                ])
+                                                ->all())
+                                            ->helperText(__('ingredients.editor.supplier.functions_helper'))
+                                            ->maxItems(10),
+                                    ]),
+                                Section::make(__('ingredients.editor.identity.section'))
+                                    ->description(__('ingredients.editor.identity.description'))
+                                    ->extraAttributes(['data-ingredient-identity-section' => true])
+                                    ->columns([
+                                        'md' => 2,
                                     ])
-                                    ->columnSpanFull(),
+                                    ->schema([
+                                        ...IngredientIdentityFields::schema(platform: false),
+                                    ]),
                                 SchemaView::make('livewire.dashboard.partials.ingredient-classification-prompt')
                                     ->visible(fn (): bool => $this->canEditIngredientData())
                                     ->columnSpanFull(),

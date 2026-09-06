@@ -790,9 +790,9 @@ it('does not let a manually created ingredient enable soap chemistry', function 
     Livewire::test(IngredientEditor::class)
         ->set('data.is_soap_saponification_trusted', true)
         ->assertDontSee('Soap chemistry')
-        ->assertSee('Compliance')
+        ->assertSee('Regulatory data')
         ->set('data.requires_aromatic_compliance', true)
-        ->assertSee('Compliance')
+        ->assertSee('Regulatory data')
         ->assertDontSee('Soap chemistry');
 });
 

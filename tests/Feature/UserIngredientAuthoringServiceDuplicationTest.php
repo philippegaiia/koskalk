@@ -985,9 +985,10 @@ it('rejects an inactive component reference while duplicating a blend', function
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $inactiveComponent = Ingredient::factory()->create([
-        'owner_type' => OwnerType::User,
-        'owner_id' => $owner->id,
-        'visibility' => Visibility::Private,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
         'is_active' => false,
     ]);
     $source = Ingredient::factory()->create([
@@ -1011,6 +1012,49 @@ it('rejects an inactive component reference while duplicating a blend', function
         ValidationException::class,
         __('ingredients.editor.validation.duplicate_component_workspace_forbidden'),
     );
+});
+
+it('rejects a deleted component reference while duplicating a blend', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $component = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+    $source = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $source->components()->create([
+        'component_ingredient_id' => $component->id,
+        'percentage_in_parent' => 100.0,
+        'sort_order' => 1,
+    ]);
+    $component->delete();
+
+    expect($source->components()->value('component_ingredient_id'))->toBeNull();
+    $beforeCount = Ingredient::query()->count();
+
+    expect(fn (): Ingredient => app(UserIngredientAuthoringService::class)->duplicateIntoWorkspace(
+        $source,
+        $owner,
+        $workspace,
+    ))->toThrow(
+        ValidationException::class,
+        __('ingredients.editor.validation.duplicate_component_workspace_forbidden'),
+    );
+
+    expect(Ingredient::query()->count())->toBe($beforeCount)
+        ->and(Ingredient::query()
+            ->where('owner_type', OwnerType::Workspace)
+            ->where('owner_id', $workspace->id)
+            ->exists())->toBeFalse();
 });
 
 it('duplicates a blend with a component assigned to the destination workspace', function (): void {

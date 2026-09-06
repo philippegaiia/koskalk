@@ -8,6 +8,7 @@ use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\User;
 use App\Models\Workspace;
 use App\SoapSap;
@@ -628,7 +629,15 @@ class UserIngredientAuthoringService
 
     private function assertDuplicateComponentsAccessibleToWorkspace(Ingredient $source, Workspace $workspace): void
     {
-        $componentIds = $source->components()
+        $componentRows = $source->components()->get();
+
+        if ($componentRows->contains(fn (IngredientComponent $component): bool => $component->component_ingredient_id === null)) {
+            throw ValidationException::withMessages([
+                'components' => __('ingredients.editor.validation.duplicate_component_workspace_forbidden'),
+            ]);
+        }
+
+        $componentIds = $componentRows
             ->pluck('component_ingredient_id')
             ->map(fn (mixed $id): int => (int) $id)
             ->filter()

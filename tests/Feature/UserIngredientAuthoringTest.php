@@ -1943,11 +1943,11 @@ it('derives the same NaOH SAP from decimal and professional KOH notation', funct
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.sap_profile.koh_sap_value', '0,176')
         ->assertSee('meq O₂/kg')
-        ->assertSee('0.125488')
+        ->assertSee('0.125')
         ->set('data.sap_profile.koh_sap_value', '0.176')
-        ->assertSee('0.125488')
+        ->assertSee('0.125')
         ->set('data.sap_profile.koh_sap_value', '176')
-        ->assertSee('0.125488')
+        ->assertSee('0.125')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -1970,7 +1970,8 @@ it('formats derived NaOH SAP with a comma when the number locale requires it', f
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.sap_profile.koh_sap_value', '0,188')
-        ->assertSee('0,134044');
+        ->assertSee('0,134')
+        ->assertDontSee('0,134044');
 });
 
 it('shows a placeholder when the editable KOH SAP input is missing', function (): void {
@@ -1993,7 +1994,7 @@ it('shows a placeholder when the editable KOH SAP input is missing', function ()
     $naohEntry = $component->instance()->form->getComponent('sap_profile.naoh_sap_value', withHidden: true);
 
     expect($naohEntry->getState())->toBe('Not available')
-        ->and($component->html())->not->toContain('0.134044');
+        ->and($component->html())->not->toContain('0.134');
 });
 
 it('returns professional KOH notation to the canonical decimal scale', function () {

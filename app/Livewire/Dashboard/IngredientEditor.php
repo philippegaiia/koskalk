@@ -1870,7 +1870,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         return NumberLocale::formatDecimal(
             SoapSap::deriveNaohFromKoh($parsedKohSapValue),
-            6,
+            3,
             $this->currentUser()?->number_locale,
         );
     }

@@ -28,7 +28,7 @@
             return $notAvailable;
         }
 
-        return \App\Support\NumberLocale::formatDecimal($value, 6, $numberLocale);
+        return \App\Support\NumberLocale::formatDecimal($value, 3, $numberLocale);
     };
     $classification = $referenceData['classification'] ?? [];
 @endphp

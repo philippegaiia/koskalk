@@ -3564,6 +3564,30 @@
     },
     {
       "group": "ingredients",
+      "key": "duplicate.preview.koh_sap_unit",
+      "text": {
+        "de": "g KOH/g Öl",
+        "es": "g KOH/g aceite",
+        "fr": "g KOH/g huile",
+        "it": "g KOH/g olio",
+        "nl": "g KOH/g olie",
+        "pt_BR": "g KOH/g óleo"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.preview.naoh_sap_unit",
+      "text": {
+        "de": "g NaOH/g Öl",
+        "es": "g NaOH/g aceite",
+        "fr": "g NaOH/g huile",
+        "it": "g NaOH/g olio",
+        "nl": "g NaOH/g olie",
+        "pt_BR": "g NaOH/g óleo"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.actions.create",
       "text": {
         "de": "Zutat hinzufügen",

@@ -18,6 +18,8 @@
             'reloadGuidance' => __('ingredients.duplicate.errors.reload_guidance'),
             'review' => __('ingredients.duplicate.preview.review'),
             'source' => __('ingredients.duplicate.preview.source'),
+            'kohSapUnit' => __('ingredients.duplicate.preview.koh_sap_unit'),
+            'naohSapUnit' => __('ingredients.duplicate.preview.naoh_sap_unit'),
             'unavailable' => __('ingredients.duplicate.preview.unavailable'),
         ]),
     })"
@@ -193,11 +195,11 @@
                                                 <dl class="mt-2 grid gap-2 sm:grid-cols-3">
                                                     <div>
                                                         <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.koh_sap_range') }}</dt>
-                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.koh_sap.minimum}–${selected.duplication.chemistry.koh_sap.maximum} g KOH/g oil (${messages.source} ${selected.duplication.chemistry.koh_sap.original} g KOH/g oil)`"></dd>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.koh_sap.minimum}–${selected.duplication.chemistry.koh_sap.maximum} ${messages.kohSapUnit} (${messages.source} ${selected.duplication.chemistry.koh_sap.original} ${messages.kohSapUnit})`"></dd>
                                                     </div>
                                                     <div>
                                                         <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.naoh_sap_range') }}</dt>
-                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.naoh_sap.minimum}–${selected.duplication.chemistry.naoh_sap.maximum} g NaOH/g oil (${messages.source} ${selected.duplication.chemistry.naoh_sap.original} g NaOH/g oil)`"></dd>
+                                                        <dd class="numeric" x-text="`${selected.duplication.chemistry.naoh_sap.minimum}–${selected.duplication.chemistry.naoh_sap.maximum} ${messages.naohSapUnit} (${messages.source} ${selected.duplication.chemistry.naoh_sap.original} ${messages.naohSapUnit})`"></dd>
                                                     </div>
                                                     <div>
                                                         <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.duplicate.preview.fatty_acid_total_range') }}</dt>

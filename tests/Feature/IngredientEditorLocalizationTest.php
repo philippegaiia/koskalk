@@ -226,8 +226,23 @@ it('renders zero soap and peroxide values with their units', function (): void {
 
     $component
         ->assertSeeText('KOH SAP (g KOH/g oil)')
-        ->assertSeeText('Peroxide value (meq O₂/kg)')
-        ->assertSeeText('0');
+        ->assertSeeText('Peroxide value (meq O₂/kg)');
+
+    $rendered = $component->html();
+    $referenceValue = static function (string $label) use ($rendered): string {
+        preg_match(
+            '/<dt[^>]*>\s*'.preg_quote($label, '/').'\s*<\/dt>\s*<dd[^>]*>\s*(.*?)\s*<\/dd>/s',
+            $rendered,
+            $matches,
+        );
+
+        expect($matches)->not->toBeEmpty();
+
+        return trim(strip_tags($matches[1]));
+    };
+
+    expect($referenceValue('KOH SAP (g KOH/g oil)'))->toBe('0')
+        ->and($referenceValue('Peroxide value (meq O₂/kg)'))->toBe('0');
 
     expect($component->instance()->referenceData['soap']['koh_sap_value'])->toBe(0.0)
         ->and($component->instance()->referenceData['ifra']['peroxide_value'])->toBe(0.0);

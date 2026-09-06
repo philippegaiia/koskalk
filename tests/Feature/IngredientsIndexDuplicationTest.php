@@ -6,6 +6,7 @@ use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\InterfaceTranslation;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\Plan;
@@ -16,6 +17,7 @@ use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
 use App\Services\EntitlementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\App;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
@@ -78,11 +80,56 @@ it('registers the duplication factory and keeps dismissal guarded during confirm
         ->and($partial)->toContain('@click.self="!confirming && closeModal()"')
         ->and($partial)->toContain('@keydown.escape.window="!confirming && closeModal()"')
         ->and($partial)->toContain('selected.duplication.chemistry.koh_sap.minimum')
-        ->and($partial)->toContain('selected.duplication.chemistry.koh_sap.original} g KOH/g oil')
-        ->and($partial)->toContain('selected.duplication.chemistry.naoh_sap.original} g NaOH/g oil')
+        ->and($partial)->toContain("'kohSapUnit' => __('ingredients.duplicate.preview.koh_sap_unit')")
+        ->and($partial)->toContain("'naohSapUnit' => __('ingredients.duplicate.preview.naoh_sap_unit')")
+        ->and($partial)->toContain('selected.duplication.chemistry.koh_sap.original} ${messages.kohSapUnit}')
+        ->and($partial)->toContain('selected.duplication.chemistry.naoh_sap.original} ${messages.naohSapUnit}')
+        ->and($partial)->not->toContain('g KOH/g oil (${messages.source}')
+        ->and($partial)->not->toContain('g NaOH/g oil (${messages.source}')
         ->and($partial)->toContain('selected.duplication.chemistry.fatty_acids')
         ->and($partial)->not->toContain("x-text=\"item.duplication.available ? '{{ __('")
         ->and($partial)->not->toContain("{{ __('ingredients.duplicate.preview.source') }}");
+});
+
+it('renders localized chemistry units in the duplication modal contract', function (): void {
+    foreach ([
+        [
+            'group' => 'ingredients',
+            'key' => 'duplicate.preview.koh_sap_range',
+            'text' => ['fr' => 'Plage SAP KOH (g KOH/g huile)'],
+        ],
+        [
+            'group' => 'ingredients',
+            'key' => 'duplicate.preview.naoh_sap_range',
+            'text' => ['fr' => 'Plage SAP NaOH (g NaOH/g huile)'],
+        ],
+        [
+            'group' => 'ingredients',
+            'key' => 'duplicate.preview.koh_sap_unit',
+            'text' => ['fr' => 'g KOH/g huile'],
+        ],
+        [
+            'group' => 'ingredients',
+            'key' => 'duplicate.preview.naoh_sap_unit',
+            'text' => ['fr' => 'g NaOH/g huile'],
+        ],
+    ] as $translation) {
+        InterfaceTranslation::query()->create($translation);
+    }
+
+    $user = User::factory()->create();
+
+    App::setLocale('fr');
+
+    $this->actingAs($user)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee('Plage SAP KOH (g KOH/g huile)')
+        ->assertSee('Plage SAP NaOH (g NaOH/g huile)')
+        ->assertSee('g KOH/g huile')
+        ->assertSee('g NaOH/g huile')
+        ->assertDontSee('g KOH/g oil')
+        ->assertDontSee('g NaOH/g oil');
 });
 
 it('searches platform ingredients for duplication', function () {

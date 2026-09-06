@@ -495,6 +495,8 @@ return [
             'source' => 'source',
             'koh_sap_range' => 'KOH SAP range (g KOH/g oil)',
             'naoh_sap_range' => 'NaOH SAP range (g NaOH/g oil)',
+            'koh_sap_unit' => 'g KOH/g oil',
+            'naoh_sap_unit' => 'g NaOH/g oil',
             'fatty_acid_total_range' => 'Fatty acid total range',
             'fatty_acid_ranges' => 'Inherited fatty acids remain editable within these source ranges.',
             'fatty_acid_range' => ':name: :minimum%–:maximum% (source :original%).',

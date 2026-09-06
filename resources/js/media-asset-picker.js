@@ -20,6 +20,7 @@ export function createMediaAssetPicker(options) {
         acceptedTypes: options.acceptedTypes ?? ['image'],
         messages: options.messages,
         pendingUpload: null,
+        pendingUploadGeneration: 0,
         pollTimer: null,
         pollFailures: 0,
         opener: null,
@@ -170,9 +171,11 @@ export function createMediaAssetPicker(options) {
 
             this.open = true;
             this.activeTab = 'library';
+            const generation = ++this.pendingUploadGeneration;
             this.pendingUpload = {
                 id: Number(detail.assetId),
                 statusUrl: detail.statusUrl,
+                generation,
                 status: 'processing',
                 progress: 0,
                 failureReason: null,
@@ -181,7 +184,7 @@ export function createMediaAssetPicker(options) {
             };
             this.pollFailures = 0;
             this.$nextTick(() => this.$refs.libraryTab?.focus());
-            this.pollUpload();
+            this.pollUpload(generation);
         },
 
         uploadNew() {
@@ -268,12 +271,19 @@ export function createMediaAssetPicker(options) {
         },
 
         async retryUpload() {
-            if (!this.pendingUpload?.retryUrl) {
+            const pendingUpload = this.pendingUpload;
+
+            if (!pendingUpload?.retryUrl) {
                 return;
             }
 
             try {
-                const result = await this.request(this.pendingUpload.retryUrl, 'POST');
+                const result = await this.request(pendingUpload.retryUrl, 'POST');
+
+                if (this.pendingUpload?.generation !== pendingUpload.generation) {
+                    return;
+                }
+
                 this.pendingUpload = {
                     ...this.pendingUpload,
                     status: result.status,
@@ -283,35 +293,63 @@ export function createMediaAssetPicker(options) {
                     removeUrl: null,
                 };
                 this.pollFailures = 0;
-                this.pollUpload();
+                this.pollUpload(pendingUpload.generation);
             } catch (error) {
-                this.pendingUpload.failureReason = error.message;
+                if (this.pendingUpload?.generation === pendingUpload.generation) {
+                    this.pendingUpload.failureReason = error.message;
+                }
             }
         },
 
         async removeUpload() {
-            if (!this.pendingUpload?.removeUrl) {
+            const pendingUpload = this.pendingUpload;
+
+            if (!pendingUpload?.removeUrl) {
                 return;
             }
 
+            const generation = ++this.pendingUploadGeneration;
+            this.pendingUpload = null;
+            window.clearTimeout(this.pollTimer);
+
             try {
-                await this.request(this.pendingUpload.removeUrl, 'DELETE');
-                this.pendingUpload = null;
+                await this.request(pendingUpload.removeUrl, 'DELETE');
+
+                if (generation !== this.pendingUploadGeneration) {
+                    return;
+                }
+
                 this.search = '';
+                await this.loadAssets(true);
             } catch (error) {
-                this.pendingUpload.failureReason = error.message;
+                if (generation === this.pendingUploadGeneration) {
+                    this.pendingUpload = {
+                        ...pendingUpload,
+                        generation,
+                        failureReason: error.message,
+                    };
+
+                    if (pendingUpload.status === 'processing') {
+                        this.pollUpload(generation);
+                    }
+                }
             }
         },
 
-        async pollUpload() {
+        async pollUpload(generation = this.pendingUpload?.generation) {
             window.clearTimeout(this.pollTimer);
 
-            if (!this.pendingUpload) {
+            if (!this.pendingUpload || this.pendingUpload.generation !== generation) {
                 return;
             }
 
             try {
                 const result = await this.request(this.pendingUpload.statusUrl, 'GET');
+
+                if (!this.pendingUpload || this.pendingUpload.generation !== generation) {
+                    return;
+                }
+
                 this.pollFailures = 0;
                 this.pendingUpload = {
                     ...this.pendingUpload,
@@ -334,6 +372,10 @@ export function createMediaAssetPicker(options) {
                     return;
                 }
             } catch (error) {
+                if (!this.pendingUpload || this.pendingUpload.generation !== generation) {
+                    return;
+                }
+
                 this.pendingUpload.failureReason = error.message;
 
                 if ([401, 403, 404, 419].includes(error.status)) {
@@ -350,7 +392,7 @@ export function createMediaAssetPicker(options) {
             }
 
             this.pollTimer = window.setTimeout(
-                () => this.pollUpload(),
+                () => this.pollUpload(generation),
                 2000 * (2 ** this.pollFailures),
             );
         },

@@ -33,6 +33,7 @@ class MediaAssetUploadService
         UploadedFile $upload,
         array $allowedTypes = [MediaAssetType::Image],
         bool $processSynchronously = false,
+        bool $documentImage = false,
     ): MediaAsset {
         Gate::forUser($user)->authorize('create', MediaAsset::class);
         $this->assertCanEditWorkspace($user, $workspace);
@@ -47,7 +48,7 @@ class MediaAssetUploadService
         try {
             $asset = $this->entitlements->withinWorkspaceQuotaLock(
                 $workspace,
-                function (Workspace $lockedWorkspace) use ($disk, $pendingPath, $type, $upload, $user): MediaAsset {
+                function (Workspace $lockedWorkspace) use ($disk, $pendingPath, $type, $upload, $user, $documentImage): MediaAsset {
                     $this->assertCanEditWorkspace($user, $lockedWorkspace);
                     $this->entitlements->assertCanUploadMediaAssetInWorkspace($lockedWorkspace);
 
@@ -56,6 +57,7 @@ class MediaAssetUploadService
                         'uploaded_by_user_id' => $user->id,
                         'status' => MediaAssetStatus::Processing,
                         'type' => $type,
+                        'document_image' => $documentImage && $type === MediaAssetType::Image,
                         'original_filename' => $upload->getClientOriginalName(),
                         'original_mime_type' => $upload->getMimeType(),
                         'original_size' => $upload->getSize(),

@@ -940,7 +940,7 @@ it('reports processing status only to authorized workspace members', function ()
             'progress' => 45,
             'failure_reason' => null,
             'retry_url' => null,
-            'remove_url' => null,
+            'remove_url' => route('media.remove', $asset),
         ]);
 
     $this->actingAs($outsider)

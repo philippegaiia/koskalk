@@ -183,7 +183,7 @@ class MediaAssetPicker extends Field
             ->whereKey($selectedIds)
             ->whereIn('type', $this->getAcceptedMediaAssetTypeValues())
             ->with('media')
-            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'type'])
+            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'type', 'document_image'])
             ->get();
 
         $request->attributes->set($cacheKey, $assets);

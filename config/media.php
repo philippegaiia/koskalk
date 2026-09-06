@@ -19,6 +19,7 @@ return [
         'max_pixels' => 25_000_000,
         'master_max_edge' => 800,
         'quality' => 85,
+        'document_quality' => 95,
         'accepted_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
         'accepted_image_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
         'accepted_document_extensions' => ['pdf'],

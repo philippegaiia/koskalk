@@ -40,6 +40,7 @@ trait InteractsWithMediaAssetPickerUploads
                 $workspace,
                 $upload,
                 $picker->getAcceptedMediaAssetTypes(),
+                documentImage: $picker->acceptsDocuments(),
             );
         } catch (ValidationException $exception) {
             return [

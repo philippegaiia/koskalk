@@ -27,6 +27,7 @@ class MediaAssetFactory extends Factory
             'uploaded_by_user_id' => User::factory(),
             'status' => MediaAssetStatus::Processing,
             'type' => MediaAssetType::Image,
+            'document_image' => false,
             'original_filename' => fake()->word().'.jpg',
             'original_mime_type' => 'image/jpeg',
             'original_size' => fake()->numberBetween(10_000, 2_000_000),

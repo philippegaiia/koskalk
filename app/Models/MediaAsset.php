@@ -26,6 +26,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
     'display_name',
     'original_mime_type',
     'original_size',
+    'document_image',
     'width',
     'height',
     'pending_disk',
@@ -81,6 +82,12 @@ class MediaAsset extends Model implements HasMedia
         return $this->display_name ?: $this->original_filename;
     }
 
+    public function usesDocumentImageProfile(): bool
+    {
+        return $this->type === MediaAssetType::Image
+            && $this->document_image === true;
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('master')
@@ -127,6 +134,7 @@ class MediaAsset extends Model implements HasMedia
         return [
             'status' => MediaAssetStatus::class,
             'type' => MediaAssetType::class,
+            'document_image' => 'boolean',
             'original_size' => 'integer',
             'width' => 'integer',
             'height' => 'integer',

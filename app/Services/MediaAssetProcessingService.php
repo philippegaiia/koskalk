@@ -6,6 +6,8 @@ use App\Enums\MediaAssetStatus;
 use App\Enums\MediaAssetType;
 use App\Exceptions\MediaAssetProcessingException;
 use App\Models\MediaAsset;
+use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Imagick;
@@ -20,10 +22,7 @@ class MediaAssetProcessingService
 
     public function process(MediaAsset $asset, string $processingToken): void
     {
-        if (
-            $asset->status !== MediaAssetStatus::Processing
-            || ! hash_equals($asset->processing_token, $processingToken)
-        ) {
+        if (! $this->isActiveProcessingAsset($asset, $processingToken)) {
             return;
         }
 
@@ -37,7 +36,7 @@ class MediaAssetProcessingService
 
         try {
             if ($asset->type === MediaAssetType::Pdf) {
-                $this->processPdf($asset, $sourcePath);
+                $this->processPdf($asset, $sourcePath, $processingToken);
 
                 return;
             }
@@ -53,7 +52,7 @@ class MediaAssetProcessingService
                 'processing_stage' => 'normalizing',
             ]);
 
-            $masterPath = $this->createMaster($sourcePath, $asset);
+            $masterPath = $this->createMaster($sourcePath, $asset, $width, $height);
             [$masterWidth, $masterHeight] = $this->dimensions($masterPath);
 
             $asset->update([
@@ -63,26 +62,30 @@ class MediaAssetProcessingService
                 'processing_stage' => 'converting',
             ]);
 
-            $asset->clearMediaCollection('master');
-            $asset->addMedia($masterPath)
-                ->usingName(pathinfo($asset->original_filename, PATHINFO_FILENAME))
-                ->usingFileName(Str::uuid().'.webp')
-                ->toMediaCollection('master', config('media.asset_disk'));
-            $masterPath = null;
+            $this->withProcessingLock($asset, $processingToken, function (MediaAsset $lockedAsset) use (&$masterPath, $asset): void {
+                $lockedAsset->clearMediaCollection('master');
+                $lockedAsset->addMedia($masterPath)
+                    ->usingName(pathinfo($lockedAsset->original_filename, PATHINFO_FILENAME))
+                    ->usingFileName(Str::uuid().'.webp')
+                    ->toMediaCollection('master', config('media.asset_disk'));
+                $masterPath = null;
 
-            $this->assertConversionsGenerated($asset);
+                $this->assertConversionsGenerated($lockedAsset);
 
-            Storage::disk($asset->pending_disk)->delete($asset->pending_path);
+                Storage::disk($lockedAsset->pending_disk)->delete($lockedAsset->pending_path);
 
-            $asset->update([
-                'status' => MediaAssetStatus::Ready,
-                'pending_disk' => null,
-                'pending_path' => null,
-                'progress' => 100,
-                'processing_stage' => null,
-                'failure_code' => null,
-                'failure_reason' => null,
-            ]);
+                $lockedAsset->update([
+                    'status' => MediaAssetStatus::Ready,
+                    'pending_disk' => null,
+                    'pending_path' => null,
+                    'progress' => 100,
+                    'processing_stage' => null,
+                    'failure_code' => null,
+                    'failure_reason' => null,
+                ]);
+
+                $asset->setRawAttributes($lockedAsset->getAttributes(), true);
+            });
         } finally {
             @unlink($sourcePath);
 
@@ -120,7 +123,7 @@ class MediaAssetProcessingService
         ]);
     }
 
-    private function processPdf(MediaAsset $asset, string $sourcePath): void
+    private function processPdf(MediaAsset $asset, string $sourcePath, string $processingToken): void
     {
         $pageCount = $this->pdfPreviewRenderer->pageCount($sourcePath);
         $maxPages = (int) config('media.asset_uploads.pdf.max_pages', 50);
@@ -134,55 +137,60 @@ class MediaAssetProcessingService
 
         $asset->update([
             'progress' => 25,
-            'processing_stage' => 'storing_document',
-        ]);
-
-        $asset->clearMediaCollection('document');
-        $asset->addMedia($sourcePath)
-            ->preservingOriginal()
-            ->usingName(pathinfo($asset->original_filename, PATHINFO_FILENAME))
-            ->usingFileName(Str::uuid().'.pdf')
-            ->toMediaCollection('document', config('media.asset_disk'));
-
-        $asset->update([
-            'progress' => 55,
             'processing_stage' => 'preparing_preview',
         ]);
 
         $previewPath = $this->pdfPreviewRenderer->renderFirstPage($sourcePath);
 
         try {
-            $asset->clearMediaCollection('master');
+            $this->withProcessingLock($asset, $processingToken, function (MediaAsset $lockedAsset) use ($sourcePath, &$previewPath, $asset): void {
+                $lockedAsset->clearMediaCollection('document');
+                $lockedAsset->addMedia($sourcePath)
+                    ->preservingOriginal()
+                    ->usingName(pathinfo($lockedAsset->original_filename, PATHINFO_FILENAME))
+                    ->usingFileName(Str::uuid().'.pdf')
+                    ->toMediaCollection('document', config('media.asset_disk'));
 
-            if ($previewPath !== null) {
-                [$width, $height] = $this->dimensions($previewPath);
-                $asset->update(['width' => $width, 'height' => $height]);
+                $lockedAsset->update([
+                    'progress' => 55,
+                    'processing_stage' => 'storing_document',
+                ]);
 
-                $asset->addMedia($previewPath)
-                    ->usingName(pathinfo($asset->original_filename, PATHINFO_FILENAME))
-                    ->usingFileName(Str::uuid().'.webp')
-                    ->toMediaCollection('master', config('media.asset_disk'));
-                $previewPath = null;
+                $lockedAsset->clearMediaCollection('master');
 
-                $this->assertConversionsGenerated($asset);
-            }
+                if ($previewPath !== null) {
+                    [$width, $height] = $this->dimensions($previewPath);
+                    $lockedAsset->update(['width' => $width, 'height' => $height]);
+
+                    $lockedAsset->addMedia($previewPath)
+                        ->usingName(pathinfo($lockedAsset->original_filename, PATHINFO_FILENAME))
+                        ->usingFileName(Str::uuid().'.webp')
+                        ->toMediaCollection('master', config('media.asset_disk'));
+                    $previewPath = null;
+
+                    $this->assertConversionsGenerated($lockedAsset);
+                }
+
+                Storage::disk($lockedAsset->pending_disk)->delete($lockedAsset->pending_path);
+
+                $lockedAsset->update([
+                    'status' => MediaAssetStatus::Ready,
+                    'pending_disk' => null,
+                    'pending_path' => null,
+                    'progress' => 100,
+                    'processing_stage' => null,
+                    'failure_code' => null,
+                    'failure_reason' => null,
+                ]);
+
+                $asset->setRawAttributes($lockedAsset->getAttributes(), true);
+            });
         } finally {
             if ($previewPath !== null) {
                 @unlink($previewPath);
             }
         }
 
-        Storage::disk($asset->pending_disk)->delete($asset->pending_path);
-
-        $asset->update([
-            'status' => MediaAssetStatus::Ready,
-            'pending_disk' => null,
-            'pending_path' => null,
-            'progress' => 100,
-            'processing_stage' => null,
-            'failure_code' => null,
-            'failure_reason' => null,
-        ]);
     }
 
     private function copyPendingFileToLocalPath(MediaAsset $asset): string
@@ -303,10 +311,13 @@ class MediaAssetProcessingService
         }
     }
 
-    private function createMaster(string $sourcePath, MediaAsset $asset): string
+    private function createMaster(string $sourcePath, MediaAsset $asset, int $width, int $height): string
     {
         try {
-            $maxEdge = (int) config('media.asset_uploads.master_max_edge', 800);
+            $isDocumentImage = $asset->usesDocumentImageProfile();
+            $maxEdge = $isDocumentImage
+                ? max($width, $height)
+                : (int) config('media.asset_uploads.master_max_edge', 800);
             $masterPath = tempnam(sys_get_temp_dir(), 'soapkraft-master-');
 
             if ($masterPath === false) {
@@ -316,7 +327,7 @@ class MediaAssetProcessingService
                 );
             }
 
-            if ($this->isAlreadyCompliantWebp($sourcePath, $asset, $maxEdge)) {
+            if (! $isDocumentImage && $this->isAlreadyCompliantWebp($sourcePath, $asset, $maxEdge)) {
                 if (! copy($sourcePath, $masterPath)) {
                     throw new MediaAssetProcessingException(
                         'The image master could not be created. Please retry the image.',
@@ -336,7 +347,9 @@ class MediaAssetProcessingService
                 ->orientation()
                 ->fit(Fit::Max, $maxEdge, $maxEdge)
                 ->format('webp')
-                ->quality((int) config('media.asset_uploads.quality', 85))
+                ->quality($isDocumentImage
+                    ? (int) config('media.asset_uploads.document_quality', 95)
+                    : (int) config('media.asset_uploads.quality', 85))
                 ->save($masterPath);
 
             return $masterPath;
@@ -535,5 +548,39 @@ class MediaAssetProcessingService
                 'conversion_failed',
             );
         }
+    }
+
+    private function isActiveProcessingAsset(MediaAsset $asset, string $processingToken): bool
+    {
+        return $asset->status === MediaAssetStatus::Processing
+            && hash_equals((string) $asset->processing_token, $processingToken);
+    }
+
+    private function withProcessingLock(MediaAsset $asset, string $processingToken, Closure $callback): bool
+    {
+        return DB::transaction(function () use ($asset, $processingToken, $callback): bool {
+            $lockedAsset = MediaAsset::query()
+                ->lockForUpdate()
+                ->find($asset->id);
+
+            if (! $lockedAsset instanceof MediaAsset || ! $this->isActiveProcessingAsset($lockedAsset, $processingToken)) {
+                return false;
+            }
+
+            try {
+                $callback($lockedAsset);
+            } catch (Throwable $exception) {
+                try {
+                    $lockedAsset->clearMediaCollection('master');
+                    $lockedAsset->clearMediaCollection('document');
+                } catch (Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+
+                throw $exception;
+            }
+
+            return true;
+        }, attempts: 5);
     }
 }

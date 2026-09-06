@@ -83,6 +83,7 @@ return [
         'document_failed' => 'Document processing failed',
         'refresh_failed' => 'Status could not be refreshed. Try again.',
         'retry' => 'Retry',
+        'cancel' => 'Cancel',
         'remove' => 'Remove',
         'done' => 'Done',
         'manage' => 'Manage Media Library',

@@ -26,7 +26,8 @@ class MediaAssetStatusController extends Controller
             'retry_url' => $mediaAsset->status === MediaAssetStatus::Failed && $user->can('update', $mediaAsset)
                 ? route('media.retry', $mediaAsset)
                 : null,
-            'remove_url' => $mediaAsset->status === MediaAssetStatus::Failed && $user->can('delete', $mediaAsset)
+            'remove_url' => in_array($mediaAsset->status, [MediaAssetStatus::Processing, MediaAssetStatus::Failed], true)
+                && $user->can('delete', $mediaAsset)
                 ? route('media.remove', $mediaAsset)
                 : null,
         ]);

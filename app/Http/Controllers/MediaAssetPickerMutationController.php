@@ -37,7 +37,7 @@ class MediaAssetPickerMutationController extends Controller
             ->where('workspace_id', $workspace->id)
             ->whereIn('type', $requestedTypes)
             ->with('media')
-            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'type', 'progress', 'created_at'])
+            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'type', 'document_image', 'progress', 'created_at'])
             ->when($search !== '', function ($query) use ($search): void {
                 $term = '%'.$search.'%';
                 $query->where(function ($query) use ($term): void {
@@ -60,11 +60,16 @@ class MediaAssetPickerMutationController extends Controller
                     && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
                     ? route('media.show', [$asset, 'thumbnail'])
                     : null,
+                'preview_url' => $asset->status === MediaAssetStatus::Ready
+                    && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
+                    ? route('media.show', [$asset, 'recipe-index'])
+                    : null,
                 'master_url' => $asset->status === MediaAssetStatus::Ready
                     && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
                     ? route('media.show', [$asset, 'master'])
                     : null,
-                'download_url' => $asset->status === MediaAssetStatus::Ready && $asset->type === MediaAssetType::Pdf
+                'download_url' => $asset->status === MediaAssetStatus::Ready
+                    && ($asset->type === MediaAssetType::Pdf || $asset->usesDocumentImageProfile())
                     ? route('media.download', $asset)
                     : null,
             ])->all(),

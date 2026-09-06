@@ -236,6 +236,9 @@
         @else
             <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
                 @foreach ($assets as $asset)
+                    @php
+                        $canRemoveAsset = $canDeleteMedia || ($asset->status !== \App\Enums\MediaAssetStatus::Ready && $user instanceof \App\Models\User && $user->can('delete', $asset));
+                    @endphp
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="sk-card overflow-hidden">
                         <div data-media-card-preview class="relative grid w-full aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
                             @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
@@ -303,7 +306,7 @@
                                             {{ trans_choice('media_library.usage', $asset->logical_usages_count, ['count' => $asset->logical_usages_count]) }}
                                             <span aria-hidden="true">›</span>
                                         </button>
-                                        @if ($asset->type === \App\Enums\MediaAssetType::Pdf && $asset->status === \App\Enums\MediaAssetStatus::Ready)
+                                        @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && ($asset->type === \App\Enums\MediaAssetType::Pdf || $asset->usesDocumentImageProfile()))
                                             <a href="{{ route('media.download', $asset) }}" class="text-[10px] font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
                                                 {{ __('media_library.documents.download') }}
                                             </a>
@@ -318,15 +321,18 @@
                                         <div class="h-full rounded-full bg-[var(--color-accent)] transition-all" style="width: {{ $asset->progress }}%"></div>
                                     </div>
                                     <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $asset->progress }}% · {{ __('media_library.processing_stages.'.($asset->processing_stage ?: 'queued')) }}</p>
+                                    @if ($canRemoveAsset)
+                                        <button type="button" wire:click="remove({{ $asset->id }})" class="mt-2 sk-btn border border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]">{{ __('media_library.picker.cancel') }}</button>
+                                    @endif
                                 </div>
                             @elseif ($asset->status === \App\Enums\MediaAssetStatus::Failed)
                                 <p role="alert" class="text-sm leading-6 text-[var(--color-danger-strong)]">{{ $asset->failure_reason }}</p>
-                                @if ($canUpdateMedia || $canDeleteMedia)
+                                @if ($canUpdateMedia || $canRemoveAsset)
                                     <div class="flex flex-wrap gap-2">
                                         @if ($canUpdateMedia)
                                             <button type="button" wire:click="retry({{ $asset->id }})" class="sk-btn sk-btn-primary">{{ __('media_library.actions.retry') }}</button>
                                         @endif
-                                        @if ($canDeleteMedia)
+                                        @if ($canRemoveAsset)
                                             <button type="button" wire:click="remove({{ $asset->id }})" class="sk-btn border border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]">{{ __('media_library.actions.remove') }}</button>
                                         @endif
                                     </div>
@@ -538,7 +544,7 @@
                                     @enderror
                                 </section>
 
-                                @if ($selectedAsset->type === \App\Enums\MediaAssetType::Pdf)
+                                @if ($selectedAsset->type === \App\Enums\MediaAssetType::Pdf || $selectedAsset->usesDocumentImageProfile())
                                     <section data-media-panel-section class="border-t border-[var(--color-line)] pt-5">
                                         <a href="{{ route('media.download', $selectedAsset) }}" class="sk-btn sk-btn-primary">{{ __('media_library.documents.download') }}</a>
                                     </section>

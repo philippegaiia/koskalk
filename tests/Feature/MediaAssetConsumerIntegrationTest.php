@@ -102,7 +102,7 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->assertSeeText('Upload a document to the library, then return here to select it.')
         ->assertSeeText('Upload document')
         ->assertSeeText('Choose document')
-        ->assertSeeText('Accepted formats: PDF, JPEG, PNG, WebP, HEIC, HEIF. Maximum size: 10 MB.')
+        ->assertSeeText('PDF, JPEG, PNG, WebP, HEIC, HEIF. Images up to 10 MB; PDFs up to 150 KB.')
         ->assertSeeHtml('No document selected')
         ->assertSeeText('Processing uploaded document')
         ->assertSeeText('Document processing failed');
@@ -541,7 +541,7 @@ it('renders explicit picker lifecycle and status contracts', function () {
     expect($controllerSource)
         ->toContain('this.open = true;')
         ->toContain('this.activeTab = \'library\';')
-        ->toContain('this.pollUpload();')
+        ->toContain('this.pollUpload(generation);')
         ->toContain('this.select(this.pendingUpload.id, false);')
         ->toContain('destroy()')
         ->toContain('window.clearTimeout(this.pollTimer);')

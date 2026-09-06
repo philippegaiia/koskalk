@@ -96,7 +96,7 @@ it('exposes removable selections, upload persistence details, and readable filen
         ->toContain("__('media_library.picker.clear')")
         ->toContain("__('media_library.picker.remove_selection_help')")
         ->toContain("__('media_library.picker.upload_description')")
-        ->toContain("__('media_library.picker.upload_requirements'")
+        ->toContain('media_library.picker.upload_requirements')
         ->toContain('getFileAttachmentsAcceptedFileTypes()')
         ->toContain('getFileAttachmentsMaxSize()')
         ->toContain('data-ingredient-editor-ignore-dirty')
@@ -155,6 +155,145 @@ assert.equal(picker.uploadFilename, 'soap-front.png');
 picker.clearUploadFile();
 assert.equal(picker.uploadFilename, '');
 assert.equal(picker.$refs.uploadInput.value, '');
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('does not resurrect a cancelled upload when status polling is already in flight', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+
+const moduleUrl = pathToFileURL(`${process.cwd()}/resources/js/media-asset-picker.js`).href;
+const { createMediaAssetPicker } = await import(moduleUrl);
+global.window = {
+    clearTimeout() {},
+    setTimeout() {},
+};
+global.document = {
+    querySelector() {
+        return null;
+    },
+};
+
+let resolveStatus;
+global.fetch = (url, options) => {
+    if (options.method === 'GET') {
+        return new Promise((resolve) => {
+            resolveStatus = resolve;
+        });
+    }
+
+    return Promise.resolve({
+        ok: true,
+        async json() {
+            return { removed: true };
+        },
+    });
+};
+
+const picker = createMediaAssetPicker({
+    embedded: true,
+    assetsUrl: '/media',
+    livewire: {},
+    statePath: 'document_media_asset_ids',
+    state: null,
+    multiple: false,
+    maximumItems: 1,
+    preserveAspectRatio: true,
+    messages: { refreshFailed: 'Refresh failed' },
+});
+let refreshed = false;
+picker.loadAssets = async (reset) => {
+    refreshed = reset;
+};
+picker.pendingUpload = {
+    id: 42,
+    generation: 1,
+    status: 'processing',
+    progress: 20,
+    statusUrl: '/media/42/status',
+    removeUrl: '/media/42',
+    retryUrl: null,
+    failureReason: null,
+};
+
+const polling = picker.pollUpload(1);
+await Promise.resolve();
+const removing = picker.removeUpload();
+await removing;
+resolveStatus({
+    ok: true,
+    async json() {
+        return { status: 'failed', progress: 0, failure_reason: 'stale' };
+    },
+});
+await polling;
+
+assert.equal(picker.pendingUpload, null);
+assert.equal(refreshed, true);
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('resumes polling when a processing upload removal fails', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+
+const moduleUrl = pathToFileURL(`${process.cwd()}/resources/js/media-asset-picker.js`).href;
+const { createMediaAssetPicker } = await import(moduleUrl);
+global.window = { clearTimeout() {} };
+global.document = { querySelector() { return null; } };
+global.fetch = async () => ({
+    ok: false,
+    status: 500,
+    async json() {
+        return { message: 'try again' };
+    },
+});
+
+const picker = createMediaAssetPicker({
+    embedded: true,
+    assetsUrl: '/media',
+    livewire: {},
+    statePath: 'document_media_asset_ids',
+    state: null,
+    multiple: false,
+    maximumItems: 1,
+    preserveAspectRatio: true,
+    messages: { refreshFailed: 'Refresh failed' },
+});
+const pendingUpload = {
+    id: 42,
+    generation: 1,
+    status: 'processing',
+    progress: 20,
+    statusUrl: '/media/42/status',
+    removeUrl: '/media/42',
+    retryUrl: null,
+    failureReason: null,
+};
+let polledGeneration = null;
+picker.pendingUploadGeneration = 1;
+picker.pendingUpload = pendingUpload;
+picker.pollUpload = (generation) => {
+    polledGeneration = generation;
+};
+
+await picker.removeUpload();
+
+assert.equal(picker.pendingUpload.generation, 2);
+assert.equal(picker.pendingUpload.failureReason, 'try again');
+assert.equal(polledGeneration, 2);
 JS;
 
     $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());

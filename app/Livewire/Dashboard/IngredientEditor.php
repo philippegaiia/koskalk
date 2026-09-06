@@ -831,6 +831,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 Tabs::make('ingredient-editor')
                     ->contained(false)
                     ->persistTabInQueryString('ingredient-tab')
+                    ->activeTab(fn (): int => match (request()->query('ingredient-tab')) {
+                        'documents::tab', 'documents::data::tab' => 3,
+                        'compliance::tab', 'compliance::data::tab' => 5,
+                        default => 1,
+                    })
                     ->tabs([
                         Tab::make(__('ingredients.editor.tabs.details'))
                             ->id('overview')

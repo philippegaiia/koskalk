@@ -7,7 +7,11 @@
     x-data="classificationPrompt()"
     aria-labelledby="classification-prompt-title"
 >
-    <details>
+    @if ($editor->generatedClassificationPrompt !== null)
+        <details open>
+    @else
+        <details>
+    @endif
         <summary id="classification-prompt-title" class="cursor-pointer list-none px-4 py-4 text-base font-semibold text-[var(--color-ink-strong)] sm:px-5">
             {{ __('ingredients.editor.classification_prompt.heading') }}
         </summary>

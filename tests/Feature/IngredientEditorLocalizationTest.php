@@ -720,6 +720,28 @@ it('exposes stable tab identifiers with the existing ingredient query key', func
         ->toBe(['overview', 'composition', 'guidance-files', 'soap-chemistry', 'regulatory-data']);
 });
 
+it('resolves legacy ingredient tab query values after the tab labels change', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $guidance = Livewire::withQueryParams(['ingredient-tab' => 'documents::tab'])
+        ->test(IngredientEditor::class);
+    $tabs = collect($guidance->instance()->form->getComponents(withHidden: true))
+        ->first(fn (mixed $component): bool => $component instanceof Tabs);
+
+    expect($tabs)->toBeInstanceOf(Tabs::class)
+        ->and($tabs->getActiveTab())->toBe(3);
+
+    $regulatory = Livewire::withQueryParams(['ingredient-tab' => 'compliance::tab'])
+        ->test(IngredientEditor::class);
+    $tabs = collect($regulatory->instance()->form->getComponents(withHidden: true))
+        ->first(fn (mixed $component): bool => $component instanceof Tabs);
+
+    expect($tabs)->toBeInstanceOf(Tabs::class)
+        ->and($tabs->getActiveTab())->toBe(5);
+});
+
 it('starts with a single ingredient and places identity before classification', function (): void {
     $user = User::factory()->create();
 
@@ -887,6 +909,33 @@ it('keeps clipboard recovery visible outside the collapsed classification prompt
         ->toContain('role="alert"')
         ->not->toContain('aria-live="assertive"')
         ->not->toContain('aria-atomic="true"');
+});
+
+it('reopens the classification helper when a prompt is generated', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $initial = Livewire::test(IngredientEditor::class);
+    $initialHtml = $initial->html();
+    $initialSectionStart = strpos($initialHtml, 'x-data="classificationPrompt()"');
+    $initialDetailsStart = strpos($initialHtml, '<details', $initialSectionStart);
+    $initialDetailsEnd = strpos($initialHtml, '>', $initialDetailsStart);
+
+    expect($initialDetailsStart)->toBeInt()
+        ->and(substr($initialHtml, $initialDetailsStart, $initialDetailsEnd - $initialDetailsStart + 1))
+        ->toBe('<details>');
+
+    $generated = $initial
+        ->set('data.name', 'Test ingredient')
+        ->call('generateClassificationPrompt');
+    $generatedHtml = $generated->html();
+    $generatedSectionStart = strpos($generatedHtml, 'x-data="classificationPrompt()"');
+    $generatedDetailsStart = strpos($generatedHtml, '<details', $generatedSectionStart);
+    $generatedDetailsEnd = strpos($generatedHtml, '>', $generatedDetailsStart);
+
+    expect(substr($generatedHtml, $generatedDetailsStart, $generatedDetailsEnd - $generatedDetailsStart + 1))
+        ->toBe('<details open>');
 });
 
 it('shows the translated blend removal warning and acknowledgement in the details tab', function (): void {

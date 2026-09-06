@@ -121,14 +121,9 @@ class IngredientGuidanceRefreshProcessor
                     IngredientEnrichmentResearchStage::AiGuidanceLocalization,
                     function (array $stageContext) use ($englishGuidance): IngredientSourceStageResult {
                         $this->validateEnglishGuidanceBeforeLocalization($englishGuidance);
-                        $providerConfiguration = $stageContext['provider_configurations'][IngredientEnrichmentResearchStage::AiGuidanceLocalization->value] ?? [];
                         $response = $this->localization->localize([
                             'locales' => $stageContext['expected_locales'],
                             'english_guidance' => $englishGuidance,
-                            'soapmaking_relevant' => $stageContext['soapmaking_relevant'],
-                            'localized_headings' => is_array($providerConfiguration['localized_headings'] ?? null)
-                                ? $providerConfiguration['localized_headings']
-                                : [],
                         ]);
 
                         return new IngredientSourceStageResult(
@@ -148,7 +143,7 @@ class IngredientGuidanceRefreshProcessor
             }
 
             $translations = $localization instanceof IngredientSourceStageResult
-                ? $this->normalizedTranslations($localization, $soapmakingRelevant)
+                ? $this->normalizedTranslations($localization)
                 : [];
             $guidance = $this->authoringGuidance($authoring);
             $validation = $this->stages->run(
@@ -474,16 +469,16 @@ class IngredientGuidanceRefreshProcessor
     /** @param array<string,mixed> $context */
     private function canonicalEnglishGuidance(array $context, Ingredient $ingredient): string
     {
-        $englishGuidance = data_get($context, 'current.canonical.info_markdown');
+        $englishGuidance = $ingredient->info_markdown;
 
         return is_string($englishGuidance) && trim($englishGuidance) !== ''
             ? $englishGuidance
-            : (string) ($ingredient->info_markdown ?? '');
+            : (string) (data_get($context, 'current.canonical.info_markdown') ?? '');
     }
 
     private function validateEnglishGuidanceBeforeLocalization(string $englishGuidance): void
     {
-        $report = $this->validator->validateGuidance($englishGuidance);
+        $report = $this->validator->validateGuidance($englishGuidance, enforceStructure: false);
         if ($report['valid']) {
             return;
         }
@@ -496,17 +491,13 @@ class IngredientGuidanceRefreshProcessor
     }
 
     /** @return list<array{locale:string,info_markdown:string}> */
-    private function normalizedTranslations(IngredientSourceStageResult $localization, bool $soapmakingRelevant): array
+    private function normalizedTranslations(IngredientSourceStageResult $localization): array
     {
         $translations = collect($localization->data['translations'] ?? [])
             ->filter(fn (mixed $translation): bool => is_array($translation))
             ->map(fn (array $translation): array => [
                 'locale' => (string) ($translation['locale'] ?? ''),
-                'info_markdown' => $this->headings->normalize(
-                    (string) ($translation['info_markdown'] ?? ''),
-                    (string) ($translation['locale'] ?? ''),
-                    $soapmakingRelevant,
-                ),
+                'info_markdown' => (string) ($translation['info_markdown'] ?? ''),
             ])
             ->values();
         $expectedLocales = data_get($localization->data, 'stage_context.expected_locales');

@@ -121,9 +121,14 @@ it('uses the localization-specific model and reasoning effort', function (): voi
 });
 
 it('describes localization as an in-context native editorial rewrite', function (): void {
-    $prompt = app(IngredientGuidanceLocalizationPrompt::class)->build([]);
+    $prompt = app(IngredientGuidanceLocalizationPrompt::class)->build([
+        'locales' => ['fr'],
+        'english_guidance' => "### Notes\n\nA manually authored paragraph.",
+        'soapmaking_relevant' => true,
+        'localized_headings' => ['fr' => ['overview' => 'Vue d’ensemble']],
+    ]);
 
-    expect($prompt['version'])->toBe('ingredient-guidance-localization-v5')
+    expect($prompt['version'])->toBe('ingredient-guidance-localization-v6')
         ->and($prompt['instructions'])
         ->toContain('in-context')
         ->toContain('native cosmetic-formulation')
@@ -131,6 +136,20 @@ it('describes localization as an in-context native editorial rewrite', function 
         ->toContain('never translate literally or sentence by sentence')
         ->toContain('Latin botanical names')
         ->toContain('INCI names');
+
+    $input = json_decode(
+        trim(str_replace([
+            '<ingredient_guidance_localization_context>',
+            '</ingredient_guidance_localization_context>',
+        ], '', $prompt['input'])),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+    );
+    expect($input)->toBe([
+        'locales' => ['fr'],
+        'english_guidance' => "### Notes\n\nA manually authored paragraph.",
+    ]);
 
     expect($prompt['instructions'])
         ->toContain('Translate only the guidance')

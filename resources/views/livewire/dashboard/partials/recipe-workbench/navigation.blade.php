@@ -7,7 +7,8 @@
 @endphp
 
 <div class="sk-workbench-navigation border-b border-[var(--color-line)]">
-    <nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-max gap-7 overflow-x-auto xl:overflow-visible' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
+    <div class="{{ $isPublicCalculator ? '' : 'relative min-w-0 max-w-full overflow-hidden' }}">
+    <nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-0 max-w-full gap-7 overflow-x-auto overscroll-x-contain pr-10 touch-pan-x [scrollbar-width:thin]' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
         <button
             id="tab-formula"
             role="tab"
@@ -78,4 +79,8 @@
             @endif
         @endunless
     </nav>
+    @unless ($isPublicCalculator)
+        <span aria-hidden="true" data-tab-overflow-cue class="pointer-events-none absolute inset-y-0 end-0 block w-10 bg-gradient-to-l from-[var(--color-panel)] via-[var(--color-panel)]/90 to-transparent"></span>
+    @endunless
+    </div>
 </div>

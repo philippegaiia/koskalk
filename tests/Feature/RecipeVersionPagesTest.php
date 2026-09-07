@@ -33,7 +33,9 @@ uses(RefreshDatabase::class);
 it('renders the formula sheet around one aligned table', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
-    $response = $this->actingAs($user)
+    $response = $this->withSession([
+        '_token' => 'formula-sheet-v1-csrf-token',
+    ])->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Formula Sheet')
@@ -42,7 +44,7 @@ it('renders the formula sheet around one aligned table', function () {
         ->assertSee('NaOH')
         ->assertSee('Water')
         ->assertSee('Calculated results')
-        ->assertDontSee('v'.$publishedVersion->version_number)
+        ->assertDontSeeText('v'.$publishedVersion->version_number)
         ->assertSee('Open formula')
         ->assertSee('Duplicate')
         ->assertDontSee('Reference formula')

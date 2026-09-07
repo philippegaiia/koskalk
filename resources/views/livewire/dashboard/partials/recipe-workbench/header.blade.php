@@ -27,7 +27,7 @@
         </nav>
     @endif
 
-    <div class="{{ $isPublicCalculator ? 'mt-3' : 'mt-4' }} flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div class="{{ $isPublicCalculator ? 'mt-2' : 'mt-3' }} flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <input
             x-model="formulaName"
             type="text"
@@ -89,7 +89,7 @@
         @endunless
     </div>
 
-    <div x-show="productTypeName || saveMessage || calculationPreviewMessage" x-cloak class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+    <div x-show="productTypeName || saveMessage || calculationPreviewMessage" x-cloak class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
         <span x-show="productTypeName" class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>
         <template x-if="saveMessage">
             <span role="status" :class="saveStatus === 'error' ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-soft)]'" x-text="saveMessage"></span>
@@ -100,7 +100,7 @@
     </div>
 
     <template x-if="needsCatalogReview">
-        <div role="status" class="mt-4 rounded-[1.5rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
+        <div role="status" aria-live="polite" data-catalog-review-warning class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-3 py-2.5 text-sm text-[var(--color-warning-strong)]">
             <p class="font-medium" x-text="catalogReview?.message"></p>
         </div>
     </template>

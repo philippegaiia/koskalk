@@ -13,27 +13,35 @@
         ->all();
 @endphp
 
-<section class="sk-card px-5 py-4" aria-labelledby="formula-setup-heading">
+<section class="sk-card px-4 py-3" aria-labelledby="formula-setup-heading">
 	<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 		<div class="min-w-0">
 			<p id="formula-setup-heading" class="sk-eyebrow">{{ __('workbench.settings.title') }}</p>
 			<div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="! isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 				<div class="overflow-hidden">
-					<div class="mt-2 flex flex-wrap gap-2">
-			<template x-for="card in formulaSetupSummaryCards" :key="`setup-${card.id}`">
-				<span
-					:class="{
-						'sk-tone-chemistry': card.tone === 'chemistry',
-						'sk-tone-info': card.tone === 'info',
-						'sk-tone-danger': card.tone === 'danger',
-						'sk-tone-summary': card.tone === 'neutral',
-					}"
-					class="sk-status-surface inline-flex min-h-8 items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
-				>
-					<span x-text="card.label"></span>
-					<span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></span>
-				</span>
-				</template>
+					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs" data-formula-settings-primary role="group" aria-label="Primary formulation settings">
+						<template x-for="card in formulaSetupSummaryCards.filter(card => ! card.context)" :key="`setup-primary-${card.id}`">
+							<span
+								:class="{
+									'sk-tone-chemistry': card.tone === 'chemistry',
+									'sk-tone-info': card.tone === 'info',
+									'sk-tone-danger': card.tone === 'danger',
+									'sk-tone-summary': card.tone === 'neutral',
+								}"
+								class="sk-status-surface inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+							>
+								<span class="min-w-0 break-words whitespace-normal" x-text="card.label"></span>
+								<span class="numeric min-w-0 max-w-full break-words whitespace-normal font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></span>
+							</span>
+						</template>
+					</div>
+					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[var(--color-line)] pt-1.5 text-xs text-[var(--color-ink-soft)] sm:border-s sm:border-t-0 sm:ps-3 sm:pt-0" data-formula-settings-context role="group" aria-label="Secondary formula context">
+						<template x-for="card in formulaSetupSummaryCards.filter(card => card.context)" :key="`setup-context-${card.id}`">
+							<span class="inline-flex min-w-0 max-w-full items-center gap-1.5">
+								<span class="min-w-0 break-words whitespace-normal" x-text="card.label"></span>
+								<span class="min-w-0 break-words whitespace-normal font-medium text-[var(--color-ink-strong)]" x-text="card.value"></span>
+							</span>
+						</template>
 					</div>
 				</div>
 				</div>
@@ -53,11 +61,11 @@
 			<div class="mt-4">
 @if ($isCosmeticWorkbench)
 	 <div class="space-y-4">
-	 <div data-cosmetic-primary-settings class="grid gap-4 lg:grid-cols-2">
+	 <div data-cosmetic-primary-settings class="grid min-w-0 gap-4 lg:grid-cols-2">
 @unless ($isPublicCalculator)
     @include('livewire.dashboard.partials.recipe-workbench.formula-output-type', ['inlineFormulaOutputType' => true])
 @endunless
-	 <div data-product-category-setting class="sk-inset p-4">
+	 <div data-product-category-setting class="sk-inset min-w-0 p-4">
 	 <p id="setting-product-type" class="sk-eyebrow">{{ __('workbench.common.product_category') }}</p>
 	 <div x-show="productTypes.length && ! hasSavedFormula" class="mt-3 max-w-3xl">
 	 <x-search-combobox
@@ -81,10 +89,10 @@
 	 </template>
 	 </div>
 	 </div>
-	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-	 <div class="sk-inset p-4">
+	 <div class="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-4">
+	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-batch-weight" class="sk-eyebrow">{{ __('workbench.common.total_batch') }}</p>
-	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.weight_unit') }}" class="mt-3 flex gap-2">
+	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.weight_unit') }}" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'g'" @click="changeOilUnit('g')" :class="oilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'kg'" @click="changeOilUnit('kg')" :class="oilUnit === 'kg' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">kg</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="changeOilUnit('oz')" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
@@ -92,21 +100,21 @@
 	 </div>
 	 <input aria-labelledby="setting-batch-weight" x-model="oilWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
-	 <div class="sk-inset p-4">
+	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-entry-mode" class="sk-eyebrow">{{ __('workbench.settings.entry_mode') }}</p>
 	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.entry_mode') }}" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="editMode === 'percentage'" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.formula_percent') }}</button>
 	 <button type="button" role="radio" :aria-checked="editMode === 'weight'" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.weight') }}</button>
 	 </div>
 	 </div>
-	 <div class="sk-inset sk-tone-info p-4">
+	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <p id="setting-exposure" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
 	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.product_use') }}" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.rinse_off') }}</button>
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.leave_on') }}</button>
 	 </div>
 	 </div>
-	 <div class="sk-inset sk-tone-info p-4">
+	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <button type="button" @click="isComplianceSettingsOpen = ! isComplianceSettingsOpen" :aria-expanded="isComplianceSettingsOpen.toString()" class="flex w-full items-start justify-between gap-4 text-left">
 	 <span>
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
@@ -137,8 +145,8 @@
     @include('livewire.dashboard.partials.recipe-workbench.formula-output-type')
 @endunless
 	 <div>
-	 <div class="grid gap-4 xl:grid-cols-5">
-	 <div class="sk-inset sk-tone-chemistry p-4">
+	 <div class="grid min-w-0 gap-4 @3xl/workbench:grid-cols-2 @4xl/workbench:grid-cols-3 @7xl/workbench:grid-cols-[repeat(5,minmax(12rem,1fr))]">
+	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-lye-type" class="sk-eyebrow">{{ __('workbench.common.lye_type') }}</p>
 	 <div role="radiogroup" aria-label="Lye type" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="lyeType === 'naoh'" @click="lyeType = 'naoh'" :class="lyeType === 'naoh' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">NaOH</button>
@@ -161,9 +169,9 @@
 	 </div>
 	 </template>
 	 </div>
-	 <div class="sk-inset p-4">
+	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-base-weight" class="sk-eyebrow">{{ __('workbench.settings.total_oil_weight') }}</p>
-	 <div role="radiogroup" aria-label="Weight unit" class="mt-3 flex gap-2">
+	 <div role="radiogroup" aria-label="Weight unit" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'g'" @click="changeOilUnit('g')" :class="oilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'kg'" @click="changeOilUnit('kg')" :class="oilUnit === 'kg' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">kg</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="changeOilUnit('oz')" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
@@ -178,7 +186,7 @@
 	 </div>
 	 </div>
 	 </div>
-	 <div class="sk-inset sk-tone-chemistry p-4">
+	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-water-mode" class="sk-eyebrow">{{ __('workbench.settings.water_mode') }}</p>
 	 <div role="radiogroup" aria-label="Water calculation mode" class="mt-3 grid gap-2">
 	 <button type="button" role="radio" :aria-checked="waterMode === 'percent_of_oils'" @click="waterMode = 'percent_of_oils'" :class="waterMode === 'percent_of_oils' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-[1rem] px-4 py-2.5 text-left text-xs font-medium transition">{{ __('workbench.common.water_percent') }}</button>
@@ -187,7 +195,7 @@
 	 </div>
 	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
-	 <div class="sk-inset sk-tone-chemistry p-4">
+	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-superfat" class="sk-eyebrow">{{ __('workbench.common.superfat') }}</p>
 	 <div class="mt-3 flex items-center justify-between gap-3 text-sm">
 	 <span aria-hidden="true"></span>
@@ -196,7 +204,7 @@
 	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-[var(--color-danger)]' : 'accent-[var(--color-active)]'" class="mt-3 w-full" />
 	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="number(superfat) < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
 	 </div>
-	 <div class="sk-inset sk-tone-info p-4">
+	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <p id="setting-exposure-soap" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
 	 <div role="radiogroup" aria-label="Exposure type" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.rinse_off') }}</button>

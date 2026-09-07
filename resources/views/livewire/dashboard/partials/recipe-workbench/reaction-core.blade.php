@@ -112,6 +112,7 @@
  </div>
  </div>
  </div>
+ <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
@@ -130,6 +131,7 @@
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), oilWeightDecimals(rowWeight(row)))}`"></span>
  </template>
  </div>
+ </div>
 		 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
 	 <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil">×</button>
  </div>
@@ -147,11 +149,13 @@
  </div>
 
 	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.saponification.total_oils') }}</div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(oilWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${format(oilWeightTotal(), oilWeightDecimals(oilWeightTotal()))}`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
+			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
+			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.saponification.total_oils') }}</div>
+ <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">
+			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(oilWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${format(oilWeightTotal(), oilWeightDecimals(oilWeightTotal()))}`"></div>
+ </div>
+			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
  </div>
  </div>
  </div>

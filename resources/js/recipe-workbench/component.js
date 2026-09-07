@@ -202,6 +202,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         superfat: 5,
         search: '',
         activeCategory: isCosmeticFormula ? 'all' : 'lipids',
+        ingredientBrowserOpen: false,
         isComplianceSettingsOpen: false,
         isFattyAcidDetailsOpen: false,
         isFormulaSettingsOpen: initialDraft === null,

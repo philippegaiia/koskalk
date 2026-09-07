@@ -32,7 +32,11 @@ it('starts soap users in lipids and builds the selector from canonical catalogue
         ->toContain('ingredient.subcategory_label')
         ->not->toContain("value: 'carrier_oil'")
         ->and($ingredientBrowser)
-        ->toContain(':selected="option.value === activeCategory"');
+        ->toContain('data-search-combobox="ingredient-category-search"')
+        ->toContain('x-init="replaceOptions(categoryOptions.map')
+        ->toContain('syncSelection(activeCategory)')
+        ->toContain('x-on:search-combobox-selected="activeCategory = String($event.detail.id)"')
+        ->toContain('x-on:search-combobox-cleared="activeCategory = \'all\'; syncSelection(\'all\')"');
 });
 
 it('keeps formula-start compliance controls available but collapsed by default', function () {
@@ -129,7 +133,11 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
     expect($navigation)
         ->not->toContain('border-t-2')
         ->toContain('overflow-x-auto')
-        ->toContain('min-w-max')
+        ->not->toContain('min-w-max')
+        ->toContain('relative min-w-0 max-w-full overflow-hidden')
+        ->toContain('min-w-0 max-w-full')
+        ->toContain('touch-pan-x')
+        ->toContain('data-tab-overflow-cue')
         ->toContain('sk-workbench-tabs')
         ->toContain('sk-workbench-tab')
         ->toContain('text-base')
@@ -157,11 +165,11 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->toContain('background-color: transparent')
         ->and($workbenchSource)
         ->toContain('@container/workbench')
-        ->toContain('mx-auto max-w-app')
+        ->toContain('mx-auto max-w-[1180px]')
         ->not->toContain('max-w-[90rem]')
         ->not->toContain('max-w-[104rem]')
         ->and($bottomActionBarSource)
-        ->toContain('mx-auto max-w-app')
+        ->toContain('mx-auto max-w-[1180px]')
         ->not->toContain('max-w-[90rem]')
         ->not->toContain('max-w-[104rem]')
         ->and($recipeWorkbenchPageSource)
@@ -178,7 +186,7 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->toContain('formulaWorkbenchLabel')
         ->toContain('sk-formula-header')
         ->not->toContain('sk-card p-5')
-        ->toContain('mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between')
+        ->toContain('mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between')
         ->toContain('sk-formula-title-control min-w-0 flex-1')
         ->toContain('sk-formula-actions')
         ->toContain('<span x-show="productTypeName" class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>')
@@ -205,9 +213,9 @@ it('uses deliberate spacing between workbench breadcrumbs, title, actions, and n
     $workbenchSource = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
 
     expect($header)
-        ->toContain('class="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"')
+        ->toContain('class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"')
         ->toContain('x-show="productTypeName || saveMessage || calculationPreviewMessage"')
-        ->toContain('class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs')
+        ->toContain('class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs')
         ->not->toContain('min-h-6')
         ->not->toContain('lg:row-start-')
         ->and($workbenchSource)
@@ -378,6 +386,28 @@ it('adapts recipe workbench tables for narrow screens before desktop grids', fun
         ->toContain('lg:grid')
         ->toContain('touch-pan-x')
         ->not->toContain('min-w-[58rem]');
+});
+
+it('keeps soap percentage and weight controls side by side below desktop', function () {
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $mobileMeasurementGroup = 'col-span-full grid grid-cols-2 gap-3 lg:contents';
+
+    expect(substr_count($reactionCore, $mobileMeasurementGroup))->toBe(2)
+        ->and(substr_count($postReaction, $mobileMeasurementGroup))->toBe(2)
+        ->and($reactionCore)
+        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('decimalAlignmentStyle(row.percentage)')
+        ->toContain('decimalAlignmentStyle(rowWeight(row))')
+        ->toContain('@dragstart="beginRowDrag(\'saponified_oils\', row.id, $event)"')
+        ->toContain('removeIngredient(\'saponified_oils\', row.id)')
+        ->and($postReaction)
+        ->toContain('decimalAlignmentStyle(row.percentage)')
+        ->toContain('decimalAlignmentStyle(rowWeight(row))')
+        ->toContain('@dragstart="beginRowDrag(\'additives\', row.id, $event)"')
+        ->toContain('removeIngredient(\'additives\', row.id)')
+        ->toContain('@dragstart="beginRowDrag(\'fragrance\', row.id, $event)"')
+        ->toContain('removeIngredient(\'fragrance\', row.id)');
 });
 
 it('keeps formula table lines compact with ten pixel vertical padding', function () {
@@ -652,9 +682,12 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
 
     expect($formulaTabSource)
         ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
+        ->toContain('order-1 min-w-0 @5xl/workbench:col-start-1')
+        ->toContain('order-2 min-w-0 space-y-4 @5xl/workbench:col-start-2')
         ->toContain('class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
         ->toContain('class="hidden @5xl/workbench:block"')
-        ->toContain('class="@5xl/workbench:hidden"')
+        ->toContain('@5xl/workbench:hidden')
+        ->toContain('data-ingredient-browser-disclosure')
         ->not->toContain('lg:max-h-[calc(100vh-7rem)]')
         ->not->toContain('lg:overflow-y-auto')
         ->not->toContain('lg:pr-1')
@@ -672,9 +705,29 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
         ->toContain('xl:max-h-[600px]')
         ->not->toContain('Fatty acid profile');
 
-    expect(strpos($formulaTabSource, 'class="@5xl/workbench:hidden"'))
-        ->toBeGreaterThan(strpos($formulaTabSource, 'post-reaction'))
-        ->toBeLessThan(strpos($formulaTabSource, 'formula-analysis'));
+    expect(strpos($formulaTabSource, 'aria-controls="formula-ingredient-browser"'))
+        ->toBeGreaterThan(strpos($formulaTabSource, 'data-ingredient-browser-disclosure'))
+        ->toBeLessThan(strpos($formulaTabSource, 'post-reaction'));
+});
+
+it('keeps the narrow ingredient disclosure discoverable while sharing one catalog instance', function () {
+    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
+    $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
+
+    expect($formulaTabSource)
+        ->toContain('data-ingredient-browser-disclosure')
+        ->toContain(':aria-expanded="ingredientBrowserOpen.toString()"')
+        ->toContain('x-text="ingredientBrowserOpen ? \'−\' : \'+\'"')
+        ->toContain('id="formula-ingredient-browser"')
+        ->toContain('x-ref="ingredientBrowserRail"')
+        ->toContain(":class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
+        ->not->toContain('x-show="ingredientBrowserOpen"')
+        ->not->toContain('<details');
+
+    expect($componentSource)->toContain('ingredientBrowserOpen: false');
+
+    expect(substr_count($formulaTabSource, "@include('livewire.dashboard.partials.recipe-workbench.ingredient-browser')"))
+        ->toBe(1);
 });
 
 it('allocates ingredient rail width and gutter from the real workbench width', function () {
@@ -721,7 +774,7 @@ it('keeps ingredient browser filters visible and pill shaped while focused', fun
     expect($ingredientBrowser)
         ->toContain('sk-ingredient-filter-control w-full px-4 py-3 text-sm')
         ->and(substr_count($ingredientBrowser, 'sk-ingredient-filter-control'))
-        ->toBe(2)
+        ->toBe(1)
         ->and($appStylesSource)
         ->toContain('.sk-workbench .sk-ingredient-filter-control')
         ->toContain('border-radius: 1.15rem')
@@ -911,7 +964,7 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
     expect($formulaTabSource)
         ->not->toContain('recipe-workbench.formula-diagnostics-rail')
         ->toContain('recipe-workbench.formula-bottom-action-bar')
-        ->toContain('pb-28')
+        ->toContain('pb-40 sm:pb-28')
         ->and($bottomActionBar)
         ->toContain('Formula save bar')
         ->toContain('fixed bottom-0 left-0 right-0')
@@ -931,6 +984,9 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->toContain('formulaDiagnosticSummaryCards')
         ->toContain('toggleFormulaDiagnostics()')
         ->toContain('aria-controls="formula-bottom-diagnostics-details"')
+        ->toContain('absolute inset-x-0 bottom-full')
+        ->toContain('max-h-[min(60dvh,28rem)]')
+        ->toContain('overflow-y-auto overscroll-contain')
         ->toContain(":class=\"isFormulaDiagnosticsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
         ->toContain(':aria-expanded="isFormulaDiagnosticsOpen.toString()"')
         ->toContain('publish()')
@@ -1233,8 +1289,8 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->and($ingredientBrowser)
         ->toContain('sk-tone-catalog')
         ->toContain('text-[var(--color-on-accent)]')
-        ->not->toContain('focus-visible:outline-2')
         ->and($ingredientBrowserSource)
+        ->not->toContain('focus-visible:outline-2')
         ->toContain('hover:bg-[var(--color-active-soft)]')
         ->and($reactionCore)
         ->toContain('sk-tone-chemistry')
@@ -1313,11 +1369,16 @@ it('collapses formula settings into a setup summary for soap and cosmetic benche
         ->and($soapSettings)
         ->toContain('Formula settings')
         ->toContain('data-formula-output-type')
-        ->toContain('class="sk-card px-5 py-4"')
+        ->toContain('class="sk-card px-4 py-3"')
         ->toContain('class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"')
         ->toContain('transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none')
         ->not->toContain('x-transition.opacity')
-        ->toContain('class="mt-2 flex flex-wrap gap-2"')
+        ->toContain('data-formula-settings-primary')
+        ->toContain('data-formula-settings-context')
+        ->toContain('mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs')
+        ->toContain('min-w-0 break-words whitespace-normal')
+        ->toContain('filter(card => ! card.context)')
+        ->toContain('filter(card => card.context)')
         ->toContain('class="mt-4"')
         ->toContain("'sk-tone-summary': card.tone === 'neutral'")
         ->not->toContain('Calculation assumptions')
@@ -1342,7 +1403,7 @@ it('collapses formula settings into a setup summary for soap and cosmetic benche
         ->toContain('class="flex flex-wrap items-center gap-2 lg:flex-nowrap"')
         ->toContain('class="flex min-w-0 flex-1 gap-2 overflow-x-auto')
         ->toContain('id="formula-bottom-diagnostics-details"')
-        ->toContain('class="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5"')
+        ->toContain('class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5"')
         ->not->toContain('lg:sticky')
         ->not->toContain('lg:top-4')
         ->not->toContain('class="sk-card p-3');

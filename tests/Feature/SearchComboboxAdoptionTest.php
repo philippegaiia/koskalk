@@ -38,7 +38,7 @@ it('gives the product category combobox room without clipping or a nested focus 
         ->toContain('data-product-category-setting')
         ->toContain('class="mt-3 max-w-3xl"')
         ->toContain("formulaSettingsOverflow ? 'overflow-visible' : 'overflow-hidden'")
-        ->toContain('lg:grid-cols-2 xl:grid-cols-4')
+        ->toContain('min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-4')
         ->not->toContain('lg:grid-cols-2 xl:grid-cols-5')
         ->and($component)
         ->toContain('formulaSettingsOverflow: initialDraft === null')
@@ -49,13 +49,93 @@ it('gives the product category combobox room without clipping or a nested focus 
         ->toContain('border-color: var(--color-active);');
 });
 
-it('keeps the main formula ingredient browser unchanged', function () {
+it('uses the shared search combobox for the main formula category filter', function () {
     $ingredientBrowser = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
 
     expect($ingredientBrowser)
-        ->not->toContain('<x-search-combobox')
+        ->toContain('<x-search-combobox')
+        ->toContain('id="ingredient-category-search"')
+        ->toContain('x-effect="replaceOptions(categoryOptions.map')
+        ->toContain('x-on:search-combobox-selected="activeCategory = String($event.detail.id)"')
+        ->toContain("x-on:search-combobox-cleared=\"activeCategory = 'all'; syncSelection('all')\"")
+        ->toContain('overflow-visible sk-card')
+        ->toContain('relative z-20 space-y-3')
+        ->toContain('overflow-y-auto')
+        ->not->toContain('<select x-model="activeCategory"')
         ->toContain('x-model="search"')
         ->toContain('filteredIngredients');
+});
+
+it('searches category options by subcategory while keeping main category values selectable', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+import { createSearchCombobox } from './resources/js/search-combobox.js';
+
+const catalogSource = fs.readFileSync('resources/js/recipe-workbench/catalog.js', 'utf8')
+    .replace(/import \{[\s\S]*?\} from '\.\/utils';\s*/, '')
+    .replaceAll('export function ', 'function ');
+const humanizeKey = (value) => `${value ?? ''}`
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+eval(`${catalogSource}\nglobalThis.categoryOptions = categoryOptions;`);
+
+const options = categoryOptions([
+    {
+        category: 'lipids',
+        category_label: 'Lipids',
+        subcategory: 'carrier_oils',
+        subcategory_label: 'Carrier oils',
+    },
+    {
+        category: 'lipids',
+        category_label: 'Lipids',
+        subcategory: 'butters',
+        subcategory_label: 'Butters',
+    },
+    {
+        category: 'botanicals_extracts',
+        category_label: 'Botanicals and extracts',
+        subcategory: 'plant_powders',
+        subcategory_label: 'Plant powders',
+    },
+]);
+const state = createSearchCombobox({
+    id: 'ingredient-category-search',
+    options: options.map((option) => ({
+        id: option.value,
+        label: option.label,
+        description: option.description,
+        searchText: option.searchText,
+    })),
+});
+
+state.$dispatch = () => {};
+state.query = 'butters';
+state.handleInput();
+
+console.log(JSON.stringify({
+    values: options.map((option) => option.value),
+    lipids: options.find((option) => option.value === 'lipids'),
+    filteredValues: state.filteredOptions.map((option) => option.id),
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['values'])->toBe(['all', 'botanicals_extracts', 'lipids'])
+        ->and($payload['lipids']['count'])->toBe(2)
+        ->and($payload['lipids']['description'])->toBe('Butters · Carrier oils')
+        ->and($payload['lipids']['searchText'])->toContain('butters')
+        ->and($payload['filteredValues'])->toBe(['lipids']);
 });
 
 it('supports string identifiers and replacing options in the shared search combobox', function () {

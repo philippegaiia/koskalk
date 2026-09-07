@@ -49,6 +49,7 @@
  <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
+ <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
@@ -66,6 +67,7 @@
  <template x-if="editMode !== 'weight'">
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), additionWeightDecimals(rowWeight(row)))}`"></span>
  </template>
+ </div>
  </div>
 		 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
 	 <button type="button" @click="removeIngredient('additives', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove additive">×</button>
@@ -124,6 +126,7 @@
  <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
+ <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
@@ -141,6 +144,7 @@
  <template x-if="editMode !== 'weight'">
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), additionWeightDecimals(rowWeight(row)))}`"></span>
  </template>
+ </div>
  </div>
 		 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
 	 <button type="button" @click="removeIngredient('fragrance', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove aromatic ingredient">×</button>

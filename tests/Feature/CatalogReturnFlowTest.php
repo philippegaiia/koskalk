@@ -44,17 +44,27 @@ it('returns newly created catalog items to a preselected supplier listing', func
         ->assertSet('data.material_type', 'packaging')
         ->assertSet('data.packaging_item_id', $packaging->id);
 
-    Livewire::withQueryParams([
+    $ingredientComponent = Livewire::withQueryParams([
         'return_to' => 'supplier_listing',
         'supplier' => $supplier->public_id,
     ])->test(IngredientEditor::class)
         ->set('data.name', 'Green clay')
         ->set('data.category', IngredientCategory::MineralsSaltsPowders->value)
         ->call('save')
-        ->assertHasNoErrors()
-        ->assertRedirect();
+        ->assertHasNoErrors();
 
     $ingredient = Ingredient::query()->where('display_name', 'Green clay')->sole();
+
+    $ingredientComponent->assertDispatched('ingredient-editor:created', function (string $event, array $payload) use ($ingredient, $supplier): bool {
+        return $event === 'ingredient-editor:created'
+            && $payload['scope'] === 'ingredient'
+            && $payload['baseline']['name'] === 'Green clay'
+            && $payload['redirect'] === route('production-bench.purchasing.listings.create', [
+                'material_type' => 'ingredient',
+                'ingredient' => $ingredient->public_id,
+                'supplier' => $supplier->public_id,
+            ]);
+    });
 
     Livewire::withQueryParams([
         'supplier' => $supplier->public_id,

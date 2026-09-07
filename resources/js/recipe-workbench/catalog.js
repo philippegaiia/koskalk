@@ -47,20 +47,52 @@ export function categoryOptions(ingredients, allLabel = 'All') {
     const categories = new Map();
 
     ingredients.forEach((ingredient) => {
-        if (!ingredient.category || categories.has(ingredient.category)) {
+        if (!ingredient.category) {
             return;
         }
 
-        categories.set(
-            ingredient.category,
-            ingredient.category_label || humanizeKey(ingredient.category),
-        );
+        const categoryLabel = ingredient.category_label || humanizeKey(ingredient.category);
+        const category = categories.get(ingredient.category) ?? {
+            label: categoryLabel,
+            count: 0,
+            searchTerms: new Set([ingredient.category, categoryLabel]),
+            subcategoryLabels: new Set(),
+        };
+
+        category.count += 1;
+        category.searchTerms.add(ingredient.category);
+        category.searchTerms.add(categoryLabel);
+
+        if (ingredient.subcategory) {
+            category.searchTerms.add(ingredient.subcategory);
+        }
+
+        if (ingredient.subcategory_label) {
+            category.searchTerms.add(ingredient.subcategory_label);
+            category.subcategoryLabels.add(ingredient.subcategory_label);
+        }
+
+        categories.set(ingredient.category, category);
     });
 
-    const representedCategories = Array.from(categories, ([value, label]) => ({ value, label }))
+    const representedCategories = Array.from(categories, ([value, category]) => ({
+        value,
+        label: category.label,
+        count: category.count,
+        description: Array.from(category.subcategoryLabels)
+            .sort((left, right) => left.localeCompare(right))
+            .join(' · '),
+        searchText: Array.from(category.searchTerms).join(' '),
+    }))
         .sort((left, right) => left.label.localeCompare(right.label));
 
-    return [{ value: 'all', label: allLabel }, ...representedCategories];
+    return [{
+        value: 'all',
+        label: allLabel,
+        count: ingredients.length,
+        description: '',
+        searchText: allLabel,
+    }, ...representedCategories];
 }
 
 export function filterIngredients(ingredients, search, activeCategory) {

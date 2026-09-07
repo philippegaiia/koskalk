@@ -1,26 +1,31 @@
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
 <aside class="space-y-4">
- <div class="overflow-hidden sk-card sk-tone-catalog">
+ <div class="overflow-visible sk-card sk-tone-catalog">
  <div class="sk-section-header border-b border-[var(--color-line)] px-4 py-4">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.ingredients.title') }}</h3>
  </div>
 
- <div class="space-y-3 border-b border-[var(--color-line)] px-4 py-4">
+ <div class="relative z-20 space-y-3 border-b border-[var(--color-line)] px-4 py-4">
  <input x-model="search" type="search" placeholder="{{ __('workbench.ingredients.search_placeholder') }}" aria-label="{{ __('workbench.ingredients.search_label') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
- <select x-model="activeCategory" aria-label="{{ __('workbench.accessibility.filter_category') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)]">
- <template x-for="option in categoryOptions" :key="option.value">
- <option :value="option.value" :selected="option.value === activeCategory" x-text="`${option.label} (${categoryIngredientCount(option.value)})`"></option>
- </template>
- </select>
+ <x-search-combobox
+ id="ingredient-category-search"
+ :label="__('workbench.accessibility.filter_category')"
+ :options="[]"
+ :placeholder="__('workbench.accessibility.filter_category')"
+ x-init="replaceOptions(categoryOptions.map((option) => ({ id: option.value, label: `${option.label} (${option.count})`, description: option.description || '', searchText: option.searchText || option.label }))); syncSelection(activeCategory)"
+ x-effect="replaceOptions(categoryOptions.map((option) => ({ id: option.value, label: `${option.label} (${option.count})`, description: option.description || '', searchText: option.searchText || option.label })))"
+ x-on:search-combobox-selected="activeCategory = String($event.detail.id)"
+ x-on:search-combobox-cleared="activeCategory = 'all'; syncSelection('all')"
+ />
  </div>
 
  <div class="border-b border-[var(--color-line)] px-5 py-3">
  <p class="text-sm text-[var(--color-ink-soft)]" x-text="filteredIngredients.length === 1 ? t('ingredients.count_singular') : t('ingredients.count_plural', { count: filteredIngredients.length })"></p>
  </div>
 
- <div class="max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
+ <div class="relative z-10 max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">

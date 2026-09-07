@@ -173,6 +173,7 @@ export function createFormulaSection() {
                     label: this.t('cosmetic.category_label'),
                     value: this.productTypeName ?? this.t('common.choose_later'),
                     tone: 'neutral',
+                    context: true,
                 },
                 {
                     id: 'formula-weight',
@@ -222,6 +223,7 @@ export function createFormulaSection() {
                         ? this.t('settings.manufactured_ingredient')
                         : this.t('settings.finished_product'),
                     tone: 'info',
+                    context: true,
                 });
             }
 
@@ -231,12 +233,14 @@ export function createFormulaSection() {
                     label: this.t('cosmetic.exposure_label'),
                     value: this.exposureModeLabel,
                     tone: 'info',
+                    context: true,
                 },
                 {
                     id: 'formula-label',
                     label: this.t('cosmetic.label_label'),
                     value: this.formulaSetupLabelSummary,
                     tone: 'info',
+                    context: true,
                 },
             );
 

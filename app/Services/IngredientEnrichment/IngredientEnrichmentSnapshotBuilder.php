@@ -15,7 +15,10 @@ use Carbon\CarbonImmutable;
 
 class IngredientEnrichmentSnapshotBuilder
 {
-    public function __construct(private readonly DecimalStringFormatter $decimalStringFormatter) {}
+    public function __construct(
+        private readonly DecimalStringFormatter $decimalStringFormatter,
+        private readonly LocalizedGuidanceHeadings $guidanceHeadings,
+    ) {}
 
     /**
      * Build the normalized state and its canonical fingerprint.
@@ -311,6 +314,7 @@ class IngredientEnrichmentSnapshotBuilder
         preg_match_all('/^##\s+(.+)$/m', $guidance, $matches);
         $headings = collect($matches[1] ?? [])
             ->map(fn (mixed $heading): string => trim((string) $heading))
+            ->map(fn (string $heading): string => $this->guidanceHeadings->canonicalEnglishHeading($heading))
             ->values()
             ->all();
         $required = data_get(config('ingredient-enrichment.guidance'), 'required_headings', []);

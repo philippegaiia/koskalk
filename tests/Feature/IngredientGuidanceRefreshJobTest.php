@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\IngredientEnrichment\ApplyApprovedIngredientEnrichment;
+use App\Actions\IngredientEnrichment\ApproveIngredientGuidanceProposal;
+use App\Actions\IngredientEnrichment\EditIngredientGuidanceProposal;
 use App\Actions\IngredientEnrichment\RetryIngredientEnrichmentFailures;
 use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
 use App\Contracts\IngredientGuidanceAuthoringClient;
@@ -1279,6 +1282,312 @@ it('localizes only outdated locales and never calls English authoring', function
         ->toBe('ingredient-guidance-localization-v6-test');
 });
 
+it('accepts cosmetic formulation as an external guidance heading during localization', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    $calls = ['localize' => 0];
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: [[
+                    'locale' => 'fr',
+                    'info_markdown' => "## Vue d’ensemble\n\nUne huile végétale liquide.\n\n## Utilisation en formulation\n\n### Usages privilégiés\n\nElle apporte du glissant.\n\n## Savonnerie\n\n### Ce qu’elle apporte\n\nElle contribue à la douceur du savon.",
+                ]],
+                responseId: 'resp-external-guidance-localization',
+                requestId: 'req-external-guidance-localization',
+                model: 'gpt-test',
+                inputTokens: 12,
+                outputTokens: 34,
+            );
+        }
+    });
+
+    $englishGuidance = externalGuidanceText();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Borage oil',
+        'info_markdown' => $englishGuidance,
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Processing,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($ingredient),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($calls)->toBe(['localize' => 1]);
+    expect($item->fresh())
+        ->status->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->input_tokens->toBe(12)
+        ->output_tokens->toBe(34);
+    expect($item->fresh()->result['info_markdown'])->toBe($englishGuidance);
+});
+
+it('rejects markup-only external guidance before calling the localization provider', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    $calls = ['localize' => 0];
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            throw new RuntimeException('localization must not run for invalid English guidance');
+        }
+    });
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Borage oil',
+        'info_markdown' => "### Summary\n\n- ",
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Processing,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($ingredient),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($item->id))
+        ->toThrow(ValidationException::class, __('ingredient_enrichment.validation.guidance_english_required'));
+
+    expect($calls)->toBe(['localize' => 0]);
+    expect($item->fresh())
+        ->status->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->input_tokens->toBe(0)
+        ->output_tokens->toBe(0);
+    expect(data_get($item->fresh()->research_stages, 'ai_guidance_localization.status'))->toBe('failed')
+        ->and(data_get($item->fresh()->research_stages, 'ai_guidance_localization.data'))->toBe([]);
+});
+
+it('preserves arbitrary authored Markdown structure without adding Soapmaking during localization', function (string $englishGuidance, string $localizedGuidance, string $reviewedGuidance): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    $providerContexts = [];
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($providerContexts, $localizedGuidance) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param list<array<string,mixed>> $providerContexts */
+        public function __construct(private array &$providerContexts, private string $localizedGuidance) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->providerContexts[] = $context;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: [[
+                    'locale' => 'fr',
+                    'info_markdown' => $this->localizedGuidance,
+                ]],
+                responseId: 'resp-arbitrary-guidance-structure',
+                requestId: 'req-arbitrary-guidance-structure',
+                model: 'gpt-test',
+                inputTokens: 9,
+                outputTokens: 11,
+            );
+        }
+    });
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Borage oil',
+        'info_markdown' => $englishGuidance,
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Processing,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($ingredient),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($providerContexts)->toBe([[
+        'locales' => ['fr'],
+        'english_guidance' => $englishGuidance,
+    ]]);
+    expect($item->fresh())
+        ->provider_response_id->toBe('resp-arbitrary-guidance-structure')
+        ->input_tokens->toBe(9)
+        ->output_tokens->toBe(11);
+    expect($item->fresh()->result['info_markdown'])->toBe($englishGuidance)
+        ->and($item->fresh()->result['translations'])->toBe([[
+            'locale' => 'fr',
+            'info_markdown' => $localizedGuidance,
+        ]])
+        ->and($item->fresh()->result['translations'][0]['info_markdown'])->not->toContain('Soapmaking');
+
+    $admin = User::factory()->admin()->create();
+    $editedItem = app(EditIngredientGuidanceProposal::class)->handle($admin, $item->fresh(), [
+        'translations' => [[
+            'locale' => 'fr',
+            'info_markdown' => $reviewedGuidance,
+        ]],
+    ]);
+    app(ApproveIngredientGuidanceProposal::class)->handle($admin, $editedItem);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
+
+    expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
+        ->and($ingredient->fresh()->info_markdown)->toBe($englishGuidance)
+        ->and($ingredient->translations()->where('locale', 'fr')->value('info_markdown'))->toBe($reviewedGuidance);
+})->with([
+    'headings and lists' => [
+        "# Material notes\n\nA manually authored paragraph.\n\n### Preferred uses\n\n- Creams\n- Balms\n\n#### Cautions\n\nReview the complete formula.",
+        "# Notes sur le matériau\n\nUn paragraphe rédigé manuellement.\n\n### Usages privilégiés\n\n- Crèmes\n- Baumes\n\n#### Précautions\n\nExaminer la formule complète.",
+        "# Notes sur le matériau\n\nUn paragraphe relu.\n\n### Usages privilégiés\n\n- Crèmes\n- Baumes\n\n#### Précautions\n\nExaminer la formule complète.",
+    ],
+    'paragraphs only' => [
+        "A manually authored opening paragraph.\n\nA second paragraph without headings or lists.",
+        "Un paragraphe d’introduction rédigé manuellement.\n\nUn second paragraphe sans titre ni liste.",
+        "Un paragraphe d’introduction relu.\n\nUn second paragraphe sans titre ni liste.",
+    ],
+]);
+
+it('enforces the visible character cap before calling paid localization', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    $calls = ['localize' => 0];
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            throw new RuntimeException('localization must not run for over-limit English guidance');
+        }
+    });
+
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Borage oil',
+        'info_markdown' => "### Notes\n\n".str_repeat('x', 10001),
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Processing,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($ingredient),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($item->id))
+        ->toThrow(ValidationException::class, __('ingredient_enrichment.validation.guidance_maximum_characters', ['maximum' => 10000]));
+
+    expect($calls)->toBe(['localize' => 0]);
+    expect($item->fresh())
+        ->status->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->input_tokens->toBe(0)
+        ->output_tokens->toBe(0);
+});
+
+it('retains completed localization accounting when final validation fails', function (): void {
+    config()->set('interface-translations.catalogue_locales', ['fr']);
+    $calls = ['localize' => 0];
+    app()->instance(IngredientGuidanceLocalizationClient::class, new class($calls) implements IngredientGuidanceLocalizationClient
+    {
+        /** @param array<string,int> $calls */
+        public function __construct(private array &$calls) {}
+
+        public function localize(array $context): IngredientGuidanceLocalizationResponse
+        {
+            $this->calls['localize']++;
+
+            return new IngredientGuidanceLocalizationResponse(
+                translations: [[
+                    'locale' => 'fr',
+                    'info_markdown' => "## Vue d’ensemble\n\nUne huile végétale liquide.\n\n## Utilisation en formulation\n\nElle apporte du glissant.\n\n## Savonnerie\n\nElle contribue à la douceur du savon.",
+                ]],
+                responseId: 'resp-accounted-localization',
+                requestId: 'req-accounted-localization',
+                model: 'gpt-test',
+                inputTokens: 13,
+                outputTokens: 35,
+            );
+        }
+    });
+    $validator = new class(app(IngredientEnrichmentSnapshotBuilder::class), app(IngredientGuidanceEvidencePolicy::class), app(LocalizedGuidanceHeadings::class)) extends IngredientGuidanceRefreshResultValidator
+    {
+        public int $calls = 0;
+
+        public function validateOrFail(
+            array $result,
+            Ingredient $ingredient,
+            IngredientEnrichmentBatchMode $mode,
+            ?array $expectedLocales = null,
+        ): array {
+            $this->calls++;
+            if ($this->calls === 1) {
+                throw ValidationException::withMessages(['result' => 'final validation failed']);
+            }
+
+            return parent::validateOrFail($result, $ingredient, $mode, $expectedLocales);
+        }
+    };
+    app()->instance(IngredientGuidanceRefreshResultValidator::class, $validator);
+
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Borage oil',
+        'info_markdown' => externalGuidanceText(),
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceLocalization,
+        'status' => IngredientEnrichmentBatchStatus::Processing,
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'snapshot' => app(IngredientGuidanceContextBuilder::class)->build($ingredient),
+        'source_fingerprint' => app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient),
+    ]);
+
+    expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($item->id))
+        ->toThrow(ValidationException::class, 'final validation failed');
+
+    expect($item->fresh())
+        ->status->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->provider_response_id->toBe('resp-accounted-localization')
+        ->provider_request_id->toBe('req-accounted-localization')
+        ->provider_model->toBe('gpt-test')
+        ->input_tokens->toBe(13)
+        ->output_tokens->toBe(35);
+    expect($batch->fresh())
+        ->input_tokens->toBe(13)
+        ->output_tokens->toBe(35);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+    app(IngredientGuidanceRefreshProcessor::class)->handle($item->id);
+
+    expect($calls)->toBe(['localize' => 1]);
+    expect($validator->calls)->toBe(2);
+    expect($item->fresh())
+        ->status->toBe(IngredientEnrichmentItemStatus::Warning)
+        ->input_tokens->toBe(13)
+        ->output_tokens->toBe(35);
+});
+
 it('requests only locales with missing guidance while excluding reviewer-owned locales', function (): void {
     config()->set('interface-translations.catalogue_locales', ['fr', 'de', 'nl']);
     $providerContexts = [];
@@ -1353,7 +1662,7 @@ it('requests only locales with missing guidance while excluding reviewer-owned l
     expect($providerContexts)->toHaveCount(1)
         ->and($providerContexts[0]['locales'])->toBe(['fr'])
         ->and($providerContexts[0])->not->toHaveKeys(['canonical', 'metadata_translations'])
-        ->and($providerContexts[0]['english_guidance'])->toBe(trim(guidanceText()))
+        ->and($providerContexts[0]['english_guidance'])->toBe(guidanceText())
         ->and($item->fresh()->result['translations'])->toBe([[
             'locale' => 'fr',
             'info_markdown' => trim(localizedGuidanceText()),
@@ -1643,7 +1952,7 @@ it('resumes a validation failure without repeating completed guidance providers'
         }
     });
 
-    $validator = new class(app(IngredientEnrichmentSnapshotBuilder::class), app(IngredientGuidanceEvidencePolicy::class)) extends IngredientGuidanceRefreshResultValidator
+    $validator = new class(app(IngredientEnrichmentSnapshotBuilder::class), app(IngredientGuidanceEvidencePolicy::class), app(LocalizedGuidanceHeadings::class)) extends IngredientGuidanceRefreshResultValidator
     {
         public int $calls = 0;
 
@@ -2256,6 +2565,11 @@ function completedDisabledResearchStages(IngredientEnrichmentBatchItem $item): a
 function guidanceText(): string
 {
     return "## Overview\nOlive oil is a plant-derived fixed oil with a defined fatty-acid profile.\n\n## Formulation use\nIts material-specific profile supports a light emollient contribution and helps select it when a fluid oil phase is needed. ".str_repeat('Use the measured material grade and review the complete formula. ', 10);
+}
+
+function externalGuidanceText(): string
+{
+    return "## Overview\n\nBorage oil is a liquid seed oil.\n\n## Cosmetic formulation\n\n### Best uses\n\nIt adds slip to creams and balms.\n\n## Soapmaking\n\n### What it contributes\n\nIt contributes mainly unsaturated soaps.";
 }
 
 function localizedGuidanceText(): string

@@ -49,6 +49,9 @@ return [
         'maximum_words' => 0,
         'maximum_characters' => 10000,
         'required_headings' => ['Overview', 'Formulation use'],
+        'heading_aliases' => [
+            'Formulation use' => ['Cosmetic formulation'],
+        ],
         'soapmaking_heading' => 'Soapmaking',
         'localized_headings' => [
             'de' => ['overview' => 'Überblick', 'formulation_use' => 'Verwendung in Formulierungen', 'soapmaking' => 'Seifenherstellung'],
@@ -104,7 +107,7 @@ return [
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
         'guidance_prompt_version' => 'ingredient-guidance-v16',
-        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v5',
+        'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v6',
         'identity_name_localization_prompt_version' => 'ingredient-identity-name-localization-v1',
         'allowed_domains' => [
             'ec.europa.eu',

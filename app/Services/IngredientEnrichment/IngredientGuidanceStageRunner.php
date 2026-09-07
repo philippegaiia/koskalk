@@ -295,17 +295,20 @@ class IngredientGuidanceStageRunner
             throw new LogicException('Guidance localization stage data is missing translations.');
         }
 
-        $normalizedTranslations = collect($translations)
-            ->map(fn (mixed $translation): mixed => is_array($translation)
-                ? $this->normalizeTranslationHeadings($translation, $context['soapmaking_relevant'])
-                : $translation)
-            ->all();
+        $normalizedTranslations = $context['mode']->isLocalizationOnly()
+            ? $translations
+            : collect($translations)
+                ->map(fn (mixed $translation): mixed => is_array($translation)
+                    ? $this->normalizeTranslationHeadings($translation, $context['soapmaking_relevant'])
+                    : $translation)
+                ->all();
         if (! $this->validator->validateTranslations(
             $normalizedTranslations,
             $context['expected_locales'],
             $context['soapmaking_relevant'],
             $this->nullableString($context['ingredient']->saponification_name),
             false,
+            enforceStructure: ! $context['mode']->isLocalizationOnly(),
         )['valid']) {
             throw new LogicException('Guidance localization stage data contains invalid translations.');
         }
@@ -816,10 +819,9 @@ class IngredientGuidanceStageRunner
             $englishGuidance = (string) ($ingredient->info_markdown ?? '');
         }
 
-        return $this->headings->hasExactHeading(
-            $englishGuidance,
-            (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
-        );
+        $soapmakingHeading = (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking');
+
+        return $this->headings->hasExactHeading($englishGuidance, $soapmakingHeading);
     }
 
     /** @param array<string,mixed> $translation */

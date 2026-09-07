@@ -2,6 +2,8 @@
 
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Enums\OwnerType;
+use App\Models\Ingredient;
 use Tests\TestCase;
 
 // Booted so lang_path() and resource_path() resolve; no database is needed.
@@ -142,4 +144,29 @@ it('declares a distinct short label for every category', function () {
 
     // Two categories sharing badge wording would be indistinguishable.
     expect(array_unique($labels))->toHaveCount(count(IngredientCategory::cases()));
+});
+
+it('provides a fallback icon asset for every category and uses other for an unknown category', function (): void {
+    foreach (IngredientCategory::cases() as $category) {
+        expect(is_file(public_path('images/app/ingredient-categories/'.$category->value.'.svg')))->toBeTrue()
+            ->and($category->fallbackIconUrl())->toContain('/images/app/ingredient-categories/'.$category->value.'.svg');
+    }
+
+    expect((new Ingredient)->categoryFallbackImageUrl())
+        ->toBe(IngredientCategory::Other->fallbackIconUrl());
+});
+
+it('keeps a real picker image ahead of the category fallback', function (): void {
+    $iconPath = 'ingredients/ingredient-id/icons/icon.webp';
+    $ingredient = Ingredient::make([
+        'public_id' => 'ingredient-id',
+        'owner_type' => OwnerType::User,
+        'icon_image_path' => $iconPath,
+        'category' => IngredientCategory::Lipids,
+    ]);
+    $ingredient->setRelation('mediaAssetUsages', collect());
+
+    expect($ingredient->pickerImageUrl())
+        ->toBe(route('ingredients.media', ['ingredient' => $ingredient, 'path' => $iconPath]))
+        ->not->toBe($ingredient->categoryFallbackImageUrl());
 });

@@ -124,6 +124,8 @@
                             @foreach ($ingredients as $ingredient)
                                 @php
                                     $imageUrl = $this->catalogImageUrl($ingredient);
+                                    $categoryFallbackImageUrl = $ingredient->categoryFallbackImageUrl();
+                                    $isFallbackImage = $imageUrl === $categoryFallbackImageUrl;
                                     $displayName = $ingredient->localizedDisplayName();
                                     $inciName = $ingredient->displayInciName();
                                     $isMine = $ingredient->owner_type !== null;
@@ -142,13 +144,9 @@
                                 @endphp
                                 <tr wire:key="ingredient-{{ $ingredient->id }}">
                                     <td>
-                                        @if ($imageUrl)
-                                            <img src="{{ $imageUrl }}" alt="" class="size-10 rounded-lg object-cover" />
-                                        @else
-                                            <div class="grid size-10 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-xs font-semibold text-[var(--color-ink-soft)]">
-                                                {{ mb_substr((string) $displayName, 0, 1) }}
-                                            </div>
-                                        @endif
+                                        <div class="sk-ingredient-image-tile {{ $isFallbackImage ? 'is-fallback' : '' }}">
+                                            <img src="{{ $imageUrl }}" alt="" />
+                                        </div>
                                     </td>
                                     <td>
                                         <div class="min-w-48">

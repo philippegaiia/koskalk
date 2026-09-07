@@ -76,6 +76,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
                         ->pluck('name')
                         ->all(),
                     'image_url' => $ingredient->pickerImageUrl(),
+                    'fallback_image_url' => $ingredient->categoryFallbackImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),
                     'subcategory' => $subcategory?->value,

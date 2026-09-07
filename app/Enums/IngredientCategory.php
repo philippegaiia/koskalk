@@ -114,6 +114,11 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
         return $this->value;
     }
 
+    public function fallbackIconUrl(): string
+    {
+        return asset('images/app/ingredient-categories/'.$this->value.'.svg');
+    }
+
     public function getIcon(): string|BackedEnum|Htmlable|null
     {
         return match ($this) {

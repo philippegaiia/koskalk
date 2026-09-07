@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Minerals &amp; powders</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="m5 32 7 16c2 5 38 5 40 0l7-16Z"/>
+  <ellipse cx="32" cy="32" rx="27" ry="7" fill="#FFFFFF"/>
+  <path fill="#E7C689" d="m10 33 11-11 8-9 7 3 7 8 11 9c-10 5-34 5-44 0Z"/>
+  <path fill="none" d="M5 32c0 9 54 9 54 0"/>
+  </g>
+</svg>

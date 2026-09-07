@@ -696,7 +696,7 @@ it('keeps compact ingredient names readable and moves inci into the inspector', 
         ->toContain('line-clamp-2')
         ->toContain(':title="ingredient.name"')
         ->toContain('text-[13px] font-semibold')
-        ->toContain('size-10 shrink-0')
+        ->toContain('sk-ingredient-image-tile')
         ->toContain('grid size-9 place-items-center')
         ->toContain('User-created or modified ingredient')
         ->toContain('<p class="sk-eyebrow">Ingredient</p>')
@@ -1370,4 +1370,29 @@ it('uses the open setup tone surfaces for collapsed and sticky formula summaries
         ->and($sharedStylesSource)
         ->toContain('.sk-status-surface')
         ->toContain('background: color-mix(in oklab, var(--sk-tone-soft) 34%, var(--color-panel) 66%);');
+});
+
+it('uses category fallback tiles for both soap and cosmetic ingredient browsers', function (): void {
+    $stylesheet = file_get_contents(resource_path('css/app.css'));
+    preg_match('/\.sk-ingredient-image-tile\s*\{([^}]*)\}/', $stylesheet, $tileRule);
+
+    expect($stylesheet)
+        ->toContain('.sk-ingredient-image-tile')
+        ->toContain('.sk-ingredient-image-tile.is-fallback')
+        ->and($tileRule[1] ?? null)
+        ->not->toContain('box-shadow:')
+        ->and($tileRule[1] ?? null)
+        ->toContain('border: 1px solid var(--color-line)')
+        ->toContain('border-radius: 0.5rem');
+
+    foreach ([false, true] as $isCosmeticWorkbench) {
+        $rendered = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser', [
+            'isCosmeticWorkbench' => $isCosmeticWorkbench,
+        ])->render();
+
+        expect($rendered)
+            ->toContain('ingredient.fallback_image_url')
+            ->toContain("ingredient.image_url ? '' : 'is-fallback'")
+            ->not->toContain('ingredientCategoryCode(ingredient)');
+    }
 });

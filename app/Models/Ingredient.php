@@ -283,6 +283,11 @@ class Ingredient extends Model
         return $this->iconImageUrl() ?? $this->featuredImageUrl();
     }
 
+    public function categoryFallbackImageUrl(): string
+    {
+        return ($this->category ?? IngredientCategory::Other)->fallbackIconUrl();
+    }
+
     /**
      * @return array<string, float>
      */

@@ -454,10 +454,11 @@ class IngredientsIndex extends Component
     public function catalogImageUrl(Ingredient $ingredient): ?string
     {
         if ($ingredient->owner_type !== null) {
-            return $ingredient->pickerImageUrl();
+            return $ingredient->pickerImageUrl() ?? $ingredient->categoryFallbackImageUrl();
         }
 
-        return MediaStorage::publicUrlWithoutExistenceCheck($ingredient->icon_image_path ?: $ingredient->featured_image_path);
+        return MediaStorage::publicUrlWithoutExistenceCheck($ingredient->icon_image_path ?: $ingredient->featured_image_path)
+            ?? $ingredient->categoryFallbackImageUrl();
     }
 
     public function formattedPrice(mixed $value): ?string

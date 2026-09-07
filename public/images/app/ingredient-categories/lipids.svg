@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Oils &amp; fats</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M25 14v6c0 3-3 4-6 6-4 3-6 6-6 11v12c0 6 4 9 10 9h18c6 0 10-3 10-9V37c0-5-2-8-6-11-3-2-6-3-6-6v-6Z"/>
+  <path fill="#F2B20C" stroke="none" d="M13 35c12-3 25 3 38-1v15c0 6-4 9-10 9H23c-6 0-10-3-10-9Z"/>
+  <path fill="none" d="M25 14v6c0 3-3 4-6 6-4 3-6 6-6 11v12c0 6 4 9 10 9h18c6 0 10-3 10-9V37c0-5-2-8-6-11-3-2-6-3-6-6v-6Z"/>
+  <rect x="21" y="6" width="22" height="6" rx="2" fill="#08294B" stroke="none"/>
+  <path d="M24 15h16"/>
+  </g>
+</svg>

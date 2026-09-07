@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\IngredientCategory;
 use App\Enums\MassDisplaySystem;
+use App\Enums\OwnerType;
+use App\Models\Ingredient;
 use App\Models\InterfaceTranslation;
 use App\Models\Plan;
 use App\Models\ProductFamily;
@@ -18,6 +21,38 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+it('delivers real ingredient images before category fallback URLs in the workbench catalog', function (): void {
+    $user = User::factory()->create();
+    $platformIngredient = Ingredient::factory()->create([
+        'display_name' => 'Platform Lipid',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+    $ownedIngredient = Ingredient::factory()->create([
+        'display_name' => 'Owned Ingredient',
+        'category' => IngredientCategory::Other,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+    $iconPath = 'ingredients/'.$ownedIngredient->public_id.'/icons/owned.webp';
+    $ownedIngredient->update(['icon_image_path' => $iconPath]);
+
+    $catalog = app(RecipeWorkbenchIngredientCatalogBuilder::class)->build($user);
+    $platformRow = collect($catalog)->firstWhere('id', $platformIngredient->id);
+    $ownedRow = collect($catalog)->firstWhere('id', $ownedIngredient->id);
+
+    expect($platformRow['image_url'])->toBeNull()
+        ->and($platformRow['fallback_image_url'])->toBe(IngredientCategory::Lipids->fallbackIconUrl())
+        ->and($ownedRow['image_url'])->toBe(route('ingredients.media', [
+            'ingredient' => $ownedIngredient,
+            'path' => $iconPath,
+        ]))
+        ->and($ownedRow['fallback_image_url'])->toBe(IngredientCategory::Other->fallbackIconUrl());
+});
 
 it('uses the workspace mass system to choose the initial formula unit', function (): void {
     $productFamily = ProductFamily::factory()->create([

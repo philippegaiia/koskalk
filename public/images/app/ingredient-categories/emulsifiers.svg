@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Emulsifiers</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M12 8h40c2 0 3 2 1 4l-4 4v33c0 6-3 9-9 9H24c-6 0-9-3-9-9V16l-4-4c-2-2-1-4 1-4Z"/>
+  <path fill="#5898CD" stroke="none" d="M15 24c12-4 22 4 34 0v25c0 6-3 9-9 9H24c-6 0-9-3-9-9Z"/>
+  <path fill="none" d="M12 8h40c2 0 3 2 1 4l-4 4v33c0 6-3 9-9 9H24c-6 0-9-3-9-9V16l-4-4c-2-2-1-4 1-4Z"/>
+  <g fill="#FFFFFF" stroke="none">
+    <circle cx="27" cy="33" r="5"/>
+    <circle cx="39" cy="40" r="4"/>
+    <circle cx="29" cy="49" r="3.8"/>
+  </g>
+  </g>
+</svg>

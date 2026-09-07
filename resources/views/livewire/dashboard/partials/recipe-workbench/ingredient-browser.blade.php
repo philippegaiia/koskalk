@@ -24,12 +24,12 @@
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
- <div class="size-10 shrink-0 overflow-hidden rounded-lg bg-[var(--color-panel)]">
+ <div class="sk-ingredient-image-tile" :class="ingredient.image_url ? '' : 'is-fallback'">
  <template x-if="ingredient.image_url">
- <img :src="ingredient.image_url" :alt="ingredient.name" loading="lazy" decoding="async" class="size-full object-cover" />
+ <img :src="ingredient.image_url" :alt="ingredient.name" loading="lazy" decoding="async" />
  </template>
  <template x-if="! ingredient.image_url">
- <div class="grid size-full place-items-center text-[10px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)]" x-text="ingredientCategoryCode(ingredient)"></div>
+ <img :src="ingredient.fallback_image_url" :alt="ingredient.name" loading="lazy" decoding="async" />
  </template>
  </div>
  <div class="min-w-0 flex-1">

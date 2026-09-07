@@ -26,6 +26,33 @@ use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
+it('uses category fallback icons for missing images while preserving real ingredient images', function (): void {
+    $user = User::factory()->create();
+    $platformIngredient = Ingredient::factory()->create([
+        'display_name' => 'Platform Lipid',
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+    $ownedIngredient = Ingredient::factory()->create([
+        'display_name' => 'Owned Ingredient',
+        'category' => IngredientCategory::Other,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+    $iconPath = 'ingredients/'.$ownedIngredient->public_id.'/icons/owned.webp';
+    $ownedIngredient->update(['icon_image_path' => $iconPath]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee(IngredientCategory::Lipids->fallbackIconUrl(), false)
+        ->assertSee(route('ingredients.media', ['ingredient' => $ownedIngredient, 'path' => $iconPath]), false)
+        ->assertDontSee(IngredientCategory::Other->fallbackIconUrl(), false);
+});
+
 /**
  * @return array{destination_workspace_id: int, destination_workspace_signature: string}
  */

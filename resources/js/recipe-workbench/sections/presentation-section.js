@@ -779,11 +779,13 @@ export function createPresentationSection() {
                     value: profile[key] ?? 0,
                     color: this.fattyAcidGroupColorFor(key),
                 }))
-                .filter((row) => this.number(row.value) > 0);
+                .filter((row) => this.number(row.value) >= 0.5);
         },
 
         get hasFattyAcidProfileData() {
-            return this.fattyAcidProfileRows.length > 0;
+            const profile = this.backendCalculation?.properties?.fatty_acid_profile ?? this.averageFattyAcidProfile();
+
+            return Object.values(profile).some((value) => this.number(value) > 0);
         },
 
         get hasQualityMetricsData() {

@@ -36744,6 +36744,18 @@
     },
     {
       "group": "workbench",
+      "key": "validation.lye_liquid_max_rows",
+      "text": {
+        "de": "Hier können Sie bis zu :max Verdünnungsflüssigkeiten hinzufügen; reines Wasser wird automatisch hinzugefügt und zählt nicht zu diesem Limit.",
+        "es": "Puedes añadir hasta :max líquidos de dilución; el agua pura se añade automáticamente y no cuenta para este límite.",
+        "fr": "Vous pouvez ajouter jusqu’à :max liquides de dilution ; l’eau pure est ajoutée automatiquement et ne compte pas dans cette limite.",
+        "it": "Puoi aggiungere fino a :max liquidi di diluizione; l’acqua pura viene aggiunta automaticamente e non conta ai fini di questo limite.",
+        "nl": "Je kunt maximaal :max verdunningsvloeistoffen toevoegen; zuiver water wordt automatisch toegevoegd en telt niet mee voor deze limiet.",
+        "pt_BR": "Você pode adicionar até :max líquidos de diluição; a água pura é adicionada automaticamente e não conta para este limite."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "validation.lye_liquid_negative_cured",
       "text": {
         "de": "Das Gewicht der gereiften Seife darf nicht negativ sein.",

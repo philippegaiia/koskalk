@@ -60,6 +60,8 @@ it('keeps alternative lye liquids behind an opt-in progressive disclosure contro
         ->toContain('sm:hidden')
         ->toContain('isLyeLiquidCompositionOpen')
         ->toContain('lyeLiquidRows')
+        ->toContain('lyeLiquidAdditionLimitReached')
+        ->toContain("t('validation.lye_liquid_max_rows'")
         ->toContain("__('workbench.settings.lye_liquid_percentage')")
         ->toContain('relative h-6 w-11 shrink-0 overflow-hidden rounded-full')
         ->toContain('absolute left-0 top-0.5 size-5')

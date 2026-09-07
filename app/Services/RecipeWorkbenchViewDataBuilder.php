@@ -74,6 +74,7 @@ class RecipeWorkbenchViewDataBuilder
             'formulaItemLimit' => $user instanceof User
                 ? $this->recipeFormulaItemLimitService->limitFor($user)
                 : null,
+            'lyeLiquidRowLimit' => LyeLiquidIngredientValidator::MAX_ROWS,
             'translations' => $this->translations(),
         ];
     }

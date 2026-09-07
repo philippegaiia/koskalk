@@ -10,6 +10,24 @@ use Illuminate\Validation\ValidationException;
 
 class LyeLiquidIngredientValidator
 {
+    public const MAX_ROWS = 4;
+
+    /**
+     * @param  array<int, mixed>  $rows
+     */
+    public function assertMaximumRows(array $rows): void
+    {
+        if (count($rows) <= self::MAX_ROWS) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'phase_items.lye_water' => __('workbench.validation.lye_liquid_max_rows', [
+                'max' => self::MAX_ROWS,
+            ]),
+        ]);
+    }
+
     /**
      * @param  array<int, mixed>  $rows
      * @return array<int, array<string, mixed>>
@@ -64,6 +82,8 @@ class LyeLiquidIngredientValidator
      */
     public function normalizeRows(array $rows): array
     {
+        $this->assertMaximumRows($rows);
+
         $normalizedRows = collect($rows)
             ->filter(fn (mixed $row): bool => is_array($row))
             ->map(function (array $row): ?array {

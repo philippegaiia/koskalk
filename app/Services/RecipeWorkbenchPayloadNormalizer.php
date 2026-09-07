@@ -64,6 +64,11 @@ class RecipeWorkbenchPayloadNormalizer
         bool $requireComplete = true,
         ?Recipe $product = null,
     ): array {
+        $rawLyeLiquidRows = data_get($payload, 'phase_items.lye_water', []);
+        $this->lyeLiquidIngredientValidator->assertMaximumRows(
+            is_array($rawLyeLiquidRows) ? $rawLyeLiquidRows : [],
+        );
+
         $productType = $productFamily instanceof ProductFamily
             ? $this->productClassificationService->resolveForSave(
                 $productFamily,

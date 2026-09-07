@@ -25,6 +25,10 @@ class RecipeWorkbenchPreviewService
         ?User $user = null,
         bool $validateLyeIngredients = true,
     ): ?array {
+        $rawLyeLiquidRows = data_get($payload, 'phase_items.lye_water', []);
+        $rawLyeLiquidRows = is_array($rawLyeLiquidRows) ? $rawLyeLiquidRows : [];
+        $this->lyeLiquidIngredientValidator->assertMaximumRows($rawLyeLiquidRows);
+
         if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') !== 'saponify_in_formula') {
             return null;
         }
@@ -87,7 +91,6 @@ class RecipeWorkbenchPreviewService
             'water_value' => (float) ($payload['water_value'] ?? 38),
         ]);
 
-        $rawLyeLiquidRows = collect($payload['phase_items']['lye_water'] ?? [])->values()->all();
         $lyeLiquidRows = $validateLyeIngredients
             ? $this->lyeLiquidIngredientValidator->validate($rawLyeLiquidRows, $user)
             : $this->lyeLiquidIngredientValidator->normalizeRows($rawLyeLiquidRows);

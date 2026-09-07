@@ -301,6 +301,9 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
             ? null
             : Math.max(0, Number(payload.formulaItemLimit)),
         formulaItemLimitMessage: '',
+        lyeLiquidRowLimit: payload.lyeLiquidRowLimit === null || payload.lyeLiquidRowLimit === undefined
+            ? 4
+            : Math.max(0, Number(payload.lyeLiquidRowLimit)),
         phaseItems: phaseItemsForBlueprints(phaseOrder),
 
         init() {
@@ -640,6 +643,10 @@ function createCatalogSection() {
                 return;
             }
 
+            if (targetPhase === 'lye_water' && this.lyeLiquidAdditionLimitReached()) {
+                return;
+            }
+
             if (this.formulaItemLimitReached()) {
                 this.formulaItemLimitMessage = this.t('formula_items.limit_reached', {
                     limit: this.formulaItemLimit,
@@ -688,6 +695,10 @@ function createCatalogSection() {
         },
 
         addLyeLiquidIngredient(ingredientId) {
+            if (this.lyeLiquidAdditionLimitReached()) {
+                return;
+            }
+
             const ingredient = this.ingredients.find((candidate) => Number(candidate.id) === Number(ingredientId));
 
             if (!ingredient || ingredient.category === 'soapmaking_alkalis') {
@@ -778,6 +789,15 @@ function createCatalogSection() {
             if (!this.formulaItemLimitReached()) {
                 this.formulaItemLimitMessage = '';
             }
+        },
+
+        lyeLiquidAdditionLimitReached() {
+            const rows = Array.isArray(this.phaseItems?.lye_water)
+                ? this.phaseItems.lye_water
+                : [];
+
+            return this.lyeLiquidRowLimit !== null
+                && rows.length >= this.lyeLiquidRowLimit;
         },
 
         formulaItemCount() {

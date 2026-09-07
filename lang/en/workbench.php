@@ -405,6 +405,7 @@ return [
         'lye_liquid_ingredient' => 'Select an active, accessible ingredient for each dilution-liquid replacement.',
         'lye_liquid_negative_cured' => 'Cured soap weight cannot be negative.',
         'lye_liquid_negative_total' => 'Total dilution liquid weight cannot be negative.',
+        'lye_liquid_max_rows' => 'You can add up to :max dilution liquids here; plain water is added automatically and does not count toward this limit.',
         'lye_liquid_percentage_range' => 'Each dilution-liquid percentage must be between 0 and 100.',
         'lye_liquid_percentage_total' => 'Dilution-liquid substitutions cannot exceed 100 percent.',
     ],

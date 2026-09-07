@@ -95,6 +95,53 @@ it('persists lye liquid substitutions as a share of the calculated dilution liqu
         ->and($ingredientRows['ROSA DAMASCENA FLOWER WATER']['kind'])->toBe('lye_liquid');
 });
 
+it('accepts four dilution liquid additions and persists each row', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $liquids = Ingredient::factory()->count(4)->create(['is_active' => true]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['lye_water'] = $liquids->map(fn (Ingredient $liquid): array => [
+        'ingredient_id' => $liquid->id,
+        'percentage' => 25,
+        'weight' => 0,
+    ])->all();
+
+    $version = app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload);
+    $phase = RecipePhase::withoutGlobalScopes()
+        ->where('recipe_version_id', $version->id)
+        ->where('slug', 'lye_water')
+        ->firstOrFail();
+    $items = RecipeItem::withoutGlobalScopes()
+        ->where('recipe_phase_id', $phase->id)
+        ->get();
+
+    expect($items)->toHaveCount(4);
+});
+
+it('rejects five raw dilution liquid rows before preview or save processing', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['saponified_oils'] = [];
+    $payload['phase_items']['lye_water'] = array_fill(0, 5, [
+        'ingredient_id' => null,
+        'percentage' => 0,
+        'weight' => 0,
+    ]);
+    $message = __('workbench.validation.lye_liquid_max_rows', ['max' => 4]);
+
+    expect(fn () => app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, $user))
+        ->toThrow(ValidationException::class, $message)
+        ->and(function () use ($payload, $user, $message): void {
+            $payload['manufacturing_mode'] = 'blend_only';
+
+            expect(fn () => app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, $user))
+                ->toThrow(ValidationException::class, $message);
+        })
+        ->and(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
+        ->toThrow(ValidationException::class, $message);
+});
+
 it('rejects lye liquid substitutions above one hundred percent', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
@@ -4486,7 +4533,9 @@ it('keeps fatty acid chemistry compact with grouped profile first and collapsed 
         ->toContain(':aria-expanded="isFattyAcidDetailsOpen.toString()"', false)
         ->toContain(":class=\"isFattyAcidDetailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"", false)
         ->toContain('x-text="`${fattyAcidProfileRows.length} acids`"')
-        ->toContain('grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem]')
+        ->toContain('grid gap-1.5 border-t border-[var(--color-line)] px-2 py-3')
+        ->toContain('grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_3rem]')
+        ->toContain('items-center gap-2 rounded-md bg-white/70 px-2 py-2 text-xs')
         ->toContain('group/fatty-row relative')
         ->toContain('lg:group-hover/fatty-row:opacity-100')
         ->toContain('aria-hidden="true"', false)
@@ -4724,6 +4773,83 @@ workbench.addLyeLiquidIngredient(7);
 assert.equal(workbench.phaseItems.lye_water.length, 1);
 assert.equal(workbench.phaseItems.additives.length, 0);
 assert.equal(scrollCount, 0);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('prevents a fifth dilution liquid through the shared browser add path', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.document = { getElementById: () => null };
+globalThis.window = {
+  location: { hash: '' },
+  matchMedia: () => ({ matches: true }),
+};
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  lyeLiquidRowLimit: 4,
+  ingredients: [],
+});
+
+workbench.phaseItems.lye_water = [
+  { id: 'one', ingredient_id: 1 },
+  { id: 'two', ingredient_id: 2 },
+  { id: 'three', ingredient_id: 3 },
+  { id: 'four', ingredient_id: 4 },
+];
+
+assert.equal(workbench.lyeLiquidAdditionLimitReached(), true);
+workbench.addIngredient({ id: 5, name: 'Fifth liquid' }, 'lye_water', false);
+assert.equal(workbench.phaseItems.lye_water.length, 4);
+workbench.removeIngredient('lye_water', 'four');
+assert.equal(workbench.lyeLiquidAdditionLimitReached(), false);
+workbench.addIngredient({ id: 5, name: 'Fifth liquid' }, 'lye_water', false);
+assert.equal(workbench.phaseItems.lye_water.length, 4);
+assert.equal(workbench.phaseItems.lye_water.some((row) => row.ingredient_id === 5), true);
 JS;
 
     $process = Process::fromShellCommandline(

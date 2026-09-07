@@ -76,7 +76,7 @@
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
 	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[10px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.accessibility.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
- i
+ <x-action-icon name="info" />
  </button>
  </template>
  <template x-teleport="body">
@@ -92,7 +92,7 @@
  x-ref="ingredientInspectorPanel"
  role="dialog"
  aria-label="{{ __('workbench.accessibility.ingredient_details') }}"
- class="z-[80] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] p-3">
+ class="sk-ingredient-info-popover z-[80] max-h-[calc(100dvh-2rem)] overflow-y-auto border border-[var(--color-line)] bg-[var(--color-field)] p-3">
  <p class="sk-eyebrow">{{ __('workbench.common.ingredient') }}</p>
  <div class="mt-2.5 rounded-xl bg-[var(--color-panel)] px-3 py-2">
  <p class="text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
@@ -127,7 +127,7 @@
  @if ($isCosmeticWorkbench)
  <template x-if="phaseOrder.length <= 1">
  <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
- <span>+</span>
+ <x-action-icon name="plus" />
  </button>
  </template>
  <template x-if="phaseOrder.length > 1">
@@ -150,7 +150,7 @@
  },
  }" class="relative">
  <button type="button" x-ref="trigger" @click.stop="open = !open; if (open) { $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
- <span>+</span>
+ <x-action-icon name="plus" />
  </button>
  <template x-teleport="body">
  <div x-show="open"
@@ -174,7 +174,7 @@
  </template>
  @else
  <button type="button" @click.stop="addIngredient(ingredient)" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
- <span>+</span>
+ <x-action-icon name="plus" />
  </button>
  @endif
  </div>

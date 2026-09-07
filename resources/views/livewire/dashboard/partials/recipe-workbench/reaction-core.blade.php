@@ -14,8 +14,8 @@
 	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.oil') }}</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">% oils</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]">% oils</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
  </div>
 
@@ -29,18 +29,18 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-1 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-		 <div class="flex items-center justify-start bg-white py-2.5 sk-formula-table-handle-cell lg:justify-center lg:px-2">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white py-0 sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('saponified_oils', row.id, $event)"
  @dragend="endRowDrag()"
-	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
+	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
  aria-label="Drag to reorder or move this oil">
- <span class="text-sm leading-none">⋮⋮</span>
+ <x-action-icon name="drag" />
  </button>
  </div>
-		 <div class="flex items-center bg-white py-2.5 sk-formula-table-cell lg:px-4">
+		 <div class="col-span-2 row-start-2 flex items-center bg-white py-2.5 sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
  <div class="flex w-full items-center justify-between gap-3">
  <div class="min-w-0 flex-1">
  <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
@@ -69,8 +69,8 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
- i
+	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
+ <x-action-icon name="info" />
  </button>
  </template>
  <template x-teleport="body">
@@ -83,7 +83,7 @@
 	 @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
- class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+ class="sk-ingredient-info-popover z-[80] border border-[var(--color-line)] bg-white p-3">
  <p class="sk-eyebrow">{{ __('workbench.ingredients.properties') }}</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="detail in ingredientInspectorRows(row)" :key="detail.label">
@@ -112,9 +112,9 @@
  </div>
  </div>
  </div>
- <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">
+ <div class="col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents">
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
-	 <span class="sk-eyebrow lg:hidden">% oils</span>
+	 <span class="sk-eyebrow text-center lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="'Percentage of oils for ' + row.name" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
@@ -123,7 +123,7 @@
  </template>
  </div>
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
-	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
+	 <span class="sk-eyebrow text-center lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="syncFormattedInput($el, rowWeight(row), oilWeightDecimals(rowWeight(row)))" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), oilWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
@@ -132,8 +132,8 @@
  </template>
  </div>
  </div>
-		 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
-	 <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil">×</button>
+		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white py-0 sk-formula-table-cell lg:col-start-5 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
+	 <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil"><x-action-icon name="close" /></button>
  </div>
  </div>
  </template>

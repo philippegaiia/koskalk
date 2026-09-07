@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Blade;
 use Symfony\Component\Process\Process;
 
 it('uses the shared search combobox for large user-facing catalogs', function () {
@@ -27,6 +28,25 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
         ->not->toContain('<x-search-combobox')
         ->and($settings)
         ->toContain('id="workspace-currency-search"');
+});
+
+it('keeps shared search combobox actions on accessible SVG icons', function (): void {
+    $component = file_get_contents(resource_path('views/components/search-combobox.blade.php'));
+    $rendered = Blade::render('<x-search-combobox id="icon-contract-search" label="Search" :options="[]" />');
+
+    expect($component)
+        ->toContain('<x-action-icon name="close" />')
+        ->toContain('<x-action-icon name="chevron-down" />')
+        ->toContain('@click="clear(); $nextTick(() => document.getElementById(@js($id))?.focus())"')
+        ->toContain('@click="open = ! open; activeIndex = -1"')
+        ->not->toContain('>×</span>')
+        ->not->toContain('>⌄</span>');
+
+    expect($rendered)
+        ->toContain('aria-label="Clear search"')
+        ->toContain('aria-label="Toggle search options"')
+        ->toContain('stroke="currentColor"')
+        ->toContain('focusable="false"');
 });
 
 it('gives the product category combobox room without clipping or a nested focus line', function () {

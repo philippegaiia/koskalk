@@ -81,7 +81,8 @@ it('uses the workspace mass system to choose the initial formula unit', function
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
 
     expect($payload['preferredMassUnit'])->toBe('lb')
-        ->and($payload['formulaItemLimit'])->toBe(30);
+        ->and($payload['formulaItemLimit'])->toBe(30)
+        ->and($payload['lyeLiquidRowLimit'])->toBe(4);
 });
 
 it('includes active allergen and substance rule counts for each regime', function () {

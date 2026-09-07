@@ -53,10 +53,10 @@
             @disabled($disabled)
         />
         <button x-cloak x-show="query !== ''" type="button" @click="clear(); $nextTick(() => document.getElementById(@js($id))?.focus())" class="sk-combobox-button grid size-10 shrink-0 place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)]" aria-label="Clear {{ \Illuminate\Support\Str::lower($label) }}" @disabled($disabled)>
-            <span aria-hidden="true" class="text-lg leading-none">×</span>
+            <x-action-icon name="close" />
         </button>
         <button type="button" @click="open = ! open; activeIndex = -1" class="sk-combobox-button grid size-10 shrink-0 place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)]" aria-label="Toggle {{ \Illuminate\Support\Str::lower($label) }} options" @disabled($disabled)>
-            <span aria-hidden="true" class="text-xs">⌄</span>
+            <x-action-icon name="chevron-down" />
         </button>
     </div>
 

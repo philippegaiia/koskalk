@@ -325,6 +325,21 @@ it('rounds water mode controls like the other formula setup surfaces', function 
         ->toBe(3);
 });
 
+it('aligns dilution liquid headings with their responsive rows', function (): void {
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+
+    expect($formulaSettings)
+        ->toContain('hidden grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] gap-3 bg-[var(--color-field-muted)] text-xs font-medium text-[var(--color-ink-soft)] sm:grid sm:items-center sm:px-3')
+        ->toContain('<div class="bg-[var(--color-field-muted)] py-2">{{ __(\'workbench.common.ingredient\') }}</div>')
+        ->toContain('<div class="bg-[var(--color-field-muted)] px-3 py-2">{{ __(\'workbench.settings.lye_liquid_percentage\') }}</div>')
+        ->toContain('<div class="bg-[var(--color-field-muted)] py-2" x-text="t(\'settings.lye_liquid_fresh_weight\', { unit: oilUnit })"></div>')
+        ->not->toContain('grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] gap-px')
+        ->and($formulaSettings)
+        ->toContain('class="grid gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] sm:items-center"')
+        ->toContain('lyeLiquidAdditionLimitReached()')
+        ->toContain('sm:hidden');
+});
+
 it('uses one focus boundary on the superfat input', function () {
     $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
@@ -391,17 +406,35 @@ it('adapts recipe workbench tables for narrow screens before desktop grids', fun
 it('keeps soap percentage and weight controls side by side below desktop', function () {
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
-    $mobileMeasurementGroup = 'col-span-full grid grid-cols-2 gap-3 lg:contents';
+    $mobileMeasurementGroup = 'grid grid-cols-2 gap-3 lg:contents';
+    $mobileHandlePlacement = 'col-start-1 row-start-1';
+    $mobileIdentityPlacement = 'col-span-2 row-start-2';
+    $mobileRemovalPlacement = 'col-start-2 row-start-1';
+    $mobileLabel = 'sk-eyebrow text-center lg:hidden';
 
     expect(substr_count($reactionCore, $mobileMeasurementGroup))->toBe(2)
         ->and(substr_count($postReaction, $mobileMeasurementGroup))->toBe(2)
         ->and($reactionCore)
         ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain($mobileHandlePlacement)
+        ->toContain($mobileIdentityPlacement)
+        ->toContain($mobileRemovalPlacement)
+        ->toContain($mobileLabel)
+        ->toContain('lg:col-start-1')
+        ->toContain('lg:col-start-2')
+        ->toContain('lg:col-start-5')
         ->toContain('decimalAlignmentStyle(row.percentage)')
         ->toContain('decimalAlignmentStyle(rowWeight(row))')
         ->toContain('@dragstart="beginRowDrag(\'saponified_oils\', row.id, $event)"')
         ->toContain('removeIngredient(\'saponified_oils\', row.id)')
         ->and($postReaction)
+        ->toContain($mobileHandlePlacement)
+        ->toContain($mobileIdentityPlacement)
+        ->toContain($mobileRemovalPlacement)
+        ->toContain($mobileLabel)
+        ->toContain('lg:col-start-1')
+        ->toContain('lg:col-start-2')
+        ->toContain('lg:col-start-5')
         ->toContain('decimalAlignmentStyle(row.percentage)')
         ->toContain('decimalAlignmentStyle(rowWeight(row))')
         ->toContain('@dragstart="beginRowDrag(\'additives\', row.id, $event)"')
@@ -410,13 +443,14 @@ it('keeps soap percentage and weight controls side by side below desktop', funct
         ->toContain('removeIngredient(\'fragrance\', row.id)');
 });
 
-it('keeps formula table lines compact with ten pixel vertical padding', function () {
+it('keeps formula table lines compact with responsive vertical padding', function () {
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
     $tablePartials = [
         view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render(),
         view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render(),
         view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render(),
     ];
+    $soapTableMarkup = implode("\n", array_slice($tablePartials, 0, 2));
 
     $combinedFormulaTableMarkup = implode("\n", $tablePartials);
 
@@ -434,13 +468,19 @@ it('keeps formula table lines compact with ten pixel vertical padding', function
         ->toContain('sk-formula-table-handle-cell')
         ->toContain('px-2.5 py-2.5 text-sm sk-formula-table-row')
         ->toContain('bg-white py-2.5 sk-formula-table-cell')
-        ->toContain('bg-white py-2.5 sk-formula-table-handle-cell')
+        ->toContain('bg-white py-0 sk-formula-table-handle-cell')
+        ->toContain('lg:py-2.5')
         ->not->toContain('This block is derived from the saponified oils, lye type, water mode, and superfat.')
         ->not->toContain('py-3.5')
         ->not->toContain('lg:py-3.5')
-        ->not->toContain('lg:py-2.5')
         ->not->toContain('p-2.5 text-sm transition')
         ->not->toContain('px-4 py-4 text-center');
+
+    expect($soapTableMarkup)
+        ->toContain('sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none')
+        ->toContain('transition-colors duration-150 motion-reduce:transition-none')
+        ->toContain('x-effect="animateAddedIngredientRow($el, row.id)"')
+        ->not->toContain('sk-formula-table-row transition motion-safe:will-change-transform');
 });
 
 it('centers costing table row contents beside price inputs', function () {
@@ -717,17 +757,75 @@ it('keeps the narrow ingredient disclosure discoverable while sharing one catalo
     expect($formulaTabSource)
         ->toContain('data-ingredient-browser-disclosure')
         ->toContain(':aria-expanded="ingredientBrowserOpen.toString()"')
-        ->toContain('x-text="ingredientBrowserOpen ? \'−\' : \'+\'"')
+        ->toContain('<x-action-icon name="plus" x-cloak x-show="! ingredientBrowserOpen" />')
+        ->toContain('<x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />')
         ->toContain('id="formula-ingredient-browser"')
         ->toContain('x-ref="ingredientBrowserRail"')
         ->toContain(":class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
-        ->not->toContain('x-show="ingredientBrowserOpen"')
+        ->not->toContain('id="formula-ingredient-browser" x-show="ingredientBrowserOpen"')
         ->not->toContain('<details');
 
     expect($componentSource)->toContain('ingredientBrowserOpen: false');
 
     expect(substr_count($formulaTabSource, "@include('livewire.dashboard.partials.recipe-workbench.ingredient-browser')"))
         ->toBe(1);
+});
+
+it('uses accessible currentColor SVG action icons across the soap workbench controls', function (): void {
+    $iconSource = file_get_contents(resource_path('views/components/action-icon.blade.php'));
+    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
+    $ingredientBrowser = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $reactionCore = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/reaction-core.blade.php'));
+    $postReaction = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/post-reaction.blade.php'));
+
+    expect($iconSource)
+        ->toContain('stroke="currentColor"')
+        ->toContain('aria-hidden="true"')
+        ->toContain('focusable="false"')
+        ->toContain("'drag'")
+        ->toContain("'info'")
+        ->toContain("'close'")
+        ->toContain("'plus'")
+        ->toContain("'minus'")
+        ->toContain("'chevron-down'");
+
+    foreach (['drag', 'info', 'close', 'plus', 'minus', 'chevron-down'] as $name) {
+        $renderedIcon = Blade::render('<x-action-icon name="'.$name.'" />');
+
+        expect($renderedIcon)
+            ->toContain('<svg')
+            ->toContain('stroke="currentColor"')
+            ->toContain('aria-hidden="true"')
+            ->toContain('focusable="false"');
+    }
+
+    expect($formulaTabSource)
+        ->toContain('<x-action-icon name="plus" x-cloak x-show="! ingredientBrowserOpen" />')
+        ->toContain('<x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />')
+        ->not->toContain("x-text=\"ingredientBrowserOpen ? '−' : '+'\"");
+
+    expect($ingredientBrowser)
+        ->toContain('<x-action-icon name="info" />')
+        ->toContain('<x-action-icon name="plus" />')
+        ->not->toContain('<span>+</span>');
+
+    expect($formulaSettings)
+        ->toContain('<x-action-icon name="close" />')
+        ->not->toContain('>×</button>');
+
+    expect($reactionCore)
+        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="info" />')
+        ->toContain('<x-action-icon name="close" />')
+        ->not->toContain('⋮⋮')
+        ->not->toContain('>×</button>');
+
+    expect($postReaction)
+        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="close" />')
+        ->not->toContain('⋮⋮')
+        ->not->toContain('>×</button>');
 });
 
 it('allocates ingredient rail width and gutter from the real workbench width', function () {
@@ -763,6 +861,19 @@ it('keeps compact ingredient names readable and moves inci into the inspector', 
         ->toContain('text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name ||')
         ->and(substr_count($ingredientBrowser, "ingredient.inci_name || 'INCI not entered yet'"))
         ->toBe(1);
+});
+
+it('shares the raised treatment across ingredient info popovers', function (): void {
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect(substr_count($ingredientBrowser, 'sk-ingredient-info-popover'))->toBe(1)
+        ->and(substr_count($reactionCore, 'sk-ingredient-info-popover'))->toBe(1)
+        ->and($appStylesSource)
+        ->toContain('.sk-ingredient-info-popover')
+        ->toContain('border-radius: 1.25rem')
+        ->toContain('box-shadow: var(--shadow-card);');
 });
 
 it('keeps ingredient browser filters visible and pill shaped while focused', function () {

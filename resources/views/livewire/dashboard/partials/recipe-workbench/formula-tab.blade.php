@@ -11,7 +11,10 @@
  <div class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start">
  <button type="button" data-ingredient-browser-disclosure @click="ingredientBrowserOpen = ! ingredientBrowserOpen" :aria-expanded="ingredientBrowserOpen.toString()" aria-controls="formula-ingredient-browser" class="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-left text-sm font-semibold text-[var(--color-ink-strong)] @5xl/workbench:hidden">
  <span>{{ __('workbench.ingredients.title') }}</span>
- <span aria-hidden="true" class="text-lg leading-none text-[var(--color-ink-soft)]" x-text="ingredientBrowserOpen ? '−' : '+'"></span>
+ <span class="text-[var(--color-ink-soft)]">
+ <x-action-icon name="plus" x-cloak x-show="! ingredientBrowserOpen" />
+ <x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />
+ </span>
  </button>
  <div id="formula-ingredient-browser" x-ref="ingredientBrowserRail" x-cloak :class="ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'">
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-browser')

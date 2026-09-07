@@ -253,18 +253,21 @@
 	 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isLyeLiquidCompositionOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 	 <div class="overflow-hidden">
 	 <div class="mt-4 space-y-4 border-t border-[var(--color-line)] pt-4">
-	 <x-search-combobox
-	 id="lye-liquid-ingredient-search"
-	 :label="__('workbench.settings.lye_liquid_add')"
-	 :options="$lyeLiquidSearchOptions"
+		 <div x-cloak x-show="! lyeLiquidAdditionLimitReached()">
+		 <x-search-combobox
+		 id="lye-liquid-ingredient-search"
+		 :label="__('workbench.settings.lye_liquid_add')"
+		 :options="$lyeLiquidSearchOptions"
 	 :placeholder="__('workbench.settings.lye_liquid_search')"
-	 x-on:search-combobox-selected="addLyeLiquidIngredient($event.detail.id)"
-	 />
+		 x-on:search-combobox-selected="addLyeLiquidIngredient($event.detail.id)"
+		 />
+		 </div>
+		 <p x-cloak x-show="lyeLiquidAdditionLimitReached()" aria-live="polite" class="rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="t('validation.lye_liquid_max_rows', { max: lyeLiquidRowLimit })"></p>
 	 <div class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-white">
-	 <div class="hidden grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] gap-px bg-[var(--color-line)] text-xs font-medium text-[var(--color-ink-soft)] sm:grid">
-	 <div class="bg-[var(--color-field-muted)] px-3 py-2">{{ __('workbench.common.ingredient') }}</div>
+	 <div class="hidden grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] gap-3 bg-[var(--color-field-muted)] text-xs font-medium text-[var(--color-ink-soft)] sm:grid sm:items-center sm:px-3">
+	 <div class="bg-[var(--color-field-muted)] py-2">{{ __('workbench.common.ingredient') }}</div>
 	 <div class="bg-[var(--color-field-muted)] px-3 py-2">{{ __('workbench.settings.lye_liquid_percentage') }}</div>
-	 <div class="bg-[var(--color-field-muted)] px-3 py-2" x-text="t('settings.lye_liquid_fresh_weight', { unit: oilUnit })"></div>
+	 <div class="bg-[var(--color-field-muted)] py-2" x-text="t('settings.lye_liquid_fresh_weight', { unit: oilUnit })"></div>
 	 <div class="bg-[var(--color-field-muted)]"></div>
 	 </div>
 	 <div class="divide-y divide-[var(--color-line)]">
@@ -278,7 +281,7 @@
 	 <span aria-hidden="true" class="numeric" x-text="format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row)))"></span>
 	 <span aria-hidden="true" class="sm:hidden" x-text="oilUnit"></span>
 	 </span>
-	 <button type="button" @click="removeIngredient('lye_water', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('settings.lye_liquid_remove', { ingredient: row.name })">×</button>
+	 <button type="button" @click="removeIngredient('lye_water', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('settings.lye_liquid_remove', { ingredient: row.name })"><x-action-icon name="close" /></button>
 	 </div>
 	 </template>
 	 </div>

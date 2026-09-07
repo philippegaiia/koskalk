@@ -67,6 +67,11 @@
         box-shadow: var(--shadow-card);
     }
 
+    .sk-ingredient-info-popover {
+        border-radius: 1.25rem;
+        box-shadow: var(--shadow-card);
+    }
+
     .sk-rich-content {
         color: var(--color-ink-strong);
         font-size: 0.875rem;

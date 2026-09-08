@@ -44,6 +44,18 @@ it('keeps the public home page available as a WordPress reference', function () 
         ->assertDontSeeText('Track costing and batch details');
 });
 
+it('bounds the public shell with the shared content width token', function () {
+    // The nav, footer, and homepage sections used to carry max-w-[1180px]
+    // by hand — 4px off the token and invisible to any future change to it.
+    $homepage = view('welcome')->render();
+
+    expect($homepage)
+        ->toContain('data-public-nav-inner')
+        ->toContain('data-public-footer-inner')
+        ->toContain('max-w-app')
+        ->not->toContain('max-w-[1180px]');
+});
+
 it('redirects guests from the application root to login', function () {
     $this->get(route('home'))
         ->assertRedirect(route('login'));

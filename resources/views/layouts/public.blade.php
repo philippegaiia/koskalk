@@ -18,7 +18,7 @@
 
         {{-- NAV --}}
         <nav class="sk-shell-line-b fixed top-0 left-0 right-0 z-50 h-[58px] bg-cream/92 backdrop-blur-[10px]">
-            <div data-public-nav-inner class="mx-auto flex h-full w-full max-w-[1180px] items-center justify-between gap-3 px-4 min-[390px]:px-5 lg:gap-6 lg:px-10">
+            <div data-public-nav-inner class="mx-auto flex h-full w-full max-w-app items-center justify-between gap-3 px-4 min-[390px]:px-5 lg:gap-6 lg:px-10">
                 <a href="{{ route('home') }}" class="flex min-h-11 shrink-0 items-center gap-2.5 no-underline">
                     <div class="flex h-[30px] w-[30px] items-center justify-center rounded-[7px] bg-accent-soft text-[0.6875rem] font-semibold text-accent-strong">SK</div>
                     <span class="font-display text-xl tracking-tight text-ink-strong">Soapkraft</span>
@@ -67,7 +67,7 @@
 
         {{-- FOOTER --}}
         <footer class="sk-shell-line-t bg-panel py-8">
-            <div data-public-footer-inner class="mx-auto flex w-full max-w-[1180px] flex-col items-center justify-between gap-4 px-5 text-center lg:flex-row lg:px-10 lg:text-left">
+            <div data-public-footer-inner class="mx-auto flex w-full max-w-app flex-col items-center justify-between gap-4 px-5 text-center lg:flex-row lg:px-10 lg:text-left">
                 <p class="max-w-[28rem] text-sm text-ink-soft">{{ __('public.footer.description') }}</p>
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 min-[390px]:gap-x-7">
                     <a href="{{ route('home') }}#workspace" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.product') }}</a>

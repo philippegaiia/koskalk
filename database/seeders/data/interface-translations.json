@@ -19128,18 +19128,6 @@
     },
     {
       "group": "production_bench",
-      "key": "inventory.filter_negative_forecast",
-      "text": {
-        "de": "Negative Prognose",
-        "es": "Previsión negativa",
-        "fr": "Prévision négative",
-        "it": "Previsione negativa",
-        "nl": "Negatieve prognose",
-        "pt_BR": "Previsão negativa"
-      }
-    },
-    {
-      "group": "production_bench",
       "key": "inventory.filter_no_options",
       "text": {
         "de": "Keine passenden Optionen",

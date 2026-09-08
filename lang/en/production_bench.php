@@ -914,7 +914,6 @@ return [
         'filter_all' => 'All',
         'filter_ingredients' => 'Ingredients',
         'filter_packaging' => 'Packaging',
-        'filter_negative_forecast' => 'Negative forecast',
         'filter_below_buffer' => 'Below buffer',
         'filter_quarantined' => 'Quarantined stock',
         'filter_incoming' => 'Incoming stock',

@@ -928,7 +928,9 @@ it('keeps danger precedence when a row is both a shortage and below buffer', fun
         // Danger wins the row; the buffer is still reported in text.
         ->assertDontSeeHtml('bg-[var(--color-warning-soft)]/40')
         ->assertSee('Below buffer')
-        ->assertSee('Negative forecast');
+        // The filter and the tile now share one word for this state, instead of
+        // the tile saying "Shortage" and the filter "Negative forecast".
+        ->assertSee(__('production_bench.production.shortage'));
 });
 
 it('narrows the material view to materials with and without planned demand', function (): void {
@@ -1132,10 +1134,12 @@ it('renders the Inventory UX headings in French for a French interface locale', 
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertSee('Stock par matière')
         ->assertSee('Trier')
-        ->assertSee('Prévision négative')
+        // The shortage filter shares the tile's wording now, so this is the
+        // French for "Shortage" rather than a separate "Negative forecast".
+        ->assertSee('Manquant')
         ->assertSee('Rechercher les noms, termes INCI')
         ->assertDontSeeHtml('>Stock by material<')
-        ->assertDontSeeHtml('>Negative forecast<');
+        ->assertDontSeeHtml('>Shortage<');
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertSee('Registre des lots')

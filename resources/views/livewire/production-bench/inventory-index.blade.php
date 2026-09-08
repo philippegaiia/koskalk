@@ -121,7 +121,9 @@
                              generic div has no role to carry a name. --}}
                         <div role="group" aria-label="{{ __('production_bench.inventory.filters') }}" class="mt-3 flex flex-wrap gap-2">
                             @if ($materialType !== 'all')<button type="button" wire:click="$set('materialType', 'all')" class="sk-badge sk-badge-neutral">{{ $materialType === 'ingredient' ? __('production_bench.inventory.filter_ingredients') : __('production_bench.inventory.filter_packaging') }} ×</button>@endif
-                            @if ($stockState !== 'all')<button type="button" wire:click="$set('stockState', 'all')" class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.filter_'.($stockState === 'negative_forecast' ? 'negative_forecast' : $stockState)) }} ×</button>@endif
+                            {{-- `negative_forecast` is the state's internal name; the word shown
+                                 is the tile's, not a second "Negative forecast" of its own. --}}
+                            @if ($stockState !== 'all')<button type="button" wire:click="$set('stockState', 'all')" class="sk-badge sk-badge-neutral">{{ $stockState === 'negative_forecast' ? __('production_bench.production.shortage') : __('production_bench.inventory.filter_'.$stockState) }} ×</button>@endif
                             @if ($demandFilter !== 'all')<button type="button" wire:click="$set('demandFilter', 'all')" class="sk-badge sk-badge-neutral">{{ $demandFilter === 'planned' ? __('production_bench.inventory.filter_with_demand') : __('production_bench.inventory.filter_without_demand') }} ×</button>@endif
                             @if ($categoryFilter !== '')<button type="button" wire:click="$set('categoryFilter', '')" class="sk-badge sk-badge-neutral">{{ $categoryOptions[$categoryFilter] ?? $categoryFilter }} ×</button>@endif
                             @if ($subcategoryFilter !== '')<button type="button" wire:click="$set('subcategoryFilter', '')" class="sk-badge sk-badge-neutral">{{ $subcategoryOptions[$subcategoryFilter] ?? $subcategoryFilter }} ×</button>@endif

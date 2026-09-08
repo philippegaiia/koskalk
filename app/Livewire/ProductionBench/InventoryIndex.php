@@ -259,7 +259,10 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->label(__('production_bench.inventory.filter_stock_state'))
                             ->options([
                                 'all' => __('production_bench.inventory.filter_all'),
-                                'negative_forecast' => __('production_bench.inventory.filter_negative_forecast'),
+                                // Same word as the summary tile above, which counts this
+                                // state: the filter used to call it "Negative forecast"
+                                // while the tile called it "Shortage".
+                                'negative_forecast' => __('production_bench.production.shortage'),
                                 'below_buffer' => __('production_bench.inventory.filter_below_buffer'),
                                 'quarantined' => __('production_bench.inventory.filter_quarantined'),
                                 'incoming' => __('production_bench.inventory.filter_incoming'),

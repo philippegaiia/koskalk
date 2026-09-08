@@ -103,9 +103,33 @@ Full 40-site audit + consolidation plan (PROVISIONAL, owner said do not implemen
 
 ## Sticky table headers
 
-`overflow-x: auto` also computes `overflow-y: auto`, but with no height the wrapper never scrolls —
-`sticky top-0` on a `<thead>` then silently does nothing. Bound it (`max-h-[70dvh] overflow-auto`);
-precedent at `production-bench/production/batch-size-form.blade.php:56`. Prefer `dvh` over `vh`.
+**Two different designs; pick deliberately.** `sticky top-0` resolves against the *nearest scroll
+container*, which is the whole ballgame.
+
+- **Bounded panel** (header sticks inside a box): `max-h-[70dvh] overflow-auto`. Precedent
+  `production-bench/production/batch-size-form.blade.php:56`. Prefer `dvh` over `vh`. Costs you the
+  per-page selector — a capped box fixes the list at ~one screen whatever it says.
+- **Page scrolls** (header sticks to the viewport): needed whenever a "rows per page" selector is
+  supposed to decide the list length. Then the table must have **no scroll-container ancestor at
+  all**. Any wrapper scrolling in X is a scroll container in *both* axes, and a wrapper that is
+  exactly content-height never scrolls — the header pins to nothing, silently.
+
+**The escape hatch for wide tables that need horizontal scroll:** container query on the card —
+`@container overflow-clip sk-card` plus a wrapper `overflow-x-auto @min-[70rem]:overflow-x-visible`.
+Set the threshold equal to the table's `min-w-*` floor, so the moment the table fits, overflow goes
+`visible` and the header sticks to the viewport; below it you keep horizontal scroll and lose the
+sticky header. Verified compiled output: `.@container { container-type: inline-size }`,
+`.@min-\[70rem\]\:overflow-x-visible { @container (width >= 70rem) { overflow-x: visible } }`.
+
+**`overflow-clip`, not `overflow-hidden`, on the card.** `hidden` creates a scrollport and kills
+sticky; `clip` still clips to the rounded corners and does not. `container-type: inline-size`
+(layout containment) also does **not** break sticky — measured in headless Chrome: wide card
+`theadTop=0` after scrolling 700px, narrow card (overflow auto) `theadTop=-300`, i.e. falls back
+exactly as designed.
+
+To verify the semantics without the app: build a static HTML probe, scroll with an inline script,
+and read it back through `google-chrome --headless=new --dump-dom` (write results into the DOM, then
+grep them out of the dump). Fast and decisive for "does it stick" questions.
 
 Layers: thead `z-20` > corner `<th>` `z-30` > sticky body `<td>` `z-10`. Filament dropdown panels are
 `position: absolute; z-index: 20` and **not teleported** (`teleport => false`), so they lose to a

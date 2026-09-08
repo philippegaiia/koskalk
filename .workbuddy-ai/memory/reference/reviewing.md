@@ -16,6 +16,12 @@ audit, spec review, or findings write-up.
   flag divergence, don't file as a defect.
 - **An interface assertion is not a usage assertion.** `implements HasForms` says nothing about
   whether the Blade renders `{{ $this->filtersForm }}`. Read the view for view findings.
+- **An attribute assertion is not a target assertion.** Asserting `aria-describedby="x"` sits on
+  the `<input>` proves nothing about whether `id="x"` exists in the same rendered markup — a
+  dangling reference leaves the input with an empty description while the test reads green.
+  Assert both. Then check the new assertion can actually fail: when the two help paragraphs live
+  in mutually exclusive branches (`@if ($mode === 'materials')` / else) it discriminates; if both
+  rendered in both modes it would pass trivially.
 - **Check the pre-branch version before calling something absent** — `git show <base>:<path>`
   separates "never had it" (gap) from "branch removed it" (regression, much worse).
 - **Check whether the guarded thing feeds the guard's own predicate** — self-referential

@@ -29,6 +29,8 @@ matching file before working in that area — they are not injected.
 - **`git show <base>:<path>`** before calling something absent: gap vs regression.
 - **Name the condition the code evaluates, never a role label** — grep for *assignment* sites.
 - **Never trust a single headless-Chrome measurement** — flakes by ~15px; take ≥3 samples, keep median.
+  **Chrome clamps `--window-size` to a 500px minimum** — 320/375/414 all report `innerWidth=500`. To
+  test phone widths, force a width on a wrapper element, don't shrink the window.
 
 ## Environment (verify before trusting)
 

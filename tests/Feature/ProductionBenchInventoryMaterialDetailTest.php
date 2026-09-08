@@ -769,6 +769,63 @@ it('links only the movement sources that belong to the workspace', function (): 
         ->assertSee(__('production_bench.inventory.source_not_available'));
 });
 
+it('keeps the material detail table headers in view', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Sticky header oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+        'occurred_at' => now()->subDays(5),
+    ]);
+
+    $this->actingAs($user);
+
+    // The same arrangement as the two inventory tabs: each table is a sideways
+    // scroll container only while the card is narrower than the table's floor,
+    // and stops being one past that so `sticky top-0` resolves against the
+    // viewport instead of the card, where it would quietly do nothing. The
+    // three floors are the widths the tables already carried.
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertDontSeeHtml('max-h-[')
+        ->assertSeeHtml('overflow-x-auto @min-[57rem]:overflow-x-visible')
+        ->assertSeeHtml('min-w-[900px]')
+        ->assertSeeHtml('overflow-x-auto @min-[54rem]:overflow-x-visible')
+        ->assertSeeHtml('min-w-[860px]')
+        ->assertSeeHtml('overflow-x-auto @min-[48rem]:overflow-x-visible')
+        ->assertSeeHtml('min-w-[760px]')
+        ->assertSeeHtml('sticky top-0 z-20');
+});
+
+it('lifts the period filter controls above the sticky activity header', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Filter stacking oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+        'occurred_at' => now()->subDays(5),
+    ]);
+
+    $this->actingAs($user);
+
+    // The period controls hold a Filament select, and its dropdown panel is
+    // `position: absolute; z-index: 20` and is not teleported — the same layer
+    // as the sticky `z-20` thead further down the DOM, which wins on document
+    // order. The wrapper has to be its own stacking context above the header
+    // for the panel to open over the table rather than behind it.
+    Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])
+        ->assertSeeHtml('class="relative z-30 border-b border-[var(--color-line)] p-4"');
+});
+
 /** @return array{user: User, workspace: Workspace} */
 function materialDetailWorkspace(MassDisplaySystem $displaySystem = MassDisplaySystem::Metric): array
 {

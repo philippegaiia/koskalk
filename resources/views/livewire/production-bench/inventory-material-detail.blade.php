@@ -52,7 +52,12 @@
             </div>
         </section>
 
-        <section class="sk-card overflow-hidden" aria-labelledby="open-lots-heading">
+        {{-- `overflow-clip`, not the `overflow-hidden` the neighbouring cards use: hidden makes the
+             card a scroll container, and `sticky top-0` then resolves against the card rather than
+             the viewport, so the header would sit still while the page scrolled past it. Clip keeps
+             the rounded corners without creating a scrollport. `@container` lets the wrapper below
+             drop `overflow-x` once the card is wide enough for the table's floor. --}}
+        <section class="@container overflow-clip sk-card" aria-labelledby="open-lots-heading">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 id="open-lots-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.open_lots') }}</h2>
@@ -60,9 +65,12 @@
                 </div>
                 <a href="{{ $lotRegisterUrl }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.view_all_lots') }} →</a>
             </div>
-            <div class="overflow-x-auto">
+            {{-- 57rem = 912px, just over the 900px floor. While the card is narrower the table
+                 scrolls sideways and the header cannot stick — the same trade the two index
+                 tables make. Past the threshold there is no sideways scroll left to lose. --}}
+            <div class="overflow-x-auto @min-[57rem]:overflow-x-visible">
                 <table class="w-full min-w-[900px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                    <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
@@ -99,14 +107,15 @@
             </div>
         </section>
 
-        <section class="sk-card overflow-hidden" aria-labelledby="supplier-listings-heading">
+        <section class="@container overflow-clip sk-card" aria-labelledby="supplier-listings-heading">
             <div class="border-b border-[var(--color-line)] px-5 py-4">
                 <h2 id="supplier-listings-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.related_supplier_listings') }}</h2>
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.related_supplier_listings_help') }}</p>
             </div>
-            <div class="overflow-x-auto">
+            {{-- 54rem = 864px, just over the 860px floor. --}}
+            <div class="overflow-x-auto @min-[54rem]:overflow-x-visible">
                 <table class="w-full min-w-[860px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                    <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.supplier.singular') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.listing.supplier_item_name') }}</th>
@@ -150,12 +159,16 @@
             />
         </section>
 
-        <section class="sk-card overflow-hidden" aria-labelledby="activity-heading">
+        <section class="@container overflow-clip sk-card" aria-labelledby="activity-heading">
             <div class="border-b border-[var(--color-line)] px-5 py-4">
                 <h2 id="activity-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.period_activity') }}</h2>
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.period_activity_help') }}</p>
             </div>
-            <div class="border-b border-[var(--color-line)] p-4">
+            {{-- Filament renders its dropdown panel as `position: absolute; z-index: 20` and does not
+                 teleport it, so it competes with the sticky `z-20` thead further down the DOM — and
+                 loses, because that comes later. Its own stacking context above the header lifts
+                 every dropdown inside it, the same fix the index filter panel carries. --}}
+            <div class="relative z-30 border-b border-[var(--color-line)] p-4">
                 {{ $this->activityFiltersForm }}
                 <p class="mt-3 text-xs text-[var(--color-ink-soft)]">{{ $periodLabel }}</p>
             </div>
@@ -172,9 +185,12 @@
                 <p class="numeric mt-2 text-[var(--color-ink-soft)]">{{ $activity['opening_physical'] }} + {{ $activity['received'] }} + {{ $activity['other_inbound'] }} − {{ $activity['production_consumed'] }} − {{ $activity['other_outbound'] }} + {{ $activity['adjustments'] }} = {{ $activity['closing_physical'] }}</p>
                 <p class="mt-2 text-xs {{ $activity['reconciliation_ok'] ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-danger-strong)]' }}">{{ __('production_bench.inventory.reconciliation_delta', ['delta' => $activity['reconciliation_delta']]) }}</p>
             </div>
-            <div class="overflow-x-auto">
+            {{-- 48rem = 768px, just over the 760px floor. This is the table that most needs the
+                 sticky header: it is the only one here long enough to scroll under its own
+                 header at the default page size. --}}
+            <div class="overflow-x-auto @min-[48rem]:overflow-x-visible">
                 <table class="w-full min-w-[760px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                    <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.date') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.inventory.activity_group') }}</th>

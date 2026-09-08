@@ -44,9 +44,15 @@
     --color-ink-soft: oklch(46.5% 0.014 75);
     /* One step lighter than soft: field help text, captions, locked-input labels.
        Never defined until now, and `color` is an inherited property — so all 47
-       uses fell back to the parent's ink and read at full body darkness. This is
-       the one line to darken if the 10px help text proves too faint. */
-    --color-ink-muted: oklch(58.0% 0.012 75);
+       uses fell back to the parent's ink and read at full body darkness.
+
+       Darkened from 58.0% to 52.0% for WCAG 1.4.3. At 58% the caption on a plain
+       panel measured 4.11:1 against the 4.5:1 AA minimum, and it fell further on
+       tinted surfaces: 3.86:1 on --color-panel-muted, 3.65:1 on its own /10 pill
+       tint. 52.0% is the lightest value that clears 4.5:1 on every surface this
+       token is used on, while staying a visible step lighter than
+       --color-ink-soft (46.5%). Lighten it again and the AA failure returns. */
+    --color-ink-muted: oklch(52.0% 0.012 75);
 
     --color-ink-sidebar: oklch(25.7% 0.010 89);
     --color-ink-sidebar-soft: oklch(51.2% 0.015 82);

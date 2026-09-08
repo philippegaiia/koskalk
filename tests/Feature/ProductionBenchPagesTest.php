@@ -872,6 +872,12 @@ it('points the inventory search inputs at their help text', function (): void {
 
         // Exactly once, so the attribute has not been left on the wrapper too.
         expect(substr_count($html, 'aria-describedby="'.$case['helpId'].'"'))->toBe(1);
+
+        // A dangling reference is worse than none: the attribute resolves, the
+        // id does not, and the input is left with an empty description while
+        // this test still reads green. Each help paragraph sits inside its own
+        // tab's block, so it has to be present in *this* mode's markup.
+        expect($html)->toContain('id="'.$case['helpId'].'"');
     }
 });
 

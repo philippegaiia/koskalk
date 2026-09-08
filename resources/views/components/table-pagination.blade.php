@@ -44,7 +44,7 @@
                 type="button"
                 wire:click="previousPage('{{ $pageName }}')"
                 @disabled($paginator->onFirstPage())
-                class="inline-flex h-9 items-center gap-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-2.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+                class="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-2.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="{{ __('table.pagination.previous_page') }}"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -56,16 +56,16 @@
             <div class="hidden items-center gap-1 sm:flex">
                 @foreach ($pages as $page)
                     @if (! $loop->first && $page - $pages[$loop->index - 1] > 1)
-                        <span class="grid size-9 place-items-center text-xs text-[var(--color-ink-soft)]" aria-hidden="true">…</span>
+                        <span class="grid size-8 place-items-center text-xs text-[var(--color-ink-soft)]" aria-hidden="true">…</span>
                     @endif
 
                     @if ($page === $currentPage)
-                        <span class="grid size-9 place-items-center rounded-lg bg-[var(--color-active)] text-xs font-semibold text-[var(--color-on-active)]" aria-current="page" aria-label="{{ __('table.pagination.page', ['page' => $page]) }}">{{ $page }}</span>
+                        <span class="grid size-8 place-items-center rounded-lg bg-[var(--color-active)] text-xs font-semibold text-[var(--color-on-active)]" aria-current="page" aria-label="{{ __('table.pagination.page', ['page' => $page]) }}">{{ $page }}</span>
                     @else
                         <button
                             type="button"
                             wire:click="gotoPage({{ $page }}, '{{ $pageName }}')"
-                            class="grid size-9 place-items-center rounded-lg border border-transparent text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-line)] hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                            class="grid size-8 place-items-center rounded-lg border border-transparent text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-line)] hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                             aria-label="{{ __('table.pagination.go_to_page', ['page' => $page]) }}"
                         >{{ $page }}</button>
                     @endif
@@ -78,7 +78,7 @@
                 type="button"
                 wire:click="nextPage('{{ $pageName }}')"
                 @disabled(! $paginator->hasMorePages())
-                class="inline-flex h-9 items-center gap-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-2.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+                class="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-2.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="{{ __('table.pagination.next_page') }}"
             >
                 <span class="hidden md:inline">{{ __('table.pagination.next') }}</span>

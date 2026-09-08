@@ -34,6 +34,8 @@ use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -787,6 +789,22 @@ it('sizes the rows per page select to its widest option', function (): void {
     // on offer. Auto width lets the control size itself to its longest option.
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertSeeHtml('sk-pagination-select h-8 w-auto min-w-20');
+});
+
+it('keeps the pagination controls on one height', function (): void {
+    // The controls only render past a single page, and building 26 workspace
+    // materials to get there is a lot of fixture for one height — so drive the
+    // component directly with a paginator that has pages to show.
+    $paginator = new Paginator(collect(range(1, 60)), 60, 25, 1);
+
+    // Shrinking the select to h-8 left the page buttons at h-9, so the row
+    // mixed two heights in every table that uses this component. 32px still
+    // clears the 24px floor in WCAG 2.5.8.
+    $html = Blade::render('<x-table-pagination :paginator="$paginator" />', ['paginator' => $paginator]);
+
+    expect($html)->toContain('inline-flex h-8 items-center gap-1 rounded-lg');
+    expect($html)->not->toContain('inline-flex h-9');
+    expect($html)->toContain('grid size-8 place-items-center rounded-lg');
 });
 
 it('names the clickable summary tiles with their visible count', function (): void {

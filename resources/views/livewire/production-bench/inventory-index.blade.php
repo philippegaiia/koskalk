@@ -259,7 +259,7 @@
                              material selected and cleared only that, so filtering by supplier
                              and date left nothing to undo. --}}
                         @if ($lotFiltersActive)
-                            <button type="button" wire:click="clearLotFilters" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.inventory.clear_filters') }}</button>
+                            <button type="button" wire:click="clearLotFilters" class="sk-btn sk-btn-ghost">{{ __('production_bench.inventory.clear_filters') }}</button>
                         @endif
 
                         {{-- Dismissible like the chips on the materials tab: it sits beside a

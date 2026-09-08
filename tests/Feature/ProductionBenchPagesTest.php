@@ -318,6 +318,31 @@ it('links every material identity to its accessible detail page', function (): v
         ->assertSee('Amber bottle');
 });
 
+it('names each inventory region without repeating the page title in sight', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    Ingredient::factory()->create(['display_name' => 'Olive oil']);
+
+    $this->actingAs($user);
+
+    // Both cards opened with an <h2> identical to the page <h1> — the screen shows
+    // one section at a time, so the same words appeared twice within ~40px. The
+    // heading stays as the region's accessible name but is hidden, which is what
+    // production-index.blade.php:56 already does for the same collision.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('id="inventory-materials-heading" class="sr-only"')
+        // ink-muted measures 4.11:1 on the panel, under the 4.5:1 these 12px
+        // captions need. ink-soft is the same role at 6.69:1.
+        ->assertDontSeeHtml('text-[var(--color-ink-muted)]')
+        ->call('toggleShortageFilter')
+        // An aria-label on a bare <div> is dropped — a generic div has no role.
+        ->assertSeeHtml('role="group" aria-label="'.__('production_bench.inventory.filters').'"');
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('id="inventory-positions-heading" class="sr-only"');
+});
+
 it('selects a material explicitly in the lot register and links it to detail', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();

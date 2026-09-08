@@ -16,9 +16,13 @@
 
         @if ($mode === 'materials')
             <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="@container overflow-clip sk-card">
-                <div class="flex flex-col gap-1 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between">
-                    <h2 id="inventory-materials-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.stock_by_material') }}</h2>
-                    <p class="text-xs text-[var(--color-ink-muted)]">
+                {{-- The card title repeated the page <h1> word for word: this screen shows one
+                     section at a time, so both read "Stock by material" ~40px apart. Kept as the
+                     region's accessible name but hidden from the eye, which is how
+                     production-index.blade.php:56 already resolves the same collision. --}}
+                <div class="flex border-b border-[var(--color-line)] px-5 py-4">
+                    <h2 id="inventory-materials-heading" class="sr-only">{{ __('production_bench.inventory.stock_by_material') }}</h2>
+                    <p class="text-xs text-[var(--color-ink-soft)]">
                         {{ trans_choice('production_bench.inventory.materials_count', $materials->total()) }}
                         · {{ trans_choice('production_bench.inventory.without_demand_count', $inventorySummary['unplanned']) }}
                     </p>
@@ -113,7 +117,9 @@
                     <p id="inventory-search-help" class="mt-3 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.search_help') }}</p>
 
                     @if ($materialFiltersActive)
-                        <div class="mt-3 flex flex-wrap gap-2" aria-label="{{ __('production_bench.inventory.filters') }}">
+                        {{-- `role="group"`: an `aria-label` on a bare <div> is dropped, because a
+                             generic div has no role to carry a name. --}}
+                        <div role="group" aria-label="{{ __('production_bench.inventory.filters') }}" class="mt-3 flex flex-wrap gap-2">
                             @if ($materialType !== 'all')<button type="button" wire:click="$set('materialType', 'all')" class="sk-badge sk-badge-neutral">{{ $materialType === 'ingredient' ? __('production_bench.inventory.filter_ingredients') : __('production_bench.inventory.filter_packaging') }} ×</button>@endif
                             @if ($stockState !== 'all')<button type="button" wire:click="$set('stockState', 'all')" class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.filter_'.($stockState === 'negative_forecast' ? 'negative_forecast' : $stockState)) }} ×</button>@endif
                             @if ($demandFilter !== 'all')<button type="button" wire:click="$set('demandFilter', 'all')" class="sk-badge sk-badge-neutral">{{ $demandFilter === 'planned' ? __('production_bench.inventory.filter_with_demand') : __('production_bench.inventory.filter_without_demand') }} ×</button>@endif
@@ -224,10 +230,12 @@
             </section>
         @else
             <section data-stock-register aria-labelledby="inventory-positions-heading" class="@container overflow-clip sk-card">
+                {{-- Same collision as the materials card: the visible <h2> echoed the <h1>.
+                     Hidden, keeping the region named. --}}
                 <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-baseline gap-3">
-                        <h2 id="inventory-positions-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.lot_register') }}</h2>
-                        <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
+                        <h2 id="inventory-positions-heading" class="sr-only">{{ __('production_bench.inventory.lot_register') }}</h2>
+                        <p class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
                     </div>
                     @if ($canWriteInventory)
                         {{ $this->addStockAction }}

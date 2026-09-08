@@ -127,6 +127,12 @@ sticky; `clip` still clips to the rounded corners and does not. `container-type:
 `theadTop=0` after scrolling 700px, narrow card (overflow auto) `theadTop=-300`, i.e. falls back
 exactly as designed.
 
+**Measuring the width a table actually needs** (for choosing `min-w-*` / thresholds): dump the real
+markup (`Livewire::test(...)->html()` in a scratch test), inline the dev-server CSS, then
+`table.style.minWidth='0'; table.style.width='min-content'` and read `getBoundingClientRect().width`.
+That is the narrowest the table goes *before any cell wraps*. Measured 2026-09-08: Stock by material
+834px, Lot register 952px — against guessed floors of 1120 / 1040.
+
 To verify the semantics without the app: build a static HTML probe, scroll with an inline script,
 and read it back through `google-chrome --headless=new --dump-dom` (write results into the DOM, then
 grep them out of the dump). Fast and decisive for "does it stick" questions.

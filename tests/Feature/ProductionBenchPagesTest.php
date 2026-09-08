@@ -331,7 +331,7 @@ it('selects a material explicitly in the lot register and links it to detail', f
         ->set('lotScope', 'all')
         // The combobox is a Filament schema component, so assert it is actually
         // rendered and labelled rather than trusting the method to exist.
-        ->assertSeeHtml('for="lotFiltersForm.lotMaterialSelection"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotMaterialSelection"')
         ->call('selectLotMaterial', 'ingredient:'.$olive->public_id)
         ->assertSet('lotMaterialType', 'ingredient')
         ->assertSet('lotMaterial', $olive->public_id)
@@ -591,6 +591,144 @@ it('lifts the material filter controls above the sticky header', function (): vo
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertSeeHtml('data-production-bench-filters')
         ->assertSeeHtml('class="relative z-30 border-b border-[var(--color-line)] p-4"');
+});
+
+it('keeps the lot register header and identity column in view', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    // The register is the denser of the two tables, so it needs the same two
+    // affordances. Both are structural: the wrapper must be a real vertical
+    // scroll container or `sticky top-0` has nothing to stick to, and the
+    // identity cell must outrank the quantity columns it slides over.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('max-h-[70dvh] overflow-auto')
+        ->assertSeeHtml('sticky top-0 z-20')
+        // Corner cell above its sibling headers, body cell above the quantities.
+        ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
+        ->assertSeeHtml('sticky left-0 z-10 border-r border-[var(--color-line)] bg-[var(--color-panel)]');
+});
+
+it('lifts the lot register filter controls above the sticky header', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    // Only now that the register has a sticky thead does it need the stacking
+    // context too: a Filament dropdown panel is `position: absolute; z-index: 20`
+    // and is not teleported, so it would otherwise render behind the header row.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('data-production-bench-filters')
+        ->assertSeeHtml('class="relative z-30 border-b border-[var(--color-line)] p-4"');
+});
+
+it('collapses the lot register narrowing filters behind a disclosure', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    // Eleven always-visible controls made this the densest filter bar on the
+    // screen, and the full-width material combobox sat directly under the search
+    // box reading as a second, competing way to search. Only search and sort
+    // stay visible, matching the material tab.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('aria-controls="lot-advanced-filters"')
+        ->assertSeeHtml('x-show="filtersOpen"')
+        ->assertSeeHtml('x-data="{ filtersOpen: false }"')
+        // Scope is deliberately not one of them: it defaults to Open lots, so
+        // collapsing it would hide why exhausted lots are absent.
+        ->assertSeeHtml('for="lotFiltersForm.lotScope"')
+        ->assertDontSeeHtml('for="lotAdvancedFiltersForm.lotScope"')
+        // Arriving on a bookmarked or material link has to open the panel, or
+        // the filter it applied would be hidden from the person it filters for.
+        ->set('lotStatus', 'quarantined')
+        ->assertSeeHtml('x-data="{ filtersOpen: true }"');
+});
+
+it('clears every lot filter rather than only the material', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    // The control is labelled "Clear filters" but only reset the material, so
+    // filtering by supplier, status and a date window left nothing to undo.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('search', 'olive')
+        ->set('lotMaterial', 'not-a-real-id')
+        ->set('lotScope', 'all')
+        ->set('lotStatus', 'quarantined')
+        ->set('lotSupplier', 'supplier-id')
+        ->set('lotOrigin', 'purchase_receipt')
+        ->set('lotDateBasis', 'received')
+        ->set('lotDateFrom', '2026-08-01')
+        ->set('lotDateUntil', '2026-08-31')
+        ->set('lotExpiry', 'expired')
+        ->set('lotSort', 'oldest')
+        ->call('clearLotFilters')
+        // Every property returns to the value its `#[Url]` attribute omits, so
+        // the cleared register is a shareable link with no query string.
+        ->assertSet('search', '')
+        ->assertSet('lotMaterial', '')
+        ->assertSet('lotMaterialType', '')
+        ->assertSet('lotScope', 'open')
+        ->assertSet('lotStatus', 'all')
+        ->assertSet('lotSupplier', '')
+        ->assertSet('lotOrigin', '')
+        ->assertSet('lotDateBasis', 'stocked')
+        ->assertSet('lotDateFrom', '')
+        ->assertSet('lotDateUntil', '')
+        ->assertSet('lotExpiry', 'all')
+        ->assertSet('lotSort', 'newest')
+        ->assertSet('lotFilters.lotMaterialSelection', null);
+});
+
+it('offers a reset whenever something narrows the lot register', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertDontSeeHtml('wire:click="clearLotFilters"')
+        // A sort order never changes which lots appear, so it must not summon a
+        // control promising to clear a filter.
+        ->set('lotSort', 'oldest')
+        ->assertDontSeeHtml('wire:click="clearLotFilters"')
+        ->set('lotStatus', 'quarantined')
+        ->assertSeeHtml('wire:click="clearLotFilters"');
+});
+
+it('does not blame a material for an empty lot register', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user);
+
+    // `no_open_lots` reads "...for this material" and is shared with the material
+    // detail screen, where that wording is correct. On the register it was shown
+    // for any empty open scope, including with no material selected at all.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSee(__('production_bench.inventory.no_lots'))
+        ->assertDontSee(__('production_bench.inventory.no_open_lots'))
+        ->set('lotStatus', 'released')
+        ->assertSee(__('production_bench.inventory.no_lots_match'))
+        ->assertDontSee(__('production_bench.inventory.no_open_lots'));
+});
+
+it('points the inventory search fields at their help text', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    // Filament does not associate helper copy with its inputs, so the sentence
+    // rendered under each filter form is invisible to a screen reader unless the
+    // input names it. Both tabs carried an id that nothing referenced.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSeeHtml('aria-describedby="lot-register-search-help"');
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('aria-describedby="inventory-search-help"');
 });
 
 it('sizes the rows per page select to its widest option', function (): void {
@@ -897,15 +1035,19 @@ it('renders the lot register filter controls from a filament schema', function (
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        // Scope and sorting stay beside the search box; every other narrowing
+        // filter lives in the advanced schema behind the Filters disclosure.
+        // Scope is the exception because its default is not "everything".
         ->assertSeeHtml('for="lotFiltersForm.lotScope"')
-        ->assertSeeHtml('for="lotFiltersForm.lotStatus"')
-        ->assertSeeHtml('for="lotFiltersForm.lotSupplier"')
-        ->assertSeeHtml('for="lotFiltersForm.lotOrigin"')
-        ->assertSeeHtml('for="lotFiltersForm.lotDateBasis"')
-        ->assertSeeHtml('for="lotFiltersForm.lotDateFrom"')
-        ->assertSeeHtml('for="lotFiltersForm.lotDateUntil"')
-        ->assertSeeHtml('for="lotFiltersForm.lotExpiry"')
-        ->assertSeeHtml('for="lotFiltersForm.lotSort"');
+        ->assertSeeHtml('for="lotFiltersForm.lotSort"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotStatus"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotSupplier"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotOrigin"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotDateBasis"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotDateFrom"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotDateUntil"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotExpiry"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotMaterialSelection"');
 });
 
 it('filters the lot register by receipt date, not only by stocked date', function (): void {
@@ -967,9 +1109,9 @@ it('renders the lot register date-basis controls and hydrates them from the url'
     $this->actingAs($user);
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->assertSeeHtml('for="lotFiltersForm.lotDateBasis"')
-        ->assertSeeHtml('for="lotFiltersForm.lotDateFrom"')
-        ->assertSeeHtml('for="lotFiltersForm.lotDateUntil"');
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotDateBasis"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotDateFrom"')
+        ->assertSeeHtml('for="lotAdvancedFiltersForm.lotDateUntil"');
 
     // The url aliases hydrate the three properties without the stocked-only
     // framing the old controls used.
@@ -1282,6 +1424,33 @@ function belowBufferWorkspace(): array
         'user' => $user,
         'workspace' => $workspace,
         'ingredient' => $ingredient,
+    ];
+}
+
+/**
+ * A workspace holding one open lot, enough to render the lot register with rows.
+ */
+function lotRegisterWorkspace(): array
+{
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'stocked_at' => today()->subDays(3),
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '10',
+    ]);
+
+    return [
+        'user' => $user,
+        'workspace' => $workspace,
+        'ingredient' => $ingredient,
+        'lot' => $lot,
     ];
 }
 

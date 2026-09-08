@@ -203,6 +203,10 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->type('search')
                             ->placeholder(__('production_bench.common.search'))
                             ->live(debounce: 300)
+                            // Filament does not associate helper copy with its inputs, so the
+                            // sentence rendered under the form is invisible to screen readers
+                            // unless it is pointed at explicitly.
+                            ->extraAttributes(['aria-describedby' => 'inventory-search-help'])
                             ->columnSpan(['sm' => 2, 'xl' => 1]),
                         Select::make('sort')
                             ->label(__('production_bench.inventory.sort'))
@@ -308,14 +312,24 @@ class InventoryIndex extends Component implements HasActions, HasForms
     {
         return $schema
             ->components([
-                Grid::make(['sm' => 2, 'xl' => 5])
+                Grid::make(['sm' => 2, 'xl' => 3])
                     ->schema([
                         TextInput::make('search')
                             ->label(__('production_bench.common.search'))
                             ->type('search')
                             ->placeholder(__('production_bench.common.search'))
                             ->live(debounce: 300)
+                            // Filament does not associate helper copy with its inputs, so the
+                            // sentence rendered under the form is invisible to screen readers
+                            // unless it is pointed at explicitly.
+                            ->extraAttributes(['aria-describedby' => 'lot-register-search-help'])
                             ->columnSpanFull(),
+                        // Scope stays outside the disclosure even though the other
+                        // narrowing filters moved into it: it is the only one whose
+                        // default is not "everything". It reads `Open lots` on
+                        // arrival, so hiding it would leave no trace of why
+                        // exhausted lots are missing from the register — the same
+                        // way an unexplained empty state reads as "no stock at all".
                         Select::make('lotScope')
                             ->label(__('production_bench.inventory.lot_scope'))
                             ->options([
@@ -325,6 +339,36 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ])
                             ->native(false)
                             ->live(),
+                        Select::make('lotSort')
+                            ->label(__('production_bench.inventory.lot_sort'))
+                            ->options([
+                                'newest' => __('production_bench.inventory.lot_sort_newest'),
+                                'oldest' => __('production_bench.inventory.lot_sort_oldest'),
+                                'code' => __('production_bench.inventory.lot_sort_code'),
+                            ])
+                            ->native(false)
+                            ->live(),
+                    ]),
+            ]);
+    }
+
+    /**
+     * The lot register's narrowing filters, behind the same Filters disclosure.
+     *
+     * The material combobox belongs in here rather than beside the search box:
+     * it is a filter that resolves to one material, but rendered as a full-width
+     * searchable select directly under a search box it read as a second, competing
+     * way to search. Collapsing it leaves one visible search control.
+     *
+     * As on the material tab these bind to the very same URL properties, so a
+     * bookmarked register link still opens with the disclosure already expanded.
+     */
+    public function lotAdvancedFiltersForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['sm' => 2, 'xl' => 5])
+                    ->schema([
                         Select::make('lotStatus')
                             ->label(__('production_bench.common.status'))
                             ->options([
@@ -374,15 +418,6 @@ class InventoryIndex extends Component implements HasActions, HasForms
                                 'active' => __('production_bench.inventory.lot_expiry_active'),
                                 'expired' => __('production_bench.inventory.lot_expiry_expired'),
                                 'none' => __('production_bench.inventory.lot_expiry_none'),
-                            ])
-                            ->native(false)
-                            ->live(),
-                        Select::make('lotSort')
-                            ->label(__('production_bench.inventory.lot_sort'))
-                            ->options([
-                                'newest' => __('production_bench.inventory.lot_sort_newest'),
-                                'oldest' => __('production_bench.inventory.lot_sort_oldest'),
-                                'code' => __('production_bench.inventory.lot_sort_code'),
                             ])
                             ->native(false)
                             ->live(),
@@ -595,10 +630,42 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->resetPage('stock-lots');
     }
 
+    /**
+     * Clears only the material selection, leaving the other lot filters in place.
+     *
+     * Kept separate from `clearLotFilters()` because the material combobox can be
+     * emptied on its own, which is not the same ask as resetting the register.
+     */
     public function clearLotMaterial(): void
     {
         $this->lotMaterial = '';
         $this->lotMaterialType = '';
+        $this->lotFilters['lotMaterialSelection'] = null;
+        $this->resetPage('stock-lots');
+    }
+
+    /**
+     * Resets every lot filter back to the value its `#[Url]` attribute omits.
+     *
+     * The register exposes ten filters plus the search box, and until now the only
+     * reset control was labelled "Clear filters" while clearing just the material.
+     * Resetting to the `except` defaults also drops the query parameters from the
+     * URL, so a cleared register is shareable as a plain link again.
+     */
+    public function clearLotFilters(): void
+    {
+        $this->search = '';
+        $this->lotMaterial = '';
+        $this->lotMaterialType = '';
+        $this->lotScope = 'open';
+        $this->lotStatus = 'all';
+        $this->lotSupplier = '';
+        $this->lotOrigin = '';
+        $this->lotDateBasis = 'stocked';
+        $this->lotDateFrom = '';
+        $this->lotDateUntil = '';
+        $this->lotExpiry = 'all';
+        $this->lotSort = 'newest';
         $this->lotFilters['lotMaterialSelection'] = null;
         $this->resetPage('stock-lots');
     }
@@ -783,6 +850,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'lotSupplierOptions' => $this->lotSupplierOptions($workspace),
             'lotOriginOptions' => $this->lotOriginOptions(),
             'lotMaterialLabel' => $this->lotMaterialLabel($workspace),
+            'lotFiltersActive' => $this->lotFiltersActive(),
             'displayUnit' => $displayUnit,
         ]);
     }
@@ -980,6 +1048,27 @@ class InventoryIndex extends Component implements HasActions, HasForms
             || $this->demandFilter !== 'all'
             || $this->categoryFilter !== ''
             || $this->subcategoryFilter !== '';
+    }
+
+    /**
+     * Whether anything on the lot register is narrowing the result set.
+     *
+     * Deliberately excludes `lotSort` and `lotDateBasis`: a sort order never
+     * changes which lots appear, and the date basis only matters once a from or
+     * until date is set. Showing "Clear filters" for either would offer a reset
+     * for something that is not filtering anything.
+     */
+    private function lotFiltersActive(): bool
+    {
+        return trim($this->search) !== ''
+            || $this->lotMaterial !== ''
+            || $this->lotScope !== 'open'
+            || $this->lotStatus !== 'all'
+            || $this->lotSupplier !== ''
+            || $this->lotOrigin !== ''
+            || $this->lotDateFrom !== ''
+            || $this->lotDateUntil !== ''
+            || $this->lotExpiry !== 'all';
     }
 
     private function resetInventoryPages(): void

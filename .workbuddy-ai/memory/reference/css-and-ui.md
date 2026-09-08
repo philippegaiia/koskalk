@@ -101,6 +101,35 @@ Full 40-site audit + consolidation plan (PROVISIONAL, owner said do not implemen
   `formatDecimalInput` (0–12 decimals). Price unit is **kg** or **lb** only
   (`MassDisplaySystem::priceUnit()`), never g — integer parts run 1–5 digits.
 
+## Sticky table headers
+
+`overflow-x: auto` also computes `overflow-y: auto`, but with no height the wrapper never scrolls —
+`sticky top-0` on a `<thead>` then silently does nothing. Bound it (`max-h-[70dvh] overflow-auto`);
+precedent at `production-bench/production/batch-size-form.blade.php:56`. Prefer `dvh` over `vh`.
+
+Layers: thead `z-20` > corner `<th>` `z-30` > sticky body `<td>` `z-10`. Filament dropdown panels are
+`position: absolute; z-index: 20` and **not teleported** (`teleport => false`), so they lose to a
+sticky `z-20` thead that comes later in the DOM — give their wrapper its own stacking context
+(`relative z-30`). A sticky body `<td>` needs an **opaque** fill, not a translucent one: a `/40` row
+tint shows the row scrolling underneath. Use `color-mix(in_oklab, ...)` against the panel colour.
+
+## WCAG contrast from oklch tokens
+
+oklch → OKLab → **linear** sRGB → relative luminance. **If your `oklch_to_rgb` already returns
+linear, luminance is just `0.2126*r + 0.7152*g + 0.0722*b` — do NOT apply the sRGB transfer function
+again.** That one mistake has bitten three times and roughly halves every ratio: 6.69 → 2.58,
+10.33 → 4.01. Tell-tale symptom: *every* pair fails, including near-black on near-white. (A second
+variant: feeding lightness as `98.5` instead of `0.985` reported a 4.11:1 fail as a 4.90:1 pass.)
+Always assert one known anchor before trusting the table — `ink-soft` on `panel` = **6.690:1**
+(`#5e5851` on `#fcfaf6`). Sanity-check tokens by printing them as hex
+(`ink-soft` `#5e5851`, `ink-muted` `#6d6861`, `accent-strong` `#7e3a00`).
+
+**A token that tints its own background is self-referential.** `--color-ink-muted` is used as
+`bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]`, so darkening the text also darkens
+the surface — that pair, not the plain panel, is the binding constraint. Darkened 58.0% → 52.0%
+(2026-09-08): panel 4.11→5.28, panel-muted 3.86→4.97, panel-strong 3.53→4.54, own `/10` tint
+3.65→4.60, field 4.22→5.42.
+
 ## Livewire / Alpine / Filament
 
 - **Filament actions hide markup from static contract tests.** The page renders

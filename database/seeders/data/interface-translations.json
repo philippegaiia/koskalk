@@ -19776,6 +19776,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.no_lots_match",
+      "text": {
+        "de": "Keine Lose entsprechen der aktuellen Suche oder dem Filter.",
+        "es": "Ningún lote coincide con la búsqueda o el filtro actual.",
+        "fr": "Aucun lot ne correspond à la recherche ou au filtre actuel.",
+        "it": "Nessun lotto corrisponde alla ricerca o al filtro attuale.",
+        "nl": "Geen partijen komen overeen met de huidige zoekopdracht of het filter.",
+        "pt_BR": "Nenhum lote corresponde à pesquisa ou ao filtro atual."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.no_material_activity",
       "text": {
         "de": "Keine Bestandsbewegungen in diesem Zeitraum.",

@@ -1017,6 +1017,7 @@ return [
         'release' => 'Release',
         'quarantine' => 'Quarantine',
         'no_lots' => 'No stock items.',
+        'no_lots_match' => 'No lots match the current search or filter.',
         'unknown_item' => 'Unknown stock item',
         'receipt_origin' => 'Receipt',
         'supplier_unknown' => 'Supplier not recorded',

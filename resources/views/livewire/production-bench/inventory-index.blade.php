@@ -220,21 +220,53 @@
                         {{ $this->addStockAction }}
                     @endif
                 </div>
-                <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                {{-- Same stacking context the material filters need: Filament renders dropdown
+                     panels as absolutely positioned `z-20` siblings and does not teleport them, so
+                     they would otherwise lose to the sticky `z-20` thead further down the DOM. --}}
+                <div
+                    data-production-bench-filters
+                    x-data="{ filtersOpen: @js($lotFiltersActive) }"
+                    class="relative z-30 border-b border-[var(--color-line)] p-4"
+                >
                     {{ $this->lotFiltersForm }}
                     <p id="lot-register-search-help" class="mt-2 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_register_search_help') }}</p>
-                    @if ($lotMaterialLabel)
-                        <div class="mt-3 flex flex-wrap items-center gap-2">
+
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            class="sk-btn sk-btn-ghost"
+                            aria-controls="lot-advanced-filters"
+                            x-bind:aria-expanded="filtersOpen.toString()"
+                            x-on:click="filtersOpen = ! filtersOpen"
+                        >
+                            {{ __('production_bench.common.filters') }}
+                        </button>
+
+                        {{-- Outside the disclosure on purpose: it used to appear only with a
+                             material selected and cleared only that, so filtering by supplier
+                             and date left nothing to undo. --}}
+                        @if ($lotFiltersActive)
+                            <button type="button" wire:click="clearLotFilters" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.inventory.clear_filters') }}</button>
+                        @endif
+
+                        @if ($lotMaterialLabel)
                             <span class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.lot_material') }}: {{ $lotMaterialLabel }}</span>
-                            <button type="button" wire:click="clearLotMaterial" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.inventory.clear_filters') }}</button>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
+
+                    <div id="lot-advanced-filters" class="mt-3" x-cloak x-show="filtersOpen">
+                        {{ $this->lotAdvancedFiltersForm }}
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
+                {{-- The register is the denser of the two tables: nine columns and up to five
+                     stacked lines per row, so it scrolls in both axes. The wrapper needs a bounded
+                     height or `sticky top-0` has nothing to stick to, and the identity cell needs
+                     to stay put or the lot name scrolls out of view under the quantities. --}}
+                <div class="max-h-[70dvh] overflow-auto">
                     <table class="w-full min-w-[1120px] text-left text-sm">
-                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                        <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
-                                <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                                <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.common.status') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
@@ -252,7 +284,10 @@
                                 @php($originReceipt = $lot->goodsReceiptLine?->goodsReceipt)
                                 @php($materialCode = $lot->packagingItem?->material_code ?? $lot->ingredient?->workspaceCodes?->firstWhere('workspace_id', $workspace->id)?->material_code)
                                 <tr id="lot-{{ $lot->public_id }}" wire:key="stock-lot-{{ $lot->id }}">
-                                    <td class="px-5 py-3">
+                                    {{-- Opaque fill: the cell sits over the quantity columns as they
+                                         scroll beneath it. Lot rows carry no tint of their own, so
+                                         the plain panel colour is enough here. --}}
+                                    <td class="sticky left-0 z-10 border-r border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-3">
                                         @if ($row['detail_url'])
                                             <a href="{{ $row['detail_url'] }}" wire:navigate class="group -m-1 inline-flex min-h-9 items-center gap-1.5 rounded p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
                                                 <span class="font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $lot->subjectName() }}</span>
@@ -291,7 +326,12 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="9" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotScope === 'open' ? __('production_bench.inventory.no_open_lots') : __('production_bench.inventory.no_lots') }}</td></tr>
+                                {{-- `no_open_lots` reads "for this material" and is shared with the
+                                     material detail screen, where that wording is correct. Here it
+                                     was shown for any empty open scope, including with no material
+                                     chosen at all. Naming the filters covers both cases, since the
+                                     material selection is itself a filter. --}}
+                                <tr><td colspan="9" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>

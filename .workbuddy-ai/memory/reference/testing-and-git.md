@@ -30,6 +30,10 @@ Triage doc: `docs/superpowers/plans/2026-08-29-test-suite-failures-triage.md`.
   128M inside `blade-icons/IconsManifest.php`. Invoke Pest directly:
   `php85 -d memory_limit=1024M vendor/bin/pest`. `phpunit.xml` already pins `sqlite :memory:` and
   `APP_ENV=testing`, so the database needs no special handling at the root checkout.
+- **`Illuminate\Testing\TestView` has no `toHtml()`** (and no `render()`), so
+  `$this->view('welcome')->toHtml()` throws `BadMethodCallException`. To get the rendered
+  string — needed for `expect(...)->toContain()` style assertions against the *full* page
+  including its `@extends` layout — use the global helper: `view('welcome')->render()`.
 
 ## Git forensics traps (each produced a false conclusion once)
 

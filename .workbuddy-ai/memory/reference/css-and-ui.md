@@ -107,9 +107,19 @@ Full 40-site audit + consolidation plan (PROVISIONAL, owner said do not implemen
 native Tailwind `max-w-app`. Introduced by `7eb53093` (2026-08-07), which replaced the scattered
 `max-w-7xl` (1280) / `max-w-[90rem]` (1440) and deleted the production-bench compact (1024) variant.
 The comment in the file says it plainly: *"on laptops (~1440–1512 CSS px) it never binds"*.
-**Still hardcoded `max-w-[1180px]`, not on the token:** `layouts/public.blade.php:21,70`,
-`welcome.blade.php:44,129`, `dashboard/recipe-workbench.blade.php:6`,
-`partials/recipe-workbench/formula-bottom-action-bar.blade.php:4`.
+**Every container is on the token as of `9dbb8829` (2026-09-09).** The last six holdouts —
+`layouts/public.blade.php:21,70`, `welcome.blade.php:44,129`,
+`dashboard/recipe-workbench.blade.php:6`, `formula-bottom-action-bar.blade.php:4` — were
+hardcoded `max-w-[1180px]`, 4px off the token; all now `max-w-app`. Guarded by
+`PublicShellPagesTest` "bounds the public shell with the shared content width token",
+which renders the homepage and asserts `max-w-app` present / `max-w-[1180px]` absent.
+
+`max-w-app` works on the **public** pages too: `resources/css/public.css` imports
+`shared/soapkraft.css` just like `app.css` does, and although it uses
+`@import 'tailwindcss' source(none)` its explicit `@source` list covers
+`layouts/public.blade.php` and `welcome.blade.php`. Confirmed in the compiled output of
+both entries (`.max-w-app { max-width: var(--container-app); }`), not assumed. The token's
+own definition is guarded by `ProductionBenchLayoutTest` against `shared/soapkraft.css`.
 
 Derivation for any authenticated page (`layouts/app-shell.blade.php:39,45,132` +
 `x-production-bench.page`), all from committed CSS:
@@ -170,6 +180,15 @@ exactly as designed.
    utility or container query added since the last build (this made every width report
    `overflowX=auto` and looked like a broken feature). After editing a Blade file, allow a moment
    for Vite to rescan before fetching, or you get the previous compile.
+   Three traps here, all hit in one session:
+   - **Dev-server CSS is not minified.** `grep -o "\.max-w-app{[^}]*}"` matches *nothing*;
+     the rule is `.max-w-app {\n    max-width: …;\n  }`. Use `grep -n -A2 "max-w-app"`.
+     Also, BSD `grep` does not support `\s` — `^\s*\.foo {` silently returns nothing.
+   - **The dev bundle keeps utilities for classes you already deleted.** Tailwind's dev
+     cache retains them, so seeing `.max-w-[1180px]` *next to* `.max-w-app` does **not**
+     mean the source still has it. Confirm against the Blade source, not the bundle.
+   - **`npm run build` is blocked in this sandbox** — Vite's `loadEnv` reads `.env` and the
+     broker denies it ("Sensitive content approval timed out"). Don't retry; use `?direct`.
 3. `table.style.minWidth='0'; table.style.width='min-content'` then read
    `getBoundingClientRect().width`. That is the narrowest the table goes before any cell wraps.
 4. Pin the wrapper and let the table size itself (`width:auto`) to answer "does it fit floor N".

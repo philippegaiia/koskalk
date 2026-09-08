@@ -19824,18 +19824,6 @@
     },
     {
       "group": "production_bench",
-      "key": "inventory.no_planned_demand",
-      "text": {
-        "de": "Kein geplanter Bedarf",
-        "es": "Sin demanda planificada",
-        "fr": "Aucun besoin planifié",
-        "it": "Nessun fabbisogno pianificato",
-        "nl": "Geen geplande behoefte",
-        "pt_BR": "Sem demanda planejada"
-      }
-    },
-    {
-      "group": "production_bench",
       "key": "inventory.no_supplier_listings",
       "text": {
         "de": "Für dieses Material ist noch kein Lieferantenartikel konfiguriert.",

@@ -39,7 +39,12 @@
                                 wire:click="toggleShortageFilter"
                                 data-inventory-shortage-filter
                                 aria-pressed="{{ $stockState === 'negative_forecast' ? 'true' : 'false' }}"
-                                aria-label="{{ __('production_bench.inventory.filter_negative_forecast') }}"
+                                {{-- WCAG 2.5.3 Label in Name: what the eye reads here is the number, so
+                                     the accessible name has to carry it too. Announcing only the state
+                                     made a screen reader say "Negative forecast" for a control that
+                                     visibly reads "3" — and used the filter panel's wording while the
+                                     tile above it says "Shortage". The term matches the <dt>. --}}
+                                aria-label="{{ __('production_bench.production.shortage') }} ({{ $inventorySummary['shortages'] }})"
                                 @class([
                                     'numeric text-lg font-semibold rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
                                     'text-[var(--color-danger-strong)] hover:underline' => $inventorySummary['shortages'] > 0,
@@ -54,14 +59,32 @@
                     </div>
                     <div class="px-5 py-3">
                         <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.below_buffer') }}</dt>
-                        <dd class="numeric mt-1 text-lg font-semibold {{ $inventorySummary['below_buffer'] > 0 ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $inventorySummary['below_buffer'] }}</dd>
+                        <dd class="mt-1">
+                            <button
+                                type="button"
+                                wire:click="toggleBelowBufferFilter"
+                                data-inventory-below-buffer-filter
+                                aria-pressed="{{ $stockState === 'below_buffer' ? 'true' : 'false' }}"
+                                aria-label="{{ __('production_bench.inventory.below_buffer') }} ({{ $inventorySummary['below_buffer'] }})"
+                                @class([
+                                    'numeric text-lg font-semibold rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
+                                    'text-[var(--color-warning-strong)] hover:underline' => $inventorySummary['below_buffer'] > 0,
+                                    'text-[var(--color-ink-strong)]' => $inventorySummary['below_buffer'] === 0,
+                                ])
+                            >{{ $inventorySummary['below_buffer'] }}</button>
+                        </dd>
                     </div>
                 </dl>
 
+                {{-- Filament renders its dropdown panel as `position: absolute; z-index: 20` and
+                     does not teleport it, so it competes directly with the sticky `z-20` thead
+                     below — and loses, because the thead comes later in the DOM. Making the
+                     filter wrapper its own stacking context above the header lifts every
+                     dropdown inside it, whatever z-index the panel itself carries. --}}
                 <div
                     data-production-bench-filters
                     x-data="{ filtersOpen: @js($materialFiltersActive) }"
-                    class="border-b border-[var(--color-line)] p-4"
+                    class="relative z-30 border-b border-[var(--color-line)] p-4"
                 >
                     {{ $this->materialFiltersForm }}
 
@@ -100,11 +123,16 @@
                     @endif
                 </div>
 
-                <div class="overflow-x-auto">
+                {{-- A bounded height is what makes this the vertical scroll container. With
+                     `overflow-x-auto` alone the wrapper computes to `overflow-y: auto` but never
+                     actually scrolls, so `sticky top-0` on the thead would have nothing to stick
+                     to. The header sits above the sticky identity column (z-20 vs z-10) so the
+                     corner cell is never covered by a scrolling row. --}}
+                <div class="max-h-[70dvh] overflow-auto">
                     <table class="w-full min-w-[1120px] text-left text-sm">
-                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                        <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
-                                <th class="px-5 py-3">{{ __('production_bench.inventory.material') }}</th>
+                                <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.material') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
@@ -119,7 +147,8 @@
                                 {{-- Below buffer is its own fact rather than a weaker shortage, so it
                                      gets its own tint. Shortage wins when both hold, because a row
                                      that cannot cover planned demand is the more urgent of the two.
-                                     Either way the tint only reinforces a text badge. --}}
+                                     The tint carries the state on its own: a shortage already reads
+                                     as a signed negative forecast, and below buffer keeps a dot. --}}
                                 <tr
                                     wire:key="inventory-material-{{ $row['key'] }}"
                                     @class([
@@ -127,7 +156,18 @@
                                         'bg-[var(--color-warning-soft)]/40' => $row['is_below_buffer'] && ! $row['is_shortage'],
                                     ])
                                 >
-                                    <td class="px-5 py-3">
+                                    {{-- The identity cell stays put while the numeric columns scroll under
+                                         it, so it needs its own opaque fill: the row tint is /40 and would
+                                         let the scrolling values show through. color-mix bakes the tint
+                                         into the panel colour at the same ratio, keeping it token-driven. --}}
+                                    <td
+                                        @class([
+                                            'sticky left-0 z-10 border-r border-[var(--color-line)] px-5 py-3',
+                                            'bg-[var(--color-panel)]' => ! $row['is_shortage'] && ! $row['is_below_buffer'],
+                                            'bg-[color-mix(in_oklab,var(--color-danger-soft)_40%,var(--color-panel))]' => $row['is_shortage'],
+                                            'bg-[color-mix(in_oklab,var(--color-warning-soft)_40%,var(--color-panel))]' => $row['is_below_buffer'] && ! $row['is_shortage'],
+                                        ])
+                                    >
                                         {{-- A table row cannot be wrapped in an anchor, so the whole identity cell
                                              is one block link instead of just the name. --}}
                                         <a
@@ -136,17 +176,11 @@
                                             class="group -m-2 flex min-h-11 items-start justify-between gap-3 rounded-lg p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                         >
                                             <span class="min-w-0">
-                                                <span class="block font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $row['name'] }}</span>
+                                                <span class="block font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $row['name'] }}@if ($row['is_below_buffer'])<span class="ml-1.5 inline-block size-2 rounded-full bg-[var(--color-warning-strong)] align-middle" title="{{ __('production_bench.inventory.filter_below_buffer') }}" aria-hidden="true"></span><span class="sr-only">{{ __('production_bench.inventory.filter_below_buffer') }}</span>@endif</span>
                                                 @if ($row['material_code'])
                                                     <span class="mt-0.5 block font-mono text-xs text-[var(--color-ink-soft)]">{{ $row['material_code'] }}</span>
                                                 @endif
                                                 <span class="mt-0.5 block text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</span>
-                                                @unless ($row['has_demand'])
-                                                    <span class="mt-1 inline-flex rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_planned_demand') }}</span>
-                                                @endunless
-                                                @if ($row['is_below_buffer'])
-                                                    <span class="mt-1 inline-flex rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.inventory.filter_below_buffer') }}</span>
-                                                @endif
                                             </span>
                                             <span class="mt-0.5 shrink-0 text-[var(--color-ink-soft)] group-hover:text-[var(--color-accent-strong)]" aria-hidden="true">&rarr;</span>
                                             <span class="sr-only">{{ __('production_bench.inventory.open_material_detail') }}</span>
@@ -158,15 +192,11 @@
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['quarantined'] }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['incoming'] }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['positions']['required'] }}</td>
+                                    {{-- A shortage already reads as a signed negative number in danger
+                                         text, so the number is the label and a repeated pill only
+                                         competed with it for space in the cell. --}}
                                     <td class="numeric px-5 py-3 text-right font-semibold {{ $row['is_shortage'] ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">
-                                        <div class="flex flex-col items-end gap-1">
-                                            <span>{{ $row['positions']['forecast'] }}</span>
-                                            @if ($row['is_shortage'])
-                                                <span data-negative-forecast-badge class="inline-flex rounded-full bg-[var(--color-danger-soft)] px-2 py-0.5 text-xs font-medium text-[var(--color-danger-strong)]">
-                                                    {{ __('production_bench.inventory.filter_negative_forecast') }}
-                                                </span>
-                                            @endif
-                                        </div>
+                                        {{ $row['positions']['forecast'] }}
                                     </td>
                                 </tr>
                             @empty

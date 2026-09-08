@@ -514,7 +514,22 @@ class InventoryIndex extends Component implements HasActions, HasForms
      */
     public function toggleShortageFilter(): void
     {
-        $this->stockState = $this->stockState === 'negative_forecast' ? 'all' : 'negative_forecast';
+        $this->toggleStockStateFilter('negative_forecast');
+    }
+
+    /**
+     * The below buffer tile mirrors the shortage tile. Both are counts of a
+     * state the filter panel already exposes, so leaving one static next to a
+     * sibling that toggles reads as a broken control rather than as content.
+     */
+    public function toggleBelowBufferFilter(): void
+    {
+        $this->toggleStockStateFilter('below_buffer');
+    }
+
+    private function toggleStockStateFilter(string $state): void
+    {
+        $this->stockState = $this->stockState === $state ? 'all' : $state;
         $this->resetPage('materials');
     }
 

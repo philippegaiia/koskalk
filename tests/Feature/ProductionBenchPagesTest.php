@@ -510,17 +510,20 @@ it('narrows the material view to shortages only', function (): void {
         ->assertDontSee('Covered oil');
 });
 
-it('shows negative forecast as a visible row badge', function (): void {
+it('conveys a negative forecast through the value and row tint instead of a badge', function (): void {
     ['user' => $user] = plannedShortageWorkspace();
 
     $this->actingAs($user);
 
+    // The forecast cell already shows a signed number, so the pill repeated a
+    // fact the number and the tint both carry. Dropping it must not leave the
+    // shortage without a non-colour signal.
     $component = Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
-        ->assertSeeHtml('data-negative-forecast-badge')
-        ->assertSee(__('production_bench.inventory.filter_negative_forecast'))
-        ->assertDontSeeHtml('class="sr-only">'.__('production_bench.inventory.filter_negative_forecast'));
+        ->assertSeeHtml('bg-[var(--color-danger-soft)]/40')
+        ->assertSeeHtml('text-[var(--color-danger-strong)]')
+        ->assertDontSeeHtml('data-negative-forecast-badge');
 
-    expect(substr_count($component->html(), 'data-negative-forecast-badge'))->toBe(1);
+    expect(substr_count($component->html(), 'data-negative-forecast-badge'))->toBe(0);
 });
 
 it('activates and clears the negative forecast filter from the shortage summary tile', function (): void {
@@ -542,6 +545,79 @@ it('activates and clears the negative forecast filter from the shortage summary 
         ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 2);
 });
 
+it('activates and clears the below buffer filter from its summary tile', function (): void {
+    ['user' => $user] = belowBufferWorkspace();
+
+    $this->actingAs($user);
+
+    // The below buffer tile mirrors the shortage tile: it counts a state the
+    // filter panel already exposes, so it has to move stockState rather than
+    // sit next to a clickable sibling doing nothing.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('data-inventory-below-buffer-filter')
+        ->assertSet('stockState', 'all')
+        ->call('toggleBelowBufferFilter')
+        ->assertSet('stockState', 'below_buffer')
+        ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
+            && $materials->first()['is_below_buffer'] === true)
+        ->call('toggleBelowBufferFilter')
+        ->assertSet('stockState', 'all');
+});
+
+it('keeps the material header visible while the rows scroll', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    // A sticky thead only works if the wrapper is a real vertical scroll
+    // container. `overflow-x-auto` alone computes to `overflow-y: auto` but
+    // never actually scrolls, so dropping the height silently unsticks the
+    // header while every other assertion still passes.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('max-h-[70dvh] overflow-auto')
+        ->assertSeeHtml('sticky top-0 z-20');
+});
+
+it('lifts the material filter controls above the sticky header', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    // Filament renders an open dropdown panel as `position: absolute; z-index: 20`
+    // and does not teleport it, so it lands on the same layer as the sticky
+    // `z-20` thead — and loses, because the thead comes later in the DOM. The
+    // filter wrapper has to be its own stacking context above the header for
+    // every select inside it to open over the table rather than behind it.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('data-production-bench-filters')
+        ->assertSeeHtml('class="relative z-30 border-b border-[var(--color-line)] p-4"');
+});
+
+it('sizes the rows per page select to its widest option', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    // The shell reserves `padding-inline-end: 3rem` for the select chevron, so
+    // a fixed width left too little text box for "100" — the widest page size
+    // on offer. Auto width lets the control size itself to its longest option.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('sk-pagination-select h-8 w-auto min-w-20');
+});
+
+it('names the clickable summary tiles with their visible count', function (): void {
+    ['user' => $user] = belowBufferWorkspace();
+
+    $this->actingAs($user);
+
+    // WCAG 2.5.3 Label in Name: the visible text of these tiles *is* the count,
+    // so the accessible name has to contain it. A bare state name made a screen
+    // reader announce "Below buffer" for a control that visibly reads "1".
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeHtml('aria-label="Below buffer (1)"')
+        ->assertSeeHtml('aria-label="Shortage (0)"');
+});
+
 it('gives a below buffer row its own warning state', function (): void {
     ['user' => $user] = belowBufferWorkspace();
 
@@ -554,12 +630,14 @@ it('gives a below buffer row its own warning state', function (): void {
         ->assertViewHas('materials', fn ($materials): bool => $materials->total() === 1
             && $materials->first()['is_below_buffer'] === true
             && $materials->first()['is_shortage'] === false)
-        // The row tint carries the `/40` modifier, which the text badge does
-        // not, so this cannot be satisfied by the badge alone.
+        // The row tint carries the `/40` modifier, which the dot does not, so
+        // this cannot be satisfied by the marker alone.
         ->assertSeeHtml('bg-[var(--color-warning-soft)]/40')
         ->assertDontSeeHtml('bg-[var(--color-danger-soft)]/40')
-        // Colour is never the only signal.
-        ->assertSee('Below buffer');
+        // Colour is never the only signal: the dot is paired with a title and
+        // screen-reader text rather than standing on hue alone.
+        ->assertSeeHtml('size-2 rounded-full bg-[var(--color-warning-strong)]')
+        ->assertSee(__('production_bench.inventory.filter_below_buffer'));
 });
 
 it('keeps danger precedence when a row is both a shortage and below buffer', function (): void {
@@ -1048,7 +1126,10 @@ it('lists a material the workspace can buy before any run asks for it', function
             && $materials->first()['has_demand'] === false
             && $materials->first()['has_listing'] === true)
         ->assertSee('Listed oil')
-        ->assertSee('No planned demand');
+        // The pill is gone like the other two: an unplanned row reads as a
+        // zero in the Required column, in the same place as every other row,
+        // and the demand filter still isolates these materials on request.
+        ->assertDontSee('No planned demand');
 });
 
 it('uses unit-of-measure wording for legacy packaging listing validation', function (): void {

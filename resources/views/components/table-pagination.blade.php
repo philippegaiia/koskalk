@@ -22,7 +22,12 @@
 <div {{ $attributes->class(['flex flex-col gap-3 border-t border-[var(--color-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between']) }}>
     <label class="flex items-center gap-2 text-xs font-medium text-[var(--color-ink-soft)]">
         <span>{{ __('table.pagination.rows_per_page') }}</span>
-        <select wire:model.live="{{ $perPageModel }}" class="sk-pagination-select h-9 w-20 shrink-0 rounded-lg border border-transparent bg-transparent py-1.5 pl-2.5 text-sm text-[var(--color-ink-strong)] outline-[var(--color-active)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]" aria-label="{{ $perPageLabel }}">
+        {{-- The shell's select rule reserves `padding-inline-end: 3rem` for the chevron, so a fixed
+             `w-20` left barely 22px of text box — enough for "25" but not for "100". Auto width
+             sizes the select to its longest option (the native behaviour), so it fits every page
+             size without hard-coding a number that breaks when an option is added. min-w keeps it
+             from collapsing narrower than the choice it replaced. --}}
+        <select wire:model.live="{{ $perPageModel }}" class="sk-pagination-select h-8 w-auto min-w-20 shrink-0 rounded-lg border border-transparent bg-transparent py-1.5 pl-2.5 text-sm text-[var(--color-ink-strong)] outline-[var(--color-active)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]" aria-label="{{ $perPageLabel }}">
             @foreach ($perPageOptions as $perPageOption)
                 <option value="{{ $perPageOption }}">{{ $perPageOption }}</option>
             @endforeach

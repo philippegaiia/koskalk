@@ -28,6 +28,10 @@ matching file before working in that area — they are not injected.
 - **An interface assertion is not a usage assertion** — read the view for view findings.
 - **`git show <base>:<path>`** before calling something absent: gap vs regression.
 - **Name the condition the code evaluates, never a role label** — grep for *assignment* sites.
+- **`aria-label` beats a wrapping `<label>`**: a control showing visible text while taking an
+  aria-label prop announces *only* the prop (WCAG 2.5.3). Render the prop as the visible text and
+  point at it with `aria-labelledby`. Related: a card with a sticky `z-20` thead needs
+  `relative z-30` on any Filament form wrapper above it, or the dropdown opens behind the header.
 - **Never trust a single headless-Chrome measurement** — flakes by ~15px; take ≥3 samples, keep median.
   **Chrome clamps `--window-size` to a 500px minimum** — 320/375/414 all report `innerWidth=500`. To
   test phone widths, force a width on a wrapper element, don't shrink the window.

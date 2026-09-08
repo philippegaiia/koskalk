@@ -698,6 +698,26 @@ it('offers a reset whenever something narrows the lot register', function (): vo
         ->assertSeeHtml('wire:click="clearLotFilters"');
 });
 
+it('lets the lot material chip be dismissed on its own', function (): void {
+    ['user' => $user, 'ingredient' => $ingredient] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertDontSeeHtml('wire:click="clearLotMaterial"')
+        ->set('lotMaterial', $ingredient->public_id)
+        ->set('lotMaterialType', 'ingredient')
+        // The chip sits beside a "Clear filters" button that resets the whole
+        // register, so it has to be undoable on its own the way the materials
+        // tab chips are, or it is the one filter you cannot dismiss singly.
+        ->assertSeeHtml('wire:click="clearLotMaterial"')
+        ->assertSee(__('production_bench.inventory.lot_material').': Olive oil')
+        ->call('clearLotMaterial')
+        ->assertSet('lotMaterial', '')
+        ->assertSet('lotMaterialType', '')
+        ->assertSet('lotFilters.lotMaterialSelection', null);
+});
+
 it('does not blame a material for an empty lot register', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();

@@ -249,8 +249,12 @@
                             <button type="button" wire:click="clearLotFilters" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.inventory.clear_filters') }}</button>
                         @endif
 
+                        {{-- Dismissible like the chips on the materials tab: it sits beside a
+                             "Clear filters" button that resets everything, so leaving this one
+                             undismissable would make it the only filter you cannot undo on
+                             its own. --}}
                         @if ($lotMaterialLabel)
-                            <span class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.lot_material') }}: {{ $lotMaterialLabel }}</span>
+                            <button type="button" wire:click="clearLotMaterial" class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.lot_material') }}: {{ $lotMaterialLabel }} ×</button>
                         @endif
                     </div>
 

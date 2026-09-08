@@ -75,7 +75,7 @@ it('renders compact accessible pagination for the ingredient catalog', function 
     $this->actingAs($user)
         ->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSeeText('Rows per page')
+        ->assertSeeText(__('ingredients.table.per_page'))
         ->assertSeeText('1–25 of 26')
         ->assertSeeHtml('aria-label="Previous page"')
         ->assertSeeHtml('aria-label="Next page"')

@@ -19668,6 +19668,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.lots_per_page",
+      "text": {
+        "de": "Chargen pro Seite",
+        "es": "Lotes por página",
+        "fr": "Lots par page",
+        "it": "Lotti per pagina",
+        "nl": "Partijen per pagina",
+        "pt_BR": "Lotes por página"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.mass_shown",
       "text": {
         "de": "Masse in :unit; Verpackungen werden in Einheiten angezeigt.",
@@ -19728,6 +19740,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.materials_per_page",
+      "text": {
+        "de": "Materialien pro Seite",
+        "es": "Materiales por página",
+        "fr": "Matériaux par page",
+        "it": "Materiali per pagina",
+        "nl": "Materialen per pagina",
+        "pt_BR": "Materiais por página"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.materials_title",
       "text": {
         "de": "Bestand nach Material",
@@ -19736,6 +19760,18 @@
         "it": "Scorte per materia",
         "nl": "Voorraad per materiaal",
         "pt_BR": "Estoque por material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.movements_per_page",
+      "text": {
+        "de": "Bewegungen pro Seite",
+        "es": "Movimientos por página",
+        "fr": "Mouvements par page",
+        "it": "Movimenti per pagina",
+        "nl": "Bewegingen per pagina",
+        "pt_BR": "Movimentações por página"
       }
     },
     {

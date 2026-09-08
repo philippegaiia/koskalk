@@ -74,7 +74,7 @@ it('renders compact accessible pagination for the packaging catalog', function (
     $this->actingAs($user)
         ->get(route('packaging-items.index'))
         ->assertSuccessful()
-        ->assertSeeText('Rows per page')
+        ->assertSeeText(__('packaging.table.per_page'))
         ->assertSeeText('1–25 of 26')
         ->assertSeeHtml('aria-label="Previous page"')
         ->assertSeeHtml('aria-label="Next page"')

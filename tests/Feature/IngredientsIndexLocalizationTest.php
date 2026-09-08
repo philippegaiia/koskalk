@@ -69,6 +69,14 @@ it('loads ingredient index interface copy from the database', function () {
         ]);
     }
 
+    // The page size control reads its own per-page label, not the generic
+    // `table.pagination.rows_per_page` fallback the component defaults to.
+    InterfaceTranslation::query()->create([
+        'group' => 'ingredients',
+        'key' => 'table.per_page',
+        'text' => ['fr' => 'Ingrédients par page'],
+    ]);
+
     foreach ([
         'pagination.rows_per_page' => 'Lignes par page',
         'pagination.summary' => ':first–:last sur :total',
@@ -89,7 +97,7 @@ it('loads ingredient index interface copy from the database', function () {
         ->assertSeeText('Votre prix / kg (EUR)')
         ->assertSeeText('Dupliquer un ingrédient Soapkraft')
         ->assertSeeText('Vous')
-        ->assertSeeText('Lignes par page')
+        ->assertSeeText('Ingrédients par page')
         ->assertSeeText('1–1 sur 1');
 });
 

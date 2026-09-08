@@ -659,6 +659,24 @@ it('lifts the lot register filter controls above the sticky header', function ()
         ->assertSeeHtml('class="relative z-30 border-b border-[var(--color-line)] p-4"');
 });
 
+it('names the page size control with the text it shows', function (): void {
+    ['user' => $user] = plannedShortageWorkspace();
+
+    $this->actingAs($user);
+
+    // WCAG 2.5.3 Label in Name. The select carried an `aria-label` of the section
+    // title, and `aria-label` beats the wrapping <label>, so the control was
+    // announced as "Stock by material" while the eye read "Rows per page" — a
+    // voice user asking for what they see reaches nothing. The name now comes
+    // from the visible label, which also says which table the control belongs to.
+    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
+        ->assertSeeText(__('production_bench.inventory.materials_per_page'))
+        // The id carries the model and the paginator's page name so two
+        // paginators on one screen cannot end up sharing a label.
+        ->assertSeeHtml('id="per-page-perPage-materials"')
+        ->assertSeeHtml('aria-labelledby="per-page-perPage-materials"');
+});
+
 it('collapses the lot register narrowing filters behind a disclosure', function (): void {
     ['user' => $user] = lotRegisterWorkspace();
 

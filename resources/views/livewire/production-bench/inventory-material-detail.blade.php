@@ -153,7 +153,9 @@
             </div>
             <x-table-pagination
                 :paginator="$supplierListings"
-                :per-page-label="__('production_bench.inventory.related_supplier_listings')"
+                {{-- The section heading already says "Supplier listings" directly above; this one
+                     says what the select does, and tells the two paginators on this page apart. --}}
+                :per-page-label="__('production_bench.listing.per_page')"
                 per-page-model="supplierListingsPerPage"
                 :per-page-options="[10, 25, 50]"
             />
@@ -217,7 +219,7 @@
                     </tbody>
                 </table>
             </div>
-            <x-table-pagination :paginator="$movements" :per-page-label="__('production_bench.inventory.period_activity')" />
+            <x-table-pagination :paginator="$movements" :per-page-label="__('production_bench.inventory.movements_per_page')" />
         </section>
     @endif
 

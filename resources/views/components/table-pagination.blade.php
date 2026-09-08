@@ -1,6 +1,9 @@
 @props([
     'paginator',
-    'perPageLabel' => 'Rows per page',
+    // Shown beside the select and, through `aria-labelledby`, read as its name.
+    // Callers pass a per-page phrasing of their own ("Supplier listings per
+    // page") so two paginators on one screen stay tellable apart.
+    'perPageLabel' => null,
     // A page can carry more than one paginator, and each one has its own
     // allow-list. Binding them all to `perPage` would make one control rewrite
     // the other's page size, so the model and the options are both injectable.
@@ -12,6 +15,10 @@
     $currentPage = $paginator->currentPage();
     $lastPage = $paginator->lastPage();
     $pageName = $paginator->getPageName();
+    $perPageLabel ??= __('table.pagination.rows_per_page');
+    // One id per instance: the material detail screen renders two paginators,
+    // and each label has to belong to its own select.
+    $perPageLabelId = 'per-page-'.$perPageModel.'-'.$pageName;
     $pages = collect([1, $currentPage - 1, $currentPage, $currentPage + 1, $lastPage])
         ->filter(fn (int $page): bool => $page >= 1 && $page <= $lastPage)
         ->unique()
@@ -21,13 +28,18 @@
 
 <div {{ $attributes->class(['flex flex-col gap-3 border-t border-[var(--color-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between']) }}>
     <label class="flex items-center gap-2 text-xs font-medium text-[var(--color-ink-soft)]">
-        <span>{{ __('table.pagination.rows_per_page') }}</span>
+        {{-- WCAG 2.5.3 Label in Name: the select used to carry `aria-label="{{ $perPageLabel }}"`,
+             which overrode this visible text, so the control was announced as e.g. "Stock by
+             material" while the eye read "Rows per page" — a voice user asking for the visible
+             label would reach nothing. Pointing at the span instead makes the accessible name
+             exactly what is on screen, and still says which table it belongs to. --}}
+        <span id="{{ $perPageLabelId }}">{{ $perPageLabel }}</span>
         {{-- The shell's select rule reserves `padding-inline-end: 3rem` for the chevron, so a fixed
              `w-20` left barely 22px of text box — enough for "25" but not for "100". Auto width
              sizes the select to its longest option (the native behaviour), so it fits every page
              size without hard-coding a number that breaks when an option is added. min-w keeps it
              from collapsing narrower than the choice it replaced. --}}
-        <select wire:model.live="{{ $perPageModel }}" class="sk-pagination-select h-8 w-auto min-w-20 shrink-0 rounded-lg border border-transparent bg-transparent py-1.5 pl-2.5 text-sm text-[var(--color-ink-strong)] outline-[var(--color-active)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]" aria-label="{{ $perPageLabel }}">
+        <select wire:model.live="{{ $perPageModel }}" aria-labelledby="{{ $perPageLabelId }}" class="sk-pagination-select h-8 w-auto min-w-20 shrink-0 rounded-lg border border-transparent bg-transparent py-1.5 pl-2.5 text-sm text-[var(--color-ink-strong)] outline-[var(--color-active)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
             @foreach ($perPageOptions as $perPageOption)
                 <option value="{{ $perPageOption }}">{{ $perPageOption }}</option>
             @endforeach

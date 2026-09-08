@@ -227,7 +227,7 @@
                     </table>
                 </div>
                 @if ($materials)
-                    <x-table-pagination :paginator="$materials" :per-page-label="__('production_bench.inventory.stock_by_material')" />
+                    <x-table-pagination :paginator="$materials" :per-page-label="__('production_bench.inventory.materials_per_page')" />
                 @endif
             </section>
         @else
@@ -405,7 +405,7 @@
                         </tbody>
                     </table>
                 </div>
-                <x-table-pagination :paginator="$lots" :per-page-label="__('production_bench.inventory.lot_register')" />
+                <x-table-pagination :paginator="$lots" :per-page-label="__('production_bench.inventory.lots_per_page')" />
             </section>
         @endif
 

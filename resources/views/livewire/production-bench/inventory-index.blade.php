@@ -290,9 +290,11 @@
                      the viewport and "Rows per page" decides the length. The wrapper only
                      scrolls horizontally while the card is narrower than the table, because a
                      scroll container of any kind becomes what `sticky top-0` resolves against.
-                     Floor is measured: 952px before anything wraps, so 992px with air. --}}
-                <div class="overflow-x-auto @min-[62rem]:overflow-x-visible">
-                    <table class="w-full min-w-[992px] text-left text-sm">
+                     Floor is measured, not guessed: adding the visible status word took the
+                     table's min-content from 981px to 1009px, so 1024px leaves a little air.
+                     Above the floor there is no sideways scroll left to lose. --}}
+                <div class="overflow-x-auto @min-[64rem]:overflow-x-visible">
+                    <table class="w-full min-w-[1024px] text-left text-sm">
                         <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
@@ -363,25 +365,33 @@
                                         @endif
                                     </td>
                                     {{-- The pill restated what the row action in the last column
-                                         already offers: a released lot says "Quarantine", a
-                                         quarantined one says "Release". A dot carries the same
-                                         state in a tenth of the width and hands the space to the
-                                         stocked-on date, which was breaking over two lines.
-                                         Colour alone is not a cue (WCAG 1.4.1), so the state is
-                                         still spelled out — for a screen reader here, and for
-                                         anyone hovering the dot. --}}
+                                         already offers — a released lot says "Quarantine", a
+                                         quarantined one says "Release" — and it was wide enough
+                                         to push the stocked-on date onto a second line. The dot
+                                         keeps the column scannable and cheap.
+
+                                         It does not replace the word, though. Two dots 120° apart
+                                         in hue were not told apart at a glance even before colour
+                                         vision is considered, and a hover title plus an sr-only
+                                         span only served people who could hover or who use a
+                                         screen reader — a read-only user gets no action button in
+                                         the last column to name the state either. So the state is
+                                         spelled out in visible `text-xs`, which widens the column
+                                         by ~68px and the table's min-content by 28px — a floor the
+                                         1184px cap still clears. The dot is then decoration:
+                                         `aria-hidden`, with the word carrying the meaning. --}}
                                     <td class="px-4 py-3">
                                         @php($isReleased = $lot->status->value === 'released')
                                         @php($lotStatusLabel = $isReleased ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined'))
-                                        <span class="inline-flex items-center" title="{{ $lotStatusLabel }}">
+                                        <span class="inline-flex items-center gap-2 whitespace-nowrap text-xs text-[var(--color-ink-soft)]">
                                             {{-- The base tones, not `-strong`: at this size the strong
                                                  pair collapsed into two dark spots (#00422e vs
                                                  #8a3f04, both above 7:1 on the panel). Green at
                                                  #257055 and amber at #b45307 are 120° apart in hue
                                                  and both near 5:1, so they stay distinct at a glance
                                                  while clearing the 3:1 non-text minimum. --}}
-                                            <span class="size-2.5 rounded-full {{ $isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]' }}" aria-hidden="true"></span>
-                                            <span class="sr-only">{{ $lotStatusLabel }}</span>
+                                            <span class="size-2.5 shrink-0 rounded-full {{ $isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]' }}" aria-hidden="true"></span>
+                                            {{ $lotStatusLabel }}
                                         </span>
                                     </td>
                                     <td class="numeric whitespace-nowrap px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>

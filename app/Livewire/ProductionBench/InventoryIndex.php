@@ -205,8 +205,11 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->live(debounce: 300)
                             // Filament does not associate helper copy with its inputs, so the
                             // sentence rendered under the form is invisible to screen readers
-                            // unless it is pointed at explicitly.
-                            ->extraAttributes(['aria-describedby' => 'inventory-search-help'])
+                            // unless it is pointed at explicitly. It has to be
+                            // `extraInputAttributes()`: `extraAttributes()` merges onto the
+                            // field's outer wrapper <div>, which is never focused and so never
+                            // announces anything — only the <input> is.
+                            ->extraInputAttributes(['aria-describedby' => 'inventory-search-help'])
                             ->columnSpan(['sm' => 2, 'xl' => 1]),
                         Select::make('sort')
                             ->label(__('production_bench.inventory.sort'))
@@ -322,10 +325,10 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ->type('search')
                             ->placeholder(__('production_bench.common.search'))
                             ->live(debounce: 300)
-                            // Filament does not associate helper copy with its inputs, so the
-                            // sentence rendered under the form is invisible to screen readers
-                            // unless it is pointed at explicitly.
-                            ->extraAttributes(['aria-describedby' => 'lot-register-search-help'])
+                            // As in the material schema: the attribute must land on the
+                            // <input>, not on the wrapper `extraAttributes()` would target,
+                            // or the help sentence is never announced.
+                            ->extraInputAttributes(['aria-describedby' => 'lot-register-search-help'])
                             ->columnSpanFull(),
                         // Scope stays outside the disclosure even though the other
                         // narrowing filters moved into it: it is the only one whose

@@ -637,9 +637,12 @@ it('keeps the lot register header and identity column in view', function (): voi
     // the identity cell has to outrank the quantity columns it slides over.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[62rem]:overflow-x-visible')
-        // Measured at 952px before anything wraps.
-        ->assertSeeHtml('min-w-[992px]')
+        ->assertSeeHtml('overflow-x-auto @min-[64rem]:overflow-x-visible')
+        // Min-content measured at 1009px once the status column carries its
+        // visible word, so the floor has to sit above that, not below it — with
+        // the floor under the table's real need, the container query would drop
+        // the horizontal scroll while the table still overflowed the card.
+        ->assertSeeHtml('min-w-[1024px]')
         ->assertSeeHtml('sticky top-0 z-20')
         // Corner cell above its sibling headers, body cell above the quantities.
         ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
@@ -772,7 +775,7 @@ it('lets the lot material chip be dismissed on its own', function (): void {
         ->assertSet('lotFilters.lotMaterialSelection', null);
 });
 
-it('carries lot status as a dot instead of a second status pill', function (): void {
+it('carries lot status as a dot plus a visible state word', function (): void {
     ['user' => $user] = lotRegisterWorkspace();
 
     $this->actingAs($user);
@@ -780,13 +783,18 @@ it('carries lot status as a dot instead of a second status pill', function (): v
     // The row action in the last column already reads "Quarantine" for a released
     // lot and "Release" for a quarantined one, so the pill was a second copy of
     // the same fact — and it was wide enough to push the stocked-on date onto a
-    // second line. The dot still has to name the state, since colour alone is not
-    // a cue: sr-only text for a screen reader, a title for anyone hovering.
+    // second line. The dot keeps the column cheap and scannable.
+    //
+    // The word has to stay visible, though. Two hues 120° apart were not told
+    // apart at a glance, and an sr-only span plus a `title` only served screen
+    // readers and people who hover — a read-only user has no action button in the
+    // last column to name the state either. The dot is `aria-hidden`; the word
+    // carries the meaning on its own.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertDontSeeHtml('rounded-full px-2.5 py-1 text-xs font-medium')
-        ->assertSeeHtml('size-2.5 rounded-full bg-[var(--color-success)]')
-        ->assertSeeHtml('title="'.__('production_bench.inventory.released').'"')
-        ->assertSeeHtml('class="sr-only">'.__('production_bench.inventory.released').'</span>');
+        ->assertSeeHtml('size-2.5 shrink-0 rounded-full bg-[var(--color-success)]')
+        ->assertSeeText(__('production_bench.inventory.released'))
+        ->assertDontSeeHtml('class="sr-only">'.__('production_bench.inventory.released').'</span>');
 });
 
 it('makes the whole lot identity cell a link to the material detail', function (): void {
@@ -835,19 +843,36 @@ it('does not blame a material for an empty lot register', function (): void {
         ->assertDontSee(__('production_bench.inventory.no_open_lots'));
 });
 
-it('points the inventory search fields at their help text', function (): void {
+it('points the inventory search inputs at their help text', function (): void {
     ['user' => $user] = lotRegisterWorkspace();
 
     $this->actingAs($user);
 
     // Filament does not associate helper copy with its inputs, so the sentence
     // rendered under each filter form is invisible to a screen reader unless the
-    // input names it. Both tabs carried an id that nothing referenced.
-    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->assertSeeHtml('aria-describedby="lot-register-search-help"');
+    // <input> names it. It has to be `extraInputAttributes()`: `extraAttributes()`
+    // merges onto the field's wrapper <div>, which is never focused and so never
+    // announces the description — and a plain `assertSeeHtml` for the attribute
+    // passes on that wrapper, which is why this reads the <input> tag itself
+    // rather than searching the whole response.
+    foreach ([
+        ['mode' => 'stock', 'helpId' => 'lot-register-search-help'],
+        ['mode' => 'materials', 'helpId' => 'inventory-search-help'],
+    ] as $case) {
+        $html = Livewire::test(InventoryIndex::class, ['mode' => $case['mode']])->html();
 
-    Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
-        ->assertSeeHtml('aria-describedby="inventory-search-help"');
+        preg_match_all('/<input\b[^>]*>/', $html, $matches);
+
+        $namedSearchInput = collect($matches[0])->first(
+            fn (string $tag): bool => str_contains($tag, 'type="search"')
+                && str_contains($tag, 'aria-describedby="'.$case['helpId'].'"')
+        );
+
+        expect($namedSearchInput)->not->toBeNull();
+
+        // Exactly once, so the attribute has not been left on the wrapper too.
+        expect(substr_count($html, 'aria-describedby="'.$case['helpId'].'"'))->toBe(1);
+    }
 });
 
 it('sizes the rows per page select to its widest option', function (): void {

@@ -162,12 +162,14 @@ exactly as designed.
 
 1. Dump the real markup: `Livewire::test(...)->html()` in a scratch test (needs
    `uses(RefreshDatabase::class)` — `tests/Pest.php` has it commented out globally).
-2. **Inline `public/build/assets/app-*.css`, NOT the dev server's.** `curl
-   https://koskalk.test:5173/resources/css/app.css` returns a **Vite JS module**
-   (`__vite__css = "…"`), so injecting it into `<style>` silently applies nothing — the tell-tale is
-   a computed `font-size` of 16px where `text-xs` should give 12px, and `size-2.5` measuring 0.
-   `public/build` is gitignored and stale for *deploy*, but every long-standing utility is in it,
-   which is all a measurement needs.
+2. **Get the CSS with `?direct`.** `curl -sk "https://koskalk.test:5173/resources/css/app.css"`
+   returns a **Vite JS module** (`__vite__css = "…"`) — injecting that into `<style>` applies
+   nothing, and the failure is silent: computed `font-size` reads 16px where `text-xs` should be
+   12px, `size-2.5` measures 0. Append **`?direct`** and you get compiled CSS. **Do not use
+   `public/build/assets/app-*.css`** — it is gitignored *and* stale, so it silently lacks any
+   utility or container query added since the last build (this made every width report
+   `overflowX=auto` and looked like a broken feature). After editing a Blade file, allow a moment
+   for Vite to rescan before fetching, or you get the previous compile.
 3. `table.style.minWidth='0'; table.style.width='min-content'` then read
    `getBoundingClientRect().width`. That is the narrowest the table goes before any cell wraps.
 4. Pin the wrapper and let the table size itself (`width:auto`) to answer "does it fit floor N".
@@ -181,6 +183,20 @@ Measured 2026-09-08 with real CSS: lot register min-content **981px** with a bar
 **1009px** once the status column carries a visible word — a 28px delta, far less than the ~74px you
 would predict by adding up the glyphs, because the binding column is not always the one you changed.
 Measure the delta; don't estimate it.
+
+**Verifying sticky behaviour in that same harness** (append a tall spacer above and below so the
+page scrolls, scroll to `tableTop + 120`, read `thead.getBoundingClientRect().top`):
+
+| card width | wrapper overflowX | theadTop | sticky? |
+|---|---|---|---|
+| 900 / 1000 | `auto` | −120 | no |
+| **1024** (the floor) | `visible` | **0** | **yes** |
+| 1089 (1440 laptop) | `visible` | **0** | **yes** |
+| 1184 (the cap) | `visible` | **0** | **yes** |
+
+The flip is exactly at the floor, three samples identical. To check the sticky *column*, set
+`wrapper.scrollLeft = 240` and confirm the first `th`/`td` stay at `left - wrapper.left = 0` —
+it only has work to do while the wrapper scrolls, so probe it below the floor.
 
 Layers: thead `z-20` > corner `<th>` `z-30` > sticky body `<td>` `z-10`. Filament dropdown panels are
 `position: absolute; z-index: 20` and **not teleported** (`teleport => false`), so they lose to a

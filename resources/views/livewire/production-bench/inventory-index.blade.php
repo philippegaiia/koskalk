@@ -307,18 +307,37 @@
                                          scroll beneath it. Lot rows carry no tint of their own, so
                                          the plain panel colour is enough here. --}}
                                     <td class="sticky left-0 z-10 border-r border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-3">
+                                        {{-- One block link over the whole identity cell, like the materials
+                                             tab: a row cannot be wrapped in an anchor, so the cell is the
+                                             largest target available and the name, the codes, the batch
+                                             and the expiry all lead to the material instead of only the
+                                             name and the arrow.
+
+                                             Deliberately the cell and not the whole row. The row already
+                                             carries two other destinations — the receipt/supplier link and
+                                             the quarantine/release action in the last column — and a
+                                             row-wide target would have to swallow both. The quantity
+                                             columns stay plain text so numbers remain selectable. --}}
                                         @if ($row['detail_url'])
-                                            <a href="{{ $row['detail_url'] }}" wire:navigate class="group -m-1 inline-flex min-h-9 items-center gap-1.5 rounded p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
-                                                <span class="font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $lot->subjectName() }}</span>
-                                                <span class="text-[var(--color-ink-soft)] group-hover:text-[var(--color-accent-strong)]" aria-hidden="true">&rarr;</span>
-                                                <span class="sr-only">{{ __('production_bench.inventory.open_material_detail') }}</span>
-                                            </a>
+                                            <a href="{{ $row['detail_url'] }}" wire:navigate class="group -m-2 flex min-h-11 items-start justify-between gap-3 rounded-lg p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
                                         @else
-                                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                            <div>
                                         @endif
-                                        @if ($materialCode)<p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
-                                        <p class="mt-0.5 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p>
-                                        @if($lot->expires_at)<p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.expires_on') }}: {{ $lot->expires_at->format('Y-m-d') }}</p>@endif
+                                            <span class="min-w-0">
+                                                <span class="block font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $lot->subjectName() }}</span>
+                                                @if ($materialCode)<span class="mt-0.5 block font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</span>@endif
+                                                <span class="mt-0.5 block font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }}@if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }}@endif</span>
+                                                @if($lot->expires_at)<span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.expires_on') }}: {{ $lot->expires_at->format('Y-m-d') }}</span>@endif
+                                            </span>
+                                        @if ($row['detail_url'])
+                                            <span class="mt-0.5 shrink-0 text-[var(--color-ink-soft)] group-hover:text-[var(--color-accent-strong)]" aria-hidden="true">&rarr;</span>
+                                            <span class="sr-only">{{ __('production_bench.inventory.open_material_detail') }}</span>
+                                        </a>
+                                        @else
+                                            </div>
+                                        @endif
+                                        {{-- Outside the block link: it goes to the receipt, not the
+                                             material, and an anchor cannot nest inside an anchor. --}}
                                         @if ($originReceipt)
                                             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
                                                 <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>

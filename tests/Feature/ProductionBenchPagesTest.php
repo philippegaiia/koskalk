@@ -746,6 +746,34 @@ it('carries lot status as a dot instead of a second status pill', function (): v
         ->assertSeeHtml('class="sr-only">'.__('production_bench.inventory.released').'</span>');
 });
 
+it('makes the whole lot identity cell a link to the material detail', function (): void {
+    ['user' => $user, 'ingredient' => $ingredient, 'lot' => $lot] = lotRegisterWorkspace();
+
+    $lot->forceFill([
+        'internal_lot_code' => 'LOT-7781',
+        'supplier_batch_number' => 'BLEND-42',
+        'expires_at' => now()->addMonths(4)->toDateString(),
+    ])->save();
+
+    $this->actingAs($user);
+
+    // A row cannot be wrapped in an anchor, so — as on the materials tab — the
+    // identity cell itself is the link: the codes, the batch and the expiry lead
+    // to the material too, instead of only the name and the arrow. Asserted by
+    // slicing the rendered anchor rather than by counting strings, because the
+    // point is that those lines sit *inside* it.
+    $html = Livewire::test(InventoryIndex::class, ['mode' => 'stock'])->html();
+
+    $needle = 'href="'.route('production-bench.inventory.material.ingredient', $ingredient).'"';
+    $start = strpos($html, $needle);
+    $anchor = $start === false ? '' : substr($html, $start, strpos($html, '</a>', $start) - $start);
+
+    expect($anchor)->toContain('LOT-7781')
+        ->and($anchor)->toContain('BLEND-42')
+        ->and($anchor)->toContain(__('production_bench.inventory.expires_on'))
+        ->and($anchor)->toContain(__('production_bench.inventory.open_material_detail'));
+});
+
 it('does not blame a material for an empty lot register', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();

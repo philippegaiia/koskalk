@@ -576,7 +576,11 @@ it('keeps the material header visible while the rows scroll', function (): void 
     // instead and quietly does nothing).
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[70rem]:overflow-x-visible')
+        ->assertSeeHtml('overflow-x-auto @min-[55rem]:overflow-x-visible')
+        // The floor is measured, not guessed: this table needs 834px before any
+        // cell wraps. Setting it higher would keep the header unstuck on screens
+        // that could perfectly well fit the table.
+        ->assertSeeHtml('min-w-[880px]')
         ->assertSeeHtml('sticky top-0 z-20');
 });
 
@@ -606,7 +610,9 @@ it('keeps the lot register header and identity column in view', function (): voi
     // the identity cell has to outrank the quantity columns it slides over.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[65rem]:overflow-x-visible')
+        ->assertSeeHtml('overflow-x-auto @min-[62rem]:overflow-x-visible')
+        // Measured at 952px before anything wraps.
+        ->assertSeeHtml('min-w-[992px]')
         ->assertSeeHtml('sticky top-0 z-20')
         // Corner cell above its sibling headers, body cell above the quantities.
         ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')

@@ -136,9 +136,13 @@
                      card is narrower than the table; once the table fits, overflow goes
                      back to `visible` and the header sticks to the viewport. `overflow-clip`
                      on the card keeps the rounded corners without creating the scrollport
-                     that `overflow-hidden` would. --}}
-                <div class="overflow-x-auto @min-[70rem]:overflow-x-visible">
-                    <table class="w-full min-w-[1120px] text-left text-sm">
+                     that `overflow-hidden` would.
+
+                     The threshold matches the table's floor, and the floor is measured: this
+                     table needs 834px before any cell wraps, so 880px keeps a little air and
+                     means the header sticks on any card at least that wide. --}}
+                <div class="overflow-x-auto @min-[55rem]:overflow-x-visible">
+                    <table class="w-full min-w-[880px] text-left text-sm">
                         <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.material') }}</th>
@@ -275,9 +279,10 @@
                      the materials tab: no height cap, so the page scrolls, the thead sticks to
                      the viewport and "Rows per page" decides the length. The wrapper only
                      scrolls horizontally while the card is narrower than the table, because a
-                     scroll container of any kind becomes what `sticky top-0` resolves against. --}}
-                <div class="overflow-x-auto @min-[65rem]:overflow-x-visible">
-                    <table class="w-full min-w-[1040px] text-left text-sm">
+                     scroll container of any kind becomes what `sticky top-0` resolves against.
+                     Floor is measured: 952px before anything wraps, so 992px with air. --}}
+                <div class="overflow-x-auto @min-[62rem]:overflow-x-visible">
+                    <table class="w-full min-w-[992px] text-left text-sm">
                         <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>

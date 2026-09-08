@@ -13,7 +13,7 @@ matching file before working in that area — they are not injected.
 
 ## Conventions
 
-- Work happens in **worktrees** under `.worktrees/<slug>` (`codex/<slug>`); re-check `git worktree list`.
+- Worktrees under `.worktrees/<slug>` (`codex/<slug>`); re-check `git worktree list`.
 - Pint is the only automated gate; no PHPStan.
 - Test helpers in Feature tests are **file-scoped** — copy them, don't call cross-file.
 - Under `.workbuddy-ai/`: commit `memory/`, `artifacts/`, `reports/`; ignore only `skills/`.
@@ -22,39 +22,30 @@ matching file before working in that area — they are not injected.
 
 ## Reviewing: habits that prevent wrong calls
 
+Full list in `memory/reference/reviewing.md`. The three that bite:
+
 - **`.ai/rules/index.md` maps path globs → rule files — read it before auditing any file.**
 - **The spec is the authority on intent, not the test** (`docs/superpowers/specs|plans`).
-- **State retractions plainly, per-clause.** When amending a findings doc, re-check its summary too.
-- **An interface assertion is not a usage assertion** — read the view for view findings.
-- **`git show <base>:<path>`** before calling something absent: gap vs regression.
-- **Name the condition the code evaluates, never a role label** — grep for *assignment* sites.
-- **`aria-label` beats a wrapping `<label>`**: a control showing visible text while taking an
-  aria-label prop announces *only* the prop (WCAG 2.5.3). Render the prop as the visible text and
-  point at it with `aria-labelledby`. Related: a card with a sticky `z-20` thead needs
-  `relative z-30` on any Filament form wrapper above it, or the dropdown opens behind the header.
-- **Never trust a single headless-Chrome measurement** — flakes by ~15px; take ≥3 samples, keep median.
-  **Chrome clamps `--window-size` to a 500px minimum** — 320/375/414 all report `innerWidth=500`. To
-  test phone widths, force a width on a wrapper element, don't shrink the window.
+- **Derive measurements from the source; never pick a round number.** I cited "1280px" for weeks as
+  the desktop reference; the app caps at **1184** and 1280 was only a viewport I chose.
 
-## Environment (verify before trusting)
+## Environment
 
 - **PHP is not on PATH:** `/Users/philippe/Library/Application Support/Herd/bin/php85`.
-- **Bash `grep` is unreliable here — use the Grep tool.** A bash-grep miss is not evidence of absence.
+- **Bash `grep` is unreliable — use the Grep tool.** A bash-grep miss is not evidence of absence.
 - **`php artisan test` OOMs** — `php85 -d memory_limit=2G vendor/bin/pest` (~2m20s).
 - `herd` CLI is on PATH; `koskalk.test` needs no symlink (Herd parks `~/Herd`); worktree previews do.
+- **`npm run build` is sandbox-denied** (Vite `loadEnv` reads `.env`); check CSS via `public/hot`.
 
 ## Skills
 
-`jakubkrehel/skills` (120) at `~/.agents/skills`, symlinked into `~/.claude/skills` and
-`~/.codex/skills` — do **not** re-run `npx skills add`; find with `find -L`. Relevant:
-`better-interface` (orchestrator), `better-accessibility`, `better-layout`, `better-writing`,
-`better-typography`, `better-colors`, `better-ui`, `interface-review` (diffs only), `grilling`.
-**Not registered in the Skill tool** — read `~/.agents/skills/<name>/SKILL.md` directly.
+`jakubkrehel/skills` (120) at `~/.agents/skills`, symlinked into `~/.claude/skills` +
+`~/.codex/skills` — do **not** re-run `npx skills add`; find with `find -L`. **Not registered in the
+Skill tool** — read `~/.agents/skills/<name>/SKILL.md` directly.
 
 ## Currently parked
 
-- **Decimal alignment consolidation — owner said do not implement** (40-site audit in
-  `docs/superpowers/plans/2026-09-04-decimal-alignment-consolidation.md`).
+- **Decimal alignment consolidation — owner said do not implement** (see the 2026-09-04 plan).
 - **Ingredient editor UX audit** — analysis only; F1 traced statically, never reproduced.
-- Open for the owner: should Viewers reach the editor? is material code workspace-scoped only for
-  platform ingredients? should guidance/material code autosave?
+- Open: should Viewers reach the editor? is material code workspace-scoped only for platform
+  ingredients? do guidance/material code autosave?

@@ -101,6 +101,36 @@ Full 40-site audit + consolidation plan (PROVISIONAL, owner said do not implemen
   `formatDecimalInput` (0–12 decimals). Price unit is **kg** or **lb** only
   (`MassDisplaySystem::priceUnit()`), never g — integer parts run 1–5 digits.
 
+## Content width — how wide is a card, actually
+
+**The app caps at 1184px, not 1280.** `--container-app: 74rem` (`soapkraft.css:14`) surfaces as the
+native Tailwind `max-w-app`. Introduced by `7eb53093` (2026-08-07), which replaced the scattered
+`max-w-7xl` (1280) / `max-w-[90rem]` (1440) and deleted the production-bench compact (1024) variant.
+The comment in the file says it plainly: *"on laptops (~1440–1512 CSS px) it never binds"*.
+**Still hardcoded `max-w-[1180px]`, not on the token:** `layouts/public.blade.php:21,70`,
+`welcome.blade.php:44,129`, `dashboard/recipe-workbench.blade.php:6`,
+`partials/recipe-workbench/formula-bottom-action-bar.blade.php:4`.
+
+Derivation for any authenticated page (`layouts/app-shell.blade.php:39,45,132` +
+`x-production-bench.page`), all from committed CSS:
+
+| viewport W | available card width |
+|---|---|
+| W < 1024 (no grid, `px-6`) | `W − 15 − 48` → 768 = **705** |
+| W ≥ 1024 (sidebar 272 + `lg:px-8`) | `min(W − 15 − 272 − 64, 1184)` = `min(W − 351, 1184)` |
+| 1024 / 1280 / 1440 / 1512 | **673** / **929** / **1089** / **1146** |
+| W ≥ 1535 | **1184** (the cap; never grows again) |
+
+The 15px is a classic (non-overlay) scrollbar — matches the flake noted below. This model
+reproduces four independent headless-Chrome measurements exactly, so trust it over a fresh probe.
+Collapsing the sidebar only widens the column, so 272px is the conservative case.
+
+**Consequence for sticky thresholds:** a `min-w-*` floor F sticks at `W ≥ F + 351`. Materials
+(880) → 1231. Lot register (992) → 1343. Both fit at the 1184 cap with 304 / 192px to spare.
+
+**Do not invent a reference viewport.** 1280 was my own pick and it is now a *narrow* desktop —
+below the range the app targets. Derive the number from the CSS instead of choosing one.
+
 ## Sticky table headers
 
 **Two different designs; pick deliberately.** `sticky top-0` resolves against the *nearest scroll

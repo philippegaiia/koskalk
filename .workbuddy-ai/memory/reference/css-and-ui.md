@@ -126,7 +126,8 @@ reproduces four independent headless-Chrome measurements exactly, so trust it ov
 Collapsing the sidebar only widens the column, so 272px is the conservative case.
 
 **Consequence for sticky thresholds:** a `min-w-*` floor F sticks at `W ≥ F + 351`. Materials
-(880) → 1231. Lot register (992) → 1343. Both fit at the 1184 cap with 304 / 192px to spare.
+(880) → 1231. Lot register (1024, raised 2026-09-08) → 1375. Both fit at the 1184 cap with
+304 / 160px to spare, and both still stick at a 1440 laptop (card 1089).
 
 **Do not invent a reference viewport.** 1280 was my own pick and it is now a *narrow* desktop —
 below the range the app targets. Derive the number from the CSS instead of choosing one.
@@ -157,15 +158,29 @@ sticky; `clip` still clips to the rounded corners and does not. `container-type:
 `theadTop=0` after scrolling 700px, narrow card (overflow auto) `theadTop=-300`, i.e. falls back
 exactly as designed.
 
-**Measuring the width a table actually needs** (for choosing `min-w-*` / thresholds): dump the real
-markup (`Livewire::test(...)->html()` in a scratch test), inline the dev-server CSS, then
-`table.style.minWidth='0'; table.style.width='min-content'` and read `getBoundingClientRect().width`.
-That is the narrowest the table goes *before any cell wraps*. Measured 2026-09-08: Stock by material
-834px, Lot register 952px — against guessed floors of 1120 / 1040.
+**Measuring the width a table actually needs** (for choosing `min-w-*` / thresholds):
 
-To verify the semantics without the app: build a static HTML probe, scroll with an inline script,
-and read it back through `google-chrome --headless=new --dump-dom` (write results into the DOM, then
-grep them out of the dump). Fast and decisive for "does it stick" questions.
+1. Dump the real markup: `Livewire::test(...)->html()` in a scratch test (needs
+   `uses(RefreshDatabase::class)` — `tests/Pest.php` has it commented out globally).
+2. **Inline `public/build/assets/app-*.css`, NOT the dev server's.** `curl
+   https://koskalk.test:5173/resources/css/app.css` returns a **Vite JS module**
+   (`__vite__css = "…"`), so injecting it into `<style>` silently applies nothing — the tell-tale is
+   a computed `font-size` of 16px where `text-xs` should give 12px, and `size-2.5` measuring 0.
+   `public/build` is gitignored and stale for *deploy*, but every long-standing utility is in it,
+   which is all a measurement needs.
+3. `table.style.minWidth='0'; table.style.width='min-content'` then read
+   `getBoundingClientRect().width`. That is the narrowest the table goes before any cell wraps.
+4. Pin the wrapper and let the table size itself (`width:auto`) to answer "does it fit floor N".
+
+Read it back through `google-chrome --headless=new --dump-dom`, writing results into the DOM and
+grepping them out — an inline `<script>` that appends `<p id="probe-result">RESULT …=NNN</p>`. Take
+≥3 samples (see the 15px flake note). **Beware: `grep -o` also matches the string literal inside
+your own script**, so use a distinctive prefix and a pattern that requires digits.
+
+Measured 2026-09-08 with real CSS: lot register min-content **981px** with a bare status dot,
+**1009px** once the status column carries a visible word — a 28px delta, far less than the ~74px you
+would predict by adding up the glyphs, because the binding column is not always the one you changed.
+Measure the delta; don't estimate it.
 
 Layers: thead `z-20` > corner `<th>` `z-30` > sticky body `<td>` `z-10`. Filament dropdown panels are
 `position: absolute; z-index: 20` and **not teleported** (`teleport => false`), so they lose to a

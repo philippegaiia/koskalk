@@ -569,12 +569,14 @@ it('keeps the material header visible while the rows scroll', function (): void 
 
     $this->actingAs($user);
 
-    // A sticky thead only works if the wrapper is a real vertical scroll
-    // container. `overflow-x-auto` alone computes to `overflow-y: auto` but
-    // never actually scrolls, so dropping the height silently unsticks the
-    // header while every other assertion still passes.
+    // The header sticks to the viewport, which means the page — not a box — is
+    // the scroll container. Two things have to hold at once: no height cap (or
+    // the list length stops following "Rows per page"), and no scroll container
+    // around the table once it fits (or `sticky top-0` resolves against that
+    // instead and quietly does nothing).
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
-        ->assertSeeHtml('max-h-[70dvh] overflow-auto')
+        ->assertDontSeeHtml('max-h-[')
+        ->assertSeeHtml('overflow-x-auto @min-[70rem]:overflow-x-visible')
         ->assertSeeHtml('sticky top-0 z-20');
 });
 
@@ -598,12 +600,13 @@ it('keeps the lot register header and identity column in view', function (): voi
 
     $this->actingAs($user);
 
-    // The register is the denser of the two tables, so it needs the same two
-    // affordances. Both are structural: the wrapper must be a real vertical
-    // scroll container or `sticky top-0` has nothing to stick to, and the
-    // identity cell must outrank the quantity columns it slides over.
+    // Same two affordances as the materials tab. The wrapper is a horizontal
+    // scroll container only while the card is narrower than the table — past
+    // that it stops being one, so the header can stick to the viewport — and
+    // the identity cell has to outrank the quantity columns it slides over.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->assertSeeHtml('max-h-[70dvh] overflow-auto')
+        ->assertDontSeeHtml('max-h-[')
+        ->assertSeeHtml('overflow-x-auto @min-[65rem]:overflow-x-visible')
         ->assertSeeHtml('sticky top-0 z-20')
         // Corner cell above its sibling headers, body cell above the quantities.
         ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
@@ -716,6 +719,23 @@ it('lets the lot material chip be dismissed on its own', function (): void {
         ->assertSet('lotMaterial', '')
         ->assertSet('lotMaterialType', '')
         ->assertSet('lotFilters.lotMaterialSelection', null);
+});
+
+it('carries lot status as a dot instead of a second status pill', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    // The row action in the last column already reads "Quarantine" for a released
+    // lot and "Release" for a quarantined one, so the pill was a second copy of
+    // the same fact — and it was wide enough to push the stocked-on date onto a
+    // second line. The dot still has to name the state, since colour alone is not
+    // a cue: sr-only text for a screen reader, a title for anyone hovering.
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertDontSeeHtml('rounded-full px-2.5 py-1 text-xs font-medium')
+        ->assertSeeHtml('size-2.5 rounded-full bg-[var(--color-success)]')
+        ->assertSeeHtml('title="'.__('production_bench.inventory.released').'"')
+        ->assertSeeHtml('class="sr-only">'.__('production_bench.inventory.released').'</span>');
 });
 
 it('does not blame a material for an empty lot register', function (): void {

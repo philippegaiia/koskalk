@@ -15,7 +15,7 @@
         </header>
 
         @if ($mode === 'materials')
-            <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="overflow-hidden sk-card">
+            <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="@container overflow-clip sk-card">
                 <div class="flex flex-col gap-1 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between">
                     <h2 id="inventory-materials-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.stock_by_material') }}</h2>
                     <p class="text-xs text-[var(--color-ink-muted)]">
@@ -123,12 +123,21 @@
                     @endif
                 </div>
 
-                {{-- A bounded height is what makes this the vertical scroll container. With
-                     `overflow-x-auto` alone the wrapper computes to `overflow-y: auto` but never
-                     actually scrolls, so `sticky top-0` on the thead would have nothing to stick
-                     to. The header sits above the sticky identity column (z-20 vs z-10) so the
-                     corner cell is never covered by a scrolling row. --}}
-                <div class="max-h-[70dvh] overflow-auto">
+                {{-- No height cap: capping the box fixed the list length at roughly one
+                     screen no matter what "Rows per page" said, which made the selector
+                     pointless. The page scrolls instead, so the thead sticks to the
+                     viewport and the selector decides how long the list actually is.
+
+                     Horizontal scrolling is the only thing left to trade. A wrapper that
+                     scrolls in X is still a scroll container, and `sticky top-0` resolves
+                     against the nearest one — so while it is there, the header pins to
+                     the wrapper (which is exactly content-height and never scrolls) and
+                     silently does nothing. The wrapper therefore only scrolls while the
+                     card is narrower than the table; once the table fits, overflow goes
+                     back to `visible` and the header sticks to the viewport. `overflow-clip`
+                     on the card keeps the rounded corners without creating the scrollport
+                     that `overflow-hidden` would. --}}
+                <div class="overflow-x-auto @min-[70rem]:overflow-x-visible">
                     <table class="w-full min-w-[1120px] text-left text-sm">
                         <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
@@ -210,7 +219,7 @@
                 @endif
             </section>
         @else
-            <section data-stock-register aria-labelledby="inventory-positions-heading" class="overflow-hidden sk-card">
+            <section data-stock-register aria-labelledby="inventory-positions-heading" class="@container overflow-clip sk-card">
                 <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-baseline gap-3">
                         <h2 id="inventory-positions-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.lot_register') }}</h2>
@@ -262,12 +271,13 @@
                         {{ $this->lotAdvancedFiltersForm }}
                     </div>
                 </div>
-                {{-- The register is the denser of the two tables: nine columns and up to five
-                     stacked lines per row, so it scrolls in both axes. The wrapper needs a bounded
-                     height or `sticky top-0` has nothing to stick to, and the identity cell needs
-                     to stay put or the lot name scrolls out of view under the quantities. --}}
-                <div class="max-h-[70dvh] overflow-auto">
-                    <table class="w-full min-w-[1120px] text-left text-sm">
+                {{-- Nine columns and up to five stacked lines per row, and the same trade as
+                     the materials tab: no height cap, so the page scrolls, the thead sticks to
+                     the viewport and "Rows per page" decides the length. The wrapper only
+                     scrolls horizontally while the card is narrower than the table, because a
+                     scroll container of any kind becomes what `sticky top-0` resolves against. --}}
+                <div class="overflow-x-auto @min-[65rem]:overflow-x-visible">
+                    <table class="w-full min-w-[1040px] text-left text-sm">
                         <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
@@ -318,8 +328,29 @@
                                             {{ $supplier?->name ?? __('production_bench.inventory.supplier_unknown') }}
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ $lot->status->value === 'released' ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span></td>
-                                    <td class="numeric px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
+                                    {{-- The pill restated what the row action in the last column
+                                         already offers: a released lot says "Quarantine", a
+                                         quarantined one says "Release". A dot carries the same
+                                         state in a tenth of the width and hands the space to the
+                                         stocked-on date, which was breaking over two lines.
+                                         Colour alone is not a cue (WCAG 1.4.1), so the state is
+                                         still spelled out — for a screen reader here, and for
+                                         anyone hovering the dot. --}}
+                                    <td class="px-4 py-3">
+                                        @php($isReleased = $lot->status->value === 'released')
+                                        @php($lotStatusLabel = $isReleased ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined'))
+                                        <span class="inline-flex items-center" title="{{ $lotStatusLabel }}">
+                                            {{-- The base tones, not `-strong`: at this size the strong
+                                                 pair collapsed into two dark spots (#00422e vs
+                                                 #8a3f04, both above 7:1 on the panel). Green at
+                                                 #257055 and amber at #b45307 are 120° apart in hue
+                                                 and both near 5:1, so they stay distinct at a glance
+                                                 while clearing the 3:1 non-text minimum. --}}
+                                            <span class="size-2.5 rounded-full {{ $isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]' }}" aria-hidden="true"></span>
+                                            <span class="sr-only">{{ $lotStatusLabel }}</span>
+                                        </span>
+                                    </td>
+                                    <td class="numeric whitespace-nowrap px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
                                     @foreach (['physical', 'quarantined', 'reserved', 'available'] as $position)
                                         <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
                                     @endforeach

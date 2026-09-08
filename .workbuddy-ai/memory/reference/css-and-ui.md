@@ -118,7 +118,7 @@ Derivation for any authenticated page (`layouts/app-shell.blade.php:39,45,132` +
 |---|---|
 | W < 1024 (no grid, `px-6`) | `W − 15 − 48` → 768 = **705** |
 | W ≥ 1024 (sidebar 272 + `lg:px-8`) | `min(W − 15 − 272 − 64, 1184)` = `min(W − 351, 1184)` |
-| 1024 / 1280 / 1440 / 1512 | **673** / **929** / **1089** / **1146** |
+| 1024 / 1280 / 1440 / 1512 | **673** / **929** / **1089** / **1161** |
 | W ≥ 1535 | **1184** (the cap; never grows again) |
 
 The 15px is a classic (non-overlay) scrollbar — matches the flake noted below. This model

@@ -15,41 +15,64 @@
                 <h1 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $materialName }}</h1>
                 @if ($materialCode)<p class="mt-1 font-mono text-sm text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
             </div>
-            <a href="{{ $lotRegisterUrl }}" wire:navigate class="sk-btn sk-btn-outline shrink-0">{{ __('production_bench.inventory.view_all_lots') }}</a>
         </header>
 
-        <section class="sk-card overflow-hidden" aria-labelledby="current-position-heading">
-            <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <h2 id="current-position-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.current_position') }}</h2>
-                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.current_position_help', ['unit' => $displayUnit]) }}</p>
-            </div>
-            <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] sm:grid-cols-4 lg:grid-cols-7 lg:divide-y-0">
-                @foreach (['physical', 'available', 'reserved', 'quarantined', 'incoming', 'required', 'forecast'] as $key)
-                    <div class="px-5 py-4">
+        <section data-material-stock-summary class="sk-card overflow-hidden" aria-labelledby="current-position-heading">
+            <dl class="grid grid-cols-2 divide-x divide-[var(--color-line)]">
+                @foreach (['available', 'forecast'] as $key)
+                    <div data-position-primary="{{ $key }}" class="px-5 py-5 sm:px-6 sm:py-6">
                         <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
-                        <dd class="numeric mt-1 text-lg font-semibold {{ $key === 'forecast' && str_starts_with($position[$key], '-') ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $position[$key] }}</dd>
+                        <dd class="numeric mt-1 text-2xl font-semibold {{ $key === 'forecast' && str_starts_with($position[$key], '-') ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $position[$key] }}</dd>
                     </div>
                 @endforeach
             </dl>
-        </section>
 
-        <section class="sk-card p-5" aria-labelledby="buffer-heading">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <h2 id="buffer-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.buffer_stock') }}</h2>
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.buffer_stock_help') }}</p>
-                    @if ($buffer !== null)
-                        <p class="mt-2 text-sm {{ $bufferBelow ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-soft)]' }}">
-                            {{ $bufferBelow ? __('production_bench.inventory.below_buffer_detail') : __('production_bench.inventory.above_buffer_detail') }}
-                            <span class="numeric font-semibold">{{ $buffer }} {{ $displayUnit }}</span>
-                        </p>
-                    @endif
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
-                    {{ $this->editBufferAction }}
-                    {{ $this->clearBufferAction }}
+            <div data-material-buffer class="border-t border-[var(--color-line)] p-5">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <h2 id="buffer-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.buffer_stock') }}</h2>
+                        <p class="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.buffer_stock_help') }}</p>
+                        @if ($buffer !== null)
+                            <p class="mt-2 text-sm {{ $bufferBelow ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-soft)]' }}">
+                                {{ $bufferBelow ? __('production_bench.inventory.below_buffer_detail') : __('production_bench.inventory.above_buffer_detail') }}
+                                <span class="numeric font-semibold">{{ $buffer }} {{ $displayUnit }}</span>
+                            </p>
+                        @else
+                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.buffer_none') }}</p>
+                        @endif
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        {{ $this->editBufferAction }}
+                        {{ $this->clearBufferAction }}
+                    </div>
                 </div>
             </div>
+
+            <details
+                data-material-position-breakdown
+                wire:ignore.self
+                x-data="{ open: $el.open }"
+                x-bind:open="open"
+                x-on:toggle="open = $el.open"
+                class="border-t border-[var(--color-line)]"
+                aria-labelledby="current-position-heading"
+            >
+                <summary class="flex cursor-pointer list-none items-start justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4 [&::-webkit-details-marker]:hidden" x-bind:aria-expanded="open.toString()">
+                    <span class="flex min-w-0 flex-col gap-1">
+                        <span id="current-position-heading" role="heading" aria-level="2" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.current_position') }}</span>
+                        <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.current_position_help', ['unit' => $displayUnit]) }}</span>
+                    </span>
+                    <span aria-hidden="true" class="mt-1 shrink-0 text-lg leading-none text-[var(--color-ink-soft)]">⌄</span>
+                </summary>
+                <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] sm:grid-cols-4 lg:grid-cols-5 lg:divide-y-0">
+                    @foreach (['physical', 'reserved', 'quarantined', 'incoming', 'required'] as $key)
+                        <div data-position-secondary="{{ $key }}" class="px-5 py-4">
+                            <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
+                            <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $position[$key] }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </details>
         </section>
 
         {{-- `overflow-clip`, not the `overflow-hidden` the neighbouring cards use: hidden makes the
@@ -57,13 +80,13 @@
              the viewport, so the header would sit still while the page scrolled past it. Clip keeps
              the rounded corners without creating a scrollport. `@container` lets the wrapper below
              drop `overflow-x` once the card is wide enough for the table's floor. --}}
-        <section class="@container overflow-clip sk-card" aria-labelledby="open-lots-heading">
+        <section data-material-open-lots class="@container overflow-clip sk-card" aria-labelledby="open-lots-heading">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 id="open-lots-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.open_lots') }}</h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.open_lots_help') }}</p>
                 </div>
-                <a href="{{ $lotRegisterUrl }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.view_all_lots') }} →</a>
+                <a data-material-view-all-lots href="{{ $lotRegisterUrl }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.view_all_lots') }} →</a>
             </div>
             {{-- 57rem = 912px, just over the 900px floor. While the card is narrower the table
                  scrolls sideways and the header cannot stick — the same trade the two index
@@ -107,11 +130,28 @@
             </div>
         </section>
 
-        <section class="@container overflow-clip sk-card" aria-labelledby="supplier-listings-heading">
-            <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <h2 id="supplier-listings-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.related_supplier_listings') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.related_supplier_listings_help') }}</p>
-            </div>
+        @php($supplierListingsOpen = $supplierListings->currentPage() > 1)
+        <details
+            data-material-supplier-listings
+            wire:key="material-supplier-listings-disclosure-{{ $supplierListingsOpen ? 'open' : 'closed' }}"
+            wire:ignore.self
+            x-data="{ open: $el.open }"
+            x-bind:open="open"
+            x-on:toggle="open = $el.open"
+            class="@container overflow-clip sk-card"
+            aria-labelledby="supplier-listings-heading"
+            @if ($supplierListingsOpen) open @endif
+        >
+            <summary class="flex cursor-pointer list-none items-start justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4 [&::-webkit-details-marker]:hidden" x-bind:aria-expanded="open.toString()">
+                <span class="flex min-w-0 flex-col gap-1">
+                    <span id="supplier-listings-heading" role="heading" aria-level="2" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.related_supplier_listings') }}</span>
+                    <span class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.related_supplier_listings_help') }}</span>
+                </span>
+                <span class="flex shrink-0 items-center gap-2">
+                    <span class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $supplierListings->total() }}</span>
+                    <span aria-hidden="true" class="text-lg leading-none text-[var(--color-ink-soft)]">⌄</span>
+                </span>
+            </summary>
             {{-- 54rem = 864px, just over the 860px floor. --}}
             <div class="overflow-x-auto @min-[54rem]:overflow-x-visible">
                 <table class="w-full min-w-[860px] text-left text-sm">
@@ -159,13 +199,33 @@
                 per-page-model="supplierListingsPerPage"
                 :per-page-options="[10, 25, 50]"
             />
-        </section>
+        </details>
 
-        <section class="@container overflow-clip sk-card" aria-labelledby="activity-heading">
-            <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <h2 id="activity-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.period_activity') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.period_activity_help') }}</p>
-            </div>
+        @php($activityDisclosureOpen = $periodPreset !== '30' || $customFrom !== '' || $customTo !== '' || $movements->currentPage() > 1)
+        <details
+            data-material-activity
+            wire:key="material-activity-disclosure-{{ $activityDisclosureOpen ? 'open' : 'closed' }}"
+            wire:ignore.self
+            x-data="{ open: $el.open }"
+            x-bind:open="open"
+            x-on:toggle="open = $el.open"
+            class="@container overflow-clip sk-card"
+            aria-labelledby="activity-heading"
+            @if ($activityDisclosureOpen) open @endif
+        >
+            <summary class="flex cursor-pointer list-none items-start justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4 [&::-webkit-details-marker]:hidden" x-bind:aria-expanded="open.toString()">
+                <span class="flex min-w-0 flex-col gap-1">
+                    <span id="activity-heading" role="heading" aria-level="2" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.period_activity') }}</span>
+                    <span class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.period_activity_help') }}</span>
+                </span>
+                <span class="flex shrink-0 flex-col items-end gap-0.5 text-right">
+                    <span class="text-xs text-[var(--color-ink-soft)]">{{ $periodLabel }}</span>
+                    <span class="flex items-baseline gap-1.5">
+                        <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.net_change') }}</span>
+                        <span class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $activity['net_change'] }} {{ $displayUnit }}</span>
+                    </span>
+                </span>
+            </summary>
             {{-- Filament renders its dropdown panel as `position: absolute; z-index: 20` and does not
                  teleport it, so it competes with the sticky `z-20` thead further down the DOM — and
                  loses, because that comes later. Its own stacking context above the header lifts
@@ -220,7 +280,7 @@
                 </table>
             </div>
             <x-table-pagination :paginator="$movements" :per-page-label="__('production_bench.inventory.movements_per_page')" />
-        </section>
+        </details>
     @endif
 
     <x-filament-actions::modals />

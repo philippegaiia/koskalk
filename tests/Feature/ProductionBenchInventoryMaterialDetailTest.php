@@ -25,6 +25,124 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+it('renders the material detail progressive disclosure structure', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Structural oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])->html();
+    $document = materialDetailDocument($html);
+    $xpath = new DOMXPath($document);
+    $violations = [];
+    $assertCount = static function (string $query, int $expected, string $label) use ($xpath, &$violations): void {
+        $actual = materialDetailXPathCount($xpath, $query);
+
+        if ($actual !== $expected) {
+            $violations[] = sprintf('%s: expected %d, got %d', $label, $expected, $actual);
+        }
+    };
+
+    $assertCount('//*[@data-material-stock-summary]', 1, 'one stock summary card');
+    $assertCount('//*[@data-material-stock-summary and @aria-labelledby="current-position-heading"]', 1, 'stock summary labels current position');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-primary]', 2, 'two primary position metrics in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-primary="available"]', 1, 'Available is a primary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-primary="forecast"]', 1, 'Forecast is a primary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-material-buffer]', 1, 'one buffer area in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-material-position-breakdown]', 1, 'one current position breakdown in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary]', 5, 'five secondary position metrics in stock summary');
+    $assertCount('//*[@data-material-position-breakdown]//*[@data-position-secondary]', 5, 'five secondary position metrics in position breakdown');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="physical"]', 1, 'Physical is a secondary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="reserved"]', 1, 'Reserved is a secondary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="quarantined"]', 1, 'Quarantined is a secondary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="incoming"]', 1, 'Incoming is a secondary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="required"]', 1, 'Required is a secondary metric in stock summary');
+    $assertCount('//*[@data-material-open-lots]', 1, 'open lots section');
+    $assertCount('//*[@data-material-view-all-lots]', 1, 'one marked View all lots link');
+    $assertCount('//a[contains(normalize-space(.), "View all lots")]', 1, 'one visible View all lots link');
+    $assertCount('//*[@data-material-supplier-listings]', 1, 'supplier listings disclosure');
+    $assertCount('//*[@data-material-activity]', 1, 'period activity disclosure');
+
+    foreach (['data-material-position-breakdown', 'data-material-supplier-listings', 'data-material-activity'] as $marker) {
+        $nodes = $xpath->query('//*[@'.$marker.']');
+
+        if (! $nodes instanceof DOMNodeList || $nodes->length !== 1) {
+            $violations[] = $marker.': expected one native details element';
+
+            continue;
+        }
+
+        $detail = $nodes->item(0);
+
+        if (! $detail instanceof DOMElement || $detail->tagName !== 'details') {
+            $violations[] = $marker.': expected a native details element';
+
+            continue;
+        }
+
+        if ($detail->hasAttribute('open')) {
+            $violations[] = $marker.': expected closed by default';
+        }
+    }
+
+    $activitySummaries = $xpath->query('//*[@data-material-activity]//summary');
+
+    if (! $activitySummaries instanceof DOMNodeList || $activitySummaries->length !== 1) {
+        $violations[] = 'activity summary: expected one summary';
+    } else {
+        $activitySummary = $activitySummaries->item(0);
+
+        if (! $activitySummary instanceof DOMElement) {
+            $violations[] = 'activity summary: expected an element';
+        } elseif (! str_contains($activitySummary->textContent, __('production_bench.inventory.net_change'))) {
+            $violations[] = 'activity summary: expected Net change';
+        }
+    }
+
+    expect($violations)->toBe([]);
+});
+
+it('opens supplier and activity disclosures for their server-side states', function (): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Disclosure oil']);
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Disclosure supplier']);
+
+    foreach (range(1, 11) as $number) {
+        SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+            'supplier_sku' => 'DISC-'.$number,
+        ]);
+    }
+
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])->call('gotoPage', 2, 'supplier-listings');
+
+    expect(materialDetailDetailsHaveLiteralOpen($component->html(), 'data-material-supplier-listings'))->toBeTrue();
+
+    $component->set('periodPreset', '365');
+
+    expect(materialDetailDetailsHaveLiteralOpen($component->html(), 'data-material-activity'))->toBeTrue();
+});
+
 it('keeps material detail collaborators available after a Livewire request', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Injected oil']);
@@ -836,4 +954,38 @@ function materialDetailWorkspace(MassDisplaySystem $displaySystem = MassDisplayS
     app(ProductionBenchAccess::class)->activate($user, $workspace);
 
     return ['user' => $user, 'workspace' => $workspace];
+}
+
+function materialDetailDocument(string $html): DOMDocument
+{
+    $previousLibxmlSetting = libxml_use_internal_errors(true);
+    $document = new DOMDocument;
+    $document->loadHTML($html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousLibxmlSetting);
+
+    return $document;
+}
+
+function materialDetailXPathCount(DOMXPath $xpath, string $query): int
+{
+    $nodes = $xpath->query($query);
+
+    return $nodes instanceof DOMNodeList ? $nodes->length : 0;
+}
+
+function materialDetailDetailsHaveLiteralOpen(string $html, string $marker): bool
+{
+    $xpath = new DOMXPath(materialDetailDocument($html));
+    $nodes = $xpath->query('//*[@'.$marker.']');
+
+    if (! $nodes instanceof DOMNodeList || $nodes->length !== 1) {
+        return false;
+    }
+
+    $detail = $nodes->item(0);
+
+    return $detail instanceof DOMElement
+        && $detail->tagName === 'details'
+        && $detail->hasAttribute('open');
 }

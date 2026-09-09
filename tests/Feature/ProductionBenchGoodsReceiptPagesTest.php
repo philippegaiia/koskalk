@@ -6,6 +6,7 @@ use App\Enums\ListingPriceBasis;
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockUnitKind;
+use App\Livewire\ProductionBench\Purchasing\ProcurementIndex;
 use App\Livewire\ProductionBench\Purchasing\ReceiptCreate;
 use App\Livewire\ProductionBench\Purchasing\ReceiptDetail;
 use App\Livewire\ProductionBench\Purchasing\ReceiptIndex;
@@ -235,11 +236,11 @@ it('uses fulfillment labels for purchase order statuses', function (): void {
         ->assertSeeHtml('data-purchase-order-status="complete"');
 });
 
-it('paginates receipts twenty at a time in newest-first order', function (): void {
+it('paginates receipts with a row selector and sticky header', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
 
-    foreach (range(1, 21) as $day) {
+    foreach (range(1, 26) as $day) {
         GoodsReceipt::factory()->for($workspace)->for($supplier)->direct()->create([
             'delivery_reference' => sprintf('PAGED-%02d', $day),
             'received_at' => sprintf('2026-07-%02d', $day),
@@ -249,11 +250,59 @@ it('paginates receipts twenty at a time in newest-first order', function (): voi
     $this->actingAs($owner);
 
     Livewire::test(ReceiptIndex::class)
-        ->assertSee('PAGED-21')
+        ->assertSee('PAGED-26')
         ->assertDontSee('PAGED-01')
+        ->assertSeeHtml('data-sticky-table-scroll')
+        ->assertSeeHtml('data-sticky-table-header')
+        ->assertSeeHtml('wire:ignore.self')
+        ->assertSeeHtml('wire:model.live="perPage"')
+        ->assertSee('Receipts per page')
         ->call('setPage', 2)
         ->assertSee('PAGED-01')
-        ->assertDontSee('PAGED-21');
+        ->assertDontSee('PAGED-26')
+        ->set('perPage', 50)
+        ->assertSet('perPage', 50)
+        ->assertSee('PAGED-26')
+        ->assertSee('PAGED-01')
+        ->set('perPage', 1000)
+        ->assertSet('perPage', 25);
+});
+
+it('paginates purchase orders with a row selector and sticky header', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+
+    foreach (range(1, 26) as $sequence) {
+        PurchaseOrder::factory()
+            ->for($workspace)
+            ->for($supplier)
+            ->create([
+                'reference' => sprintf('PO-PAGED-%02d', $sequence),
+                'stage' => ProcurementStage::PurchaseOrder,
+                'status' => PurchaseOrderStatus::Ordered,
+                'created_by_user_id' => $owner->id,
+            ]);
+    }
+
+    $this->actingAs($owner);
+
+    Livewire::test(ProcurementIndex::class, ['stage' => ProcurementStage::PurchaseOrder->value])
+        ->assertSee('PO-PAGED-26')
+        ->assertDontSee('PO-PAGED-01')
+        ->assertSeeHtml('data-sticky-table-scroll')
+        ->assertSeeHtml('data-sticky-table-header')
+        ->assertSeeHtml('wire:ignore.self')
+        ->assertSeeHtml('wire:model.live="perPage"')
+        ->assertSee('Purchase orders per page')
+        ->call('setPage', 2)
+        ->assertSee('PO-PAGED-01')
+        ->assertDontSee('PO-PAGED-26')
+        ->set('perPage', 50)
+        ->assertSet('perPage', 50)
+        ->assertSee('PO-PAGED-26')
+        ->assertSee('PO-PAGED-01')
+        ->set('perPage', -1)
+        ->assertSet('perPage', 25);
 });
 
 it('only offers issued purchase orders with outstanding lines and preselects a linked order', function (): void {

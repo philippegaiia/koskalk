@@ -30,9 +30,9 @@
     @else
         <section aria-labelledby="receipt-list-heading" class="overflow-hidden sk-card">
             <h2 id="receipt-list-heading" class="sr-only">{{ __('production_bench.receipt.plural') }}</h2>
-            <div class="overflow-x-auto" data-receipt-responsive-table>
+            <x-sticky-table-scroll data-receipt-responsive-table>
                 <table class="w-full min-w-[900px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                    <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.receipt.received_on') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.receipt.reference') }}</th>
@@ -83,10 +83,10 @@
                         @endforeach
                     </tbody>
                 </table>
+            </x-sticky-table-scroll>
+            <div data-receipt-pagination>
+                <x-table-pagination :paginator="$receipts" :per-page-label="__('production_bench.receipt.per_page')" />
             </div>
         </section>
-        <div data-receipt-pagination>
-            {{ $receipts->links() }}
-        </div>
     @endif
 </x-production-bench.page>

@@ -10,15 +10,28 @@ use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class ProcurementIndex extends Component
 {
+    use WithPagination;
+
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+
     #[Locked]
     public string $stage;
+
+    public int $perPage = 25;
 
     public function mount(string $stage): void
     {
         $this->stage = ProcurementStage::from($stage)->value;
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->normalizedPerPage();
+        $this->resetPage();
     }
 
     public function render(ProductionBenchAccess $access): View
@@ -29,7 +42,7 @@ class ProcurementIndex extends Component
             ->where('stage', $this->stage)
             ->with('supplier')
             ->latest('id')
-            ->get();
+            ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.procurement-index', [
             'isBenchActive' => $access->isActive($workspace),
@@ -37,6 +50,13 @@ class ProcurementIndex extends Component
             'isQuotation' => ProcurementStage::from($this->stage) === ProcurementStage::Quotation,
             'orders' => $orders,
         ]);
+    }
+
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true)
+            ? $this->perPage
+            : 25;
     }
 
     private function user(): User

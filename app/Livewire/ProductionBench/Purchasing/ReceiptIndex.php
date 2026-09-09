@@ -14,6 +14,16 @@ class ReceiptIndex extends Component
 {
     use WithPagination;
 
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+
+    public int $perPage = 25;
+
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->normalizedPerPage();
+        $this->resetPage();
+    }
+
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
@@ -27,8 +37,15 @@ class ReceiptIndex extends Component
                 ->withCount('lines')
                 ->latest('received_at')
                 ->latest('id')
-                ->paginate(20),
+                ->paginate($this->normalizedPerPage()),
         ]);
+    }
+
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true)
+            ? $this->perPage
+            : 25;
     }
 
     private function user(): User

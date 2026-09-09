@@ -21912,6 +21912,18 @@
     },
     {
       "group": "production_bench",
+      "key": "procurement.orders_per_page",
+      "text": {
+        "de": "Bestellungen pro Seite",
+        "es": "Pedidos por página",
+        "fr": "Commandes par page",
+        "it": "Ordini per pagina",
+        "nl": "Bestellingen per pagina",
+        "pt_BR": "Pedidos por página"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "procurement.per_unit",
       "text": {
         "de": "Pro Einheit",
@@ -22076,6 +22088,18 @@
         "it": "Richieste di preventivo",
         "nl": "Offerteaanvragen",
         "pt_BR": "Solicitações de cotação"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "procurement.quotation_requests_per_page",
+      "text": {
+        "de": "Angebotsanfragen pro Seite",
+        "es": "Solicitudes de cotización por página",
+        "fr": "Demandes de devis par page",
+        "it": "Richieste di offerta per pagina",
+        "nl": "Offerteaanvragen per pagina",
+        "pt_BR": "Solicitações de cotação por página"
       }
     },
     {
@@ -27668,6 +27692,18 @@
         "it": "L’unità di prezzo degli imballaggi deve essere il pezzo.",
         "nl": "De prijseenheid voor verpakkingen moet per stuk zijn.",
         "pt_BR": "As unidades de preço da embalagem devem ser unidades."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.per_page",
+      "text": {
+        "de": "Wareneingänge pro Seite",
+        "es": "Recepciones por página",
+        "fr": "Réceptions par page",
+        "it": "Ricezioni per pagina",
+        "nl": "Ontvangsten per pagina",
+        "pt_BR": "Recebimentos por página"
       }
     },
     {

@@ -11,9 +11,9 @@
     </header>
 
     <section class="overflow-hidden sk-card">
-        <div class="overflow-x-auto">
+        <x-sticky-table-scroll>
             <table class="w-full min-w-[720px] text-left text-sm">
-                <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]"><tr><th class="px-5 py-3">{{ __('production_bench.procurement.reference') }}</th><th class="px-4 py-3">{{ __('production_bench.supplier.singular') }}</th><th class="px-4 py-3">{{ __('production_bench.common.status') }}</th><th class="px-4 py-3">{{ __('production_bench.common.currency') }}</th><th class="px-5 py-3 text-right">{{ __('production_bench.common.actions') }}</th></tr></thead>
+                <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]"><tr><th class="px-5 py-3">{{ __('production_bench.procurement.reference') }}</th><th class="px-4 py-3">{{ __('production_bench.supplier.singular') }}</th><th class="px-4 py-3">{{ __('production_bench.common.status') }}</th><th class="px-4 py-3">{{ __('production_bench.common.currency') }}</th><th class="px-5 py-3 text-right">{{ __('production_bench.common.actions') }}</th></tr></thead>
                 <tbody class="divide-y divide-[var(--color-line)]">
                     @forelse ($orders as $order)
                         @php
@@ -47,6 +47,12 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </x-sticky-table-scroll>
+        <x-table-pagination
+            :paginator="$orders"
+            :per-page-label="$isQuotation
+                ? __('production_bench.procurement.quotation_requests_per_page')
+                : __('production_bench.procurement.orders_per_page')"
+        />
     </section>
 </x-production-bench.page>

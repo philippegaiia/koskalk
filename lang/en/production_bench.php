@@ -130,7 +130,9 @@ return [
     ],
     'procurement' => [
         'quotation_requests' => 'Quotation requests',
+        'quotation_requests_per_page' => 'Quotation requests per page',
         'purchase_orders' => 'Purchase orders',
+        'orders_per_page' => 'Purchase orders per page',
         'new_quotation' => 'New quotation request',
         'new_order' => 'New purchase order',
         'reference' => 'Reference',
@@ -266,6 +268,7 @@ return [
         'listing_required' => 'A supplier listing is required before this line can be received.',
         'listing_changed' => 'The supplier listing no longer matches this ordered line.',
         'over_receipt' => 'Received packs cannot exceed the ordered quantity.',
+        'per_page' => 'Receipts per page',
         'actual_positive' => 'Actual received quantity must be positive.',
         'whole_count' => 'Packaging receipts require a positive whole number of units.',
         'date_invalid' => 'The date must be a valid calendar date in YYYY-MM-DD format.',

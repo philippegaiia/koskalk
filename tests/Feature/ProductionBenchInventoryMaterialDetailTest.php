@@ -71,6 +71,7 @@ it('renders the material detail progressive disclosure structure', function (): 
     $assertCount('//a[contains(normalize-space(.), "View all lots")]', 1, 'one visible View all lots link');
     $assertCount('//*[@data-material-supplier-listings]', 1, 'supplier listings disclosure');
     $assertCount('//*[@data-material-activity]', 1, 'period activity disclosure');
+    $assertCount('//*[@data-material-activity]//summary//*[@data-material-activity-chevron]', 1, 'one activity summary chevron');
 
     foreach (['data-material-position-breakdown', 'data-material-supplier-listings', 'data-material-activity'] as $marker) {
         $nodes = $xpath->query('//*[@'.$marker.']');
@@ -89,8 +90,71 @@ it('renders the material detail progressive disclosure structure', function (): 
             continue;
         }
 
+        $firstElementChild = null;
+
+        foreach ($detail->childNodes as $child) {
+            if ($child instanceof DOMElement) {
+                $firstElementChild = $child;
+
+                break;
+            }
+        }
+
+        if (! $firstElementChild instanceof DOMElement || $firstElementChild->tagName !== 'summary') {
+            $violations[] = $marker.': expected summary to be the first element child';
+        }
+
         if ($detail->hasAttribute('open')) {
             $violations[] = $marker.': expected closed by default';
+        }
+    }
+
+    foreach ([
+        'data-material-supplier-listings' => [
+            'key' => 'material-supplier-listings-disclosure',
+            'effectFragments' => ["\$wire.paginators['supplier-listings']", 'if (serverOpen) open = true'],
+        ],
+        'data-material-activity' => [
+            'key' => 'material-activity-disclosure',
+            'effectFragments' => ['$wire.periodPreset', '$wire.customFrom', '$wire.customTo', "\$wire.paginators['activity']", 'if (serverOpen) open = true'],
+        ],
+    ] as $marker => $expectations) {
+        $nodes = $xpath->query('//*[@'.$marker.']');
+
+        if (! $nodes instanceof DOMNodeList || $nodes->length !== 1) {
+            $violations[] = $marker.': expected one disclosure for Alpine state assertions';
+
+            continue;
+        }
+
+        $detail = $nodes->item(0);
+
+        if (! $detail instanceof DOMElement) {
+            $violations[] = $marker.': expected a disclosure element for Alpine state assertions';
+
+            continue;
+        }
+
+        if ($detail->getAttribute('wire:key') !== $expectations['key']) {
+            $violations[] = $marker.': expected a stable wire:key';
+        }
+
+        $xData = preg_replace('/\s+/', ' ', $detail->getAttribute('x-data')) ?? '';
+
+        if (! str_contains($xData, 'serverOpen: false')) {
+            $violations[] = $marker.': expected serverOpen initialized from the server state';
+        }
+
+        $effect = preg_replace('/\s+/', ' ', $detail->getAttribute('x-effect')) ?? '';
+
+        foreach ($expectations['effectFragments'] as $fragment) {
+            if (! str_contains($effect, $fragment)) {
+                $violations[] = $marker.': expected server-open effect fragment '.$fragment;
+            }
+        }
+
+        if (str_contains($effect, 'open = false')) {
+            $violations[] = $marker.': expected one-way server-open promotion without closing open state';
         }
     }
 
@@ -136,11 +200,19 @@ it('opens supplier and activity disclosures for their server-side states', funct
         'subjectType' => 'ingredient',
     ])->call('gotoPage', 2, 'supplier-listings');
 
-    expect(materialDetailDetailsHaveLiteralOpen($component->html(), 'data-material-supplier-listings'))->toBeTrue();
+    $supplierHtml = $component->html();
+
+    expect(materialDetailDetailsHaveLiteralOpen($supplierHtml, 'data-material-supplier-listings'))->toBeTrue();
+    expect(materialDetailHasAttributeValue($supplierHtml, '//*[@data-material-supplier-listings]', 'wire:key', 'material-supplier-listings-disclosure'))->toBeTrue();
+    expect(materialDetailHasAttributeContaining($supplierHtml, '//*[@data-material-supplier-listings]', 'x-data', 'serverOpen: true'))->toBeTrue();
 
     $component->set('periodPreset', '365');
 
-    expect(materialDetailDetailsHaveLiteralOpen($component->html(), 'data-material-activity'))->toBeTrue();
+    $activityHtml = $component->html();
+
+    expect(materialDetailDetailsHaveLiteralOpen($activityHtml, 'data-material-activity'))->toBeTrue();
+    expect(materialDetailHasAttributeValue($activityHtml, '//*[@data-material-activity]', 'wire:key', 'material-activity-disclosure'))->toBeTrue();
+    expect(materialDetailHasAttributeContaining($activityHtml, '//*[@data-material-activity]', 'x-data', 'serverOpen: true'))->toBeTrue();
 });
 
 it('keeps material detail collaborators available after a Livewire request', function (): void {
@@ -988,4 +1060,34 @@ function materialDetailDetailsHaveLiteralOpen(string $html, string $marker): boo
     return $detail instanceof DOMElement
         && $detail->tagName === 'details'
         && $detail->hasAttribute('open');
+}
+
+function materialDetailHasAttributeValue(string $html, string $query, string $attribute, string $expected): bool
+{
+    $xpath = new DOMXPath(materialDetailDocument($html));
+    $nodes = $xpath->query($query);
+
+    if (! $nodes instanceof DOMNodeList || $nodes->length !== 1) {
+        return false;
+    }
+
+    $element = $nodes->item(0);
+
+    return $element instanceof DOMElement
+        && $element->getAttribute($attribute) === $expected;
+}
+
+function materialDetailHasAttributeContaining(string $html, string $query, string $attribute, string $expected): bool
+{
+    $xpath = new DOMXPath(materialDetailDocument($html));
+    $nodes = $xpath->query($query);
+
+    if (! $nodes instanceof DOMNodeList || $nodes->length !== 1) {
+        return false;
+    }
+
+    $element = $nodes->item(0);
+
+    return $element instanceof DOMElement
+        && str_contains($element->getAttribute($attribute), $expected);
 }

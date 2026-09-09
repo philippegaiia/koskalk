@@ -133,9 +133,10 @@
         @php($supplierListingsOpen = $supplierListings->currentPage() > 1)
         <details
             data-material-supplier-listings
-            wire:key="material-supplier-listings-disclosure-{{ $supplierListingsOpen ? 'open' : 'closed' }}"
+            wire:key="material-supplier-listings-disclosure"
             wire:ignore.self
-            x-data="{ open: $el.open }"
+            x-data="{ open: $el.open, serverOpen: {{ $supplierListingsOpen ? 'true' : 'false' }} }"
+            x-effect="serverOpen = ($wire.paginators['supplier-listings'] ?? 1) > 1; if (serverOpen) open = true"
             x-bind:open="open"
             x-on:toggle="open = $el.open"
             class="@container overflow-clip sk-card"
@@ -204,9 +205,10 @@
         @php($activityDisclosureOpen = $periodPreset !== '30' || $customFrom !== '' || $customTo !== '' || $movements->currentPage() > 1)
         <details
             data-material-activity
-            wire:key="material-activity-disclosure-{{ $activityDisclosureOpen ? 'open' : 'closed' }}"
+            wire:key="material-activity-disclosure"
             wire:ignore.self
-            x-data="{ open: $el.open }"
+            x-data="{ open: $el.open, serverOpen: {{ $activityDisclosureOpen ? 'true' : 'false' }} }"
+            x-effect="serverOpen = $wire.periodPreset !== '30' || $wire.customFrom !== '' || $wire.customTo !== '' || ($wire.paginators['activity'] ?? 1) > 1; if (serverOpen) open = true"
             x-bind:open="open"
             x-on:toggle="open = $el.open"
             class="@container overflow-clip sk-card"
@@ -225,6 +227,7 @@
                         <span class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $activity['net_change'] }} {{ $displayUnit }}</span>
                     </span>
                 </span>
+                <span data-material-activity-chevron aria-hidden="true" class="mt-1 shrink-0 text-lg leading-none text-[var(--color-ink-soft)] transition-transform duration-150 motion-reduce:transition-none" x-bind:class="{ 'rotate-180': open }">⌄</span>
             </summary>
             {{-- Filament renders its dropdown panel as `position: absolute; z-index: 20` and does not
                  teleport it, so it competes with the sticky `z-20` thead further down the DOM — and

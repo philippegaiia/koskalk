@@ -285,21 +285,15 @@
                         {{ $this->lotAdvancedFiltersForm }}
                     </div>
                 </div>
-                {{-- Ten columns and up to five stacked lines per row, and the same trade as
-                     the materials tab: no height cap, so the page scrolls, the thead sticks to
-                     the viewport and "Rows per page" decides the length. The wrapper only
-                     scrolls horizontally while the card is narrower than the table, because a
-                     scroll container of any kind becomes what `sticky top-0` resolves against.
-                     Allowing long translated headings to break gives a measured worst-case
-                     min-content of 1012px; the 1024px floor leaves a small buffer.
-                     Above the floor there is no sideways scroll left to lose. --}}
-                <div class="overflow-x-auto @min-[64rem]:overflow-x-visible">
+                {{-- The bounded scroll region lets the header remain sticky while the register
+                     also scrolls horizontally. Supplier information sits with the lot identity,
+                     giving the sticky first column more room without widening the table. --}}
+                <div class="max-h-[70dvh] overflow-auto">
                     <table class="w-full min-w-[1024px] text-left text-sm">
-                        <thead class="sticky top-0 z-20 wrap-anywhere bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                        <thead class="sticky top-0 z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
-                                <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
-                                <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
-                                <th class="px-4 py-3">{{ __('production_bench.common.status') }}</th>
+                                <th class="sticky left-0 z-30 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                                <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.initial_quantity') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
@@ -319,7 +313,7 @@
                                     {{-- Opaque fill: the cell sits over the quantity columns as they
                                          scroll beneath it. Lot rows carry no tint of their own, so
                                          the plain panel colour is enough here. --}}
-                                    <td class="sticky left-0 z-10 border-r border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-3">
+                                    <td class="sticky left-0 z-10 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-3" data-lot-identity>
                                         {{-- One block link over the whole identity cell, like the materials
                                              tab: a row cannot be wrapped in an anchor, so the cell is the
                                              largest target available and the name, the codes, the batch
@@ -349,54 +343,30 @@
                                         @else
                                             </div>
                                         @endif
-                                        {{-- Outside the block link: it goes to the receipt, not the
-                                             material, and an anchor cannot nest inside an anchor. --}}
-                                        @if ($originReceipt)
-                                            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
-                                                <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>
+                                        {{-- Supplier and receipt metadata stay outside the material link
+                                             because the receipt is a separate destination. --}}
+                                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]" data-lot-supplier>
+                                            @if ($supplier && $originReceipt)
+                                                <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ $supplier->name }}</a>
+                                            @elseif ($supplier)
+                                                <span class="font-medium">{{ $supplier->name }}</span>
+                                            @else
+                                                <span>{{ __('production_bench.inventory.supplier_unknown') }}</span>
+                                            @endif
+                                            @if ($originReceipt)
+                                                · {{ __('production_bench.inventory.receipt_origin') }}
                                                 · {{ $originReceipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}
-                                            </p>
-                                        @endif
+                                            @endif
+                                        </p>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-[var(--color-ink-soft)]">
-                                        @if ($originReceipt && $supplier)
-                                            <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ $supplier->name }}</a>
-                                        @else
-                                            {{ $supplier?->name ?? __('production_bench.inventory.supplier_unknown') }}
-                                        @endif
-                                    </td>
-                                    {{-- The pill restated what the row action in the last column
-                                         already offers — a released lot says "Quarantine", a
-                                         quarantined one says "Release" — and it was wide enough
-                                         to push the stocked-on date onto a second line. The dot
-                                         keeps the column scannable and cheap.
-
-                                         It does not replace the word, though. Coloured dots were
-                                         not told apart at a glance even before colour
-                                         vision is considered, and a hover title plus an sr-only
-                                         span only served people who could hover or who use a
-                                         screen reader — a read-only user gets no action button in
-                                         the last column to name the state either. So the state is
-                                         spelled out in visible `text-xs`, which widens the column
-                                         by ~68px and the table's min-content by 28px — a floor the
-                                         1184px cap still clears. The dot is then decoration:
-                                         `aria-hidden`, with the word carrying the meaning. --}}
-                                    <td class="px-4 py-3" data-lot-balance-state="{{ $row['is_exhausted'] ? 'out-of-stock' : 'open' }}" data-lot-handling-status="{{ $lot->status->value }}">
+                                    <td class="px-3 py-3 text-center" data-lot-balance-state="{{ $row['is_exhausted'] ? 'out-of-stock' : 'open' }}" data-lot-handling-status="{{ $lot->status->value }}">
                                         @php($isExhausted = $row['is_exhausted'])
                                         @php($isReleased = $lot->status->value === 'released')
                                         @php($handlingStatusLabel = $isReleased ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined'))
                                         @php($lotStatusLabel = $isExhausted ? __('production_bench.inventory.out_of_stock') : $handlingStatusLabel)
-                                        <span class="inline-flex items-center gap-2 whitespace-nowrap text-xs text-[var(--color-ink-soft)]">
-                                            {{-- Released and quarantined use the established success
-                                                 and warning tones. Exhausted is a derived balance state,
-                                                 so danger takes visual priority without replacing the
-                                                 lot's stored handling status. --}}
-                                            <span class="size-2.5 shrink-0 rounded-full {{ $isExhausted ? 'bg-[var(--color-danger)]' : ($isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]') }}" aria-hidden="true"></span>
-                                            {{ $lotStatusLabel }}
-                                        </span>
-                                        @if ($isExhausted)
-                                            <span class="mt-0.5 block pl-[18px] text-[11px] leading-4 text-[var(--color-ink-muted)]" data-lot-handling-label="{{ $lot->status->value }}">{{ $handlingStatusLabel }}</span>
-                                        @endif
+                                        @php($assistiveStatusLabel = $isExhausted ? $lotStatusLabel.' · '.$handlingStatusLabel : $handlingStatusLabel)
+                                        <span class="mx-auto block size-2.5 shrink-0 rounded-full {{ $isExhausted ? 'bg-[var(--color-danger)]' : ($isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]') }}" aria-hidden="true"></span>
+                                        <span class="sr-only">{{ $assistiveStatusLabel }}</span>
                                     </td>
                                     <td class="numeric whitespace-nowrap px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['initial_quantity'] }}</td>
@@ -415,7 +385,7 @@
                                      was shown for any empty open scope, including with no material
                                      chosen at all. Naming the filters covers both cases, since the
                                      material selection is itself a filter. --}}
-                                <tr><td colspan="10" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
+                                <tr><td colspan="9" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>

@@ -631,19 +631,17 @@ it('keeps the lot register header and identity column in view', function (): voi
 
     $this->actingAs($user);
 
-    // Same two affordances as the materials tab. The wrapper is a horizontal
-    // scroll container only while the card is narrower than the table — past
-    // that it stops being one, so the header can stick to the viewport — and
-    // the identity cell has to outrank the quantity columns it slides over.
+    // The register scrolls in both axes inside a bounded region, so its header
+    // remains visible while the user moves through a long or wide lot history.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[64rem]:overflow-x-visible')
+        ->assertSeeHtml('max-h-[70dvh] overflow-auto')
         ->assertSeeHtml('min-w-[1024px]')
         ->assertSeeHtml('sticky top-0 z-20')
-        ->assertSeeHtml('wrap-anywhere')
+        ->assertSeeHtml('whitespace-nowrap')
+        ->assertSeeHtml('min-w-64')
         // Corner cell above its sibling headers, body cell above the quantities.
-        ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
-        ->assertSeeHtml('sticky left-0 z-10 border-r border-[var(--color-line)] bg-[var(--color-panel)]');
+        ->assertSeeHtml('sticky left-0 z-30 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
+        ->assertSeeHtml('sticky left-0 z-10 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel)]');
 });
 
 it('lifts the lot register filter controls above the sticky header', function (): void {
@@ -772,35 +770,36 @@ it('lets the lot material chip be dismissed on its own', function (): void {
         ->assertSet('lotFilters.lotMaterialSelection', null);
 });
 
-it('carries lot status as a dot plus a visible state word', function (): void {
-    ['user' => $user] = lotRegisterWorkspace();
+it('carries lot status as compact dots with hidden text alternatives', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'ingredient' => $ingredient] = lotRegisterWorkspace();
+    $quarantinedLot = StockLot::factory()->for($workspace)->for($ingredient)->create();
+    StockMovement::factory()->for($quarantinedLot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5',
+    ]);
 
     $this->actingAs($user);
 
-    // The row action in the last column already reads "Quarantine" for a released
-    // lot and "Release" for a quarantined one, so the pill was a second copy of
-    // the same fact — and it was wide enough to push the stocked-on date onto a
-    // second line. The dot keeps the column cheap and scannable.
-    //
-    // The word has to stay visible, though. Two hues 120° apart were not told
-    // apart at a glance, and an sr-only span plus a `title` only served screen
-    // readers and people who hover — a read-only user has no action button in the
-    // last column to name the state either. The dot is `aria-hidden`; the word
-    // carries the meaning on its own.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertDontSeeHtml('rounded-full px-2.5 py-1 text-xs font-medium')
         ->assertSeeHtml('size-2.5 shrink-0 rounded-full bg-[var(--color-success)]')
-        ->assertSeeText(__('production_bench.inventory.released'))
-        ->assertDontSeeHtml('class="sr-only">'.__('production_bench.inventory.released').'</span>');
+        ->assertSeeHtml('size-2.5 shrink-0 rounded-full bg-[var(--color-warning)]')
+        ->assertSeeHtml('class="sr-only">'.__('production_bench.inventory.released').'</span>')
+        ->assertSeeHtml('class="sr-only">'.__('production_bench.inventory.quarantined').'</span>')
+        ->assertDontSeeHtml('inline-flex items-center gap-2 whitespace-nowrap text-xs');
 });
 
 it('makes the whole lot identity cell a link to the material detail', function (): void {
-    ['user' => $user, 'ingredient' => $ingredient, 'lot' => $lot] = lotRegisterWorkspace();
+    ['user' => $user, 'workspace' => $workspace, 'ingredient' => $ingredient, 'lot' => $lot] = lotRegisterWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Local Oils']);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
 
     $lot->forceFill([
         'internal_lot_code' => 'LOT-7781',
         'supplier_batch_number' => 'BLEND-42',
         'expires_at' => now()->addMonths(4)->toDateString(),
+        'supplier_listing_id' => $listing->id,
     ])->save();
 
     $this->actingAs($user);
@@ -815,11 +814,30 @@ it('makes the whole lot identity cell a link to the material detail', function (
     $needle = 'href="'.route('production-bench.inventory.material.ingredient', $ingredient).'"';
     $start = strpos($html, $needle);
     $anchor = $start === false ? '' : substr($html, $start, strpos($html, '</a>', $start) - $start);
+    $cellStart = strpos($html, 'data-lot-identity');
+    $identityCell = $cellStart === false ? '' : substr($html, $cellStart, strpos($html, '</td>', $cellStart) - $cellStart);
 
     expect($anchor)->toContain('LOT-7781')
         ->and($anchor)->toContain('BLEND-42')
         ->and($anchor)->toContain(__('production_bench.inventory.expires_on'))
-        ->and($anchor)->toContain(__('production_bench.inventory.open_material_detail'));
+        ->and($anchor)->toContain(__('production_bench.inventory.open_material_detail'))
+        ->and($anchor)->not->toContain('Local Oils')
+        ->and($identityCell)->toContain('Local Oils')
+        ->and($html)->not->toContain('>'.__('production_bench.inventory.lot_supplier').'</th>');
+});
+
+it('keeps the unknown supplier fallback inside the lot identity cell', function (): void {
+    ['user' => $user] = lotRegisterWorkspace();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test(InventoryIndex::class, ['mode' => 'stock'])->html();
+    $cellStart = strpos($html, 'data-lot-identity');
+    $identityCell = $cellStart === false ? '' : substr($html, $cellStart, strpos($html, '</td>', $cellStart) - $cellStart);
+
+    expect($identityCell)
+        ->toContain('data-lot-supplier')
+        ->toContain(__('production_bench.inventory.supplier_unknown'));
 });
 
 it('does not blame a material for an empty lot register', function (): void {
@@ -1456,8 +1474,9 @@ it('keeps reserved zero-balance lots in the default open scope', function (): vo
             && $lots->first()['is_exhausted'] === true)
         ->assertSeeText('Out of stock')
         ->assertSeeHtml('data-lot-balance-state="out-of-stock" data-lot-handling-status="quarantined"')
-        ->assertSeeHtml('data-lot-handling-label="quarantined"')
         ->assertSeeHtml('size-2.5 shrink-0 rounded-full bg-[var(--color-danger)]')
+        ->assertSeeHtml('class="sr-only">Out of stock · Quarantined</span>')
+        ->assertDontSeeHtml('data-lot-handling-label')
         ->set('lotScope', 'all')
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2);
 });

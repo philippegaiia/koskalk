@@ -1010,6 +1010,8 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
             return [
                 'lot' => $lot,
+                'is_exhausted' => bccomp($stock['physical'], '0', 9) === 0
+                    && bccomp((string) ($lot->active_reserved_quantity ?? '0'), '0', 9) === 0,
                 // The register is the second way into a material, so each row
                 // carries its own detail route rather than rebuilding it in Blade.
                 'detail_url' => $this->lotMaterialDetailUrl($lot),

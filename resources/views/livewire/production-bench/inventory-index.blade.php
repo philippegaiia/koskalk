@@ -290,12 +290,12 @@
                      the viewport and "Rows per page" decides the length. The wrapper only
                      scrolls horizontally while the card is narrower than the table, because a
                      scroll container of any kind becomes what `sticky top-0` resolves against.
-                     The 1152px floor leaves room for the initial quantity while keeping every
-                     quantity on one line.
+                     Allowing long translated headings to break gives a measured worst-case
+                     min-content of 1012px; the 1024px floor leaves a small buffer.
                      Above the floor there is no sideways scroll left to lose. --}}
-                <div class="overflow-x-auto @min-[72rem]:overflow-x-visible">
-                    <table class="w-full min-w-[1152px] text-left text-sm">
-                        <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                <div class="overflow-x-auto @min-[64rem]:overflow-x-visible">
+                    <table class="w-full min-w-[1024px] text-left text-sm">
+                        <thead class="sticky top-0 z-20 wrap-anywhere bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
@@ -371,8 +371,8 @@
                                          to push the stocked-on date onto a second line. The dot
                                          keeps the column scannable and cheap.
 
-                                         It does not replace the word, though. Two dots 120° apart
-                                         in hue were not told apart at a glance even before colour
+                                         It does not replace the word, though. Coloured dots were
+                                         not told apart at a glance even before colour
                                          vision is considered, and a hover title plus an sr-only
                                          span only served people who could hover or who use a
                                          screen reader — a read-only user gets no action button in
@@ -381,19 +381,22 @@
                                          by ~68px and the table's min-content by 28px — a floor the
                                          1184px cap still clears. The dot is then decoration:
                                          `aria-hidden`, with the word carrying the meaning. --}}
-                                    <td class="px-4 py-3">
+                                    <td class="px-4 py-3" data-lot-balance-state="{{ $row['is_exhausted'] ? 'out-of-stock' : 'open' }}" data-lot-handling-status="{{ $lot->status->value }}">
+                                        @php($isExhausted = $row['is_exhausted'])
                                         @php($isReleased = $lot->status->value === 'released')
-                                        @php($lotStatusLabel = $isReleased ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined'))
+                                        @php($handlingStatusLabel = $isReleased ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined'))
+                                        @php($lotStatusLabel = $isExhausted ? __('production_bench.inventory.out_of_stock') : $handlingStatusLabel)
                                         <span class="inline-flex items-center gap-2 whitespace-nowrap text-xs text-[var(--color-ink-soft)]">
-                                            {{-- The base tones, not `-strong`: at this size the strong
-                                                 pair collapsed into two dark spots (#00422e vs
-                                                 #8a3f04, both above 7:1 on the panel). Green at
-                                                 #257055 and amber at #b45307 are 120° apart in hue
-                                                 and both near 5:1, so they stay distinct at a glance
-                                                 while clearing the 3:1 non-text minimum. --}}
-                                            <span class="size-2.5 shrink-0 rounded-full {{ $isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]' }}" aria-hidden="true"></span>
+                                            {{-- Released and quarantined use the established success
+                                                 and warning tones. Exhausted is a derived balance state,
+                                                 so danger takes visual priority without replacing the
+                                                 lot's stored handling status. --}}
+                                            <span class="size-2.5 shrink-0 rounded-full {{ $isExhausted ? 'bg-[var(--color-danger)]' : ($isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]') }}" aria-hidden="true"></span>
                                             {{ $lotStatusLabel }}
                                         </span>
+                                        @if ($isExhausted)
+                                            <span class="mt-0.5 block pl-[18px] text-[11px] leading-4 text-[var(--color-ink-muted)]" data-lot-handling-label="{{ $lot->status->value }}">{{ $handlingStatusLabel }}</span>
+                                        @endif
                                     </td>
                                     <td class="numeric whitespace-nowrap px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
                                     <td class="numeric px-4 py-3 text-right">{{ $row['initial_quantity'] }}</td>

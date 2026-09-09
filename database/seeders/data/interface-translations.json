@@ -20040,6 +20040,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.out_of_stock",
+      "text": {
+        "de": "Aufgebraucht",
+        "es": "Agotado",
+        "fr": "Épuisé",
+        "it": "Esaurito",
+        "nl": "Uitgeput",
+        "pt_BR": "Esgotado"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.period",
       "text": {
         "de": "Zeitraum",

@@ -637,9 +637,10 @@ it('keeps the lot register header and identity column in view', function (): voi
     // the identity cell has to outrank the quantity columns it slides over.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[72rem]:overflow-x-visible')
-        ->assertSeeHtml('min-w-[1152px]')
+        ->assertSeeHtml('overflow-x-auto @min-[64rem]:overflow-x-visible')
+        ->assertSeeHtml('min-w-[1024px]')
         ->assertSeeHtml('sticky top-0 z-20')
+        ->assertSeeHtml('wrap-anywhere')
         // Corner cell above its sibling headers, body cell above the quantities.
         ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
         ->assertSeeHtml('sticky left-0 z-10 border-r border-[var(--color-line)] bg-[var(--color-panel)]');
@@ -1431,7 +1432,7 @@ it('keeps reserved zero-balance lots in the default open scope', function (): vo
     ]);
 
     // Net-zero movements and nothing reserved: genuinely exhausted.
-    $exhaustedLot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+    $exhaustedLot = StockLot::factory()->for($workspace)->for($ingredient)->create();
     StockMovement::factory()->for($exhaustedLot, 'stockLot')->create([
         'workspace_id' => $workspace->id,
         'type' => StockMovementType::OpeningBalance,
@@ -1447,10 +1448,16 @@ it('keeps reserved zero-balance lots in the default open scope', function (): vo
 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1
-            && $lots->first()['lot']->id === $reservedLot->id)
+            && $lots->first()['lot']->id === $reservedLot->id
+            && $lots->first()['is_exhausted'] === false)
         ->set('lotScope', 'exhausted')
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 1
-            && $lots->first()['lot']->id === $exhaustedLot->id)
+            && $lots->first()['lot']->id === $exhaustedLot->id
+            && $lots->first()['is_exhausted'] === true)
+        ->assertSeeText('Out of stock')
+        ->assertSeeHtml('data-lot-balance-state="out-of-stock" data-lot-handling-status="quarantined"')
+        ->assertSeeHtml('data-lot-handling-label="quarantined"')
+        ->assertSeeHtml('size-2.5 shrink-0 rounded-full bg-[var(--color-danger)]')
         ->set('lotScope', 'all')
         ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->total() === 2);
 });

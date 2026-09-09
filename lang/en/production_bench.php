@@ -1017,6 +1017,7 @@ return [
             'buffer_forbidden' => 'This material is not available in the selected workspace.',
         ],
         'released' => 'Released',
+        'out_of_stock' => 'Out of stock',
         'release' => 'Release',
         'quarantine' => 'Quarantine',
         'no_lots' => 'No stock items.',

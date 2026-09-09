@@ -1081,7 +1081,7 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->toContain('fixed bottom-0 left-0 right-0')
         ->toContain('z-30')
         ->toContain('lg:left-[var(--app-sidebar-width,0rem)]')
-        ->toContain('bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)]')
+        ->toContain('bg-[color-mix(in_oklab,var(--color-panel)_72%,transparent)]')
         ->toContain('backdrop-blur-md')
         ->toContain('lg:flex-nowrap')
         ->toContain('overflow-x-auto')

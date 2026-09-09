@@ -603,6 +603,7 @@ it('keeps the material header visible while the rows scroll', function (): void 
         ->assertDontSeeHtml('max-h-[')
         ->assertSeeHtml('data-sticky-table-scroll')
         ->assertSeeHtml('x-data="stickyTableHeader()"')
+        ->assertSeeHtml('x-on:scroll="scheduleUpdate()"')
         ->assertSeeHtml('wire:ignore.self data-sticky-table-header')
         ->assertSeeHtml('overflow-x-auto')
         ->assertDontSeeHtml('@min-[55rem]:overflow-x-visible')

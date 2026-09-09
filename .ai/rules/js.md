@@ -11,5 +11,5 @@ paths:
 ## Keep quick and guided product creation paths
 The default new-product entry is the searchable Product Type selector. Keep the existing guided family → grouped Product Type flow available at recipes.start.guided. PRODUCT_QUICK_CREATION_ENABLED=false must restore the guided flow globally without changing stored data.
 
-## Preserve fractional sticky-header offsets
-The shared page-scroll header must apply the exact fractional offset returned by getBoundingClientRect(). Wheel and trackpad scrolling commonly uses subpixel positions; rounding the transform makes every table header visibly jump around half-pixel boundaries. Keep the correction composited and unrounded.
+## Use a fixed overlay for page-sticky table headers
+Do not move the live thead vertically on each scroll frame; compositor-driven wheel scrolling will outrun that transform and visibly shake. Keep the original header in table layout and show a fixed, aria-hidden clone while its table crosses the viewport top. Synchronize column widths on resize and horizontal position on the table wrapper's own scroll event.

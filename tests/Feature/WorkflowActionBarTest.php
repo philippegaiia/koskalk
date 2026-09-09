@@ -20,8 +20,10 @@ it('renders a compact sticky workflow surface with leading and trailing actions'
         ->toContain('sk-workflow-action-bar')
         ->toContain('flex-nowrap')
         ->not->toContain('flex-wrap')
+        ->toContain('max-w-app')
+        ->not->toContain('max-w-5xl')
         ->toContain('backdrop-blur-md')
-        ->toContain('bg-[color-mix(in_oklab,var(--color-panel)_80%,transparent)]')
+        ->toContain('bg-[color-mix(in_oklab,var(--color-panel)_72%,transparent)]')
         ->toContain('sk-btn sk-btn-danger')
         ->toContain('sk-btn sk-btn-ghost')
         ->toContain('sk-btn sk-btn-primary');
@@ -55,5 +57,5 @@ it('allows the workflow surface width to match a wider workbench', function (): 
 
     expect($html)
         ->toContain('max-w-7xl')
-        ->not->toContain('max-w-5xl');
+        ->not->toContain('max-w-app');
 });

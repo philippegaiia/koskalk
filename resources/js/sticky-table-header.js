@@ -44,7 +44,7 @@ export function createStickyTableHeader() {
                 headerHeight,
             );
 
-            header.style.transform = `translateY(${Math.round(offset)}px)`;
+            header.style.transform = `translate3d(0, ${offset}px, 0)`;
         },
 
         destroy() {

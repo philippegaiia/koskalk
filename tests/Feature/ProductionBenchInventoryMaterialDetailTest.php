@@ -73,6 +73,7 @@ it('renders the material detail progressive disclosure structure', function (): 
     $assertCount('//*[@data-material-supplier-listings]', 1, 'supplier listings disclosure');
     $assertCount('//*[@data-material-activity]', 1, 'period activity disclosure');
     $assertCount('//*[@data-material-activity]//summary//*[@data-material-activity-chevron]', 1, 'one activity summary chevron');
+    $assertCount('//*[@data-material-activity]//*[@data-activity-metric-label and contains(concat(" ", normalize-space(@class), " "), " line-clamp-2 ") and contains(concat(" ", normalize-space(@class), " "), " min-h-8 ")]', 8, 'activity metric labels share a two-line height');
 
     $positionBreakdowns = $xpath->query('//*[@data-material-position-breakdown]');
 

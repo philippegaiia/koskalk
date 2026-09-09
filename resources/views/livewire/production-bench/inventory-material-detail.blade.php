@@ -245,7 +245,7 @@
             <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] sm:grid-cols-4 lg:grid-cols-8 lg:divide-y-0">
                 @foreach (['opening_physical', 'received', 'production_consumed', 'other_inbound', 'other_outbound', 'adjustments', 'net_change', 'closing_physical'] as $key)
                     <div class="px-5 py-4">
-                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
+                        <dt data-activity-metric-label class="line-clamp-2 min-h-8 text-xs font-medium leading-4 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
                         <dd class="numeric mt-1 text-base font-semibold text-[var(--color-ink-strong)]">{{ $activity[$key] }}</dd>
                     </div>
                 @endforeach

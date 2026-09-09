@@ -131,27 +131,12 @@
                     @endif
                 </div>
 
-                {{-- No height cap: capping the box fixed the list length at roughly one
-                     screen no matter what "Rows per page" said, which made the selector
-                     pointless. The page scrolls instead, so the thead sticks to the
-                     viewport and the selector decides how long the list actually is.
-
-                     Horizontal scrolling is the only thing left to trade. A wrapper that
-                     scrolls in X is still a scroll container, and `sticky top-0` resolves
-                     against the nearest one — so while it is there, the header pins to
-                     the wrapper (which is exactly content-height and never scrolls) and
-                     silently does nothing. The wrapper therefore only scrolls while the
-                     card is narrower than the table; once the table fits, overflow goes
-                     back to `visible` and the header sticks to the viewport. `overflow-clip`
-                     on the card keeps the rounded corners without creating the scrollport
-                     that `overflow-hidden` would.
-
-                     The threshold matches the table's floor, and the floor is measured: this
-                     table needs 834px before any cell wraps, so 880px keeps a little air and
-                     means the header sticks on any card at least that wide. --}}
-                <div class="overflow-x-auto @min-[55rem]:overflow-x-visible">
+                {{-- The table grows with the selected page size. Its shared wrapper owns only
+                     sideways navigation and compensates the header during page scroll, so the
+                     header stays visible even when the 880px table is wider than its card. --}}
+                <x-sticky-table-scroll>
                     <table class="w-full min-w-[880px] text-left text-sm">
-                        <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.material') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
@@ -225,7 +210,7 @@
                             @endforelse
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
                 @if ($materials)
                     <x-table-pagination :paginator="$materials" :per-page-label="__('production_bench.inventory.materials_per_page')" />
                 @endif
@@ -285,12 +270,12 @@
                         {{ $this->lotAdvancedFiltersForm }}
                     </div>
                 </div>
-                {{-- The bounded scroll region lets the header remain sticky while the register
-                     also scrolls horizontally. Supplier information sits with the lot identity,
-                     giving the sticky first column more room without widening the table. --}}
-                <div class="max-h-[70dvh] overflow-auto">
+                {{-- No height cap: the register grows with its selected page size. The shared
+                     wrapper keeps horizontal scrolling and the header together at every width.
+                     Supplier information stays with the wider sticky lot identity. --}}
+                <x-sticky-table-scroll>
                     <table class="w-full min-w-[1024px] text-left text-sm">
-                        <thead class="sticky top-0 z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                                 <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }}</th>
@@ -389,7 +374,7 @@
                             @endforelse
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
                 <x-table-pagination :paginator="$lots" :per-page-label="__('production_bench.inventory.lots_per_page')" />
             </section>
         @endif

@@ -93,12 +93,9 @@
                 </div>
                 <a data-material-view-all-lots href="{{ $lotRegisterUrl }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.view_all_lots') }} →</a>
             </div>
-            {{-- 57rem = 912px, just over the 900px floor. While the card is narrower the table
-                 scrolls sideways and the header cannot stick — the same trade the two index
-                 tables make. Past the threshold there is no sideways scroll left to lose. --}}
-            <div class="overflow-x-auto @min-[57rem]:overflow-x-visible">
+            <x-sticky-table-scroll>
                 <table class="w-full min-w-[900px] text-left text-sm">
-                    <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                    <thead wire:ignore.self data-sticky-table-header class="relative z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
@@ -132,7 +129,7 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
+            </x-sticky-table-scroll>
         </section>
 
         @php($supplierListingsOpen = $supplierListings->currentPage() > 1)
@@ -158,10 +155,9 @@
                     <span aria-hidden="true" class="text-lg leading-none text-[var(--color-ink-soft)]">⌄</span>
                 </span>
             </summary>
-            {{-- 54rem = 864px, just over the 860px floor. --}}
-            <div class="overflow-x-auto @min-[54rem]:overflow-x-visible">
+            <x-sticky-table-scroll>
                 <table class="w-full min-w-[860px] text-left text-sm">
-                    <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                    <thead wire:ignore.self data-sticky-table-header class="relative z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.supplier.singular') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.listing.supplier_item_name') }}</th>
@@ -196,7 +192,7 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
+            </x-sticky-table-scroll>
             <x-table-pagination
                 :paginator="$supplierListings"
                 {{-- The section heading already says "Supplier listings" directly above; this one
@@ -255,12 +251,9 @@
                 <p class="numeric mt-2 text-[var(--color-ink-soft)]">{{ $activity['opening_physical'] }} + {{ $activity['received'] }} + {{ $activity['other_inbound'] }} − {{ $activity['production_consumed'] }} − {{ $activity['other_outbound'] }} + {{ $activity['adjustments'] }} = {{ $activity['closing_physical'] }}</p>
                 <p class="mt-2 text-xs {{ $activity['reconciliation_ok'] ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-danger-strong)]' }}">{{ __('production_bench.inventory.reconciliation_delta', ['delta' => $activity['reconciliation_delta']]) }}</p>
             </div>
-            {{-- 48rem = 768px, just over the 760px floor. This is the table that most needs the
-                 sticky header: it is the only one here long enough to scroll under its own
-                 header at the default page size. --}}
-            <div class="overflow-x-auto @min-[48rem]:overflow-x-visible">
+            <x-sticky-table-scroll>
                 <table class="w-full min-w-[760px] text-left text-sm">
-                    <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
+                    <thead wire:ignore.self data-sticky-table-header class="relative z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.date') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.inventory.activity_group') }}</th>
@@ -286,7 +279,7 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
+            </x-sticky-table-scroll>
             <x-table-pagination :paginator="$movements" :per-page-label="__('production_bench.inventory.movements_per_page')" />
         </details>
     @endif

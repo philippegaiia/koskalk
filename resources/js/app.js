@@ -9,6 +9,7 @@ import { createMediaLibraryUploader } from './media-library-uploader';
 import { createRecipeContentAutosave } from './recipe-content-autosave';
 import { createRecipeWorkbench } from './recipe-workbench/component';
 import { createSearchCombobox } from './search-combobox';
+import { createStickyTableHeader } from './sticky-table-header';
 import { createProductionCalendar, createProductionCalendarComponent } from './production-calendar';
 import { initializeProductCreationSelectors } from './product-creation-selector';
 
@@ -21,6 +22,7 @@ window.recipeWorkbench = (payload) => createRecipeWorkbench(payload, createDirty
 window.ingredientEditor = (payload) => createIngredientEditor(payload, createDirtyStateRegistry);
 window.ingredientDuplicationModal = (payload) => createIngredientDuplicationModal(payload);
 window.searchCombobox = createSearchCombobox;
+window.stickyTableHeader = createStickyTableHeader;
 window.productionCalendar = createProductionCalendar;
 window.productionCalendarComponent = createProductionCalendarComponent;
 

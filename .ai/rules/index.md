@@ -38,4 +38,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Support/InciName.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |
 | app/Services/Translations/** | .ai/rules/translations.md |
+| resources/views/livewire/production-bench/inventory*.blade.php | .ai/rules/views-livewire-production-bench.md |
 | resources/views/** | .ai/rules/views.md |

@@ -596,19 +596,20 @@ it('keeps the material header visible while the rows scroll', function (): void 
 
     $this->actingAs($user);
 
-    // The header sticks to the viewport, which means the page — not a box — is
-    // the scroll container. Two things have to hold at once: no height cap (or
-    // the list length stops following "Rows per page"), and no scroll container
-    // around the table once it fits (or `sticky top-0` resolves against that
-    // instead and quietly does nothing).
+    // The page remains the vertical scroll surface, so the page-size control
+    // decides the list length. The shared wrapper keeps native horizontal
+    // scrolling and moves the header with the page at every container width.
     Livewire::test(InventoryIndex::class, ['mode' => 'materials'])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[55rem]:overflow-x-visible')
+        ->assertSeeHtml('data-sticky-table-scroll')
+        ->assertSeeHtml('x-data="stickyTableHeader()"')
+        ->assertSeeHtml('wire:ignore.self data-sticky-table-header')
+        ->assertSeeHtml('overflow-x-auto')
+        ->assertDontSeeHtml('@min-[55rem]:overflow-x-visible')
         // The floor is measured, not guessed: this table needs 834px before any
         // cell wraps. Setting it higher would keep the header unstuck on screens
         // that could perfectly well fit the table.
-        ->assertSeeHtml('min-w-[880px]')
-        ->assertSeeHtml('sticky top-0 z-20');
+        ->assertSeeHtml('min-w-[880px]');
 });
 
 it('lifts the material filter controls above the sticky header', function (): void {
@@ -631,12 +632,16 @@ it('keeps the lot register header and identity column in view', function (): voi
 
     $this->actingAs($user);
 
-    // The register scrolls in both axes inside a bounded region, so its header
-    // remains visible while the user moves through a long or wide lot history.
+    // The register grows with its rows and scrolls only in the horizontal axis.
+    // The shared wrapper keeps the header in view during page scroll even when
+    // the table is wider than its card.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
-        ->assertSeeHtml('max-h-[70dvh] overflow-auto')
+        ->assertDontSeeHtml('max-h-[')
+        ->assertSeeHtml('data-sticky-table-scroll')
+        ->assertSeeHtml('x-data="stickyTableHeader()"')
+        ->assertSeeHtml('wire:ignore.self data-sticky-table-header')
+        ->assertSeeHtml('overflow-x-auto')
         ->assertSeeHtml('min-w-[1024px]')
-        ->assertSeeHtml('sticky top-0 z-20')
         ->assertSeeHtml('whitespace-nowrap')
         ->assertSeeHtml('min-w-64')
         // Corner cell above its sibling headers, body cell above the quantities.

@@ -1015,23 +1015,27 @@ it('keeps the material detail table headers in view', function (): void {
 
     $this->actingAs($user);
 
-    // The same arrangement as the two inventory tabs: each table is a sideways
-    // scroll container only while the card is narrower than the table's floor,
-    // and stops being one past that so `sticky top-0` resolves against the
-    // viewport instead of the card, where it would quietly do nothing. The
-    // three floors are the widths the tables already carried.
-    Livewire::test(InventoryMaterialDetail::class, [
+    // Every table grows with its rows and retains native horizontal scrolling.
+    // The shared wrapper moves each header with the page at every width.
+    $component = Livewire::test(InventoryMaterialDetail::class, [
         'subject' => $ingredient->public_id,
         'subjectType' => 'ingredient',
     ])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[57rem]:overflow-x-visible')
+        ->assertSeeHtml('data-sticky-table-scroll')
+        ->assertSeeHtml('x-data="stickyTableHeader()"')
+        ->assertSeeHtml('wire:ignore.self data-sticky-table-header')
+        ->assertSeeHtml('overflow-x-auto')
+        ->assertDontSeeHtml('@min-[57rem]:overflow-x-visible')
         ->assertSeeHtml('min-w-[900px]')
-        ->assertSeeHtml('overflow-x-auto @min-[54rem]:overflow-x-visible')
+        ->assertDontSeeHtml('@min-[54rem]:overflow-x-visible')
         ->assertSeeHtml('min-w-[860px]')
-        ->assertSeeHtml('overflow-x-auto @min-[48rem]:overflow-x-visible')
+        ->assertDontSeeHtml('@min-[48rem]:overflow-x-visible')
         ->assertSeeHtml('min-w-[760px]')
-        ->assertSeeHtml('sticky top-0 z-20');
+        ->assertDontSeeHtml('sticky top-0 z-20');
+
+    expect(substr_count($component->html(), 'data-sticky-table-scroll'))->toBe(3)
+        ->and(substr_count($component->html(), 'data-sticky-table-header'))->toBe(3);
 });
 
 it('lifts the period filter controls above the sticky activity header', function (): void {

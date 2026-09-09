@@ -27564,6 +27564,30 @@
     },
     {
       "group": "production_bench",
+      "key": "receipt.outstanding_items",
+      "text": {
+        "de": "Noch zu erhalten",
+        "es": "Pendiente de recibir",
+        "fr": "Reste à réceptionner",
+        "it": "Ancora da ricevere",
+        "nl": "Nog te ontvangen",
+        "pt_BR": "Ainda a receber"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.outstanding_items_help",
+      "text": {
+        "de": "Diese Bestellpositionen sind nicht Teil dieses Wareneingangs und für :order noch offen.",
+        "es": "Estos artículos del pedido no forman parte de esta recepción y siguen pendientes en :order.",
+        "fr": "Ces articles de la commande ne font pas partie de cette réception et restent à réceptionner sur :order.",
+        "it": "Questi articoli dell’ordine non fanno parte di questa ricezione e restano da ricevere per :order.",
+        "nl": "Deze bestelregels maken geen deel uit van deze ontvangst en staan nog open op :order.",
+        "pt_BR": "Estes itens do pedido não fazem parte deste recebimento e continuam pendentes em :order."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "receipt.over_receipt",
       "text": {
         "de": "Die erhaltenen Gebinde dürfen die bestellte Menge nicht überschreiten.",
@@ -27956,6 +27980,30 @@
         "it": "Origine",
         "nl": "Bron",
         "pt_BR": "Origem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.status_complete",
+      "text": {
+        "de": "Vollständig",
+        "es": "Completa",
+        "fr": "Complète",
+        "it": "Completa",
+        "nl": "Volledig",
+        "pt_BR": "Completo"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.status_incomplete",
+      "text": {
+        "de": "Unvollständig",
+        "es": "Incompleta",
+        "fr": "Incomplète",
+        "it": "Incompleta",
+        "nl": "Onvolledig",
+        "pt_BR": "Incompleto"
       }
     },
     {

@@ -46,6 +46,14 @@
                     </thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @foreach ($receipts as $receipt)
+                            @php
+                                $receiptStatus = match (true) {
+                                    $receipt->status->value === 'reversed' => 'reversed',
+                                    $receipt->purchaseOrder?->status->value === 'received' => 'complete',
+                                    $receipt->purchaseOrder !== null => 'incomplete',
+                                    default => 'posted',
+                                };
+                            @endphp
                             <tr wire:key="receipt-{{ $receipt->id }}" class="transition hover:bg-[var(--color-panel-strong)]">
                                 <td class="numeric whitespace-nowrap px-5 py-4">{{ $receipt->received_at->format('Y-m-d') }}</td>
                                 <td class="numeric px-4 py-4 font-medium text-[var(--color-ink-strong)]">{{ $receipt->delivery_reference ?: __('production_bench.receipt.no_reference') }}</td>
@@ -59,7 +67,17 @@
                                     @endif
                                 </td>
                                 <td class="numeric px-4 py-4 text-right">{{ $receipt->lines_count }}</td>
-                                <td class="px-4 py-4">{{ $receipt->status->value === 'reversed' ? __('production_bench.receipt.status_reversed') : __('production_bench.receipt.status_posted') }}</td>
+                                <td class="px-4 py-4">
+                                    <span
+                                        data-receipt-status="{{ $receiptStatus }}"
+                                        @class([
+                                            'inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
+                                            'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' => in_array($receiptStatus, ['complete', 'posted'], true),
+                                            'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' => $receiptStatus === 'incomplete',
+                                            'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' => $receiptStatus === 'reversed',
+                                        ])
+                                    >{{ __("production_bench.receipt.status_{$receiptStatus}") }}</span>
+                                </td>
                                 <td class="px-5 py-4 text-right"><a href="{{ route('production-bench.purchasing.receipts.show', $receipt) }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.open') }}</a></td>
                             </tr>
                         @endforeach

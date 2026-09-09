@@ -10,12 +10,15 @@ use App\Enums\MediaAssetType;
 use App\Enums\ProductionDocumentType;
 use App\Models\GoodsReceipt;
 use App\Models\ProductionDocument;
+use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaAssetUploadService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -175,6 +178,13 @@ class ReceiptDetail extends Component
         $receipt = $this->receipt()->load([
             'supplier',
             'purchaseOrder',
+            'purchaseOrder.lines' => fn (HasMany $query): HasMany => $query
+                ->with(['ingredient.translations', 'packagingItem'])
+                ->withSum([
+                    'receiptLines as posted_packs_received' => fn (Builder $receiptLineQuery): Builder => $receiptLineQuery
+                        ->whereHas('goodsReceipt', fn (Builder $goodsReceiptQuery): Builder => $goodsReceiptQuery
+                            ->where('status', GoodsReceiptStatus::Posted)),
+                ], 'packs_received'),
             'lines.supplierListing',
             'lines.purchaseOrderLine',
             'lines.stockLot.ingredient.translations',
@@ -183,8 +193,22 @@ class ReceiptDetail extends Component
             'lines.stockLot.documents.mediaAsset',
         ]);
 
+        $outstandingOrderLines = ($receipt->purchaseOrder?->lines ?? collect())
+            ->map(function (PurchaseOrderLine $line): array {
+                $receivedPacks = (int) ($line->posted_packs_received ?? 0);
+
+                return [
+                    'line' => $line,
+                    'receivedPacks' => $receivedPacks,
+                    'remainingPacks' => max(0, $line->ordered_packs - $receivedPacks),
+                ];
+            })
+            ->filter(fn (array $progress): bool => $progress['remainingPacks'] > 0)
+            ->values();
+
         return view('livewire.production-bench.purchasing.receipt-detail', [
             'receipt' => $receipt,
+            'outstandingOrderLines' => $outstandingOrderLines,
             'isReadOnly' => $access->isReadOnly($this->workspace()),
             'canReverse' => ! $access->isReadOnly($this->workspace())
                 && $receipt->status === GoodsReceiptStatus::Posted,

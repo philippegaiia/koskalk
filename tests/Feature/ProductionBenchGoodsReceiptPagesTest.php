@@ -140,6 +140,75 @@ it('lists newest receipts with source supplier order and line count', function (
         ->assertSee('2');
 });
 
+it('shows an incomplete status while a purchase order has outstanding lines', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [$supplier, , $order, $receivedLine] = outstandingReceiptOrder($owner, $workspace, 1);
+    $outstandingListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory())
+        ->create();
+    $outstandingLine = PurchaseOrderLine::factory()
+        ->for($order)
+        ->for($outstandingListing, 'supplierListing')
+        ->create([
+            'ingredient_id' => $outstandingListing->ingredient_id,
+            'listing_name' => 'Outstanding 5 kg pail',
+            'ordered_packs' => 1,
+            'expected_quantity' => $outstandingListing->canonical_quantity_per_purchase_format,
+        ]);
+    $partialReceipt = app(ReceivePurchaseOrder::class)->handle(
+        actor: $owner,
+        order: $order,
+        idempotencyKey: fake()->uuid(),
+        deliveryReference: 'PARTIAL-DELIVERY',
+        lines: [[
+            'order_line' => $receivedLine,
+            'packs_received' => 1,
+            'actual_quantity' => '5',
+            'actual_unit' => 'kg',
+        ]],
+    );
+
+    $response = $this->actingAs($owner)->get(route('production-bench.purchasing.receipts'));
+
+    $response->assertOk()
+        ->assertSee('PARTIAL-DELIVERY')
+        ->assertSee('Incomplete')
+        ->assertDontSeeHtml('data-receipt-status="posted"')
+        ->assertSeeHtml('data-receipt-status="incomplete"');
+
+    Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $partialReceipt->public_id])
+        ->assertSee('Still to receive')
+        ->assertSee('Outstanding 5 kg pail')
+        ->assertSeeHtml('data-receipt-status="incomplete"')
+        ->assertSeeHtml('data-outstanding-order-line="'.$outstandingLine->id.'"');
+
+    app(ReceivePurchaseOrder::class)->handle(
+        actor: $owner,
+        order: $order,
+        idempotencyKey: fake()->uuid(),
+        deliveryReference: 'FINAL-DELIVERY',
+        lines: [[
+            'order_line' => $outstandingLine,
+            'packs_received' => 1,
+            'actual_quantity' => '5',
+            'actual_unit' => 'kg',
+        ]],
+    );
+
+    $this->actingAs($owner)
+        ->get(route('production-bench.purchasing.receipts'))
+        ->assertOk()
+        ->assertSee('Complete')
+        ->assertDontSeeHtml('data-receipt-status="incomplete"')
+        ->assertSeeHtml('data-receipt-status="complete"');
+
+    Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $partialReceipt->public_id])
+        ->assertSeeHtml('data-receipt-status="complete"')
+        ->assertDontSeeHtml('data-outstanding-order-lines');
+});
+
 it('paginates receipts twenty at a time in newest-first order', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();

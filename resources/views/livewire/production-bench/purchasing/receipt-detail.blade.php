@@ -1,5 +1,13 @@
 <x-production-bench.page active="purchasing" subnavigation="receipts">
-    @php($numberLocale = auth()->user()?->number_locale)
+    @php
+        $numberLocale = auth()->user()?->number_locale;
+        $receiptStatus = match (true) {
+            $receipt->status->value === 'reversed' => 'reversed',
+            $receipt->purchaseOrder?->status->value === 'received' => 'complete',
+            $receipt->purchaseOrder !== null => 'incomplete',
+            default => 'posted',
+        };
+    @endphp
     @if ($isReadOnly)
         <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
     @endif
@@ -10,7 +18,15 @@
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.singular') }}</h1>
             <p class="numeric mt-1 text-sm text-[var(--color-ink-soft)]">{{ $receipt->delivery_reference ?: __('production_bench.receipt.no_reference') }}</p>
         </div>
-        <span @class(['rounded-full px-3 py-1 text-xs font-medium', 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' => $receipt->status->value === 'reversed', 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' => $receipt->status->value === 'posted'])>{{ $receipt->status->value === 'reversed' ? __('production_bench.receipt.status_reversed') : __('production_bench.receipt.status_posted') }}</span>
+        <span
+            data-receipt-status="{{ $receiptStatus }}"
+            @class([
+                'rounded-full px-3 py-1 text-xs font-medium',
+                'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' => in_array($receiptStatus, ['complete', 'posted'], true),
+                'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' => $receiptStatus === 'incomplete',
+                'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' => $receiptStatus === 'reversed',
+            ])
+        >{{ __("production_bench.receipt.status_{$receiptStatus}") }}</span>
     </header>
 
     <dl class="grid gap-x-6 gap-y-4 border-y border-[var(--color-line)] py-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -20,6 +36,30 @@
         <div><dt class="sk-eyebrow">{{ __('production_bench.receipt.lines') }}</dt><dd class="numeric mt-1 text-sm text-[var(--color-ink-strong)]">{{ $receipt->lines->count() }}</dd></div>
         @if ($receipt->notes)<div class="sm:col-span-2 lg:col-span-4"><dt class="sk-eyebrow">{{ __('production_bench.common.notes') }}</dt><dd class="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-strong)]">{{ $receipt->notes }}</dd></div>@endif
     </dl>
+
+    @if ($outstandingOrderLines->isNotEmpty())
+        <section aria-labelledby="outstanding-order-lines-heading" data-outstanding-order-lines class="sk-card space-y-4 p-5">
+            <div>
+                <h2 id="outstanding-order-lines-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.outstanding_items') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.outstanding_items_help', ['order' => $receipt->purchaseOrder->reference]) }}</p>
+            </div>
+            <div class="space-y-2">
+                @foreach ($outstandingOrderLines as $progress)
+                    <article wire:key="outstanding-order-line-{{ $progress['line']->id }}" data-outstanding-order-line="{{ $progress['line']->id }}" class="grid gap-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:grid-cols-[minmax(12rem,1fr)_minmax(18rem,1fr)] sm:items-center">
+                        <div class="min-w-0">
+                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $progress['line']->ingredient?->localizedDisplayName() ?? $progress['line']->packagingItem?->name }}</p>
+                            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $progress['line']->listing_name }}</p>
+                        </div>
+                        <dl class="grid grid-cols-3 gap-4">
+                            <div><dt class="sk-eyebrow">{{ __('production_bench.receipt.ordered') }}</dt><dd class="numeric mt-1 text-sm text-[var(--color-ink-strong)]">{{ $progress['line']->ordered_packs }}</dd></div>
+                            <div><dt class="sk-eyebrow">{{ __('production_bench.receipt.previously_received') }}</dt><dd class="numeric mt-1 text-sm text-[var(--color-ink-strong)]">{{ $progress['receivedPacks'] }}</dd></div>
+                            <div><dt class="sk-eyebrow">{{ __('production_bench.receipt.remaining') }}</dt><dd class="numeric mt-1 text-sm font-semibold text-[var(--color-warning-strong)]">{{ $progress['remainingPacks'] }}</dd></div>
+                        </dl>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <section aria-labelledby="receipt-lines-heading" class="space-y-3">
         <h2 id="receipt-lines-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.received_items') }}</h2>

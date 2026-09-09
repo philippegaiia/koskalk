@@ -180,8 +180,10 @@ it('shows an incomplete status while a purchase order has outstanding lines', fu
 
     Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $partialReceipt->public_id])
         ->assertSee('Still to receive')
+        ->assertSee('Receive outstanding items')
         ->assertSee('Outstanding 5 kg pail')
         ->assertSeeHtml('data-receipt-status="incomplete"')
+        ->assertSeeHtml('order='.$order->public_id)
         ->assertSeeHtml('data-outstanding-order-line="'.$outstandingLine->id.'"');
 
     app(ReceivePurchaseOrder::class)->handle(
@@ -206,7 +208,31 @@ it('shows an incomplete status while a purchase order has outstanding lines', fu
 
     Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $partialReceipt->public_id])
         ->assertSeeHtml('data-receipt-status="complete"')
+        ->assertDontSee('Receive outstanding items')
         ->assertDontSeeHtml('data-outstanding-order-lines');
+});
+
+it('uses fulfillment labels for purchase order statuses', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [, , $ordered] = outstandingReceiptOrder($owner, $workspace);
+    [, , $partial] = outstandingReceiptOrder($owner, $workspace);
+    $partial->update(['status' => PurchaseOrderStatus::PartiallyReceived]);
+    [, , $complete] = outstandingReceiptOrder($owner, $workspace);
+    $complete->update(['status' => PurchaseOrderStatus::Received]);
+
+    $this->actingAs($owner)
+        ->get(route('production-bench.purchasing.orders'))
+        ->assertOk()
+        ->assertSee($ordered->reference)
+        ->assertSee($partial->reference)
+        ->assertSee($complete->reference)
+        ->assertSee('Ordered')
+        ->assertSee('Incomplete')
+        ->assertSee('Complete')
+        ->assertDontSee('partially_received')
+        ->assertSeeHtml('data-purchase-order-status="ordered"')
+        ->assertSeeHtml('data-purchase-order-status="incomplete"')
+        ->assertSeeHtml('data-purchase-order-status="complete"');
 });
 
 it('paginates receipts twenty at a time in newest-first order', function (): void {
@@ -837,6 +863,7 @@ it('keeps receipt and purchase-order mutations hidden when the bench is read-onl
     Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $receipt->public_id])
         ->assertSee('Read-only')
         ->assertDontSee('Reverse receipt')
+        ->assertDontSee('Receive outstanding items')
         ->assertDontSeeHtml('data-receipt-reversal-action-bar');
 
     $this->get(route('production-bench.purchasing.procurement.show', $order))
@@ -882,7 +909,9 @@ it('renders immutable receipt relationships and requires a reason to reverse', f
         ->call('reverse')
         ->assertHasNoErrors()
         ->assertSee('Delivery entered twice')
-        ->assertSee('Reversed');
+        ->assertSee('Reversed')
+        ->assertSee('Receive outstanding items')
+        ->assertSeeHtml('order='.$order->public_id);
 });
 
 it('shows total mass costs without per-gram noise and labels packaging costs per unit', function (): void {

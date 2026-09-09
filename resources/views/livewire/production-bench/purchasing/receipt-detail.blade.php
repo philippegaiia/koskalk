@@ -39,9 +39,14 @@
 
     @if ($outstandingOrderLines->isNotEmpty())
         <section aria-labelledby="outstanding-order-lines-heading" data-outstanding-order-lines class="sk-card space-y-4 p-5">
-            <div>
-                <h2 id="outstanding-order-lines-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.outstanding_items') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.outstanding_items_help', ['order' => $receipt->purchaseOrder->reference]) }}</p>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 id="outstanding-order-lines-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.outstanding_items') }}</h2>
+                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.outstanding_items_help', ['order' => $receipt->purchaseOrder->reference]) }}</p>
+                </div>
+                @if ($canReceiveOutstanding)
+                    <a href="{{ route('production-bench.purchasing.receipts.create', ['source' => 'purchase_order', 'order' => $receipt->purchaseOrder->public_id]) }}" wire:navigate class="sk-btn sk-btn-outline min-h-11 shrink-0">{{ __('production_bench.receipt.receive_outstanding') }}</a>
+                @endif
             </div>
             <div class="space-y-2">
                 @foreach ($outstandingOrderLines as $progress)

@@ -22128,6 +22128,66 @@
     },
     {
       "group": "production_bench",
+      "key": "procurement.status_cancelled",
+      "text": {
+        "de": "Storniert",
+        "es": "Cancelado",
+        "fr": "Annulée",
+        "it": "Annullato",
+        "nl": "Geannuleerd",
+        "pt_BR": "Cancelado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "procurement.status_complete",
+      "text": {
+        "de": "Vollständig",
+        "es": "Completo",
+        "fr": "Complète",
+        "it": "Completo",
+        "nl": "Volledig",
+        "pt_BR": "Completo"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "procurement.status_draft",
+      "text": {
+        "de": "Entwurf",
+        "es": "Borrador",
+        "fr": "Brouillon",
+        "it": "Bozza",
+        "nl": "Concept",
+        "pt_BR": "Rascunho"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "procurement.status_incomplete",
+      "text": {
+        "de": "Unvollständig",
+        "es": "Incompleto",
+        "fr": "Incomplète",
+        "it": "Incompleto",
+        "nl": "Onvolledig",
+        "pt_BR": "Incompleto"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "procurement.status_ordered",
+      "text": {
+        "de": "Bestellt",
+        "es": "Pedido",
+        "fr": "Commandée",
+        "it": "Ordinato",
+        "nl": "Besteld",
+        "pt_BR": "Solicitado"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "procurement.tax",
       "text": {
         "de": "Steuer",
@@ -27824,6 +27884,18 @@
         "it": "Ricevi una o più righe residue di un ordine emesso.",
         "nl": "Ontvang één of meer openstaande regels van een uitgegeven bestelling.",
         "pt_BR": "Receba uma ou mais linhas pendentes de um pedido de compra emitido."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.receive_outstanding",
+      "text": {
+        "de": "Offene Artikel empfangen",
+        "es": "Recibir artículos pendientes",
+        "fr": "Réceptionner les articles restants",
+        "it": "Ricevi gli articoli rimanenti",
+        "nl": "Openstaande artikelen ontvangen",
+        "pt_BR": "Receber itens pendentes"
       }
     },
     {

@@ -8,6 +8,7 @@ use App\Actions\Purchasing\ReverseGoodsReceipt;
 use App\Enums\GoodsReceiptStatus;
 use App\Enums\MediaAssetType;
 use App\Enums\ProductionDocumentType;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\GoodsReceipt;
 use App\Models\ProductionDocument;
 use App\Models\PurchaseOrderLine;
@@ -205,14 +206,18 @@ class ReceiptDetail extends Component
             })
             ->filter(fn (array $progress): bool => $progress['remainingPacks'] > 0)
             ->values();
+        $isReadOnly = $access->isReadOnly($this->workspace());
+        $canWrite = $access->canWrite($this->user(), $this->workspace());
 
         return view('livewire.production-bench.purchasing.receipt-detail', [
             'receipt' => $receipt,
             'outstandingOrderLines' => $outstandingOrderLines,
-            'isReadOnly' => $access->isReadOnly($this->workspace()),
-            'canReverse' => ! $access->isReadOnly($this->workspace())
-                && $receipt->status === GoodsReceiptStatus::Posted,
-            'canAttachDocuments' => ! $access->isReadOnly($this->workspace()),
+            'isReadOnly' => $isReadOnly,
+            'canReverse' => ! $isReadOnly && $receipt->status === GoodsReceiptStatus::Posted,
+            'canAttachDocuments' => ! $isReadOnly,
+            'canReceiveOutstanding' => $canWrite
+                && $outstandingOrderLines->isNotEmpty()
+                && in_array($receipt->purchaseOrder?->status, [PurchaseOrderStatus::Ordered, PurchaseOrderStatus::PartiallyReceived], true),
             'receiptDocumentTypes' => $this->receiptDocumentTypeValues(),
             'lotDocumentTypes' => $this->lotDocumentTypeValues(),
         ]);

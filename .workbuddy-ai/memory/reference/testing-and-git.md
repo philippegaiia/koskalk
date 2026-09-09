@@ -34,6 +34,12 @@ Triage doc: `docs/superpowers/plans/2026-08-29-test-suite-failures-triage.md`.
   `$this->view('welcome')->toHtml()` throws `BadMethodCallException`. To get the rendered
   string — needed for `expect(...)->toContain()` style assertions against the *full* page
   including its `@extends` layout — use the global helper: `view('welcome')->render()`.
+- **A green suite says nothing about whether the assets build.** Contract tests assert against
+  Blade *source*, never generated CSS, so malformed output is invisible to them. After any UI
+  or CSS work the production build must be run separately, and I cannot run it (the sandbox
+  blocks Vite reading `.env`). Flag the build as unverified rather than implying it passed —
+  and never write symbolic placeholder class names into tracked Markdown, which is the one way
+  a *documentation* change can break the build (see `css-and-ui.md`).
 
 ## Git forensics traps (each produced a false conclusion once)
 

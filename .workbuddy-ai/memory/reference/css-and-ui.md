@@ -13,6 +13,16 @@ Moved out of `MEMORY.md` 2026-09-04 to keep that file under the injection limit.
   change.** Verify: `curl -s "$(cat public/hot)/resources/css/app.css" | grep -c '<your-new-class>'`.
 - Design-polish contract tests read `resource_path('css/app.css')` — the **source**, never the
   bundle. The suite is green whether or not `public/build` is current.
+- **Tracked Markdown is scanned as plain text and can break the production build.** `app.css`
+  uses a bare `@import 'tailwindcss'`, so Tailwind auto-scans every file that is not
+  gitignored — including `.workbuddy-ai/memory/*.md`. It understands neither backticks nor
+  code fences, so a class-shaped string whose measurement is a *symbol* (an `N`, or
+  `<value>`) is read as a real utility and emitted as a container query with an invalid
+  measurement. The production minifier rejects it and **PHP tests cannot see it** — the suite
+  stays green while `npm run build` fails. **Never write placeholder class names in tracked
+  files; describe the pattern in prose, or use a concrete valid value.** This broke the build
+  on 2026-09-09 (the owner fixed it) and `@source not` for `.workbuddy-ai` is the fallback if
+  it recurs.
 
 ## Visual language
 
@@ -187,8 +197,11 @@ exactly as designed.
    - **The dev bundle keeps utilities for classes you already deleted.** Tailwind's dev
      cache retains them, so seeing `.max-w-[1180px]` *next to* `.max-w-app` does **not**
      mean the source still has it. Confirm against the Blade source, not the bundle.
-   - **`npm run build` is blocked in this sandbox** — Vite's `loadEnv` reads `.env` and the
-     broker denies it ("Sensitive content approval timed out"). Don't retry; use `?direct`.
+   - **`npm run build` is blocked in *the agent's* sandbox** — Vite's `loadEnv` reads `.env`
+     and the broker denies it ("Sensitive content approval timed out"). That is a restriction
+     on me, **not a property of the project**: the owner runs it fine. Don't retry; verify
+     with `?direct` and then say plainly that the production build is unverified. Corollary:
+     the dev bundle is not proof either — see the dev-cache trap above.
 3. `table.style.minWidth='0'; table.style.width='min-content'` then read
    `getBoundingClientRect().width`. That is the narrowest the table goes before any cell wraps.
 4. Pin the wrapper and let the table size itself (`width:auto`) to answer "does it fit floor N".

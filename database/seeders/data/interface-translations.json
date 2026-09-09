@@ -19272,6 +19272,30 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.incoming_help",
+      "text": {
+        "de": "Offene Bestellungen",
+        "es": "Pedidos de compra pendientes",
+        "fr": "Commandes d’achat en cours",
+        "it": "Ordini di acquisto in sospeso",
+        "nl": "Openstaande inkooporders",
+        "pt_BR": "Pedidos de compra pendentes"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.initial_quantity",
+      "text": {
+        "de": "Anfangsmenge",
+        "es": "Cantidad inicial",
+        "fr": "Quantité initiale",
+        "it": "Quantità iniziale",
+        "nl": "Beginhoeveelheid",
+        "pt_BR": "Quantidade inicial"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.internal_batch",
       "text": {
         "de": "Interne Chargennummer",

@@ -66,6 +66,7 @@ it('renders the material detail progressive disclosure structure', function (): 
     $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="quarantined"]', 1, 'Quarantined is a secondary metric in stock summary');
     $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="incoming"]', 1, 'Incoming is a secondary metric in stock summary');
     $assertCount('//*[@data-material-stock-summary]//*[@data-position-secondary="required"]', 1, 'Required is a secondary metric in stock summary');
+    $assertCount('//*[@data-material-stock-summary]//*[@data-material-forecast-equation]', 1, 'Forecast includes its calculation breakdown');
     $assertCount('//*[@data-material-open-lots]', 1, 'open lots section');
     $assertCount('//*[@data-material-view-all-lots]', 1, 'one marked View all lots link');
     $assertCount('//a[contains(normalize-space(.), "View all lots")]', 1, 'one visible View all lots link');
@@ -73,7 +74,37 @@ it('renders the material detail progressive disclosure structure', function (): 
     $assertCount('//*[@data-material-activity]', 1, 'period activity disclosure');
     $assertCount('//*[@data-material-activity]//summary//*[@data-material-activity-chevron]', 1, 'one activity summary chevron');
 
-    foreach (['data-material-position-breakdown', 'data-material-supplier-listings', 'data-material-activity'] as $marker) {
+    $positionBreakdowns = $xpath->query('//*[@data-material-position-breakdown]');
+
+    if (! $positionBreakdowns instanceof DOMNodeList || $positionBreakdowns->length !== 1) {
+        $violations[] = 'data-material-position-breakdown: expected one visible position breakdown';
+    } elseif ($positionBreakdowns->item(0) instanceof DOMElement && $positionBreakdowns->item(0)->tagName === 'details') {
+        $violations[] = 'data-material-position-breakdown: expected visible content, not a disclosure';
+    }
+
+    $forecastEquations = $xpath->query('//*[@data-material-forecast-equation]');
+
+    if (! $forecastEquations instanceof DOMNodeList || $forecastEquations->length !== 1) {
+        $violations[] = 'forecast equation: expected one calculation';
+    } else {
+        $forecastEquation = $forecastEquations->item(0)?->textContent ?? '';
+
+        foreach ([
+            __('production_bench.inventory.available'),
+            __('production_bench.inventory.incoming'),
+            __('production_bench.inventory.required'),
+            __('production_bench.inventory.forecast'),
+            '+',
+            '-',
+            '=',
+        ] as $term) {
+            if (! str_contains($forecastEquation, $term)) {
+                $violations[] = 'forecast equation: missing '.$term;
+            }
+        }
+    }
+
+    foreach (['data-material-supplier-listings', 'data-material-activity'] as $marker) {
         $nodes = $xpath->query('//*[@'.$marker.']');
 
         if (! $nodes instanceof DOMNodeList || $nodes->length !== 1) {
@@ -328,12 +359,14 @@ it('renders the material detail headings in French for a French interface locale
         ->assertSee('Lots ouverts')
         ->assertSee('Mouvements de la période')
         ->assertSee('Voir tous les lots')
+        ->assertSee('Commandes d’achat en cours')
         ->assertSee('30 derniers jours')
         ->assertSee('Consommé en production')
         ->assertSee('Fournisseur')
         ->assertDontSeeHtml('>Current position<')
         ->assertDontSeeHtml('>Open lots<')
         ->assertDontSeeHtml('>View all lots<')
+        ->assertDontSeeHtml('>Outstanding purchase orders<')
         ->assertDontSeeHtml('>Last 30 days<')
         ->assertDontSeeHtml('>Production consumed<')
         ->assertDontSeeHtml('>Supplier<');
@@ -534,6 +567,8 @@ it('changes activity periods without changing the current position', function ()
 });
 
 it('renders the period controls from a filament schema', function (): void {
+    $this->travelTo('2026-09-09 10:00:00');
+
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Rose water']);
     $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
@@ -555,11 +590,49 @@ it('renders the period controls from a filament schema', function (): void {
         // the schema has to render them conditionally rather than always.
         ->assertDontSeeHtml('for="activityFiltersForm.from"')
         ->set('periodPreset', 'custom')
+        ->assertHasNoErrors()
+        ->assertSet('customFrom', '2026-08-11')
+        ->assertSet('customTo', '2026-09-09')
         ->assertSeeHtml('for="activityFiltersForm.from"')
         ->assertSeeHtml('for="activityFiltersForm.to"');
 });
 
+it('initializes and validates custom periods loaded from the url', function (): void {
+    $this->travelTo('2026-09-09 10:00:00');
+
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Rose water']);
+    StockLot::factory()->for($workspace)->for($ingredient)->create();
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('production-bench.inventory.material.ingredient', [
+        'ingredient' => $ingredient,
+        'period' => 'custom',
+    ]));
+    $response
+        ->assertOk()
+        ->assertDontSeeText(__('production_bench.inventory.period_date_required'));
+
+    $document = materialDetailDocument($response->getContent());
+    $component = (new DOMXPath($document))->query('//*[@*[name()="wire:snapshot"]][descendant::*[@data-material-stock-summary]]')?->item(0);
+    $snapshot = json_decode($component?->getAttribute('wire:snapshot') ?? '', true);
+
+    expect(data_get($snapshot, 'data.customFrom'))->toBe('2026-08-11')
+        ->and(data_get($snapshot, 'data.customTo'))->toBe('2026-09-09');
+
+    $this->get(route('production-bench.inventory.material.ingredient', [
+        'ingredient' => $ingredient,
+        'period' => 'custom',
+        'from' => '2026-09-01',
+    ]))
+        ->assertOk()
+        ->assertSeeText(__('production_bench.inventory.period_date_required'));
+});
+
 it('keeps the custom period validation and the activity page through the schema', function (): void {
+    $this->travelTo('2026-09-09 10:00:00');
+
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Rose water']);
     $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
@@ -596,10 +669,12 @@ it('keeps the custom period validation and the activity page through the schema'
         ->set('periodPreset', '365')
         ->assertViewHas('movements', fn (LengthAwarePaginator $page): bool => $page->currentPage() === 1)
         ->assertViewHas('activity', fn (array $activity): bool => $activity['received'] === '0.34')
-        // Choosing "custom" with no dates yet is the incomplete state the
-        // validation hook has always rejected.
+        // Choosing "custom" starts with the selected preset's range, so the
+        // form is useful immediately and does not flash required errors.
         ->set('periodPreset', 'custom')
-        ->assertHasErrors(['customFrom'])
+        ->assertHasNoErrors()
+        ->assertSet('customFrom', '2025-09-10')
+        ->assertSet('customTo', '2026-09-09')
         ->set('customFrom', today()->subDays(10)->toDateString())
         ->set('customTo', today()->subDays(20)->toDateString())
         ->assertHasErrors(['customFrom'])
@@ -675,7 +750,7 @@ it('renders packaging balances in units', function (): void {
         && $position['available'] === '12');
 });
 
-it('validates custom activity periods before replacing the period data', function (): void {
+it('keeps custom activity dates null-safe when a date is cleared', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create();
     StockLot::factory()->for($workspace)->for($ingredient)->create();
@@ -685,12 +760,23 @@ it('validates custom activity periods before replacing the period data', functio
         'subject' => $ingredient->public_id,
         'subjectType' => 'ingredient',
     ])
+        ->set('periodPreset', '365')
         ->set('periodPreset', 'custom')
-        ->assertHasErrors(['customFrom', 'customTo'])
+        ->assertHasNoErrors()
+        ->set('customFrom', null)
+        ->assertHasErrors(['customFrom'])
+        ->assertHasNoErrors(['customTo'])
         ->set('customFrom', '2026-08-31')
         ->set('customTo', '2026-08-01')
         ->assertHasErrors(['customFrom', 'customTo'])
-        ->set('customTo', '2026-08-31')
+        // Filament's non-native picker emits its internal midnight format
+        // during a live update; the URL state must be normalized to date-only.
+        ->set('customTo', '2026-08-31 00:00:00')
+        ->assertSet('customTo', '2026-08-31')
+        ->assertHasNoErrors()
+        ->set('periodPreset', '30')
+        ->assertSet('customFrom', null)
+        ->assertSet('customTo', null)
         ->assertHasNoErrors();
 });
 

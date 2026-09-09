@@ -18,14 +18,44 @@
         </header>
 
         <section data-material-stock-summary class="sk-card overflow-hidden" aria-labelledby="current-position-heading">
-            <dl class="grid grid-cols-2 divide-x divide-[var(--color-line)]">
-                @foreach (['available', 'forecast'] as $key)
-                    <div data-position-primary="{{ $key }}" class="px-5 py-5 sm:px-6 sm:py-6">
-                        <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
-                        <dd class="numeric mt-1 text-2xl font-semibold {{ $key === 'forecast' && str_starts_with($position[$key], '-') ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $position[$key] }}</dd>
+            <div class="border-b border-[var(--color-line)] px-5 py-4">
+                <h2 id="current-position-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.current_position') }}</h2>
+                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.current_position_help', ['unit' => $displayUnit]) }}</p>
+            </div>
+
+            <dl class="grid divide-y divide-[var(--color-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                <div data-position-primary="available" class="px-5 py-5 sm:px-6 sm:py-6">
+                    <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.available') }}</dt>
+                    <dd class="numeric mt-1 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $position['available'] }}</dd>
+                </div>
+                <div data-position-primary="forecast" class="bg-[var(--color-panel-muted)] px-5 py-5 sm:px-6 sm:py-6">
+                    <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.forecast') }}</dt>
+                    <dd class="numeric mt-1 text-2xl font-semibold {{ str_starts_with($position['forecast'], '-') ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $position['forecast'] }}</dd>
+                    <div data-material-forecast-equation class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+                        <span>{{ __('production_bench.inventory.available') }} <span class="numeric font-medium text-[var(--color-ink-strong)]">{{ $position['available'] }}</span></span>
+                        <span>+</span>
+                        <span>{{ __('production_bench.inventory.incoming') }} <span class="numeric font-medium text-[var(--color-ink-strong)]">{{ $position['incoming'] }}</span></span>
+                        <span>-</span>
+                        <span>{{ __('production_bench.inventory.required') }} <span class="numeric font-medium text-[var(--color-ink-strong)]">{{ $position['required'] }}</span></span>
+                        <span>=</span>
+                        <span>{{ __('production_bench.inventory.forecast') }} <span class="numeric font-medium text-[var(--color-ink-strong)]">{{ $position['forecast'] }}</span></span>
                     </div>
-                @endforeach
+                </div>
             </dl>
+
+            <div data-material-position-breakdown class="border-t border-[var(--color-line)]">
+                <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] sm:grid-cols-3 lg:grid-cols-5 lg:divide-y-0">
+                    @foreach (['physical', 'reserved', 'quarantined', 'incoming', 'required'] as $key)
+                        <div data-position-secondary="{{ $key }}" class="px-5 py-4">
+                            <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
+                            <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $position[$key] }}</dd>
+                            @if ($key === 'incoming')
+                                <dd class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.incoming_help') }}</dd>
+                            @endif
+                        </div>
+                    @endforeach
+                </dl>
+            </div>
 
             <div data-material-buffer class="border-t border-[var(--color-line)] p-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -48,31 +78,6 @@
                 </div>
             </div>
 
-            <details
-                data-material-position-breakdown
-                wire:ignore.self
-                x-data="{ open: $el.open }"
-                x-bind:open="open"
-                x-on:toggle="open = $el.open"
-                class="border-t border-[var(--color-line)]"
-                aria-labelledby="current-position-heading"
-            >
-                <summary class="flex cursor-pointer list-none items-start justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4 [&::-webkit-details-marker]:hidden" x-bind:aria-expanded="open.toString()">
-                    <span class="flex min-w-0 flex-col gap-1">
-                        <span id="current-position-heading" role="heading" aria-level="2" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.current_position') }}</span>
-                        <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.current_position_help', ['unit' => $displayUnit]) }}</span>
-                    </span>
-                    <span aria-hidden="true" class="mt-1 shrink-0 text-lg leading-none text-[var(--color-ink-soft)]">⌄</span>
-                </summary>
-                <dl class="grid grid-cols-2 divide-x divide-y divide-[var(--color-line)] sm:grid-cols-4 lg:grid-cols-5 lg:divide-y-0">
-                    @foreach (['physical', 'reserved', 'quarantined', 'incoming', 'required'] as $key)
-                        <div data-position-secondary="{{ $key }}" class="px-5 py-4">
-                            <dt class="text-xs font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.'.$key) }}</dt>
-                            <dd class="numeric mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ $position[$key] }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            </details>
         </section>
 
         {{-- `overflow-clip`, not the `overflow-hidden` the neighbouring cards use: hidden makes the
@@ -202,13 +207,13 @@
             />
         </details>
 
-        @php($activityDisclosureOpen = $periodPreset !== '30' || $customFrom !== '' || $customTo !== '' || $movements->currentPage() > 1)
+        @php($activityDisclosureOpen = $periodPreset !== '30' || filled($customFrom) || filled($customTo) || $movements->currentPage() > 1)
         <details
             data-material-activity
             wire:key="material-activity-disclosure"
             wire:ignore.self
             x-data="{ open: $el.open, serverOpen: {{ $activityDisclosureOpen ? 'true' : 'false' }} }"
-            x-effect="serverOpen = $wire.periodPreset !== '30' || $wire.customFrom !== '' || $wire.customTo !== '' || ($wire.paginators['activity'] ?? 1) > 1; if (serverOpen) open = true"
+            x-effect="serverOpen = $wire.periodPreset !== '30' || ($wire.customFrom ?? '') !== '' || ($wire.customTo ?? '') !== '' || ($wire.paginators['activity'] ?? 1) > 1; if (serverOpen) open = true"
             x-bind:open="open"
             x-on:toggle="open = $el.open"
             class="@container overflow-clip sk-card"

@@ -285,22 +285,23 @@
                         {{ $this->lotAdvancedFiltersForm }}
                     </div>
                 </div>
-                {{-- Nine columns and up to five stacked lines per row, and the same trade as
+                {{-- Ten columns and up to five stacked lines per row, and the same trade as
                      the materials tab: no height cap, so the page scrolls, the thead sticks to
                      the viewport and "Rows per page" decides the length. The wrapper only
                      scrolls horizontally while the card is narrower than the table, because a
                      scroll container of any kind becomes what `sticky top-0` resolves against.
-                     Floor is measured, not guessed: adding the visible status word took the
-                     table's min-content from 981px to 1009px, so 1024px leaves a little air.
+                     The 1152px floor leaves room for the initial quantity while keeping every
+                     quantity on one line.
                      Above the floor there is no sideways scroll left to lose. --}}
-                <div class="overflow-x-auto @min-[64rem]:overflow-x-visible">
-                    <table class="w-full min-w-[1024px] text-left text-sm">
+                <div class="overflow-x-auto @min-[72rem]:overflow-x-visible">
+                    <table class="w-full min-w-[1152px] text-left text-sm">
                         <thead class="sticky top-0 z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.common.status') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.initial_quantity') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
@@ -395,6 +396,7 @@
                                         </span>
                                     </td>
                                     <td class="numeric whitespace-nowrap px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
+                                    <td class="numeric px-4 py-3 text-right">{{ $row['initial_quantity'] }}</td>
                                     @foreach (['physical', 'quarantined', 'reserved', 'available'] as $position)
                                         <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
                                     @endforeach
@@ -410,7 +412,7 @@
                                      was shown for any empty open scope, including with no material
                                      chosen at all. Naming the filters covers both cases, since the
                                      material selection is itself a filter. --}}
-                                <tr><td colspan="9" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
+                                <tr><td colspan="10" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>

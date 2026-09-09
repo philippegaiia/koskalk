@@ -57,11 +57,11 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     #[Url(as: 'period', except: '30')]
     public string $periodPreset = '30';
 
-    #[Url(as: 'from', except: '')]
-    public string $customFrom = '';
+    #[Url(as: 'from')]
+    public ?string $customFrom = null;
 
-    #[Url(as: 'to', except: '')]
-    public string $customTo = '';
+    #[Url(as: 'to')]
+    public ?string $customTo = null;
 
     /**
      * The route-bound subject is reduced to locked identifiers, so a later Livewire
@@ -134,18 +134,38 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         $this->subject();
 
         $this->normalizePeriodState();
+        $this->validateCustomPeriod();
+    }
+
+    public function updatingPeriodPreset(mixed $value): void
+    {
+        if ($value === 'custom') {
+            if (blank($this->customFrom) && blank($this->customTo)) {
+                $this->fillCustomPeriodDates($this->periodPreset === '365' ? 365 : 30);
+            }
+
+            return;
+        }
+
+        $this->customFrom = null;
+        $this->customTo = null;
     }
 
     public function updatedPeriodPreset(): void
     {
-        $this->normalizePeriodState();
+        if (! in_array($this->periodPreset, ['30', '365', 'custom'], true)) {
+            $this->periodPreset = '30';
+        }
+
         $this->validateCustomPeriod();
         $this->resetPage('activity');
     }
 
     public function updatedCustomFrom(): void
     {
-        if ($this->customFrom !== '') {
+        $this->customFrom = $this->normalizedPeriodDateState($this->customFrom);
+
+        if (filled($this->customFrom)) {
             $this->periodPreset = 'custom';
         }
 
@@ -155,7 +175,9 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
     public function updatedCustomTo(): void
     {
-        if ($this->customTo !== '') {
+        $this->customTo = $this->normalizedPeriodDateState($this->customTo);
+
+        if (filled($this->customTo)) {
             $this->periodPreset = 'custom';
         }
 
@@ -181,10 +203,9 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
      * Each field keeps its plan name as its key — `period`, `from`, `to` — while
      * binding to the URL-bound property through an explicit state path, so a
      * bookmarked `?period=365&from=…&to=…` link keeps resolving to the same
-     * view. The `updated*()` hooks stay the only place period side effects are
-     * applied (validation and the activity paginator reset), which is why the
-     * fields carry no `afterStateUpdated()` of their own: the hook fires off
-     * the root property the schema writes to.
+     * view. The property lifecycle hooks stay the only place period side effects
+     * are applied, which is why the fields carry no `afterStateUpdated()` of
+     * their own: the hook fires off the root property the schema writes to.
      *
      * `period` is deliberately rendered as a non-native select so the date
      * pickers that follow it share the module's own control styling rather than
@@ -502,13 +523,28 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
     private function normalizePeriodState(): void
     {
-        if ($this->customFrom !== '' || $this->customTo !== '') {
+        $this->customFrom = $this->normalizedPeriodDateState($this->customFrom);
+        $this->customTo = $this->normalizedPeriodDateState($this->customTo);
+
+        if (filled($this->customFrom) || filled($this->customTo)) {
             $this->periodPreset = 'custom';
         }
 
         if (! in_array($this->periodPreset, ['30', '365', 'custom'], true)) {
             $this->periodPreset = '30';
         }
+
+        if ($this->periodPreset === 'custom' && blank($this->customFrom) && blank($this->customTo)) {
+            $this->fillCustomPeriodDates(30);
+        }
+    }
+
+    private function fillCustomPeriodDates(int $days): void
+    {
+        $today = CarbonImmutable::today();
+
+        $this->customFrom = $today->subDays($days - 1)->toDateString();
+        $this->customTo = $today->toDateString();
     }
 
     private function validateCustomPeriod(): bool
@@ -523,7 +559,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         $from = $this->parsePeriodDate($this->customFrom);
         $to = $this->parsePeriodDate($this->customTo);
 
-        if ($this->customFrom === '') {
+        if (blank($this->customFrom)) {
             $this->addError('customFrom', __('production_bench.inventory.period_date_required'));
             $valid = false;
         } elseif (! $from instanceof CarbonImmutable) {
@@ -531,7 +567,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             $valid = false;
         }
 
-        if ($this->customTo === '') {
+        if (blank($this->customTo)) {
             $this->addError('customTo', __('production_bench.inventory.period_date_required'));
             $valid = false;
         } elseif (! $to instanceof CarbonImmutable) {
@@ -549,21 +585,34 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         return $valid;
     }
 
-    private function parsePeriodDate(string $date): ?CarbonImmutable
+    private function parsePeriodDate(?string $date): ?CarbonImmutable
     {
-        if ($date === '') {
+        if (blank($date)) {
             return null;
         }
 
-        try {
-            $parsed = CarbonImmutable::createFromFormat('!Y-m-d', $date);
-        } catch (\Throwable) {
+        foreach (['Y-m-d', 'Y-m-d H:i:s'] as $format) {
+            try {
+                $parsed = CarbonImmutable::createFromFormat('!'.$format, $date);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if ($parsed instanceof CarbonImmutable && $parsed->format($format) === $date) {
+                return $parsed;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizedPeriodDateState(?string $date): ?string
+    {
+        if (blank($date)) {
             return null;
         }
 
-        return $parsed instanceof CarbonImmutable && $parsed->format('Y-m-d') === $date
-            ? $parsed
-            : null;
+        return $this->parsePeriodDate($date)?->toDateString() ?? $date;
     }
 
     /** @param array<string, string> $position */

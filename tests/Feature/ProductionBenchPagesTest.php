@@ -637,12 +637,8 @@ it('keeps the lot register header and identity column in view', function (): voi
     // the identity cell has to outrank the quantity columns it slides over.
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertDontSeeHtml('max-h-[')
-        ->assertSeeHtml('overflow-x-auto @min-[64rem]:overflow-x-visible')
-        // Min-content measured at 1009px once the status column carries its
-        // visible word, so the floor has to sit above that, not below it — with
-        // the floor under the table's real need, the container query would drop
-        // the horizontal scroll while the table still overflowed the card.
-        ->assertSeeHtml('min-w-[1024px]')
+        ->assertSeeHtml('overflow-x-auto @min-[72rem]:overflow-x-visible')
+        ->assertSeeHtml('min-w-[1152px]')
         ->assertSeeHtml('sticky top-0 z-20')
         // Corner cell above its sibling headers, body cell above the quantities.
         ->assertSeeHtml('sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)]')
@@ -1057,6 +1053,53 @@ it('paginates the stock lot register', function (): void {
             && $lots->total() === 26);
 });
 
+it('shows each lot initial quantity separately from its current physical quantity', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'origin' => StockLotOrigin::PurchaseReceipt,
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::PurchaseReceipt,
+        'quantity_delta' => '1000',
+        'original_quantity' => '1',
+        'original_unit' => 'kg',
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::ProductionConsumption,
+        'quantity_delta' => '-250',
+        'original_quantity' => '0.25',
+        'original_unit' => 'kg',
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::StockCountAdjustment,
+        'quantity_delta' => '100',
+        'original_quantity' => '0.1',
+        'original_unit' => 'kg',
+        // A later ledger entry may describe an earlier effective date; it is
+        // still not the quantity that created the lot.
+        'occurred_at' => now()->subYear(),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotScope', 'all')
+        ->assertViewHas('lots', function (LengthAwarePaginator $lots) use ($lot): bool {
+            $row = $lots->first();
+
+            return $row['lot']->is($lot)
+                && $row['initial_quantity'] === '1.00'
+                && $row['positions']['physical'] === '0.85';
+        })
+        ->assertSeeText('Initial quantity');
+});
+
 it('filters the stock lot register by material and status', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
@@ -1193,7 +1236,9 @@ it('renders the Inventory UX headings in French for a French interface locale', 
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertSee('Registre des lots')
         ->assertSee('Fournisseur')
+        ->assertSee('Quantité initiale')
         ->assertDontSeeHtml('>Lot register<')
+        ->assertDontSeeHtml('>Initial quantity<')
         ->assertDontSeeHtml('>Supplier<');
 });
 

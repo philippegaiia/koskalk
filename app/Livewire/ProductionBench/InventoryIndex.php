@@ -15,6 +15,7 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -890,6 +891,15 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 'supplierListing.supplier',
             ])
             ->withSum('movements', 'quantity_delta')
+            // Every lot is created with one immutable opening ledger entry.
+            // Later movements can be backdated, so creation order identifies it.
+            ->addSelect([
+                'initial_quantity' => StockMovement::query()
+                    ->select('quantity_delta')
+                    ->whereColumn('stock_lot_id', 'stock_lots.id')
+                    ->oldest('id')
+                    ->limit(1),
+            ])
             ->withSum([
                 'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
             ], 'quantity')
@@ -1003,6 +1013,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 // The register is the second way into a material, so each row
                 // carries its own detail route rather than rebuilding it in Blade.
                 'detail_url' => $this->lotMaterialDetailUrl($lot),
+                'initial_quantity' => $this->quantityPresenter->present(
+                    (string) ($lot->initial_quantity ?? '0'),
+                    $lot->ingredient_id !== null,
+                    $displayUnit,
+                    $this->user()->number_locale,
+                ),
                 'positions' => collect($stock)
                     ->only(['physical', 'quarantined', 'reserved', 'available'])
                     ->map(

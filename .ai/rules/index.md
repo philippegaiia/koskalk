@@ -29,6 +29,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Policies/** | .ai/rules/policies.md |
 | {resources/views/livewire/production-bench/purchasing/procurement-index.blade.php,resources/views/livewire/production-bench/purchasing/receipt-detail.blade.php} | .ai/rules/production-bench-purchasing.md |
 | resources/views/components/production-bench/** | .ai/rules/production-bench.md |
+| resources/views/livewire/production-bench/production/*.blade.php | .ai/rules/production.md |
 | app/Providers/*.php, app/Providers/** | .ai/rules/providers.md |
 | {app/Livewire/ProductionBench/Purchasing/{ReceiptIndex,ProcurementIndex}.php,resources/views/livewire/production-bench/purchasing/{receipt-index,procurement-index}.blade.php}, {app/Livewire/ProductionBench/Purchasing/ReceiptDetail.php,resources/views/livewire/production-bench/purchasing/receipt-detail.blade.php} | .ai/rules/purchasing.md |
 | resources/**/recipe-workbench/** | .ai/rules/recipe-workbench.md |

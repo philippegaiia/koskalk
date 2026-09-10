@@ -24,6 +24,8 @@ class ProductionIndex extends Component
     use InteractsWithAppNotifications;
     use WithPagination;
 
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+
     public string $search = '';
 
     public string $status = '';
@@ -31,6 +33,8 @@ class ProductionIndex extends Component
     public string $dateFrom = '';
 
     public string $dateTo = '';
+
+    public int $perPage = 25;
 
     #[Url(as: 'recipe')]
     public string $recipeFilter = '';
@@ -59,6 +63,12 @@ class ProductionIndex extends Component
 
     public function updatedDateTo(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->normalizedPerPage();
         $this->resetPage();
     }
 
@@ -221,7 +231,7 @@ class ProductionIndex extends Component
             ->orderByRaw('planned_for is null')
             ->orderBy('planned_for')
             ->orderByDesc('id')
-            ->paginate(15);
+            ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.production.production-index', [
             'workspace' => $workspace,
@@ -235,6 +245,13 @@ class ProductionIndex extends Component
     private function user(): User
     {
         return auth()->user() ?? abort(401);
+    }
+
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true)
+            ? $this->perPage
+            : self::ALLOWED_PER_PAGE[0];
     }
 
     private function workspace(): Workspace

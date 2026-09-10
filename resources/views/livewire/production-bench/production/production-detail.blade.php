@@ -114,9 +114,9 @@
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.batch_materials_help') }}</p>
                 </div>
                 @error('actuals') <p role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</p> @enderror
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
-                        <thead class="bg-[var(--color-surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">
+                <x-sticky-table-scroll>
+                    <table class="w-full min-w-[900px] divide-y divide-[var(--color-line)] text-sm">
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="px-5 py-3 font-medium sm:px-6">{{ __('production_bench.production.material') }}</th>
                                 <th class="px-5 py-3 text-right font-medium sm:px-6">{{ __('production_bench.production.planned') }}</th>
@@ -192,7 +192,7 @@
                             @endforelse
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
                 @if ($production->status === \App\Enums\ProductionRunStatus::InProduction)
                     <span class="sr-only">{{ __('production_bench.production.actuals_title') }}</span>
                     <div class="flex items-center justify-end gap-3 border-t border-[var(--color-line)] p-4 sm:px-6">

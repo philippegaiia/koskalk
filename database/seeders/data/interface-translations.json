@@ -23964,6 +23964,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.per_page",
+      "text": {
+        "de": "Produktionen pro Seite",
+        "es": "Producciones por página",
+        "fr": "Productions par page",
+        "it": "Produzioni per pagina",
+        "nl": "Producties per pagina",
+        "pt_BR": "Produções por página"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.percentage",
       "text": {
         "de": "Formel %",

@@ -346,6 +346,7 @@ return [
         'save_as_draft' => 'Save as draft',
         'draft_saved' => 'Draft saved.',
         'partially_reserved_short' => 'Partially reserved — short by :short',
+        'per_page' => 'Productions per page',
         'schedule_draft' => 'Schedule',
         'schedule_draft_help' => 'Choose a production date to move this draft to the schedule.',
         'create_intro' => 'Choose a product, adjust the batch if needed, and set the production date. Stock is only reserved later when you prepare it.',

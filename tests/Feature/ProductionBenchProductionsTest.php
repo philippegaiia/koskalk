@@ -355,6 +355,32 @@ it('filters the production list by recipe public id from a product link', functi
         ->assertDontSee('Lavender soap');
 });
 
+it('paginates the production register with the shared row selector', function (): void {
+    $fixture = productionListFixture();
+
+    foreach (range(2, 26) as $sequence) {
+        productionListRun(
+            $fixture,
+            sprintf('Production %02d', $sequence),
+            '2026-08-10',
+            ProductionRunStatus::Scheduled,
+        );
+    }
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionIndex::class)
+        ->assertSeeHtml('data-sticky-table-scroll')
+        ->assertSeeHtml('data-sticky-table-header')
+        ->assertSeeHtml('wire:model.live="perPage"')
+        ->assertSee('Productions per page')
+        ->assertViewHas('productions', fn ($productions): bool => $productions->perPage() === 25 && $productions->count() === 25)
+        ->set('perPage', 50)
+        ->assertSet('perPage', 50)
+        ->assertViewHas('productions', fn ($productions): bool => $productions->perPage() === 50 && $productions->count() === 26)
+        ->set('perPage', 1000)
+        ->assertSet('perPage', 25);
+});
+
 it('deletes a deletable run from the list and keeps reserved runs', function (): void {
     $fixture = productionListFixture();
     $other = productionListRun([...$fixture, 'recipe' => $fixture['recipe'], 'version' => $fixture['version']], 'Olive soap', '2026-08-15', ProductionRunStatus::Scheduled);

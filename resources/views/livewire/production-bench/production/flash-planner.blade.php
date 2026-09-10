@@ -181,9 +181,9 @@
                         {{ $simulation['totals']['missing_prices'] > 0 ? __('production_bench.flash.budget_missing_prices') : __('production_bench.flash.budget_mixed_currencies') }}
                     </p>
                 @endif
-                <div class="overflow-x-auto">
+                <x-sticky-table-scroll>
                     <table class="w-full min-w-[900px] text-left text-sm">
-                        <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="px-5 py-3">{{ __('production_bench.production.material') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.flash.required') }}</th>
@@ -214,7 +214,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
             </section>
         @endif
 

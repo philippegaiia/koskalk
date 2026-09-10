@@ -69,10 +69,10 @@
                 @endphp
 
                 {{-- Desktop table (lg+) --}}
-                <div class="hidden lg:block overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead>
-                            <tr class="border-b border-[var(--color-line)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">
+                <x-sticky-table-scroll class="hidden lg:block">
+                    <table class="w-full min-w-[1100px]">
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)] shadow-[0_1px_0_0_var(--color-line)]">
+                            <tr>
                                 <th class="w-10 px-5 py-4"><span class="sr-only">Select</span></th>
                                 <th class="px-5 py-4">{{ __('production_bench.navigation.production_workflow') }}</th>
                                 <th class="px-5 py-4">{{ __('production_bench.production.status_filter') }}</th>
@@ -148,7 +148,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
 
                 {{-- Mobile card stack (<lg) --}}
                 <div class="lg:hidden divide-y divide-[var(--color-line)]">
@@ -213,9 +213,7 @@
                 </div>
             @endif
 
-            @if ($productions->hasPages())
-                <div class="border-t border-[var(--color-line)] px-5 py-4 sm:px-6">{{ $productions->links() }}</div>
-            @endif
+            <x-table-pagination :paginator="$productions" :per-page-label="__('production_bench.production.per_page')" />
         </section>
     @endif
 </x-production-bench.page>

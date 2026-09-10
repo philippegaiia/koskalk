@@ -105,9 +105,9 @@
                 @if ($preview['error'])
                     <p role="alert" class="m-5 rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)] sm:m-6">{{ $preview['error'] }}</p>
                 @elseif ($preview['requirements'])
-                    <div class="overflow-x-auto">
+                    <x-sticky-table-scroll>
                         <table class="w-full min-w-[760px] text-left text-sm">
-                            <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                            <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                                 <tr>
                                     <th class="px-5 py-3">{{ __('production_bench.production.material') }}</th>
                                     <th class="px-4 py-3">{{ __('production_bench.production.percentage') }}</th>
@@ -133,7 +133,7 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
+                    </x-sticky-table-scroll>
                 @else
                     <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.choose_product_to_preview') }}</p>
                 @endif

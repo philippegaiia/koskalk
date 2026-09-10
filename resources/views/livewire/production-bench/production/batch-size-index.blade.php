@@ -34,9 +34,9 @@
                     </select>
                 </label>
             </div>
-            <div class="overflow-x-auto">
+            <x-sticky-table-scroll>
                 <table class="w-full min-w-[760px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                    <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.settings.preset_name') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.settings.batch_size') }}</th>
@@ -83,7 +83,7 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
+            </x-sticky-table-scroll>
             <x-table-pagination :paginator="$presets" />
         </section>
     @endif

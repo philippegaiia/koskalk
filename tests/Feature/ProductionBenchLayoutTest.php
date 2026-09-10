@@ -372,6 +372,21 @@ it('uses one consistent full-width inner across all production bench pages', fun
         ->not->toContain('max-w-5xl');
 });
 
+it('uses the shared sticky header for page-scrolling production tables', function (string $view): void {
+    $contents = file_get_contents(resource_path('views/livewire/production-bench/production/'.$view));
+
+    expect($contents)
+        ->toContain('<x-sticky-table-scroll')
+        ->toContain('wire:ignore.self data-sticky-table-header');
+})->with([
+    'production register' => 'production-index.blade.php',
+    'batch-size list' => 'batch-size-index.blade.php',
+    'task-set list' => 'task-set-index.blade.php',
+    'flash-planner summary' => 'flash-planner.blade.php',
+    'production requirement preview' => 'production-create.blade.php',
+    'batch-material detail' => 'production-detail.blade.php',
+]);
+
 /**
  * Every production bench Livewire view, one and two directories deep.
  *

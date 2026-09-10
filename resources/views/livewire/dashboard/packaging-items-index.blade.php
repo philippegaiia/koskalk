@@ -49,9 +49,9 @@
                     </div>
                 </div>
             @else
-                <div class="sk-table-wrapper">
+                <x-sticky-table-scroll>
                     <table class="sk-table">
-                        <thead>
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th scope="col"><span class="sr-only">{{ __('packaging.table.image') }}</span></th>
                                 <th scope="col"><button type="button" wire:click="sortBy('name')" class="sk-table-sort-button">{{ __('packaging.table.name') }}</button></th>
@@ -104,7 +104,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
 
                 <x-table-pagination :paginator="$items" :per-page-label="__('packaging.table.per_page')" />
             @endif

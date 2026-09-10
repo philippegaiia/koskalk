@@ -90,7 +90,7 @@
                     </div>
                 </div>
             @else
-                <div class="sk-table-wrapper">
+                <x-sticky-table-scroll>
                     <table class="sk-table table-auto">
                         <colgroup>
                             <col />
@@ -100,7 +100,7 @@
                             <col class="w-32" />
                             <col class="w-32" />
                         </colgroup>
-                        <thead>
+                        <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th scope="col">{{ __('ingredients.table.picture') }}</th>
                                 <th scope="col">
@@ -273,7 +273,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                </x-sticky-table-scroll>
 
                 <div class="border-t border-[var(--color-line)] px-5 py-2.5">
                     <x-ingredient-source-legend :show="$ingredients->contains(fn ($ingredient): bool => $ingredient->owner_type !== null)" />

@@ -2,7 +2,12 @@
  <section class="sk-card p-5 sm:p-6">
  <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <h3 class="text-2xl font-semibold text-[var(--color-ink-strong)]">
+ @if ($packagingItem)
+ <a data-packaging-back-link href="{{ route('packaging-items.index') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-md text-sm font-medium text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+ ← {{ __('packaging.editor.actions.back') }}
+ </a>
+ @endif
+ <h3 class="{{ $packagingItem ? 'mt-3' : '' }} text-2xl font-semibold text-[var(--color-ink-strong)]">
  {{ $packagingItem ? __('packaging.editor.edit.heading') : __('packaging.editor.create.heading') }}
  </h3>
  <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">

@@ -7,6 +7,21 @@ use Illuminate\Support\Facades\App;
 
 uses(RefreshDatabase::class);
 
+it('limits the application Tailwind scan to explicit runtime sources', function () {
+    $source = (string) file_get_contents(resource_path('css/app.css'));
+    preg_match_all('/^\s*@source\s+.+;$/m', $source, $matches);
+    $sourceDeclarations = array_map('trim', $matches[0]);
+
+    expect($source)->toContain("@import 'tailwindcss' source(none);");
+    expect($sourceDeclarations)->toBe([
+        "@source '../../app/**/*.php';",
+        "@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';",
+        "@source '../../storage/framework/views/*.php';",
+        "@source '../views/**/*.blade.php';",
+        "@source '../js/**/*.js';",
+    ]);
+});
+
 it('keeps the public home page available as a WordPress reference', function () {
     $this->view('welcome')
         ->assertSee('data-public-nav-inner', false)
@@ -44,16 +59,26 @@ it('keeps the public home page available as a WordPress reference', function () 
         ->assertDontSeeText('Track costing and batch details');
 });
 
-it('bounds the public shell with the shared content width token', function () {
-    // The nav, footer, and homepage sections used to carry max-w-[1180px]
-    // by hand — 4px off the token and invisible to any future change to it.
+it('bounds the :container with the shared content width token', function (string $containerMarker) {
+    $homepage = view('welcome')->render();
+    // Both lookaheads apply to one element while allowing either attribute order.
+    $pattern = sprintf(
+        '/<(?=[^>]*\s%s(?:\s|=|\/?>))(?=[^>]*\sclass="(?:[^"]*\s)?max-w-app(?:\s[^"]*)?")[^>]+>/s',
+        preg_quote($containerMarker, '/'),
+    );
+
+    expect($homepage)->toMatch($pattern);
+})->with([
+    'navigation' => 'data-public-nav-inner',
+    'footer' => 'data-public-footer-inner',
+    'homepage hero inner' => 'data-homepage-hero-inner',
+    'homepage workspace inner' => 'data-homepage-workspace-inner',
+]);
+
+it('does not restore the retired hardcoded public width', function () {
     $homepage = view('welcome')->render();
 
-    expect($homepage)
-        ->toContain('data-public-nav-inner')
-        ->toContain('data-public-footer-inner')
-        ->toContain('max-w-app')
-        ->not->toContain('max-w-[1180px]');
+    expect($homepage)->not->toMatch('/max-w-\\[1180px\\]/');
 });
 
 it('redirects guests from the application root to login', function () {

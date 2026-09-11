@@ -41,7 +41,7 @@
     <div class="absolute inset-x-0 top-[58px] -z-10 hidden h-48 bg-linear-to-b from-cream via-cream/64 to-transparent lg:block"></div>
     <div class="absolute inset-x-0 bottom-0 -z-10 hidden h-36 bg-linear-to-t from-cream via-cream/60 to-transparent lg:block"></div>
 
-    <div class="mx-auto grid min-h-[calc(100svh-8rem)] max-w-app items-center gap-10 px-5 py-7 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.72fr)] lg:px-10 lg:py-12">
+    <div data-homepage-hero-inner class="mx-auto grid min-h-[calc(100svh-8rem)] max-w-app items-center gap-10 px-5 py-7 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.72fr)] lg:px-10 lg:py-12">
         <div class="max-w-[700px] text-center lg:text-left">
             <h1 id="hero-heading" data-hero-title class="font-display text-[2.35rem] text-ink-strong sm:text-[2.75rem] lg:text-[4.5rem]">
                 {{ __('homepage.hero.title') }}
@@ -126,7 +126,7 @@
 </section>
 
 <section id="workspace" data-workspace-proof aria-labelledby="workspace-heading" class="bg-panel px-5 py-14 lg:px-10 lg:py-18">
-    <div class="mx-auto max-w-app">
+    <div data-homepage-workspace-inner class="mx-auto max-w-app">
         <div class="grid gap-6 border-b border-line pb-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <h2 id="workspace-heading" class="max-w-[620px] text-3xl font-semibold leading-tight text-ink-strong lg:text-5xl">
                 {{ __('homepage.workspace.heading') }}

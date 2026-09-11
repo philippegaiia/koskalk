@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 @custom-variant dark (&:where(.dark, .dark *));
 @import '../../vendor/filament/support/resources/css/index.css';
 @import '../../vendor/filament/schemas/resources/css/index.css';
@@ -8,10 +8,11 @@
 @import './shared/soapkraft.css';
 @import './shared/filament-soapkraft.css';
 
+@source '../../app/**/*.php';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
 
 @layer base {
     html {

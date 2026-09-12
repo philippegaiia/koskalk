@@ -149,21 +149,25 @@
  this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
  },
  }" class="relative">
- <button type="button" x-ref="trigger" @click.stop="open = !open; if (open) { $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
+ <button type="button" x-ref="trigger" :id="`formula-phase-trigger-${ingredient.id}`" :aria-controls="`formula-phase-options-${ingredient.id}`" @click.stop="open = !open; if (open) { $nextTick(() => { reposition(); $refs.phaseOptions?.querySelector('[role=\"menuitem\"]:not([disabled])')?.focus(); }); } else { $nextTick(() => $refs.trigger?.focus()); }" class="grid min-h-11 min-w-11 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
  <x-action-icon name="plus" />
  </button>
  <template x-teleport="body">
  <div x-show="open"
  x-transition.opacity
  x-cloak
- @click.outside="open = false"
- @keydown.escape.window="open = false"
+ @click.outside="open = false; $nextTick(() => $refs.trigger?.focus())"
+ @keydown.escape.window="if (open) { $event.preventDefault(); $event.stopPropagation(); open = false; $nextTick(() => $refs.trigger?.focus()); }"
  @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
+ x-ref="phaseOptions"
+ :id="`formula-phase-options-${ingredient.id}`"
+ :aria-labelledby="`formula-phase-trigger-${ingredient.id}`"
+ role="menu"
  class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
- <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)]">
+ <button type="button" role="menuitem" @click.stop="addIngredient(ingredient, phase.key); open = false; $nextTick(() => $refs.trigger?.focus())" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]">
  <span class="truncate" x-text="t('cosmetic.add_to_phase', { phase: phase.name || humanizeKey(phase.key) })"></span>
  <span class="numeric text-[var(--color-ink-soft)]" x-text="`${format(cosmeticPhasePercentageTotal(phase.key), 1)}%`"></span>
  </button>

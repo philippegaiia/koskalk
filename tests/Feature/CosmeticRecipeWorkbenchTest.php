@@ -560,13 +560,14 @@ it('keeps cosmetic phase editing calm and guarded', function () {
         ->not->toContain('Drop here to move to the end of this phase')
         ->not->toContain('Phase total')
         ->toContain("t('cosmetic.percent_of_formula'")
-        ->toContain('confirmRemoveCosmeticPhase(phase.key)')
+        ->toContain('requestCosmeticPhaseRemoval(phase.key, $event.currentTarget)')
         ->toContain('items-center')
         ->and($formulaSource)
         ->toContain('syncFormattedInput(element, value, decimals)')
         ->toContain('document.activeElement === element')
-        ->toContain('confirmRemoveCosmeticPhase(phaseKey)')
-        ->toContain('Remove this phase and its ingredients?')
+        ->toContain('requestCosmeticPhaseRemoval(phaseKey, trigger = null)')
+        ->toContain('cancelCosmeticPhaseRemoval()')
+        ->not->toContain('confirmRemoveCosmeticPhase')
         ->and($componentSource)
         ->toContain('beforeunload')
         ->toContain('livewire:navigate')
@@ -619,6 +620,28 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
         ->not->toContain('x-text="`${format(oilWeight, 3)} ${oilUnit}`"')
         ->toContain('formatPercentageTotal(cosmeticOutputIngredientTotalPercent)')
         ->and(substr_count($cosmeticFormula, 'Drop ingredients here'))->toBeGreaterThanOrEqual(2);
+});
+
+it('uses shared row actions and ownership affordances for cosmetic ingredients', function (): void {
+    $cosmeticFormulaSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/cosmetic-formula.blade.php'));
+    $rowActionsPath = resource_path('views/components/recipe-workbench/formula-row-actions.blade.php');
+    $rowActionsSource = file_exists($rowActionsPath)
+        ? file_get_contents($rowActionsPath)
+        : '';
+
+    expect($cosmeticFormulaSource)
+        ->toContain('<x-recipe-workbench.formula-row-actions')
+        ->toContain('phase-key-expression="phase.key"')
+        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="info" />')
+        ->toContain('role="img"')
+        ->toContain('aria-label="{{ __(\'workbench.accessibility.user_owned\') }}"')
+        ->not->toContain('>×</button>')
+        ->not->toContain('>⋮⋮</span>')
+        ->and($rowActionsPath)
+        ->toBeFile()
+        ->and($rowActionsSource)
+        ->toContain('<x-action-icon name="more-horizontal"');
 });
 
 it('reloads weight mode cosmetic drafts without losing saved item weights', function () {

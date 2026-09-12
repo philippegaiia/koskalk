@@ -133,7 +133,7 @@
  </div>
  </div>
 		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white py-0 sk-formula-table-cell lg:col-start-5 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
-	 <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil"><x-action-icon name="close" /></button>
+ <x-recipe-workbench.formula-row-actions phase-key="saponified_oils" />
  </div>
  </div>
  </template>

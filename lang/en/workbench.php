@@ -98,6 +98,21 @@ return [
         'percentage_for' => 'Percentage for :ingredient',
         'weight_for' => 'Weight for :ingredient',
     ],
+    'row_actions' => [
+        'label' => 'Actions for :ingredient',
+        'move_up' => 'Move up',
+        'move_down' => 'Move down',
+        'move_to_phase' => 'Move to :phase',
+        'remove' => 'Remove ingredient',
+    ],
+    'phase_removal' => [
+        'title' => 'Remove phase?',
+        'description_empty' => 'Remove :phase? This phase is empty.',
+        'description_one' => 'Remove :phase and its :count ingredient?',
+        'description_many' => 'Remove :phase and its :count ingredients?',
+        'cancel' => 'Cancel',
+        'confirm' => 'Remove phase',
+    ],
     'accessibility' => ['formula_save_bar' => 'Formula save bar', 'zero_quantity_note' => 'Ingredients with a zero quantity remain in the formula.', 'weight_unit' => 'Weight unit', 'entry_mode' => 'Amount entry mode', 'product_use' => 'Product use', 'filter_category' => 'Filter by category', 'ingredient_list' => 'Ingredient list', 'user_owned' => 'User-created or modified ingredient', 'show_ingredient_details' => 'Show ingredient details', 'ingredient_details' => 'Ingredient details', 'add_ingredient' => 'Add ingredient', 'choose_phase' => 'Choose a phase for this ingredient'],
     'categories' => ['all' => 'All', 'carrier_oil' => 'Carrier oils', 'essential_oil' => 'Essential oils', 'fragrance_oil' => 'Fragrance oils', 'botanical_extract' => 'Botanical extracts', 'co2_extract' => 'CO2 extracts', 'liquid' => 'Liquids', 'glycol' => 'Glycols', 'clay' => 'Clays', 'colorant' => 'Colorants', 'preservative' => 'Preservatives', 'additive' => 'Additives'],
     'settings' => [
@@ -403,6 +418,8 @@ return [
     ],
     'messages' => [
         'formula_item_limit' => 'This formula has :count ingredient lines, but the current plan allows :limit. Remove ingredient lines or change the plan before saving.',
+        'ingredient_removed' => 'Ingredient removed: :ingredient',
+        'undo' => 'Undo',
     ],
     'validation' => [
         'koh_purity' => 'Choose KOH 90% or KOH 100%.',

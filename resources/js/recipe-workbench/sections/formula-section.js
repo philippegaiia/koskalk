@@ -667,6 +667,7 @@ export function createFormulaSection() {
                 ...this.phaseItems,
                 [candidate]: [],
             };
+            this.removedFormulaRowUndo = null;
         },
 
         cosmeticPhaseIndex(phaseKey) {
@@ -699,24 +700,69 @@ export function createFormulaSection() {
             const [phase] = nextPhaseOrder.splice(currentIndex, 1);
             nextPhaseOrder.splice(targetIndex, 0, phase);
             this.phaseOrder = nextPhaseOrder;
+            this.removedFormulaRowUndo = null;
         },
 
-        confirmRemoveCosmeticPhase(phaseKey) {
-            const phaseRows = this.phaseItems[phaseKey] ?? [];
-            const message = phaseRows.length > 0
-                ? 'Remove this phase and its ingredients?'
-                : 'Remove this phase?';
-
-            if (!window.confirm(message)) {
-                return;
+        requestCosmeticPhaseRemoval(phaseKey, trigger = null) {
+            if (this.phaseOrder.length <= 1) {
+                return false;
             }
 
-            this.removeCosmeticPhase(phaseKey);
+            const phase = this.phaseOrder.find((candidate) => candidate.key === phaseKey);
+
+            if (!phase) {
+                return false;
+            }
+
+            this.pendingCosmeticPhaseRemoval = {
+                phaseKey,
+                phaseName: phase.name,
+                rowCount: Array.isArray(this.phaseItems?.[phaseKey])
+                    ? this.phaseItems[phaseKey].length
+                    : 0,
+            };
+            this.pendingCosmeticPhaseRemovalTrigger = trigger;
+
+            return true;
+        },
+
+        cancelCosmeticPhaseRemoval() {
+            const trigger = this.pendingCosmeticPhaseRemovalTrigger;
+
+            this.pendingCosmeticPhaseRemoval = null;
+            this.pendingCosmeticPhaseRemovalTrigger = null;
+
+            const focusTrigger = () => {
+                trigger?.focus?.();
+            };
+
+            if (typeof this.$nextTick === 'function') {
+                this.$nextTick(focusTrigger);
+            } else if (typeof queueMicrotask === 'function') {
+                queueMicrotask(focusTrigger);
+            } else {
+                setTimeout(focusTrigger, 0);
+            }
+
+            return trigger;
+        },
+
+        confirmCosmeticPhaseRemoval() {
+            const phaseKey = this.pendingCosmeticPhaseRemoval?.phaseKey;
+
+            this.pendingCosmeticPhaseRemoval = null;
+            this.pendingCosmeticPhaseRemovalTrigger = null;
+
+            if (!phaseKey) {
+                return false;
+            }
+
+            return this.removeCosmeticPhase(phaseKey);
         },
 
         removeCosmeticPhase(phaseKey) {
-            if (this.phaseOrder.length <= 1) {
-                return;
+            if (this.phaseOrder.length <= 1 || !this.phaseOrder.some((phase) => phase.key === phaseKey)) {
+                return false;
             }
 
             this.phaseOrder = this.phaseOrder.filter((phase) => phase.key !== phaseKey);
@@ -727,6 +773,10 @@ export function createFormulaSection() {
             if (!this.formulaItemLimitReached()) {
                 this.formulaItemLimitMessage = '';
             }
+
+            this.removedFormulaRowUndo = null;
+
+            return true;
         },
 
         number(value) {

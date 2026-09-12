@@ -40,5 +40,6 @@
  @endif
  </div>
  </section>
+ @include('livewire.dashboard.partials.recipe-workbench.formula-confirmation-modal')
  @include('livewire.dashboard.partials.recipe-workbench.formula-bottom-action-bar')
 </div>

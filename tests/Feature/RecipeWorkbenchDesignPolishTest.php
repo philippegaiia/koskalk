@@ -406,6 +406,8 @@ it('adapts recipe workbench tables for narrow screens before desktop grids', fun
 it('keeps soap percentage and weight controls side by side below desktop', function () {
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $reactionCoreSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/reaction-core.blade.php'));
+    $postReactionSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/post-reaction.blade.php'));
     $mobileMeasurementGroup = 'grid grid-cols-2 gap-3 lg:contents';
     $mobileHandlePlacement = 'col-start-1 row-start-1';
     $mobileIdentityPlacement = 'col-span-2 row-start-2';
@@ -426,7 +428,6 @@ it('keeps soap percentage and weight controls side by side below desktop', funct
         ->toContain('decimalAlignmentStyle(row.percentage)')
         ->toContain('decimalAlignmentStyle(rowWeight(row))')
         ->toContain('@dragstart="beginRowDrag(\'saponified_oils\', row.id, $event)"')
-        ->toContain('removeIngredient(\'saponified_oils\', row.id)')
         ->and($postReaction)
         ->toContain($mobileHandlePlacement)
         ->toContain($mobileIdentityPlacement)
@@ -438,9 +439,122 @@ it('keeps soap percentage and weight controls side by side below desktop', funct
         ->toContain('decimalAlignmentStyle(row.percentage)')
         ->toContain('decimalAlignmentStyle(rowWeight(row))')
         ->toContain('@dragstart="beginRowDrag(\'additives\', row.id, $event)"')
-        ->toContain('removeIngredient(\'additives\', row.id)')
         ->toContain('@dragstart="beginRowDrag(\'fragrance\', row.id, $event)"')
-        ->toContain('removeIngredient(\'fragrance\', row.id)');
+        ->and($reactionCoreSource)
+        ->toContain('<x-recipe-workbench.formula-row-actions phase-key="saponified_oils" />')
+        ->and($postReactionSource)
+        ->toContain('<x-recipe-workbench.formula-row-actions phase-key="additives" />')
+        ->toContain('<x-recipe-workbench.formula-row-actions phase-key="fragrance" />');
+});
+
+it('matches the soap mobile ledger hierarchy for cosmetic rows', function (): void {
+    $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
+
+    expect($cosmeticFormula)
+        ->toContain('class="grid grid-cols-2 gap-3')
+        ->toContain('col-start-1 row-start-1')
+        ->toContain('col-span-2 row-start-2')
+        ->toContain('col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents')
+        ->toContain('col-start-2 row-start-1')
+        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->not->toContain('class="grid grid-cols-1 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row');
+});
+
+it('uses one accessible row-actions menu in every formula ledger', function (): void {
+    $reactionCoreSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/reaction-core.blade.php'));
+    $postReactionSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/post-reaction.blade.php'));
+    $cosmeticFormulaSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/cosmetic-formula.blade.php'));
+    $rowActionsPath = resource_path('views/components/recipe-workbench/formula-row-actions.blade.php');
+    $rowActionsSource = file_exists($rowActionsPath)
+        ? file_get_contents($rowActionsPath)
+        : '';
+
+    expect(substr_count($reactionCoreSource, '<x-recipe-workbench.formula-row-actions'))
+        ->toBe(1)
+        ->and($reactionCoreSource)
+        ->toContain('phase-key="saponified_oils"')
+        ->and(substr_count($postReactionSource, '<x-recipe-workbench.formula-row-actions'))
+        ->toBe(2)
+        ->and($postReactionSource)
+        ->toContain('phase-key="additives"')
+        ->toContain('phase-key="fragrance"')
+        ->and(substr_count($cosmeticFormulaSource, '<x-recipe-workbench.formula-row-actions'))
+        ->toBe(1)
+        ->and($cosmeticFormulaSource)
+        ->toContain('phase-key-expression="phase.key"')
+        ->and($rowActionsPath)
+        ->toBeFile()
+        ->and($rowActionsSource)
+        ->toContain('aria-haspopup="menu"')
+        ->toContain('$phaseKeyExpression')
+        ->toContain('json_encode')
+        ->toMatch('/(?:x-bind:aria-label|:aria-label)="[^"]*row\\.name[^"]*"/')
+        ->toMatch('/x-ref="[^\"]*trigger/')
+        ->toContain('moveFormulaRowBy')
+        ->toContain('moveFormulaRowToPhase')
+        ->toContain('formulaRowMoveTargets')
+        ->toMatch('/(?:Move up|move_up)/')
+        ->toMatch('/(?:Move down|move_down)/')
+        ->toMatch('/(?:Remove ingredient|remove_ingredient|row_actions\\.remove)/')
+        ->toMatch('/x-for="[^\"]*(?:phase|Phase)[^\"]*"/')
+        ->toMatch('/[Pp]hase\\.key/')
+        ->not->toMatch('/x-for="[^\"]*\\bin\\s+phaseOrder/')
+        ->toContain('focus()');
+});
+
+it('renders one accessible phase confirmation dialog and formula removal undo status', function (): void {
+    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
+    $confirmationModalPath = resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-confirmation-modal.blade.php');
+    $confirmationModalSource = file_exists($confirmationModalPath)
+        ? file_get_contents($confirmationModalPath)
+        : '';
+    $bottomActionBarSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-bottom-action-bar.blade.php'));
+
+    expect(substr_count($formulaTabSource, "@include('livewire.dashboard.partials.recipe-workbench.formula-confirmation-modal')"))
+        ->toBe(1)
+        ->and($confirmationModalPath)
+        ->toBeFile()
+        ->and($confirmationModalSource)
+        ->toContain('role="dialog"')
+        ->toContain('aria-modal="true"')
+        ->toContain('aria-labelledby=')
+        ->toContain('aria-describedby=')
+        ->toContain('x-trap.inert.noscroll')
+        ->toMatch('/(?:@|x-on:)keydown\\.escape/')
+        ->toMatch('/(?:@|x-on:)click\\.self/')
+        ->toContain('cancelCosmeticPhaseRemoval')
+        ->toContain('confirmCosmeticPhaseRemoval')
+        ->toMatch('/x-ref="[^\"]*cancel[^\"]*"/i')
+        ->toMatch('/x-init="[^\"]*\\$refs\\.[^\"]*cancel[^\"]*focus\\(\)/i')
+        ->toMatch('/(?:Remove phase|remove_phase|phase_removal\\.confirm)/')
+        ->toContain('rowCount')
+        ->toContain('pendingCosmeticPhaseRemoval')
+        ->toMatch('/(?:danger|color-danger)/')
+        ->and($bottomActionBarSource)
+        ->toContain('removedFormulaRowUndo')
+        ->toContain('role="status"')
+        ->toContain('undoFormulaRowRemoval')
+        ->toMatch('/(?:Undo|undo)/');
+});
+
+it('makes the cosmetic phase chooser a labelled focus-managed popover', function (): void {
+    $ingredientBrowserSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
+
+    $phaseChooserId = ':id="`formula-phase-options-${ingredient.id}`"';
+
+    expect($ingredientBrowserSource)
+        ->toContain('aria-haspopup="menu"')
+        ->toContain(':id="`formula-phase-trigger-${ingredient.id}`"')
+        ->toContain(':aria-controls="`formula-phase-options-${ingredient.id}`"')
+        ->toContain($phaseChooserId)
+        ->toContain(':aria-labelledby="`formula-phase-trigger-${ingredient.id}`"')
+        ->toContain('role="menu"')
+        ->toContain('aria-labelledby=')
+        ->toContain('@click.outside="open = false; $nextTick(() => $refs.trigger?.focus())"')
+        ->toContain('@keydown.escape.window="if (open) { $event.preventDefault(); $event.stopPropagation(); open = false; $nextTick(() => $refs.trigger?.focus()); }"')
+        ->toContain('$nextTick(() => { reposition(); $refs.phaseOptions?.querySelector')
+        ->toMatch('/x-ref="[^\"]*trigger"/');
+
 });
 
 it('keeps formula table lines compact with responsive vertical padding', function () {
@@ -778,6 +892,8 @@ it('uses accessible currentColor SVG action icons across the soap workbench cont
     $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
     $reactionCore = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/reaction-core.blade.php'));
     $postReaction = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/post-reaction.blade.php'));
+    $cosmeticFormula = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/cosmetic-formula.blade.php'));
+    $rowActions = file_get_contents(resource_path('views/components/recipe-workbench/formula-row-actions.blade.php'));
 
     expect($iconSource)
         ->toContain('stroke="currentColor"')
@@ -788,9 +904,10 @@ it('uses accessible currentColor SVG action icons across the soap workbench cont
         ->toContain("'close'")
         ->toContain("'plus'")
         ->toContain("'minus'")
+        ->toContain("'more-horizontal'")
         ->toContain("'chevron-down'");
 
-    foreach (['drag', 'info', 'close', 'plus', 'minus', 'chevron-down'] as $name) {
+    foreach (['drag', 'info', 'close', 'plus', 'minus', 'more-horizontal', 'chevron-down'] as $name) {
         $renderedIcon = Blade::render('<x-action-icon name="'.$name.'" />');
 
         expect($renderedIcon)
@@ -817,15 +934,24 @@ it('uses accessible currentColor SVG action icons across the soap workbench cont
     expect($reactionCore)
         ->toContain('<x-action-icon name="drag" />')
         ->toContain('<x-action-icon name="info" />')
-        ->toContain('<x-action-icon name="close" />')
+        ->not->toContain('<x-action-icon name="close" />')
         ->not->toContain('⋮⋮')
         ->not->toContain('>×</button>');
 
     expect($postReaction)
         ->toContain('<x-action-icon name="drag" />')
-        ->toContain('<x-action-icon name="close" />')
+        ->not->toContain('<x-action-icon name="close" />')
         ->not->toContain('⋮⋮')
         ->not->toContain('>×</button>');
+
+    expect($cosmeticFormula)
+        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="info" />')
+        ->not->toContain('<x-action-icon name="close" />')
+        ->not->toContain('⋮⋮')
+        ->not->toContain('>×</button>')
+        ->and($rowActions)
+        ->toContain('<x-action-icon name="more-horizontal" />');
 });
 
 it('allocates ingredient rail width and gutter from the real workbench width', function () {
@@ -1298,7 +1424,7 @@ it('animates only the ingredient row that was just added', function () {
         ->and($combinedFormulaRows)
         ->toContain(':data-workbench-row-id="row.id"')
         ->toContain('animateAddedIngredientRow($el, row.id)')
-        ->toContain('motion-safe:will-change-transform');
+        ->not->toContain('motion-safe:will-change-transform');
 });
 
 it('highlights cosmetic destination phases and keeps row inspectors right aligned', function () {
@@ -1412,7 +1538,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->toContain('sk-tone-catalog')
         ->toContain('text-[var(--color-on-accent)]')
         ->and($ingredientBrowserSource)
-        ->not->toContain('focus-visible:outline-2')
+        ->toContain('focus-visible:outline-2')
         ->toContain('hover:bg-[var(--color-active-soft)]')
         ->and($reactionCore)
         ->toContain('sk-tone-chemistry')

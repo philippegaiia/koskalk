@@ -6,6 +6,7 @@
     'close' => '<path d="m7 7 10 10M17 7 7 17" />',
     'plus' => '<path d="M12 5v14M5 12h14" />',
     'minus' => '<path d="M5 12h14" />',
+    'more-horizontal' => '<path d="M6 12h.01M12 12h.01M18 12h.01" />',
     'chevron-down' => '<path d="m6 9 6 6 6-6" />',
     default => '',
 })

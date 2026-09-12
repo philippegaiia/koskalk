@@ -30,7 +30,7 @@
  <span class="sr-only">{{ __('workbench.cosmetic.move_down') }}</span>
  </button>
  <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="t('cosmetic.percent_of_formula', { percentage: format(cosmeticPhasePercentageTotal(phase.key), 2) })"></span>
- <button type="button" x-show="phaseOrder.length > 1" @click="confirmRemoveCosmeticPhase(phase.key)" class="rounded-full border border-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] transition hover:bg-[var(--color-danger-soft)]">
+ <button type="button" x-show="phaseOrder.length > 1" @click="requestCosmeticPhaseRemoval(phase.key, $event.currentTarget)" class="min-h-11 rounded-full border border-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] transition hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)]">
  {{ __('workbench.cosmetic.remove_phase') }}
  </button>
  </div>
@@ -55,21 +55,21 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
- class="grid grid-cols-1 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-	 <div class="flex items-center justify-start bg-[var(--color-panel)] py-2.5 sk-formula-table-handle-cell lg:justify-center lg:px-2">
+ class="grid grid-cols-2 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 <div class="col-start-1 row-start-1 flex items-center justify-start bg-[var(--color-panel)] py-0 sk-formula-table-handle-cell lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag(phase.key, row.id, $event)"
  @dragend="endRowDrag()"
 	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
  aria-label="{{ __('workbench.cosmetic.drag_ingredient') }}">
- <span class="text-sm leading-none">⋮⋮</span>
+	 <x-action-icon name="drag" />
  </button>
  </div>
-	 <div class="flex items-center bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:px-4">
+	 <div class="col-span-2 row-start-2 flex items-center bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
  <div class="flex w-full items-center justify-between gap-3">
  <div class="min-w-0 flex-1">
- <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.accessibility.user_owned') }}"></span></p>
+ <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" role="img" aria-label="{{ __('workbench.accessibility.user_owned') }}" title="{{ __('workbench.accessibility.user_owned') }}"></span></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
  <div x-data="{
@@ -96,7 +96,7 @@
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
 	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
- i
+ <x-action-icon name="info" />
  </button>
  </template>
  <template x-teleport="body">
@@ -124,7 +124,8 @@
  </div>
  </div>
  </div>
-	 <div class="flex flex-col gap-2 bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
+ <div class="col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents">
+ <div class="flex flex-col gap-2 bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden">{{ __('workbench.common.formula_percent') }}</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('cosmetic.percentage_for', { ingredient: row.name })" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -142,8 +143,9 @@
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
-	 <div class="flex items-center justify-end bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
-	 <button type="button" @click="removeIngredient(phase.key, row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="{{ __('workbench.cosmetic.remove_ingredient') }}">×</button>
+ </div>
+	 <div class="col-start-2 row-start-1 flex items-center justify-end bg-[var(--color-panel)] py-0 sk-formula-table-cell lg:col-start-5 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
+ <x-recipe-workbench.formula-row-actions phase-key-expression="phase.key" />
  </div>
  </div>
  </template>

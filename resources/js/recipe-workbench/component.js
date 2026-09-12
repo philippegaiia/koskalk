@@ -249,7 +249,10 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         draggedRowPhaseKey: null,
         dropTargetPhaseKey: null,
         dropTargetRowId: null,
+        removedFormulaRowUndo: null,
         phaseOrder,
+        pendingCosmeticPhaseRemoval: null,
+        pendingCosmeticPhaseRemovalTrigger: null,
         saveStatus: null,
         saveMessage: '',
         isSaving: false,
@@ -680,6 +683,7 @@ function createCatalogSection() {
             };
 
             this.phaseItems[targetPhase].push(nextRow);
+            this.removedFormulaRowUndo = null;
 
             if (!shouldAnimate) {
                 return;
@@ -715,6 +719,7 @@ function createCatalogSection() {
                 }
 
                 this.phaseItems.lye_water = [];
+                this.removedFormulaRowUndo = null;
                 this.isLyeLiquidCompositionOpen = false;
 
                 return;
@@ -789,6 +794,79 @@ function createCatalogSection() {
             if (!this.formulaItemLimitReached()) {
                 this.formulaItemLimitMessage = '';
             }
+        },
+
+        removeFormulaRowWithUndo(phaseKey, rowId) {
+            const phaseRows = this.phaseItems?.[phaseKey];
+
+            if (!Array.isArray(phaseRows)) {
+                return false;
+            }
+
+            const index = phaseRows.findIndex((row) => row.id === rowId);
+
+            if (index === -1) {
+                return false;
+            }
+
+            const row = phaseRows[index];
+
+            this.removedFormulaRowUndo = {
+                phaseKey,
+                row,
+                index,
+                message: this.t('messages.ingredient_removed', { ingredient: row.name }),
+            };
+            this.removeIngredient(phaseKey, rowId);
+
+            return true;
+        },
+
+        undoFormulaRowRemoval() {
+            const removed = this.removedFormulaRowUndo;
+
+            if (!removed) {
+                return false;
+            }
+
+            let restored = false;
+
+            try {
+                const phaseRows = this.phaseItems?.[removed.phaseKey];
+
+                if (!Array.isArray(phaseRows)) {
+                    return false;
+                }
+
+                if (!this.isCosmeticFormula
+                    && !canMoveSoapRowToPhase(removed.row, removed.phaseKey, removed.phaseKey)) {
+                    return false;
+                }
+
+                if (phaseRows.some((row) => {
+                    return row.id !== removed.row.id
+                        && Number(row.ingredient_id) === Number(removed.row.ingredient_id);
+                })) {
+                    return false;
+                }
+
+                const nextRows = [...phaseRows];
+                const targetIndex = Number.isFinite(Number(removed.index))
+                    ? Math.trunc(Number(removed.index))
+                    : 0;
+                const clampedIndex = Math.min(Math.max(targetIndex, 0), nextRows.length);
+
+                nextRows.splice(clampedIndex, 0, removed.row);
+                this.phaseItems = {
+                    ...this.phaseItems,
+                    [removed.phaseKey]: nextRows,
+                };
+                restored = true;
+            } finally {
+                this.removedFormulaRowUndo = null;
+            }
+
+            return restored;
         },
 
         lyeLiquidAdditionLimitReached() {
@@ -919,6 +997,143 @@ function createCatalogSection() {
             });
         },
 
+        formulaRowMoveTargets(sourcePhaseKey, rowId) {
+            const sourceRows = this.phaseItems?.[sourcePhaseKey];
+
+            if (!Array.isArray(sourceRows)) {
+                return [];
+            }
+
+            const row = sourceRows.find((candidate) => candidate.id === rowId);
+
+            if (!row) {
+                return [];
+            }
+
+            return (this.phaseOrder ?? [])
+                .filter((phase) => phase.key !== sourcePhaseKey)
+                .filter((phase) => {
+                    const targetRows = this.phaseItems?.[phase.key];
+
+                    if (!Array.isArray(targetRows)) {
+                        return false;
+                    }
+
+                    if (!this.isCosmeticFormula && !canMoveSoapRowToPhase(row, sourcePhaseKey, phase.key)) {
+                        return false;
+                    }
+
+                    return !targetRows.some((targetRow) => {
+                        return Number(targetRow.ingredient_id) === Number(row.ingredient_id);
+                    });
+                });
+        },
+
+        canMoveFormulaRowBy(sourcePhaseKey, rowId, direction) {
+            if (!['up', 'down'].includes(direction)) {
+                return false;
+            }
+
+            const rows = this.phaseItems?.[sourcePhaseKey];
+            const rowIndex = Array.isArray(rows)
+                ? rows.findIndex((row) => row.id === rowId)
+                : -1;
+
+            return direction === 'up'
+                ? rowIndex > 0
+                : rowIndex !== -1 && rowIndex < rows.length - 1;
+        },
+
+        moveFormulaRow(sourcePhaseKey, rowId, targetPhaseKey, targetIndex) {
+            const sourceRows = this.phaseItems?.[sourcePhaseKey];
+            const targetRows = this.phaseItems?.[targetPhaseKey];
+
+            if (!Array.isArray(sourceRows) || !Array.isArray(targetRows)) {
+                return false;
+            }
+
+            const sourceIndex = sourceRows.findIndex((row) => row.id === rowId);
+
+            if (sourceIndex === -1) {
+                return false;
+            }
+
+            const row = sourceRows[sourceIndex];
+
+            if (!this.isCosmeticFormula && !canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey)) {
+                return false;
+            }
+
+            if (targetRows.some((targetRow) => {
+                return targetRow.id !== row.id
+                    && Number(targetRow.ingredient_id) === Number(row.ingredient_id);
+            })) {
+                return false;
+            }
+
+            const nextSourceRows = [...sourceRows];
+            nextSourceRows.splice(sourceIndex, 1);
+            const nextTargetRows = sourcePhaseKey === targetPhaseKey
+                ? nextSourceRows
+                : [...targetRows];
+            const numericTargetIndex = Number(targetIndex);
+            const normalizedTargetIndex = Number.isFinite(numericTargetIndex)
+                ? Math.trunc(numericTargetIndex)
+                : 0;
+            const clampedTargetIndex = Math.min(
+                Math.max(normalizedTargetIndex, 0),
+                nextTargetRows.length,
+            );
+
+            if (sourcePhaseKey === targetPhaseKey && clampedTargetIndex === sourceIndex) {
+                return false;
+            }
+
+            nextTargetRows.splice(clampedTargetIndex, 0, row);
+
+            this.phaseItems = {
+                ...this.phaseItems,
+                [sourcePhaseKey]: nextSourceRows,
+                [targetPhaseKey]: nextTargetRows,
+            };
+            this.removedFormulaRowUndo = null;
+
+            return true;
+        },
+
+        moveFormulaRowBy(sourcePhaseKey, rowId, direction) {
+            if (!['up', 'down'].includes(direction)) {
+                return false;
+            }
+
+            const phaseRows = this.phaseItems?.[sourcePhaseKey];
+
+            if (!Array.isArray(phaseRows)) {
+                return false;
+            }
+
+            const sourceIndex = phaseRows.findIndex((row) => row.id === rowId);
+
+            if (sourceIndex === -1) {
+                return false;
+            }
+
+            const targetIndex = direction === 'up' ? sourceIndex - 1 : sourceIndex + 1;
+
+            if (targetIndex < 0 || targetIndex >= phaseRows.length) {
+                return false;
+            }
+
+            return this.moveFormulaRow(sourcePhaseKey, rowId, sourcePhaseKey, targetIndex);
+        },
+
+        moveFormulaRowToPhase(sourcePhaseKey, rowId, targetPhaseKey) {
+            const targetRows = this.phaseItems?.[targetPhaseKey];
+            const targetIndex = Array.isArray(targetRows) ? targetRows.length : 0;
+
+            return this.moveFormulaRow(sourcePhaseKey, rowId, targetPhaseKey, targetIndex);
+        },
+
         allowPhaseDrop(phaseKey, event, targetRowId = null) {
             this.autoScrollDuringRowDrag(event);
 
@@ -949,46 +1164,37 @@ function createCatalogSection() {
             const rowId = this.draggedRowId;
             const resolvedTargetRowId = this.resolvedDropTargetRowId(phaseKey, event, targetRowId);
 
-            if (!sourcePhaseKey || !rowId) {
+            try {
+                if (!sourcePhaseKey || !rowId) {
+                    return;
+                }
+
+                if (sourcePhaseKey === phaseKey && resolvedTargetRowId === rowId) {
+                    return;
+                }
+
+                const sourceRows = this.phaseItems?.[sourcePhaseKey];
+                const targetRows = this.phaseItems?.[phaseKey];
+
+                if (!Array.isArray(sourceRows) || !Array.isArray(targetRows)) {
+                    return;
+                }
+
+                const rowsAfterRemoval = sourcePhaseKey === phaseKey
+                    ? sourceRows.filter((row) => row.id !== rowId)
+                    : targetRows;
+                let targetIndex = resolvedTargetRowId === null
+                    ? rowsAfterRemoval.length
+                    : rowsAfterRemoval.findIndex((row) => row.id === resolvedTargetRowId);
+
+                if (targetIndex === -1) {
+                    targetIndex = rowsAfterRemoval.length;
+                }
+
+                this.moveFormulaRow(sourcePhaseKey, rowId, phaseKey, targetIndex);
+            } finally {
                 this.endRowDrag();
-
-                return;
             }
-
-            if (sourcePhaseKey === phaseKey && resolvedTargetRowId === rowId) {
-                this.endRowDrag();
-
-                return;
-            }
-
-            const sourceRows = [...(this.phaseItems[sourcePhaseKey] ?? [])];
-            const sourceIndex = sourceRows.findIndex((row) => row.id === rowId);
-
-            if (sourceIndex === -1) {
-                this.endRowDrag();
-
-                return;
-            }
-
-            const [draggedRow] = sourceRows.splice(sourceIndex, 1);
-            const targetRows = sourcePhaseKey === phaseKey
-                ? sourceRows
-                : [...(this.phaseItems[phaseKey] ?? [])];
-
-            let targetIndex = resolvedTargetRowId === null
-                ? targetRows.length
-                : targetRows.findIndex((row) => row.id === resolvedTargetRowId);
-
-            if (targetIndex === -1) {
-                targetIndex = targetRows.length;
-            }
-
-            targetRows.splice(targetIndex, 0, draggedRow);
-
-            this.phaseItems[sourcePhaseKey] = sourceRows;
-            this.phaseItems[phaseKey] = targetRows;
-
-            this.endRowDrag();
         },
 
         resolveTargetPhase(ingredient, requestedPhase = null) {
@@ -1039,6 +1245,7 @@ function createPersistenceSection() {
             this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
+            this.removedFormulaRowUndo = null;
         },
 
         applyDraft(draft) {
@@ -1052,6 +1259,7 @@ function createPersistenceSection() {
             this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
+            this.removedFormulaRowUndo = null;
         },
 
         scheduleCalculationPreview(resetBaseline = false) {
@@ -1190,6 +1398,10 @@ function createPersistenceSection() {
 
         async persist(method) {
             await persistWorkbench(this, method);
+
+            if (this.saveStatus === 'success') {
+                this.removedFormulaRowUndo = null;
+            }
         },
     };
 }

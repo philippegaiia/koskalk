@@ -3,6 +3,12 @@
 <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
  <section id="formula-save-bar" aria-label="{{ __('workbench.accessibility.formula_save_bar') }}" class="pointer-events-auto relative mx-auto max-w-app rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_72%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
  <span class="sr-only">{{ __('workbench.accessibility.zero_quantity_note') }}</span>
+ <div x-cloak x-show="removedFormulaRowUndo" role="status" aria-live="polite" class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-active-soft)] bg-[var(--color-active-soft)] px-3 py-2.5 text-sm text-[var(--color-active-strong)]">
+ <span x-text="removedFormulaRowUndo?.message"></span>
+ <button type="button" @click="undoFormulaRowRemoval()" class="sk-btn min-h-11 border border-[var(--color-active)] bg-[var(--color-panel)] text-[var(--color-active-strong)] hover:bg-[var(--color-active-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+ {{ __('workbench.messages.undo') }}
+ </button>
+ </div>
  <div id="formula-bottom-diagnostics-details" x-cloak class="absolute inset-x-0 bottom-full z-40 mb-2 grid max-h-[min(60dvh,28rem)] transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFormulaDiagnosticsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
  <div class="min-h-0 overflow-y-auto overscroll-contain rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_94%,transparent)] p-3 shadow-[0_-8px_24px_rgba(60,50,30,0.12)] touch-pan-y">
  <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">

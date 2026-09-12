@@ -3496,6 +3496,943 @@ JS;
     expect($payload['oilIds'])->toBe(['oil-2', 'oil-1']);
 });
 
+it('lists only eligible non-duplicate destinations for formula row menus', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const refreshWorkbenchLabelingPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const resolveNumberLocale = () => 'en_US';
+const convertMass = (value) => Number(value) || 0;
+const copyText = async () => true;
+const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = {
+  location: { hash: '' },
+  localStorage: {
+    getItem: () => null,
+    setItem: () => {},
+  },
+};
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const cosmetic = globalThis.createRecipeWorkbench({
+  productFamily: { slug: 'cosmetic' },
+  phases: [
+    { key: 'phase_a', name: 'Phase A' },
+    { key: 'phase_b', name: 'Phase B' },
+    { key: 'phase_c', name: 'Phase C' },
+  ],
+  ingredients: [],
+});
+
+const cosmeticRow = {
+  id: 'cosmetic-water',
+  ingredient_id: 1,
+  name: 'Purified Water',
+  category: 'liquids',
+};
+
+cosmetic.isCosmeticFormula = true;
+cosmetic.phaseItems = {
+  phase_a: [cosmeticRow],
+  phase_b: [],
+  phase_c: [],
+};
+
+assert.deepEqual(
+  cosmetic.formulaRowMoveTargets('phase_a', cosmeticRow.id).map((phase) => phase.key),
+  ['phase_b', 'phase_c'],
+);
+
+const soap = globalThis.createRecipeWorkbench({
+  productFamily: { slug: 'soap' },
+  phases: [
+    { key: 'saponified_oils', name: 'Saponified oils' },
+    { key: 'lye_water', name: 'Alkali solution' },
+    { key: 'additives', name: 'Additives' },
+    { key: 'fragrance', name: 'Fragrance and aromatics' },
+  ],
+  ingredients: [],
+});
+
+const eligibleOil = {
+  id: 'eligible-oil',
+  ingredient_id: 2,
+  name: 'Olive Oil',
+  category: 'lipids',
+  available_phases: ['saponified_oils', 'additives'],
+};
+
+soap.phaseItems = {
+  saponified_oils: [eligibleOil],
+  lye_water: [],
+  additives: [{ id: 'existing-additive', ingredient_id: 3, name: 'Vitamin E', category: 'other' }],
+  fragrance: [],
+};
+
+assert.deepEqual(
+  soap.formulaRowMoveTargets('saponified_oils', eligibleOil.id).map((phase) => phase.key),
+  ['additives'],
+);
+
+soap.phaseItems.additives.push({
+  id: 'duplicate-oil',
+  ingredient_id: eligibleOil.ingredient_id,
+  name: 'Olive Oil duplicate',
+  category: 'lipids',
+});
+
+assert.deepEqual(
+  soap.formulaRowMoveTargets('saponified_oils', eligibleOil.id).map((phase) => phase.key),
+  [],
+);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('moves cosmetic formula rows through the central row movement helpers', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const refreshWorkbenchLabelingPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [
+    { key: 'additives', name: 'Additives' },
+    { key: 'fragrance', name: 'Fragrance' },
+  ],
+  ingredients: [],
+});
+
+workbench.isCosmeticFormula = true;
+workbench.phaseItems = {
+  additives: [
+    { id: 'additive-a', ingredient_id: 1, name: 'A' },
+    { id: 'additive-b', ingredient_id: 2, name: 'B' },
+    { id: 'additive-c', ingredient_id: 3, name: 'C' },
+  ],
+  fragrance: [
+    { id: 'fragrance-a', ingredient_id: 4, name: 'Fragrance A' },
+    { id: 'fragrance-b', ingredient_id: 5, name: 'Fragrance B' },
+  ],
+};
+
+const ids = (phaseKey) => workbench.phaseItems[phaseKey].map((row) => row.id);
+const movedRow = workbench.phaseItems.additives[2];
+
+workbench.moveFormulaRow('additives', movedRow.id, 'additives', 0);
+assert.deepEqual(ids('additives'), ['additive-c', 'additive-a', 'additive-b']);
+
+workbench.moveFormulaRow('additives', movedRow.id, 'fragrance', 1);
+assert.deepEqual(ids('additives'), ['additive-a', 'additive-b']);
+assert.deepEqual(ids('fragrance'), ['fragrance-a', 'additive-c', 'fragrance-b']);
+assert.strictEqual(workbench.phaseItems.fragrance[1], movedRow);
+
+const idsBeforeFirstBoundaryMove = ids('additives');
+workbench.moveFormulaRowBy('additives', 'additive-a', 'up');
+assert.deepEqual(ids('additives'), idsBeforeFirstBoundaryMove);
+
+const idsBeforeLastBoundaryMove = ids('additives');
+workbench.moveFormulaRowBy('additives', 'additive-b', 'down');
+assert.deepEqual(ids('additives'), idsBeforeLastBoundaryMove);
+
+const delegatedCalls = [];
+const centralMove = workbench.moveFormulaRow.bind(workbench);
+workbench.moveFormulaRow = (...args) => {
+  delegatedCalls.push(args);
+
+  return centralMove(...args);
+};
+
+const delegatedRow = workbench.phaseItems.additives[1];
+workbench.moveFormulaRowToPhase('additives', delegatedRow.id, 'fragrance');
+
+assert.deepEqual(delegatedCalls, [
+  ['additives', delegatedRow.id, 'fragrance', 3],
+]);
+assert.deepEqual(ids('additives'), ['additive-a']);
+assert.deepEqual(ids('fragrance'), ['fragrance-a', 'additive-c', 'fragrance-b', 'additive-b']);
+assert.strictEqual(workbench.phaseItems.fragrance[3], delegatedRow);
+
+console.log(JSON.stringify({
+  additives: ids('additives'),
+  fragrance: ids('fragrance'),
+  delegatedCalls,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['additives'])->toBe(['additive-a'])
+        ->and($payload['fragrance'])->toBe(['fragrance-a', 'additive-c', 'fragrance-b', 'additive-b'])
+        ->and($payload['delegatedCalls'])->toBe([
+            ['additives', 'additive-b', 'fragrance', 3],
+        ]);
+});
+
+it('enforces soap row phase eligibility and duplicate safeguards during movement', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const refreshWorkbenchLabelingPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  productFamily: { slug: 'soap' },
+  phases: [
+    { key: 'saponified_oils', name: 'Saponified Oils' },
+    { key: 'additives', name: 'Additives' },
+  ],
+  ingredients: [],
+});
+
+workbench.phaseItems = {
+  saponified_oils: [
+    {
+      id: 'eligible-oil',
+      ingredient_id: 1,
+      category: 'lipids',
+      available_phases: ['saponified_oils', 'additives'],
+    },
+    {
+      id: 'non-lipid',
+      ingredient_id: 2,
+      category: 'botanicals',
+      available_phases: ['additives'],
+    },
+    {
+      id: 'duplicate-oil',
+      ingredient_id: 4,
+      category: 'lipids',
+      available_phases: ['saponified_oils', 'additives'],
+    },
+  ],
+  additives: [
+    {
+      id: 'existing-additive',
+      ingredient_id: 4,
+      category: 'other',
+      available_phases: ['additives'],
+    },
+    {
+      id: 'oil-without-sap-eligibility',
+      ingredient_id: 3,
+      category: 'lipids',
+      available_phases: ['additives'],
+    },
+  ],
+};
+
+const phaseSnapshot = () => ({
+  saponified_oils: JSON.stringify(workbench.phaseItems.saponified_oils),
+  additives: JSON.stringify(workbench.phaseItems.additives),
+});
+
+workbench.moveFormulaRow('saponified_oils', 'eligible-oil', 'additives', 1);
+
+assert.deepEqual(
+  workbench.phaseItems.saponified_oils.map((row) => row.id),
+  ['non-lipid', 'duplicate-oil'],
+);
+assert.deepEqual(
+  workbench.phaseItems.additives.map((row) => row.id),
+  ['existing-additive', 'eligible-oil', 'oil-without-sap-eligibility'],
+);
+
+const beforeNonLipidMove = phaseSnapshot();
+workbench.moveFormulaRow('saponified_oils', 'non-lipid', 'additives', 0);
+assert.deepEqual(phaseSnapshot(), beforeNonLipidMove);
+
+const beforeIneligibleLipidMove = phaseSnapshot();
+workbench.moveFormulaRow('additives', 'oil-without-sap-eligibility', 'saponified_oils', 0);
+assert.deepEqual(phaseSnapshot(), beforeIneligibleLipidMove);
+
+const beforeDuplicateMove = phaseSnapshot();
+workbench.moveFormulaRow('saponified_oils', 'duplicate-oil', 'additives', 0);
+assert.deepEqual(phaseSnapshot(), beforeDuplicateMove);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('delegates cosmetic drag and drop placement to the central row movement helper', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const refreshWorkbenchLabelingPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const resolveNumberLocale = () => 'en_US';
+const convertMass = (value) => Number(value) || 0;
+const copyText = async () => true;
+const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = {
+  innerHeight: 600,
+  location: { hash: '' },
+};
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  productFamily: { slug: 'cosmetic' },
+  phases: [
+    { key: 'phase_a', name: 'Phase A' },
+    { key: 'phase_b', name: 'Phase B' },
+  ],
+  ingredients: [
+    {
+      id: 1,
+      name: 'Purified Water',
+      inci_name: 'AQUA',
+      category: 'liquids',
+      available_phases: ['phase_a', 'phase_b'],
+    },
+    {
+      id: 2,
+      name: 'Jojoba Oil',
+      inci_name: 'SIMMONDSIA CHINENSIS SEED OIL',
+      category: 'lipids',
+      available_phases: ['phase_a', 'phase_b'],
+    },
+    {
+      id: 3,
+      name: 'Glycerin',
+      inci_name: 'GLYCERIN',
+      category: 'humectants',
+      available_phases: ['phase_a', 'phase_b'],
+    },
+    {
+      id: 4,
+      name: 'Vitamin E',
+      inci_name: 'TOCOPHEROL',
+      category: 'actives',
+      available_phases: ['phase_a', 'phase_b'],
+    },
+  ],
+});
+
+workbench.isCosmeticFormula = true;
+
+workbench.phaseItems = {
+  phase_a: [
+    {
+      id: 'phase-a-water',
+      ingredient_id: 1,
+      name: 'Purified Water',
+      inci_name: 'AQUA',
+      category: 'liquids',
+      available_phases: ['phase_a', 'phase_b'],
+      percentage: 60,
+      weight: 60,
+      note: '',
+    },
+    {
+      id: 'phase-a-oil',
+      ingredient_id: 2,
+      name: 'Jojoba Oil',
+      inci_name: 'SIMMONDSIA CHINENSIS SEED OIL',
+      category: 'lipids',
+      available_phases: ['phase_a', 'phase_b'],
+      percentage: 25,
+      weight: 25,
+      note: 'Warm with Phase A.',
+    },
+    {
+      id: 'phase-a-glycerin',
+      ingredient_id: 3,
+      name: 'Glycerin',
+      inci_name: 'GLYCERIN',
+      category: 'humectants',
+      available_phases: ['phase_a', 'phase_b'],
+      percentage: 10,
+      weight: 10,
+      note: '',
+    },
+  ],
+  phase_b: [
+    {
+      id: 'phase-b-vitamin-e',
+      ingredient_id: 4,
+      name: 'Vitamin E',
+      inci_name: 'TOCOPHEROL',
+      category: 'actives',
+      available_phases: ['phase_a', 'phase_b'],
+      percentage: 5,
+      weight: 5,
+      note: 'Add below 40°C.',
+    },
+    {
+      id: 'phase-b-preservative',
+      ingredient_id: 5,
+      name: 'Preservative',
+      inci_name: 'PRESERVATIVE',
+      category: 'preservatives',
+      available_phases: ['phase_a', 'phase_b'],
+      percentage: 0.8,
+      weight: 0.8,
+      note: '',
+    },
+  ],
+};
+
+const rowIds = (phaseKey) => workbench.phaseItems[phaseKey].map((row) => row.id);
+const delegatedCalls = [];
+const realMoveFormulaRow = workbench.moveFormulaRow;
+
+workbench.moveFormulaRow = (...args) => {
+  delegatedCalls.push(args);
+
+  return realMoveFormulaRow?.apply(workbench, args);
+};
+
+const eventFor = (clientY, targetRow) => ({
+  clientY,
+  currentTarget: {
+    getBoundingClientRect: () => ({ top: 200, height: 40 }),
+  },
+  preventDefault() {},
+  dataTransfer: {
+    effectAllowed: '',
+    dropEffect: '',
+    setData() {},
+  },
+  targetRow,
+});
+
+const beforeTargetEvent = eventFor(210, 'phase-b-preservative');
+workbench.beginRowDrag('phase_a', 'phase-a-oil', beforeTargetEvent);
+workbench.allowPhaseDrop('phase_b', beforeTargetEvent, 'phase-b-preservative');
+workbench.dropDraggedRow('phase_b', beforeTargetEvent, 'phase-b-preservative');
+
+assert.deepEqual(rowIds('phase_a'), ['phase-a-water', 'phase-a-glycerin']);
+assert.deepEqual(rowIds('phase_b'), ['phase-b-vitamin-e', 'phase-a-oil', 'phase-b-preservative']);
+assert.strictEqual(workbench.draggedRowPhaseKey, null);
+assert.strictEqual(workbench.draggedRowId, null);
+assert.strictEqual(workbench.dropTargetPhaseKey, null);
+assert.strictEqual(workbench.dropTargetRowId, null);
+
+const phaseEndEvent = eventFor(250, 'phase-b-preservative');
+workbench.beginRowDrag('phase_a', 'phase-a-glycerin', phaseEndEvent);
+workbench.allowPhaseDrop('phase_b', phaseEndEvent, 'phase-b-preservative');
+workbench.dropDraggedRow('phase_b', phaseEndEvent, 'phase-b-preservative');
+
+assert.deepEqual(delegatedCalls, [
+  ['phase_a', 'phase-a-oil', 'phase_b', 1],
+  ['phase_a', 'phase-a-glycerin', 'phase_b', 3],
+]);
+assert.deepEqual(rowIds('phase_a'), ['phase-a-water']);
+assert.deepEqual(rowIds('phase_b'), [
+  'phase-b-vitamin-e',
+  'phase-a-oil',
+  'phase-b-preservative',
+  'phase-a-glycerin',
+]);
+assert.strictEqual(workbench.draggedRowPhaseKey, null);
+assert.strictEqual(workbench.draggedRowId, null);
+assert.strictEqual(workbench.dropTargetPhaseKey, null);
+assert.strictEqual(workbench.dropTargetRowId, null);
+
+console.log(JSON.stringify({
+  delegatedCalls,
+  phaseA: rowIds('phase_a'),
+  phaseB: rowIds('phase_b'),
+  dragState: {
+    draggedRowPhaseKey: workbench.draggedRowPhaseKey,
+    draggedRowId: workbench.draggedRowId,
+    dropTargetPhaseKey: workbench.dropTargetPhaseKey,
+    dropTargetRowId: workbench.dropTargetRowId,
+  },
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['delegatedCalls'])->toBe([
+        ['phase_a', 'phase-a-oil', 'phase_b', 1],
+        ['phase_a', 'phase-a-glycerin', 'phase_b', 3],
+    ])
+        ->and($payload['phaseA'])->toBe(['phase-a-water'])
+        ->and($payload['phaseB'])->toBe([
+            'phase-b-vitamin-e',
+            'phase-a-oil',
+            'phase-b-preservative',
+            'phase-a-glycerin',
+        ])
+        ->and($payload['dragState'])->toBe([
+            'draggedRowPhaseKey' => null,
+            'draggedRowId' => null,
+            'dropTargetPhaseKey' => null,
+            'dropTargetRowId' => null,
+        ]);
+});
+
+it('restores removed formula rows once and confirms cosmetic phase removals', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const formulaSource = fs
+  .readFileSync('resources/js/recipe-workbench/sections/formula-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createFormulaSection', 'function createFormulaSection');
+
+const componentSource = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const resolveNumberLocale = () => 'en_US';
+const convertMass = (value) => Number(value) || 0;
+const copyText = async () => true;
+const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
+const buildAverageFattyAcidProfile = () => ({});
+const calculateCuredBatchWeight = () => 0;
+const calculateFinalBatchWeight = () => 0;
+const buildLyeBreakdown = () => ({});
+const getOilPercentageTotal = () => 0;
+const calculateRowWeight = () => 0;
+const calculateSumPercentages = () => 0;
+const calculateTotalAdditionPercentage = () => 0;
+const calculateTotalFormulaPercentage = () => 0;
+const buildFormulaPercentagesFromWeights = () => {};
+const calculateTotalLyeToWeigh = () => 0;
+const buildOilPercentagesFromWeights = () => {};
+const calculatePercentageFromWeight = () => 0;
+const clampPercentageValue = (value) => value;
+const formatNumber = (value) => String(value);
+const ensureNonNegativeNumber = (value) => Number(value) || 0;
+const coerceNumber = (value) => Number(value) || 0;
+const parseDecimal = (value) => Number(value) || 0;
+const roundNumberTo = (value) => value;
+const chooseMassDisplayDecimals = () => 2;
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = {
+  location: { hash: '' },
+  localStorage: {
+    getItem: () => null,
+    setItem: () => {},
+  },
+};
+globalThis.document = {
+  addEventListener() {},
+  removeEventListener() {},
+};
+
+eval(`${stubs}\n${formulaSource}\n${componentSource}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const translations = {
+  header: { new_cosmetic: 'New cosmetic product' },
+  messages: { ingredient_removed: 'Translated ingredient removed: :ingredient' },
+};
+
+const workbench = globalThis.createRecipeWorkbench({
+  productFamily: { slug: 'cosmetic' },
+  phases: [
+    { key: 'phase_a', name: 'Phase A' },
+    { key: 'phase_b', name: 'Phase B' },
+  ],
+  ingredients: [],
+  translations,
+});
+
+workbench.$nextTick = (callback) => callback();
+
+const phaseARows = [
+  {
+    id: 'phase-a-water',
+    ingredient_id: 101,
+    name: 'Purified Water',
+    inci_name: 'AQUA',
+    category: 'liquids',
+    percentage: 70,
+    weight: 70,
+    note: 'Heat to 70°C.',
+  },
+  {
+    id: 'phase-a-oil',
+    ingredient_id: 102,
+    name: 'Jojoba Oil',
+    inci_name: 'SIMMONDSIA CHINENSIS SEED OIL',
+    category: 'lipids',
+    percentage: 20,
+    weight: 20,
+    note: 'Warm with Phase A.',
+  },
+];
+const phaseBRows = [
+  {
+    id: 'phase-b-preservative',
+    ingredient_id: 201,
+    name: 'Preservative',
+    inci_name: 'PRESERVATIVE',
+    category: 'preservatives',
+    percentage: 1,
+    weight: 1,
+    note: '',
+  },
+  {
+    id: 'phase-b-fragrance',
+    ingredient_id: 202,
+    name: 'Fragrance',
+    inci_name: 'FRAGRANCE',
+    category: 'fragrance',
+    percentage: 4,
+    weight: 4,
+    note: 'Add below 40°C.',
+  },
+  {
+    id: 'phase-b-vitamin',
+    ingredient_id: 203,
+    name: 'Vitamin E',
+    inci_name: 'TOCOPHEROL',
+    category: 'actives',
+    percentage: 5,
+    weight: 5,
+    note: '',
+  },
+];
+
+workbench.phaseItems = {
+  phase_a: phaseARows,
+  phase_b: phaseBRows,
+};
+
+const firstRemovedRow = phaseARows[1];
+workbench.removeFormulaRowWithUndo('phase_a', firstRemovedRow.id);
+
+assert.deepEqual(workbench.phaseItems.phase_a, [phaseARows[0]]);
+assert.deepEqual(Object.keys(workbench.removedFormulaRowUndo), [
+  'phaseKey',
+  'row',
+  'index',
+  'message',
+]);
+assert.strictEqual(workbench.removedFormulaRowUndo.row, firstRemovedRow);
+assert.deepEqual(workbench.removedFormulaRowUndo, {
+  phaseKey: 'phase_a',
+  row: firstRemovedRow,
+  index: 1,
+  message: 'Translated ingredient removed: Jojoba Oil',
+});
+assert.deepEqual(JSON.parse(JSON.stringify(workbench.removedFormulaRowUndo)), {
+  phaseKey: 'phase_a',
+  row: firstRemovedRow,
+  index: 1,
+  message: 'Translated ingredient removed: Jojoba Oil',
+});
+
+const secondRemovedRow = phaseBRows[1];
+workbench.removeFormulaRowWithUndo('phase_b', secondRemovedRow.id);
+
+assert.deepEqual(workbench.phaseItems.phase_b, [phaseBRows[0], phaseBRows[2]]);
+assert.strictEqual(workbench.removedFormulaRowUndo.row, secondRemovedRow);
+assert.deepEqual(workbench.removedFormulaRowUndo, {
+  phaseKey: 'phase_b',
+  row: secondRemovedRow,
+  index: 1,
+  message: 'Translated ingredient removed: Fragrance',
+});
+
+workbench.undoFormulaRowRemoval();
+
+assert.deepEqual(workbench.phaseItems.phase_b, phaseBRows);
+assert.strictEqual(workbench.phaseItems.phase_b[1], secondRemovedRow);
+assert.strictEqual(workbench.removedFormulaRowUndo, null);
+
+const phaseAAfterUndo = JSON.stringify(workbench.phaseItems.phase_a);
+const phaseBAfterUndo = JSON.stringify(workbench.phaseItems.phase_b);
+workbench.undoFormulaRowRemoval();
+assert.equal(JSON.stringify(workbench.phaseItems.phase_a), phaseAAfterUndo);
+assert.equal(JSON.stringify(workbench.phaseItems.phase_b), phaseBAfterUndo);
+assert.strictEqual(workbench.removedFormulaRowUndo, null);
+
+const conflictRemovedRow = phaseARows[0];
+workbench.removeFormulaRowWithUndo('phase_a', conflictRemovedRow.id);
+const duplicateRow = {
+  id: 'phase-a-water-duplicate',
+  ingredient_id: conflictRemovedRow.ingredient_id,
+  name: 'Purified Water (duplicate)',
+  inci_name: 'AQUA',
+  category: 'liquids',
+  percentage: 70,
+  weight: 70,
+  note: '',
+};
+workbench.phaseItems.phase_a.push(duplicateRow);
+
+workbench.undoFormulaRowRemoval();
+
+assert.deepEqual(workbench.phaseItems.phase_a, [duplicateRow]);
+assert.strictEqual(workbench.phaseItems.phase_a[0], duplicateRow);
+assert.deepEqual(workbench.phaseItems.phase_b, phaseBRows);
+assert.strictEqual(workbench.removedFormulaRowUndo, null);
+
+workbench.phaseItems = {
+  phase_a: phaseARows,
+  phase_b: phaseBRows,
+};
+workbench.phaseOrder = [
+  { key: 'phase_a', name: 'Phase A' },
+  { key: 'phase_b', name: 'Phase B' },
+];
+
+const phaseOrderBeforeCancel = JSON.stringify(workbench.phaseOrder);
+const phaseItemsBeforeCancel = JSON.stringify(workbench.phaseItems);
+let cancelTriggerFocusCount = 0;
+const cancelTrigger = { focus() { cancelTriggerFocusCount += 1; } };
+
+workbench.requestCosmeticPhaseRemoval('phase_a', cancelTrigger);
+
+assert.deepEqual(workbench.pendingCosmeticPhaseRemoval, {
+  phaseKey: 'phase_a',
+  phaseName: 'Phase A',
+  rowCount: 2,
+});
+assert.strictEqual(workbench.pendingCosmeticPhaseRemovalTrigger, cancelTrigger);
+assert.equal(Object.hasOwn(workbench.pendingCosmeticPhaseRemoval, 'trigger'), false);
+assert.deepEqual(JSON.parse(JSON.stringify(workbench.pendingCosmeticPhaseRemoval)), {
+  phaseKey: 'phase_a',
+  phaseName: 'Phase A',
+  rowCount: 2,
+});
+
+workbench.cancelCosmeticPhaseRemoval();
+
+assert.strictEqual(workbench.pendingCosmeticPhaseRemoval, null);
+assert.strictEqual(workbench.pendingCosmeticPhaseRemovalTrigger, null);
+assert.equal(cancelTriggerFocusCount, 1);
+assert.equal(JSON.stringify(workbench.phaseOrder), phaseOrderBeforeCancel);
+assert.equal(JSON.stringify(workbench.phaseItems), phaseItemsBeforeCancel);
+
+const untouchedPhaseB = workbench.phaseItems.phase_b;
+const confirmTrigger = { focus() {} };
+workbench.requestCosmeticPhaseRemoval('phase_a', confirmTrigger);
+workbench.confirmCosmeticPhaseRemoval();
+
+assert.deepEqual(workbench.phaseOrder, [{ key: 'phase_b', name: 'Phase B' }]);
+assert.equal(Object.hasOwn(workbench.phaseItems, 'phase_a'), false);
+assert.strictEqual(workbench.phaseItems.phase_b, untouchedPhaseB);
+assert.deepEqual(workbench.phaseItems.phase_b, phaseBRows);
+assert.strictEqual(workbench.pendingCosmeticPhaseRemoval, null);
+assert.strictEqual(workbench.pendingCosmeticPhaseRemovalTrigger, null);
+
+const finalPhaseOrder = JSON.stringify(workbench.phaseOrder);
+const finalPhaseItems = JSON.stringify(workbench.phaseItems);
+const finalTrigger = { focus() {} };
+workbench.requestCosmeticPhaseRemoval('phase_b', finalTrigger);
+
+assert.strictEqual(workbench.pendingCosmeticPhaseRemoval, null);
+assert.strictEqual(workbench.pendingCosmeticPhaseRemovalTrigger, null);
+assert.equal(JSON.stringify(workbench.phaseOrder), finalPhaseOrder);
+assert.equal(JSON.stringify(workbench.phaseItems), finalPhaseItems);
+
+console.log(JSON.stringify({
+  removedFormulaRowUndo: workbench.removedFormulaRowUndo,
+  pendingCosmeticPhaseRemoval: workbench.pendingCosmeticPhaseRemoval,
+  pendingCosmeticPhaseRemovalTrigger: workbench.pendingCosmeticPhaseRemovalTrigger,
+  phaseOrder: workbench.phaseOrder,
+  phaseItems: workbench.phaseItems,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
 it('only schedules the soap calculation preview when reaction-core rows change', function () {
     $script = <<<'JS'
 import fs from 'node:fs';

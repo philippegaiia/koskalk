@@ -13,3 +13,6 @@ Soap mass readouts use the shared unit-aware precision helper: standard oils, ly
 
 ## Round large calculated gram masses
 For calculated soap masses—lye, dilution liquids, produced glycerine, wet weight, and cured weight—display no decimals when the selected unit is g and the value is strictly greater than 100. At 100 g or below, retain the standard gram precision. This calculated profile does not change oil-row or addition precision.
+
+## Format aggregate percentage totals without redundant zeroes
+Ingredient and phase percentages keep their established precision. Aggregate percentage totals render without decimals when the two-decimal readout is an integer (for example 100%), but retain two decimals when needed to expose an imbalance. Calculations and the save decision keep unrounded values and use the existing two-decimal readout contract.

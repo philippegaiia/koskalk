@@ -34500,6 +34500,54 @@
     },
     {
       "group": "workbench",
+      "key": "messages.ingredient_list_cleared",
+      "text": {
+        "de": "Finale Zutatenliste gelöscht.",
+        "es": "Se ha borrado la lista final de ingredientes.",
+        "fr": "La liste finale d’ingrédients a été effacée.",
+        "it": "Elenco ingredienti finale cancellato.",
+        "nl": "Definitieve ingrediëntenlijst gewist.",
+        "pt_BR": "A lista final de ingredientes foi limpa."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "messages.ingredient_list_replaced",
+      "text": {
+        "de": "Die finale Zutatenliste wurde durch die generierte Version ersetzt.",
+        "es": "La lista final de ingredientes se ha sustituido por la versión generada.",
+        "fr": "La liste finale d’ingrédients a été remplacée par la version générée.",
+        "it": "L’elenco ingredienti finale è stato sostituito con la versione generata.",
+        "nl": "De definitieve ingrediëntenlijst is vervangen door de gegenereerde versie.",
+        "pt_BR": "A lista final de ingredientes foi substituída pela versão gerada."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "messages.ingredient_removed",
+      "text": {
+        "de": "Zutat entfernt: :ingredient",
+        "es": "Ingrediente eliminado: :ingredient",
+        "fr": "Ingrédient supprimé : :ingredient",
+        "it": "Ingrediente rimosso: :ingredient",
+        "nl": "Ingrediënt verwijderd: :ingredient",
+        "pt_BR": "Ingrediente removido: :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "messages.undo",
+      "text": {
+        "de": "Rückgängig",
+        "es": "Deshacer",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Ongedaan maken",
+        "pt_BR": "Desfazer"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.allergens.allergen",
       "text": {
         "de": "Allergen",
@@ -34718,36 +34766,24 @@
       "group": "workbench",
       "key": "output.cosmetic.batch_quantity",
       "text": {
-        "de": "Total batch quantity",
-        "es": "Total batch quantity",
-        "fr": "Quantité totale du lot",
-        "it": "Total batch quantity",
-        "nl": "Total batch quantity",
-        "pt_BR": "Total batch quantity"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "output.cosmetic.descending",
-      "text": {
-        "de": "Descending",
-        "es": "Descending",
-        "fr": "Ordre décroissant",
-        "it": "Descending",
-        "nl": "Descending",
-        "pt_BR": "Descending"
+        "de": "Rezepturmenge",
+        "es": "Cantidad de la fórmula",
+        "fr": "Quantité de la formule",
+        "it": "Quantità della formula",
+        "nl": "Formulehoeveelheid",
+        "pt_BR": "Quantidade da fórmula"
       }
     },
     {
       "group": "workbench",
       "key": "output.cosmetic.empty",
       "text": {
-        "de": "Add ingredients to build the cosmetic output list.",
-        "es": "Add ingredients to build the cosmetic output list.",
-        "fr": "Ajoutez des ingrédients pour constituer la liste de sortie cosmétique.",
-        "it": "Add ingredients to build the cosmetic output list.",
-        "nl": "Add ingredients to build the cosmetic output list.",
-        "pt_BR": "Add ingredients to build the cosmetic output list."
+        "de": "Fügen Sie Zutaten hinzu, um die Rezepturzusammensetzung aufzubauen.",
+        "es": "Añade ingredientes para crear la composición de la fórmula.",
+        "fr": "Ajoutez des ingrédients pour constituer la composition de la formule.",
+        "it": "Aggiungi ingredienti per creare la composizione della formula.",
+        "nl": "Voeg ingrediënten toe om de formulesamenstelling op te bouwen.",
+        "pt_BR": "Adicione ingredientes para criar a composição da fórmula."
       }
     },
     {
@@ -34766,72 +34802,72 @@
       "group": "workbench",
       "key": "output.cosmetic.full_formula",
       "text": {
-        "de": "Full formula",
-        "es": "Full formula",
-        "fr": "Formule complète",
-        "it": "Full formula",
-        "nl": "Full formula",
-        "pt_BR": "Full formula"
+        "de": "Rezeptursumme",
+        "es": "Total de la fórmula",
+        "fr": "Total de la formule",
+        "it": "Totale della formula",
+        "nl": "Formuletotaal",
+        "pt_BR": "Total da fórmula"
       }
     },
     {
       "group": "workbench",
       "key": "output.cosmetic.help",
       "text": {
-        "de": "This view reads the full cosmetic formula basis.",
-        "es": "This view reads the full cosmetic formula basis.",
-        "fr": "Cette vue utilise la base complète de la formule cosmétique.",
-        "it": "This view reads the full cosmetic formula basis.",
-        "nl": "This view reads the full cosmetic formula basis.",
-        "pt_BR": "This view reads the full cosmetic formula basis."
+        "de": "Prüfen Sie Rezepturmenge, Zusammensetzung und Kennzeichnungsangaben auf Basis der vollständigen Rezeptur.",
+        "es": "Revisa la cantidad, la composición y la información de etiquetado de la fórmula completa.",
+        "fr": "Examinez la quantité, la composition et les informations d’étiquetage de la formule complète.",
+        "it": "Rivedi quantità, composizione e informazioni per l’etichetta sulla base dell’intera formula.",
+        "nl": "Bekijk de formulehoeveelheid, samenstelling en etiketteringsinformatie op basis van de volledige formule.",
+        "pt_BR": "Revise a quantidade, a composição e as informações de rotulagem com base na fórmula completa."
       }
     },
     {
       "group": "workbench",
       "key": "output.cosmetic.ingredient_rows",
       "text": {
-        "de": "Ingredient rows",
-        "es": "Ingredient rows",
-        "fr": "Lignes d’ingrédients",
-        "it": "Ingredient rows",
-        "nl": "Ingredient rows",
-        "pt_BR": "Ingredient rows"
+        "de": "Zutaten",
+        "es": "Ingredientes",
+        "fr": "Ingrédients",
+        "it": "Ingredienti",
+        "nl": "Ingrediënten",
+        "pt_BR": "Ingredientes"
       }
     },
     {
       "group": "workbench",
       "key": "output.cosmetic.ingredients_help",
       "text": {
-        "de": "Ingredients sorted from highest to lowest formula share.",
-        "es": "Ingredients sorted from highest to lowest formula share.",
-        "fr": "Ingrédients classés de la proportion la plus élevée à la plus faible.",
-        "it": "Ingredients sorted from highest to lowest formula share.",
-        "nl": "Ingredients sorted from highest to lowest formula share.",
-        "pt_BR": "Ingredients sorted from highest to lowest formula share."
+        "de": "Die Zutaten sind nach ihrem höchsten bis niedrigsten Rezepturanteil geordnet. Der gebräuchliche Name steht unter dem INCI-Kennzeichnungsnamen.",
+        "es": "Los ingredientes se ordenan de mayor a menor proporción en la fórmula. El nombre común aparece debajo del nombre INCI de etiquetado.",
+        "fr": "Les ingrédients sont classés de la proportion la plus élevée à la plus faible. Le nom courant apparaît sous le nom INCI utilisé pour l’étiquetage.",
+        "it": "Ingredienti ordinati dalla percentuale più alta a quella più bassa nella formula. Il nome comune appare sotto il nome INCI per l’etichetta.",
+        "nl": "Ingrediënten zijn geordend van het hoogste naar het laagste aandeel in de formule. De gangbare naam staat onder de INCI-naam voor etikettering.",
+        "pt_BR": "Os ingredientes são ordenados da maior para a menor proporção na fórmula. O nome comum aparece abaixo do nome INCI de rotulagem."
       }
     },
     {
       "group": "workbench",
       "key": "output.cosmetic.ingredients_title",
       "text": {
-        "de": "Ingredient output",
-        "es": "Ingredient output",
-        "fr": "Sortie des ingrédients",
-        "it": "Ingredient output",
-        "nl": "Ingredient output",
-        "pt_BR": "Ingredient output"
+        "de": "Rezepturzusammensetzung",
+        "es": "Composición de la fórmula",
+        "fr": "Composition de la formule",
+        "it": "Composizione della formula",
+        "nl": "Formulesamenstelling",
+        "pt_BR": "Composição da fórmula"
       }
     },
     {
       "group": "workbench",
       "key": "output.cosmetic.title",
       "text": {
-        "de": "Formula output",
-        "es": "Formula output",
-        "fr": "Sortie de la formule",
-        "it": "Formula output",
-        "nl": "Formula output",
-        "pt_BR": "Formula output"
+        "de": "Kosmetikformel",
+        "es": "Fórmula cosmética",
+        "fr": "Formule cosmétique",
+        "it": "Formula cosmetica",
+        "nl": "Cosmetische formule",
+        "pt_BR": "Fórmula cosmética"
       }
     },
     {
@@ -34968,6 +35004,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.lists.cosmetic_generated_help",
+      "text": {
+        "de": "Zutaten wie hinzugefügt, für den ausgewählten Kennzeichnungsmarkt geordnet, mit den erforderlichen Deklarationen.",
+        "es": "Ingredientes tal como se añaden, ordenados para el mercado de etiquetado seleccionado, con las declaraciones obligatorias.",
+        "fr": "Ingrédients tels qu’ajoutés, classés pour le marché d’étiquetage sélectionné, avec les déclarations requises.",
+        "it": "Ingredienti così come aggiunti, ordinati per il mercato dell’etichetta selezionato, con le dichiarazioni obbligatorie.",
+        "nl": "Ingrediënten zoals toegevoegd, geordend voor de geselecteerde etiketteringsmarkt, met de verplichte vermeldingen.",
+        "pt_BR": "Ingredientes como adicionados, ordenados para o mercado de rotulagem selecionado, com as declarações obrigatórias."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.lists.final_inci",
       "text": {
         "de": "Final INCI list",
@@ -35096,6 +35144,30 @@
         "it": "Saponified oils + superfat",
         "nl": "Saponified oils + superfat",
         "pt_BR": "Saponified oils + superfat"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.soap_as_added_help",
+      "text": {
+        "de": "Zutaten vor der Verseifung mit den erforderlichen Allergenen.",
+        "es": "Ingredientes antes de la saponificación, con los alérgenos obligatorios.",
+        "fr": "Ingrédients avant saponification, avec les allergènes requis.",
+        "it": "Ingredienti prima della saponificazione, con gli allergeni obbligatori.",
+        "nl": "Ingrediënten vóór verzeping, met de verplichte allergenen.",
+        "pt_BR": "Ingredientes antes da saponificação, com os alérgenos obrigatórios."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.soap_saponified_help",
+      "text": {
+        "de": "Verseifte Ölnamen mit den geschätzten unverseiften Ölen.",
+        "es": "Nombres de aceites saponificados con los aceites sin saponificar estimados.",
+        "fr": "Noms des huiles saponifiées avec les huiles non saponifiées estimées.",
+        "it": "Nomi degli oli saponificati con gli oli non saponificati stimati.",
+        "nl": "Verzeepte olienamen met de geschatte onverzeepte oliën.",
+        "pt_BR": "Nomes dos óleos saponificados com os óleos não saponificados estimados."
       }
     },
     {
@@ -35700,6 +35772,78 @@
     },
     {
       "group": "workbench",
+      "key": "phase_removal.cancel",
+      "text": {
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "phase_removal.confirm",
+      "text": {
+        "de": "Phase entfernen",
+        "es": "Eliminar fase",
+        "fr": "Supprimer la phase",
+        "it": "Rimuovi fase",
+        "nl": "Fase verwijderen",
+        "pt_BR": "Remover fase"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "phase_removal.description_empty",
+      "text": {
+        "de": ":phase entfernen? Diese Phase ist leer.",
+        "es": "¿Eliminar :phase? Esta fase está vacía.",
+        "fr": "Supprimer :phase ? Cette phase est vide.",
+        "it": "Rimuovere :phase? Questa fase è vuota.",
+        "nl": ":phase verwijderen? Deze fase is leeg.",
+        "pt_BR": "Remover :phase? Esta fase está vazia."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "phase_removal.description_many",
+      "text": {
+        "de": ":phase mit :count Zutaten entfernen?",
+        "es": "¿Eliminar :phase y sus :count ingredientes?",
+        "fr": "Supprimer :phase et ses :count ingrédients ?",
+        "it": "Rimuovere :phase e i suoi :count ingredienti?",
+        "nl": ":phase met :count ingrediënten verwijderen?",
+        "pt_BR": "Remover :phase e seus :count ingredientes?"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "phase_removal.description_one",
+      "text": {
+        "de": ":phase mit :count Zutat entfernen?",
+        "es": "¿Eliminar :phase y su :count ingrediente?",
+        "fr": "Supprimer :phase et son :count ingrédient ?",
+        "it": "Rimuovere :phase e il suo :count ingrediente?",
+        "nl": ":phase met :count ingrediënt verwijderen?",
+        "pt_BR": "Remover :phase e seu :count ingrediente?"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "phase_removal.title",
+      "text": {
+        "de": "Phase entfernen?",
+        "es": "¿Eliminar fase?",
+        "fr": "Supprimer la phase ?",
+        "it": "Rimuovere la fase?",
+        "nl": "Fase verwijderen?",
+        "pt_BR": "Remover fase?"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.disclaimer",
       "text": {
         "de": "Diese Werte sind Schätzungen. Verfahren, Zusätze und Reifebedingungen beeinflussen die fertige Seife.",
@@ -35732,6 +35876,66 @@
         "it": "Punti da verificare",
         "nl": "Aandachtspunten",
         "pt_BR": "Pontos a revisar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "row_actions.label",
+      "text": {
+        "de": "Aktionen für :ingredient",
+        "es": "Acciones para :ingredient",
+        "fr": "Actions pour :ingredient",
+        "it": "Azioni per :ingredient",
+        "nl": "Acties voor :ingredient",
+        "pt_BR": "Ações para :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "row_actions.move_down",
+      "text": {
+        "de": "Nach unten",
+        "es": "Bajar",
+        "fr": "Descendre",
+        "it": "Sposta giù",
+        "nl": "Omlaag",
+        "pt_BR": "Mover para baixo"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "row_actions.move_to_phase",
+      "text": {
+        "de": "Nach :phase verschieben",
+        "es": "Mover a :phase",
+        "fr": "Déplacer vers :phase",
+        "it": "Sposta in :phase",
+        "nl": "Verplaatsen naar :phase",
+        "pt_BR": "Mover para :phase"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "row_actions.move_up",
+      "text": {
+        "de": "Nach oben",
+        "es": "Subir",
+        "fr": "Monter",
+        "it": "Sposta su",
+        "nl": "Omhoog",
+        "pt_BR": "Mover para cima"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "row_actions.remove",
+      "text": {
+        "de": "Zutat entfernen",
+        "es": "Eliminar ingrediente",
+        "fr": "Supprimer l’ingrédient",
+        "it": "Rimuovi ingrediente",
+        "nl": "Ingrediënt verwijderen",
+        "pt_BR": "Remover ingrediente"
       }
     },
     {
@@ -35828,6 +36032,30 @@
         "it": "Ingrediente prodotto",
         "nl": "Geproduceerd ingrediënt",
         "pt_BR": "Ingrediente produzido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.cosmetic_percentage_entry_help",
+      "text": {
+        "de": "Formelanteile festlegen; die Mengen richten sich nach der Gesamtcharge.",
+        "es": "Define las proporciones de la fórmula; las cantidades siguen el lote total.",
+        "fr": "Définissez les proportions de la formule ; les quantités suivent la quantité totale du lot.",
+        "it": "Imposta le proporzioni della formula; le quantità seguono il lotto totale.",
+        "nl": "Stel de aandelen van de formule in; hoeveelheden volgen de totale batch.",
+        "pt_BR": "Defina as proporções da fórmula; as quantidades seguem o lote total."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.cosmetic_weight_entry_help",
+      "text": {
+        "de": "Zutatenmengen festlegen; Gesamtcharge und Prozentsätze werden neu berechnet.",
+        "es": "Define las cantidades de los ingredientes; el lote total y los porcentajes se recalculan.",
+        "fr": "Définissez les quantités d’ingrédients ; la quantité totale du lot et les pourcentages sont recalculés.",
+        "it": "Imposta le quantità degli ingredienti; il lotto totale e le percentuali vengono ricalcolati.",
+        "nl": "Stel de hoeveelheden ingrediënten in; totale batch en percentages worden herberekend.",
+        "pt_BR": "Defina as quantidades dos ingredientes; o lote total e as porcentagens são recalculados."
       }
     },
     {
@@ -36536,6 +36764,42 @@
         "it": "Quadro normativo",
         "nl": "Regelgevingskader",
         "pt_BR": "Estrutura regulatória"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.soap_percentage_entry_help",
+      "text": {
+        "de": "Anteile von Ölen und Zusätzen festlegen; die Mengen richten sich nach der Gesamtölmenge.",
+        "es": "Define las proporciones de aceites y aditivos; las cantidades siguen el total de aceites.",
+        "fr": "Définissez les proportions d’huiles et d’ajouts ; les quantités suivent la quantité totale d’huiles.",
+        "it": "Imposta le proporzioni di oli e aggiunte; le quantità seguono il totale degli oli.",
+        "nl": "Stel de aandelen van oliën en toevoegingen in; hoeveelheden volgen het totale oliegewicht.",
+        "pt_BR": "Defina as proporções de óleos e adições; as quantidades seguem o total de óleos."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.soap_percentage_entry_label",
+      "text": {
+        "de": "% der Öle",
+        "es": "% de aceites",
+        "fr": "% des huiles",
+        "it": "% degli oli",
+        "nl": "% oliën",
+        "pt_BR": "% de óleos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.soap_weight_entry_help",
+      "text": {
+        "de": "Ölmengen berechnen Gesamtölmenge und Ölprozente neu; Zusätze bleiben auf Basis der Gesamtölmenge.",
+        "es": "Las cantidades de aceite recalculan el total de aceites y sus porcentajes; los aditivos siguen basándose en el total de aceites.",
+        "fr": "Les quantités d’huiles recalculent le total et les pourcentages d’huiles ; les ajouts restent basés sur le total des huiles.",
+        "it": "Le quantità degli oli ricalcolano il totale e le percentuali degli oli; le aggiunte restano basate sul totale degli oli.",
+        "nl": "Oliehoeveelheden herberekenen het totale oliegewicht en de oliepercentages; toevoegingen blijven gebaseerd op het totale oliegewicht.",
+        "pt_BR": "As quantidades de óleo recalculam o total e os percentuais de óleos; as adições continuam baseadas no total de óleos."
       }
     },
     {

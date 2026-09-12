@@ -40,7 +40,7 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         ->and($settings)
         ->toContain('Formula settings')
         ->toContain('Total oil weight')
-        ->toContain('Enter amounts as')
+        ->not->toContain('Enter amounts as')
         ->toContain('Calculate water by')
         ->toContain('Product use')
         ->toContain('Regulatory framework')
@@ -142,8 +142,108 @@ it('localizes composition and labeling copy and explains workspace currency sett
         'output.allergens.title',
         'output.common.label_market',
         'settings.product_type_search',
-    ])->and($catalogue['output.cosmetic.title']['text']['fr'])->toBe('Sortie de la formule')
+    ])->and($catalogue['output.cosmetic.title']['text']['fr'])->toBe('Formule cosmétique')
+        ->and($catalogue['output.cosmetic.ingredients_title']['text']['fr'])->toBe('Composition de la formule')
+        ->and($catalogue['output.cosmetic.batch_quantity']['text']['fr'])->toBe('Quantité de la formule')
         ->and(array_keys($catalogue['output.cosmetic.title']['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
+});
+
+it('keeps revised Workbench translations complete and ordered across all catalogue locales', function (): void {
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $workbenchRows = collect($catalogue['translations'])
+        ->where('group', 'workbench')
+        ->keyBy('key');
+    $locales = ['de', 'es', 'fr', 'it', 'nl', 'pt_BR'];
+    $reviewedKeys = [
+        'accessibility.entry_mode',
+        'settings.entry_mode',
+        'settings.cosmetic_percentage_entry_help',
+        'settings.cosmetic_weight_entry_help',
+        'settings.soap_percentage_entry_label',
+        'settings.soap_percentage_entry_help',
+        'settings.soap_weight_entry_help',
+        'row_actions.label',
+        'row_actions.move_up',
+        'row_actions.move_down',
+        'row_actions.move_to_phase',
+        'row_actions.remove',
+        'phase_removal.title',
+        'phase_removal.description_empty',
+        'phase_removal.description_one',
+        'phase_removal.description_many',
+        'phase_removal.cancel',
+        'phase_removal.confirm',
+        'output.cosmetic.title',
+        'output.cosmetic.help',
+        'output.cosmetic.batch_quantity',
+        'output.cosmetic.ingredient_rows',
+        'output.cosmetic.ingredients_title',
+        'output.cosmetic.ingredients_help',
+        'output.cosmetic.full_formula',
+        'output.cosmetic.empty',
+        'output.lists.cosmetic_generated_help',
+        'output.lists.soap_as_added_help',
+        'output.lists.soap_saponified_help',
+        'messages.ingredient_removed',
+        'messages.ingredient_list_replaced',
+        'messages.ingredient_list_cleared',
+        'messages.undo',
+    ];
+    $englishWorkbench = require lang_path('en/workbench.php');
+    $flatten = function (array $values, string $prefix = '') use (&$flatten): array {
+        $flattened = [];
+
+        foreach ($values as $key => $value) {
+            $fullKey = $prefix === '' ? $key : "{$prefix}.{$key}";
+
+            if (is_array($value)) {
+                $flattened = [...$flattened, ...$flatten($value, $fullKey)];
+
+                continue;
+            }
+
+            $flattened[$fullKey] = $value;
+        }
+
+        return $flattened;
+    };
+    $englishValues = $flatten($englishWorkbench);
+    $placeholderSet = function (string $value): array {
+        preg_match_all('/:[A-Za-z_][A-Za-z0-9_]*/', $value, $matches);
+        $placeholders = array_values(array_unique($matches[0]));
+        sort($placeholders);
+
+        return $placeholders;
+    };
+
+    $catalogueKeys = collect($catalogue['translations'])
+        ->map(fn (array $row): string => "{$row['group']}.{$row['key']}")
+        ->all();
+    $sortedCatalogueKeys = $catalogueKeys;
+    sort($sortedCatalogueKeys, SORT_STRING);
+
+    expect($catalogueKeys)->toBe($sortedCatalogueKeys)
+        ->and(count($catalogueKeys))->toBe(count(array_unique($catalogueKeys)))
+        ->and($workbenchRows->keys()->sort()->values()->all())
+        ->toBe(collect($englishValues)->keys()->sort()->values()->all())
+        ->and($catalogueKeys)->not->toContain('workbench.output.cosmetic.descending');
+
+    foreach ($reviewedKeys as $key) {
+        $english = $englishValues[$key];
+
+        expect($workbenchRows)->toHaveKey($key);
+
+        foreach ($locales as $locale) {
+            $translation = trim((string) data_get($workbenchRows[$key], "text.{$locale}"));
+
+            expect($translation, "Missing {$locale} translation for workbench.{$key}")
+                ->not->toBe('')
+                ->not->toBe($english)
+                ->and(array_keys($workbenchRows[$key]['text']))->toBe($locales)
+                ->and($placeholderSet($translation))
+                ->toBe($placeholderSet($english));
+        }
+    }
 });
 
 it('loads reviewed soap workbench translations from the database for every supported locale', function () {

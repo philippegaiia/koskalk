@@ -22,7 +22,7 @@
             this.open = true;
             this.$nextTick(() => {
                 this.reposition();
-                this.$refs.menu?.querySelector('[role=\"menuitem\"]:not([disabled])')?.focus();
+                this.$refs.menu?.querySelector('[role=menuitem]:not([disabled])')?.focus();
             });
         },
         closeMenu() {

@@ -502,6 +502,18 @@ it('uses one accessible row-actions menu in every formula ledger', function (): 
         ->toContain('focus()');
 });
 
+it('keeps teleported row-action menu selectors valid inside HTML attributes', function (): void {
+    $rowActionsSource = file_get_contents(resource_path('views/components/recipe-workbench/formula-row-actions.blade.php'));
+    $ingredientBrowserSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
+
+    expect($rowActionsSource)
+        ->toContain("querySelector('[role=menuitem]:not([disabled])')")
+        ->not->toContain('[role=\\"menuitem\\"]')
+        ->and($ingredientBrowserSource)
+        ->toContain("\$refs.phaseOptions?.querySelector('[role=menuitem]:not([disabled])')")
+        ->not->toContain('[role=\\"menuitem\\"]');
+});
+
 it('renders one accessible phase confirmation dialog and formula removal undo status', function (): void {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
     $confirmationModalPath = resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-confirmation-modal.blade.php');

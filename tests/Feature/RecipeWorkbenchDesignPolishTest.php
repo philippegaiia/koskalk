@@ -508,6 +508,9 @@ it('uses one accessible row-actions menu in every formula ledger', function (): 
         ->toContain('min-w-11')
         ->toContain('border-0')
         ->toContain('bg-transparent')
+        ->toContain('hover:text-[var(--color-ink-strong)]')
+        ->not->toContain('hover:bg-[var(--color-field-muted)]')
+        ->not->toContain('rounded-lg')
         ->not->toContain('border-[var(--color-line)]')
         ->not->toContain('bg-[var(--color-field)]')
         ->and(substr_count($reactionCoreSource, '<x-action-icon name="drag" />'))
@@ -564,6 +567,29 @@ it('renders one accessible phase confirmation dialog and formula removal undo st
         ->toContain('role="status"')
         ->toContain('undoFormulaRowRemoval')
         ->toMatch('/(?:Undo|undo)/');
+});
+
+it('renders formula row removal undo as a compact dismissible status', function (): void {
+    $bottomActionBarSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-bottom-action-bar.blade.php'));
+    preg_match('/<div\b(?=[^>]*x-show="removedFormulaRowUndo")(?=[^>]*class="([^"]+)")[^>]*>/s', $bottomActionBarSource, $statusMatches);
+    preg_match('/<button\b(?=[^>]*@click="undoFormulaRowRemoval\(\)")(?=[^>]*class="([^"]+)")[^>]*>/s', $bottomActionBarSource, $undoButtonMatches);
+    preg_match('/<button\b(?=[^>]*@click="removedFormulaRowUndo = null")(?=[^>]*class="([^"]+)")[^>]*>/s', $bottomActionBarSource, $dismissButtonMatches);
+
+    expect($statusMatches[1] ?? '')
+        ->toContain('flex items-center gap-2')
+        ->toContain('py-1.5')
+        ->not->toContain('flex-wrap')
+        ->not->toContain('py-2.5');
+
+    expect($undoButtonMatches[1] ?? '')
+        ->toContain('min-h-8')
+        ->not->toContain('min-h-11');
+
+    expect($dismissButtonMatches[1] ?? '')
+        ->toContain('size-8')
+        ->and($bottomActionBarSource)
+        ->toContain("aria-label=\"{{ __('Close') }}\"")
+        ->toContain('<x-action-icon name="close"');
 });
 
 it('keeps the original cosmetic phase chooser interaction', function (): void {

@@ -3,10 +3,13 @@
 <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
  <section id="formula-save-bar" aria-label="{{ __('workbench.accessibility.formula_save_bar') }}" class="pointer-events-auto relative mx-auto max-w-app rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_72%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
  <span class="sr-only">{{ __('workbench.accessibility.zero_quantity_note') }}</span>
- <div x-cloak x-show="removedFormulaRowUndo" role="status" aria-live="polite" class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-active-soft)] bg-[var(--color-active-soft)] px-3 py-2.5 text-sm text-[var(--color-active-strong)]">
- <span x-text="removedFormulaRowUndo?.message"></span>
- <button type="button" @click="undoFormulaRowRemoval()" class="sk-btn min-h-11 border border-[var(--color-active)] bg-[var(--color-panel)] text-[var(--color-active-strong)] hover:bg-[var(--color-active-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+ <div x-cloak x-show="removedFormulaRowUndo" role="status" aria-live="polite" class="mb-2 flex items-center gap-2 rounded-lg border border-[var(--color-active-soft)] bg-[var(--color-active-soft)] px-3 py-1.5 text-sm text-[var(--color-active-strong)]">
+ <span class="min-w-0 flex-1 truncate" x-text="removedFormulaRowUndo?.message"></span>
+ <button type="button" @click="undoFormulaRowRemoval()" class="inline-flex min-h-8 shrink-0 items-center rounded-md px-2.5 font-semibold text-[var(--color-active-strong)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
  {{ __('workbench.messages.undo') }}
+ </button>
+ <button type="button" @click="removedFormulaRowUndo = null" aria-label="{{ __('Close') }}" class="grid size-8 shrink-0 place-items-center text-[var(--color-active-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+ <x-action-icon name="close" />
  </button>
  </div>
  <div id="formula-bottom-diagnostics-details" x-cloak class="absolute inset-x-0 bottom-full z-40 mb-2 grid max-h-[min(60dvh,28rem)] transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFormulaDiagnosticsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">

@@ -880,7 +880,7 @@ it('keeps rich content text-only and enables library pickers after the recipe ha
         ->and($savedForm->getComponent('manufacturing_media_asset_ids'))->toBeNull();
 });
 
-it('keeps the ingredient browser rail sticky on large screens and moves soap fatty acids below the table on mobile', function () {
+it('keeps the desktop ingredient rail row-bounded and moves soap fatty acids below the table on mobile', function () {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
@@ -888,14 +888,15 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
         ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('order-1 min-w-0 @5xl/workbench:col-start-1')
         ->toContain('order-2 min-w-0 space-y-4 @5xl/workbench:col-start-2')
-        ->toContain('class="h-full space-y-4"')
-        ->toContain("id=\"formula-ingredient-browser\" x-ref=\"ingredientBrowserRail\" x-cloak class=\"@5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start\" :class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
+        ->toContain('class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
+        ->toContain("id=\"formula-ingredient-browser\" x-ref=\"ingredientBrowserRail\" x-cloak :class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
         ->toContain('class="hidden @5xl/workbench:block"')
         ->toContain('@5xl/workbench:hidden')
         ->toContain('data-ingredient-browser-disclosure')
         ->not->toContain('lg:max-h-[calc(100vh-7rem)]')
         ->not->toContain('lg:overflow-y-auto')
         ->not->toContain('lg:pr-1')
+        ->not->toContain('x-ref="ingredientBrowserRail" x-cloak class="@5xl/workbench:sticky')
         ->not->toContain('class="hidden xl:block"')
         ->not->toContain('class="xl:hidden"');
 

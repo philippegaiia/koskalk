@@ -65,6 +65,72 @@ JS;
     expect($process->getOutput())->toBe('');
 });
 
+it('rebalances formula percentages from edited weights without changing the oil basis', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const {
+    updateFormulaPercentagesFromWeights,
+    updateOilPercentagesFromWeights,
+    updatePercentageFromWeight,
+} = await import('./resources/js/recipe-workbench/calculation.js');
+
+const cosmeticRows = [
+    { id: 'water', percentage: 60 },
+    { id: 'oil', percentage: 40 },
+];
+const cosmeticResult = updateFormulaPercentagesFromWeights(cosmeticRows, 100, 'water', 30);
+
+assert.equal(cosmeticResult.totalWeight, 70);
+assert.equal(cosmeticResult.percentagesByRowId.get('water'), 42.857);
+assert.equal(cosmeticResult.percentagesByRowId.get('oil'), 57.143);
+
+const soapOils = [
+    { id: 'olive', percentage: 75 },
+    { id: 'coconut', percentage: 25 },
+];
+const soapResult = updateOilPercentagesFromWeights(soapOils, 1000, 'olive', 500);
+
+assert.equal(soapResult.oilWeight, 750);
+assert.equal(soapResult.percentagesByRowId.get('olive'), 66.667);
+assert.equal(soapResult.percentagesByRowId.get('coconut'), 33.333);
+
+const totalOilWeight = 1000;
+const soapAdditionWeight = 250;
+const percentage = updatePercentageFromWeight(totalOilWeight, soapAdditionWeight);
+
+assert.equal(percentage, 25);
+assert.equal(totalOilWeight, 1000);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->mustRun();
+
+    expect($process->getOutput())->toBe('');
+});
+
 it('uses conversion actions and all four mass units in both formula benches', function (): void {
     $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
 

@@ -37,6 +37,95 @@ JS;
     expect($process->getOutput())->toBe('');
 });
 
+it('formats percentage totals with locale-aware two-decimal precision', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+
+const numberLocales = {
+    en: 'en-US',
+    fr: 'fr-FR',
+};
+
+const createState = (numberLocale) => {
+    const state = Object.create(createFormulaSection());
+
+    Object.assign(state, {
+        numberLocale,
+        phaseItems: {},
+        number(value) {
+            if (typeof value === 'number') {
+                return value;
+            }
+
+            const locale = numberLocales[this.numberLocale];
+            const decimalSeparator = new Intl.NumberFormat(locale)
+                .formatToParts(1.1)
+                .find((part) => part.type === 'decimal')?.value ?? '.';
+            const groupSeparator = new Intl.NumberFormat(locale)
+                .formatToParts(1000)
+                .find((part) => part.type === 'group')?.value ?? '';
+            const normalizedValue = String(value)
+                .trim()
+                .replaceAll(groupSeparator, '')
+                .replace(decimalSeparator, '.');
+
+            return Number(normalizedValue);
+        },
+        format(value, decimals = 2) {
+            return new Intl.NumberFormat(numberLocales[this.numberLocale], {
+                maximumFractionDigits: decimals,
+                minimumFractionDigits: decimals,
+                useGrouping: false,
+            }).format(this.number(value));
+        },
+    });
+
+    return state;
+};
+
+const english = createState('en');
+assert.equal(english.formatPercentageTotal(100), '100');
+assert.equal(english.formatPercentageTotal(99.75), '99.75');
+assert.equal(english.formatPercentageTotal(100.004), '100');
+assert.equal(english.formatPercentageTotal(100.006), '100.01');
+
+const french = createState('fr');
+assert.equal(french.formatPercentageTotal(100), '100');
+assert.equal(french.formatPercentageTotal(99.75), '99,75');
+assert.equal(french.formatPercentageTotal(100.004), '100');
+assert.equal(french.formatPercentageTotal(100.006), '100,01');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->mustRun();
+
+    expect($process->getOutput())->toBe('');
+});
+
 it('uses unit-aware precision for soap lye, liquids, additions, and batch totals', function (): void {
     $formulaSection = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
     $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));

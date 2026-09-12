@@ -534,6 +534,8 @@ it('keeps cosmetic phase editing calm and guarded', function () {
         ->not->toContain('border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
+        ->toContain('x-text="`${format(row.percentage, 2)}%`"')
+        ->toContain('format(cosmeticPhasePercentageTotal(phase.key), 2)')
         ->not->toContain(':value="format(rowWeight(row), 3)"')
         ->not->toContain("'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'")
         ->toContain('Drop ingredients here')
@@ -560,6 +562,9 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
         'isCosmeticWorkbench' => true,
     ])->render();
     $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
+    $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isCosmeticWorkbench' => true,
+    ])->render();
 
     expect($header)
         ->toContain('manufacturingModeLabel')
@@ -583,8 +588,15 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
         ->toContain('IFRA category')
         ->and($cosmeticFormula)
         ->toContain('Formula total</div>')
+        ->toContain('formatPercentageTotal(totalOilPercentage())')
+        ->toContain('format(cosmeticFormulaWeightTotal(), 3)')
         ->toContain('cosmeticFormulaWeightTotal()')
         ->not->toContain('<p class="text-sm text-[var(--color-ink-soft)]">')
+        ->and($outputTab)
+        ->toContain('x-text="`${format(cosmeticOutputIngredientTotalWeight, 3)} ${oilUnit}`"')
+        ->toContain('x-text="format(cosmeticOutputIngredientTotalWeight, 3)"')
+        ->not->toContain('x-text="`${format(oilWeight, 3)} ${oilUnit}`"')
+        ->toContain('formatPercentageTotal(cosmeticOutputIngredientTotalPercent)')
         ->and(substr_count($cosmeticFormula, 'Drop ingredients here'))->toBeGreaterThanOrEqual(2);
 });
 

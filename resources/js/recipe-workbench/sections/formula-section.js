@@ -37,6 +37,18 @@ export function createFormulaSection() {
             return this.productFamilySlug === 'cosmetic';
         },
 
+        get entryModeHelperText() {
+            if (this.editMode === 'weight') {
+                return this.isCosmeticFormula
+                    ? this.t('settings.cosmetic_weight_entry_help')
+                    : this.t('settings.soap_weight_entry_help');
+            }
+
+            return this.isCosmeticFormula
+                ? this.t('settings.cosmetic_percentage_entry_help')
+                : this.t('settings.soap_percentage_entry_help');
+        },
+
         get oilRows() {
             return this.phaseItems.saponified_oils ?? [];
         },

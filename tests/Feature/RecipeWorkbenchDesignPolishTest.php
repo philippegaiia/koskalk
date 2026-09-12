@@ -1531,6 +1531,65 @@ it('collapses formula settings into a setup summary for soap and cosmetic benche
         ->not->toContain('class="sk-card p-3');
 });
 
+it('surfaces one shared entry mode control immediately above each formula ledger', function (): void {
+    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
+    $formulaSettingsSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $formulaSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
+    $translationSource = file_get_contents(lang_path('en/workbench.php'));
+    $soapFormulaTab = view('livewire.dashboard.partials.recipe-workbench.formula-tab')->render();
+    $cosmeticFormulaTab = view('livewire.dashboard.partials.recipe-workbench.formula-tab', [
+        'isCosmeticWorkbench' => true,
+    ])->render();
+    $entryModeTogglePath = resource_path('views/components/recipe-workbench/entry-mode-toggle.blade.php');
+
+    $entryModeToggle = file_exists($entryModeTogglePath)
+        ? file_get_contents($entryModeTogglePath)
+        : '';
+
+    $entryModeComponentPosition = strpos($formulaTabSource, '<x-recipe-workbench.entry-mode-toggle />');
+    $formulaBranchPosition = strpos($formulaTabSource, '@if ($isCosmeticWorkbench)');
+
+    expect(substr_count($formulaTabSource, '<x-recipe-workbench.entry-mode-toggle />'))
+        ->toBe(1)
+        ->and($entryModeComponentPosition)
+        ->toBeLessThan($formulaBranchPosition)
+        ->and($formulaSettingsSource)
+        ->not->toContain('id="setting-entry-mode"')
+        ->not->toContain('id="setting-entry-mode-soap"')
+        ->and($formulaSectionSource)
+        ->toContain("id: 'formula-entry'")
+        ->toContain("value: this.editMode === 'weight' ? this.t('common.weight')")
+        ->toContain('get entryModeHelperText()')
+        ->toContain("this.t('settings.cosmetic_weight_entry_help')")
+        ->toContain("this.t('settings.soap_weight_entry_help')")
+        ->toContain("this.t('settings.cosmetic_percentage_entry_help')")
+        ->toContain("this.t('settings.soap_percentage_entry_help')")
+        ->and($translationSource)
+        ->toContain("'cosmetic_percentage_entry_help' => 'Set formula shares; quantities follow the total batch.'")
+        ->toContain("'cosmetic_weight_entry_help' => 'Set ingredient quantities; total batch and percentages recalculate.'")
+        ->toContain("'soap_percentage_entry_label' => '% oils'")
+        ->toContain("'soap_percentage_entry_help' => 'Set oil and addition shares; quantities follow total oils.'")
+        ->toContain("'soap_weight_entry_help' => 'Oil quantities recalculate total oils and % oils; additions remain based on total oils.'")
+        ->and(substr_count($soapFormulaTab, 'id="formula-entry-mode-heading"'))
+        ->toBe(1)
+        ->and(substr_count($cosmeticFormulaTab, 'id="formula-entry-mode-heading"'))
+        ->toBe(1)
+        ->and($entryModeTogglePath)
+        ->toBeFile()
+        ->and($entryModeToggle)
+        ->toContain('<section class="flex flex-col gap-2 rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="formula-entry-mode-heading">')
+        ->toContain('aria-labelledby="formula-entry-mode-heading"')
+        ->toContain('role="radiogroup"')
+        ->toContain(':aria-checked="editMode === \'percentage\'"')
+        ->toContain(':aria-checked="editMode === \'weight\'"')
+        ->toContain('x-text="entryModeHelperText"')
+        ->and(substr_count($entryModeToggle, 'min-h-11'))
+        ->toBe(2)
+        ->and($entryModeToggle)
+        ->toContain("'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm'")
+        ->toContain("'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'");
+});
+
 it('uses the open setup tone surfaces for collapsed and sticky formula summaries', function () {
     $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
     $bottomActionBar = view('livewire.dashboard.partials.recipe-workbench.formula-bottom-action-bar')->render();

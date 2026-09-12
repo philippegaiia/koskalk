@@ -93,6 +93,24 @@ it('requires a Product Type before opening a new cosmetic formula', function () 
         ->assertDontSee('Saponified oils + lye water');
 });
 
+it('keeps cosmetic amount entry beside the formula ledger when settings are collapsed', function (): void {
+    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
+    $formulaSettingsSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $entryModeTogglePath = resource_path('views/components/recipe-workbench/entry-mode-toggle.blade.php');
+    $entryModeToggle = file_exists($entryModeTogglePath)
+        ? file_get_contents($entryModeTogglePath)
+        : '';
+
+    expect(substr_count($formulaTabSource, '<x-recipe-workbench.entry-mode-toggle />'))
+        ->toBe(1)
+        ->and($formulaSettingsSource)
+        ->not->toContain('id="setting-entry-mode"')
+        ->not->toContain('id="setting-entry-mode-soap"')
+        ->and($entryModeToggle)
+        ->toContain('x-text="isCosmeticFormula ? t(\'common.formula_percent\') : t(\'settings.soap_percentage_entry_label\')"')
+        ->toContain('entryModeHelperText');
+});
+
 it('keeps cosmetic formula percentages balanced when editing weights', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
@@ -561,6 +579,7 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
     $settings = view('livewire.dashboard.partials.recipe-workbench.formula-settings', [
         'isCosmeticWorkbench' => true,
     ])->render();
+    $entryModeToggle = view('components.recipe-workbench.entry-mode-toggle')->render();
     $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
     $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
         'isCosmeticWorkbench' => true,
@@ -582,10 +601,12 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
         ->toContain('Product category')
         ->toContain('Choose later')
         ->toContain('Total batch quantity')
-        ->toContain('Enter amounts as')
+        ->not->toContain('Enter amounts as')
         ->toContain('Product use')
         ->toContain('Regulatory framework')
         ->toContain('IFRA category')
+        ->and($entryModeToggle)
+        ->toContain('Enter amounts as')
         ->and($cosmeticFormula)
         ->toContain('Formula total</div>')
         ->toContain('formatPercentageTotal(totalOilPercentage())')

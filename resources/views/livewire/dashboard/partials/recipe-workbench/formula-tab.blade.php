@@ -27,6 +27,7 @@
  </div>
  </div>
  <div class="order-2 min-w-0 space-y-4 @5xl/workbench:col-start-2 @5xl/workbench:row-start-1">
+ <x-recipe-workbench.entry-mode-toggle />
  @if ($isCosmeticWorkbench)
  @include('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')
  @else

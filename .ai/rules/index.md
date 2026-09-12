@@ -26,7 +26,8 @@ Before planning or editing, find the row whose globs match the file's path and r
 | database/migrations/** | .ai/rules/migrations.md |
 | app/{Models,Services}/** | .ai/rules/models-services.md |
 | app/Models/**, app/Models/{ProductArea,ProductCategory,ProductType,IfraProductCategory}.php | .ai/rules/models.md |
-| {app/Http/Controllers/RecipeController.php,app/Policies/RecipePolicy.php,resources/views/**/recipe*.blade.php} | .ai/rules/policies-views.md |
+| resources/views/livewire/dashboard/partials/recipe-workbench/** | .ai/rules/partials-recipe-workbench.md |
+| app/Http/Controllers/RecipeController.php, app/Policies/RecipePolicy.php, resources/views/**/recipe*.blade.php | .ai/rules/policies-views.md |
 | app/Policies/** | .ai/rules/policies.md |
 | {resources/views/livewire/production-bench/purchasing/procurement-index.blade.php,resources/views/livewire/production-bench/purchasing/receipt-detail.blade.php} | .ai/rules/production-bench-purchasing.md |
 | resources/views/components/production-bench/** | .ai/rules/production-bench.md |

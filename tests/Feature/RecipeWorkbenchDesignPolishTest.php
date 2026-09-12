@@ -888,8 +888,8 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
         ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('order-1 min-w-0 @5xl/workbench:col-start-1')
         ->toContain('order-2 min-w-0 space-y-4 @5xl/workbench:col-start-2')
-        ->toContain('class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
-        ->toContain(":class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
+        ->toContain('class="h-full space-y-4"')
+        ->toContain("id=\"formula-ingredient-browser\" x-ref=\"ingredientBrowserRail\" x-cloak class=\"@5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start\" :class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
         ->toContain('class="hidden @5xl/workbench:block"')
         ->toContain('@5xl/workbench:hidden')
         ->toContain('data-ingredient-browser-disclosure')
@@ -898,6 +898,8 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
         ->not->toContain('lg:pr-1')
         ->not->toContain('class="hidden xl:block"')
         ->not->toContain('class="xl:hidden"');
+
+    expect(substr_count($formulaTabSource, '@5xl/workbench:sticky'))->toBe(1);
 
     expect($ingredientBrowser)
         ->toContain('Add ingredients')

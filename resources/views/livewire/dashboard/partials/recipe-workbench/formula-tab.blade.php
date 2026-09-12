@@ -8,7 +8,7 @@
  class="grid min-w-0 gap-4 @5xl/workbench:grid-cols-[19rem_minmax(0,1fr)] @5xl/workbench:gap-6 @7xl/workbench:gap-8"
  >
  <div class="order-1 min-w-0 @5xl/workbench:col-start-1 @5xl/workbench:row-start-1">
- <div class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start">
+ <div class="h-full space-y-4">
  <button type="button" data-ingredient-browser-disclosure @click="ingredientBrowserOpen = ! ingredientBrowserOpen" :aria-expanded="ingredientBrowserOpen.toString()" aria-controls="formula-ingredient-browser" class="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-left text-sm font-semibold text-[var(--color-ink-strong)] @5xl/workbench:hidden">
  <span>{{ __('workbench.ingredients.title') }}</span>
  <span class="text-[var(--color-ink-soft)]">
@@ -16,7 +16,7 @@
  <x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />
  </span>
  </button>
- <div id="formula-ingredient-browser" x-ref="ingredientBrowserRail" x-cloak :class="ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'">
+ <div id="formula-ingredient-browser" x-ref="ingredientBrowserRail" x-cloak class="@5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start" :class="ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'">
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-browser')
  </div>
  @unless ($isCosmeticWorkbench)

@@ -1,12 +1,12 @@
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
-<aside class="flex min-h-0 flex-1 flex-col">
- <div class="flex min-h-0 flex-1 flex-col overflow-visible sk-card sk-tone-catalog">
- <div class="sk-section-header shrink-0 border-b border-[var(--color-line)] px-4 py-4">
+<aside class="space-y-4">
+ <div class="overflow-visible sk-card sk-tone-catalog">
+ <div class="sk-section-header border-b border-[var(--color-line)] px-4 py-4">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.ingredients.title') }}</h3>
  </div>
 
- <div class="relative z-20 shrink-0 space-y-3 border-b border-[var(--color-line)] px-4 py-4">
+ <div class="relative z-20 space-y-3 border-b border-[var(--color-line)] px-4 py-4">
  <input x-model="search" type="search" placeholder="{{ __('workbench.ingredients.search_placeholder') }}" aria-label="{{ __('workbench.ingredients.search_label') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
  <x-search-combobox
@@ -21,11 +21,11 @@
  />
  </div>
 
- <div class="shrink-0 border-b border-[var(--color-line)] px-5 py-3">
+ <div class="border-b border-[var(--color-line)] px-5 py-3">
  <p class="text-sm text-[var(--color-ink-soft)]" x-text="filteredIngredients.length === 1 ? t('ingredients.count_singular') : t('ingredients.count_plural', { count: filteredIngredients.length })"></p>
  </div>
 
- <div class="relative z-10 min-h-0 flex-1 max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}" @scroll="$dispatch('ingredient-list-scrolled')">
+ <div class="relative z-10 max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
@@ -149,27 +149,21 @@
  this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
  },
  }" class="relative">
- <button type="button" x-ref="trigger" :id="`formula-phase-trigger-${ingredient.id}`" :aria-controls="`formula-phase-options-${ingredient.id}`" @click.stop="if (open) { open = false; if ($event.detail > 0) { $event.currentTarget.blur(); } } else { $dispatch('phase-chooser-opened', { ingredientId: ingredient.id }); open = true; $nextTick(() => { reposition(); $refs.phaseOptions?.querySelector('[role=menuitem]:not([disabled])')?.focus(); }); }" class="grid min-h-11 min-w-11 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
+ <button type="button" x-ref="trigger" @click.stop="open = !open; if (open) { $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
  <x-action-icon name="plus" />
  </button>
  <template x-teleport="body">
  <div x-show="open"
  x-transition.opacity
  x-cloak
- @phase-chooser-opened.window="if ($event.detail.ingredientId !== ingredient.id) { open = false; }"
- @ingredient-list-scrolled.window="open = false"
-	 @click.outside="open = false"
-	 @keydown.escape.window="if (open) { $event.preventDefault(); $event.stopPropagation(); open = false; $nextTick(() => $refs.trigger?.focus()); }"
-	 @scroll.window="if (open) { open = false; }"
+ @click.outside="open = false"
+ @keydown.escape.window="open = false"
+ @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
- x-ref="phaseOptions"
- :id="`formula-phase-options-${ingredient.id}`"
- :aria-labelledby="`formula-phase-trigger-${ingredient.id}`"
- role="menu"
  class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
- <button type="button" role="menuitem" @click.stop="const shouldRestoreFocus = $event.detail === 0; addIngredient(ingredient, phase.key); open = false; if (shouldRestoreFocus) { $nextTick(() => $refs.trigger?.focus()); }" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]">
+ <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)]">
  <span class="truncate" x-text="t('cosmetic.add_to_phase', { phase: phase.name || humanizeKey(phase.key) })"></span>
  <span class="numeric text-[var(--color-ink-soft)]" x-text="`${format(cosmeticPhasePercentageTotal(phase.key), 1)}%`"></span>
  </button>

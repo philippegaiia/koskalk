@@ -68,7 +68,7 @@
         :aria-controls="`formula-row-actions-${row.id}`"
         aria-haspopup="menu"
         :aria-label="t('row_actions.label', { ingredient: row.name })"
-        class="grid min-h-11 min-w-11 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-line-strong)] hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        class="grid min-h-11 min-w-11 place-items-center rounded-lg border-0 bg-transparent text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
     >
         <x-action-icon name="more-horizontal" />
     </button>

@@ -468,6 +468,9 @@ it('uses one accessible row-actions menu in every formula ledger', function (): 
     $rowActionsSource = file_exists($rowActionsPath)
         ? file_get_contents($rowActionsPath)
         : '';
+    $rowTemplateSources = implode("\n", [$reactionCoreSource, $postReactionSource, $cosmeticFormulaSource]);
+    preg_match('/<button\b(?=[^>]*\bx-ref="trigger")[^>]*\bclass="([^"]+)"[^>]*>/s', $rowActionsSource, $triggerMatches);
+    $rowActionsTriggerClass = $triggerMatches[1] ?? '';
 
     expect(substr_count($reactionCoreSource, '<x-recipe-workbench.formula-row-actions'))
         ->toBe(1)
@@ -499,7 +502,25 @@ it('uses one accessible row-actions menu in every formula ledger', function (): 
         ->toMatch('/x-for="[^\"]*(?:phase|Phase)[^\"]*"/')
         ->toMatch('/[Pp]hase\\.key/')
         ->not->toMatch('/x-for="[^\"]*\\bin\\s+phaseOrder/')
-        ->toContain('focus()');
+        ->toContain('focus()')
+        ->and($rowActionsTriggerClass)
+        ->toContain('min-h-11')
+        ->toContain('min-w-11')
+        ->toContain('border-0')
+        ->toContain('bg-transparent')
+        ->not->toContain('border-[var(--color-line)]')
+        ->not->toContain('bg-[var(--color-field)]')
+        ->and(substr_count($reactionCoreSource, '<x-action-icon name="drag" />'))
+        ->toBe(1)
+        ->and(substr_count($postReactionSource, '<x-action-icon name="drag" />'))
+        ->toBe(2)
+        ->and(substr_count($cosmeticFormulaSource, '<x-action-icon name="drag" />'))
+        ->toBe(1)
+        ->and($rowTemplateSources)
+        ->not->toMatch('/<button\b[^>]*(?:moveFormulaRow(?:By|ToPhase)|row_actions\.move_(?:up|down)|Move\s+(?:up|down))[^>]*>/i');
+
+    expect(substr_count($rowActionsSource, 'row_actions.move_up'))->toBe(1);
+    expect(substr_count($rowActionsSource, 'row_actions.move_down'))->toBe(1);
 });
 
 it('keeps teleported row-action menu selectors valid inside HTML attributes', function (): void {
@@ -551,8 +572,42 @@ it('renders one accessible phase confirmation dialog and formula removal undo st
 
 it('makes the cosmetic phase chooser a labelled focus-managed popover', function (): void {
     $ingredientBrowserSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
+    $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
 
     $phaseChooserId = ':id="`formula-phase-options-${ingredient.id}`"';
+    $phaseChooserStart = strpos($ingredientBrowserSource, '<template x-if="phaseOrder.length > 1">');
+    $phaseChooserSource = $phaseChooserStart === false
+        ? ''
+        : substr($ingredientBrowserSource, $phaseChooserStart);
+    preg_match('/<div\b(?=[^>]*\brole="region")[^>]*>/s', $ingredientBrowserSource, $ingredientListMatches);
+    preg_match('/@click\.outside="([^"]*)"/', $phaseChooserSource, $outsideClickMatches);
+    preg_match('/@keydown\.escape\.window="([^"]*)"/', $phaseChooserSource, $escapeMatches);
+    preg_match('/<button\b(?=[^>]*\bx-ref="trigger")(?=[^>]*@click\.stop="([^"]*)")[^>]*>/s', $phaseChooserSource, $phaseTriggerClickMatches);
+    preg_match('/@phase-chooser-opened\.window="([^"]*)"/', $phaseChooserSource, $phaseChooserOpenedMatches);
+    preg_match('/\$dispatch\(\s*[\'"]phase-chooser-opened[\'"]\s*,\s*\{\s*(?<key>[A-Za-z_$][A-Za-z0-9_$]*)\s*:\s*ingredient\.id\s*\}\s*\)/', $ingredientBrowserSource, $phaseChooserDispatchMatches);
+    preg_match('/@click\.stop="([^"]*addIngredient\(ingredient, phase\.key\)[^"]*)"/', $phaseChooserSource, $phaseSelectionMatches);
+    preg_match_all('/@scroll\.window="([^"]*)"/', $phaseChooserSource, $windowScrollMatches);
+    $ingredientListTag = $ingredientListMatches[0] ?? '';
+    $hasDirectIngredientListClose = preg_match('/@scroll="[^\"]*(?:open\s*=\s*false|closePhaseChooser\(\)|phaseChooserOpenId\s*=\s*null|activePhaseChooserId\s*=\s*null)[^\"]*"/', $ingredientListTag) === 1;
+    $hasIngredientListScrollEvent = preg_match('/@scroll="[^\"]*\$dispatch\([\'"]ingredient-list-scrolled[\'"]/', $ingredientListTag) === 1
+        && preg_match('/@ingredient-list-scrolled\.window="[^\"]*(?:open\s*=\s*false|closePhaseChooser\(\)|phaseChooserOpenId\s*=\s*null|activePhaseChooserId\s*=\s*null)[^\"]*"/', $phaseChooserSource) === 1;
+
+    $phaseChooserOpenedHandler = $phaseChooserOpenedMatches[1] ?? '';
+    $phaseChooserEventIdKey = $phaseChooserDispatchMatches['key'] ?? null;
+    $hasSharedPhaseChooserEventSemantics = $phaseChooserEventIdKey !== null
+        && preg_match('/if\s*\(\s*\$event\.detail\.'.preg_quote($phaseChooserEventIdKey, '/').'\s*!==?\s*ingredient\.id\s*\)\s*\{\s*open\s*=\s*false;?\s*\}/', $phaseChooserOpenedHandler) === 1;
+    $sharedPhaseChooserId = preg_match('/\b(phaseChooserOpenId|activePhaseChooserId)\b/', $componentSource.$ingredientBrowserSource, $sharedPhaseChooserIdMatches) === 1
+        ? $sharedPhaseChooserIdMatches[1]
+        : null;
+    $hasSharedPhaseChooserIdSemantics = $sharedPhaseChooserId !== null
+        && preg_match('/'.preg_quote($sharedPhaseChooserId, '/').'\s*=\s*ingredient\.id/', $componentSource.$ingredientBrowserSource) === 1
+        && preg_match('/'.preg_quote($sharedPhaseChooserId, '/').'\s*!==?\s*ingredient\.id/', $componentSource.$ingredientBrowserSource) === 1
+        && preg_match('/'.preg_quote($sharedPhaseChooserId, '/').'\s*=\s*null/', $componentSource.$ingredientBrowserSource) === 1;
+    $phaseTriggerClickHandler = $phaseTriggerClickMatches[1] ?? '';
+    $hasPointerToggleBlur = preg_match('/if\s*\(open\)[\s\S]*?(?:\$event|event)\.detail\s*(?:>\s*0|!==?\s*0|>=\s*1)[\s\S]*?(?:\$event|event)\.currentTarget\.blur\(\)/', $phaseTriggerClickHandler) === 1;
+    $phaseSelectionHandler = $phaseSelectionMatches[1] ?? '';
+    $phaseSelectionRestoresFocusWithoutKeyboardGuard = str_contains($phaseSelectionHandler, 'focus()')
+        && preg_match('/(?:\$event|event)\.detail\s*===?\s*0/', $phaseSelectionHandler) !== 1;
 
     expect($ingredientBrowserSource)
         ->toContain('aria-haspopup="menu"')
@@ -562,10 +617,47 @@ it('makes the cosmetic phase chooser a labelled focus-managed popover', function
         ->toContain(':aria-labelledby="`formula-phase-trigger-${ingredient.id}`"')
         ->toContain('role="menu"')
         ->toContain('aria-labelledby=')
-        ->toContain('@click.outside="open = false; $nextTick(() => $refs.trigger?.focus())"')
-        ->toContain('@keydown.escape.window="if (open) { $event.preventDefault(); $event.stopPropagation(); open = false; $nextTick(() => $refs.trigger?.focus()); }"')
         ->toContain('$nextTick(() => { reposition(); $refs.phaseOptions?.querySelector')
         ->toMatch('/x-ref="[^\"]*trigger"/');
+
+    expect($hasSharedPhaseChooserEventSemantics || $hasSharedPhaseChooserIdSemantics)->toBeTrue();
+
+    expect($hasPointerToggleBlur)->toBeTrue();
+    expect(substr_count($phaseTriggerClickHandler, 'currentTarget.blur()'))->toBe(1);
+
+    expect($outsideClickMatches[1] ?? null)
+        ->toMatch('/(?:open\s*=\s*false|closePhaseChooser\(\)|phaseChooserOpenId\s*=\s*null|activePhaseChooserId\s*=\s*null)/')
+        ->not->toContain('focus()');
+
+    expect($hasDirectIngredientListClose || $hasIngredientListScrollEvent)->toBeTrue();
+
+    expect($windowScrollMatches[1] ?? [])->not->toBeEmpty();
+
+    $windowScrollCloseHandlers = array_filter(
+        $windowScrollMatches[1] ?? [],
+        fn (string $handler): bool => preg_match('/(?:open\s*=\s*false|closePhaseChooser\(\)|phaseChooserOpenId\s*=\s*null|activePhaseChooserId\s*=\s*null)/', $handler) === 1
+            && ! str_contains($handler, 'reposition()'),
+    );
+
+    expect($windowScrollCloseHandlers)->not->toBeEmpty();
+
+    expect($escapeMatches[1] ?? null)
+        ->toMatch('/(?:open\s*=\s*false|closePhaseChooser\(\)|phaseChooserOpenId\s*=\s*null|activePhaseChooserId\s*=\s*null)/')
+        ->toContain('focus()');
+
+    expect($phaseSelectionHandler)
+        ->toContain('addIngredient(ingredient, phase.key)')
+        ->toContain('open = false');
+
+    expect($phaseSelectionRestoresFocusWithoutKeyboardGuard)->toBeFalse();
+
+    expect(substr_count($ingredientBrowserSource, ':id="`formula-phase-trigger-${ingredient.id}`"'))
+        ->toBe(1)
+        ->and(substr_count($ingredientBrowserSource, $phaseChooserId))
+        ->toBe(1)
+        ->and($ingredientBrowserSource)
+        ->not->toContain('id="formula-phase-trigger"')
+        ->not->toContain('id="formula-phase-options"');
 
 });
 
@@ -845,24 +937,30 @@ it('keeps rich content text-only and enables library pickers after the recipe ha
 it('keeps the ingredient browser rail sticky on large screens and moves soap fatty acids below the table on mobile', function () {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    preg_match('/<div class="([^"]+)" role="region"[^>]*aria-label="[^"]*ingredient/i', $ingredientBrowser, $ingredientResultsMatches);
+    $ingredientResultsClass = $ingredientResultsMatches[1] ?? '';
 
     expect($formulaTabSource)
         ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('order-1 min-w-0 @5xl/workbench:col-start-1')
         ->toContain('order-2 min-w-0 space-y-4 @5xl/workbench:col-start-2')
-        ->toContain('class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
-        ->toContain('class="hidden @5xl/workbench:block"')
+        ->toContain('class="flex min-h-0 flex-col gap-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:max-h-[calc(100dvh-2rem)] @5xl/workbench:self-start"')
+        ->toContain("id=\"formula-ingredient-browser\" x-ref=\"ingredientBrowserRail\" x-cloak class=\"min-h-0 flex-1 flex-col\" :class=\"ingredientBrowserOpen ? 'flex' : 'hidden @5xl/workbench:flex'\"")
+        ->toContain(":class=\"ingredientBrowserOpen ? 'flex' : 'hidden @5xl/workbench:flex'\"")
+        ->toContain('class="hidden shrink-0 @5xl/workbench:block"')
         ->toContain('@5xl/workbench:hidden')
         ->toContain('data-ingredient-browser-disclosure')
-        ->not->toContain('lg:max-h-[calc(100vh-7rem)]')
-        ->not->toContain('lg:overflow-y-auto')
-        ->not->toContain('lg:pr-1')
+        ->not->toContain('@5xl/workbench:overflow-y-auto')
+        ->not->toContain('overflow-hidden')
         ->not->toContain('class="hidden xl:block"')
         ->not->toContain('class="xl:hidden"');
 
     expect($ingredientBrowser)
         ->toContain('Add ingredients')
         ->toContain('text-lg font-semibold')
+        ->toContain('class="flex min-h-0 flex-1 flex-col overflow-visible sk-card sk-tone-catalog"')
+        ->toContain('<aside class="flex min-h-0 flex-1 flex-col">')
+        ->toContain('data-search-combobox="ingredient-category-search"')
         ->not->toContain('Filtered by category')
         ->not->toContain('mt-2 text-xl font-semibold')
         ->toContain('max-h-[18rem]')
@@ -870,6 +968,11 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
         ->toContain('lg:max-h-[24rem]')
         ->toContain('xl:max-h-[600px]')
         ->not->toContain('Fatty acid profile');
+
+    expect($ingredientResultsClass)
+        ->toContain('min-h-0')
+        ->toContain('flex-1')
+        ->toContain('overflow-y-auto');
 
     expect(strpos($formulaTabSource, 'aria-controls="formula-ingredient-browser"'))
         ->toBeGreaterThan(strpos($formulaTabSource, 'data-ingredient-browser-disclosure'))
@@ -887,7 +990,8 @@ it('keeps the narrow ingredient disclosure discoverable while sharing one catalo
         ->toContain('<x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />')
         ->toContain('id="formula-ingredient-browser"')
         ->toContain('x-ref="ingredientBrowserRail"')
-        ->toContain(":class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
+        ->toContain("id=\"formula-ingredient-browser\" x-ref=\"ingredientBrowserRail\" x-cloak class=\"min-h-0 flex-1 flex-col\" :class=\"ingredientBrowserOpen ? 'flex' : 'hidden @5xl/workbench:flex'\"")
+        ->toContain(":class=\"ingredientBrowserOpen ? 'flex' : 'hidden @5xl/workbench:flex'\"")
         ->not->toContain('id="formula-ingredient-browser" x-show="ingredientBrowserOpen"')
         ->not->toContain('<details');
 

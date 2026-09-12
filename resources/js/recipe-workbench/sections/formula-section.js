@@ -266,7 +266,7 @@ export function createFormulaSection() {
             return {
                 id: 'formula-balance',
                 label: this.isCosmeticFormula ? this.t('cosmetic.balance_label') : this.t('status.oils'),
-                value: `${this.format(total, 2)}%`,
+                value: `${this.formatPercentageTotal(total)}%`,
                 detail: this.oilPercentageIsBalanced
                     ? this.t('status.ready')
                     : this.t('status.balanced_remaining', { amount: this.format(delta, 2) }),
@@ -470,6 +470,12 @@ export function createFormulaSection() {
             const value = this.number(card?.value ?? 0);
 
             return this.format(value, this.calculatedMassDecimals(value));
+        },
+
+        formatPercentageTotal(value) {
+            const readout = this.number(this.format(value, 2));
+
+            return this.format(readout, Number.isInteger(readout) ? 0 : 2);
         },
 
         nonNegativeNumber(value) {

@@ -297,7 +297,7 @@ export function createPresentationSection() {
                     {
                         id: 'formula-total',
                         label: 'Formula total',
-                        value: `${this.format(this.totalOilPercentage(), 2)}%`,
+                        value: `${this.formatPercentageTotal(this.totalOilPercentage())}%`,
                     },
                     {
                         id: 'batch-weight',
@@ -385,11 +385,13 @@ export function createPresentationSection() {
         },
 
         get ingredientListVariantHelperText() {
-            if (this.activeIngredientListVariantKey === 'incorporated_ingredients') {
-                return 'Ingredients before saponification, with required allergens.';
+            if (this.isCosmeticFormula) {
+                return this.t('output.lists.cosmetic_generated_help');
             }
 
-            return 'Saponified oil names with the estimated unsaponified oils.';
+            return this.activeIngredientListVariantKey === 'incorporated_ingredients'
+                ? this.t('output.lists.soap_as_added_help')
+                : this.t('output.lists.soap_saponified_help');
         },
 
         get cosmeticOutputIngredientRows() {
@@ -406,6 +408,8 @@ export function createPresentationSection() {
                         id: `cosmetic-output-${phase.key}-${row.id}`,
                         name: row.name,
                         inci_name: row.inci_name,
+                        label_name: row.inci_name || row.name,
+                        common_name: row.name,
                         phase: phase.name ?? this.humanizeKey(phase.key),
                         percentage,
                         weight,

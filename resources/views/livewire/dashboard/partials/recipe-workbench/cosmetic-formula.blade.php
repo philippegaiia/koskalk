@@ -6,7 +6,7 @@
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.cosmetic.instruction') }}</p>
  </div>
  <div data-formula-balance-status aria-live="polite" :class="oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-warning-strong)]'" class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors">
- <span class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
+ <span class="numeric font-semibold" x-text="`${formatPercentageTotal(totalOilPercentage())}%`"></span>
  <span x-text="oilPercentageStatusLabel"></span>
  </div>
  </div>
@@ -175,7 +175,7 @@
 	 <div data-formula-total-grid class="grid grid-cols-1 gap-2 p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:p-0">
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.cosmetic.formula_total') }}</div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${formatPercentageTotal(totalOilPercentage())}%`"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(cosmeticFormulaWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
 	 </div>

@@ -3,7 +3,7 @@
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.title') }}</h3>
  <div data-formula-balance-status aria-live="polite" :class="oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-danger-strong)]'" class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors">
- <span class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
+ <span class="numeric font-semibold" x-text="`${formatPercentageTotal(totalOilPercentage())}%`"></span>
  <span x-text="oilPercentageStatusLabel"></span>
  </div>
  </div>
@@ -152,7 +152,7 @@
 			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
 			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.saponification.total_oils') }}</div>
  <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">
-			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${formatPercentageTotal(totalOilPercentage())}%`"></div>
 			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" :style="decimalAlignmentStyle(oilWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium lg:flex" x-text="`${format(oilWeightTotal(), oilWeightDecimals(oilWeightTotal()))}`"></div>
  </div>
 			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>

@@ -20,11 +20,11 @@
  <div class="mt-4 grid gap-3 md:grid-cols-3">
  <div class="sk-inset p-4">
  <p class="sk-eyebrow">{{ __('workbench.output.cosmetic.batch_quantity') }}</p>
- <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(oilWeight, 3)} ${oilUnit}`"></p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(cosmeticOutputIngredientTotalWeight, 3)} ${oilUnit}`"></p>
  </div>
  <div class="sk-inset p-4">
  <p class="sk-eyebrow">{{ __('workbench.output.cosmetic.formula_total') }}</p>
- <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(totalOilPercentage(), 2)}%`"></p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatPercentageTotal(totalOilPercentage())}%`"></p>
  </div>
  <div class="sk-inset p-4">
  <p class="sk-eyebrow">{{ __('workbench.output.cosmetic.ingredient_rows') }}</p>
@@ -39,7 +39,6 @@
  <h2 id="output-cosmetic-ingredients-heading" class="sk-eyebrow">{{ __('workbench.output.cosmetic.ingredients_title') }}</h2>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.ingredients_help') }}</p>
  </div>
- <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.descending') }}</span>
  </div>
 
  <template x-if="cosmeticOutputIngredientRows.length > 0">
@@ -58,19 +57,19 @@
  <template x-for="row in cosmeticOutputIngredientRows" :key="row.id">
  <tr>
  <td class="px-4 py-3 align-top">
- <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
- <p x-show="row.inci_name" class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
+ <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.label_name"></p>
+ <p x-show="row.common_name && row.common_name !== row.label_name" class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.common_name"></p>
  </td>
  <td class="px-4 py-3 align-top text-[var(--color-ink-soft)]" x-text="row.phase"></td>
- <td class="numeric px-4 py-3 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 3)}%`"></span></td>
- <td class="numeric px-4 py-3 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 2)"></span></td>
+ <td class="numeric px-4 py-3 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span></td>
+ <td class="numeric px-4 py-3 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 3)"></span></td>
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
  <td class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
  <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.full_formula') }}</td>
- <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalPercent)" x-text="`${format(cosmeticOutputIngredientTotalPercent, 3)}%`"></span></td>
- <td class="numeric px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalWeight)" x-text="format(cosmeticOutputIngredientTotalWeight, 2)"></span></td>
+ <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalPercent)" x-text="`${formatPercentageTotal(cosmeticOutputIngredientTotalPercent)}%`"></span></td>
+ <td class="numeric px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalWeight)" x-text="format(cosmeticOutputIngredientTotalWeight, 3)"></span></td>
  </tr>
  </tbody>
  </table>

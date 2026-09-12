@@ -126,6 +126,176 @@ JS;
     expect($process->getOutput())->toBe('');
 });
 
+it('maps cosmetic output names explicitly', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+const { createPresentationSection } = await import('./resources/js/recipe-workbench/sections/presentation-section.js');
+
+const makeState = ({ productFamilySlug, selectedIngredientListVariantKey }) => {
+    const state = {};
+
+    Object.defineProperties(state, Object.getOwnPropertyDescriptors(createFormulaSection()));
+    Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPresentationSection()));
+    Object.assign(state, {
+        productFamilySlug,
+        selectedIngredientListVariantKey,
+        backendLabeling: {
+            list_variants: [
+                { key: 'incorporated_ingredients' },
+                { key: 'saponified_with_superfat' },
+            ],
+            default_variant_key: 'saponified_with_superfat',
+        },
+        phaseOrder: [{ key: 'phase_a', name: 'Phase A' }],
+        oilWeight: 100,
+        phaseItems: {
+            phase_a: [
+                { id: 'water', name: 'Water', inci_name: 'Aqua', percentage: 60, weight: 60 },
+                { id: 'glycerin', name: 'Glycerin', inci_name: '', percentage: 40, weight: 40 },
+            ],
+        },
+        number(value) {
+            return Number(value) || 0;
+        },
+        rowWeight(row) {
+            return row.weight;
+        },
+        humanizeKey(key) {
+            return key;
+        },
+        t(path) {
+            return `translated:${path}`;
+        },
+    });
+
+    return state;
+};
+
+const cosmetic = makeState({
+    productFamilySlug: 'cosmetic',
+    selectedIngredientListVariantKey: 'incorporated_ingredients',
+});
+
+assert.deepEqual(
+    cosmetic.cosmeticOutputIngredientRows.map(({ label_name, common_name }) => ({ label_name, common_name })),
+    [
+        { label_name: 'Aqua', common_name: 'Water' },
+        { label_name: 'Glycerin', common_name: 'Glycerin' },
+    ],
+);
+assert.equal(cosmetic.cosmeticFormulaWeightTotal(), cosmetic.number(cosmetic.oilWeight));
+assert.equal(cosmetic.cosmeticOutputIngredientTotalWeight, cosmetic.cosmeticFormulaWeightTotal());
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+    expect($process->getOutput())->toBe('');
+});
+
+it('localizes the cosmetic and soap ingredient list helper branches', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+const { createPresentationSection } = await import('./resources/js/recipe-workbench/sections/presentation-section.js');
+
+const makeState = ({ productFamilySlug, selectedIngredientListVariantKey }) => {
+    const state = {};
+
+    Object.defineProperties(state, Object.getOwnPropertyDescriptors(createFormulaSection()));
+    Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPresentationSection()));
+    Object.assign(state, {
+        productFamilySlug,
+        selectedIngredientListVariantKey,
+        backendLabeling: {
+            list_variants: [
+                { key: 'incorporated_ingredients' },
+                { key: 'saponified_with_superfat' },
+            ],
+            default_variant_key: 'saponified_with_superfat',
+        },
+        t(path) {
+            return `translated:${path}`;
+        },
+    });
+
+    return state;
+};
+
+const cosmetic = makeState({
+    productFamilySlug: 'cosmetic',
+    selectedIngredientListVariantKey: 'incorporated_ingredients',
+});
+assert.equal(cosmetic.ingredientListVariantHelperText, 'translated:output.lists.cosmetic_generated_help');
+
+const soapAsAdded = makeState({
+    productFamilySlug: 'soap',
+    selectedIngredientListVariantKey: 'incorporated_ingredients',
+});
+assert.equal(soapAsAdded.ingredientListVariantHelperText, 'translated:output.lists.soap_as_added_help');
+
+const soapSaponified = makeState({
+    productFamilySlug: 'soap',
+    selectedIngredientListVariantKey: 'saponified_with_superfat',
+});
+assert.equal(soapSaponified.ingredientListVariantHelperText, 'translated:output.lists.soap_saponified_help');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+    expect($process->getOutput())->toBe('');
+});
+
 it('uses unit-aware precision for soap lye, liquids, additions, and batch totals', function (): void {
     $formulaSection = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
     $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));

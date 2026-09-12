@@ -5232,7 +5232,7 @@ it('keeps formula table controls stepped and visually aligned', function () {
         ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
-        ->toContain('format(totalOilPercentage(), 2)')
+        ->toContain('formatPercentageTotal(totalOilPercentage())')
         ->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]'")
         ->toContain('syncFormattedInput($el, row.percentage, 2)')
         ->toContain('oilWeightDecimals(rowWeight(row))')
@@ -5266,7 +5266,7 @@ it('keeps formula visual states distinct and softly selected', function () {
 
     expect($reactionCore)
         ->toContain('data-formula-balance-status')
-        ->toContain('class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
+        ->toContain('class="numeric font-semibold" x-text="`${formatPercentageTotal(totalOilPercentage())}%`"')
         ->not->toContain('numeric rounded-full bg-white')
         ->and($formulaAnalysis)
         ->toContain('rounded-lg border px-4 py-3 text-sm')
@@ -6183,6 +6183,216 @@ JS;
     expect($labels)
         ->toContain('High-KOH process context')
         ->not->toContain('Castile-like');
+});
+
+it('stores and restores one-level undo snapshots for every final ingredient list action', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+function makeWorkbench() {
+  const translationCalls = [];
+  const workbench = {
+    isCosmeticFormula: true,
+    finalIngredientList: 'Old INCI',
+    finalIngredientListBasisHash: 'old-inci',
+    finalPlainIngredientList: 'Old plain list',
+    finalPlainIngredientListBasisHash: 'old-plain',
+    backendLabeling: {
+      ingredient_list_basis_hash: 'new-basis',
+      default_variant_key: 'incorporated_ingredients',
+      list_variants: [{
+        key: 'incorporated_ingredients',
+        final_label_text: 'Generated INCI',
+        plain_label_text: 'Generated plain list',
+        ingredient_rows: [],
+        declaration_rows: [],
+      }],
+    },
+    selectedIngredientListVariantKey: 'incorporated_ingredients',
+    translationCalls,
+    t(key) {
+      translationCalls.push(key);
+
+      return `translated:${key}`;
+    },
+    number(value) {
+      return Number(value ?? 0);
+    },
+  };
+
+  Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+  return workbench;
+}
+
+const workbench = makeWorkbench();
+
+workbench.useGeneratedIngredientListAsFinal();
+
+assert.deepEqual(workbench.ingredientListUndo, {
+  target: 'inci',
+  value: 'Old INCI',
+  basisHash: 'old-inci',
+  message: 'translated:messages.ingredient_list_replaced',
+});
+assert.equal(workbench.finalIngredientList, 'Generated INCI');
+assert.equal(workbench.finalIngredientListBasisHash, 'new-basis');
+
+workbench.clearFinalPlainIngredientList();
+
+assert.deepEqual(workbench.ingredientListUndo, {
+  target: 'plain',
+  value: 'Old plain list',
+  basisHash: 'old-plain',
+  message: 'translated:messages.ingredient_list_cleared',
+});
+assert.equal(workbench.finalIngredientList, 'Generated INCI');
+assert.equal(workbench.undoIngredientListChange(), true);
+assert.equal(workbench.finalPlainIngredientList, 'Old plain list');
+assert.equal(workbench.finalPlainIngredientListBasisHash, 'old-plain');
+
+workbench.clearFinalIngredientList();
+
+assert.deepEqual(workbench.ingredientListUndo, {
+  target: 'inci',
+  value: 'Generated INCI',
+  basisHash: 'new-basis',
+  message: 'translated:messages.ingredient_list_cleared',
+});
+assert.equal(workbench.finalIngredientList, '');
+assert.equal(workbench.finalIngredientListBasisHash, '');
+assert.equal(workbench.undoIngredientListChange(), true);
+assert.equal(workbench.finalIngredientList, 'Generated INCI');
+assert.equal(workbench.finalIngredientListBasisHash, 'new-basis');
+assert.equal(workbench.ingredientListUndo, null);
+assert.equal(workbench.undoIngredientListChange(), false);
+
+workbench.useGeneratedPlainIngredientListAsFinal();
+
+assert.deepEqual(workbench.ingredientListUndo, {
+  target: 'plain',
+  value: 'Old plain list',
+  basisHash: 'old-plain',
+  message: 'translated:messages.ingredient_list_replaced',
+});
+assert.equal(workbench.finalPlainIngredientList, 'Generated plain list');
+assert.equal(workbench.finalPlainIngredientListBasisHash, 'new-basis');
+
+assert.equal(workbench.undoIngredientListChange(), true);
+assert.equal(workbench.finalPlainIngredientList, 'Old plain list');
+assert.equal(workbench.finalPlainIngredientListBasisHash, 'old-plain');
+
+workbench.clearFinalPlainIngredientList();
+
+assert.deepEqual(workbench.ingredientListUndo, {
+  target: 'plain',
+  value: 'Old plain list',
+  basisHash: 'old-plain',
+  message: 'translated:messages.ingredient_list_cleared',
+});
+assert.equal(workbench.finalPlainIngredientList, '');
+assert.equal(workbench.finalPlainIngredientListBasisHash, '');
+assert.equal(workbench.undoIngredientListChange(), true);
+assert.equal(workbench.finalPlainIngredientList, 'Old plain list');
+assert.equal(workbench.finalPlainIngredientListBasisHash, 'old-plain');
+
+workbench.useGeneratedIngredientListAsFinal();
+workbench.finalPlainIngredientList = 'Typed plain manually';
+workbench.touchFinalPlainIngredientList();
+assert.equal(workbench.ingredientListUndo?.target, 'inci');
+
+workbench.finalIngredientList = 'Typed manually';
+workbench.touchFinalIngredientList();
+assert.equal(workbench.ingredientListUndo, null);
+
+workbench.useGeneratedPlainIngredientListAsFinal();
+workbench.finalPlainIngredientList = 'Typed plain manually';
+workbench.touchFinalPlainIngredientList();
+assert.equal(workbench.ingredientListUndo, null);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('clears final ingredient list undo after a successful save and snapshot reload', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const buildSnapshotStateFromSnapshot = () => ({});
+const buildDraftStateFromDraft = () => null;
+const persistWorkbench = async (workbench) => {
+  workbench.saveStatus = 'success';
+};
+
+eval(`${source}\nglobalThis.createPersistenceSection = createPersistenceSection;`);
+
+const workbench = {
+  ingredientListUndo: {
+    target: 'inci',
+    value: 'Previous INCI',
+    basisHash: 'previous-basis',
+    message: 'Undo this list change',
+  },
+  removedFormulaRowUndo: {
+    phaseKey: 'phase_a',
+    row: { id: 'row-1' },
+    index: 0,
+  },
+  lastCalculationPhaseSignature: 'before',
+  currentCalculationPhaseSignature() {
+    return 'after';
+  },
+  reconcileCostingPrices() {},
+  syncIngredientListVariantSelection() {},
+  refreshDirtyBaseline() {},
+  dirtyStateRegistry: { set() {} },
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPersistenceSection()));
+
+workbench.applySnapshot({ draft: {} });
+
+assert.equal(workbench.ingredientListUndo, null);
+assert.equal(workbench.removedFormulaRowUndo, null);
+
+workbench.ingredientListUndo = {
+  target: 'plain',
+  value: 'Previous plain list',
+  basisHash: 'plain-basis',
+  message: 'Undo this plain list change',
+};
+
+await workbench.persist('save');
+
+assert.equal(workbench.ingredientListUndo, null);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
 
 function makeCarrierOilIngredient(): Ingredient

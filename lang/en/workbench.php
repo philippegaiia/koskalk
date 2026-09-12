@@ -418,6 +418,8 @@ return [
     'messages' => [
         'formula_item_limit' => 'This formula has :count ingredient lines, but the current plan allows :limit. Remove ingredient lines or change the plan before saving.',
         'ingredient_removed' => 'Ingredient removed: :ingredient',
+        'ingredient_list_replaced' => 'Final ingredient list replaced with the generated version.',
+        'ingredient_list_cleared' => 'Final ingredient list cleared.',
         'undo' => 'Undo',
     ],
     'validation' => [

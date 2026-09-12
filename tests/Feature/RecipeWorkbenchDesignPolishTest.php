@@ -1406,6 +1406,26 @@ it('keeps the generated inci actions together beside compact helper text', funct
         ->toContain('<div class="flex shrink-0 flex-nowrap items-center gap-2">');
 });
 
+it('keeps final ingredient list undo feedback accessible and persistent', function (): void {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-list-preview.blade.php'));
+    $statusPosition = strpos($source, 'x-show="ingredientListUndo"');
+    $gridPosition = strpos($source, 'mt-5 grid items-stretch gap-5 xl:grid-cols-2');
+
+    expect($source)
+        ->toContain('x-show="ingredientListUndo"')
+        ->toContain('role="status"')
+        ->toContain('aria-live="polite"')
+        ->toContain('x-text="ingredientListUndo?.message"')
+        ->toContain('<button type="button" @click="undoIngredientListChange()"')
+        ->toContain("__('workbench.messages.undo')")
+        ->toContain('@input="touchFinalIngredientList()"')
+        ->toContain('@input="touchFinalPlainIngredientList()"')
+        ->not->toContain('ingredientListUndoTimer')
+        ->and($statusPosition)->toBeInt()
+        ->and($gridPosition)->toBeInt()
+        ->and($statusPosition)->toBeLessThan($gridPosition);
+});
+
 it('animates only the ingredient row that was just added', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();

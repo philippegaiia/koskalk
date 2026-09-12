@@ -221,6 +221,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         finalIngredientListBasisHash: '',
         finalPlainIngredientList: '',
         finalPlainIngredientListBasisHash: '',
+        ingredientListUndo: null,
         ingredients: payload.ingredients ?? [],
         manufacturedIngredients: payload.manufacturedIngredients ?? [],
         productionOutputType: 'finished_product',
@@ -1246,6 +1247,7 @@ function createPersistenceSection() {
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
             this.removedFormulaRowUndo = null;
+            this.ingredientListUndo = null;
         },
 
         applyDraft(draft) {
@@ -1260,6 +1262,7 @@ function createPersistenceSection() {
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
             this.removedFormulaRowUndo = null;
+            this.ingredientListUndo = null;
         },
 
         scheduleCalculationPreview(resetBaseline = false) {
@@ -1401,6 +1404,7 @@ function createPersistenceSection() {
 
             if (this.saveStatus === 'success') {
                 this.removedFormulaRowUndo = null;
+                this.ingredientListUndo = null;
             }
         },
     };

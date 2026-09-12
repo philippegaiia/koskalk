@@ -721,31 +721,83 @@ export function createPresentationSection() {
         },
 
         useGeneratedIngredientListAsFinal() {
+            this.ingredientListUndo = {
+                target: 'inci',
+                value: this.finalIngredientList ?? '',
+                basisHash: this.finalIngredientListBasisHash ?? '',
+                message: this.t('messages.ingredient_list_replaced'),
+            };
             this.finalIngredientList = this.curedSoapOutputListText;
             this.finalIngredientListBasisHash = this.ingredientListBasisHash;
         },
 
         useGeneratedPlainIngredientListAsFinal() {
+            this.ingredientListUndo = {
+                target: 'plain',
+                value: this.finalPlainIngredientList ?? '',
+                basisHash: this.finalPlainIngredientListBasisHash ?? '',
+                message: this.t('messages.ingredient_list_replaced'),
+            };
             this.finalPlainIngredientList = this.generatedPlainLanguageListText;
             this.finalPlainIngredientListBasisHash = this.ingredientListBasisHash;
         },
 
         touchFinalIngredientList() {
             this.finalIngredientListBasisHash = this.ingredientListBasisHash;
+
+            if (this.ingredientListUndo?.target === 'inci') {
+                this.ingredientListUndo = null;
+            }
         },
 
         touchFinalPlainIngredientList() {
             this.finalPlainIngredientListBasisHash = this.ingredientListBasisHash;
+
+            if (this.ingredientListUndo?.target === 'plain') {
+                this.ingredientListUndo = null;
+            }
         },
 
         clearFinalIngredientList() {
+            this.ingredientListUndo = {
+                target: 'inci',
+                value: this.finalIngredientList ?? '',
+                basisHash: this.finalIngredientListBasisHash ?? '',
+                message: this.t('messages.ingredient_list_cleared'),
+            };
             this.finalIngredientList = '';
             this.finalIngredientListBasisHash = '';
         },
 
         clearFinalPlainIngredientList() {
+            this.ingredientListUndo = {
+                target: 'plain',
+                value: this.finalPlainIngredientList ?? '',
+                basisHash: this.finalPlainIngredientListBasisHash ?? '',
+                message: this.t('messages.ingredient_list_cleared'),
+            };
             this.finalPlainIngredientList = '';
             this.finalPlainIngredientListBasisHash = '';
+        },
+
+        undoIngredientListChange() {
+            const undo = this.ingredientListUndo;
+
+            if (!undo || !['inci', 'plain'].includes(undo.target)) {
+                return false;
+            }
+
+            if (undo.target === 'inci') {
+                this.finalIngredientList = undo.value;
+                this.finalIngredientListBasisHash = undo.basisHash;
+            } else {
+                this.finalPlainIngredientList = undo.value;
+                this.finalPlainIngredientListBasisHash = undo.basisHash;
+            }
+
+            this.ingredientListUndo = null;
+
+            return true;
         },
 
         syncIngredientListVariantSelection() {

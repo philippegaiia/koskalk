@@ -24,6 +24,13 @@
  </div>
  </template>
 
+ <div x-cloak x-show="ingredientListUndo" role="status" aria-live="polite" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-active-soft)] bg-[var(--color-active-soft)] px-4 py-3 text-sm text-[var(--color-active-strong)]">
+ <span x-text="ingredientListUndo?.message"></span>
+ <button type="button" @click="undoIngredientListChange()" class="sk-btn min-h-11 border border-[var(--color-active)] bg-[var(--color-panel)] text-[var(--color-active-strong)] hover:bg-[var(--color-active-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+ {{ __('workbench.messages.undo') }}
+ </button>
+ </div>
+
  <div class="mt-5 grid items-stretch gap-5 xl:grid-cols-2">
  <div class="flex flex-col gap-5">
  <section class="sk-inset flex flex-1 flex-col px-5 py-4" aria-labelledby="generated-inci-list-heading">

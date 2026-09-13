@@ -791,7 +791,7 @@ function createCatalogSection() {
                     backgroundColor: 'transparent',
                 },
             ], {
-                duration: 1600,
+                duration: 1200,
                 easing: 'ease-out',
             });
         },
@@ -827,10 +827,10 @@ function createCatalogSection() {
                 el.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: scrollBlock });
             }
 
-            el.classList.add('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
+            el.classList.add('ring-2', 'ring-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]', 'ring-offset-2');
             setTimeout(() => {
-                el.classList.remove('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
-            }, 1600);
+                el.classList.remove('ring-2', 'ring-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]', 'ring-offset-2');
+            }, 1200);
         },
 
         removeIngredient(phaseKey, rowId) {

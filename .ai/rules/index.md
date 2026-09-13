@@ -19,6 +19,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/IngredientEnrichment/**, app/Services/IngredientIntake/**, app/Actions/IngredientIntake/** | .ai/rules/ingredient-enrichment.md |
 | resources/js/recipe-workbench/** | .ai/rules/js-recipe-workbench.md |
 | app/Http/Controllers/RecipeController.php, resources/views/recipes/**, resources/js/product-creation-selector.js, resources/js/sticky-table-header.js | .ai/rules/js.md |
+| resources/{js,views}/**/recipe-workbench/** | .ai/rules/jsviews-recipe-workbench.md |
 | lang/**/*.php | .ai/rules/lang.md |
 | resources/views/livewire/dashboard/ingredients-index.blade.php, resources/views/livewire/dashboard/packaging-items-index.blade.php, resources/views/livewire/dashboard/packaging-item-editor.blade.php | .ai/rules/livewire-dashboard.md |
 | app/Livewire/ProductionBench/** | .ai/rules/livewire-production-bench.md |

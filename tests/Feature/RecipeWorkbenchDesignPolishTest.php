@@ -592,17 +592,19 @@ it('renders formula row removal undo as a compact dismissible status', function 
         ->toContain('<x-action-icon name="close"');
 });
 
-it('keeps the original cosmetic phase chooser interaction', function (): void {
+it('keeps only one cosmetic phase chooser open', function (): void {
     $ingredientBrowserSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
 
     expect($ingredientBrowserSource)
-        ->toContain('@click.stop="open = !open; if (open) { $nextTick(() => reposition()); }"')
+        ->toContain("\$dispatch('phase-chooser-opened', { ingredientId: ingredient.id })")
+        ->toContain('@phase-chooser-opened.window="if ($event.detail.ingredientId !== ingredient.id) { open = false; }"')
+        ->toContain('if (open) { open = false; } else {')
+        ->toContain('open = true; $nextTick(() => reposition());')
         ->toContain('aria-haspopup="menu"')
         ->toContain('@click.outside="open = false"')
         ->toContain('@keydown.escape.window="open = false"')
         ->toContain('@scroll.window="if (open) { reposition(); }"')
         ->toContain('@click.stop="addIngredient(ingredient, phase.key); open = false"')
-        ->not->toContain('phase-chooser-opened')
         ->not->toContain('ingredient-list-scrolled')
         ->not->toContain('x-ref="phaseOptions"');
 });
@@ -1502,19 +1504,22 @@ it('animates only the ingredient row that was just added', function () {
         ->not->toContain('motion-safe:will-change-transform');
 });
 
-it('highlights cosmetic destination phases and keeps row inspectors right aligned', function () {
+it('reveals the added cosmetic ingredient row and keeps row inspectors right aligned', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
 
     expect($cosmeticFormula)
         ->toContain(':id="`cosmetic-phase-${phase.key}`"')
         ->toContain(':data-cosmetic-phase-key="phase.key"')
+        ->toContain(':data-workbench-row-id="row.id"')
+        ->toContain('animateAddedIngredientRow($el, row.id)')
         ->toContain('flex w-full items-center justify-between gap-3')
         ->toContain('min-w-0 flex-1')
         ->and($componentSource)
-        ->toContain('highlightCosmeticPhase(targetPhase)')
+        ->toContain('if (this.isCosmeticFormula) {')
+        ->toContain('this.highlightFormulaTarget(element);')
         ->toContain('highlightFormulaTarget')
-        ->toContain('document.getElementById(`cosmetic-phase-${phaseKey}`)')
+        ->not->toContain('highlightCosmeticPhase(targetPhase)')
         ->toContain("behavior: this.prefersReducedMotion() ? 'auto' : 'smooth'");
 });
 

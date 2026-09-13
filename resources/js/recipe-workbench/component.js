@@ -692,9 +692,7 @@ function createCatalogSection() {
 
             this.lastAddedIngredientRowId = nextRow.id;
 
-            if (this.isCosmeticFormula) {
-                this.highlightCosmeticPhase(targetPhase);
-            } else if (targetPhase !== 'saponified_oils') {
+            if (!this.isCosmeticFormula && targetPhase !== 'saponified_oils') {
                 this.highlightPostReaction();
             }
         },
@@ -744,6 +742,10 @@ function createCatalogSection() {
 
             element.dataset.addedIngredientAnimation = rowId;
 
+            if (this.isCosmeticFormula) {
+                this.highlightFormulaTarget(element);
+            }
+
             if (this.prefersReducedMotion() || typeof element.animate !== 'function') {
                 return;
             }
@@ -767,12 +769,6 @@ function createCatalogSection() {
 
         highlightPostReaction() {
             const el = document.getElementById('post-reaction-phases');
-
-            this.highlightFormulaTarget(el);
-        },
-
-        highlightCosmeticPhase(phaseKey) {
-            const el = document.getElementById(`cosmetic-phase-${phaseKey}`);
 
             this.highlightFormulaTarget(el);
         },

@@ -692,8 +692,10 @@ function createCatalogSection() {
 
             this.lastAddedIngredientRowId = nextRow.id;
 
-            if (!this.isCosmeticFormula && targetPhase !== 'saponified_oils') {
-                this.highlightPostReaction();
+            if (this.isCosmeticFormula) {
+                this.highlightCosmeticPhase(targetPhase, false);
+            } else if (targetPhase !== 'saponified_oils') {
+                this.highlightPostReaction(false);
             }
         },
 
@@ -742,9 +744,7 @@ function createCatalogSection() {
 
             element.dataset.addedIngredientAnimation = rowId;
 
-            if (this.isCosmeticFormula) {
-                this.highlightFormulaTarget(element);
-            }
+            this.highlightFormulaTarget(element, true, 'center');
 
             if (this.prefersReducedMotion() || typeof element.animate !== 'function') {
                 return;
@@ -767,18 +767,27 @@ function createCatalogSection() {
             });
         },
 
-        highlightPostReaction() {
+        highlightPostReaction(shouldScroll = true) {
             const el = document.getElementById('post-reaction-phases');
 
-            this.highlightFormulaTarget(el);
+            this.highlightFormulaTarget(el, shouldScroll);
         },
 
-        highlightFormulaTarget(el) {
+        highlightCosmeticPhase(phaseKey, shouldScroll = true) {
+            const el = document.getElementById(`cosmetic-phase-${phaseKey}`);
+
+            this.highlightFormulaTarget(el, shouldScroll);
+        },
+
+        highlightFormulaTarget(el, shouldScroll = true, scrollBlock = 'nearest') {
             if (!el) {
                 return;
             }
 
-            el.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+            if (shouldScroll) {
+                el.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: scrollBlock });
+            }
+
             el.classList.add('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
             setTimeout(() => {
                 el.classList.remove('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');

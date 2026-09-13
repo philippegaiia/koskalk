@@ -1494,6 +1494,8 @@ it('animates only the ingredient row that was just added', function () {
     expect($componentSource)
         ->toContain('lastAddedIngredientRowId')
         ->toContain('animateAddedIngredientRow')
+        ->toContain("this.highlightFormulaTarget(element, true, 'center')")
+        ->toContain('this.highlightPostReaction(false)')
         ->toContain("this.addIngredient(defaultOil, 'saponified_oils', false)")
         ->toContain('addIngredient(ingredient, requestedPhase = null, shouldAnimate = true)')
         ->toContain("matchMedia('(prefers-reduced-motion: reduce)')")
@@ -1504,7 +1506,7 @@ it('animates only the ingredient row that was just added', function () {
         ->not->toContain('motion-safe:will-change-transform');
 });
 
-it('reveals the added cosmetic ingredient row and keeps row inspectors right aligned', function () {
+it('highlights the cosmetic phase and reveals the added ingredient row', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
 
@@ -1516,10 +1518,11 @@ it('reveals the added cosmetic ingredient row and keeps row inspectors right ali
         ->toContain('flex w-full items-center justify-between gap-3')
         ->toContain('min-w-0 flex-1')
         ->and($componentSource)
+        ->toContain('this.highlightCosmeticPhase(targetPhase, false)')
+        ->toContain('document.getElementById(`cosmetic-phase-${phaseKey}`)')
         ->toContain('if (this.isCosmeticFormula) {')
-        ->toContain('this.highlightFormulaTarget(element);')
+        ->toContain("this.highlightFormulaTarget(element, true, 'center')")
         ->toContain('highlightFormulaTarget')
-        ->not->toContain('highlightCosmeticPhase(targetPhase)')
         ->toContain("behavior: this.prefersReducedMotion() ? 'auto' : 'smooth'");
 });
 

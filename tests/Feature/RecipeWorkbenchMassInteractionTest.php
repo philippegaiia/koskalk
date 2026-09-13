@@ -2,6 +2,48 @@
 
 use Symfony\Component\Process\Process;
 
+it('defaults only new soap formulas to 30 percent lye concentration', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+global.window = {
+    location: { hash: '' },
+    localStorage: { getItem: () => null, setItem: () => {} },
+    matchMedia: () => ({ matches: false }),
+};
+
+const source = fs
+    .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/export function /g, 'function ');
+
+eval(`${source}\nglobalThis.createRecipeWorkbenchState = createRecipeWorkbenchState;`);
+
+const dirtyStateRegistry = { blocksNavigation: () => false };
+const soap = globalThis.createRecipeWorkbenchState({
+    productFamily: { slug: 'soap' },
+}, dirtyStateRegistry);
+const cosmetic = globalThis.createRecipeWorkbenchState({
+    productFamily: { slug: 'cosmetic' },
+}, dirtyStateRegistry);
+
+assert.equal(soap.waterMode, 'lye_concentration');
+assert.equal(soap.waterValue, 30);
+assert.equal(cosmetic.waterMode, 'percent_of_oils');
+assert.equal(cosmetic.waterValue, 38);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
 it('converts formula state without changing its physical mass or percentages', function (): void {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

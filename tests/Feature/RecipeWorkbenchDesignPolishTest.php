@@ -1254,6 +1254,17 @@ it('keeps workbench card subheadings at the compact card title size', function (
         ->not->toMatch('/<h3[^>]*class="[^"]*text-xl font-semibold text-\[var\(--color-ink-strong\)\]/');
 });
 
+it('renders the lye and water summary without a redundant outer card', function (): void {
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+
+    expect($reactionCore)
+        ->toContain('<section class="mt-5" aria-labelledby="lye-water-summary-heading">')
+        ->toContain('<p id="lye-water-summary-heading" class="sk-eyebrow">')
+        ->toContain('<template x-for="card in lyeSummaryCards"')
+        ->toContain('class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col px-3 py-2.5"')
+        ->not->toContain('class="sk-inset mt-5 p-4"');
+});
+
 it('keeps live formula diagnostics in a compact bottom save bar without SAP gap warnings', function () {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
     $formulaSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));

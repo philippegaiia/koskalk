@@ -160,14 +160,10 @@
  </div>
  </div>
 
- <div class="sk-inset mt-5 p-4">
- <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
- <div>
- <p class="sk-eyebrow">{{ __('workbench.saponification.lye_water') }}</p>
- </div>
- </div>
+ <section class="mt-5" aria-labelledby="lye-water-summary-heading">
+ <p id="lye-water-summary-heading" class="sk-eyebrow">{{ __('workbench.saponification.lye_water') }}</p>
 
- <div class="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
+ <div class="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
  <div class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col px-3 py-2.5">
  <p class="sk-eyebrow" x-text="card.label"></p>
@@ -175,6 +171,6 @@
  </div>
  </template>
  </div>
- </div>
+ </section>
  </div>
 </section>

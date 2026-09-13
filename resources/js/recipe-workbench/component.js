@@ -733,6 +733,35 @@ function createCatalogSection() {
             return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         },
 
+        canFocusAddedIngredientAmount() {
+            if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+                return false;
+            }
+
+            const desktopPointer = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)');
+            const coarsePointer = window.matchMedia('(any-pointer: coarse)');
+            const maxTouchPoints = typeof navigator === 'undefined'
+                ? 0
+                : Number(navigator.maxTouchPoints ?? 0);
+
+            return desktopPointer.matches && !coarsePointer.matches && maxTouchPoints <= 0;
+        },
+
+        focusAddedIngredientAmount(element, rowId) {
+            if (!element || rowId !== this.lastAddedIngredientRowId || !this.canFocusAddedIngredientAmount()) {
+                return;
+            }
+
+            const amountInput = element.querySelector(`[data-workbench-amount-input="${this.editMode}"]`);
+
+            if (!amountInput) {
+                return;
+            }
+
+            amountInput.focus({ preventScroll: true });
+            amountInput.select();
+        },
+
         animateAddedIngredientRow(element, rowId) {
             if (!element || rowId !== this.lastAddedIngredientRowId) {
                 return;
@@ -745,6 +774,10 @@ function createCatalogSection() {
             element.dataset.addedIngredientAnimation = rowId;
 
             this.highlightFormulaTarget(element, true, 'center');
+
+            if (typeof this.$nextTick === 'function') {
+                this.$nextTick(() => this.focusAddedIngredientAmount(element, rowId));
+            }
 
             if (this.prefersReducedMotion() || typeof element.animate !== 'function') {
                 return;

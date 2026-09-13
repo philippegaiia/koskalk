@@ -13,6 +13,7 @@ use Filament\Schemas\Components\Section;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
+use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
@@ -1524,6 +1525,310 @@ it('highlights the cosmetic phase and reveals the added ingredient row', functio
         ->toContain("this.highlightFormulaTarget(element, true, 'center')")
         ->toContain('highlightFormulaTarget')
         ->toContain("behavior: this.prefersReducedMotion() ? 'auto' : 'smooth'");
+});
+
+it('focuses the newly added amount on eligible desktop rows without disturbing row scrolling', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const mediaMatches = new Map();
+const timers = new Map();
+let nextTimerId = 1;
+
+globalThis.window = {
+    location: { hash: '' },
+    localStorage: { getItem: () => null, setItem: () => {} },
+    matchMedia: (query) => ({ matches: mediaMatches.get(query) ?? false }),
+};
+globalThis.document = {
+    addEventListener() {},
+    removeEventListener() {},
+    getElementById: () => null,
+};
+globalThis.setTimeout = (callback) => {
+    const timerId = nextTimerId++;
+    timers.set(timerId, callback);
+    callback();
+
+    return timerId;
+};
+globalThis.clearTimeout = (timerId) => timers.delete(timerId);
+Object.defineProperty(globalThis, 'navigator', {
+    value: { maxTouchPoints: 0 },
+    configurable: true,
+});
+
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase
+    ?? ingredient.available_phases?.[0]
+    ?? null;
+
+const source = fs
+    .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/export function /g, 'function ');
+
+eval(`${source}\nglobalThis.createCatalogSection = createCatalogSection;`);
+
+const createWorkbench = ({ isCosmeticFormula = false } = {}) => {
+    const workbench = {
+        productFamilySlug: isCosmeticFormula ? 'cosmetic' : 'soap',
+        isCosmeticFormula,
+        ingredients: [],
+        phaseItems: isCosmeticFormula
+            ? { phase_a: [] }
+            : { saponified_oils: [], lye_water: [], additives: [], fragrance: [] },
+        phaseOrder: isCosmeticFormula
+            ? [{ key: 'phase_a', name: 'Phase A' }]
+            : [
+                { key: 'saponified_oils', name: 'Saponified Oils' },
+                { key: 'lye_water', name: 'Lye Water' },
+                { key: 'additives', name: 'Additives' },
+                { key: 'fragrance', name: 'Fragrance' },
+            ],
+        editMode: 'percentage',
+        formulaItemLimit: null,
+        formulaItemLimitMessage: '',
+        lastAddedIngredientRowId: null,
+        removedFormulaRowUndo: null,
+        cosmeticFormulaRows() {
+            return Object.values(this.phaseItems)
+                .flatMap((rows) => Array.isArray(rows) ? rows : []);
+        },
+        resolveTargetPhase: (ingredient, requestedPhase = null) => requestedPhase
+            ?? ingredient.available_phases?.[0]
+            ?? null,
+        lyeLiquidAdditionLimitReached: () => false,
+        formulaItemLimitReached: () => false,
+        t: (path) => path,
+        highlightCalls: [],
+        highlightPostReaction(shouldScroll) {
+            this.highlightCalls.push({ type: 'post-reaction', shouldScroll });
+        },
+        highlightCosmeticPhase(phaseKey, shouldScroll) {
+            this.highlightCalls.push({ type: 'cosmetic-phase', phaseKey, shouldScroll });
+        },
+    };
+
+    Object.defineProperties(
+        workbench,
+        Object.getOwnPropertyDescriptors(globalThis.createCatalogSection()),
+    );
+
+    workbench.highlightPostReaction = (shouldScroll) => {
+        workbench.highlightCalls.push({ type: 'post-reaction', shouldScroll });
+    };
+    workbench.highlightCosmeticPhase = (phaseKey, shouldScroll) => {
+        workbench.highlightCalls.push({ type: 'cosmetic-phase', phaseKey, shouldScroll });
+    };
+
+    return workbench;
+};
+
+const createRowElement = (events, editMode, inputAvailable = true) => {
+    const input = {
+        focus(options) {
+            events.push({ type: 'focus', options });
+        },
+        select() {
+            events.push({ type: 'select' });
+        },
+    };
+
+    return {
+        dataset: {},
+        classList: { add() {}, remove() {} },
+        scrollIntoView(options) {
+            events.push({ type: 'scroll', options });
+        },
+        querySelector(selector) {
+            events.push({ type: 'query', selector });
+
+            return inputAvailable && selector === `[data-workbench-amount-input="${editMode}"]`
+                ? input
+                : null;
+        },
+    };
+};
+
+const setEligibleDesktop = () => {
+    mediaMatches.set('(min-width: 1024px) and (hover: hover) and (pointer: fine)', true);
+    mediaMatches.set('(any-pointer: coarse)', false);
+    mediaMatches.set('(prefers-reduced-motion: reduce)', false);
+    globalThis.navigator.maxTouchPoints = 0;
+};
+
+const exerciseAddedRow = ({ isCosmeticFormula, phase, mode, ingredientId }) => {
+    const workbench = createWorkbench({ isCosmeticFormula });
+    const events = [];
+
+    workbench.editMode = mode;
+    workbench.$nextTick = (callback) => {
+        events.push({ type: 'next-tick' });
+        callback();
+    };
+    setEligibleDesktop();
+
+    const ingredient = {
+        id: ingredientId,
+        name: `Ingredient ${ingredientId}`,
+        category: isCosmeticFormula ? 'cosmetic' : 'lipids',
+        available_phases: [phase],
+    };
+
+    workbench.addIngredient(ingredient, phase, true);
+    const row = workbench.phaseItems[phase][0];
+    const rowElement = createRowElement(events, mode);
+    workbench.animateAddedIngredientRow(rowElement, row.id);
+
+    assert.equal(workbench.lastAddedIngredientRowId, row.id);
+    assert.deepEqual(
+        events.map(({ type }) => type),
+        ['scroll', 'next-tick', 'query', 'focus', 'select'],
+    );
+    assert.deepEqual(
+        events.filter(({ type }) => ['scroll', 'focus', 'select'].includes(type)).map(({ type }) => type),
+        ['scroll', 'focus', 'select'],
+    );
+    assert.deepEqual(events.find(({ type }) => type === 'scroll')?.options, {
+        behavior: 'smooth',
+        block: 'center',
+    });
+    assert.deepEqual(events.find(({ type }) => type === 'focus')?.options, { preventScroll: true });
+    assert.equal(events.find(({ type }) => type === 'query')?.selector, `[data-workbench-amount-input="${mode}"]`);
+
+    if (isCosmeticFormula) {
+        assert.deepEqual(workbench.highlightCalls, [{ type: 'cosmetic-phase', phaseKey: phase, shouldScroll: false }]);
+    } else if (phase !== 'saponified_oils') {
+        assert.deepEqual(workbench.highlightCalls, [{ type: 'post-reaction', shouldScroll: false }]);
+    }
+};
+
+exerciseAddedRow({ isCosmeticFormula: false, phase: 'saponified_oils', mode: 'percentage', ingredientId: 1 });
+exerciseAddedRow({ isCosmeticFormula: false, phase: 'additives', mode: 'weight', ingredientId: 2 });
+exerciseAddedRow({ isCosmeticFormula: false, phase: 'fragrance', mode: 'percentage', ingredientId: 3 });
+exerciseAddedRow({ isCosmeticFormula: true, phase: 'phase_a', mode: 'weight', ingredientId: 4 });
+
+const excludedDeviceCases = [
+    {
+        name: 'wide coarse pointer',
+        desktop: true,
+        coarse: true,
+        maxTouchPoints: 0,
+    },
+    {
+        name: 'navigator touch points',
+        desktop: true,
+        coarse: false,
+        maxTouchPoints: 1,
+    },
+    {
+        name: 'narrow viewport',
+        desktop: false,
+        coarse: false,
+        maxTouchPoints: 0,
+    },
+];
+
+for (const device of excludedDeviceCases) {
+    const workbench = createWorkbench();
+    const events = [];
+    const ingredient = {
+        id: device.name,
+        name: device.name,
+        category: 'lipids',
+        available_phases: ['additives'],
+    };
+
+    workbench.$nextTick = (callback) => callback();
+    workbench.editMode = 'weight';
+    mediaMatches.set('(min-width: 1024px) and (hover: hover) and (pointer: fine)', device.desktop);
+    mediaMatches.set('(any-pointer: coarse)', device.coarse);
+    mediaMatches.set('(prefers-reduced-motion: reduce)', false);
+    globalThis.navigator.maxTouchPoints = device.maxTouchPoints;
+
+    workbench.addIngredient(ingredient, 'additives', true);
+    const row = workbench.phaseItems.additives[0];
+    workbench.animateAddedIngredientRow(createRowElement(events, workbench.editMode), row.id);
+
+    assert.equal(workbench.lastAddedIngredientRowId, row.id, device.name);
+    assert.deepEqual(
+        events.filter(({ type }) => ['scroll', 'focus', 'select'].includes(type)).map(({ type }) => type),
+        ['scroll'],
+        device.name,
+    );
+    assert.deepEqual(workbench.highlightCalls, [{ type: 'post-reaction', shouldScroll: false }], device.name);
+}
+
+setEligibleDesktop();
+const staleWorkbench = createWorkbench();
+staleWorkbench.$nextTick = (callback) => callback();
+staleWorkbench.addIngredient({ id: 5, name: 'First', available_phases: ['additives'] }, 'additives', true);
+const staleRow = staleWorkbench.phaseItems.additives[0];
+staleWorkbench.addIngredient({ id: 6, name: 'Second', available_phases: ['additives'] }, 'additives', true);
+const currentRow = staleWorkbench.phaseItems.additives[1];
+const staleEvents = [];
+staleWorkbench.animateAddedIngredientRow(createRowElement(staleEvents, 'percentage'), staleRow.id);
+assert.equal(staleWorkbench.lastAddedIngredientRowId, currentRow.id);
+assert.deepEqual(staleEvents, []);
+
+const branchWorkbench = createWorkbench();
+branchWorkbench.ingredients = [
+    { id: 7, name: 'Automatic liquid', category: 'botanical', available_phases: ['lye_water'] },
+];
+branchWorkbench.addLyeLiquidIngredient(7);
+assert.equal(branchWorkbench.lastAddedIngredientRowId, null);
+
+branchWorkbench.addIngredient({ id: 8, name: 'Default addition', available_phases: ['additives'] }, 'additives', false);
+assert.equal(branchWorkbench.lastAddedIngredientRowId, null);
+
+branchWorkbench.addIngredient({ id: 9, name: 'Added once', available_phases: ['additives'] }, 'additives', true);
+const successfulMarker = branchWorkbench.lastAddedIngredientRowId;
+branchWorkbench.addIngredient({ id: 9, name: 'Added once', available_phases: ['additives'] }, 'additives', true);
+assert.equal(branchWorkbench.lastAddedIngredientRowId, successfulMarker);
+
+branchWorkbench.resolveTargetPhase = () => null;
+branchWorkbench.addIngredient({ id: 10, name: 'Unresolved', available_phases: ['additives'] }, 'additives', true);
+assert.equal(branchWorkbench.lastAddedIngredientRowId, successfulMarker);
+
+branchWorkbench.resolveTargetPhase = (ingredient, requestedPhase = null) => requestedPhase
+    ?? ingredient.available_phases?.[0]
+    ?? null;
+branchWorkbench.formulaItemLimitReached = () => true;
+branchWorkbench.addIngredient({ id: 11, name: 'Over limit', available_phases: ['additives'] }, 'additives', true);
+assert.equal(branchWorkbench.lastAddedIngredientRowId, successfulMarker);
+
+branchWorkbench.formulaItemLimitReached = () => false;
+branchWorkbench.lyeLiquidAdditionLimitReached = () => true;
+branchWorkbench.ingredients.push({ id: 12, name: 'Lye limit', available_phases: ['lye_water'] });
+branchWorkbench.addLyeLiquidIngredient(12);
+assert.equal(branchWorkbench.lastAddedIngredientRowId, successfulMarker);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
+
+    expect(substr_count($reactionCore, 'data-workbench-amount-input="percentage"'))
+        ->toBe(1)
+        ->and(substr_count($reactionCore, 'data-workbench-amount-input="weight"'))
+        ->toBe(1)
+        ->and(substr_count($postReaction, 'data-workbench-amount-input="percentage"'))
+        ->toBe(2)
+        ->and(substr_count($postReaction, 'data-workbench-amount-input="weight"'))
+        ->toBe(2)
+        ->and(substr_count($cosmeticFormula, 'data-workbench-amount-input="percentage"'))
+        ->toBe(1)
+        ->and(substr_count($cosmeticFormula, 'data-workbench-amount-input="weight"'))
+        ->toBe(1);
 });
 
 it('keeps the cosmetic phase picker visible outside the scrollable ingredient list', function () {

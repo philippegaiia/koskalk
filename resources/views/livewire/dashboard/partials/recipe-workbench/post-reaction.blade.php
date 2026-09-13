@@ -11,7 +11,7 @@
 
  <div class="space-y-5 p-5">
  <template x-if="additiveRows.length > 0 || canDropRowInPhase('additives')">
- <div class="overflow-hidden sk-inset">
+ <div id="soap-phase-additives" class="overflow-hidden sk-inset transition-shadow duration-300">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.additives') }}</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.additives_help') }}</p>
@@ -34,7 +34,7 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
 		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white py-0 sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
  <button type="button"
  draggable="true"
@@ -88,7 +88,7 @@
  </template>
 
  <template x-if="fragranceRows.length > 0">
- <div class="overflow-hidden sk-inset">
+ <div id="soap-phase-fragrance" class="overflow-hidden sk-inset transition-shadow duration-300">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.fragrance') }}</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.fragrance_help') }}</p>
@@ -111,7 +111,7 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
 		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white py-0 sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
  <button type="button"
  draggable="true"

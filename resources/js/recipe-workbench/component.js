@@ -694,8 +694,8 @@ function createCatalogSection() {
 
             if (this.isCosmeticFormula) {
                 this.highlightCosmeticPhase(targetPhase, false);
-            } else if (targetPhase !== 'saponified_oils') {
-                this.highlightPostReaction(false);
+            } else {
+                this.highlightSoapPhase(targetPhase, false);
             }
         },
 
@@ -785,23 +785,29 @@ function createCatalogSection() {
 
             element.animate([
                 {
-                    opacity: 0.78,
-                    transform: 'translateY(-6px) scale(0.992)',
-                    backgroundColor: 'color-mix(in oklab, var(--color-accent-soft) 52%, white)',
+                    backgroundColor: 'color-mix(in oklab, var(--color-accent-soft) 38%, transparent)',
                 },
                 {
-                    opacity: 1,
-                    transform: 'translateY(0) scale(1)',
-                    backgroundColor: 'white',
+                    backgroundColor: 'transparent',
                 },
             ], {
-                duration: 240,
-                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                duration: 1600,
+                easing: 'ease-out',
             });
         },
 
-        highlightPostReaction(shouldScroll = true) {
-            const el = document.getElementById('post-reaction-phases');
+        highlightSoapPhase(phaseKey, shouldScroll = true) {
+            const el = document.getElementById(`soap-phase-${phaseKey}`);
+
+            if (!el && typeof this.$nextTick === 'function') {
+                this.$nextTick(() => {
+                    const renderedPhase = document.getElementById(`soap-phase-${phaseKey}`);
+
+                    this.highlightFormulaTarget(renderedPhase, shouldScroll);
+                });
+
+                return;
+            }
 
             this.highlightFormulaTarget(el, shouldScroll);
         },
@@ -824,7 +830,7 @@ function createCatalogSection() {
             el.classList.add('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
             setTimeout(() => {
                 el.classList.remove('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
-            }, 1200);
+            }, 1600);
         },
 
         removeIngredient(phaseKey, rowId) {

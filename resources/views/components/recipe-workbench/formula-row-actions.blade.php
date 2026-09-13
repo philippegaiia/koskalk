@@ -25,9 +25,12 @@
                 this.$refs.menu?.querySelector('[role=menuitem]:not([disabled])')?.focus();
             });
         },
-        closeMenu() {
+        closeMenu(shouldRestoreFocus = true) {
             this.open = false;
-            this.$nextTick(() => this.focusTrigger());
+
+            if (shouldRestoreFocus) {
+                this.$nextTick(() => this.focusTrigger());
+            }
         },
         reposition() {
             const trigger = this.$refs.trigger;
@@ -56,13 +59,14 @@
     class="relative ml-auto shrink-0"
     @scroll.window="if (open) { reposition(); }"
     @resize.window="if (open) { reposition(); }"
+    @formula-row-actions-opened.window="if (open && $event.detail.rowId !== row.id) { closeMenu(false); }"
     x-cloak
 >
     <button
         x-ref="trigger"
         type="button"
         :id="`formula-row-actions-trigger-${row.id}`"
-        @click.stop="open ? closeMenu() : openMenu()"
+        @click.stop="if (open) { closeMenu(); } else { $dispatch('formula-row-actions-opened', { rowId: row.id }); openMenu(); }"
         @keydown.escape.prevent.stop="closeMenu()"
         :aria-expanded="open.toString()"
         :aria-controls="`formula-row-actions-${row.id}`"
@@ -78,7 +82,7 @@
             x-show="open"
             x-transition.opacity
             x-cloak
-            @click.outside="closeMenu()"
+            @click.outside="closeMenu(false)"
             @keydown.escape.window="if (open) { $event.preventDefault(); $event.stopPropagation(); closeMenu(); }"
             x-ref="menu"
             :id="`formula-row-actions-${row.id}`"

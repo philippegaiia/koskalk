@@ -55,7 +55,7 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
- class="grid grid-cols-2 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+ class="grid grid-cols-2 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
 	 <div class="col-start-1 row-start-1 flex items-center justify-start bg-[var(--color-panel)] py-0 sk-formula-table-handle-cell lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
  <button type="button"
  draggable="true"

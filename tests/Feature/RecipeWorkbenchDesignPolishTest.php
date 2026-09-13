@@ -503,6 +503,10 @@ it('uses one accessible row-actions menu in every formula ledger', function (): 
         ->toMatch('/x-for="[^\"]*(?:phase|Phase)[^\"]*"/')
         ->toMatch('/[Pp]hase\\.key/')
         ->not->toMatch('/x-for="[^\"]*\\bin\\s+phaseOrder/')
+        ->toContain("\$dispatch('formula-row-actions-opened', { rowId: row.id })")
+        ->toContain('@formula-row-actions-opened.window="if (open && $event.detail.rowId !== row.id) { closeMenu(false); }"')
+        ->toContain('closeMenu(shouldRestoreFocus = true)')
+        ->toContain('@click.outside="closeMenu(false)"')
         ->toContain('focus()')
         ->and($rowActionsTriggerClass)
         ->toContain('min-h-11')
@@ -644,7 +648,7 @@ it('keeps formula table lines compact with responsive vertical padding', functio
         ->not->toContain('px-4 py-4 text-center');
 
     expect($soapTableMarkup)
-        ->toContain('sk-formula-table-row transition-[background-color,opacity] duration-150 motion-reduce:transition-none')
+        ->toContain('sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none')
         ->toContain('transition-colors duration-150 motion-reduce:transition-none')
         ->toContain('x-effect="animateAddedIngredientRow($el, row.id)"')
         ->not->toContain('sk-formula-table-row transition motion-safe:will-change-transform');
@@ -1496,14 +1500,27 @@ it('animates only the ingredient row that was just added', function () {
         ->toContain('lastAddedIngredientRowId')
         ->toContain('animateAddedIngredientRow')
         ->toContain("this.highlightFormulaTarget(element, true, 'center')")
-        ->toContain('this.highlightPostReaction(false)')
+        ->toContain('this.highlightSoapPhase(targetPhase, false)')
+        ->toContain('document.getElementById(`soap-phase-${phaseKey}`)')
+        ->toContain('const renderedPhase = document.getElementById(`soap-phase-${phaseKey}`)')
+        ->toContain('this.highlightFormulaTarget(renderedPhase, shouldScroll)')
         ->toContain("this.addIngredient(defaultOil, 'saponified_oils', false)")
         ->toContain('addIngredient(ingredient, requestedPhase = null, shouldAnimate = true)')
         ->toContain("matchMedia('(prefers-reduced-motion: reduce)')")
         ->toContain("behavior: this.prefersReducedMotion() ? 'auto' : 'smooth'")
+        ->toContain('duration: 1600')
+        ->toContain('}, 1600);')
+        ->not->toContain("transform: 'translateY(-6px) scale(0.992)'")
+        ->not->toContain('opacity: 0.78')
+        ->and($reactionCore)
+        ->toContain('id="soap-phase-saponified_oils"')
+        ->and($postReaction)
+        ->toContain('id="soap-phase-additives"')
+        ->toContain('id="soap-phase-fragrance"')
         ->and($combinedFormulaRows)
         ->toContain(':data-workbench-row-id="row.id"')
         ->toContain('animateAddedIngredientRow($el, row.id)')
+        ->toContain('transition-[background-color,box-shadow] duration-300')
         ->not->toContain('motion-safe:will-change-transform');
 });
 
@@ -1602,8 +1619,8 @@ const createWorkbench = ({ isCosmeticFormula = false } = {}) => {
         formulaItemLimitReached: () => false,
         t: (path) => path,
         highlightCalls: [],
-        highlightPostReaction(shouldScroll) {
-            this.highlightCalls.push({ type: 'post-reaction', shouldScroll });
+        highlightSoapPhase(phaseKey, shouldScroll) {
+            this.highlightCalls.push({ type: 'soap-phase', phaseKey, shouldScroll });
         },
         highlightCosmeticPhase(phaseKey, shouldScroll) {
             this.highlightCalls.push({ type: 'cosmetic-phase', phaseKey, shouldScroll });
@@ -1615,8 +1632,8 @@ const createWorkbench = ({ isCosmeticFormula = false } = {}) => {
         Object.getOwnPropertyDescriptors(globalThis.createCatalogSection()),
     );
 
-    workbench.highlightPostReaction = (shouldScroll) => {
-        workbench.highlightCalls.push({ type: 'post-reaction', shouldScroll });
+    workbench.highlightSoapPhase = (phaseKey, shouldScroll) => {
+        workbench.highlightCalls.push({ type: 'soap-phase', phaseKey, shouldScroll });
     };
     workbench.highlightCosmeticPhase = (phaseKey, shouldScroll) => {
         workbench.highlightCalls.push({ type: 'cosmetic-phase', phaseKey, shouldScroll });
@@ -1699,8 +1716,8 @@ const exerciseAddedRow = ({ isCosmeticFormula, phase, mode, ingredientId }) => {
 
     if (isCosmeticFormula) {
         assert.deepEqual(workbench.highlightCalls, [{ type: 'cosmetic-phase', phaseKey: phase, shouldScroll: false }]);
-    } else if (phase !== 'saponified_oils') {
-        assert.deepEqual(workbench.highlightCalls, [{ type: 'post-reaction', shouldScroll: false }]);
+    } else {
+        assert.deepEqual(workbench.highlightCalls, [{ type: 'soap-phase', phaseKey: phase, shouldScroll: false }]);
     }
 };
 
@@ -1757,7 +1774,7 @@ for (const device of excludedDeviceCases) {
         ['scroll'],
         device.name,
     );
-    assert.deepEqual(workbench.highlightCalls, [{ type: 'post-reaction', shouldScroll: false }], device.name);
+    assert.deepEqual(workbench.highlightCalls, [{ type: 'soap-phase', phaseKey: 'additives', shouldScroll: false }], device.name);
 }
 
 setEligibleDesktop();

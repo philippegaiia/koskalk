@@ -111,9 +111,16 @@
                 @endphp
 
                 <article
-                    class="sk-card overflow-hidden"
+                    class="sk-card relative overflow-hidden transition hover:shadow-lg"
                     x-data="{ menuOpen: false, deleteOpen: false, archiveOpen: false, confirmText: '', productName: @js($recipe->name) }"
                 >
+                    <a
+                        href="{{ route('recipes.edit', $recipe) }}"
+                        wire:navigate
+                        data-product-card-link
+                        class="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-active)]"
+                        aria-label="{{ __('products.actions.open_workbench') }}: {{ $recipe->name }}"
+                    ></a>
                     <div class="relative aspect-[4/3] {{ $thumbnailUrl ? '' : $fallbackThumbnailClasses }}">
                         @if ($thumbnailUrl)
                             <img src="{{ $thumbnailUrl }}" alt="{{ $recipe->name }}" class="h-full w-full object-contain" />
@@ -126,7 +133,7 @@
                             </div>
                         @endif
 
-                        <div class="absolute top-3 right-3">
+                        <div class="absolute top-3 right-3 z-20" data-product-card-actions>
                             <button
                                 type="button"
                                 @click="menuOpen = !menuOpen"
@@ -218,7 +225,7 @@
                             {{ __('products.card.updated', ['time' => $recipe->updated_at?->diffForHumans() ?? __('products.card.just_now')]) }}
                         </p>
                         @if ($hasProductionHistory)
-                            <a href="{{ route('production-bench.production.index', ['recipe' => $recipe->public_id]) }}" wire:navigate class="mt-2 inline-block text-xs font-medium text-[var(--color-accent-strong)] hover:underline">
+                            <a href="{{ route('production-bench.production.index', ['recipe' => $recipe->public_id]) }}" wire:navigate class="relative z-20 mt-2 inline-block text-xs font-medium text-[var(--color-accent-strong)] hover:underline">
                                 {{ trans_choice('products.card.production_count', $recipe->production_runs_count, ['count' => $recipe->production_runs_count]) }}
                             </a>
                         @endif

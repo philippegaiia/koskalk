@@ -696,7 +696,7 @@ it('renders formula row removal undo as a compact dismissible status', function 
     expect($dismissButtonMatches[1] ?? '')
         ->toContain('size-8')
         ->and($bottomActionBarSource)
-        ->toContain("aria-label=\"{{ __('Close') }}\"")
+        ->toContain("aria-label=\"{{ __('navigation.actions.dismiss_notification') }}\"")
         ->toContain('<x-action-icon name="close"');
 });
 
@@ -998,7 +998,7 @@ it('keeps the desktop ingredient rail row-bounded and moves soap fatty acids bel
         ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('order-1 min-w-0 @5xl/workbench:col-start-1')
         ->toContain('order-2 min-w-0 space-y-4 @5xl/workbench:col-start-2')
-        ->toContain('class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
+        ->toContain('class="order-1 min-w-0 @5xl/workbench:col-start-1 @5xl/workbench:row-start-1 space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
         ->toContain("id=\"formula-ingredient-browser\" x-ref=\"ingredientBrowserRail\" x-cloak :class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
         ->toContain('class="hidden @5xl/workbench:block"')
         ->toContain('@5xl/workbench:hidden')
@@ -1009,6 +1009,8 @@ it('keeps the desktop ingredient rail row-bounded and moves soap fatty acids bel
         ->not->toContain('x-ref="ingredientBrowserRail" x-cloak class="@5xl/workbench:sticky')
         ->not->toContain('class="hidden xl:block"')
         ->not->toContain('class="xl:hidden"');
+
+    expect($formulaTabSource)->toMatch('/<section\b[^>]*>\s*<div[^>]*@5xl\/workbench:sticky/s');
 
     expect(substr_count($formulaTabSource, '@5xl/workbench:sticky'))->toBe(1);
 

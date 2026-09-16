@@ -55,7 +55,7 @@ it('shows saved recipes on the recipes index page', function () {
         'version_number' => 3,
     ]);
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.index'))
         ->assertSuccessful()
         ->assertSee('Olive Coconut Bar')
@@ -65,6 +65,20 @@ it('shows saved recipes on the recipes index page', function () {
         ->assertDontSee('Open draft')
         ->assertDontSee('Edit formula')
         ->assertDontSee('Use recipe');
+
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    $link = $xpath->query('//article/a[@data-product-card-link]')->item(0);
+
+    expect($link)->not->toBeNull();
+    expect($link->getAttribute('href'))->toBe(route('recipes.edit', $recipe))
+        ->and($link->getAttribute('aria-label'))->toBe('Open workbench: Olive Coconut Bar')
+        ->and($link->hasAttribute('wire:navigate'))->toBeTrue()
+        ->and($link->getAttribute('class'))->toContain('absolute inset-0 z-10')
+        ->and($xpath->query('//article/a[@data-product-card-link]//button')->length)->toBe(0)
+        ->and($xpath->query('//article//*[@data-product-card-actions]')->item(0)->getAttribute('class'))->toContain('z-20');
+
 });
 
 it('only shows recipes that belong to the current user', function () {

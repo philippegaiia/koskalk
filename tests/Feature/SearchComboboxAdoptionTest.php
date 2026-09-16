@@ -226,6 +226,8 @@ const state = createSearchCombobox({
 
 state.$dispatch = (name, detail) => events.push({ name, detail });
 state.init();
+state.open = true;
+const reopenedIds = state.filteredOptions.map((option) => option.id);
 state.query = 'dollar';
 state.handleInput();
 const filteredIds = state.filteredOptions.map((option) => option.id);
@@ -236,6 +238,7 @@ state.replaceOptions([
 ]);
 
 console.log(JSON.stringify({
+    reopenedIds,
     filteredIds,
     selectedId: state.selectedId,
     query: state.query,
@@ -256,6 +259,7 @@ JS;
 
     expect($payload)
         ->toMatchArray([
+            'reopenedIds' => ['EUR', 'USD'],
             'filteredIds' => ['USD'],
             'selectedId' => 'USD',
             'query' => 'USD — US Dollar',

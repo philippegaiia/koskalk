@@ -110,13 +110,9 @@
                     <span class="block {{ $wrapLabels ? 'whitespace-normal break-words' : 'truncate' }} font-medium text-[var(--color-ink-strong)]" x-text="option.label"></span>
                     <span x-show="option.description" class="mt-0.5 block {{ $wrapLabels ? 'whitespace-normal break-words' : 'truncate' }} text-xs text-[var(--color-ink-soft)]" x-text="option.description"></span>
                 </span>
-                @if ($wrapLabels)
-                    <span x-show="sameId(selectedId, option.id)" aria-hidden="true" class="shrink-0 text-[var(--color-accent-strong)]">
-                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6" /></svg>
-                    </span>
-                @else
-                <span class="shrink-0 text-xs font-medium text-[var(--color-accent-strong)]" x-text="sameId(selectedId, option.id) ? 'Selected' : @js($actionLabel)"></span>
-                @endif
+                @unless ($wrapLabels)
+                    <span class="shrink-0 text-xs font-medium text-[var(--color-accent-strong)]" x-text="sameId(selectedId, option.id) ? 'Selected' : @js($actionLabel)"></span>
+                @endunless
             </button>
         </template>
     </div>

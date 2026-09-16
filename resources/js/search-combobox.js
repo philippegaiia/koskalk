@@ -22,11 +22,11 @@ export function createSearchCombobox(config) {
         get filteredOptions() {
             const term = this.query.trim().toLocaleLowerCase();
 
-            return this.options.filter((option) => {
-                if (term === '' || (this.sameId(this.selectedId, option.id) && term === this.selectedLabel.toLocaleLowerCase())) {
-                    return true;
-                }
+            if (term === '' || (this.selectedId !== null && term === this.selectedLabel.trim().toLocaleLowerCase())) {
+                return this.options;
+            }
 
+            return this.options.filter((option) => {
                 return [option.label, option.description, option.searchText]
                     .filter(Boolean)
                     .some((value) => value.toLocaleLowerCase().includes(term));

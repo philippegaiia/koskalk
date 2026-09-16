@@ -202,7 +202,7 @@
     }
 
     [data-user-shell] .fi-select-input-option.fi-selected:not(.fi-disabled):not([disabled]) {
-        background: var(--color-active-soft);
+        background: var(--color-panel-strong);
     }
 
     [data-user-shell] .fi-select-input-option.fi-selected .fi-dropdown-list-item-label {

@@ -162,6 +162,54 @@
         color: var(--color-ink-soft);
     }
 
+    /* Filament's non-native selects otherwise keep its gray/dark palette and
+       browser-blue selected state inside the light public application shell. */
+    [data-user-shell] .fi-select-input-btn {
+        color: var(--color-ink-strong);
+    }
+
+    [data-user-shell] .fi-select-input .fi-dropdown-panel {
+        border-radius: 0.5rem;
+        background: var(--color-panel);
+        box-shadow:
+            0 0 0 1px var(--color-line),
+            0 12px 24px rgb(60 50 30 / 0.12);
+        color: var(--color-ink-strong);
+    }
+
+    [data-user-shell] .fi-select-input-options-ctn > :not(:last-child),
+    [data-user-shell] .fi-select-input-option-group > :not(:last-child) {
+        border-color: var(--color-line);
+    }
+
+    [data-user-shell] .fi-select-input-search-ctn {
+        background: var(--color-panel);
+    }
+
+    [data-user-shell] .fi-select-input-placeholder,
+    [data-user-shell] .fi-select-input-message,
+    [data-user-shell] .fi-select-input-option-group .fi-dropdown-header span {
+        color: var(--color-ink-soft);
+    }
+
+    [data-user-shell] .fi-select-input-option .fi-dropdown-list-item-label {
+        color: var(--color-ink-strong);
+    }
+
+    [data-user-shell] .fi-select-input-option:not(.fi-disabled):not([disabled]):hover,
+    [data-user-shell] .fi-select-input-option:not(.fi-disabled):not([disabled]):focus-visible {
+        background: var(--color-field-muted);
+    }
+
+    [data-user-shell] .fi-select-input-option.fi-selected:not(.fi-disabled):not([disabled]) {
+        background: var(--color-active-soft);
+    }
+
+    [data-user-shell] .fi-select-input-option.fi-selected .fi-dropdown-list-item-label {
+        color: var(--color-active-strong);
+        font-weight: 600;
+    }
+
     .fi-btn {
         border-radius: 0.5rem;
     }

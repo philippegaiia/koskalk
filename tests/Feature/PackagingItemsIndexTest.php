@@ -136,14 +136,16 @@ it('renders inline packaging prices with the users saved number format', functio
     'French' => ['fr_FR', '0,10'],
 ]);
 
-it('uses one bench-colored focus treatment for catalog search fields', function () {
+it('uses one slim bench-colored focus treatment for form fields', function () {
     $css = file_get_contents(resource_path('css/shared/soapkraft.css'))
         .file_get_contents(resource_path('css/app.css'));
 
     expect($css)
-        ->toContain('input:not(.sk-field-control):not(.fi-input):focus-visible')
+        ->toContain('input:not(.sk-field-control):not(.fi-input):not(.fi-fo-date-time-picker-display-text-input):focus,')
+        ->toContain('select:not(.sk-language-selector-control):not(.sk-pagination-select):not(.sk-select-control):not(.fi-select-input):focus,')
+        ->toContain('input:not(.sk-field-control):not(.fi-input):not(.fi-fo-date-time-picker-display-text-input):focus-visible,')
         ->toContain('border-color: var(--color-accent);')
-        ->toContain('box-shadow: 0 0 0 1px var(--color-accent);')
+        ->toContain('box-shadow: none;')
         ->toContain('outline: none;')
         ->toContain('.sk-field:focus-within')
         ->toContain('background: var(--color-field);')

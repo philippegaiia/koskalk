@@ -253,11 +253,14 @@
     }
 }
 
+input:not(.sk-field-control):not(.fi-input):not(.fi-fo-date-time-picker-display-text-input):focus,
+select:not(.sk-language-selector-control):not(.sk-pagination-select):not(.sk-select-control):not(.fi-select-input):focus,
+textarea:not(.fi-textarea):focus,
 input:not(.sk-field-control):not(.fi-input):not(.fi-fo-date-time-picker-display-text-input):focus-visible,
 select:not(.sk-language-selector-control):not(.sk-pagination-select):not(.sk-select-control):not(.fi-select-input):focus-visible,
 textarea:not(.fi-textarea):focus-visible {
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent);
+    box-shadow: none;
     outline: none;
 }
 

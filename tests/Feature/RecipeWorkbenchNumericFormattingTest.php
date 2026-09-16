@@ -37,6 +37,409 @@ JS;
     expect($process->getOutput())->toBe('');
 });
 
+it('keeps total mass inputs numeric while preserving localized editing text', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+const { formatDecimalInput } = await import('./resources/js/recipe-workbench/number-format.js');
+
+global.document = { activeElement: null };
+
+const state = Object.create(createFormulaSection());
+Object.assign(state, {
+    numberLocale: 'fr_FR',
+    oilUnit: 'kg',
+    oilWeight: 1,
+});
+
+const input = { value: '1,5' };
+global.document.activeElement = input;
+state.updateOilWeight({ target: input });
+
+assert.equal(state.oilWeight, 1.5);
+assert.equal(typeof state.oilWeight, 'number');
+assert.equal(input.value, '1,5');
+
+global.document.activeElement = input;
+state.normalizeOilWeightBlur({ target: input });
+assert.equal(state.oilWeight, 1.5);
+assert.equal(input.value, '1,5');
+
+state.oilWeight = 1.75;
+state.syncOilWeightInput(input);
+assert.equal(input.value, '1,5');
+
+global.document.activeElement = null;
+state.oilUnit = 'oz';
+state.oilWeight = 35.27396194958041;
+state.syncOilWeightInput(input);
+assert.equal(input.value, '35,27');
+
+state.oilUnit = 'lb';
+state.oilWeight = 2.2046226218487757;
+state.syncOilWeightInput(input);
+assert.equal(input.value, '2,205');
+
+state.oilUnit = 'g';
+state.oilWeight = 1000;
+state.syncOilWeightInput(input);
+assert.equal(input.value, '1000');
+
+assert.equal(formatDecimalInput('35,27396194958041', 'fr_FR', 2), '35,27');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
+it('preserves 1000 grams through pounds, untouched blur, and back to grams', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+global.window = {
+    location: { hash: '' },
+    localStorage: { getItem: () => null, setItem: () => {} },
+};
+global.document = { activeElement: null };
+Object.defineProperty(global, 'navigator', {
+    value: { languages: ['en-US'], language: 'en-US', maxTouchPoints: 0 },
+    configurable: true,
+});
+
+const { createRecipeWorkbench } = await import('./resources/js/recipe-workbench/component.js');
+const state = createRecipeWorkbench({
+    productFamily: { slug: 'soap' },
+    numberLocale: 'en_US',
+    numberLocaleOptions: { en_US: '1,234.56' },
+    preferredMassUnit: 'g',
+});
+state.scheduleCalculationPreview = () => {};
+state.oilUnit = 'g';
+state.oilWeight = 1000;
+
+state.changeOilUnit('lb');
+const preciseOilWeightInPounds = state.oilWeight;
+
+const input = { value: '' };
+state.syncOilWeightInput(input);
+assert.equal(input.value, '2.205');
+
+global.document.activeElement = input;
+state.normalizeOilWeightBlur({ target: input });
+assert.equal(state.oilWeight, preciseOilWeightInPounds);
+assert.equal(input.value, '2.205');
+
+global.document.activeElement = null;
+state.changeOilUnit('g');
+state.syncOilWeightInput(input);
+
+assert.equal(state.oilUnit, 'g');
+assert.ok(Math.abs(state.oilWeight - 1000) < 1e-9);
+assert.equal(input.value, '1000');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
+it('applies a localized oil weight edit on blur', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+global.document = { activeElement: null };
+
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+const state = Object.create(createFormulaSection());
+Object.assign(state, {
+    numberLocale: 'fr_FR',
+    oilUnit: 'kg',
+    oilWeight: 1,
+});
+
+const input = { value: '1,75' };
+global.document.activeElement = input;
+state.updateOilWeight({ target: input });
+state.normalizeOilWeightBlur({ target: input });
+
+assert.equal(state.oilWeight, 1.75);
+assert.equal(typeof state.oilWeight, 'number');
+assert.equal(input.value, '1,75');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
+it('clears the oil weight when the input is emptied', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+
+global.document = { activeElement: null };
+
+const state = Object.create(createFormulaSection());
+Object.assign(state, {
+    numberLocale: 'en_US',
+    oilUnit: 'g',
+    oilWeight: 1000,
+});
+
+const input = { value: '' };
+global.document.activeElement = input;
+state.updateOilWeight({ target: input });
+state.normalizeOilWeightBlur({ target: input });
+
+assert.equal(state.oilWeight, 0);
+assert.equal(input.value, '');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
+it('keeps the total weight field reactive after editing it while focused', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+global.window = {
+    location: { hash: '' },
+    localStorage: { getItem: () => null, setItem: () => {} },
+};
+global.document = { activeElement: null };
+Object.defineProperty(global, 'navigator', {
+    value: { languages: ['en-US'], language: 'en-US', maxTouchPoints: 0 },
+    configurable: true,
+});
+
+const { createRecipeWorkbench } = await import('./resources/js/recipe-workbench/component.js');
+const component = createRecipeWorkbench({
+    productFamily: { slug: 'soap' },
+    numberLocale: 'en_US',
+    numberLocaleOptions: { en_US: '1,234.56' },
+    preferredMassUnit: 'kg',
+});
+component.scheduleCalculationPreview = () => {};
+
+const input = { value: '' };
+let dependencies = new Set();
+let pendingEffect = false;
+let tracking = false;
+let reactiveState;
+
+const runEffect = () => {
+    dependencies = new Set();
+    tracking = true;
+    reactiveState.syncOilWeightInput(input);
+    tracking = false;
+    pendingEffect = false;
+};
+
+const flushEffect = () => {
+    if (pendingEffect) {
+        runEffect();
+    }
+};
+
+reactiveState = new Proxy(component, {
+    get(target, property, receiver) {
+        if (tracking) {
+            dependencies.add(property);
+        }
+
+        return Reflect.get(target, property, receiver);
+    },
+    set(target, property, value, receiver) {
+        const didSet = Reflect.set(target, property, value, receiver);
+
+        if (dependencies.has(property)) {
+            pendingEffect = true;
+        }
+
+        return didSet;
+    },
+});
+
+runEffect();
+assert.equal(input.value, '1');
+
+global.document.activeElement = input;
+input.value = '2';
+reactiveState.updateOilWeight({ target: input });
+flushEffect();
+assert.equal(input.value, '2');
+
+global.document.activeElement = null;
+reactiveState.changeOilUnit('lb');
+flushEffect();
+
+assert.equal(reactiveState.oilWeight, 4.409245243697551);
+assert.equal(input.value, '4.409');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
+it('uses dedicated mass input synchronization for both shared formula benches', function (): void {
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+
+    expect(substr_count($formulaSettings, 'x-effect="syncOilWeightInput($el)"'))
+        ->toBe(2)
+        ->and(substr_count($formulaSettings, '@input="updateOilWeight($event)"'))
+        ->toBe(2)
+        ->and(substr_count($formulaSettings, '@blur="normalizeOilWeightBlur($event)"'))
+        ->toBe(2)
+        ->and($formulaSettings)
+        ->not->toContain('x-model="oilWeight"');
+});
+
+it('uses the shared input treatment for soap setting values without changing cosmetic styling', function (): void {
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    preg_match('/<input aria-labelledby="setting-base-weight"[^>]+>/', $formulaSettings, $soapOilWeightInput);
+    preg_match('/<input aria-labelledby="setting-water-mode"[^>]+>/', $formulaSettings, $soapWaterValueInput);
+    preg_match('/<input aria-labelledby="setting-batch-weight"[^>]+>/', $formulaSettings, $cosmeticTotalBatchInput);
+
+    expect($soapOilWeightInput[0] ?? '')
+        ->toContain('sk-input numeric mt-3')
+        ->not->toContain('focus:outline')
+        ->and($soapWaterValueInput[0] ?? '')
+        ->toContain('sk-input numeric mt-3')
+        ->not->toContain('focus:outline')
+        ->and($cosmeticTotalBatchInput[0] ?? '')
+        ->not->toContain('sk-input')
+        ->and($appStylesSource)
+        ->toContain('input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input)');
+});
+
 it('formats percentage totals with locale-aware two-decimal precision', function (): void {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

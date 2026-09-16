@@ -1317,7 +1317,10 @@ it('returns backend soap calculation preview data for the workbench', function (
     expect($result['ok'])->toBeTrue()
         ->and($result['calculation'])->not->toBeNull()
         ->and($result['calculation']['properties']['fatty_acid_profile']['oleic'])->toBe(71.0)
-        ->and($result['calculation']['properties']['qualities'])->toHaveKey('unmolding_firmness')
+        ->and($result['calculation']['properties']['quality_model_version'])->toBe('2026-09-13')
+        ->and($result['calculation']['properties']['qualities'])->toHaveKeys(['unmolding_firmness', 'shrinkage_risk'])
+        ->and($result['calculation']['properties']['quality_applicability']['shrinkage_risk']['applies'])->toBeFalse()
+        ->and($result['calculation']['properties']['quality_applicability']['bubble_volume']['display'])->toBe('tendency')
         ->and($result['calculation']['properties']['warnings'])->toContain('high_koh_context_process_dependent');
 });
 

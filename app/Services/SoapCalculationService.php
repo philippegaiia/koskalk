@@ -8,6 +8,11 @@ use InvalidArgumentException;
 
 class SoapCalculationService
 {
+    public const QUALITY_MODEL_VERSION = '2026-09-13';
+
+    /** Weighted C6–C14 content of the documented zero-superfat reference profile. */
+    private const CLEANSING_REFERENCE = 76.62;
+
     private const GLYCERINE_FROM_NAOH_RATIO = 92.09382 / 119.9922;
 
     private const GLYCERINE_FROM_KOH_RATIO = 92.09382 / 168.3168;
@@ -114,13 +119,13 @@ class SoapCalculationService
             $kohPurityPercentage,
         );
         $waterWeight = $this->calculateWaterWeight($waterMode, $waterValue, $oilsWeight, $selectedLye['total_active_lye_weight']);
-        $waterProcessModifiers = $this->calculateWaterProcessModifiers($waterWeight, $oilsWeight);
+        $waterProcessModifiers = $this->calculateWaterProcessModifiers($waterWeight, $oilsWeight, $selectedLye['total_active_lye_weight']);
 
         $fattyAcidProfile = $this->averageProfile($fattyAcidTotals, $oilsWeight);
         $fattyAcidGroups = $this->deriveFattyAcidGroups($fattyAcidProfile);
         $superfatEffects = $this->calculateSuperfatEffects($fattyAcidProfile, $fattyAcidGroups, $superfat);
-        $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical, $superfat, $superfatEffects, $waterProcessModifiers);
-        $qualityApplicability = $this->deriveQualityApplicability($qualities, $soapContext);
+        $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical, $superfat, $superfatEffects, $waterProcessModifiers, $soapContext);
+        $qualityApplicability = $this->deriveQualityApplicability($qualities, $soapContext, $superfat);
         $warnings = $this->buildSoapWarnings($qualities, $fattyAcidGroups, $superfat, $soapContext);
 
         return [
@@ -152,6 +157,7 @@ class SoapCalculationService
             ],
             'soap_context' => $soapContext,
             'properties' => [
+                'quality_model_version' => self::QUALITY_MODEL_VERSION,
                 'fatty_acid_profile' => $fattyAcidProfile,
                 'fatty_acid_groups' => $fattyAcidGroups,
                 'superfat_effects' => $superfatEffects,
@@ -302,7 +308,7 @@ class SoapCalculationService
      * @param  array<string, mixed>  $soapContext
      * @return array<string, array<string, bool|float|string>>
      */
-    private function deriveQualityApplicability(array $qualities, array $soapContext): array
+    private function deriveQualityApplicability(array $qualities, array $soapContext, float $superfat): array
     {
         $barOnlyMetrics = [
             'unmolding_firmness',
@@ -311,6 +317,7 @@ class SoapCalculationService
             'cure_speed',
             'slime_risk',
             'dos_risk',
+            'shrinkage_risk',
         ];
         $skinUseMetrics = [
             'cleansing_strength',
@@ -325,6 +332,17 @@ class SoapCalculationService
         $applicability = [];
 
         foreach ($qualities as $quality => $_score) {
+            if ($superfat < 0 && in_array($quality, ['cleansing_strength', 'mildness', 'conditioning_feel'], true)) {
+                $applicability[$quality] = [
+                    'applies' => false,
+                    'confidence' => 0.0,
+                    'display' => 'not_applicable',
+                    'reason' => 'Finished-soap skin feel requires a completed neutralization workflow.',
+                ];
+
+                continue;
+            }
+
             if (! $barMetricsApplicable && in_array($quality, $barOnlyMetrics, true)) {
                 $applicability[$quality] = [
                     'applies' => false,
@@ -336,10 +354,10 @@ class SoapCalculationService
                 continue;
             }
 
-            if ($this->isLiquidOrHighKohContext($soapContext) && in_array($quality, $skinUseMetrics, true)) {
+            if (($soapContext['koh_percentage'] ?? 0.0) > 0 && in_array($quality, [...$skinUseMetrics, ...$barOnlyMetrics], true)) {
                 $applicability[$quality] = [
                     'applies' => true,
-                    'confidence' => $this->roundValue(max(0.35, $barContext)),
+                    'confidence' => $this->roundValue(max(0.35, min(0.75, $barContext))),
                     'display' => 'tendency',
                 ];
 
@@ -478,6 +496,7 @@ class SoapCalculationService
         float $superfat,
         array $superfatEffects,
         array $waterProcessModifiers,
+        array $soapContext,
     ): array {
         $caprylic = $fattyAcidProfile['caprylic'] ?? 0.0;
         $capric = $fattyAcidProfile['capric'] ?? 0.0;
@@ -498,6 +517,7 @@ class SoapCalculationService
         $superfatLatherPenalty = $superfatEffects['superfat_lather_penalty'] ?? 0.0;
         $processFirmnessModifier = $waterProcessModifiers['firmness'] ?? 0.0;
         $processCureModifier = $waterProcessModifiers['cure_speed'] ?? 0.0;
+        $processHardnessModifier = $waterProcessModifiers['cured_hardness'] ?? 0.0;
         $cleansingStrength = max(0.0, min(100.0, $effectiveCleansing));
         $hs = $groups['hs'] ?? 0.0;
         $mu = $groups['mu'] ?? 0.0;
@@ -511,8 +531,15 @@ class SoapCalculationService
         $ricinoleicExcess = max(0.0, $ricinoleic - 10.0);
         $highHsSolubilityDrag = max(0.0, $hs - 25.0);
         $moderateHardSaturatedStructure = max(0.0, min($hs - 22.0, 34.0 - $hs, 6.0));
-        $unmoldingStructureBonus = 0.35 * $moderateHardSaturatedStructure;
         $cureStructureBonus = 0.90 * $moderateHardSaturatedStructure;
+        $highOleicStructure = 45.0 * $this->smoothTransition($oleic, 65.0, 75.0)
+            * (1.0 - $this->smoothTransition($vs, 0.0, 15.0));
+        $kohRatio = (float) $soapContext['koh_percentage'] / 100.0;
+        $barStructureFactor = 1.0 - (0.60 * $kohRatio);
+        $kohLatherSupport = 0.20 * $hs * $kohRatio;
+        $castileSlimeModifier = 8.0 * $this->smoothTransition($mu, 60.0, 70.0)
+            * (1.0 - $this->smoothTransition($vs, 7.0, 17.0))
+            * (1.0 - $this->smoothTransition($hs, 15.0, 25.0));
 
         return [
             'hardness' => $this->roundValue($lauric + $myristic + $palmitic + $stearic),
@@ -520,17 +547,18 @@ class SoapCalculationService
             'conditioning' => $this->roundValue($oleic + $ricinoleic + $linoleic + $linolenic),
             'bubbly' => $this->roundValue($lauric + $myristic + $ricinoleic),
             'creamy' => $this->roundValue($palmitic + $stearic + $ricinoleic),
-            'unmolding_firmness' => $this->roundValue(max(0.0, min(100.0, (0.85 * $vs) + (0.95 * $hs) - (0.40 * $mu) - $superfatSoftening + $processFirmnessModifier + $unmoldingStructureBonus + 18))),
-            'cured_hardness' => $this->roundValue(max(0.0, min(100.0, (1.15 * $hs) + (0.55 * $vs) + (0.20 * $mu) - (0.50 * $pu) - (0.45 * $superfatSoftening) + 8))),
-            'longevity' => $this->roundValue(max(0.0, min(100.0, (0.85 * $hs) + (0.18 * $vs) - (0.35 * $sp) - (0.30 * $pu) - (0.70 * $superfatSoftening) + 20))),
+            'unmolding_firmness' => $this->roundValue(max(0.0, min(100.0, ((0.85 * $vs) + (1.25 * $hs) - (0.25 * $mu) - $superfatSoftening + $processFirmnessModifier + 18) * $barStructureFactor))),
+            'cured_hardness' => $this->roundValue(max(0.0, min(100.0, ((1.35 * $hs) + (0.55 * $vs) + (0.20 * $mu) - (0.50 * $pu) - (0.45 * $superfatSoftening) + $processHardnessModifier + $highOleicStructure + 8) * $barStructureFactor))),
+            'longevity' => $this->roundValue(max(0.0, min(100.0, ((0.85 * $hs) + (0.18 * $vs) - (0.35 * $sp) - (0.30 * $pu) - (0.70 * $superfatSoftening) + 20) * $barStructureFactor))),
             'cleansing_strength' => $this->roundValue($cleansingStrength),
             'mildness' => $this->roundValue(max(0.0, min(100.0, 78 - (1.00 * $cleansingStrength) + (0.18 * $mu) - (0.12 * $pu) + (0.30 * $superfatSoftening)))),
-            'bubble_volume' => $this->roundValue(max(0.0, min(100.0, 8 + (1.15 * $lauricMyristic) + (0.55 * $caprylicCapric) + (0.85 * $ricinoleicSupport) - (0.06 * $highHsSolubilityDrag) - (0.80 * $ricinoleicExcess) - $superfatLatherPenalty))),
+            'bubble_volume' => $this->roundValue(max(0.0, min(100.0, 8 + (1.15 * $lauricMyristic) + (0.55 * $caprylicCapric) + (0.85 * $ricinoleicSupport) - (0.06 * $highHsSolubilityDrag) - (0.80 * $ricinoleicExcess) - $superfatLatherPenalty + $kohLatherSupport))),
             'creamy_lather' => $this->roundValue(max(0.0, min(100.0, 4 + (0.95 * $hs) + (0.18 * $stearic) + (0.75 * $ricinoleicSupport) + (0.16 * $mu) - (0.10 * $vs) - (0.35 * $superfatLatherPenalty) - (0.35 * $ricinoleicExcess)))),
             'lather_stability' => $this->roundValue(max(0.0, min(100.0, 8 + (0.75 * $hs) + (0.20 * $solubleBubbleFats) + (1.40 * $ricinoleicSupport) - (0.45 * $ricinoleicExcess) - $superfatLatherPenalty))),
             'conditioning_feel' => $this->roundValue(max(0.0, min(100.0, (0.35 * $mu) + (0.15 * min($pu, 15.0)) + (0.15 * $sp) - (0.45 * $cleansingStrength) + (0.20 * $superfatSoftening) + 35))),
             'dos_risk' => $this->roundValue($this->calculateDosRisk($pu, $superfat, $iodine)),
-            'slime_risk' => $this->roundValue(max(0.0, min(100.0, (0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (0.25 * $superfatSoftening) + (($mu > 65 && $vs < 12 && $hs < 20) ? 8 : 0)))),
+            'slime_risk' => $this->roundValue(max(0.0, min(100.0, ((0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (0.25 * $superfatSoftening) + $castileSlimeModifier) * (1.0 - (0.75 * $kohRatio))))),
+            'shrinkage_risk' => $this->roundValue($waterProcessModifiers['shrinkage_risk']),
             'cure_speed' => $this->roundValue(max(0.0, min(100.0, (0.75 * $vs) + (0.80 * $hs) - (0.52 * $mu) - (0.55 * $superfatSoftening) + $processCureModifier + $cureStructureBonus + 20))),
             'iodine' => $this->roundValue($iodine),
             'ins' => $this->roundValue($ins),
@@ -543,6 +571,7 @@ class SoapCalculationService
      */
     private function deriveFattyAcidGroups(array $fattyAcidProfile): array
     {
+        $caproic = $fattyAcidProfile['caproic'] ?? 0.0;
         $caprylic = $fattyAcidProfile['caprylic'] ?? 0.0;
         $capric = $fattyAcidProfile['capric'] ?? 0.0;
         $lauric = $fattyAcidProfile['lauric'] ?? 0.0;
@@ -563,7 +592,7 @@ class SoapCalculationService
         $punicic = $fattyAcidProfile['punicic'] ?? 0.0;
         $ricinoleic = $fattyAcidProfile['ricinoleic'] ?? 0.0;
 
-        $vs = $caprylic + $capric + $lauric + $myristic;
+        $vs = $caproic + $caprylic + $capric + $lauric + $myristic;
         $hs = $palmitic + $stearic + $arachidic + $behenic + $lignoceric;
         $mu = $oleic + $palmitoleic + $gondoic + $erucic + $nervonic;
         $pu = $linoleic + $linolenic + $gammaLinolenic + $punicic;
@@ -591,25 +620,19 @@ class SoapCalculationService
         $myristic = $fattyAcidProfile['myristic'] ?? 0.0;
         $capric = $fattyAcidProfile['capric'] ?? 0.0;
         $caprylic = $fattyAcidProfile['caprylic'] ?? 0.0;
-        $hs = $fattyAcidGroups['hs'] ?? 0.0;
-
-        $baseCleansingPotential = $this->roundValue(
-            max(0.0, (1.55 * ($lauric + $myristic)) + (1.00 * $capric) + (0.65 * $caprylic) + (0.20 * ($fattyAcidGroups['vs'] ?? 0.0)) - (0.10 * $hs))
-        );
-
-        $superfatBuffer = $this->roundValue(
-            max(0.0, $superfat * (0.35 + (0.020 * $baseCleansingPotential)))
-        );
-
-        $effectiveCleansing = $this->roundValue(max(0.0, $baseCleansingPotential - $superfatBuffer));
+        $caproic = $fattyAcidProfile['caproic'] ?? 0.0;
+        $weightedCleansingAcids = max(0.0, $lauric + $myristic + $capric + (0.65 * $caprylic) + (0.35 * $caproic));
+        $baseCleansingPotential = 100.0 * min(1.0, ($weightedCleansingAcids / self::CLEANSING_REFERENCE) ** 0.62);
+        $effectiveCleansing = $baseCleansingPotential * (1.0 - (max(0.0, $superfat) / 100.0)) ** 3.9;
+        $superfatBuffer = $baseCleansingPotential - $effectiveCleansing;
         $dosRiskModifier = $this->roundValue(($fattyAcidGroups['pu'] ?? 0.0) * ($superfat / 100));
         $superfatSoftening = $this->roundValue(max(0.0, ($superfat - 2.0) * 0.80));
         $superfatLatherPenalty = $this->roundValue(max(0.0, ($superfat - 5.0) * 0.65));
 
         return [
-            'base_cleansing_potential' => $baseCleansingPotential,
-            'superfat_buffer' => $superfatBuffer,
-            'effective_cleansing' => $effectiveCleansing,
+            'base_cleansing_potential' => $this->roundValue($baseCleansingPotential),
+            'superfat_buffer' => $this->roundValue($superfatBuffer),
+            'effective_cleansing' => $this->roundValue($effectiveCleansing),
             'dos_risk_modifier' => $dosRiskModifier,
             'superfat_softening' => $superfatSoftening,
             'superfat_lather_penalty' => $superfatLatherPenalty,
@@ -619,22 +642,36 @@ class SoapCalculationService
     /**
      * @return array<string, float>
      */
-    private function calculateWaterProcessModifiers(float $waterWeight, float $oilsWeight): array
+    private function calculateWaterProcessModifiers(float $waterWeight, float $oilsWeight, float $activeLyeWeight): array
     {
         if ($oilsWeight <= 0) {
             return [
                 'firmness' => 0.0,
                 'cure_speed' => 0.0,
+                'cured_hardness' => 0.0,
+                'shrinkage_risk' => 0.0,
             ];
         }
 
         $waterRatio = $waterWeight / $oilsWeight;
         $modifier = max(-6.0, min(6.0, (0.38 - $waterRatio) * 30.0));
+        $concentration = $activeLyeWeight > 0
+            ? 100.0 * $activeLyeWeight / ($activeLyeWeight + max(0.0, $waterWeight))
+            : 0.0;
 
         return [
             'firmness' => $this->roundValue($modifier),
             'cure_speed' => $this->roundValue($modifier * 1.15),
+            'cured_hardness' => $this->roundValue($modifier * 0.5),
+            'shrinkage_risk' => 100.0 / (1.0 + exp(($concentration - 28.0) / 3.0)),
         ];
+    }
+
+    private function smoothTransition(float $value, float $start, float $end): float
+    {
+        $position = max(0.0, min(1.0, ($value - $start) / ($end - $start)));
+
+        return $position * $position * (3.0 - (2.0 * $position));
     }
 
     private function calculateDosRisk(float $pu, float $superfat, float $iodine): float

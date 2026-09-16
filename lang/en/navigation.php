@@ -9,8 +9,13 @@ return [
         'media_library' => 'Media Library',
         'compliance' => 'Compliance',
         'account' => 'Account',
+        'admin' => 'Admin',
         'settings' => 'Settings',
         'home' => 'Home',
+    ],
+    'sections' => [
+        'work' => 'Work',
+        'account' => 'Account and settings',
     ],
     'menu' => [
         'close' => 'Close menu',

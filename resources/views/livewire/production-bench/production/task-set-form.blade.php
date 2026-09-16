@@ -78,7 +78,7 @@
                 </div>
                 <label class="w-full text-sm sm:max-w-xs">
                     <span class="font-medium">{{ __('production_bench.common.search') }}</span>
-                    <input wire:model.live.debounce.300ms="productSearch" type="search" class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.settings.search_products') }}">
+                    <input autocomplete="off" wire:model.live.debounce.300ms="productSearch" type="search" class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.settings.search_products') }}">
                 </label>
             </div>
             <p class="text-xs text-[var(--color-ink-soft)]">{{ trans_choice('production_bench.settings.products_selected', count($selectedRecipeIds), ['count' => count($selectedRecipeIds)]) }}</p>

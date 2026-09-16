@@ -10,6 +10,8 @@
     'retainSelection' => true,
     'allowEmpty' => true,
     'disabled' => false,
+    'inlineOptions' => false,
+    'wrapLabels' => false,
     'optionAddedEvent' => null,
     'optionAddedIdKey' => 'id',
     'optionAddedLabelKey' => 'label',
@@ -27,21 +29,44 @@
         allowEmpty: @js($allowEmpty),
     })"
     @if ($optionAddedEvent) x-on:{{ $optionAddedEvent }}.window="registerOption($event.detail, @js($optionAddedIdKey), @js($optionAddedLabelKey))" @endif
+    @if ($wrapLabels)
+        @search-combobox-selected="$nextTick(() => $refs.selectionLabel?.focus())"
+    @endif
     @click.outside="closeOptions()"
 >
     <label for="{{ $id }}" class="sr-only">{{ $label }}</label>
-    <div class="sk-combobox-control flex items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] transition">
+    <div :data-has-selection="selectedId !== null && selectedId !== ''" class="sk-combobox-control flex items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] transition">
+        @if ($wrapLabels)
+            <button
+                x-ref="selectionLabel"
+                x-cloak
+                x-show="! open && selectedLabel !== ''"
+                type="button"
+                @click="open = true; $nextTick(() => document.getElementById(@js($id))?.focus())"
+                aria-haspopup="listbox"
+                :aria-expanded="open.toString()"
+                aria-controls="{{ $id }}-options"
+                :aria-label="@js($label) + ': ' + selectedLabel"
+                class="min-w-0 flex-1 whitespace-normal break-words px-4 py-3 text-left text-sm text-[var(--color-ink-strong)]"
+                x-text="selectedLabel"
+                @disabled($disabled)
+            ></button>
+        @endif
         <input
+            @if ($wrapLabels) x-show="open || selectedLabel === ''" @endif
             id="{{ $id }}"
             x-model="query"
             @focus="open = true"
             @input="handleInput()"
             @keydown.enter.prevent="selectActiveOption()"
-            @keydown.escape.prevent="closeOptions()"
+            @keydown.escape.prevent="closeOptions(); @if ($wrapLabels) $nextTick(() => $refs.selectionLabel?.focus()) @endif"
             @keydown.arrow-down.prevent="open = true; moveActive(1)"
             @keydown.arrow-up.prevent="open = true; moveActive(-1)"
             type="text"
             inputmode="search"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
             role="combobox"
             aria-autocomplete="list"
             aria-label="{{ $label }}"
@@ -65,7 +90,7 @@
         x-show="open"
         id="{{ $id }}-options"
         role="listbox"
-        class="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-72 overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-[0_10px_30px_color-mix(in_oklch,var(--color-ink-strong)_14%,transparent)]"
+        class="{{ $inlineOptions ? 'relative mt-1.5 max-h-48' : 'absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-72' }} overflow-y-auto overscroll-contain rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-[0_10px_30px_color-mix(in_oklch,var(--color-ink-strong)_14%,transparent)]"
     >
         <template x-if="filteredOptions.length === 0">
             <p class="px-3 py-2.5 text-sm text-[var(--color-ink-soft)]">{{ $emptyMessage }}</p>
@@ -82,10 +107,16 @@
                 :class="{ 'bg-[var(--color-field-muted)]': activeIndex === index || sameId(selectedId, option.id) }"
             >
                 <span class="min-w-0">
-                    <span class="block truncate font-medium text-[var(--color-ink-strong)]" x-text="option.label"></span>
-                    <span x-show="option.description" class="mt-0.5 block truncate text-xs text-[var(--color-ink-soft)]" x-text="option.description"></span>
+                    <span class="block {{ $wrapLabels ? 'whitespace-normal break-words' : 'truncate' }} font-medium text-[var(--color-ink-strong)]" x-text="option.label"></span>
+                    <span x-show="option.description" class="mt-0.5 block {{ $wrapLabels ? 'whitespace-normal break-words' : 'truncate' }} text-xs text-[var(--color-ink-soft)]" x-text="option.description"></span>
                 </span>
+                @if ($wrapLabels)
+                    <span x-show="sameId(selectedId, option.id)" aria-hidden="true" class="shrink-0 text-[var(--color-accent-strong)]">
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6" /></svg>
+                    </span>
+                @else
                 <span class="shrink-0 text-xs font-medium text-[var(--color-accent-strong)]" x-text="sameId(selectedId, option.id) ? 'Selected' : @js($actionLabel)"></span>
+                @endif
             </button>
         </template>
     </div>

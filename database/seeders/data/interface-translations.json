@@ -16116,6 +16116,18 @@
     },
     {
       "group": "navigation",
+      "key": "items.admin",
+      "text": {
+        "de": "Admin",
+        "es": "Admin",
+        "fr": "Admin",
+        "it": "Admin",
+        "nl": "Admin",
+        "pt_BR": "Admin"
+      }
+    },
+    {
+      "group": "navigation",
       "key": "items.compliance",
       "text": {
         "de": "Konformität",
@@ -16244,6 +16256,30 @@
         "it": "Mostra o nascondi il menu",
         "nl": "Menu tonen of verbergen",
         "pt_BR": "Mostrar ou ocultar menu"
+      }
+    },
+    {
+      "group": "navigation",
+      "key": "sections.account",
+      "text": {
+        "de": "Konto und Einstellungen",
+        "es": "Cuenta y ajustes",
+        "fr": "Compte et paramètres",
+        "it": "Account e impostazioni",
+        "nl": "Account en instellingen",
+        "pt_BR": "Conta e configurações"
+      }
+    },
+    {
+      "group": "navigation",
+      "key": "sections.work",
+      "text": {
+        "de": "Arbeitsbereich",
+        "es": "Trabajo",
+        "fr": "Espace de travail",
+        "it": "Lavoro",
+        "nl": "Werkruimte",
+        "pt_BR": "Trabalho"
       }
     },
     {
@@ -35844,6 +35880,66 @@
     },
     {
       "group": "workbench",
+      "key": "qualities.bar_unavailable",
+      "text": {
+        "de": "Festigkeit und Reifung von Stückseife lassen sich für diese Laugenmischung nicht abschätzen. Siehe Schaum & Hautgefühl für Formulierungstendenzen.",
+        "es": "Las estimaciones de firmeza y curado de la pastilla no están disponibles para esta mezcla de álcalis. Consulta Espuma y sensación para ver tendencias de formulación.",
+        "fr": "Les estimations de fermeté et de cure du savon solide ne sont pas disponibles pour ce mélange d’alcalis. Consultez Mousse et toucher pour les tendances de formulation.",
+        "it": "Le stime di consistenza e stagionatura della saponetta non sono disponibili per questa miscela di alcali. Consulta Schiuma e sensazione per le tendenze della formula.",
+        "nl": "Schattingen van stevigheid en rijping van zeepblokken zijn niet beschikbaar voor dit alkalimengsel. Zie Schuim en huidgevoel voor formuleringstendensen.",
+        "pt_BR": "As estimativas de firmeza e cura da barra não estão disponíveis para esta mistura de álcalis. Consulte Espuma e sensação para ver tendências da formulação."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.cleansing_balanced",
+      "text": {
+        "de": "Im empfohlenen Reinigungsbereich für Körperseifen im täglichen Gebrauch.",
+        "es": "Dentro del rango de limpieza sugerido para pastillas corporales de uso diario.",
+        "fr": "Dans la plage de pouvoir lavant conseillée pour un savon corporel quotidien.",
+        "it": "Nell’intervallo detergente suggerito per saponette corpo di uso quotidiano.",
+        "nl": "Binnen het aanbevolen reinigingsbereik voor dagelijkse lichaamszeep.",
+        "pt_BR": "Dentro da faixa de limpeza sugerida para sabonetes corporais de uso diário."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.cleansing_high",
+      "text": {
+        "de": "Über dem empfohlenen Bereich für tägliche Körperseifen; kann stärker entfettend wirken.",
+        "es": "Por encima del rango sugerido para pastillas corporales de uso diario; puede desengrasar más la piel.",
+        "fr": "Au-dessus de la plage conseillée pour un savon corporel quotidien ; peut être plus délipidant.",
+        "it": "Al di sopra dell’intervallo suggerito per saponette corpo quotidiane; può risultare più sgrassante.",
+        "nl": "Boven het aanbevolen bereik voor dagelijkse lichaamszeep; kan sterker ontvetten.",
+        "pt_BR": "Acima da faixa sugerida para sabonetes corporais de uso diário; pode remover mais oleosidade da pele."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.cleansing_low",
+      "text": {
+        "de": "Geringer Beitrag schnell reinigender Fettsäuren. Ein niedriger Wert bedeutet nicht, dass die Seife nicht reinigt.",
+        "es": "Baja contribución de ácidos grasos de limpieza rápida. Una puntuación baja no significa que el jabón no limpie.",
+        "fr": "Faible contribution des acides gras au pouvoir lavant rapide. Un indice bas ne signifie pas que le savon ne lave pas.",
+        "it": "Basso contributo degli acidi grassi a detergenza rapida. Un valore basso non significa che il sapone non pulisca.",
+        "nl": "Geringe bijdrage van snel reinigende vetzuren. Een lage score betekent niet dat de zeep niet reinigt.",
+        "pt_BR": "Baixa contribuição de ácidos graxos de limpeza rápida. Uma pontuação baixa não significa que o sabonete não limpe."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.cleansing_very_high",
+      "text": {
+        "de": "Sehr hohe schnelle Reinigungskraft; Verwendungszweck und Überfettung berücksichtigen.",
+        "es": "Poder de limpieza rápida muy alto; considera el uso previsto y el sobreengrasado.",
+        "fr": "Pouvoir lavant rapide très élevé ; tenez compte de l’usage prévu et du surgraissage.",
+        "it": "Potere detergente rapido molto elevato; considera l’uso previsto e il surgrassaggio.",
+        "nl": "Zeer sterke snelle reiniging; houd rekening met het beoogde gebruik en de overvetting.",
+        "pt_BR": "Poder de limpeza rápida muito alto; considere o uso pretendido e o sobreengorduramento."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.disclaimer",
       "text": {
         "de": "Diese Werte sind Schätzungen. Verfahren, Zusätze und Reifebedingungen beeinflussen die fertige Seife.",
@@ -35868,6 +35964,18 @@
     },
     {
       "group": "workbench",
+      "key": "qualities.hardness_four_weeks",
+      "text": {
+        "de": "Härte nach vier Wochen",
+        "es": "Dureza a las cuatro semanas",
+        "fr": "Dureté à quatre semaines",
+        "it": "Durezza a quattro settimane",
+        "nl": "Hardheid na vier weken",
+        "pt_BR": "Dureza após quatro semanas"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.review_title",
       "text": {
         "de": "Zu prüfende Punkte",
@@ -35876,6 +35984,42 @@
         "it": "Punti da verificare",
         "nl": "Aandachtspunten",
         "pt_BR": "Pontos a revisar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.shrinkage_high",
+      "text": {
+        "de": "Mehr Verdünnungsflüssigkeit kann während der Reifung zu sichtbarer Schrumpfung führen. Dieser Index sagt weder Abmessungen noch Verformungen voraus.",
+        "es": "Más líquido de dilución puede causar contracción visible durante el curado. Este índice no predice dimensiones ni deformaciones.",
+        "fr": "Plus de liquide de dilution peut entraîner un retrait visible pendant la cure. Cet indice ne prédit ni les dimensions ni les déformations.",
+        "it": "Più liquido di diluizione può causare un ritiro visibile durante la stagionatura. Questo indice non prevede dimensioni né deformazioni.",
+        "nl": "Meer verdunningsvloeistof kan zichtbare krimp tijdens het rijpen veroorzaken. Deze index voorspelt geen afmetingen of vervorming.",
+        "pt_BR": "Mais líquido de diluição pode causar retração visível durante a cura. Este índice não prevê dimensões nem deformações."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.shrinkage_label",
+      "text": {
+        "de": "Schrumpfung während der Reifung",
+        "es": "Contracción durante el curado",
+        "fr": "Retrait pendant la cure",
+        "it": "Ritiro durante la stagionatura",
+        "nl": "Krimp tijdens het rijpen",
+        "pt_BR": "Retração durante a cura"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.shrinkage_low",
+      "text": {
+        "de": "Geringere Neigung zu sichtbarer Schrumpfung. Dieser Index ist kein Prozentsatz des Größen- oder Gewichtsverlusts.",
+        "es": "Menor tendencia a la contracción visible. Este índice no es un porcentaje de pérdida de tamaño o peso.",
+        "fr": "Tendance plus faible au retrait visible. Cet indice n’est pas un pourcentage de perte de dimensions ou de poids.",
+        "it": "Minore tendenza al ritiro visibile. Questo indice non è una percentuale di perdita di dimensioni o peso.",
+        "nl": "Lagere neiging tot zichtbare krimp. Deze index is geen percentage van grootte- of gewichtsverlies.",
+        "pt_BR": "Menor tendência à retração visível. Este índice não é uma porcentagem de perda de tamanho ou peso."
       }
     },
     {
@@ -36206,36 +36350,36 @@
       "group": "workbench",
       "key": "settings.lye_liquid_fresh_weight",
       "text": {
-        "de": "Frischgewicht (:unit)",
-        "es": "Peso fresco (:unit)",
-        "fr": "Poids frais (:unit)",
-        "it": "Peso fresco (:unit)",
-        "nl": "Versgewicht (:unit)",
-        "pt_BR": "Peso fresco (:unit)"
+        "de": "Gewicht (:unit)",
+        "es": "Peso (:unit)",
+        "fr": "Poids (:unit)",
+        "it": "Peso (:unit)",
+        "nl": "Gewicht (:unit)",
+        "pt_BR": "Peso (:unit)"
       }
     },
     {
       "group": "workbench",
       "key": "settings.lye_liquid_fresh_weight_for",
       "text": {
-        "de": "Frischgewicht für :ingredient: :weight :unit",
-        "es": "Peso fresco de :ingredient: :weight :unit",
-        "fr": "Poids frais de :ingredient : :weight :unit",
-        "it": "Peso fresco di :ingredient: :weight :unit",
-        "nl": "Versgewicht van :ingredient: :weight :unit",
-        "pt_BR": "Peso fresco de :ingredient: :weight :unit"
+        "de": "Gewicht für :ingredient: :weight :unit",
+        "es": "Peso de :ingredient: :weight :unit",
+        "fr": "Poids de :ingredient : :weight :unit",
+        "it": "Peso di :ingredient: :weight :unit",
+        "nl": "Gewicht van :ingredient: :weight :unit",
+        "pt_BR": "Peso de :ingredient: :weight :unit"
       }
     },
     {
       "group": "workbench",
       "key": "settings.lye_liquid_fresh_weight_mobile",
       "text": {
-        "de": "Frischgewicht",
-        "es": "Peso fresco",
-        "fr": "Poids frais",
-        "it": "Peso fresco",
-        "nl": "Versgewicht",
-        "pt_BR": "Peso fresco"
+        "de": "Gewicht",
+        "es": "Peso",
+        "fr": "Poids",
+        "it": "Peso",
+        "nl": "Gewicht",
+        "pt_BR": "Peso"
       }
     },
     {

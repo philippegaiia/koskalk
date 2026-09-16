@@ -1,3 +1,5 @@
+import { parseDecimalInput } from './number-format.js';
+
 export const MASS_UNITS = Object.freeze(['g', 'kg', 'oz', 'lb']);
 
 const GRAMS_PER_UNIT = Object.freeze({
@@ -22,13 +24,13 @@ export function convertMass(value, fromUnit, toUnit) {
         return roundMass(value);
     }
 
-    const quantity = Number(value);
+    const quantity = parseDecimalInput(value);
 
     if (!Number.isFinite(quantity) || quantity < 0) {
         return 0;
     }
 
-    return roundMass((quantity * GRAMS_PER_UNIT[fromUnit]) / GRAMS_PER_UNIT[toUnit]);
+    return (quantity * GRAMS_PER_UNIT[fromUnit]) / GRAMS_PER_UNIT[toUnit];
 }
 
 export function convertMassPrice(value, fromUnit, toUnit) {

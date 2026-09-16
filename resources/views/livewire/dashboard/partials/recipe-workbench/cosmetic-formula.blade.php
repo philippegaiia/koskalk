@@ -1,5 +1,5 @@
 <section class="overflow-hidden sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-4">
+ <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.cosmetic.title') }}</h3>
@@ -15,7 +15,7 @@
  <div class="space-y-5 bg-[var(--color-surface)] py-5">
  <template x-for="phase in phaseOrder" :key="phase.key">
  <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-panel)] transition-shadow duration-300">
- <div class="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+ <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-4 py-3">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0 flex-1">
  <input x-model="phase.name" type="text" aria-label="{{ __('workbench.cosmetic.phase_name') }}" placeholder="{{ __('workbench.cosmetic.phase_name') }}" class="w-full max-w-md rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2 text-base font-semibold text-[var(--color-ink-strong)] transition" />

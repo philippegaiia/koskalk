@@ -50,7 +50,12 @@ it('keeps the material view navigation visibly selected across live updates', fu
     // Materials is the exact destination, so it is the only `page`. Its
     // parent tab shares the same href and is marked as a `branch` instead.
     $assertInventoryNavigationIsActive = function (string $html): void {
-        expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+        $document = new DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new DOMXPath($document);
+        $currentLinks = $xpath->query('//nav[@aria-label="Production Bench"]//*[@aria-current="page"]');
+
+        expect($currentLinks->length)->toBe(1)
             ->and(Str::of($html)->afterLast('href="'.route('production-bench.inventory').'"')->before('</a>')->toString())
             ->toContain('aria-current="page"')
             ->toContain('class="sk-nav-item is-active"')
@@ -76,7 +81,12 @@ it('marks exactly one navigation entry current on every production bench page', 
         ->assertOk()
         ->getContent();
 
-    expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+    $document = new DOMDocument;
+    @$document->loadHTML($html);
+    $xpath = new DOMXPath($document);
+    $currentLinks = $xpath->query('//nav[@aria-label="Production Bench"]//*[@aria-current="page"]');
+
+    expect($currentLinks->length)->toBe(1)
         ->and(Str::of($html)->afterLast('href="'.route($currentRoute).'"')->before('</a>')->toString())
         ->toContain('aria-current="page"');
 })->with([
@@ -126,7 +136,12 @@ it('renders explicit production bench navigation state without relying on the re
     // parent and child share an href (Materials, Production runs,
     // Purchasing suppliers) the level 1 tab renders first, so `after` reads the
     // branch and `afterLast` reads the current entry.
-    expect(substr_count($html, 'aria-current="page"'))->toBe(1)
+    $document = new DOMDocument;
+    @$document->loadHTML($html);
+    $xpath = new DOMXPath($document);
+    $currentLinks = $xpath->query('//nav[@aria-label="Production Bench"]//*[@aria-current="page"]');
+
+    expect($currentLinks->length)->toBe(1)
         ->and(Str::of($html)->afterLast('href="'.route($currentRoute).'"')->before('</a>')->toString())
         ->toContain('aria-current="page"');
 

@@ -288,7 +288,7 @@ it('tracks expected benchmark archetype relationships for koskalk quality metric
         ],
     ]);
 
-    expect($coconut100['cleansing_strength'])->toBe(100.0)
+    expect($coconut100['cleansing_strength'])->toBeBetween(80.0, 85.0)
         ->and($coconut100['bubble_volume'])->toBeGreaterThan($balanced['bubble_volume'])
         ->and($coconut100['cure_speed'])->toBeGreaterThan($balanced['cure_speed'])
         ->and($coconut100['mildness'])->toBeLessThan($balanced['mildness'])
@@ -300,7 +300,7 @@ it('tracks expected benchmark archetype relationships for koskalk quality metric
         ->and($twentyCoconutPalmOlive['cure_speed'])->toBeGreaterThanOrEqual(35.0)
         ->and($twentyCoconutPalmOlive['unmolding_firmness'])->toBeGreaterThan(39.0)
         ->and($veryHighPalmWithCoconut['cure_speed'])->toBeBetween(45.0, 50.0)
-        ->and($veryHighPalmWithCoconut['unmolding_firmness'])->toBeBetween(54.0, 58.0)
+        ->and($veryHighPalmWithCoconut['unmolding_firmness'])->toBeBetween(65.0, 80.0)
         ->and($twentyCoconutWithCastor['cure_speed'])->toBeGreaterThanOrEqual(33.0)
         ->and($twentyCoconutWithCastor['unmolding_firmness'])->toBeGreaterThan(39.0)
         ->and($twentyCoconutPalmOlive['bubble_volume'])->toBeBetween(23.0, 30.0)

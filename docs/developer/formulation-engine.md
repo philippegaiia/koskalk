@@ -1,6 +1,6 @@
 # Formulation Engine
 
-Last updated: 2026-04-27
+Last updated: 2026-09-13
 
 ## Current services
 
@@ -92,53 +92,20 @@ Recipe media is a later concern. The current domain target is to support one fea
 - superfat is moving toward a practical behavior model rather than a guessed unsaponified-fatty-acid model
 - soap molecule density remains a future research idea, not a v1 dependency
 
-## Next soap-quality engine revision
+## Soap quality calibration: first pass
 
-The next calculation contract should add explicit context and applicability instead of treating every soap as a bar soap.
+Implemented model version: `2026-09-13`, returned as `properties.quality_model_version`.
 
-Required payload additions:
+The current engine estimates formulation behavior from fatty acids, superfat, selected alkali, and total dilution liquid. These are empirical indices, not measured properties or validated skin-tolerance predictions. SAP, lye, glycerine, and recipe quantities retain their existing calculation rules.
 
-```json
-{
-  "soap_context": {
-    "type": "bar|hybrid|soft_or_liquid|liquid",
-    "koh_percentage": 0,
-    "bar_context": 1.0,
-    "liquid_context": 0.0,
-    "bar_metrics_applicable": true
-  },
-  "properties": {
-    "quality_applicability": {},
-    "warnings": []
-  }
-}
-```
+- Cleansing is normalized against a documented quick-fatty-acid reference before applying the superfat response. Approximately 24–25% lauric/myristic at 5% superfat reaches 40; the reference coconut profile scores 100 at 0% and approximately 42 at 20% superfat. Oil names do not affect scoring.
+- Palmitic/stearic contributions to unmolding and cured hardness are stronger. A smooth high-oleic structure term allows very hard olive/high-oleic bars without assigning them the longevity of palmitic/stearic-rich bars.
+- Cured hardness refers to approximately four weeks. Total dilution liquid affects early firmness, cure speed, and more modestly four-week hardness. `shrinkage_risk` indicates visible shrinkage tendency, not a percentage of dimensional or weight loss.
+- The existing nonlinear DOS formula and its superfat penalty are preserved. No protection bonus is inferred from additive names or categories.
+- Custom scores remain bounded from 0 to 100. Cleansing above the advisable ceiling of 40 remains visible. High mildness is no longer styled as excessive.
 
-Initial context rules:
+`soap_context` and `properties.quality_applicability` are implemented. Context labels are `bar` (up to 20% KOH), `hybrid` (over 20% through 40%), `soft_or_liquid` (over 40% through 60%), and `liquid` (over 60%). NaOH and KOH settings resolve to 0% and 100% respectively.
 
-- NaOH only: bar
-- KOH only: liquid
-- dual lye 0-20% KOH: bar
-- dual lye 20-40% KOH: hybrid
-- dual lye 40-60% KOH: soft_or_liquid
-- dual lye 60-100% KOH: liquid
+KOH progressively reduces modeled bar structure/longevity and supports lather, with provisional coefficients. Any KOH custom metric is presented as a process-dependent tendency. Above 40% KOH, bar-only metrics are omitted from the cards while supported lather/feel tendencies remain visible. This cutoff is an applicability guard, not a physical phase boundary. Negative superfat remains available in the existing high-KOH workflow; final cleansing, mildness, and conditioning estimates are withheld until a future neutralization model exists.
 
-Bar-only metrics should be hidden or marked not applicable in high-KOH/liquid contexts instead of shown as empty/zero scores. This applies to unmolding firmness, cured hardness, bar longevity, bar cure speed, Castile-bar slime risk, and DOS as orange-spot bar risk.
-
-Superfat handling must become context-aware:
-
-- bar soap: non-negative normal superfat
-- liquid/high-KOH soap: guarded negative superfat can be allowed for neutralization workflows
-- negative liquid superfat warns about neutralization and final pH control
-- positive liquid superfat above about 3% warns about cloudiness/separation
-
-Scoring corrections needed:
-
-- superfat should soften physical bar qualities, not only lower cleansing
-- high superfat should reduce lather punch/stability and longevity
-- water / lye concentration should mainly modify unmolding and cure speed
-- PU/DOS risk must be nonlinear, with PU above about 15% treated as high risk and above 20% as very high risk
-- bubble volume must not treat hard saturated fats as a large direct anti-bubble penalty; HS should mainly increase creamy lather and foam persistence, with only a small solubility dampener at high levels
-- ricinoleic/castor should improve lather quality and stability around 4-10%, then saturate instead of adding linearly; excess ricinoleic should not compensate for too little coconut/palm-kernel/babassu-type soluble lather fats
-
-Liquid soap behavior is process-dependent. The engine should show formulation tendencies and warnings, not precise final liquid-soap quality predictions.
+See [Soap quality calibration](soap-quality-calibration.md) for formulas, benchmarks, evidence, limitations, and deferred work. Regression coverage lives in `SoapQualityCalibrationTest`, the existing soap calculation/benchmark tests, the workbench preview test, and `soap-quality-presentation.test.mjs`.

@@ -22,7 +22,7 @@
         }"
         class="sk-card sk-tone-analysis overflow-hidden"
     >
-        <div class="sk-section-header flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div class="sk-section-header sk-section-header-reference flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="sk-eyebrow">{{ __('workbench.headings.soap_qualities') }}</p>
                 <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">
@@ -34,10 +34,10 @@
                 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="soapQualitiesExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
                     <div class="overflow-hidden">
                         <div role="tablist" aria-label="Quality metrics view" class="inline-flex items-center gap-2">
-                    <button id="tab-bar-cure" type="button" role="tab" :aria-selected="soapQualityPanel === 'bar_cure'" aria-controls="panel-bar-cure" @click="soapQualityPanel = 'bar_cure'" :class="soapQualityPanel === 'bar_cure' ? 'border-b-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
+                    <button id="tab-bar-cure" type="button" role="tab" :aria-selected="soapQualityPanel === 'bar_cure'" aria-controls="panel-bar-cure" @click="soapQualityPanel = 'bar_cure'" :class="soapQualityPanel === 'bar_cure' ? 'border-b-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
                         Bar &amp; cure
                     </button>
-                    <button id="tab-lather-feel" type="button" role="tab" :aria-selected="soapQualityPanel === 'lather_feel'" aria-controls="panel-lather-feel" @click="soapQualityPanel = 'lather_feel'" :class="soapQualityPanel === 'lather_feel' ? 'border-b-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
+                    <button id="tab-lather-feel" type="button" role="tab" :aria-selected="soapQualityPanel === 'lather_feel'" aria-controls="panel-lather-feel" @click="soapQualityPanel = 'lather_feel'" :class="soapQualityPanel === 'lather_feel' ? 'border-b-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
                         Lather &amp; feel
                     </button>
                         </div>
@@ -64,6 +64,9 @@
             <template x-if="hasQualityMetricsData">
                 <div class="space-y-4 px-5 py-5">
                     <div id="panel-bar-cure" x-show="soapQualityPanel === 'bar_cure'" role="tabpanel" aria-labelledby="tab-bar-cure" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <template x-if="barAndCureQualityRows().length === 0">
+                            <p>{{ __('workbench.qualities.bar_unavailable') }}</p>
+                        </template>
                         <template x-for="row in barAndCureQualityRows()" :key="row.key">
                             <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
                                 <span class="sk-eyebrow block min-h-8 text-[var(--color-ink-soft)]" x-text="row.label"></span>

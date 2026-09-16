@@ -54,8 +54,8 @@ it('derives grouped fatty acid buckets including extended acids', function () {
             'sat' => 38.0,
             'unsat' => 67.0,
         ])
-        ->and($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(28.8)
-        ->and($result['properties']['superfat_effects']['superfat_buffer'])->toBe(7.408)
-        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(21.392)
+        ->and($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(41.6417)
+        ->and($result['properties']['superfat_effects']['superfat_buffer'])->toBe(11.5601)
+        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(30.0816)
         ->and($result['properties']['superfat_effects']['dos_risk_modifier'])->toBe(1.12);
 });

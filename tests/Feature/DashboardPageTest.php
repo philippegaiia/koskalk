@@ -64,7 +64,7 @@ it('renders the simplified dashboard with creation buttons, stat cards, and user
         ->assertSee('Products')
         ->assertSee('Ingredients')
         ->assertSee('Marie Maker')
-        ->assertSee('marie@example.com')
+        ->assertDontSee('marie@example.com')
         ->assertSee('Free account')
         ->assertDontSee('mt-3 flex min-w-0 items-start gap-3', false)
         ->assertDontSee('max-w-44 truncate text-xs text-[var(--color-ink-soft)]', false)

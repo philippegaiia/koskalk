@@ -21,11 +21,32 @@ import {
     parseDecimalInput as parseDecimal,
     roundTo as roundNumberTo,
 } from '../utils';
+import { formatDecimalInput } from '../number-format';
 import { massDisplayDecimals as chooseMassDisplayDecimals } from '../mass';
 
 const formulaMassDisplayDecimals = typeof chooseMassDisplayDecimals === 'function'
     ? chooseMassDisplayDecimals
     : (() => 2);
+
+const oilWeightInputStates = new WeakMap();
+
+function getOilWeightInputState(element) {
+    if (!element || (typeof element !== 'object' && typeof element !== 'function')) {
+        return null;
+    }
+
+    let state = oilWeightInputStates.get(element);
+
+    if (!state) {
+        state = {
+            edited: false,
+            rawValue: null,
+        };
+        oilWeightInputStates.set(element, state);
+    }
+
+    return state;
+}
 
 /**
  * Formula math and normalized numeric helpers stay together so the editor-side
@@ -793,6 +814,49 @@ export function createFormulaSection() {
             return parseDecimal(value);
         },
 
+        updateOilWeight(event) {
+            const input = event?.target;
+
+            this.oilWeight = this.nonNegativeNumber(input?.value ?? '');
+
+            const inputState = getOilWeightInputState(input);
+
+            if (inputState) {
+                inputState.edited = true;
+            }
+        },
+
+        normalizeOilWeightBlur(event) {
+            const input = event?.target;
+            const raw = `${input?.value ?? ''}`.trim();
+            const inputState = getOilWeightInputState(input);
+
+            if (raw === '') {
+                this.oilWeight = 0;
+
+                if (input) {
+                    input.value = '';
+                }
+
+                if (inputState) {
+                    inputState.edited = false;
+                    inputState.rawValue = '';
+                }
+
+                return;
+            }
+
+            const isUntouchedFormattedValue = inputState
+                && !inputState.edited
+                && inputState.rawValue === raw;
+
+            if (!isUntouchedFormattedValue) {
+                this.oilWeight = this.nonNegativeNumber(raw);
+            }
+
+            this.syncOilWeightInput(input, true);
+        },
+
         confirmNegativeSuperfat(event) {
             const value = this.parseDecimalInput(event.target.value);
 
@@ -819,6 +883,34 @@ export function createFormulaSection() {
             }
 
             element.value = this.format(value, decimals);
+        },
+
+        syncOilWeightInput(element, force = false) {
+            if (!element) {
+                return;
+            }
+
+            const value = this.nonNegativeNumber(this.oilWeight);
+            const formattedValue = formatDecimalInput(
+                value,
+                this.numberLocale,
+                this.oilWeightDecimals(value),
+            );
+
+            const isActive = typeof document !== 'undefined' && document.activeElement === element;
+
+            if (!force && isActive) {
+                return;
+            }
+
+            element.value = formattedValue;
+
+            const inputState = getOilWeightInputState(element);
+
+            if (inputState) {
+                inputState.edited = false;
+                inputState.rawValue = formattedValue;
+            }
         },
 
         massDecimals(value, profile = 'standard') {

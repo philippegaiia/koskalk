@@ -22,7 +22,7 @@
             <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" aria-label="{{ __('products.filters.aria_label') }}">
                 <label class="sk-field sm:min-w-80 lg:min-w-[24rem]">
                     <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.search.label') }}</span>
-                    <input
+                    <input autocomplete="off"
                         wire:model.live.debounce.250ms="search"
                         type="text"
                         placeholder="{{ __('products.filters.search.placeholder') }}"

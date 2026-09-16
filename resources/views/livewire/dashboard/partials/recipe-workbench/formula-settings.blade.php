@@ -98,7 +98,7 @@
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="changeOilUnit('oz')" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="changeOilUnit('lb')" :class="oilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
 	 </div>
-	 <input aria-labelledby="setting-batch-weight" x-model="oilWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-batch-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <p id="setting-exposure" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
@@ -134,17 +134,14 @@
 	 </div>
 	 </div>
 @else
-@unless ($isPublicCalculator)
-    @include('livewire.dashboard.partials.recipe-workbench.formula-output-type')
-@endunless
 	 <div>
-	 <div class="grid min-w-0 gap-4 @3xl/workbench:grid-cols-2 @4xl/workbench:grid-cols-3 @7xl/workbench:grid-cols-[repeat(5,minmax(12rem,1fr))]">
+	 <div class="grid min-w-0 gap-4 @3xl/workbench:grid-cols-2 @4xl/workbench:grid-cols-3 @5xl/workbench:grid-cols-4">
 	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-lye-type" class="sk-eyebrow">{{ __('workbench.common.lye_type') }}</p>
 	 <div role="radiogroup" aria-label="Lye type" class="mt-3 flex flex-wrap gap-2">
-	 <button type="button" role="radio" :aria-checked="lyeType === 'naoh'" @click="lyeType = 'naoh'" :class="lyeType === 'naoh' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">NaOH</button>
-	 <button type="button" role="radio" :aria-checked="lyeType === 'koh'" @click="lyeType = 'koh'" :class="lyeType === 'koh' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">KOH</button>
-	 <button type="button" role="radio" :aria-checked="lyeType === 'dual'" @click="lyeType = 'dual'" :class="lyeType === 'dual' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.dual_lye') }}</button>
+	 <button type="button" role="radio" :aria-checked="lyeType === 'naoh'" @click="lyeType = 'naoh'" :class="lyeType === 'naoh' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">NaOH</button>
+	 <button type="button" role="radio" :aria-checked="lyeType === 'koh'" @click="lyeType = 'koh'" :class="lyeType === 'koh' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">KOH</button>
+	 <button type="button" role="radio" :aria-checked="lyeType === 'dual'" @click="lyeType = 'dual'" :class="lyeType === 'dual' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">{{ __('workbench.common.dual_lye') }}</button>
 	 </div>
 	 <template x-if="lyeType === 'dual'">
 	 <div class="mt-3 sk-inset p-3">
@@ -157,29 +154,29 @@
 	 </template>
 	 <template x-if="lyeType === 'koh' || lyeType === 'dual'">
 	 <div role="radiogroup" aria-label="KOH purity" class="mt-3 flex flex-wrap gap-2">
-	 <button type="button" role="radio" :aria-checked="kohPurity === 100" @click="kohPurity = 100" :class="kohPurity === 100 ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">KOH 100%</button>
-	 <button type="button" role="radio" :aria-checked="kohPurity === 90" @click="kohPurity = 90" :class="kohPurity === 90 ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">KOH 90%</button>
+	 <button type="button" role="radio" :aria-checked="kohPurity === 100" @click="kohPurity = 100" :class="kohPurity === 100 ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">KOH 100%</button>
+	 <button type="button" role="radio" :aria-checked="kohPurity === 90" @click="kohPurity = 90" :class="kohPurity === 90 ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">KOH 90%</button>
 	 </div>
 	 </template>
 	 </div>
 	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-base-weight" class="sk-eyebrow">{{ __('workbench.settings.total_oil_weight') }}</p>
 	 <div role="radiogroup" aria-label="Weight unit" class="mt-3 flex flex-wrap gap-2">
-	 <button type="button" role="radio" :aria-checked="oilUnit === 'g'" @click="changeOilUnit('g')" :class="oilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
-	 <button type="button" role="radio" :aria-checked="oilUnit === 'kg'" @click="changeOilUnit('kg')" :class="oilUnit === 'kg' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">kg</button>
-	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="changeOilUnit('oz')" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
-	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="changeOilUnit('lb')" :class="oilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
+	 <button type="button" role="radio" :aria-checked="oilUnit === 'g'" @click="changeOilUnit('g')" :class="oilUnit === 'g' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">g</button>
+	 <button type="button" role="radio" :aria-checked="oilUnit === 'kg'" @click="changeOilUnit('kg')" :class="oilUnit === 'kg' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">kg</button>
+	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="changeOilUnit('oz')" :class="oilUnit === 'oz' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">oz</button>
+	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="changeOilUnit('lb')" :class="oilUnit === 'lb' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">lb</button>
 	 </div>
-	 <input aria-labelledby="setting-base-weight" x-model="oilWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-base-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="sk-input numeric mt-3" />
 	 </div>
 	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-water-mode" class="sk-eyebrow">{{ __('workbench.settings.water_mode') }}</p>
 	 <div role="radiogroup" aria-label="Water calculation mode" class="mt-3 grid gap-2">
-	 <button type="button" role="radio" :aria-checked="waterMode === 'percent_of_oils'" @click="waterMode = 'percent_of_oils'" :class="waterMode === 'percent_of_oils' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-[1rem] px-4 py-2.5 text-left text-xs font-medium transition">{{ __('workbench.common.water_percent') }}</button>
-	 <button type="button" role="radio" :aria-checked="waterMode === 'lye_ratio'" @click="waterMode = 'lye_ratio'" :class="waterMode === 'lye_ratio' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-[1rem] px-4 py-2.5 text-left text-xs font-medium transition">{{ __('workbench.common.water_ratio') }}</button>
-	 <button type="button" role="radio" :aria-checked="waterMode === 'lye_concentration'" @click="waterMode = 'lye_concentration'" :class="waterMode === 'lye_concentration' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-[1rem] px-4 py-2.5 text-left text-xs font-medium transition">{{ __('workbench.common.lye_concentration') }}</button>
+	 <button type="button" role="radio" :aria-checked="waterMode === 'percent_of_oils'" @click="waterMode = 'percent_of_oils'" :class="waterMode === 'percent_of_oils' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-[1rem] border px-4 py-2.5 text-left text-xs font-medium transition-colors">{{ __('workbench.common.water_percent') }}</button>
+	 <button type="button" role="radio" :aria-checked="waterMode === 'lye_ratio'" @click="waterMode = 'lye_ratio'" :class="waterMode === 'lye_ratio' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-[1rem] border px-4 py-2.5 text-left text-xs font-medium transition-colors">{{ __('workbench.common.water_ratio') }}</button>
+	 <button type="button" role="radio" :aria-checked="waterMode === 'lye_concentration'" @click="waterMode = 'lye_concentration'" :class="waterMode === 'lye_concentration' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-[1rem] border px-4 py-2.5 text-left text-xs font-medium transition-colors">{{ __('workbench.common.lye_concentration') }}</button>
 	 </div>
-	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="sk-input numeric mt-3" />
 	 </div>
 	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-superfat" class="sk-eyebrow">{{ __('workbench.common.superfat') }}</p>
@@ -190,13 +187,24 @@
 	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-[var(--color-danger)]' : 'accent-[var(--color-active)]'" class="mt-3 w-full" />
 	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="number(superfat) < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
 	 </div>
+	 </div>
+
+	 <div @class([
+	 'mt-4 grid min-w-0 gap-4 @3xl/workbench:grid-cols-2',
+	 '@4xl/workbench:grid-cols-3' => ! $isPublicCalculator,
+	 ])>
+@unless ($isPublicCalculator)
+    @include('livewire.dashboard.partials.recipe-workbench.formula-output-type', ['deferFormulaOutputIngredientFields' => true])
+@endunless
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <p id="setting-exposure-soap" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
 	 <div role="radiogroup" aria-label="Exposure type" class="mt-3 flex flex-wrap gap-2">
-	 <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.rinse_off') }}</button>
-	 <button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.leave_on') }}</button>
+	 <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">{{ __('workbench.common.rinse_off') }}</button>
+	 <button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">{{ __('workbench.common.leave_on') }}</button>
 	 </div>
-	 <div class="mt-4">
+	 </div>
+	 <div class="sk-inset sk-tone-info min-w-0 p-4">
+	 <div>
 	 <button type="button" @click="isComplianceSettingsOpen = ! isComplianceSettingsOpen" :aria-expanded="isComplianceSettingsOpen.toString()" class="flex w-full items-start justify-between gap-3 rounded-lg bg-white px-3 py-2.5 text-left transition hover:bg-[var(--color-panel)]">
 	 <span>
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
@@ -204,9 +212,19 @@
 	 </span>
 		 <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
 		 </button>
-		 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
-		 <div class="overflow-hidden">
-		 <div class="mt-4 space-y-4">
+	 </div>
+	 </div>
+	 </div>
+
+@unless ($isPublicCalculator)
+	 <div x-show="productionOutputType === 'manufactured_ingredient'" x-cloak class="mt-4 sk-inset sk-tone-info p-4">
+	 @include('livewire.dashboard.partials.recipe-workbench.formula-output-ingredient-fields')
+	 </div>
+@endunless
+
+	 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+	 <div class="overflow-hidden">
+	 <div class="mt-4 space-y-4">
 	 <div>
 	 <p id="setting-regime-soap" class="sk-eyebrow">{{ __('workbench.settings.regulatory_framework') }}</p>
 	 <select aria-labelledby="setting-regime-soap" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
@@ -216,9 +234,6 @@
 	 </select>
 	 </div>
 	 @include('livewire.dashboard.partials.recipe-workbench.ifra-category-modal')
-		 </div>
-		 </div>
-	 </div>
 	 </div>
 	 </div>
 	 </div>
@@ -229,7 +244,7 @@
 	 <p class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]" x-text="lyeLiquidSelectionSummary()"></p>
 	 <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.settings.lye_liquid_help') }}</p>
 	 </div>
-	 <button type="button" role="switch" :aria-checked="isLyeLiquidCompositionOpen.toString()" @click="toggleLyeLiquidComposition()" class="flex min-h-11 shrink-0 items-center gap-3 rounded-full bg-[var(--color-control)] px-3 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition">
+	 <button type="button" role="switch" :aria-checked="isLyeLiquidCompositionOpen.toString()" @click="toggleLyeLiquidComposition()" class="flex min-h-11 shrink-0 items-center gap-3 rounded-full border border-[var(--color-field-outline)] bg-transparent px-3 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition">
 	 <span>{{ __('workbench.settings.lye_liquid_toggle') }}</span>
 	 <span :class="isLyeLiquidCompositionOpen ? 'bg-[var(--color-active)]' : 'bg-[var(--color-line-strong)]'" class="relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition">
 	 <span :class="isLyeLiquidCompositionOpen ? 'translate-x-5' : 'translate-x-0.5'" class="absolute left-0 top-0.5 size-5 rounded-full bg-white shadow-sm transition"></span>
@@ -242,6 +257,8 @@
 		 <div x-cloak x-show="! lyeLiquidAdditionLimitReached()">
 		 <x-search-combobox
 		 id="lye-liquid-ingredient-search"
+ :inline-options="true"
+ class="sk-combobox-reference"
 		 :label="__('workbench.settings.lye_liquid_add')"
 		 :options="$lyeLiquidSearchOptions"
 	 :placeholder="__('workbench.settings.lye_liquid_search')"
@@ -260,11 +277,11 @@
 	 <template x-for="row in lyeLiquidRows" :key="row.id">
 	 <div class="grid gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] sm:items-center">
 	 <div><p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p><p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p></div>
-	 <label class="flex items-center gap-2"><span class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_percentage_short') }}</span><input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('settings.lye_liquid_percentage_for', { ingredient: row.name })" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm" /></label>
+	 <label class="flex items-center gap-2"><span class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_percentage_short') }}</span><input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" :style="decimalAlignmentStyle(row.percentage)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('settings.lye_liquid_percentage_for', { ingredient: row.name })" class="numeric sk-decimal-aligned w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm" /></label>
 	 <span class="flex items-center gap-2 text-sm text-[var(--color-ink-soft)]">
 	 <span class="sr-only" x-text="t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row))), unit: oilUnit })"></span>
 	 <span aria-hidden="true" class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_fresh_weight_mobile') }}</span>
-	 <span aria-hidden="true" class="numeric" x-text="format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row)))"></span>
+	 <span aria-hidden="true" class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(lyeLiquidWeight(row))" x-text="format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row)))"></span>
 	 <span aria-hidden="true" class="sm:hidden" x-text="oilUnit"></span>
 	 </span>
 	 <button type="button" @click="removeIngredient('lye_water', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('settings.lye_liquid_remove', { ingredient: row.name })"><x-action-icon name="close" /></button>

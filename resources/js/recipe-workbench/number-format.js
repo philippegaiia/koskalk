@@ -55,10 +55,10 @@ export function formatNumber(value, decimals = 2, locale = DEFAULT_NUMBER_LOCALE
     }).format(parseDecimalInput(value));
 }
 
-export function formatDecimalInput(value, locale = DEFAULT_NUMBER_LOCALE) {
+export function formatDecimalInput(value, locale = DEFAULT_NUMBER_LOCALE, maximumFractionDigits = 12) {
     return new Intl.NumberFormat(intlLocale(locale), {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 12,
+        maximumFractionDigits,
         useGrouping: false,
     }).format(parseDecimalInput(value));
 }

@@ -498,13 +498,24 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         },
 
         changeOilUnit(nextUnit) {
-            if (!workbenchMassUnits.includes(nextUnit) || nextUnit === this.oilUnit) {
+            if (!workbenchMassUnits.includes(nextUnit)) {
                 return;
             }
 
-            const nextWeight = convertWorkbenchMass(this.oilWeight, this.oilUnit, nextUnit);
+            const parsedWeight = typeof this.parseDecimalInput === 'function'
+                ? this.parseDecimalInput(this.oilWeight)
+                : convertWorkbenchMass(this.oilWeight, this.oilUnit, this.oilUnit);
+            const currentWeight = Number.isFinite(parsedWeight) ? Math.max(0, parsedWeight) : 0;
 
-            this.oilWeight = nextWeight;
+            if (nextUnit === this.oilUnit) {
+                this.oilWeight = currentWeight;
+
+                return;
+            }
+
+            const nextWeight = convertWorkbenchMass(currentWeight, this.oilUnit, nextUnit);
+
+            this.oilWeight = Number.isFinite(nextWeight) && nextWeight >= 0 ? nextWeight : 0;
             this.oilUnit = nextUnit;
             this.scheduleCalculationPreview();
         },
@@ -778,22 +789,6 @@ function createCatalogSection() {
             if (typeof this.$nextTick === 'function') {
                 this.$nextTick(() => this.focusAddedIngredientAmount(element, rowId));
             }
-
-            if (this.prefersReducedMotion() || typeof element.animate !== 'function') {
-                return;
-            }
-
-            element.animate([
-                {
-                    backgroundColor: 'color-mix(in oklab, var(--color-accent-soft) 38%, transparent)',
-                },
-                {
-                    backgroundColor: 'transparent',
-                },
-            ], {
-                duration: 1200,
-                easing: 'ease-out',
-            });
         },
 
         highlightSoapPhase(phaseKey, shouldScroll = true) {
@@ -827,9 +822,23 @@ function createCatalogSection() {
                 el.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: scrollBlock });
             }
 
-            el.classList.add('ring-2', 'ring-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]', 'ring-offset-2');
+            let highlightClasses;
+
+            if (el.classList.contains('sk-formula-table-row')) {
+                highlightClasses = ['sk-added-row-highlight'];
+            } else if (el.classList.contains('sk-inset')) {
+                highlightClasses = ['border-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]'];
+            } else {
+                highlightClasses = [
+                    'ring-2',
+                    'ring-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]',
+                    'ring-offset-2',
+                ];
+            }
+
+            el.classList.add(...highlightClasses);
             setTimeout(() => {
-                el.classList.remove('ring-2', 'ring-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]', 'ring-offset-2');
+                el.classList.remove(...highlightClasses);
             }, 1200);
         },
 

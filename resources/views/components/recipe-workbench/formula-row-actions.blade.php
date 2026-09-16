@@ -89,7 +89,7 @@
             :aria-labelledby="`formula-row-actions-trigger-${row.id}`"
             role="menu"
             :style="panelStyle"
-            class="fixed z-[90] rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1.5 shadow-[0_12px_24px_rgba(60,50,30,0.12)]"
+            class="fixed z-[90] max-h-[min(24rem,calc(100dvh-2rem))] overflow-y-auto overscroll-contain rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1.5 shadow-[0_12px_24px_rgba(60,50,30,0.12)]"
         >
             <button
                 type="button"

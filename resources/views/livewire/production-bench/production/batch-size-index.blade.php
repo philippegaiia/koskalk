@@ -23,7 +23,7 @@
             <div class="grid gap-3 border-b border-[var(--color-line)] bg-[var(--color-panel-muted)] p-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
                 <label class="text-sm">
                     <span class="font-medium">{{ __('production_bench.common.search') }}</span>
-                    <input wire:model.live.debounce.300ms="search" type="search" class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.settings.search_batch_sizes') }}">
+                    <input autocomplete="off" wire:model.live.debounce.300ms="search" type="search" class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.settings.search_batch_sizes') }}">
                 </label>
                 <label class="text-sm">
                     <span class="font-medium">{{ __('production_bench.common.status') }}</span>

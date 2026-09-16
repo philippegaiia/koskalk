@@ -54,7 +54,7 @@ export function createPresentationSection() {
                 return 'ideal';
             }
 
-            if (['dos_risk', 'slime_risk'].includes(key)) {
+            if (['dos_risk', 'slime_risk', 'shrinkage_risk'].includes(key)) {
                 if (numeric <= 20) return 'ideal';
                 if (numeric < 35) return 'low';
                 if (numeric < 60) return 'high';
@@ -160,14 +160,15 @@ export function createPresentationSection() {
                 unmolding_firmness: { start: 45, end: 70 },
                 cured_hardness: { start: 45, end: 70 },
                 longevity: { start: 40, end: 70 },
-                cleansing_strength: { start: 18, end: 40 },
-                mildness: { start: 50, end: 75 },
+                cleansing_strength: { start: 0, end: 40 },
+                mildness: { start: 50, end: 100 },
                 bubble_volume: { start: 25, end: 55 },
                 creamy_lather: { start: 25, end: 55 },
                 lather_stability: { start: 25, end: 55 },
                 conditioning_feel: { start: 35, end: 65 },
                 dos_risk: { start: 0, end: 20 },
                 slime_risk: { start: 0, end: 20 },
+                shrinkage_risk: { start: 0, end: 20 },
                 cure_speed: { start: 35, end: 60 },
                 iodine: { start: 41, end: 70 },
                 ins: { start: 136, end: 165 },
@@ -866,6 +867,18 @@ export function createPresentationSection() {
         qualityExplanation(key, value) {
             const numeric = this.number(value);
 
+            if (key === 'cleansing_strength') {
+                if (numeric < 20) return this.t('qualities.cleansing_low');
+                if (numeric <= 40) return this.t('qualities.cleansing_balanced');
+                if (numeric < 65) return this.t('qualities.cleansing_high');
+
+                return this.t('qualities.cleansing_very_high');
+            }
+
+            if (key === 'shrinkage_risk') {
+                return this.t(numeric < 35 ? 'qualities.shrinkage_low' : 'qualities.shrinkage_high');
+            }
+
             const ranges = {
                 unmolding_firmness: [
                     [20, 'Likely soft at unmolding. Expect more patience, support molds, or a longer wait before cutting.'],
@@ -884,12 +897,6 @@ export function createPresentationSection() {
                     [45, 'Average staying power in the shower or at the sink.'],
                     [70, 'Should hold up well with decent lifespan in normal use.'],
                     [101, 'Strong longevity profile for a long-lasting bar.'],
-                ],
-                cleansing_strength: [
-                    [20, 'Very gentle cleansing profile. Better for mild facial or low-stripping styles.'],
-                    [40, 'Balanced cleansing for many body bars.'],
-                    [65, 'Noticeably cleansing. Good for heavy-duty use but may feel drying on some skin.'],
-                    [101, 'Extremely cleansing profile. Usually wants extra care with superfat and positioning.'],
                 ],
                 mildness: [
                     [20, 'Low mildness. This may feel harsh unless the formula intent is very cleansing.'],
@@ -973,11 +980,12 @@ export function createPresentationSection() {
 
             return [
                 ['Unmolding firmness', 'unmolding_firmness'],
-                ['Cured hardness', 'cured_hardness'],
+                [this.t('qualities.hardness_four_weeks'), 'cured_hardness'],
                 ['Longevity', 'longevity'],
                 ['Cure speed', 'cure_speed'],
                 ['DOS risk', 'dos_risk'],
-            ].map(([label, key]) => ({
+                [this.t('qualities.shrinkage_label'), 'shrinkage_risk'],
+            ].filter(([, key]) => this.isQualityApplicable(key)).map(([label, key]) => ({
                 label,
                 key,
                 value: quality[key],
@@ -997,7 +1005,7 @@ export function createPresentationSection() {
                 ['Lather stability', 'lather_stability'],
                 ['Conditioning feel', 'conditioning_feel'],
                 ['Slime tendency', 'slime_risk'],
-            ].map(([label, key]) => ({
+            ].filter(([, key]) => this.isQualityApplicable(key)).map(([label, key]) => ({
                 label,
                 key,
                 value: quality[key],
@@ -1035,10 +1043,17 @@ export function createPresentationSection() {
                 });
             }
 
-            if (quality.cleansing_strength >= 45) {
+            if (this.isQualityScored('cleansing_strength') && quality.cleansing_strength > 40) {
                 flags.push({
                     label: 'High cleansing',
                     explanation: 'This should clean strongly, but may feel drying unless balanced carefully with superfat and formula positioning.',
+                });
+            }
+
+            if (this.isQualityScored('shrinkage_risk') && quality.shrinkage_risk >= 35) {
+                flags.push({
+                    label: this.t('qualities.shrinkage_label'),
+                    explanation: this.t('qualities.shrinkage_high'),
                 });
             }
 

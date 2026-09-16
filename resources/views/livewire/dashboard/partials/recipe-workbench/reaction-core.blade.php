@@ -1,5 +1,5 @@
 <section id="soap-phase-saponified_oils" class="overflow-hidden sk-card sk-phase-core sk-tone-chemistry transition-shadow duration-300" aria-labelledby="reaction-core-heading">
- <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
+ <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.title') }}</h3>
  <div data-formula-balance-status aria-live="polite" :class="oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-danger-strong)]'" class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors">

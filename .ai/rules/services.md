@@ -4,6 +4,7 @@ paths:
   - app/Services/IngredientIdentitySynchronizer.php
   - 'app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php'
   - app/Services/IngredientCatalogConsolidationService.php
+  - app/Services/SoapCalculationService.php
 ---
 
 # Services
@@ -34,3 +35,6 @@ When merging platform ingredients, transfer a source-only workspace material cod
 
 ## Keep material codes optional and snapshot-backed
 Internal material codes are optional, workspace-authored mnemonic references and are never generated. Ingredient and packaging code namespaces remain separate; supplier_sku stays owned by each supplier listing. Production requirements and procurement lines must use creation-time material-code snapshots for historical output.
+
+## Calibrate soap qualities from fatty acids and preserve DOS
+Use fatty-acid composition, never oil names, for quality calibration. Preserve the documented anchors: quick acids ~24–25% at 5% superfat near cleansing 40, reference coconut at 0% near 100 and 20% near 42. Hardness means approximately four weeks and differs from longevity; total dilution liquid is the process proxy. Keep DOS unchanged until material-specific additive dose data supports protection factors. See docs/developer/soap-quality-calibration.md for the empirical contract and limitations.

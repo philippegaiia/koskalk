@@ -2,15 +2,17 @@
 
 <aside class="space-y-4">
  <div class="overflow-visible sk-card sk-tone-catalog">
- <div class="sk-section-header border-b border-[var(--color-line)] px-4 py-4">
+ <div class="sk-section-header sk-section-header-reference border-b border-[var(--color-line)] px-4 py-4">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.ingredients.title') }}</h3>
  </div>
 
  <div class="relative z-20 space-y-3 border-b border-[var(--color-line)] px-4 py-4">
- <input x-model="search" type="search" placeholder="{{ __('workbench.ingredients.search_placeholder') }}" aria-label="{{ __('workbench.ingredients.search_label') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
+ <input autocomplete="off" x-model="search" type="search" placeholder="{{ __('workbench.ingredients.search_placeholder') }}" aria-label="{{ __('workbench.ingredients.search_label') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
  <x-search-combobox
  id="ingredient-category-search"
+ :wrap-labels="true"
+ class="sk-combobox-reference"
  :label="__('workbench.accessibility.filter_category')"
  :options="[]"
  :placeholder="__('workbench.accessibility.filter_category')"

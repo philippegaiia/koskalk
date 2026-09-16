@@ -32,34 +32,37 @@
     </head>
     <body data-user-shell class="min-h-dvh bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
         @php($appShellUser = auth()->user())
+        @php($appShellAdminPanel = \Filament\Facades\Filament::getPanel('admin'))
 
         <div
             data-app-shell
             data-sidebar-open="true"
-            class="relative mx-auto min-h-dvh w-full max-w-[2100px] lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch transition-[grid-template-columns] duration-300 lg:transition-none"
+            class="relative mx-auto min-h-dvh w-full max-w-[2100px] transition-[grid-template-columns] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch"
         >
-            <div data-sidebar-overlay data-sidebar-close class="fixed inset-0 z-40 hidden bg-black/35 lg:hidden"></div>
+            <div data-sidebar-overlay data-sidebar-close aria-hidden="true" class="fixed inset-0 z-40 hidden bg-black/35 lg:hidden"></div>
 
             <aside
+                id="app-sidebar"
                 data-sidebar
-                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-x-hidden overflow-y-auto bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:sticky lg:top-0 lg:h-dvh lg:self-start lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
+                aria-labelledby="app-sidebar-title"
+                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-x-hidden overflow-y-auto bg-[var(--color-sidebar)] overscroll-contain px-5 py-6 text-[var(--color-ink-sidebar)] transition-[width,opacity,padding,translate] duration-150 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none lg:sticky lg:top-0 lg:h-dvh lg:self-start lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100"
             >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <img src="{{ asset('images/app/brand/soapkraftlogo-beige.png') }}" alt="Soapkraft" class="size-10 rounded-lg object-contain">
                         <div>
-                            <h1 class="text-base font-semibold text-[var(--color-ink-sidebar)]">{{ config('app.name') }}</h1>
+                            <h1 id="app-sidebar-title" class="text-base font-semibold text-[var(--color-ink-sidebar)]">{{ config('app.name') }}</h1>
                         </div>
                     </div>
 
-                    <button type="button" data-sidebar-close class="grid size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-sidebar-active)] lg:hidden">
+                    <button type="button" data-sidebar-close aria-controls="app-sidebar" class="grid size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-sidebar-active)] lg:hidden">
                         <span class="sr-only">{{ __('navigation.menu.close') }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18 18 6M6 6l12 12" />
                         </svg>
                     </button>
 
-                    <button type="button" data-sidebar-toggle class="hidden size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-sidebar-active)] lg:grid">
+                    <button type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="true" class="hidden size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-sidebar-active)] lg:grid">
                         <span class="sr-only">{{ __('navigation.menu.collapse') }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="m15 18-6-6 6-6" />
@@ -67,24 +70,32 @@
                     </button>
                 </div>
 
-                <nav class="mt-8 grid gap-2 text-sm">
-                    <a href="{{ route('dashboard') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('dashboard') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.overview') }}</a>
-                    <a href="{{ route('recipes.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('recipes.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.formulas') }}</a>
-                    <a href="{{ route('ingredients.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('ingredients.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.ingredients') }}</a>
-                    <a href="{{ route('packaging-items.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('packaging-items.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.packaging') }}</a>
-                    <a href="{{ route('production-bench.home') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('production-bench.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Production Bench</a>
-                    <a href="{{ route('media.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('media.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.media_library') }}</a>
-                    <a href="javascript:void(0)" data-sidebar-mobile-close aria-disabled="true" tabindex="-1" title="{{ __('navigation.status.coming_soon') }}" class="rounded-lg px-4 py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">{{ __('navigation.items.compliance') }}</a>
-                    <a href="{{ route('account') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('account') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.account') }}</a>
-                    <a href="/admin" data-sidebar-mobile-close class="rounded-lg px-4 py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">Admin</a>
-                    <a href="{{ route('settings') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('settings') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.settings') }}</a>
+                <nav aria-labelledby="work-navigation-title" class="mt-4 grid gap-0.5 text-sm">
+                    <h2 id="work-navigation-title" class="sk-eyebrow px-4 text-[var(--color-ink-sidebar-soft)]">{{ __('navigation.sections.work') }}</h2>
+                    <a href="{{ route('dashboard') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('dashboard')) aria-current="page" @endif class="{{ request()->routeIs('dashboard') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.overview') }}</a>
+                    <a href="{{ route('recipes.index') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('recipes.*')) aria-current="page" @endif class="{{ request()->routeIs('recipes.*') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.formulas') }}</a>
+                    <a href="{{ route('ingredients.index') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('ingredients.*')) aria-current="page" @endif class="{{ request()->routeIs('ingredients.*') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.ingredients') }}</a>
+                    <a href="{{ route('packaging-items.index') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('packaging-items.*')) aria-current="page" @endif class="{{ request()->routeIs('packaging-items.*') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.packaging') }}</a>
+                    <a href="{{ route('production-bench.home') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('production-bench.*')) aria-current="page" @endif class="{{ request()->routeIs('production-bench.*') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('production_bench.title') }}</a>
+                    <a href="{{ route('media.index') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('media.*')) aria-current="page" @endif class="{{ request()->routeIs('media.*') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.media_library') }}</a>
+                    <div class="flex items-center justify-between gap-3 border-l-2 border-l-transparent px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 text-[var(--color-ink-sidebar-soft)]">
+                        <span>{{ __('navigation.items.compliance') }}</span>
+                        <span class="text-xs">{{ __('navigation.status.coming_soon') }}</span>
+                    </div>
                 </nav>
 
-                <section aria-label="{{ __('navigation.user.aria_label') }}" class="mt-8 border-t border-[var(--color-line)] px-4 pt-5">
-                    <p class="sk-eyebrow text-[var(--color-ink-sidebar-soft)]">{{ __('navigation.user.signed_in') }}</p>
-                    <p class="mt-2 truncate text-sm font-semibold text-[var(--color-ink-sidebar)]">{{ $appShellUser?->name }}</p>
-                    <p class="mt-0.5 truncate text-xs text-[var(--color-ink-sidebar-soft)]">{{ $appShellUser?->email }}</p>
-                    <div class="mt-3 flex flex-wrap gap-2">
+                <nav aria-labelledby="account-navigation-title" class="mt-4 grid gap-0.5 border-t border-[var(--color-line)] pt-3 text-sm">
+                    <h2 id="account-navigation-title" class="sk-eyebrow px-4 text-[var(--color-ink-sidebar-soft)]">{{ __('navigation.sections.account') }}</h2>
+                    <a href="{{ route('account') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('account')) aria-current="page" @endif class="{{ request()->routeIs('account') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.account') }}</a>
+                    <a href="{{ route('settings') }}" wire:navigate data-sidebar-mobile-close @if (request()->routeIs('settings')) aria-current="page" @endif class="{{ request()->routeIs('settings') ? 'border-l-[var(--color-sidebar-active-text)] font-semibold text-[var(--color-sidebar-active-text)]' : 'border-l-transparent text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} border-l-2 rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 transition">{{ __('navigation.items.settings') }}</a>
+                    @if ($appShellUser?->canAccessPanel($appShellAdminPanel))
+                        <a href="{{ route('filament.admin.pages.dashboard') }}" data-sidebar-mobile-close class="border-l-2 border-l-transparent rounded-r-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">{{ __('navigation.items.admin') }}</a>
+                    @endif
+                </nav>
+
+                <section aria-label="{{ __('navigation.user.aria_label') }}" class="mt-4 border-t border-[var(--color-line)] px-4 pt-3">
+                    <p class="truncate text-sm font-semibold text-[var(--color-ink-sidebar)]">{{ $appShellUser?->name }}</p>
+                    <div class="mt-1.5 flex flex-wrap gap-2">
                         <span class="rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-sidebar-soft)]">{{ __('navigation.user.free_account') }}</span>
                         @if ($appShellUser?->is_admin)
                             <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">Admin</span>
@@ -92,16 +103,16 @@
                     </div>
                 </section>
 
-                <form method="POST" action="{{ route('logout') }}" class="mt-8 border-t border-white/10 pt-5">
+                <form method="POST" action="{{ route('logout') }}" class="mt-1">
                     @csrf
-                    <button type="submit" data-sidebar-mobile-close class="flex w-full items-center rounded-lg px-4 py-3 text-left text-sm text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">
+                    <button type="submit" data-sidebar-mobile-close class="flex w-full items-center rounded-md px-4 py-3 lg:py-2 lg:pointer-coarse:py-3 text-left text-sm text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">
                         {{ __('navigation.actions.sign_out') }}
                     </button>
                 </form>
 
             </aside>
 
-            <div class="flex min-h-dvh min-w-0 flex-col">
+            <div data-sidebar-background class="flex min-h-dvh min-w-0 flex-col">
                 <header class="bg-[color:oklch(from_var(--color-panel)_l_c_h_/_0.90)] px-6 py-4 backdrop-blur lg:px-8">
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
@@ -109,7 +120,9 @@
                                 type="button"
                                 data-sidebar-toggle
                                 data-sidebar-header-toggle
-                                class="grid size-11 place-items-center rounded-lg bg-[var(--color-forest-deep)] text-[var(--color-inverse)] shadow-sm transition hover:bg-[var(--color-forest-mid)]"
+                                aria-controls="app-sidebar"
+                                aria-expanded="true"
+                                class="grid size-11 place-items-center rounded-lg bg-transparent text-[var(--color-ink-strong)] transition-[color,background-color,translate,scale,opacity] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-[var(--color-field-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)] active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
                             >
                                 <span class="sr-only">{{ __('navigation.menu.toggle') }}</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

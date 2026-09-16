@@ -8,7 +8,7 @@
  <button type="button" @click="undoFormulaRowRemoval()" class="inline-flex min-h-8 shrink-0 items-center rounded-md px-2.5 font-semibold text-[var(--color-active-strong)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
  {{ __('workbench.messages.undo') }}
  </button>
- <button type="button" @click="removedFormulaRowUndo = null" aria-label="{{ __('Close') }}" class="grid size-8 shrink-0 place-items-center text-[var(--color-active-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+ <button type="button" @click="removedFormulaRowUndo = null" aria-label="{{ __('navigation.actions.dismiss_notification') }}" class="grid size-8 shrink-0 place-items-center text-[var(--color-active-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
  <x-action-icon name="close" />
  </button>
  </div>

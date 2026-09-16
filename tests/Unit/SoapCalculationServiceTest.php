@@ -60,9 +60,9 @@ it('calculates soap lye, water, glycerine, and quality metrics from oil data', f
         ->and($result['properties']['fatty_acid_profile']['oleic'])->toBe(39.5)
         ->and($result['properties']['fatty_acid_groups']['vs'])->toBe(33.5)
         ->and($result['properties']['fatty_acid_groups']['hs'])->toBe(13.5)
-        ->and($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(57.275)
-        ->and($result['properties']['superfat_effects']['superfat_buffer'])->toBe(7.4775)
-        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(49.7975)
+        ->and($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(59.8736)
+        ->and($result['properties']['superfat_effects']['superfat_buffer'])->toBe(10.8554)
+        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(49.0182)
         ->and($result['properties']['superfat_effects']['dos_risk_modifier'])->toBe(0.3)
         ->and($result['properties']['superfat_effects']['superfat_softening'])->toBe(2.4)
         ->and($result['properties']['superfat_effects']['superfat_lather_penalty'])->toBe(0.0)
@@ -71,15 +71,15 @@ it('calculates soap lye, water, glycerine, and quality metrics from oil data', f
         ->and($result['properties']['qualities']['conditioning'])->toBe(45.5)
         ->and($result['properties']['qualities']['bubbly'])->toBe(33.5)
         ->and($result['properties']['qualities']['creamy'])->toBe(13.5)
-        ->and($result['properties']['qualities']['unmolding_firmness'])->toBe(41.1)
-        ->and($result['properties']['qualities']['cured_hardness'])->toBe(45.77)
+        ->and($result['properties']['qualities']['unmolding_firmness'])->toBe(51.075)
+        ->and($result['properties']['qualities']['cured_hardness'])->toBe(48.47)
         ->and($result['properties']['qualities']['longevity'])->toBe(34.025)
-        ->and($result['properties']['qualities']['cleansing_strength'])->toBe(49.7975)
-        ->and($result['properties']['qualities']['mildness'])->toBe(35.3125)
+        ->and($result['properties']['qualities']['cleansing_strength'])->toBe(49.0182)
+        ->and($result['properties']['qualities']['mildness'])->toBe(36.0918)
         ->and($result['properties']['qualities']['bubble_volume'])->toBe(46.525)
         ->and($result['properties']['qualities']['creamy_lather'])->toBe(20.245)
         ->and($result['properties']['qualities']['lather_stability'])->toBe(24.825)
-        ->and($result['properties']['qualities']['conditioning_feel'])->toBe(27.7961)
+        ->and($result['properties']['qualities']['conditioning_feel'])->toBe(28.1468)
         ->and($result['properties']['qualities']['dos_risk'])->toBe(14.8)
         ->and($result['properties']['qualities']['slime_risk'])->toBe(10.11)
         ->and($result['properties']['qualities']['cure_speed'])->toBe(34.065)
@@ -216,7 +216,7 @@ it('supports dual lye selection and koh purity adjustments', function () {
         ->and($result['lye']['water']['weight'])->toBe(385.341);
 });
 
-it('caps cleansing strength at 100 for very cleansing formulas', function () {
+it('applies superfat after normalizing very cleansing formulas', function () {
     $service = new SoapCalculationService;
 
     $result = $service->calculate([
@@ -238,7 +238,8 @@ it('caps cleansing strength at 100 for very cleansing formulas', function () {
         'superfat' => 5,
     ]);
 
-    expect($result['properties']['superfat_effects']['effective_cleansing'])->toBeGreaterThan(100)
-        ->and($result['properties']['qualities']['cleansing_strength'])->toBe(100.0)
+    expect($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(100.0)
+        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(81.8695)
+        ->and($result['properties']['qualities']['cleansing_strength'])->toBe(81.8695)
         ->and($result['properties']['qualities']['mildness'])->toBe(0.0);
 });

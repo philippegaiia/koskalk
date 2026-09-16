@@ -35,7 +35,7 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center" aria-label="{{ __('packaging.catalog.filters_label') }}">
                     <label class="sk-field min-w-64">
                         <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('packaging.search.label') }}</span>
-                        <input wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('packaging.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('packaging.search.aria_label') }}" />
+                        <input autocomplete="off" wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('packaging.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('packaging.search.aria_label') }}" />
                     </label>
                 </div>
             </div>

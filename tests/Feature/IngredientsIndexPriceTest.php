@@ -711,3 +711,10 @@ it('uses the users default currency when creating a price from the ingredient ta
         ->where('ingredient_id', $ingredient->id)
         ->value('currency'))->toBe('GBP');
 });
+
+it('renders compact price inputs with the shared field treatment', function (): void {
+    $ingredientsIndexSource = file_get_contents(resource_path('views/livewire/dashboard/ingredients-index.blade.php'));
+
+    expect($ingredientsIndexSource)
+        ->toContain('class="sk-input numeric py-2 text-right"');
+});

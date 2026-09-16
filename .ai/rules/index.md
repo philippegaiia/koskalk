@@ -39,7 +39,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | routes/*.php | .ai/rules/routes.md |
 | app/Filament/Resources/Ingredients/Schemas/IngredientForm.php | .ai/rules/schemas.md |
 | database/seeders/** | .ai/rules/seeders.md |
-| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php | .ai/rules/services.md |
+| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php | .ai/rules/services.md |
 | app/Services/IngredientEnrichment/Sources/** | .ai/rules/sources.md |
 | app/Support/InciName.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-20
+Last updated: 2026-09-13
 
 ## Stack
 
@@ -97,11 +97,12 @@ These currently cover:
 - fatty acid aggregation from normalized fatty-acid rows
 - transparent legacy soap quality reference metrics derived from fatty acids and KOH SAP
 - grouped fatty-acid buckets (`vs`, `hs`, `mu`, `pu`, `sp`, `sat`, `unsat`)
-- context-aware soap output through `soap_context` (`bar`, `soft`, `liquid`)
+- context-aware soap output through `soap_context` (`bar`, `hybrid`, `soft_or_liquid`, `liquid`)
 - quality applicability metadata through `properties.quality_applicability`
 - warnings for liquid/high-KOH superfat and neutralization situations
 - superfat behavior outputs (`base_cleansing_potential`, `superfat_buffer`, `effective_cleansing`, `dos_risk_modifier`, `superfat_softening`, `superfat_lather_penalty`)
-- first parallel Koskalk quality outputs alongside the legacy SoapCalc-style keys
+- versioned Koskalk quality outputs alongside the legacy SoapCalc-style keys
+- [first-pass soap quality calibration](soap-quality-calibration.md): fatty-acid cleansing anchors, stronger palmitic/stearic firmness, high-oleic cured hardness, liquid-related shrinkage, and explicit KOH tendencies
 - nonlinear PU-aware DOS risk, with PU above about 15% escalating strongly
 - lather model direction separates quick soluble bubbles, hard-fat foam body/persistence, and capped ricinoleic stability support
 - soap recipe normalization on an oil-weight basis

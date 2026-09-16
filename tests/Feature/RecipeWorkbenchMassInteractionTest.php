@@ -62,6 +62,10 @@ Object.defineProperty(global, 'navigator', {
     configurable: true,
 });
 
+const assertClose = (actual, expected, tolerance = 1e-12) => {
+    assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`);
+};
+
 const source = fs
     .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
     .replace(/^import[\s\S]*?;\n/gm, '')
@@ -71,7 +75,11 @@ eval(`${source}\nglobalThis.createRecipeWorkbenchState = createRecipeWorkbenchSt
 
 assert.equal(preferredMassUnit(1000, 'metric'), 'kg');
 assert.equal(preferredMassUnit(100, 'us_customary'), 'oz');
-assert.equal(convertMass(1, 'kg', 'lb'), 2.204622622);
+assertClose(convertMass(1, 'kg', 'oz'), 35.27396194958041);
+assertClose(convertMass(1, 'kg', 'lb'), 2.2046226218487757);
+assert.equal(convertMass('1,5', 'kg', 'g'), 1500);
+assertClose(convertMass(convertMass(1, 'kg', 'oz'), 'oz', 'g'), 1000, 1e-9);
+assertClose(convertMass(convertMass(1, 'kg', 'lb'), 'lb', 'g'), 1000, 1e-9);
 
 const state = globalThis.createRecipeWorkbenchState({
     productFamily: { slug: 'soap' },
@@ -84,18 +92,30 @@ const percentage = state.phaseItems.saponified_oils[0].percentage;
 state.changeOilUnit('lb');
 
 assert.equal(state.oilUnit, 'lb');
-assert.equal(state.oilWeight, 2.204622622);
+assertClose(state.oilWeight, 2.2046226218487757);
 assert.equal(state.phaseItems.saponified_oils[0].percentage, percentage);
 assert.ok(Math.abs(((state.oilWeight * 0.6) * 453.59237) - 600) < 0.000001);
 
 state.changeOilUnit('kg');
 
 assert.equal(state.oilUnit, 'kg');
-assert.equal(state.oilWeight, 1);
+assertClose(state.oilWeight, 1, 1e-9);
 
 state.changeOilUnit('stone');
 assert.equal(state.oilUnit, 'kg');
-assert.equal(state.oilWeight, 1);
+assertClose(state.oilWeight, 1, 1e-9);
+
+const localizedState = globalThis.createRecipeWorkbenchState({
+    productFamily: { slug: 'soap' },
+    preferredMassUnit: 'kg',
+}, { blocksNavigation: () => false });
+localizedState.scheduleCalculationPreview = () => {};
+localizedState.oilWeight = '1,5';
+localizedState.changeOilUnit('g');
+
+assert.equal(localizedState.oilUnit, 'g');
+assert.equal(localizedState.oilWeight, 1500);
+assert.equal(typeof localizedState.oilWeight, 'number');
 JS;
 
     $process = Process::fromShellCommandline(
@@ -189,6 +209,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { convertMass, convertMassPrice } from './resources/js/recipe-workbench/mass.js';
 
+const assertClose = (actual, expected, tolerance = 1e-12) => {
+    assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`);
+};
+
 const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
 const number = (value) => Number(value) || 0;
 const parseDecimalInput = number;
@@ -236,14 +260,14 @@ const initialCost = state.totalBatchCost;
 state.changeCostingUnit('lb');
 
 assert.equal(state.costingOilUnit, 'lb');
-assert.equal(state.costingOilWeight, 2.204622622);
+assertClose(state.costingOilWeight, 2.2046226218487757);
 assert.equal(state.costingPriceUnit, 'lb');
 assert.equal(state.costingPriceForRow(state.costingFormulaRows[0]), 4.5359237);
 assert.equal(state.canonicalPricePerKg(state.costingFormulaRows[0]), 10);
 assert.ok(Math.abs(state.totalBatchCost - initialCost) < 0.000001);
 
 state.changeCostingUnit('kg');
-assert.equal(state.costingOilWeight, 1);
+assertClose(state.costingOilWeight, 1, 1e-9);
 assert.equal(state.costingPriceUnit, 'kg');
 assert.equal(state.costingPriceForRow(state.costingFormulaRows[0]), 10);
 assert.equal(state.totalBatchCost, initialCost);

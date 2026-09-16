@@ -224,7 +224,7 @@
 
             <label class="sk-field min-w-64">
                 <span class="text-[var(--color-ink-soft)]">{{ __('media_library.search') }}</span>
-                <input wire:model.live.debounce.250ms="search" type="search" placeholder="{{ __('media_library.search_placeholder') }}" class="sk-field-control" />
+                <input autocomplete="off" wire:model.live.debounce.250ms="search" type="search" placeholder="{{ __('media_library.search_placeholder') }}" class="sk-field-control" />
             </label>
         </div>
 
@@ -639,7 +639,7 @@
                     @else
                         <label class="block">
                             <span class="sr-only">{{ __('media_library.panel.search_usage') }}</span>
-                            <input wire:model.live.debounce.250ms="usageSearch" type="search" placeholder="{{ __('media_library.panel.search_usage') }}" class="w-full rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
+                            <input autocomplete="off" wire:model.live.debounce.250ms="usageSearch" type="search" placeholder="{{ __('media_library.panel.search_usage') }}" class="w-full rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
                         </label>
 
                         @if ($selectedUsageGroups->isEmpty())

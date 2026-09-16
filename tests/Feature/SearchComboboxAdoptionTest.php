@@ -34,6 +34,12 @@ it('keeps shared search combobox actions on accessible SVG icons', function (): 
     $component = file_get_contents(resource_path('views/components/search-combobox.blade.php'));
     $rendered = Blade::render('<x-search-combobox id="icon-contract-search" label="Search" :options="[]" />');
 
+    expect($rendered)
+        ->toContain('autocomplete="off"')
+        ->toContain('autocapitalize="none"')
+        ->toContain('spellcheck="false"')
+        ->toContain(':data-has-selection=');
+
     expect($component)
         ->toContain('<x-action-icon name="close" />')
         ->toContain('<x-action-icon name="chevron-down" />')
@@ -257,4 +263,36 @@ JS;
         ])
         ->and($payload['event']['name'])->toBe('search-combobox-selected')
         ->and($payload['event']['detail']['id'])->toBe('USD');
+});
+
+it('contains dilution options in a compact rounded list within the expanding section', function (): void {
+    $settings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
+    $document = new DOMDocument;
+    @$document->loadHTML($settings);
+    $xpath = new DOMXPath($document);
+    $list = $xpath->query('//*[@id="lye-liquid-ingredient-search-options"]')->item(0);
+
+    expect($list)->not->toBeNull();
+    expect($list->getAttribute('class'))
+        ->toContain('relative mt-1.5 max-h-48')
+        ->toContain('overflow-y-auto overscroll-contain rounded-lg border')
+        ->not->toContain('absolute');
+
+    $default = Blade::render('<x-search-combobox id="floating-search" label="Search" />');
+    expect($default)->toContain('absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-72');
+});
+
+it('wraps category option and selected labels without repeating selection action text', function (): void {
+    $rendered = Blade::render('<x-search-combobox id="categories" label="Category" :wrap-labels="true" />');
+
+    expect($rendered)
+        ->toContain('x-ref="selectionLabel"')
+        ->toContain('whitespace-normal break-words')
+        ->toContain('x-show="open || selectedLabel')
+        ->toContain('aria-haspopup="listbox"')
+        ->not->toContain('block truncate')
+        ->not->toContain("? 'Selected'");
+
+    $browser = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
+    expect($browser)->toContain(':wrap-labels="true"');
 });

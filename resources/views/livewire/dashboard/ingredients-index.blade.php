@@ -73,7 +73,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <label class="sk-field min-w-64">
                             <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('ingredients.search.label') }}</span>
-                            <input wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('ingredients.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('ingredients.search.aria_label') }}" />
+                            <input autocomplete="off" wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('ingredients.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('ingredients.search.aria_label') }}" />
                         </label>
                     </div>
                 </div>
@@ -182,7 +182,7 @@
                                                 type="text"
                                                 inputmode="decimal"
                                                 @disabled(! $canEditPrices)
-                                                class="sk-input numeric text-right"
+                                                class="sk-input numeric py-2 text-right"
                                                 aria-label="{{ __('ingredients.accessibility.price', ['ingredient' => $displayName, 'unit' => $currentPriceUnit]) }}"
                                             />
                                             @error('price_'.$ingredient->id)

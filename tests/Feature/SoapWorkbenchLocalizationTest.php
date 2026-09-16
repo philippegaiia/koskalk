@@ -48,7 +48,8 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         ->toContain('No IFRA category')
         ->toContain('Review IFRA category')
         ->toContain('Optional guidance.')
-        ->toContain('Fresh weight')
+        ->toContain('>Weight</span>')
+        ->not->toContain('Fresh weight')
         ->toContain('settings.lye_liquid_fresh_weight_for')
         ->not->toContain('Formula setup')
         ->not->toContain('>Current<');
@@ -155,6 +156,15 @@ it('keeps revised Workbench translations complete and ordered across all catalog
         ->keyBy('key');
     $locales = ['de', 'es', 'fr', 'it', 'nl', 'pt_BR'];
     $reviewedKeys = [
+        'qualities.bar_unavailable',
+        'qualities.cleansing_balanced',
+        'qualities.cleansing_high',
+        'qualities.cleansing_low',
+        'qualities.cleansing_very_high',
+        'qualities.hardness_four_weeks',
+        'qualities.shrinkage_label',
+        'qualities.shrinkage_low',
+        'qualities.shrinkage_high',
         'accessibility.entry_mode',
         'settings.entry_mode',
         'settings.cosmetic_percentage_entry_help',

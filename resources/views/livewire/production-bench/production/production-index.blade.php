@@ -24,7 +24,7 @@
         <section aria-label="{{ __('production_bench.common.search') }}" class="sk-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
             <label class="space-y-2 sm:col-span-2 lg:col-span-2">
                 <span class="text-sm font-medium">{{ __('production_bench.common.search') }}</span>
-                <input wire:model.live.debounce.300ms="search" class="sk-input w-full" placeholder="{{ __('production_bench.production.search_placeholder') }}">
+                <input autocomplete="off" wire:model.live.debounce.300ms="search" class="sk-input w-full" placeholder="{{ __('production_bench.production.search_placeholder') }}">
             </label>
             <label class="space-y-2">
                 <span class="text-sm font-medium">{{ __('production_bench.production.status_filter') }}</span>

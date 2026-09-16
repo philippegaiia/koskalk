@@ -67,6 +67,23 @@ it('shows today and upcoming/overdue/completed scopes with combined filters', fu
         ->and($page->instance()->filterDatesForm->getComponent('toDate')->isNative())->toBeFalse();
 });
 
+it('keeps the task date range in chronological order', function (): void {
+    $fixture = productionTaskIndexFixture();
+    $earlierDate = today()->subDays(2)->toDateString();
+    $laterDate = today()->addDays(2)->toDateString();
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(TaskIndex::class)
+        ->set('toDate', $earlierDate)
+        ->set('fromDate', $laterDate)
+        ->assertSet('fromDate', $laterDate)
+        ->assertSet('toDate', $laterDate)
+        ->set('fromDate', $laterDate)
+        ->set('toDate', $earlierDate)
+        ->assertSet('fromDate', $earlierDate)
+        ->assertSet('toDate', $earlierDate);
+});
+
 it('keeps task search and assignment options inside the active workspace', function (): void {
     $fixture = productionTaskIndexFixture();
     $other = productionTaskIndexFixture();

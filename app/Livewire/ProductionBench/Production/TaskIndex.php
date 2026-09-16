@@ -15,6 +15,7 @@ use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,12 +71,22 @@ class TaskIndex extends Component implements HasForms
     public function updatedFromDate(): void
     {
         $this->fromDate = $this->normalizeDatePickerState($this->fromDate);
+
+        if ($this->fromDate !== '' && $this->toDate !== '' && $this->fromDate > $this->toDate) {
+            $this->toDate = $this->fromDate;
+        }
+
         $this->resetPage();
     }
 
     public function updatedToDate(): void
     {
         $this->toDate = $this->normalizeDatePickerState($this->toDate);
+
+        if ($this->fromDate !== '' && $this->toDate !== '' && $this->toDate < $this->fromDate) {
+            $this->fromDate = $this->toDate;
+        }
+
         $this->resetPage();
     }
 
@@ -86,11 +97,13 @@ class TaskIndex extends Component implements HasForms
                 ->label(__('production_bench.production.from_date'))
                 ->native(false)
                 ->displayFormat('d/m/Y')
+                ->maxDate(fn (Get $get): ?string => filled($get('toDate')) ? $this->normalizeDatePickerState((string) $get('toDate')) : null)
                 ->live(),
             DatePicker::make('toDate')
                 ->label(__('production_bench.production.to_date'))
                 ->native(false)
                 ->displayFormat('d/m/Y')
+                ->minDate(fn (Get $get): ?string => filled($get('fromDate')) ? $this->normalizeDatePickerState((string) $get('fromDate')) : null)
                 ->live(),
         ]);
     }

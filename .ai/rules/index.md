@@ -17,6 +17,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | vite.config.js | .ai/rules/general.md |
 | app/Http/** | .ai/rules/http.md |
 | app/Services/IngredientEnrichment/**, app/Services/IngredientIntake/**, app/Actions/IngredientIntake/** | .ai/rules/ingredient-enrichment.md |
+| app/Actions/Inventory/** | .ai/rules/inventory.md |
 | resources/js/recipe-workbench/** | .ai/rules/js-recipe-workbench.md |
 | app/Http/Controllers/RecipeController.php, resources/views/recipes/**, resources/js/product-creation-selector.js, resources/js/sticky-table-header.js | .ai/rules/js.md |
 | resources/{js,views}/**/recipe-workbench/** | .ai/rules/jsviews-recipe-workbench.md |

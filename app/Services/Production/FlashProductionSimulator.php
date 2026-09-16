@@ -38,6 +38,7 @@ class FlashProductionSimulator
         private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly FlashProductionLimits $limits,
         private readonly ProductionReadyDateService $readyDates,
+        private readonly ProductionLocationSelection $locationSelection,
     ) {}
 
     /**
@@ -46,6 +47,10 @@ class FlashProductionSimulator
      */
     public function simulate(Workspace $workspace, array $lines): array
     {
+        $this->recipesById = [];
+        $this->versionsByRecipeId = [];
+        $this->taskSetsById = [];
+        $this->taskSetRecipeApplicability = [];
         $simulationLines = [];
         $requirements = collect();
         $subjects = [];
@@ -130,6 +135,7 @@ class FlashProductionSimulator
                 'line_index' => $index,
                 'recipe_id' => $recipe->id,
                 'recipe' => $recipe,
+                'production_location_id' => $line['production_location_id'],
                 'recipe_version_id' => $version->id,
                 'desired_units' => $line['desired_units'],
                 'expected_units_per_batch' => $line['expected_units_per_batch'],
@@ -306,6 +312,7 @@ class FlashProductionSimulator
         }
 
         return [
+            'production_location_id' => $this->locationSelection->resolve($workspace, $input['production_location_id'] ?? null),
             'recipe_id' => $recipeId,
             'desired_units' => $desiredUnits,
             'expected_units_per_batch' => $expectedUnits,

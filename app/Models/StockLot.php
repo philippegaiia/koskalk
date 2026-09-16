@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use LogicException;
 
 #[Fillable([
+    'storage_location_id',
     'workspace_id',
     'ingredient_id',
     'packaging_item_id',
@@ -209,6 +210,11 @@ class StockLot extends Model
     public function productionRun(): BelongsTo
     {
         return $this->belongsTo(ProductionRun::class);
+    }
+
+    public function storageLocation(): BelongsTo
+    {
+        return $this->belongsTo(StorageLocation::class, 'storage_location_id');
     }
 
     protected function casts(): array

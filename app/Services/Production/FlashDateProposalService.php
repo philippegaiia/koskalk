@@ -2,6 +2,7 @@
 
 namespace App\Services\Production;
 
+use App\Models\ProductionLocation;
 use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\Workspace;
@@ -18,6 +19,8 @@ class FlashDateProposalService
         private readonly ProductionWorkingCalendar $calendar,
         private readonly FlashProductionLimits $limits,
         private readonly ProductionReadyDateService $readyDates,
+        private readonly ProductionDailyOccupancy $occupancy,
+        private readonly ProductionLocationSelection $locationSelection,
     ) {}
 
     /**
@@ -29,19 +32,27 @@ class FlashDateProposalService
         array $lines,
         string|DateTimeInterface $firstDate,
         int $batchesPerDay = 1,
+        bool $legacy = false,
     ): array {
-        if ($batchesPerDay < 1) {
+        if ($batchesPerDay < 1 || $batchesPerDay > FlashProductionLimits::MAX_BATCHES_PER_SUBMISSION) {
             throw ValidationException::withMessages([
                 'batchesPerDay' => 'The number of batches per day must be positive.',
             ]);
         }
 
-        $date = $this->parseDate($firstDate);
+        $this->calendar->refresh($workspace);
+        $this->taskSetsById = [];
+        $first = $this->parseDate($firstDate);
+        $last = $first->addYears(5);
+        $counts = $legacy ? ['overall' => [], 'locations' => []] : $this->occupancy->between($workspace, $first->toDateString(), $last->toDateString());
+        $locationLimits = $workspace->uses_production_locations
+            ? ProductionLocation::query()->where('workspace_id', $workspace->id)->pluck('daily_production_limit', 'id')->all()
+            : [];
         $proposals = [];
-        $dayBatchCount = 0;
         $totalBatches = 0;
 
         foreach ($lines as $line) {
+            $locationId = $legacy ? null : $this->locationSelection->resolve($workspace, $line['production_location_id'] ?? null);
             $batchTotal = (int) ($line['whole_batches'] ?? 0);
 
             if ($batchTotal < 1) {
@@ -55,11 +66,18 @@ class FlashDateProposalService
                 : ($line['task_set'] ?? $this->taskSet($workspace, $line['task_set_id'] ?? null));
 
             for ($batch = 1; $batch <= $batchTotal; $batch++) {
-                if ($dayBatchCount >= $batchesPerDay) {
-                    $date = $this->calendar->nextWorkingDate($workspace, $date->addDay());
-                    $dayBatchCount = 0;
-                } else {
-                    $date = $this->calendar->nextWorkingDate($workspace, $date);
+                $date = $first;
+                while (true) {
+                    if ($date->greaterThan($last)) {
+                        throw ValidationException::withMessages(['firstDate' => __('locations.validation.horizon')]);
+                    }
+                    $day = $date->toDateString();
+                    if ($this->calendar->isWorkingDate($workspace, $date)
+                        && ($counts['overall'][$day] ?? 0) < $batchesPerDay
+                        && ($locationId === null || ($counts['locations'][$locationId][$day] ?? 0) < $locationLimits[$locationId])) {
+                        break;
+                    }
+                    $date = $date->addDay();
                 }
 
                 $proposals[] = [
@@ -68,6 +86,7 @@ class FlashDateProposalService
                     'recipe_name' => (string) ($line['recipe_name'] ?? $line['recipe']->name ?? ''),
                     'batch_number' => $batch,
                     'batch_total' => $batchTotal,
+                    'production_location_id' => $locationId,
                     'production_date' => $date->toDateString(),
                     'estimated_ready_on' => $this->estimatedReadyOn(
                         $workspace,
@@ -80,7 +99,10 @@ class FlashDateProposalService
                         : $this->tasks($workspace, $date, $taskSet),
                 ];
 
-                $dayBatchCount++;
+                $counts['overall'][$day] = ($counts['overall'][$day] ?? 0) + 1;
+                if ($locationId !== null) {
+                    $counts['locations'][$locationId][$day] = ($counts['locations'][$locationId][$day] ?? 0) + 1;
+                }
             }
         }
 
@@ -137,7 +159,6 @@ class FlashDateProposalService
         }
 
         $id = (int) $taskSetId;
-
         if (array_key_exists($id, $this->taskSetsById)) {
             return $this->taskSetsById[$id];
         }

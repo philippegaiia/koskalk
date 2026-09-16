@@ -171,6 +171,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             // any link that predates the change still resolve.
             Route::redirect('/production/settings', '/dashboard/production-bench/production/settings/numbering')->name('production.settings');
             Route::view('/production/settings/numbering', 'production-bench.production.numbering')->name('production.settings.numbering');
+            Route::view('/production/settings/planning', 'production-bench.production.planning-preferences')->name('production.settings.planning');
             Route::view('/production/settings/batch-sizes/new', 'production-bench.production.batch-size-create')->name('production.settings.presets.create');
             Route::view('/production/settings/batch-sizes/{preset}/edit', 'production-bench.production.batch-size-edit')->name('production.settings.presets.edit');
             Route::view('/production/settings/batch-sizes', 'production-bench.production.batch-size-index')->name('production.settings.presets');

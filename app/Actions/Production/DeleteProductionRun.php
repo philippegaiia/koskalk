@@ -39,6 +39,7 @@ class DeleteProductionRun
                 ->lockForUpdate()
                 ->find($production->workspace_id);
             $lockedProduction = ProductionRun::query()
+                ->where('workspace_id', $production->workspace_id)
                 ->lockForUpdate()
                 ->findOrFail($production->id);
 

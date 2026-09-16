@@ -3,32 +3,51 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\GenerateFlashProductions;
+use App\Enums\ProductionRunStatus;
 use App\Models\ProductionBatchPreset;
+use App\Models\ProductionLocation;
+use App\Models\ProductionRun;
 use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\FlashDateProposalService;
+use App\Services\Production\FlashPlanFingerprint;
 use App\Services\Production\FlashProductionSimulator;
+use App\Services\Production\ProductionLocationSelection;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
-class FlashPlanner extends Component
+class FlashPlanner extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
+    use InteractsWithForms;
+
     /** @var list<array<string, string>> */
     public array $lines = [];
 
-    public string $firstDate = '';
+    public ?string $firstDate = '';
 
     public string $batchesPerDay = '1';
 
     public bool $showDatePreview = false;
 
+    #[Locked]
     public string $idempotencyKey = '';
+
+    #[Locked]
+    public ?string $proposalFingerprint = null;
 
     /** @var list<array<string, mixed>> */
     public array $datePreview = [];
@@ -41,6 +60,7 @@ class FlashPlanner extends Component
     public function mount(): void
     {
         $this->firstDate = now()->toDateString();
+        $this->batchesPerDay = (string) ($this->workspace()->production_daily_limit ?? 1);
         $this->lines = [$this->blankLine()];
         $this->idempotencyKey = (string) Str::uuid();
     }
@@ -48,6 +68,7 @@ class FlashPlanner extends Component
     public function updatedLines(mixed $value, string $key): void
     {
         $this->simulationError = null;
+        $this->proposalFingerprint = null;
         $this->showDatePreview = false;
         $this->datePreview = [];
         $this->simulationSnapshot = [];
@@ -65,13 +86,16 @@ class FlashPlanner extends Component
 
     public function addLine(): void
     {
+        $this->simulationError = null;
         $this->lines[] = $this->blankLine();
+        $this->proposalFingerprint = null;
         $this->showDatePreview = false;
         $this->simulationSnapshot = [];
     }
 
     public function removeLine(int $index): void
     {
+        $this->simulationError = null;
         if (count($this->lines) === 1) {
             $this->lines = [$this->blankLine()];
         } else {
@@ -79,26 +103,44 @@ class FlashPlanner extends Component
             $this->lines = array_values($this->lines);
         }
 
+        $this->proposalFingerprint = null;
         $this->showDatePreview = false;
         $this->datePreview = [];
         $this->simulationSnapshot = [];
     }
 
+    public function updatedFirstDate(): void
+    {
+        $this->simulationError = null;
+        $this->proposalFingerprint = null;
+        $this->showDatePreview = false;
+        $this->datePreview = [];
+    }
+
+    public function updatedBatchesPerDay(): void
+    {
+        $this->updatedFirstDate();
+    }
+
     public function previewDates(FlashProductionSimulator $simulator, FlashDateProposalService $dateProposal): void
     {
         $this->simulationError = null;
+        $workspace = $this->workspace()->refresh();
 
         try {
-            $simulation = $this->simulation($simulator);
+            $this->simulationSnapshot = [];
+            $simulation = $simulator->simulate($this->workspace(), $this->lines);
             $this->datePreview = $dateProposal->propose(
                 workspace: $this->workspace(),
                 lines: $simulation['lines'],
                 firstDate: $this->firstDate,
                 batchesPerDay: $this->positiveWhole($this->batchesPerDay),
             );
+            $this->proposalFingerprint = app(FlashPlanFingerprint::class)->proposal($simulation, $this->datePreview, $this->workspace(), $this->positiveWhole($this->batchesPerDay));
             $this->showDatePreview = true;
         } catch (ValidationException $exception) {
             $this->simulationError = collect($exception->errors())->flatten()->first();
+            $this->proposalFingerprint = null;
             $this->showDatePreview = false;
             $this->datePreview = [];
         }
@@ -108,6 +150,12 @@ class FlashPlanner extends Component
     {
         $this->simulationError = null;
 
+        if ($this->proposalFingerprint === null) {
+            $this->simulationError = __('locations.validation.preview_required');
+
+            return;
+        }
+
         try {
             $generate->handle(
                 actor: $this->user(),
@@ -116,14 +164,19 @@ class FlashPlanner extends Component
                 firstDate: $this->firstDate,
                 batchesPerDay: $this->batchesPerDay,
                 idempotencyKey: $this->idempotencyKey,
+                expectedProposalFingerprint: $this->proposalFingerprint,
             );
         } catch (ValidationException $exception) {
+            if (array_key_exists('proposal', $exception->errors())) {
+                $this->previewDates(app(FlashProductionSimulator::class), app(FlashDateProposalService::class));
+            }
             $this->simulationError = collect($exception->errors())->flatten()->first();
 
             return;
         }
 
         $this->idempotencyKey = (string) Str::uuid();
+        $this->proposalFingerprint = null;
         $this->showDatePreview = false;
         $this->dispatch('flash-productions-generated');
     }
@@ -138,7 +191,6 @@ class FlashPlanner extends Component
         if ($this->hasEnteredLine()) {
             try {
                 $simulation = $this->simulation($simulator, $workspace);
-                $this->simulationError = null;
             } catch (ValidationException $exception) {
                 $this->simulationError = collect($exception->errors())->flatten()->first();
             }
@@ -146,6 +198,7 @@ class FlashPlanner extends Component
 
         return view('livewire.production-bench.production.flash-planner', [
             'workspace' => $workspace,
+            'productionLocations' => $workspace->uses_production_locations ? ProductionLocation::query()->where('workspace_id', $workspace->id)->where('is_active', true)->orderBy('name')->get() : collect(),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'recipes' => Recipe::query()
@@ -167,6 +220,12 @@ class FlashPlanner extends Component
                 ->orderBy('name')
                 ->get(),
             'simulation' => $simulation,
+            'existingProductionsByDay' => $this->showDatePreview
+                ? ProductionRun::query()->where('workspace_id', $workspace->id)
+                    ->whereIn('planned_for', collect($this->datePreview)->pluck('production_date')->unique())
+                    ->whereNotIn('status', [ProductionRunStatus::Draft, ProductionRunStatus::Cancelled])
+                    ->orderBy('id')->get()->groupBy(fn ($run): string => $run->planned_for->toDateString())
+                : collect(),
         ]);
     }
 
@@ -175,6 +234,7 @@ class FlashPlanner extends Component
     {
         return [
             'recipe_id' => '',
+            'production_location_id' => '',
             'preset_id' => '',
             'batch_mode' => 'custom',
             'task_set_id' => '',
@@ -190,6 +250,8 @@ class FlashPlanner extends Component
         $recipeId = (int) ($this->lines[$index]['recipe_id'] ?? 0);
 
         if ($recipeId < 1) {
+            $this->lines[$index]['production_location_id'] = '';
+
             return;
         }
 
@@ -201,6 +263,7 @@ class FlashPlanner extends Component
                 'productionBatchPresets' => fn ($query) => $query->where('is_active', true),
             ])
             ->find($recipeId);
+        $this->lines[$index]['production_location_id'] = $recipe instanceof Recipe ? (string) (app(ProductionLocationSelection::class)->defaultFor($this->workspace(), $recipe) ?? '') : '';
         $presets = $recipe instanceof Recipe ? $recipe->productionBatchPresets : collect();
         $preset = $presets->first(fn (ProductionBatchPreset $candidate): bool => (bool) $candidate->pivot?->is_default);
         $preset ??= $presets->count() === 1 ? $presets->first() : null;
@@ -301,6 +364,7 @@ class FlashPlanner extends Component
                 'line_index' => $line['line_index'],
                 'recipe_id' => $line['recipe_id'],
                 'recipe_name' => (string) $line['recipe']->name,
+                'production_location_id' => $line['production_location_id'],
                 'whole_batches' => $line['whole_batches'],
                 'task_set_id' => $line['task_set_id'],
                 'output_ready_delay_days' => $line['output_ready_delay_days'],
@@ -337,9 +401,9 @@ class FlashPlanner extends Component
 
     private function positiveWhole(string $value): int
     {
-        if (preg_match('/^[1-9]\d*$/', trim($value)) !== 1) {
+        if (preg_match('/^[1-9]\d*$/', trim($value)) !== 1 || (int) $value > 1000) {
             throw ValidationException::withMessages([
-                'batchesPerDay' => 'Enter a positive number of batches per day.',
+                'batchesPerDay' => __('locations.validation.production_daily_limit'),
             ]);
         }
 
@@ -349,6 +413,30 @@ class FlashPlanner extends Component
     private function displayDecimal(string $value): string
     {
         return NumberLocale::formatAdaptiveDecimal($value, 0, 3, $this->user()->number_locale);
+    }
+
+    public function updated(string $property): void
+    {
+        if ($property !== 'firstDate') {
+            return;
+        }
+
+        $value = $this->firstDate ?? '';
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}(?: 00:00:00)?$/', $value) === 1 ? substr($value, 0, 10) : '';
+        $this->firstDate = validator(['date' => $date], ['date' => 'required|date_format:Y-m-d'])->passes() ? $date : '';
+    }
+
+    public function planningDateForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            DatePicker::make('firstDate')
+                ->label(__('production_bench.production.production_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live()
+                ->required()
+                ->disabled(! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace())),
+        ]);
     }
 
     private function user(): User

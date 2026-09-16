@@ -24,6 +24,7 @@ use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\ExchangeRateService;
 use App\Services\InternalLotCodeGenerator;
+use App\Services\Inventory\StorageLocationSelection;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -33,8 +34,10 @@ class PostGoodsReceiptLine
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly ExchangeRateService $exchangeRateService,
+        private readonly StorageLocationSelection $locations,
     ) {}
 
+    /** @param array{storage_location_id?: int|string|null} $storageLocationInput */
     public function handle(
         User $actor,
         Workspace $workspace,
@@ -55,6 +58,7 @@ class PostGoodsReceiptLine
         ?string $supplierBatchNumber = null,
         ?string $expiresAt = null,
         ?string $notes = null,
+        array $storageLocationInput = [],
     ): GoodsReceiptLine {
         $this->assertCoherent(
             $actor,
@@ -126,7 +130,10 @@ class PostGoodsReceiptLine
         $costingTotalCost = bcmul($historicalTotalCost, $exchangeRate->rate, 9);
         $costingUnitCost = bcround(bcdiv($costingTotalCost, $actualQuantity, 18), 9);
 
+        $subject = $ingredientId !== null ? Ingredient::withoutGlobalScopes()->findOrFail($ingredientId) : PackagingItem::query()->where('workspace_id', $workspace->id)->findOrFail($packagingItemId);
+        $locationId = $this->locations->resolve($workspace, $subject, $storageLocationInput);
         $lot = StockLot::query()->create([
+            'storage_location_id' => $locationId,
             'workspace_id' => $workspace->id,
             'supplier_listing_id' => $listing->id,
             'ingredient_id' => $ingredientId,

@@ -1,12 +1,14 @@
 <?php
 
 use App\Actions\Production\GenerateFlashProductions;
+use App\Enums\MassUnit;
 use App\Enums\OwnerType;
 use App\Enums\ProductionRunSource;
 use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTaskSet;
@@ -19,6 +21,9 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\FlashDateProposalService;
+use App\Services\Production\FlashPlanFingerprint;
+use App\Services\Production\FlashProductionSimulator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -252,3 +257,86 @@ function generateFlashFixture(): array
 
     return compact('owner', 'workspace', 'recipe', 'version', 'taskSet');
 }
+
+it('replays flash after other work is scheduled without creating or moving runs', function (): void {
+    $fixture = generateFlashFixture();
+    $lines = [['recipe_id' => $fixture['recipe']->id, 'desired_units' => '100', 'expected_units_per_batch' => '100', 'basis_input_value' => '12', 'basis_input_unit' => 'kg', 'task_set_id' => $fixture['taskSet']->id]];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'stable-flash');
+    $other = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'other-flash');
+    $retry = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'stable-flash');
+    expect($other->first()->planned_for->toDateString())->toBe('2026-09-22');
+    expect($retry->pluck('id')->all())->toBe($first->pluck('id')->all());
+    expect(ProductionRun::query()->count())->toBe(2);
+});
+
+it('replays a completed submission after its recipe and location are archived', function (): void {
+    $fixture = generateFlashFixture();
+    $fixture['workspace']->update(['uses_production_locations' => true]);
+    $location = ProductionLocation::factory()->for($fixture['workspace'])->create();
+    $lines = [['recipe_id' => $fixture['recipe']->id, 'desired_units' => '100', 'expected_units_per_batch' => '100', 'basis_input_value' => '12', 'basis_input_unit' => 'kg', 'production_location_id' => $location->id]];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'archived-replay');
+    $location->update(['is_active' => false]);
+    $fixture['recipe']->update(['archived_at' => now()]);
+    $fixture['workspace']->update(['uses_production_locations' => false]);
+    $retry = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'archived-replay');
+    expect($retry->pluck('id')->all())->toBe($first->pluck('id')->all());
+});
+
+it('rejects a partially deleted submission without recreating missing batches', function (): void {
+    $fixture = generateFlashFixture();
+    $lines = [['recipe_id' => $fixture['recipe']->id, 'desired_units' => '200', 'expected_units_per_batch' => '100', 'basis_input_value' => '12', 'basis_input_unit' => 'kg']];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'partial-replay');
+    $first->last()->delete();
+    expect(fn () => $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'partial-replay'))->toThrow(ValidationException::class);
+    expect(ProductionRun::query()->count())->toBe(1);
+});
+
+it('does not recreate a submission after every generated run was deleted', function (): void {
+    $fixture = generateFlashFixture();
+    $lines = [['recipe_id' => $fixture['recipe']->id, 'desired_units' => '100', 'expected_units_per_batch' => '100', 'basis_input_value' => '12', 'basis_input_unit' => 'kg']];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'deleted-replay');
+    $first->first()->delete();
+    expect(fn () => $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'deleted-replay'))->toThrow(ValidationException::class);
+    expect(ProductionRun::query()->count())->toBe(0);
+});
+
+it('replays equivalent numeric ids and enum values without treating them as changed input', function (): void {
+    $fixture = generateFlashFixture();
+    $line = ['recipe_id' => $fixture['recipe']->id, 'desired_units' => 100, 'expected_units_per_batch' => 100, 'basis_input_value' => '12', 'basis_input_unit' => MassUnit::Kilogram, 'task_set_id' => $fixture['taskSet']->id];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], [$line], '2026-09-21', 1, 'normalized-replay');
+    $line['recipe_id'] = '0'.$fixture['recipe']->id;
+    $line['task_set_id'] = '0'.$fixture['taskSet']->id;
+    $line['basis_input_unit'] = 'kg';
+    $line['desired_units'] = ' 100 ';
+    $retry = $action->handle($fixture['owner'], $fixture['workspace'], [$line], '2026-09-21', 1, 'normalized-replay');
+    expect($retry->pluck('id')->all())->toBe($first->pluck('id')->all());
+});
+
+it('keeps an explicitly cleared flash task set consistent with its accepted preview', function (): void {
+    $fixture = generateFlashFixture();
+    $lines = [['recipe_id' => $fixture['recipe']->id, 'desired_units' => '100', 'expected_units_per_batch' => '100', 'basis_input_value' => '12', 'basis_input_unit' => 'kg', 'task_set_id' => null]];
+    $simulation = app(FlashProductionSimulator::class)->simulate($fixture['workspace'], $lines);
+    $proposal = app(FlashDateProposalService::class)->propose($fixture['workspace'], $simulation['lines'], '2026-09-21', 1);
+    $fingerprint = app(FlashPlanFingerprint::class)->proposal($simulation, $proposal, $fixture['workspace'], 1);
+    expect($proposal[0]['tasks'])->toBe([]);
+    $runs = app(GenerateFlashProductions::class)->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'cleared-task-set', $fingerprint);
+    expect($runs->first()->tasks)->toHaveCount(0)->and($runs->first()->production_task_set_id)->toBeNull();
+});
+
+it('ignores stale location input on retries of submissions created with locations disabled', function (): void {
+    $fixture = generateFlashFixture();
+    $lines = [['recipe_id' => $fixture['recipe']->id, 'desired_units' => '100', 'expected_units_per_batch' => '100', 'basis_input_value' => '12', 'basis_input_unit' => 'kg', 'production_location_id' => 999999]];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'disabled-location-replay');
+    $lines[0]['production_location_id'] = null;
+    $retry = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'disabled-location-replay');
+    expect($retry->pluck('id')->all())->toBe($first->pluck('id')->all());
+    $fixture['workspace']->update(['uses_production_locations' => true]);
+    $retry = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'disabled-location-replay');
+    expect($retry->pluck('id')->all())->toBe($first->pluck('id')->all());
+});

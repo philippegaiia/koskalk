@@ -32,6 +32,19 @@
                     <input type="checkbox" wire:model.live="showCompleted" style="accent-color: var(--color-accent);" class="h-4 w-4 rounded border-[var(--color-line-strong)]">
                     {{ __('production_bench.calendar.completed') }}
                 </label>
+                @if ($workspace->uses_production_locations)
+                    <label class="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-ink-strong)]">
+                        <span>{{ __('locations.production_location') }}</span>
+                        <select wire:model.live="locationFilter" class="sk-input py-1.5 text-sm">
+                            <option value="">{{ __('locations.all_production_locations') }}</option>
+                            @foreach ($productionLocations as $location)
+                                <option value="{{ $location->public_id }}">
+                                    {{ $location->name }}@if (! $location->is_active) ({{ __('locations.archived') }}) @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
             </div>
 
             <div

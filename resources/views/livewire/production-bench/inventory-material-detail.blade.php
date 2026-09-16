@@ -78,6 +78,28 @@
                 </div>
             </div>
 
+            @if ($workspace->uses_storage_locations)
+                <div data-material-storage-location class="border-t border-[var(--color-line)] p-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('locations.usual_storage_location') }}</h2>
+                            <p class="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('locations.usual_storage_location_help') }}</p>
+                            @if ($defaultStorageLocation)
+                                <p class="mt-2 text-sm text-[var(--color-ink-strong)]">
+                                    {{ $defaultStorageLocation->name }}
+                                    @if (! $defaultStorageLocation->is_active)
+                                        <span class="ml-1 rounded-full bg-[var(--color-field-muted)] px-2 py-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('locations.inactive') }}</span>
+                                    @endif
+                                </p>
+                            @else
+                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('locations.unassigned') }}</p>
+                            @endif
+                        </div>
+                        {{ $this->editStorageLocationAction }}
+                    </div>
+                </div>
+            @endif
+
         </section>
 
         {{-- `overflow-clip`, not the `overflow-hidden` the neighbouring cards use: hidden makes the
@@ -104,6 +126,10 @@
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
+                            @if ($workspace->uses_storage_locations)
+                                <th class="px-4 py-3">{{ __('locations.storage_location') }}</th>
+                                <th class="px-5 py-3"></th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
@@ -123,9 +149,13 @@
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['reserved'] }}</td>
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>
                                 <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
+                                @if ($workspace->uses_storage_locations)
+                                    <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->storageLocation?->name ?? __('locations.unassigned') }}</td>
+                                    <td class="px-5 py-3 text-right">{{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}</td>
+                                @endif
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_open_lots') }}</td></tr>
+                            <tr><td colspan="{{ $workspace->uses_storage_locations ? 9 : 7 }}" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_open_lots') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>

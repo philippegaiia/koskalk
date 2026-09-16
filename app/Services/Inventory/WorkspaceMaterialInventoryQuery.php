@@ -12,11 +12,11 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ProductionBenchAccess;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use App\Services\ProductionBenchAccess;
 
 class WorkspaceMaterialInventoryQuery
 {
@@ -293,10 +293,12 @@ class WorkspaceMaterialInventoryQuery
             ->selectRaw("'packaging' AS subject_type, packaging_item_id AS subject_id");
         $settingIngredients = DB::table('workspace_material_settings')
             ->where('workspace_id', $workspace->id)
+            ->when(! $workspace->uses_storage_locations, fn (Builder $query): Builder => $query->whereNotNull('buffer_quantity'))
             ->whereNotNull('ingredient_id')
             ->selectRaw("'ingredient' AS subject_type, ingredient_id AS subject_id");
         $settingPackaging = DB::table('workspace_material_settings')
             ->where('workspace_id', $workspace->id)
+            ->when(! $workspace->uses_storage_locations, fn (Builder $query): Builder => $query->whereNotNull('buffer_quantity'))
             ->whereNotNull('packaging_item_id')
             ->selectRaw("'packaging' AS subject_type, packaging_item_id AS subject_id");
 

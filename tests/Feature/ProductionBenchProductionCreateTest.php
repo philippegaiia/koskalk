@@ -13,6 +13,7 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatchPreset;
+use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
@@ -28,6 +29,8 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceProductionEntitlement;
+use Filament\Forms\Components\DatePicker;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -116,7 +119,8 @@ it('allows the user to edit a loaded preset and schedule one planned production'
         ->set('recipeId', (string) $fixture['recipe']->id)
         ->set('basisInputValue', '6')
         ->set('expectedUnits', '20')
-        ->set('plannedFor', '2026-08-10')
+        ->set('plannedFor', null)->assertSet('plannedFor', '')
+        ->set('plannedFor', '2026-08-10 00:00:00')->assertSet('plannedFor', '2026-08-10')
         ->call('plan')
         ->assertHasNoErrors()
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
@@ -316,11 +320,20 @@ it('creates a draft production without a date and keeps it scheduleable', functi
         ->and($production->requirements()->count())->toBeGreaterThan(0)
         ->and($production->tasks()->count())->toBe(0);
 
-    // Schedule the draft from the index
+    ProductionRun::factory()->for($fixture['workspace'])->create([
+        'status' => ProductionRunStatus::Scheduled,
+        'planned_for' => '2026-09-15',
+    ]);
+
+    // Schedule the draft from the index without blocking an over-capacity date.
     $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->set('scheduleDates.'.$production->id, '2026-09-15')
-        ->call('scheduleProduction', $production->id)
-        ->assertHasNoErrors()
+        ->mountAction('scheduleDraft', ['productionId' => $production->id])
+        ->fillForm(['planned_for' => null])->callMountedAction()->assertHasFormErrors(['planned_for' => 'required'])
+        ->fillForm(['planned_for' => '2026-09-13'])->callMountedAction()->assertHasFormErrors(['planned_for'])
+        ->set('mountedActions.0.data.planned_for', '2026-09-15 00:00:00')
+        ->assertFormFieldExists('planned_for', fn (DatePicker $field): bool => str_contains((string) $field->toHtml(), __('locations.capacity_warning')))
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
         ->assertDispatched('app-notification');
 
     $production->refresh();
@@ -410,4 +423,15 @@ it('schedules a draft from the index with a per-row date and keeps the row value
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Scheduled)
         ->and($production->fresh()->planned_for->format('Y-m-d'))->toBe('2026-09-15');
+});
+
+it('does not open the scheduling calendar for another workspace production', function (): void {
+    $fixture = productionCreateFixture();
+    $foreign = ProductionRun::factory()->create(['status' => ProductionRunStatus::Draft]);
+
+    expect(fn () => Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->mountAction('scheduleDraft', ['productionId' => $foreign->id]))
+        ->toThrow(ModelNotFoundException::class);
+
+    expect($foreign->fresh()->status)->toBe(ProductionRunStatus::Draft);
 });

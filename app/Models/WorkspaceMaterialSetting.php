@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'default_storage_location_id',
     'workspace_id',
     'ingredient_id',
     'packaging_item_id',
@@ -35,6 +36,11 @@ class WorkspaceMaterialSetting extends Model
     public function packagingItem(): BelongsTo
     {
         return $this->belongsTo(PackagingItem::class);
+    }
+
+    public function defaultStorageLocation(): BelongsTo
+    {
+        return $this->belongsTo(StorageLocation::class, 'default_storage_location_id');
     }
 
     protected function casts(): array

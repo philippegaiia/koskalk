@@ -159,6 +159,7 @@ class ReceiveDirectGoodsReceipt
                     supplierBatchNumber: $line['supplier_batch_number'],
                     expiresAt: $line['expires_at'],
                     notes: $line['notes'],
+                    storageLocationInput: $line['storage_location_input'],
                 );
             }
 
@@ -300,6 +301,7 @@ class ReceiveDirectGoodsReceipt
             'manual_exchange_rate' => filled($input['manual_exchange_rate'] ?? null)
                 ? trim((string) $input['manual_exchange_rate'])
                 : null,
+            'storage_location_input' => array_key_exists('storage_location_id', $input) ? ['storage_location_id' => $input['storage_location_id']] : [],
             'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
             'expires_at' => $input['expires_at'] ?? null,
             'notes' => $input['notes'] ?? null,

@@ -31,9 +31,11 @@ class PlanProduction
         ?string $notes = null,
         ProductionRunSource $source = ProductionRunSource::Direct,
         ?ProductionTaskSet $taskSet = null,
+        ?int $productionLocationId = null,
     ): ProductionRun {
         return DB::transaction(function () use (
             $actor,
+            $productionLocationId,
             $basisInputUnit,
             $basisInputValue,
             $expectedUnits,
@@ -47,6 +49,7 @@ class PlanProduction
         ): ProductionRun {
             $production = $this->createProductionDraft->handle(
                 actor: $actor,
+                productionLocationId: $productionLocationId,
                 workspace: $workspace,
                 recipe: $recipe,
                 basisInputValue: $basisInputValue,

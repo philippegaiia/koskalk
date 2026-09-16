@@ -15,13 +15,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system', 'production_works_on_weekends'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system', 'production_works_on_weekends', 'uses_production_locations', 'uses_storage_locations', 'production_daily_limit'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
     use HasFactory;
 
     use HasPublicId;
+
+    protected $attributes = [
+        'uses_production_locations' => false,
+        'uses_storage_locations' => false,
+        'production_daily_limit' => 1,
+    ];
 
     protected static function booted(): void
     {
@@ -110,6 +116,16 @@ class Workspace extends Model
         return $this->hasMany(ProductionRun::class);
     }
 
+    public function productionLocations(): HasMany
+    {
+        return $this->hasMany(ProductionLocation::class);
+    }
+
+    public function storageLocations(): HasMany
+    {
+        return $this->hasMany(StorageLocation::class);
+    }
+
     public function productionRunNumberIssuances(): HasMany
     {
         return $this->hasMany(ProductionRunNumberIssuance::class);
@@ -170,6 +186,9 @@ class Workspace extends Model
         return [
             'mass_display_system' => MassDisplaySystem::class,
             'production_works_on_weekends' => 'boolean',
+            'uses_production_locations' => 'boolean',
+            'uses_storage_locations' => 'boolean',
+            'production_daily_limit' => 'integer',
         ];
     }
 }

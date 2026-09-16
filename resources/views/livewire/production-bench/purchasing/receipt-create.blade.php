@@ -110,6 +110,18 @@
                                                 <label class="flex min-w-0 flex-col gap-2 text-xs">{{ __('production_bench.receipt.supplier_batch') }}<input wire:model="lineInputs.{{ $line->id }}.supplier_batch_number" aria-invalid="{{ $errors->has("lineInputs.{$line->id}.supplier_batch_number") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$line->id}.supplier_batch_number")) aria-describedby="line-{{ $line->id }}-batch-error" @endif class="sk-input w-full py-2">@error("lineInputs.{$line->id}.supplier_batch_number")<span id="line-{{ $line->id }}-batch-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
                                                 <label class="flex min-w-0 flex-col gap-2 text-xs">{{ __('production_bench.receipt.expiry') }}<input wire:model="lineInputs.{{ $line->id }}.expires_at" type="date" aria-invalid="{{ $errors->has("lineInputs.{$line->id}.expires_at") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$line->id}.expires_at")) aria-describedby="line-{{ $line->id }}-expiry-error" @endif class="sk-input w-full py-2">@error("lineInputs.{$line->id}.expires_at")<span id="line-{{ $line->id }}-expiry-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
                                                 <label class="flex min-w-0 flex-col gap-2 text-xs xl:col-span-2">{{ __('production_bench.common.notes') }}<input wire:model="lineInputs.{{ $line->id }}.notes" aria-invalid="{{ $errors->has("lineInputs.{$line->id}.notes") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$line->id}.notes")) aria-describedby="line-{{ $line->id }}-notes-error" @endif class="sk-input w-full py-2">@error("lineInputs.{$line->id}.notes")<span id="line-{{ $line->id }}-notes-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
+                                                @if ($workspace->uses_storage_locations)
+                                                    <label data-receipt-storage-location="{{ $line->id }}" class="flex min-w-0 flex-col gap-2 text-xs">
+                                                        {{ __('locations.storage_location') }}
+                                                        <select wire:model="lineInputs.{{ $line->id }}.storage_location_id" aria-invalid="{{ $errors->has("lineInputs.{$line->id}.storage_location_id") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$line->id}.storage_location_id")) aria-describedby="line-{{ $line->id }}-storage-location-error" @endif class="sk-input w-full py-2">
+                                                            <option value="">{{ __('locations.unassigned') }}</option>
+                                                            @foreach ($storageLocations as $location)
+                                                                <option value="{{ $location->id }}" @selected((string) ($lineInputs[$line->id]['storage_location_id'] ?? '') === (string) $location->id)>{{ $location->name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @error("lineInputs.{$line->id}.storage_location_id")<span id="line-{{ $line->id }}-storage-location-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                                                    </label>
+                                                @endif
                                             </div>
                                         </div>
                                     </fieldset>
@@ -147,6 +159,18 @@
                                         <label class="text-xs">{{ __('production_bench.receipt.supplier_batch') }}<input wire:model="lineInputs.{{ $listing->id }}.supplier_batch_number" aria-invalid="{{ $errors->has("lineInputs.{$listing->id}.supplier_batch_number") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$listing->id}.supplier_batch_number")) aria-describedby="line-{{ $listing->id }}-batch-error" @endif class="sk-input mt-1 w-full">@error("lineInputs.{$listing->id}.supplier_batch_number")<span id="line-{{ $listing->id }}-batch-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
                                         <label class="text-xs">{{ __('production_bench.receipt.expiry') }}<input wire:model="lineInputs.{{ $listing->id }}.expires_at" type="date" aria-invalid="{{ $errors->has("lineInputs.{$listing->id}.expires_at") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$listing->id}.expires_at")) aria-describedby="line-{{ $listing->id }}-expiry-error" @endif class="sk-input mt-1 w-full">@error("lineInputs.{$listing->id}.expires_at")<span id="line-{{ $listing->id }}-expiry-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
                                         <label class="text-xs">{{ __('production_bench.common.notes') }}<input wire:model="lineInputs.{{ $listing->id }}.notes" aria-invalid="{{ $errors->has("lineInputs.{$listing->id}.notes") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$listing->id}.notes")) aria-describedby="line-{{ $listing->id }}-notes-error" @endif class="sk-input mt-1 w-full">@error("lineInputs.{$listing->id}.notes")<span id="line-{{ $listing->id }}-notes-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
+                                        @if ($workspace->uses_storage_locations)
+                                            <label data-receipt-storage-location="{{ $listing->id }}" class="flex min-w-0 flex-col gap-2 text-xs">
+                                                {{ __('locations.storage_location') }}
+                                                <select wire:model="lineInputs.{{ $listing->id }}.storage_location_id" aria-invalid="{{ $errors->has("lineInputs.{$listing->id}.storage_location_id") ? 'true' : 'false' }}" @if($errors->has("lineInputs.{$listing->id}.storage_location_id")) aria-describedby="line-{{ $listing->id }}-storage-location-error" @endif class="sk-input mt-1 w-full py-2">
+                                                    <option value="">{{ __('locations.unassigned') }}</option>
+                                                    @foreach ($storageLocations as $location)
+                                                        <option value="{{ $location->id }}" @selected((string) ($lineInputs[$listing->id]['storage_location_id'] ?? '') === (string) $location->id)>{{ $location->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @error("lineInputs.{$listing->id}.storage_location_id")<span id="line-{{ $listing->id }}-storage-location-error" class="mt-1 block text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                                            </label>
+                                        @endif
                                     </div>
                                 </article>
                             @empty

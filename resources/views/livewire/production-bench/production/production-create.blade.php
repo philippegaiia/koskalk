@@ -36,6 +36,25 @@
                         @error('recipeId') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                     </label>
 
+                    @if ($workspace->uses_production_locations)
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium" for="production-location">{{ __('locations.production_location') }}</label>
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                                <select id="production-location" wire:model.live="productionLocationId" @disabled($isReadOnly || $recipeId === '') class="sk-input w-full">
+                                    <option value="">{{ __('locations.no_production_location') }}</option>
+                                    @foreach ($productionLocations as $location)
+                                        <option value="{{ $location->id }}">{{ $location->name }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" wire:click="saveProductProductionLocation" wire:loading.attr="disabled" @disabled($isReadOnly || $recipeId === '') class="sk-btn sk-btn-secondary whitespace-nowrap">
+                                    {{ __('locations.save_product_default') }}
+                                </button>
+                            </div>
+                            <span class="block text-xs text-[var(--color-ink-soft)]">{{ __('locations.production_location_help') }}</span>
+                            @error('productionLocationId') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
+
                     <label class="space-y-2">
                         <span class="text-sm font-medium">{{ __('production_bench.production.preset') }}</span>
                         <select wire:model.live="presetId" @disabled($isReadOnly || $recipeId === '') class="sk-input w-full">
@@ -68,12 +87,7 @@
                         @error('expectedUnits') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                     </label>
 
-                    <label class="space-y-2">
-                        <input wire:model.live="plannedFor" type="date" @disabled($isReadOnly) class="sk-input w-full">
-
-                        <span class="block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.production_date_help') }}</span>
-                        @error('plannedFor') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
-                    </label>
+                    <div>{{ $this->planningDateForm }}</div>
 
                     <label class="space-y-2">
                         <span class="text-sm font-medium">{{ __('production_bench.production.task_set') }}</span>
@@ -94,6 +108,15 @@
 
                 @if ($preview['non_working_date'])
                     <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.production.non_working_date') }}</p>
+                @endif
+
+                @if ($capacityWarnings)
+                    <div role="status" data-testid="production-capacity-warning" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
+                        <p class="font-medium">{{ __('locations.capacity_warning') }}</p>
+                        @foreach ($capacityWarnings as $warning)
+                            <p class="mt-1">{{ $warning['label'] }}: <span class="font-mono tabular-nums">{{ $warning['count'] }} / {{ $warning['limit'] }}</span></p>
+                        @endforeach
+                    </div>
                 @endif
             </section>
 

@@ -11,18 +11,23 @@ use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockUnitKind;
 use App\Models\GoodsReceipt;
+use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
+use App\Models\StorageLocation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ExchangeRateService;
+use App\Services\Inventory\StorageLocationSelection;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -230,18 +235,28 @@ class ReceiptCreate extends Component
 
     public function render(): View
     {
+        $workspace = $this->workspace();
+
         $orders = $this->eligibleOrders();
 
         return view('livewire.production-bench.purchasing.receipt-create', [
+            'workspace' => $workspace,
             'orders' => $orders,
             'selectedOrder' => $this->selectedOrder($orders),
-            'workspaceCurrency' => $this->workspace()->default_currency,
+            'workspaceCurrency' => $workspace->default_currency,
             'suppliers' => Supplier::query()
-                ->where('workspace_id', $this->workspace()->id)
+                ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
             'listings' => $this->directListings(),
+            'storageLocations' => $workspace->uses_storage_locations
+                ? StorageLocation::query()
+                    ->where('workspace_id', $workspace->id)
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get()
+                : collect(),
         ]);
     }
 
@@ -277,6 +292,7 @@ class ReceiptCreate extends Component
                 'supplier_batch_number' => filled($input['supplier_batch_number']) ? $input['supplier_batch_number'] : null,
                 'expires_at' => filled($input['expires_at']) ? $input['expires_at'] : null,
                 'notes' => filled($input['notes']) ? $input['notes'] : null,
+                ...$this->storageLocationInput($input),
             ])->values()->all(),
             receivedAt: $this->receivedAt,
             notes: $this->notes ?: null,
@@ -317,6 +333,7 @@ class ReceiptCreate extends Component
                 'supplier_batch_number' => filled($input['supplier_batch_number']) ? $input['supplier_batch_number'] : null,
                 'expires_at' => filled($input['expires_at']) ? $input['expires_at'] : null,
                 'notes' => filled($input['notes']) ? $input['notes'] : null,
+                ...$this->storageLocationInput($input),
             ])->values()->all(),
             receivedAt: $this->receivedAt,
             deliveryReference: $this->deliveryReference ?: null,
@@ -365,6 +382,16 @@ class ReceiptCreate extends Component
             $rules["lineInputs.$id.supplier_batch_number"] = ['nullable', 'string', 'max:120'];
             $rules["lineInputs.$id.expires_at"] = ['nullable', 'date_format:Y-m-d'];
             $rules["lineInputs.$id.notes"] = ['nullable', 'string', 'max:5000'];
+
+            if ($this->workspace()->uses_storage_locations && array_key_exists('storage_location_id', $this->lineInputs[$id] ?? [])) {
+                $rules["lineInputs.$id.storage_location_id"] = [
+                    'nullable',
+                    'integer',
+                    Rule::exists('storage_locations', 'id')->where(fn (QueryBuilder $query): QueryBuilder => $query
+                        ->where('workspace_id', $this->workspace()->id)
+                        ->where('is_active', true)),
+                ];
+            }
         }
 
         $this->validate($rules);
@@ -406,7 +433,7 @@ class ReceiptCreate extends Component
             ? 'count'
             : ($line->supplierListing?->net_unit ?? 'kg');
 
-        return [
+        $input = [
             'packs_received' => $packsReceived,
             'actual_quantity' => $line->unit_kind === StockUnitKind::Count
                 ? bcadd($canonicalQuantity, '0', 0)
@@ -433,11 +460,16 @@ class ReceiptCreate extends Component
             'expires_at' => '',
             'notes' => '',
         ];
+
+        return [
+            ...$input,
+            ...$this->defaultStorageLocationInput($line->ingredient ?? $line->packagingItem),
+        ];
     }
 
     private function defaultListingInput(SupplierListing $listing): array
     {
-        return [
+        $input = [
             'packs_received' => 1,
             'actual_quantity' => $listing->unit_kind === StockUnitKind::Count
                 ? bcadd($listing->net_quantity, '0', 0)
@@ -462,6 +494,42 @@ class ReceiptCreate extends Component
             'expires_at' => '',
             'notes' => '',
         ];
+
+        return [
+            ...$input,
+            ...$this->defaultStorageLocationInput($listing->ingredient ?? $listing->packagingItem),
+        ];
+    }
+
+    /**
+     * Keep the location key out of disabled receipt payloads. When the feature is
+     * enabled, retaining a null key represents an intentional clear and lets the
+     * receiving action distinguish it from an omitted value that uses the default.
+     *
+     * @return array{storage_location_id?: int|string|null}
+     */
+    private function storageLocationInput(array $input): array
+    {
+        if (! $this->workspace()->uses_storage_locations || ! array_key_exists('storage_location_id', $input)) {
+            return [];
+        }
+
+        return ['storage_location_id' => $input['storage_location_id']];
+    }
+
+    /**
+     * @return array{storage_location_id?: string|null}
+     */
+    private function defaultStorageLocationInput(Ingredient|PackagingItem|null $subject): array
+    {
+        if (! $this->workspace()->uses_storage_locations
+            || (! $subject instanceof Ingredient && ! $subject instanceof PackagingItem)) {
+            return [];
+        }
+
+        $locationId = app(StorageLocationSelection::class)->defaultFor($this->workspace(), $subject);
+
+        return ['storage_location_id' => $locationId === null ? null : (string) $locationId];
     }
 
     private function eligibleOrders(): Collection

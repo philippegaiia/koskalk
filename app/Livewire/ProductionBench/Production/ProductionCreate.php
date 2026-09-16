@@ -4,25 +4,38 @@ namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\PlanProduction;
+use App\Actions\Production\SaveProductProductionLocation;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionBatchPreset;
+use App\Models\ProductionLocation;
 use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ProductionAvailabilityPreview;
+use App\Services\Production\ProductionDailyOccupancy;
+use App\Services\Production\ProductionLocationSelection;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
-class ProductionCreate extends Component
+class ProductionCreate extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithAppNotifications;
+    use InteractsWithForms;
 
     public string $recipeId = '';
 
@@ -36,7 +49,9 @@ class ProductionCreate extends Component
 
     public string $expectedUnits = '';
 
-    public string $plannedFor = '';
+    public ?string $plannedFor = '';
+
+    public string $productionLocationId = '';
 
     public string $notes = '';
 
@@ -59,10 +74,14 @@ class ProductionCreate extends Component
         $recipe = $this->selectedRecipe();
 
         if (! $recipe instanceof Recipe) {
-            $this->reset(['presetId', 'taskSetId', 'basisInputValue', 'expectedUnits']);
+            $this->reset(['presetId', 'taskSetId', 'basisInputValue', 'expectedUnits', 'productionLocationId']);
 
             return;
         }
+
+        $this->productionLocationId = $this->workspace()->uses_production_locations
+            ? (string) (app(ProductionLocationSelection::class)->defaultFor($this->workspace(), $recipe) ?? '')
+            : '';
 
         $presets = $recipe->productionBatchPresets()
             ->where('is_active', true)
@@ -91,6 +110,38 @@ class ProductionCreate extends Component
         }
 
         $this->taskSetId = $taskSet instanceof ProductionTaskSet ? (string) $taskSet->id : '';
+    }
+
+    public function saveProductProductionLocation(SaveProductProductionLocation $saveProductProductionLocation): void
+    {
+        try {
+            $recipe = $this->selectedRecipe();
+
+            if (! $recipe instanceof Recipe) {
+                throw ValidationException::withMessages([
+                    'recipeId' => __('production_bench.production.select_product'),
+                ]);
+            }
+
+            $savedRecipe = $saveProductProductionLocation->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                recipe: $recipe,
+                locationId: $this->selectedProductionLocationId(),
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field === 'production_location_id' ? 'productionLocationId' : $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->productionLocationId = (string) ($savedRecipe->default_production_location_id ?? '');
+        $this->showAppNotification(__('locations.saved'));
+        $this->dispatch('production-location-default-updated');
     }
 
     public function updatedPresetId(): void
@@ -136,10 +187,11 @@ class ProductionCreate extends Component
                 basisInputUnit: $this->basisInputUnit,
                 expectedUnits: $this->expectedUnits,
                 idempotencyKey: $this->idempotencyKey,
-                plannedFor: $this->plannedFor,
+                plannedFor: $this->plannedFor ?? '',
                 notes: filled($this->notes) ? $this->notes : null,
                 source: ProductionRunSource::Direct,
                 taskSet: $this->selectedTaskSet(),
+                productionLocationId: $this->selectedProductionLocationId(),
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -194,6 +246,7 @@ class ProductionCreate extends Component
                 source: ProductionRunSource::Direct,
                 status: ProductionRunStatus::Draft,
                 taskSet: $this->selectedTaskSet(),
+                productionLocationId: $this->selectedProductionLocationId(),
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -213,15 +266,31 @@ class ProductionCreate extends Component
     public function render(
         ProductionBenchAccess $access,
         ProductionAvailabilityPreview $availabilityPreview,
+        ProductionDailyOccupancy $occupancy,
     ): View {
         $workspace = $this->workspace();
         $recipe = $this->selectedRecipe();
         $taskSet = $this->selectedTaskSet();
+        $productionLocations = $workspace->uses_production_locations
+            ? ProductionLocation::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return view('livewire.production-bench.production.production-create', [
             'workspace' => $workspace,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'productionLocations' => $productionLocations,
+            'capacityWarnings' => $this->capacityWarnings(
+                workspace: $workspace,
+                plannedFor: $this->plannedFor ?? '',
+                locationId: $this->selectedProductionLocationId(),
+                productionLocations: $productionLocations,
+                occupancy: $occupancy,
+            ),
             'recipes' => Recipe::query()
                 ->where('workspace_id', $workspace->id)
                 ->whereNull('archived_at')
@@ -248,9 +317,84 @@ class ProductionCreate extends Component
                 basisInputUnit: $this->basisInputUnit,
                 expectedUnits: $this->expectedUnits,
                 taskSet: $taskSet,
-                plannedFor: $this->plannedFor,
+                plannedFor: $this->plannedFor ?? '',
             ),
         ]);
+    }
+
+    /**
+     * @param  Collection<int, ProductionLocation>  $productionLocations
+     * @return list<array{label: string, count: int, limit: int}>
+     */
+    private function capacityWarnings(
+        Workspace $workspace,
+        string $plannedFor,
+        ?int $locationId,
+        Collection $productionLocations,
+        ProductionDailyOccupancy $occupancy,
+    ): array {
+        if (! $this->isDate($plannedFor)) {
+            return [];
+        }
+
+        $occupied = $occupancy->between($workspace, $plannedFor, $plannedFor.' 23:59:59');
+        $warnings = [];
+        $overallCount = ($occupied['overall'][$plannedFor] ?? 0) + 1;
+
+        if ($overallCount > (int) $workspace->production_daily_limit) {
+            $warnings[] = [
+                'label' => __('locations.daily_production_limit'),
+                'count' => $overallCount,
+                'limit' => (int) $workspace->production_daily_limit,
+            ];
+        }
+
+        if (! $workspace->uses_production_locations) {
+            return $warnings;
+        }
+
+        $location = $locationId === null
+            ? null
+            : $productionLocations->firstWhere('id', $locationId);
+
+        if ($location instanceof ProductionLocation) {
+            $locationCount = ($occupied['locations'][$location->id][$plannedFor] ?? 0) + 1;
+
+            if ($locationCount > $location->daily_production_limit) {
+                $warnings[] = [
+                    'label' => $location->name,
+                    'count' => $locationCount,
+                    'limit' => (int) $location->daily_production_limit,
+                ];
+            }
+        }
+
+        return $warnings;
+    }
+
+    private function selectedProductionLocationId(): ?int
+    {
+        if (! $this->workspace()->uses_production_locations || trim($this->productionLocationId) === '') {
+            return null;
+        }
+
+        return ctype_digit(trim($this->productionLocationId))
+            ? (int) $this->productionLocationId
+            : 0;
+    }
+
+    private function isDate(string $value): bool
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return false;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        $errors = \DateTimeImmutable::getLastErrors();
+
+        return $date !== false
+            && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))
+            && $date->format('Y-m-d') === $value;
     }
 
     private function selectedRecipe(): ?Recipe
@@ -295,6 +439,30 @@ class ProductionCreate extends Component
         return $recipe->productionTaskSets()
             ->where('is_active', true)
             ->find((int) $this->taskSetId);
+    }
+
+    public function updated(string $property): void
+    {
+        if ($property !== 'plannedFor') {
+            return;
+        }
+
+        $value = $this->plannedFor ?? '';
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}(?: 00:00:00)?$/', $value) === 1 ? substr($value, 0, 10) : '';
+        $this->plannedFor = validator(['date' => $date], ['date' => 'required|date_format:Y-m-d'])->passes() ? $date : '';
+    }
+
+    public function planningDateForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            DatePicker::make('plannedFor')
+                ->label(__('production_bench.production.production_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live()
+                ->required()
+                ->disabled(! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace())),
+        ]);
     }
 
     private function user(): User

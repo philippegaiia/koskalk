@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
+    'production_location_id',
     'workspace_id',
     'recipe_id',
     'recipe_version_id',
@@ -171,6 +172,11 @@ class ProductionRun extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(ProductionDocument::class, 'documentable');
+    }
+
+    public function productionLocation(): BelongsTo
+    {
+        return $this->belongsTo(ProductionLocation::class, 'production_location_id');
     }
 
     protected function casts(): array

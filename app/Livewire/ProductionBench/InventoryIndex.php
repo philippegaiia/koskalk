@@ -12,16 +12,19 @@ use App\Enums\StockLotStatus;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\StorageLocation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrencyCatalog;
 use App\Services\Inventory\InventoryQuantityPresenter;
+use App\Services\Inventory\StorageLocationSelection;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -59,6 +62,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithStockLotLocations;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
@@ -138,6 +142,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     #[Url(as: 'lot_sort', except: 'newest')]
     public string $lotSort = 'newest';
+
+    #[Url(as: 'storage_location', except: 'all')]
+    public string $lotStorageLocation = 'all';
 
     public string $mode = 'materials';
 
@@ -428,6 +435,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
                             ])
                             ->native(false)
                             ->live(),
+                        Select::make('lotStorageLocation')
+                            ->label(__('locations.storage_location_filter'))
+                            ->options(fn (): array => $this->lotStorageLocationOptions())
+                            ->native(false)
+                            ->live()
+                            ->visible(fn (): bool => $this->workspace()->uses_storage_locations),
                         Select::make('lotMaterialSelection')
                             ->key('lotMaterialSelection')
                             ->statePath('lotFilters.lotMaterialSelection')
@@ -539,6 +552,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     public function updatedLotExpiry(): void
     {
+        $this->resetPage('stock-lots');
+    }
+
+    public function updatedLotStorageLocation(): void
+    {
+        $this->lotStorageLocation = $this->normalizedLotStorageLocation($this->lotStorageLocation, $this->workspace());
         $this->resetPage('stock-lots');
     }
 
@@ -673,6 +692,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->lotDateUntil = '';
         $this->lotExpiry = 'all';
         $this->lotSort = 'newest';
+        $this->lotStorageLocation = 'all';
         $this->lotFilters['lotMaterialSelection'] = null;
         $this->resetPage('stock-lots');
     }
@@ -707,11 +727,19 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ->modalCancelActionLabel(__('production_bench.common.cancel'))
             ->modalWidth(Width::FourExtraLarge)
             ->visible(fn (): bool => $this->mode === 'stock' && $this->canAddStock())
-            ->fillForm(fn (): array => [
-                'currency' => $this->workspace()->default_currency,
-                'stocked_at' => today()->toDateString(),
-                'unit' => $this->workspace()->mass_display_system->priceUnit()->value,
-            ])
+            ->fillForm(function (): array {
+                $defaults = [
+                    'currency' => $this->workspace()->default_currency,
+                    'stocked_at' => today()->toDateString(),
+                    'unit' => $this->workspace()->mass_display_system->priceUnit()->value,
+                ];
+
+                if ($this->workspace()->uses_storage_locations) {
+                    $defaults['storage_location_id'] = null;
+                }
+
+                return $defaults;
+            })
             ->schema([
                 Select::make('supplier_listing_id')
                     ->label(__('production_bench.inventory.supplier_listing'))
@@ -732,6 +760,10 @@ class InventoryIndex extends Component implements HasActions, HasForms
                         if (! $listing instanceof SupplierListing) {
                             $set('price_per_unit', null);
 
+                            if ($this->workspace()->uses_storage_locations) {
+                                $set('storage_location_id', null);
+                            }
+
                             return;
                         }
 
@@ -741,7 +773,18 @@ class InventoryIndex extends Component implements HasActions, HasForms
                         $set('unit', $unit);
                         $set('currency', $listing->currency);
                         $set('price_per_unit', $this->listingPricePerUnit($listing, $unit));
+
+                        if ($this->workspace()->uses_storage_locations) {
+                            $subject = $listing->ingredient ?? $listing->packagingItem;
+                            $defaultLocation = $subject instanceof Ingredient || $subject instanceof PackagingItem
+                                ? app(StorageLocationSelection::class)->defaultFor($this->workspace(), $subject)
+                                : null;
+                            $set('storage_location_id', $defaultLocation === null ? null : (string) $defaultLocation);
+                        }
                     })
+                    ->columnSpanFull(),
+                $this->storageLocationSelect()
+                    ->visible(fn (): bool => $this->workspace()->uses_storage_locations)
                     ->columnSpanFull(),
                 Grid::make(2)
                     ->schema([
@@ -856,6 +899,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'subcategoryOptionsForCombobox' => $this->comboboxOptions(IngredientSubcategory::optionsFor($this->categoryFilter)),
             'lotSupplierOptions' => $this->lotSupplierOptions($workspace),
             'lotOriginOptions' => $this->lotOriginOptions(),
+            'lotStorageLocationOptions' => $this->lotStorageLocationOptions(),
             'lotMaterialLabel' => $this->lotMaterialLabel($workspace),
             'lotFiltersActive' => $this->lotFiltersActive(),
             'displayUnit' => $displayUnit,
@@ -878,18 +922,27 @@ class InventoryIndex extends Component implements HasActions, HasForms
             : 'all';
         $scope = in_array($this->lotScope, ['open', 'exhausted', 'all'], true) ? $this->lotScope : 'open';
         $origin = array_key_exists($this->lotOrigin, $this->lotOriginOptions()) ? $this->lotOrigin : '';
+        $storageLocation = $workspace->uses_storage_locations
+            ? $this->normalizedLotStorageLocation($this->lotStorageLocation, $workspace)
+            : 'all';
         $physical = '(SELECT COALESCE(SUM(movements.quantity_delta), 0) FROM stock_movements AS movements WHERE movements.stock_lot_id = stock_lots.id)';
         $activeReserved = '(SELECT COALESCE(SUM(reservations.quantity), 0) FROM stock_reservations AS reservations WHERE reservations.stock_lot_id = stock_lots.id AND reservations.status = \'active\')';
 
+        $with = [
+            'ingredient.translations',
+            'ingredient.workspaceCodes',
+            'packagingItem',
+            'goodsReceiptLine.goodsReceipt.supplier',
+            'supplierListing.supplier',
+        ];
+
+        if ($workspace->uses_storage_locations) {
+            $with[] = 'storageLocation';
+        }
+
         $stockLots = StockLot::query()
             ->where('workspace_id', $workspace->id)
-            ->with([
-                'ingredient.translations',
-                'ingredient.workspaceCodes',
-                'packagingItem',
-                'goodsReceiptLine.goodsReceipt.supplier',
-                'supplierListing.supplier',
-            ])
+            ->with($with)
             ->withSum('movements', 'quantity_delta')
             // Every lot is created with one immutable opening ledger entry.
             // Later movements can be backdated, so creation order identifies it.
@@ -905,6 +958,11 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ], 'quantity')
             ->when($status !== 'all', fn (Builder $query): Builder => $query->where('status', $status))
             ->when($origin !== '', fn (Builder $query): Builder => $query->where('origin', $origin))
+            ->when($storageLocation === 'unassigned', fn (Builder $query): Builder => $query->whereNull('storage_location_id'))
+            ->when(
+                $storageLocation !== 'all' && $storageLocation !== 'unassigned',
+                fn (Builder $query): Builder => $query->where('storage_location_id', (int) $storageLocation),
+            )
             ->when($scope === 'open', fn (Builder $query): Builder => $query
                 ->whereRaw("({$physical} <> 0 OR {$activeReserved} <> 0)"))
             ->when($scope === 'exhausted', fn (Builder $query): Builder => $query
@@ -1092,7 +1150,8 @@ class InventoryIndex extends Component implements HasActions, HasForms
             || $this->lotOrigin !== ''
             || $this->lotDateFrom !== ''
             || $this->lotDateUntil !== ''
-            || $this->lotExpiry !== 'all';
+            || $this->lotExpiry !== 'all'
+            || ($this->workspace()->uses_storage_locations && $this->lotStorageLocation !== 'all');
     }
 
     private function resetInventoryPages(): void
@@ -1187,6 +1246,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->lotDateUntil = $this->normalizeLotDate($this->lotDateUntil);
         $this->lotExpiry = in_array($this->lotExpiry, ['all', 'active', 'expired', 'none'], true) ? $this->lotExpiry : 'all';
         $this->lotSort = in_array($this->lotSort, ['newest', 'oldest', 'code'], true) ? $this->lotSort : 'newest';
+        $this->lotStorageLocation = $this->normalizedLotStorageLocation($this->lotStorageLocation, $this->workspace());
     }
 
     /** @return array<string, string> */
@@ -1208,6 +1268,42 @@ class InventoryIndex extends Component implements HasActions, HasForms
                 $origin->value => __('production_bench.inventory.origin_'.$origin->value),
             ])
             ->all();
+    }
+
+    /** @return array<string, string> */
+    private function lotStorageLocationOptions(): array
+    {
+        if (! $this->workspace()->uses_storage_locations) {
+            return [];
+        }
+
+        return [
+            'all' => __('production_bench.inventory.filter_all'),
+            'unassigned' => __('locations.unassigned'),
+            ...$this->storageLocationOptions(includeInactive: true),
+        ];
+    }
+
+    private function normalizedLotStorageLocation(string $value, Workspace $workspace): string
+    {
+        if (! $workspace->uses_storage_locations) {
+            return 'all';
+        }
+
+        if (in_array($value, ['all', 'unassigned'], true)) {
+            return $value;
+        }
+
+        if (! is_numeric($value) || (int) $value < 1) {
+            return 'all';
+        }
+
+        return StorageLocation::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereKey((int) $value)
+            ->exists()
+            ? (string) (int) $value
+            : 'all';
     }
 
     private function lotMaterialLabel(Workspace $workspace): ?string
@@ -1338,9 +1434,20 @@ class InventoryIndex extends Component implements HasActions, HasForms
             stockedAt: (string) $data['stocked_at'],
             expiresAt: filled($data['expires_at'] ?? null) ? (string) $data['expires_at'] : null,
             notes: filled($data['notes'] ?? null) ? (string) $data['notes'] : null,
+            storageLocationInput: $this->storageLocationInput($data),
         );
 
         $this->showAppNotification(__('production_bench.inventory.lot_created', ['code' => $lot->internal_lot_code]));
+    }
+
+    /** @param array<string, mixed> $data */
+    private function storageLocationInput(array $data): array
+    {
+        if (! $this->workspace()->uses_storage_locations || ! array_key_exists('storage_location_id', $data)) {
+            return [];
+        }
+
+        return ['storage_location_id' => $data['storage_location_id']];
     }
 
     private function activeSupplierListing(mixed $listingId): ?SupplierListing

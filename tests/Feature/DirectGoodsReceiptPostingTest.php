@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Inventory\AssignStockLotLocation;
+use App\Actions\Inventory\SaveMaterialStorageLocation;
 use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\PostGoodsReceiptLine;
@@ -18,6 +20,7 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\StorageLocation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -811,3 +814,55 @@ it('rejects a historical unit cost that rounds to zero without partial writes', 
         ->and($listing->refresh()->only(array_keys($listingPriceBefore)))->toBe($listingPriceBefore)
         ->and($listing->price_recorded_at?->equalTo($priceRecordedAtBefore))->toBeTrue();
 });
+
+it('applies receipt storage defaults and preserves reassignment on retry', function (bool $packaging): void {
+    [$owner, $workspace, $supplier, $ingredient, $ingredientListing, $packagingItem, $packagingListing] = directReceiptContext();
+    $workspace->update(['uses_storage_locations' => true]);
+    $location = StorageLocation::factory()->for($workspace)->create();
+    $other = StorageLocation::factory()->for($workspace)->create();
+    $subject = $packaging ? $packagingItem : $ingredient;
+    $listing = $packaging ? $packagingListing : $ingredientListing;
+    app(SaveMaterialStorageLocation::class)->handle($owner, $workspace, $subject, $location->id);
+    $line = ['listing' => $listing, 'packs_received' => 1, 'actual_quantity' => '5', 'actual_unit' => $packaging ? 'count' : 'kg', 'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat, 'receipt_price_amount' => '10', 'currency' => 'EUR'];
+    $action = app(ReceiveDirectGoodsReceipt::class);
+    $receipt = $action->handle($owner, $workspace, $supplier, 'location-receipt', [$line], receivedAt: '2026-09-21');
+    $lot = $receipt->lines()->first()->stockLot;
+    expect($lot->storage_location_id)->toBe($location->id);
+    app(AssignStockLotLocation::class)->handle($owner, $lot, $other->id);
+    $action->handle($owner, $workspace, $supplier, 'location-receipt', [$line], receivedAt: '2026-09-21');
+    expect($lot->fresh()->storage_location_id)->toBe($other->id)->and(StockLot::query()->count())->toBe(1);
+    $cleared = $action->handle($owner, $workspace, $supplier, 'cleared-receipt', [$line + ['storage_location_id' => null]], receivedAt: '2026-09-21');
+    expect($cleared->lines()->first()->stockLot->storage_location_id)->toBeNull();
+    $workspace->update(['uses_storage_locations' => false]);
+    $off = $action->handle($owner, $workspace, $supplier, 'off-receipt', [$line + ['storage_location_id' => $location->id]], receivedAt: '2026-09-21');
+    expect($off->lines()->first()->stockLot->storage_location_id)->toBeNull();
+})->with([false, true]);
+
+it('rolls back receipt lots and prices when a storage location belongs to another workspace', function (): void {
+    [$owner, $workspace, $supplier, $ingredient, $listing] = directReceiptContext();
+    $workspace->update(['uses_storage_locations' => true]);
+    $foreign = StorageLocation::factory()->create();
+    expect(fn () => app(ReceiveDirectGoodsReceipt::class)->handle($owner, $workspace, $supplier, 'foreign-location-receipt', [[
+        'listing' => $listing, 'packs_received' => 1, 'actual_quantity' => '5', 'actual_unit' => 'kg',
+        'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat, 'receipt_price_amount' => '10', 'currency' => 'EUR', 'storage_location_id' => $foreign->id,
+    ]], receivedAt: '2026-09-21'))->toThrow(ValidationException::class);
+    expect(GoodsReceipt::query()->count())->toBe(0)->and(StockLot::query()->count())->toBe(0)
+        ->and(StockMovement::query()->count())->toBe(0)->and(CurrentMaterialPrice::query()->count())->toBe(0);
+});
+
+it('assigns optional locations to purchase order lots and honors explicit clearing', function (bool $packaging, bool $clear): void {
+    [$owner, $workspace, $supplier, $ingredient, $ingredientListing, $packagingItem, $packagingListing] = directReceiptContext();
+    $workspace->update(['uses_storage_locations' => true]);
+    $location = StorageLocation::factory()->for($workspace)->create();
+    $subject = $packaging ? $packagingItem : $ingredient;
+    $listing = $packaging ? $packagingListing : $ingredientListing;
+    app(SaveMaterialStorageLocation::class)->handle($owner, $workspace, $subject, $location->id);
+    $order = app(CreatePurchaseOrder::class)->handle($owner, $workspace, $supplier, [['listing' => $listing, 'packs' => 1]]);
+    app(PlacePurchaseOrder::class)->handle($owner, $order);
+    $line = ['order_line' => $order->lines()->sole(), 'packs_received' => 1, 'actual_quantity' => '5', 'actual_unit' => $packaging ? 'count' : 'kg'];
+    if ($clear) {
+        $line['storage_location_id'] = null;
+    }
+    $receipt = app(ReceivePurchaseOrder::class)->handle($owner, $order, 'order-location', null, [$line], '2026-09-21');
+    expect($receipt->lines()->sole()->stockLot->storage_location_id)->toBe($clear ? null : $location->id);
+})->with([false, true])->with([false, true]);

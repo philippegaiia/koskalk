@@ -38,6 +38,7 @@ it('resolves every navigation state the production bench views pass', function (
     'settings task sets' => ['production-setup', 'task-sets', ['production-setup', 'task-sets']],
     'settings working calendar' => ['production-setup', 'calendar', ['production-setup', 'calendar']],
     'settings ready dates' => ['production-setup', 'ready-dates', ['production-setup', 'ready-dates']],
+    'settings planning and storage' => ['production-setup', 'planning', ['production-setup', 'planning']],
     // The Settings tab lands on Numbering, its first child, so it behaves like
     // every other group: the tab is a branch and the child is the page.
     'settings landing resolves to numbering' => ['production-setup', null, ['production-setup', 'numbering']],
@@ -99,7 +100,7 @@ it('groups settings children and leaves other rows ungrouped', function (): void
         ->and(array_column($settingsGroups[0]['nodes'], 'key'))
         ->toBe(['numbering', 'presets', 'task-types', 'task-sets', 'calendar', 'ready-dates'])
         ->and($settingsGroups[1]['label'])->toBe('production_bench.navigation.settings_group_resources')
-        ->and(array_column($settingsGroups[1]['nodes'], 'key'))->toBe(['departments', 'employees']);
+        ->and(array_column($settingsGroups[1]['nodes'], 'key'))->toBe(['planning', 'departments', 'employees']);
 
     $inventoryGroups = ProductionBenchNavigation::groups(
         ProductionBenchNavigation::resolve('inventory', null)['rows'][2],

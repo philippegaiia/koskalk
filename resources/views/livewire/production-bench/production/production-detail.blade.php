@@ -48,7 +48,7 @@
                     <div class="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
                         @if ($primaryAction === 'schedule')
                             <div class="flex flex-col gap-1 sm:flex-row sm:items-start">
-                                <input type="date" wire:model="scheduleDate" required class="sk-input py-2 text-sm" @disabled($mutationLocked)>
+                                <div class="min-w-48">{{ $this->planningDateForm }}</div>
                                 <button type="button" data-testid="primary-production-action" wire:click="scheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule') }}</button>
                             </div>
                             @error('scheduleDate') <p role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
@@ -89,6 +89,15 @@
                 <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
             @enderror
 
+            @if ($capacityWarnings)
+                <div role="status" data-testid="production-capacity-warning" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
+                    <p class="font-medium">{{ __('locations.capacity_warning') }}</p>
+                    @foreach ($capacityWarnings as $warning)
+                        <p class="mt-1">{{ $warning['label'] }}: <span class="font-mono tabular-nums">{{ $warning['count'] }} / {{ $warning['limit'] }}</span></p>
+                    @endforeach
+                </div>
+            @endif
+
             @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
                 <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4">
                     <div>
@@ -105,6 +114,62 @@
                     </div>
                 </section>
                 @error('production') <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+            @endif
+
+            @if ($workspace->uses_production_locations)
+                <section aria-labelledby="production-location-heading" data-testid="production-location-section" class="sk-card space-y-4 p-5 sm:p-6">
+                    <div>
+                        <h2 id="production-location-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('locations.production_location') }}</h2>
+                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('locations.production_location_help') }}</p>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1 text-sm">
+                            <p class="font-medium">{{ __('locations.current_production_location') }}</p>
+                            <p class="text-[var(--color-ink-soft)]">
+                                @if ($production->productionLocation)
+                                    {{ $production->productionLocation->name }}
+                                    @if (! $production->productionLocation->is_active)
+                                        <span class="text-xs">({{ __('locations.archived') }})</span>
+                                    @endif
+                                @else
+                                    {{ __('production_bench.production.unassigned') }}
+                                @endif
+                            </p>
+                        </div>
+
+                        @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Draft, \App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium" for="production-detail-location">{{ __('locations.assign_production_location') }}</label>
+                                <div class="flex flex-col gap-2 sm:flex-row">
+                                    <select id="production-detail-location" wire:model.live="productionLocationId" @disabled($mutationLocked) class="sk-input w-full">
+                                        <option value="">{{ __('locations.no_production_location') }}</option>
+                                        @if ($production->productionLocation && ! $production->productionLocation->is_active)
+                                            <option value="{{ $production->productionLocation->id }}">{{ $production->productionLocation->name }} ({{ __('locations.archived') }})</option>
+                                        @endif
+                                        @foreach ($productionLocations as $location)
+                                            <option value="{{ $location->id }}">{{ $location->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" wire:click="assignProductionLocation" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-secondary whitespace-nowrap">{{ __('locations.save_assignment') }}</button>
+                                </div>
+                                @error('productionLocationId') <span role="alert" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                                @error('production') <span role="alert" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                            </div>
+                        @endif
+                    </div>
+
+                </section>
+            @endif
+
+            @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
+                <section class="sk-card p-5 sm:p-6">
+                    <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start">
+                        <div class="w-full sm:w-64">{{ $this->planningDateForm }}</div>
+                        <button type="button" wire:click="rescheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-secondary">{{ __('production_bench.production.schedule') }}</button>
+                    </div>
+                    @error('scheduleDate') <span role="alert" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                </section>
             @endif
 
             <section data-testid="batch-materials-table" aria-labelledby="batch-materials-heading" class="sk-card overflow-hidden">

@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use App\Services\MassConverter;
 use App\Services\Production\ProductionCalculatedRequirementBuilder;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
+use App\Services\Production\ProductionLocationSelection;
 use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRequirementMaterialCodeSnapshotter;
@@ -39,6 +40,7 @@ class CreateProductionDraft
         private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
+        private readonly ProductionLocationSelection $locations,
     ) {}
 
     public function handle(
@@ -54,6 +56,7 @@ class CreateProductionDraft
         ProductionRunSource $source = ProductionRunSource::Direct,
         ProductionRunStatus $status = ProductionRunStatus::Draft,
         ?ProductionTaskSet $taskSet = null,
+        ?int $productionLocationId = null,
     ): ProductionRun {
         $this->access->assertWritable($actor, $workspace);
 
@@ -77,6 +80,7 @@ class CreateProductionDraft
 
         return DB::transaction(function () use (
             $actor,
+            $productionLocationId,
             $basisInputValue,
             $basisInputUnit,
             $basisQuantityGrams,
@@ -149,10 +153,10 @@ class CreateProductionDraft
                 ]);
             }
 
-            // Resolve and pin the product's active default task set while the
-            // recipe is still locked, so later task generation never needs to
-            // look the product up again.
-            if ($lockedTaskSet === null) {
+            // Flash has already resolved the user's selection for its preview;
+            // an empty selection there must not silently regain a default.
+            // Manual creation resolves the default while the recipe is locked.
+            if ($lockedTaskSet === null && $source !== ProductionRunSource::Flash) {
                 $lockedTaskSet = $lockedRecipe->defaultProductionTaskSets()
                     ->where('production_task_sets.workspace_id', $lockedWorkspace->id)
                     ->where('production_task_sets.is_active', true)
@@ -211,7 +215,9 @@ class CreateProductionDraft
             $outputSnapshot = $this->readyDates->snapshot($lockedRecipe, $lockedWorkspace, $plannedFor);
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
+            $locationId = $this->locations->resolve($lockedWorkspace, $productionLocationId);
             $production = ProductionRun::query()->create([
+                'production_location_id' => $locationId,
                 'workspace_id' => $lockedWorkspace->id,
                 'recipe_id' => $lockedRecipe->id,
                 'recipe_version_id' => $publishedVersion->id,

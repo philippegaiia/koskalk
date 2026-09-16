@@ -13,6 +13,11 @@ class ProductionWorkingCalendar
     /** @var array<int, Collection<int, ProductionHoliday>> */
     private array $holidaysByWorkspace = [];
 
+    public function refresh(Workspace $workspace): void
+    {
+        unset($this->holidaysByWorkspace[$workspace->id]);
+    }
+
     public function isWorkingDate(Workspace $workspace, string|DateTimeInterface $date): bool
     {
         $date = $this->date($date);

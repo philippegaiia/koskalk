@@ -4,22 +4,24 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockMovementType;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientAlias;
 use App\Models\IngredientTranslation;
+use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
+use App\Models\StorageLocation;
 use App\Models\SupportedLocale;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceMaterialSetting;
-use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
-use App\Enums\WorkspaceMemberRole;
-use App\Models\User;
 use App\Models\WorkspaceMember;
+use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -270,3 +272,25 @@ it('rejects inventory reads from a user outside the workspace', function (): voi
     expect(fn () => app(WorkspaceMaterialInventoryQuery::class)->paginate($outsider, $workspace))
         ->toThrow(AuthorizationException::class);
 });
+
+it('hides location-only material settings while storage locations are off but retains actual buffers', function (bool $packaging): void {
+    $workspace = Workspace::factory()->create(['uses_storage_locations' => true]);
+    $subject = $packaging
+        ? PackagingItem::factory()->for($workspace)->create()
+        : Ingredient::factory()->create();
+    $location = StorageLocation::factory()->for($workspace)->create();
+    $setting = WorkspaceMaterialSetting::factory()->for($workspace)->create([
+        'ingredient_id' => $packaging ? null : $subject->id,
+        'packaging_item_id' => $packaging ? $subject->id : null,
+        'buffer_quantity' => null,
+        'default_storage_location_id' => $location->id,
+    ]);
+    $actor = inventoryReadActor($workspace);
+    $query = app(WorkspaceMaterialInventoryQuery::class);
+    expect($query->paginate($actor, $workspace)->total())->toBe(1);
+    $workspace->update(['uses_storage_locations' => false]);
+    expect($query->paginate($actor, $workspace)->total())->toBe(0);
+    expect($setting->fresh()->default_storage_location_id)->toBe($location->id);
+    $setting->update(['buffer_quantity' => '0']);
+    expect($query->paginate($actor, $workspace)->total())->toBe(1);
+})->with([false, true]);

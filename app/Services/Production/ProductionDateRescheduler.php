@@ -19,6 +19,7 @@ class ProductionDateRescheduler
 
     public function rescheduleLocked(Workspace $workspace, ProductionRun $production, string $plannedFor): void
     {
+        $this->calendar->refresh($workspace);
         if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
             throw ValidationException::withMessages([
                 'planned_for' => __('production_bench.production.validation.planned_date_working_day'),

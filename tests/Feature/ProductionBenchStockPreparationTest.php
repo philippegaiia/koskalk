@@ -16,6 +16,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\StorageLocation;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -165,3 +166,24 @@ function productionStockPreparationUiProduction(array $fixture, string $plannedF
         'planning_batch_number' => 'T'.str_pad((string) fake()->unique()->numberBetween(1, 99999), 5, '0', STR_PAD_LEFT),
     ]);
 }
+
+it('shows lot storage locations during preparation only when enabled', function (): void {
+    $fixture = productionStockPreparationUiFixture();
+    $fixture['workspace']->update(['uses_storage_locations' => true]);
+    $location = StorageLocation::factory()->for($fixture['workspace'])->create(['name' => 'Oil room north']);
+    $production = productionStockPreparationUiProduction($fixture, '2026-09-21');
+    ProductionRequirement::factory()->for($production, 'productionRun')->for($fixture['ingredient'])->create([
+        'kind' => ProductionRequirementKind::Ingredient, 'required_mass_grams' => '10', 'required_units' => null,
+    ]);
+    $lot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $fixture['ingredient']->id, 'storage_location_id' => $location->id,
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id, 'type' => StockMovementType::OpeningBalance, 'quantity_delta' => '20',
+    ]);
+    Livewire::actingAs($fixture['owner'])->test(StockPreparation::class, ['productionRun' => $production->id])->assertSee('Oil room north');
+    $lot->update(['storage_location_id' => null]);
+    Livewire::actingAs($fixture['owner']->fresh())->test(StockPreparation::class, ['productionRun' => $production->id])->assertSee(__('locations.unassigned'));
+    $fixture['workspace']->update(['uses_storage_locations' => false]);
+    Livewire::actingAs($fixture['owner']->fresh())->test(StockPreparation::class, ['productionRun' => $production->id])->assertDontSee('Oil room north')->assertDontSee(__('locations.unassigned'));
+});

@@ -59,12 +59,9 @@ class UpdateProductionPlan
             $plannedFor,
             $production,
         ): ProductionRun {
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
+                ->find($production->workspace_id);
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -73,6 +70,10 @@ class UpdateProductionPlan
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
+            $lockedProduction = ProductionRun::query()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->lockForUpdate()
+                ->findOrFail($production->id);
 
             if (! in_array($lockedProduction->status, [
                 ProductionRunStatus::Draft,

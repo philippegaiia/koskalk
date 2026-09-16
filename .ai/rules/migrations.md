@@ -13,3 +13,6 @@ Every migration (except vendor ones) must define down() that reverses up(): drop
 
 ## Store enum-backed columns as string() with a PHP enum cast
 Store enum-backed columns as $table->string('column', n) in migrations and cast to a PHP enum in the model's casts() (enum classes live in app/Enums). Use DB enum() columns only for the legacy owner_type/visibility/role tenancy trio.
+
+## Preserve SQLite triggers and partial indexes on table rebuild
+Adding foreign keys or changing columns through Schema may rebuild SQLite tables, dropping triggers and converting partial indexes into unconditional indexes. Preserve existing trigger SQL and partial index definitions on both migration directions, or use native compatible ALTER statements; run the production integrity and schema tests.

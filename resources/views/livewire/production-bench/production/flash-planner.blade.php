@@ -112,17 +112,30 @@
                                 <p class="md:col-span-2 xl:col-span-12 border-t border-[var(--color-line)] pt-4 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.batch_size_fixed_help') }}</p>
                             @endif
 
-                            <label class="space-y-2 md:col-span-2 xl:col-span-5">
-                                <span class="text-sm font-medium">{{ __('production_bench.production.task_set') }} <span class="font-normal text-[var(--color-ink-muted)]">{{ __('production_bench.flash.optional') }}</span></span>
-                                <select wire:model.live="lines.{{ $index }}.task_set_id" @disabled($isReadOnly) class="sk-input w-full">
-                                    <option value="">{{ __('production_bench.production.no_task_set') }}</option>
-                                    @foreach ($taskSets as $taskSet)
-                                        @if ((int) ($line['recipe_id'] ?? 0) > 0 && $taskSet->recipes->contains('id', (int) $line['recipe_id']))
-                                            <option value="{{ $taskSet->id }}">{{ $taskSet->name }}</option>
-                                        @endif
-                                    @endforeach
-                                </select>
-                            </label>
+                            <div data-testid="flash-line-options" class="grid min-w-0 gap-x-4 gap-y-5 md:col-span-2 md:grid-cols-2 xl:col-span-12">
+                                @if ($workspace->uses_production_locations)
+                                    <label class="min-w-0 space-y-2">
+                                        <span class="block text-sm font-medium">{{ __('locations.production_location') }}</span>
+                                        <select wire:model.live="lines.{{ $index }}.production_location_id" @disabled($isReadOnly) class="sk-input w-full">
+                                            <option value="">{{ __('locations.unassigned') }}</option>
+                                            @foreach ($productionLocations as $location)
+                                                <option value="{{ $location->id }}">{{ $location->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                @endif
+                                <label class="min-w-0 space-y-2">
+                                    <span class="block text-sm font-medium">{{ __('production_bench.production.task_set') }} <span class="font-normal text-[var(--color-ink-muted)]">{{ __('production_bench.flash.optional') }}</span></span>
+                                    <select wire:model.live="lines.{{ $index }}.task_set_id" @disabled($isReadOnly) class="sk-input w-full">
+                                        <option value="">{{ __('production_bench.production.no_task_set') }}</option>
+                                        @foreach ($taskSets as $taskSet)
+                                            @if ((int) ($line['recipe_id'] ?? 0) > 0 && $taskSet->recipes->contains('id', (int) $line['recipe_id']))
+                                                <option value="{{ $taskSet->id }}">{{ $taskSet->name }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </label>
+                            </div>
                         </div>
                     </article>
                 @endforeach
@@ -135,12 +148,9 @@
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.schedule_help') }}</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
+                {{ $this->planningDateForm }}
                 <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.production.production_date') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
-                    <input wire:model.live="firstDate" type="date" aria-required="true" @disabled($isReadOnly) class="sk-input w-full">
-                </label>
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.flash.batches_per_day') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                    <span class="text-sm font-medium">{{ __('locations.daily_production_limit') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
                     <input wire:model.live="batchesPerDay" type="number" min="1" step="1" inputmode="numeric" aria-required="true" @disabled($isReadOnly) class="sk-input w-full font-mono">
                 </label>
             </div>
@@ -225,17 +235,29 @@
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.date_preview_help') }}</p>
                 </div>
                 <div class="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)]">
-                    @foreach ($datePreview as $proposal)
+                    @foreach (collect($datePreview)->sortBy('production_date')->groupBy('production_date') as $day => $dayProposals)
+                        <div class="bg-[var(--color-panel-muted)] px-4 py-3">
+                            <h3 class="font-medium">{{ $day }}</h3>
+                            <p class="text-sm text-[var(--color-ink-soft)]">{{ __('locations.day_summary', ['existing' => $existingProductionsByDay->get($day, collect())->count(), 'new' => $dayProposals->count()]) }}</p>
+                            @foreach ($existingProductionsByDay->get($day, collect()) as $existing)
+                                <p class="text-sm text-[var(--color-ink-soft)]">{{ $existing->recipe_name_snapshot }} · {{ $existing->planning_batch_number }}</p>
+                            @endforeach
+                        </div>
+                    @foreach ($dayProposals as $proposal)
                         <div class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <span class="font-medium text-[var(--color-ink-strong)]">{{ $proposal['recipe_name'] }} · {{ __('production_bench.flash.batch_label', ['number' => $proposal['batch_number'], 'total' => $proposal['batch_total']]) }}</span>
                             <span class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $proposal['production_date'] }} → {{ $proposal['estimated_ready_on'] }}</span>
                         </div>
+                        @if ($workspace->uses_production_locations && filled($proposal['production_location_id'] ?? null))
+                            <p class="text-sm">{{ $productionLocations->firstWhere('id', $proposal['production_location_id'])?->name }}</p>
+                        @endif
                         @foreach ($proposal['tasks'] as $task)
                             <div class="flex flex-col gap-1 bg-[var(--color-panel-muted)] px-4 py-2 pl-8 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <span>{{ $task['name'] }}</span>
                                 <span class="font-mono text-[var(--color-ink-soft)]">{{ $task['scheduled_for'] }}</span>
                             </div>
                         @endforeach
+                    @endforeach
                     @endforeach
                 </div>
                 <p class="rounded-xl bg-[var(--color-panel-muted)] px-4 py-3 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.generation_next_step') }}</p>

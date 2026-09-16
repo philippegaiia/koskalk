@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\InternalLotCodeGenerator;
+use App\Services\Inventory\StorageLocationSelection;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +30,10 @@ class CreateOpeningStockLot
         private readonly MassConverter $massConverter,
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
+        private readonly StorageLocationSelection $locations,
     ) {}
 
+    /** @param array{storage_location_id?: int|string|null} $storageLocationInput */
     public function handle(
         User $actor,
         Workspace $workspace,
@@ -44,6 +47,7 @@ class CreateOpeningStockLot
         ?string $stockedAt = null,
         ?string $expiresAt = null,
         ?string $notes = null,
+        array $storageLocationInput = [],
     ): StockLot {
         $this->access->assertWritable($actor, $workspace);
 
@@ -83,6 +87,7 @@ class CreateOpeningStockLot
 
         return DB::transaction(function () use (
             $actor,
+            $storageLocationInput,
             $workspace,
             $currentListing,
             $subject,
@@ -98,6 +103,9 @@ class CreateOpeningStockLot
             $isMass,
             $canonicalQuantity,
         ): StockLot {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertWritable($actor, $workspace);
+
             $existing = StockMovement::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('idempotency_key', $idempotencyKey)
@@ -108,9 +116,9 @@ class CreateOpeningStockLot
                 return $existing->stockLot;
             }
 
-            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-
+            $locationId = $this->locations->resolve($workspace, $subject, $storageLocationInput);
             $lot = StockLot::query()->create([
+                'storage_location_id' => $locationId,
                 'workspace_id' => $workspace->id,
                 'supplier_listing_id' => $currentListing->id,
                 'ingredient_id' => $isMass ? $subject->id : null,

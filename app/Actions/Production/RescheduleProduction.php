@@ -30,14 +30,14 @@ class RescheduleProduction
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $plannedFor, $production): ProductionRun {
-            $lockedProduction = ProductionRun::query()->lockForUpdate()->findOrFail($production->id);
-            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($lockedProduction->workspace_id);
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($production->workspace_id);
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages(['production' => __('production_bench.production.workspace_missing')]);
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
+            $lockedProduction = ProductionRun::query()->where('workspace_id', $lockedWorkspace->id)->lockForUpdate()->findOrFail($production->id);
 
             if (! in_array($lockedProduction->status, [
                 ProductionRunStatus::Draft,

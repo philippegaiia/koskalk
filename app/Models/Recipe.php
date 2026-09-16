@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
 #[Fillable([
+    'default_production_location_id',
     'product_family_id',
     'product_type_id',
     'production_output_type',
@@ -325,6 +326,11 @@ class Recipe extends Model implements HasRichContent
             ->fileAttachmentsDisk(MediaStorage::recipeDisk())
             ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
             ->fileAttachmentProvider(app(RecipeRichContentAttachmentProvider::class));
+    }
+
+    public function defaultProductionLocation(): BelongsTo
+    {
+        return $this->belongsTo(ProductionLocation::class, 'default_production_location_id');
     }
 
     protected function casts(): array

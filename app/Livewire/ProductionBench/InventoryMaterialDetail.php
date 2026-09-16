@@ -3,8 +3,10 @@
 namespace App\Livewire\ProductionBench;
 
 use App\Actions\Inventory\SaveMaterialBuffer;
+use App\Actions\Inventory\SaveMaterialStorageLocation;
 use App\Enums\StockMovementType;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\Ingredient;
@@ -48,6 +50,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithStockLotLocations;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
@@ -96,6 +99,8 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
     private SaveMaterialBuffer $saveMaterialBuffer;
 
+    private SaveMaterialStorageLocation $saveMaterialStorageLocation;
+
     private WorkspaceMaterialInventoryQuery $inventoryQuery;
 
     private InventoryQuantityPresenter $quantityPresenter;
@@ -105,12 +110,14 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         MassConverter $massConverter,
         ProductionBenchAccess $productionBenchAccess,
         SaveMaterialBuffer $saveMaterialBuffer,
+        SaveMaterialStorageLocation $saveMaterialStorageLocation,
         WorkspaceMaterialInventoryQuery $inventoryQuery,
     ): void {
         $this->quantityPresenter = $quantityPresenter;
         $this->massConverter = $massConverter;
         $this->productionBenchAccess = $productionBenchAccess;
         $this->saveMaterialBuffer = $saveMaterialBuffer;
+        $this->saveMaterialStorageLocation = $saveMaterialStorageLocation;
         $this->inventoryQuery = $inventoryQuery;
     }
 
@@ -280,6 +287,39 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->action(fn (array $data) => $this->saveBufferFromModal($data));
     }
 
+    public function editStorageLocationAction(): Action
+    {
+        return Action::make('editStorageLocation')
+            ->label(__('locations.usual_storage_location'))
+            ->modalHeading(__('locations.usual_storage_location'))
+            ->modalDescription(__('locations.usual_storage_location_help'))
+            ->modalSubmitActionLabel(__('locations.save'))
+            ->modalCancelActionLabel(__('production_bench.common.cancel'))
+            ->visible(fn (): bool => $this->workspace()->uses_storage_locations
+                && $this->productionBenchAccess->canWrite($this->user(), $this->workspace()))
+            ->fillForm(fn (): array => [
+                'storage_location_id' => $this->materialSetting()?->default_storage_location_id,
+            ])
+            ->schema(fn (): array => [
+                $this->storageLocationSelect(
+                    includeInactive: true,
+                    currentLocationId: $this->materialSetting()?->default_storage_location_id,
+                ),
+            ])
+            ->action(function (array $data): void {
+                $locationId = $data['storage_location_id'] ?? null;
+
+                $this->saveMaterialStorageLocation->handle(
+                    actor: $this->user(),
+                    workspace: $this->workspace(),
+                    subject: $this->subject(),
+                    locationId: filled($locationId) ? (int) $locationId : null,
+                );
+
+                $this->showAppNotification(__('locations.storage_location_saved'));
+            });
+    }
+
     public function clearBufferAction(): Action
     {
         return Action::make('clearBuffer')
@@ -309,14 +349,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             $rawPosition,
             $displayUnit,
         );
-        $setting = WorkspaceMaterialSetting::query()
-            ->where('workspace_id', $workspace->id)
-            ->when(
-                $this->subject() instanceof Ingredient,
-                fn ($query) => $query->where('ingredient_id', $this->subject()->id),
-                fn ($query) => $query->where('packaging_item_id', $this->subject()->id),
-            )
-            ->first();
+        $setting = $this->materialSetting();
         $buffer = $setting?->buffer_quantity === null
             ? null
             : $this->formatQuantity((string) $setting->buffer_quantity, $displayUnit);
@@ -339,7 +372,13 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ),
             $displayUnit,
         );
-        $openLots = $activityService->openLots($this->user(), $workspace, $this->subject())
+        $openLotModels = $activityService->openLots($this->user(), $workspace, $this->subject());
+
+        if ($workspace->uses_storage_locations) {
+            $openLotModels->load('storageLocation');
+        }
+
+        $openLots = $openLotModels
             ->map(fn (StockLot $lot): array => [
                 'lot' => $lot,
                 'positions' => collect($positions->forLotWithLoadedMovementSum($lot))
@@ -378,6 +417,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             'buffer' => $buffer,
             'bufferBelow' => $bufferBelow,
             'bufferConfigured' => $setting instanceof WorkspaceMaterialSetting,
+            'defaultStorageLocation' => $setting?->defaultStorageLocation,
             'openLots' => $openLots,
             'supplierListings' => $supplierListings,
             'activity' => $periodActivity,
@@ -492,6 +532,19 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         abort_unless($this->inventoryQuery->tracks($this->user(), $workspace, $ingredient), 404);
 
         return $ingredient;
+    }
+
+    private function materialSetting(): ?WorkspaceMaterialSetting
+    {
+        return WorkspaceMaterialSetting::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->when(
+                $this->subject() instanceof Ingredient,
+                fn ($query) => $query->where('ingredient_id', $this->subject()->id),
+                fn ($query) => $query->where('packaging_item_id', $this->subject()->id),
+            )
+            ->with('defaultStorageLocation')
+            ->first();
     }
 
     /** @return array{from: CarbonImmutable, to: CarbonImmutable} */

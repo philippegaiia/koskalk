@@ -13,3 +13,6 @@ Manual stock stocked_at is date-only: default to today, allow today and past dat
 
 ## Exhausted lots retain their handling status
 Released and Quarantined are handling states. A finished lot is not assigned a third persisted status: the lot register derives Exhausted only when physical quantity and active reserved quantity are both exactly zero. Negative exception balances and zero-physical lots with active reservations remain open.
+
+## Location features are independently opt in
+Production locations and storage locations have separate workspace switches, both off by default. When off, omit their fields, columns, filters, badges and empty states from operational screens; keep discovery in Settings only. Disabling preserves existing assignments and defaults, but new records must not apply them.

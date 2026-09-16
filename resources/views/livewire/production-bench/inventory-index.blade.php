@@ -264,9 +264,15 @@
                         @if ($lotMaterialLabel)
                             <button type="button" wire:click="clearLotMaterial" class="sk-badge sk-badge-neutral">{{ __('production_bench.inventory.lot_material') }}: {{ $lotMaterialLabel }} ×</button>
                         @endif
+                        @if ($workspace->uses_storage_locations && $lotStorageLocation !== 'all')
+                            <button type="button" wire:click="$set('lotStorageLocation', 'all')" class="sk-badge sk-badge-neutral">{{ __('locations.storage_location_filter') }}: {{ $lotStorageLocationOptions[$lotStorageLocation] ?? __('locations.unassigned') }} ×</button>
+                        @endif
                     </div>
 
                     <div id="lot-advanced-filters" class="mt-3" x-cloak x-show="filtersOpen">
+                        @if ($workspace->uses_storage_locations)
+                            <span data-lot-storage-location-filter class="sr-only">{{ __('locations.storage_location_filter') }}</span>
+                        @endif
                         {{ $this->lotAdvancedFiltersForm }}
                     </div>
                 </div>
@@ -278,6 +284,9 @@
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                                @if ($workspace->uses_storage_locations)
+                                    <th data-storage-location-column class="px-4 py-3">{{ __('locations.storage_location') }}</th>
+                                @endif
                                 <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.initial_quantity') }}</th>
@@ -344,6 +353,11 @@
                                             @endif
                                         </p>
                                     </td>
+                                    @if ($workspace->uses_storage_locations)
+                                        <td class="px-4 py-3 text-[var(--color-ink-soft)]">
+                                            {{ $lot->storageLocation?->name ?? __('locations.unassigned') }}
+                                        </td>
+                                    @endif
                                     <td class="px-3 py-3 text-center" data-lot-balance-state="{{ $row['is_exhausted'] ? 'out-of-stock' : 'open' }}" data-lot-handling-status="{{ $lot->status->value }}">
                                         @php($isExhausted = $row['is_exhausted'])
                                         @php($isReleased = $lot->status->value === 'released')
@@ -359,6 +373,9 @@
                                         <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
                                     @endforeach
                                     <td class="px-5 py-3 text-right">
+                                        @if ($workspace->uses_storage_locations && $canWriteInventory && ($lot->ingredient_id !== null || $lot->packaging_item_id !== null))
+                                            {{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}
+                                        @endif
                                         @if ($canWriteInventory)
                                             <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
                                         @endif
@@ -370,7 +387,7 @@
                                      was shown for any empty open scope, including with no material
                                      chosen at all. Naming the filters covers both cases, since the
                                      material selection is itself a filter. --}}
-                                <tr><td colspan="9" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
+                                <tr><td colspan="{{ $workspace->uses_storage_locations ? 10 : 9 }}" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ $lotFiltersActive ? __('production_bench.inventory.no_lots_match') : __('production_bench.inventory.no_lots') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>

@@ -3,11 +3,13 @@
 namespace App\Actions\Production;
 
 use App\Enums\ProductionRunSource;
+use App\Models\ProductionFlashSubmission;
 use App\Models\ProductionRun;
 use App\Models\ProductionTaskSet;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\FlashDateProposalService;
+use App\Services\Production\FlashPlanFingerprint;
 use App\Services\Production\FlashProductionSimulator;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Collection;
@@ -24,6 +26,7 @@ class GenerateFlashProductions
         private readonly FlashProductionSimulator $simulator,
         private readonly FlashDateProposalService $dateProposal,
         private readonly PlanProduction $planProduction,
+        private readonly FlashPlanFingerprint $fingerprints,
     ) {}
 
     /**
@@ -37,6 +40,7 @@ class GenerateFlashProductions
         string $firstDate,
         int|string $batchesPerDay,
         string $idempotencyKey,
+        ?string $expectedProposalFingerprint = null,
     ): Collection {
         $this->access->assertWritable($actor, $workspace);
         $this->validateKey($idempotencyKey);
@@ -44,6 +48,7 @@ class GenerateFlashProductions
 
         return DB::transaction(function () use (
             $actor,
+            $expectedProposalFingerprint,
             $batchesPerDay,
             $firstDate,
             $idempotencyKey,
@@ -52,14 +57,40 @@ class GenerateFlashProductions
         ): Collection {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
             $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->taskSetsById = [];
+            $submission = ProductionFlashSubmission::query()->where('workspace_id', $lockedWorkspace->id)
+                ->where('idempotency_hash', hash('sha256', $idempotencyKey))->first();
+            $requestHash = $this->fingerprints->request(
+                $lines,
+                $firstDate,
+                $batchesPerDay,
+                $submission?->uses_production_locations ?? $lockedWorkspace->uses_production_locations,
+            );
+            if ($submission instanceof ProductionFlashSubmission) {
+                $prior = ProductionRun::query()->where('workspace_id', $lockedWorkspace->id)
+                    ->whereIn('id', $submission->production_ids)->orderBy('id')->get();
+                if (! hash_equals($submission->request_hash, $requestHash)
+                    || $prior->count() !== count($submission->production_ids)) {
+                    throw ValidationException::withMessages(['idempotency_key' => __('production_bench.production.validation.flash_idempotency_conflict')]);
+                }
+
+                return $prior->load(['requirements', 'tasks']);
+            }
+            $prior = ProductionRun::query()->where('workspace_id', $lockedWorkspace->id)
+                ->where('idempotency_key', 'like', $this->productionPrefix($idempotencyKey).'%')->get();
             $simulation = $this->simulator->simulate($lockedWorkspace, $lines);
             $proposals = $this->dateProposal->propose(
                 workspace: $lockedWorkspace,
                 lines: $simulation['lines'],
                 firstDate: $firstDate,
                 batchesPerDay: $batchesPerDay,
+                legacy: $prior->isNotEmpty(),
             );
 
+            if ($prior->isEmpty() && $expectedProposalFingerprint !== null
+                && ! hash_equals($expectedProposalFingerprint, $this->fingerprints->proposal($simulation, $proposals, $lockedWorkspace, $batchesPerDay))) {
+                throw ValidationException::withMessages(['proposal' => __('locations.validation.stale')]);
+            }
             if ($proposals === []) {
                 throw ValidationException::withMessages([
                     'lines' => __('production_bench.production.validation.flash_products_required'),
@@ -131,9 +162,19 @@ class GenerateFlashProductions
                     plannedFor: $proposal['production_date'],
                     source: ProductionRunSource::Flash,
                     taskSet: $taskSet,
+                    productionLocationId: $proposal['production_location_id'],
                 );
                 $productions->push($production);
             }
+
+            ProductionFlashSubmission::query()->create([
+                'workspace_id' => $lockedWorkspace->id,
+                'idempotency_hash' => hash('sha256', $idempotencyKey),
+                'request_hash' => $requestHash,
+                'uses_production_locations' => $lockedWorkspace->uses_production_locations,
+                'production_ids' => $productions->pluck('id')->all(),
+            ]);
+            $lockedWorkspace->update(['production_daily_limit' => $batchesPerDay]);
 
             return $productions->values();
         }, attempts: 5);
@@ -209,7 +250,7 @@ class GenerateFlashProductions
 
     private function positiveWhole(int|string $value): int
     {
-        if (preg_match('/^[1-9]\d*$/', trim((string) $value)) !== 1) {
+        if (preg_match('/^[1-9]\d*$/', trim((string) $value)) !== 1 || (int) $value > 1000) {
             throw ValidationException::withMessages([
                 'batchesPerDay' => __('production_bench.production.validation.flash_batches_per_day_positive'),
             ]);

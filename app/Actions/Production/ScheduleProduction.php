@@ -39,19 +39,10 @@ class ScheduleProduction
             ]);
         }
 
-        if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
-            throw ValidationException::withMessages([
-                'planned_for' => __('production_bench.production.validation.planned_date_working_day'),
-            ]);
-        }
-
         return DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
+                ->find($production->workspace_id);
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -60,6 +51,17 @@ class ScheduleProduction
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
+            $lockedProduction = ProductionRun::query()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->lockForUpdate()
+                ->findOrFail($production->id);
+
+            $this->calendar->refresh($lockedWorkspace);
+            if (! $this->calendar->isWorkingDate($lockedWorkspace, $plannedFor)) {
+                throw ValidationException::withMessages([
+                    'planned_for' => __('production_bench.production.validation.planned_date_working_day'),
+                ]);
+            }
 
             if ($lockedProduction->status !== ProductionRunStatus::Draft) {
                 throw ValidationException::withMessages([

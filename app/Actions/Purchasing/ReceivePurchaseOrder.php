@@ -273,6 +273,7 @@ class ReceivePurchaseOrder
                     supplierBatchNumber: $input['supplier_batch_number'] ?? null,
                     expiresAt: $input['expires_at'] ?? null,
                     notes: $input['notes'] ?? null,
+                    storageLocationInput: array_key_exists('storage_location_id', $input) ? ['storage_location_id' => $input['storage_location_id']] : [],
                 );
             }
 

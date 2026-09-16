@@ -44,7 +44,7 @@ class WorkspaceMaterialSettings
                 ->lockForUpdate()
                 ->first();
 
-            if ($bufferQuantity === null) {
+            if ($bufferQuantity === null && $existing?->default_storage_location_id === null) {
                 $existing?->delete();
 
                 return null;
@@ -52,7 +52,7 @@ class WorkspaceMaterialSettings
 
             return WorkspaceMaterialSetting::query()->updateOrCreate(
                 $keys,
-                ['buffer_quantity' => bcadd($bufferQuantity, '0', 9)],
+                ['buffer_quantity' => $bufferQuantity === null ? null : bcadd($bufferQuantity, '0', 9)],
             );
         }, attempts: 5);
     }

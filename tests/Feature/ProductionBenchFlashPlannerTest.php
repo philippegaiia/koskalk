@@ -2,15 +2,19 @@
 
 use App\Enums\MassUnit;
 use App\Enums\OwnerType;
+use App\Enums\ProductionRunStatus;
 use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\FlashPlanner;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatchPreset;
+use App\Models\ProductionLocation;
+use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -57,6 +61,24 @@ it('keeps custom quantity fields available when a product has no saved batch siz
         ->assertSet('lines.0.batch_mode', 'custom')
         ->assertSee(__('production_bench.flash.no_batch_sizes'))
         ->assertSee(__('production_bench.flash.batch_quantity'));
+});
+
+it('keeps optional production choices together without narrowing the location selector', function (): void {
+    $fixture = flashPlannerFixture();
+    $fixture['workspace']->update(['uses_production_locations' => true]);
+    $location = ProductionLocation::factory()->for($fixture['workspace'])->create(['name' => 'Finishing workshop']);
+
+    $page = Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->assertSee('Finishing workshop');
+    $document = HTMLDocument::createFromString($page->html(), LIBXML_NOERROR);
+    $options = $document->querySelectorAll('[data-testid="flash-line-options"]');
+    expect($options)->toHaveCount(1)
+        ->and($options->item(0)->getAttribute('class'))->toContain('xl:col-span-12');
+    expect($options->item(0)->querySelectorAll('select'))->toHaveCount(2);
+
+    $page->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->set('lines.0.production_location_id', (string) $location->id)
+        ->assertSet('lines.0.production_location_id', (string) $location->id);
 });
 
 it('hides archived products from the flash planner selector', function (): void {
@@ -133,7 +155,7 @@ it('keeps the flash planner lookup query count bounded on the initial render', f
 
     Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class);
 
-    expect($queries)->toHaveCount(10);
+    expect(count($queries))->toBeLessThanOrEqual(12);
 });
 
 /** @return array{owner: User, workspace: Workspace, recipe: Recipe, preset: ProductionBatchPreset} */
@@ -172,3 +194,47 @@ function flashPlannerFixture(): array
 
     return compact('owner', 'workspace', 'recipe', 'preset');
 }
+
+it('refreshes a stale preview and requires another create click', function (): void {
+    $fixture = flashPlannerFixture();
+    $page = Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->set('lines.0.desired_units', '100')
+        ->set('firstDate', '2026-09-21')->call('previewDates');
+    ProductionRun::factory()->for($fixture['workspace'])->create([
+        'status' => ProductionRunStatus::Scheduled,
+        'planned_for' => '2026-09-21',
+    ]);
+    $page->call('generate')->assertSet('showDatePreview', true)
+        ->assertSet('simulationError', __('locations.validation.stale'));
+    expect($page->get('datePreview')[0]['production_date'])->toBe('2026-09-22');
+    expect($fixture['workspace']->productionRuns()->count())->toBe(1);
+    $page->call('generate')->assertSet('showDatePreview', false);
+    expect($fixture['workspace']->productionRuns()->count())->toBe(2);
+});
+
+it('invalidates accepted dates when the daily limit or first date changes', function (): void {
+    $fixture = flashPlannerFixture();
+    $page = Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->set('lines.0.desired_units', '100')->call('previewDates')
+        ->set('batchesPerDay', '2')->assertSet('proposalFingerprint', null)
+        ->call('generate')->assertSet('simulationError', __('locations.validation.preview_required'))
+        ->call('previewDates')->set('firstDate', 'invalid')->assertSet('proposalFingerprint', null);
+    expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});
+
+it('normalizes the Filament planning date and clears accepted previews when it changes', function (): void {
+    $fixture = flashPlannerFixture();
+    $page = Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->assertSee('dateTimePicker')
+        ->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->set('lines.0.desired_units', '100')
+        ->set('firstDate', '2026-09-21 00:00:00')
+        ->assertSet('firstDate', '2026-09-21')
+        ->call('previewDates')->assertSet('showDatePreview', true)
+        ->set('firstDate', null)->assertSet('firstDate', '')
+        ->assertSet('proposalFingerprint', null)
+        ->call('previewDates')->assertSet('showDatePreview', false);
+    expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});

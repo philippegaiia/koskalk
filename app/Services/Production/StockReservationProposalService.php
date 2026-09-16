@@ -185,6 +185,7 @@ class StockReservationProposalService
         $isIngredient = $requirement->ingredient_id !== null;
 
         $lots = StockLot::query()
+            ->when($workspace->uses_storage_locations, fn (Builder $query): Builder => $query->with('storageLocation'))
             ->where('workspace_id', $workspace->id)
             ->where('status', StockLotStatus::Released)
             ->when(

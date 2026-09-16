@@ -43,6 +43,17 @@
                 <span class="text-sm font-medium">{{ __('production_bench.production.to_date') }}</span>
                 <input wire:model.live="dateTo" type="date" class="sk-input w-full">
             </label>
+            @if ($workspace->uses_production_locations)
+                <label class="space-y-2">
+                    <span class="text-sm font-medium">{{ __('locations.production_location') }}</span>
+                    <select wire:model.live="locationFilter" class="sk-input w-full">
+                        <option value="">{{ __('locations.all_production_locations') }}</option>
+                        @foreach ($productionLocations as $location)
+                            <option value="{{ $location->public_id }}">{{ $location->name }}@if (! $location->is_active) ({{ __('locations.archived') }}) @endif</option>
+                        @endforeach
+                    </select>
+                </label>
+            @endif
         </section>
 
         @error('selectedProductionIds')
@@ -70,12 +81,15 @@
 
                 {{-- Desktop table (lg+) --}}
                 <x-sticky-table-scroll class="hidden lg:block">
-                    <table class="w-full min-w-[1100px]">
+                    <table class="w-full {{ $workspace->uses_production_locations ? 'min-w-[1220px]' : 'min-w-[1100px]' }}">
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="w-10 px-5 py-4"><span class="sr-only">Select</span></th>
                                 <th class="px-5 py-4">{{ __('production_bench.navigation.production_workflow') }}</th>
                                 <th class="px-5 py-4">{{ __('production_bench.production.status_filter') }}</th>
+                                @if ($workspace->uses_production_locations)
+                                    <th class="px-5 py-4">{{ __('locations.production_location') }}</th>
+                                @endif
                                 <th class="px-5 py-4">{{ __('production_bench.production.production_date') }}</th>
                                 <th class="px-5 py-4">{{ __('production_bench.settings.batch_size') }}</th>
                                 <th class="px-5 py-4">{{ __('production_bench.settings.expected_units') }}</th>
@@ -127,6 +141,18 @@
                                             @endif
                                         </div>
                                     </td>
+                                    @if ($workspace->uses_production_locations)
+                                        <td class="px-5 py-4 text-sm text-[var(--color-ink-strong)]">
+                                            @if ($production->productionLocation)
+                                                {{ $production->productionLocation->name }}
+                                                @if (! $production->productionLocation->is_active)
+                                                    <span class="text-xs text-[var(--color-ink-muted)]">({{ __('locations.archived') }})</span>
+                                                @endif
+                                            @else
+                                                {{ __('production_bench.production.unassigned') }}
+                                            @endif
+                                        </td>
+                                    @endif
                                     <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</td>
                                     <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</td>
                                     <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, auth()->user()?->number_locale) }}</td>
@@ -134,8 +160,15 @@
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-1.5">
                                             @if ($canMutate && $production->status->value === 'draft')
-                                                <input type="date" wire:model="scheduleDates.{{ $production->id }}" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
-                                                <button type="button" wire:click="scheduleProduction({{ $production->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary text-xs">{{ __('production_bench.production.schedule_draft') }}</button>
+                                                {{ ($this->scheduleDraftAction)(['productionId' => $production->id]) }}
+                                                @if (($scheduleWarnings[$production->id] ?? []) !== [])
+                                                    <div role="status" class="basis-full text-xs text-[var(--color-warning-strong)]">
+                                                        <span class="font-medium">{{ __('locations.capacity_warning') }}</span>
+                                                        @foreach ($scheduleWarnings[$production->id] as $warning)
+                                                            <span class="ml-1">{{ $warning['label'] }}: <span class="font-mono">{{ $warning['count'] }} / {{ $warning['limit'] }}</span></span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
                                             @endif
                                             @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
                                                 <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="sk-btn sk-btn-danger text-xs">
@@ -191,6 +224,9 @@
                                     </div>
                                     <dl class="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-4">
                                         <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</dd></div>
+                                        @if ($workspace->uses_production_locations)
+                                            <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('locations.production_location') }}</dt><dd class="mt-1 text-[var(--color-ink-strong)]">{{ $production->productionLocation?->name ?? __('production_bench.production.unassigned') }}@if ($production->productionLocation && ! $production->productionLocation->is_active) <span class="text-xs text-[var(--color-ink-muted)]">({{ __('locations.archived') }})</span>@endif</dd></div>
+                                        @endif
                                         <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.batch_size') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</dd></div>
                                         <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.expected_units') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, auth()->user()?->number_locale) }}</dd></div>
                                         <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.tasks') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->tasks->count() }}</dd></div>
@@ -198,8 +234,15 @@
                                 </a>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
                                     @if ($canMutate && $production->status->value === 'draft')
-                                        <input type="date" wire:model="scheduleDates.{{ $production->id }}" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
-                                        <button type="button" wire:click="scheduleProduction({{ $production->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary text-xs">{{ __('production_bench.production.schedule_draft') }}</button>
+                                        {{ ($this->scheduleDraftAction)(['productionId' => $production->id]) }}
+                                        @if (($scheduleWarnings[$production->id] ?? []) !== [])
+                                            <div role="status" class="basis-full text-xs text-[var(--color-warning-strong)]">
+                                                <span class="font-medium">{{ __('locations.capacity_warning') }}</span>
+                                                @foreach ($scheduleWarnings[$production->id] as $warning)
+                                                    <span class="ml-1">{{ $warning['label'] }}: <span class="font-mono">{{ $warning['count'] }} / {{ $warning['limit'] }}</span></span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     @endif
                                     @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
                                         <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="sk-btn sk-btn-danger text-xs">
@@ -216,4 +259,5 @@
             <x-table-pagination :paginator="$productions" :per-page-label="__('production_bench.production.per_page')" />
         </section>
     @endif
+    <x-filament-actions::modals />
 </x-production-bench.page>

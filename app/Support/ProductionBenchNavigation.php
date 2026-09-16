@@ -158,6 +158,7 @@ final class ProductionBenchNavigation
                     // workspace default behind every production run's estimated
                     // ready date, so it cannot be left unreachable.
                     self::leaf('ready-dates', 'production-bench.production.settings.ready-dates', 'production_bench.settings.ready_dates', 'ready-dates', 'production_bench.navigation.production_workflow', ['production-bench.production.settings.ready-dates*']),
+                    self::leaf('planning', 'production-bench.production.settings.planning', 'locations.planning_and_storage', 'settings', 'production_bench.navigation.settings_group_resources', ['production-bench.production.settings.planning*']),
                     self::leaf('departments', 'production-bench.production.settings.departments', 'production_bench.settings.departments', 'departments', 'production_bench.navigation.settings_group_resources', ['production-bench.production.settings.departments*']),
                     self::leaf('employees', 'production-bench.production.settings.employees', 'production_bench.settings.employees', 'employees', 'production_bench.navigation.settings_group_resources', ['production-bench.production.settings.employees*']),
                 ],

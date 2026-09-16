@@ -307,8 +307,8 @@
                         @if ($production->production_output_type === null && $outputMode === 'intermediate')
                             <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_intermediate_ingredient') }}</span><select wire:model.live="outputIngredientId" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="">{{ __('production_bench.production.choose_intermediate') }}</option>@foreach ($intermediateIngredients as $ingredient)<option value="{{ $ingredient->id }}">{{ $ingredient->display_name }}</option>@endforeach</select></label>
                         @endif
-                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.manufacture_date') }}</span><input type="date" wire:model.live="manufactureDate" @disabled($mutationLocked) class="sk-input mt-1 w-full"></label>
-                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.estimated_ready_date') }}</span><input type="date" wire:model.live="estimatedReadyOn" @disabled($mutationLocked) class="sk-input mt-1 w-full"><span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.estimated_ready_date_help') }}</span></label>
+                        {{ $this->completionDatesForm->getComponent('manufactureDate') }}
+                        {{ $this->completionDatesForm->getComponent('estimatedReadyOn') }}
                     </div>
                     @error('actual_output_quantity') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     @error('manufacture_date') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
@@ -374,7 +374,7 @@
                                 <select aria-label="{{ __('production_bench.production.choose_department') }}" wire:change="assignTaskDepartment({{ $task->id }}, $event.target.value)" class="sk-input w-40 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))><option value="">{{ __('production_bench.production.choose_department') }}</option>@foreach ($departments as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select>
                                 <select aria-label="{{ __('production_bench.production.choose_employee') }}" wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input w-40 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))><option value="">{{ __('production_bench.production.choose_employee') }}</option>@foreach ($employees as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select>
                                 @if ($task->completed_at === null && ! in_array($production->status->value, ['in_production', 'completed', 'cancelled', 'aborted'], true))
-                                    <input type="date" value="{{ $task->scheduled_for->format('Y-m-d') }}" wire:change="rescheduleTask({{ $task->id }}, $event.target.value)" class="sk-input py-1.5 text-sm" @disabled($mutationLocked)>
+                                    <div class="w-36">{{ $this->taskDatesForm->getComponent("task_date_{$task->id}") }}</div>
                                 @else
                                     <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }}</p>
                                 @endif

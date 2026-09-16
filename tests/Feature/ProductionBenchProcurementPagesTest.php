@@ -49,8 +49,14 @@ it('creates a quotation draft from selected supplier listings in the customer wo
         ->create();
     $this->actingAs($owner);
 
-    Livewire::test(ProcurementCreate::class, ['stage' => ProcurementStage::Quotation->value])
+    $page = Livewire::test(ProcurementCreate::class, ['stage' => ProcurementStage::Quotation->value]);
+
+    expect($page->instance()->expectedDateForm->getComponent('expectedAt')->isNative())->toBeFalse();
+
+    $page
         ->set('supplierId', $supplier->id)
+        ->set('expectedAt', '2026-09-30 00:00:00')
+        ->assertSet('expectedAt', '2026-09-30')
         ->set("packs.{$listing->id}", 2)
         ->call('save')
         ->assertHasNoErrors()
@@ -59,6 +65,7 @@ it('creates a quotation draft from selected supplier listings in the customer wo
     $order = PurchaseOrder::query()->sole();
 
     expect($order->stage)->toBe(ProcurementStage::Quotation)
+        ->and($order->expected_at?->toDateString())->toBe('2026-09-30')
         ->and($order->lines()->sole()->ordered_packs)->toBe(2)
         ->and($order->lines()->sole()->pack_price)->toBeNull();
 

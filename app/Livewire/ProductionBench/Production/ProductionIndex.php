@@ -8,6 +8,7 @@ use App\Actions\Production\ScheduleProduction;
 use App\Enums\ProductionRunStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
@@ -21,6 +22,7 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -34,6 +36,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use NormalizesDatePickerState;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
@@ -73,12 +76,30 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function updatedDateFrom(): void
     {
+        $this->dateFrom = $this->normalizeDatePickerState($this->dateFrom);
         $this->resetPage();
     }
 
     public function updatedDateTo(): void
     {
+        $this->dateTo = $this->normalizeDatePickerState($this->dateTo);
         $this->resetPage();
+    }
+
+    public function filterDatesForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            DatePicker::make('dateFrom')
+                ->label(__('production_bench.production.from_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live(),
+            DatePicker::make('dateTo')
+                ->label(__('production_bench.production.to_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live(),
+        ]);
     }
 
     public function updatedLocationFilter(): void

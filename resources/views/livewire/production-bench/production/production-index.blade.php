@@ -35,14 +35,8 @@
                     @endforeach
                 </select>
             </label>
-            <label class="space-y-2">
-                <span class="text-sm font-medium">{{ __('production_bench.production.from_date') }}</span>
-                <input wire:model.live="dateFrom" type="date" class="sk-input w-full">
-            </label>
-            <label class="space-y-2">
-                <span class="text-sm font-medium">{{ __('production_bench.production.to_date') }}</span>
-                <input wire:model.live="dateTo" type="date" class="sk-input w-full">
-            </label>
+            {{ $this->filterDatesForm->getComponent('dateFrom') }}
+            {{ $this->filterDatesForm->getComponent('dateTo') }}
             @if ($workspace->uses_production_locations)
                 <label class="space-y-2">
                     <span class="text-sm font-medium">{{ __('locations.production_location') }}</span>

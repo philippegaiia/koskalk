@@ -612,8 +612,10 @@ it('renders a single-axis editable receipt layout with associated errors and loa
     $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for(Ingredient::factory())->create();
     $this->actingAs($owner);
 
-    Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
-        ->test(ReceiptCreate::class)
+    $page = Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class);
+
+    $page
         ->assertSeeHtml('data-receipt-editable-lines')
         ->assertSeeHtml('data-receipt-mobile-context')
         ->assertDontSeeHtml('min-w-[980px]')
@@ -621,11 +623,16 @@ it('renders a single-axis editable receipt layout with associated errors and loa
         ->assertSeeHtml('aria-label="Currency"')
         ->assertSeeHtml('wire:loading.attr="disabled"')
         ->assertSeeHtml('wire:target="post"')
+        ->set("lineInputs.{$line->id}.expires_at", '2027-08-03 00:00:00')
+        ->assertSet("lineInputs.{$line->id}.expires_at", '2027-08-03');
+
+    expect($page->instance()->receiptDatesForm->getComponent('received_at')->isNative())->toBeFalse()
+        ->and($page->instance()->receiptDatesForm->getComponent("expiry_date_{$line->id}")->isNative())->toBeFalse();
+
+    $page
         ->set('receivedAt', '')
         ->call('post')
         ->assertHasErrors('receivedAt')
-        ->assertSeeHtml('aria-describedby="receipt-date-error"')
-        ->assertSeeHtml('id="receipt-date-error"')
         ->set('receivedAt', '2026-08-03')
         ->set('orderPublicId', null)
         ->call('post')

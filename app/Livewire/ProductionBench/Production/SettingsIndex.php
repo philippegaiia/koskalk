@@ -16,6 +16,7 @@ use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Actions\Production\UpdateProductionWorkingCalendar;
 use App\Enums\MassUnit;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\ProductionBatchPreset;
@@ -27,14 +28,20 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
-class SettingsIndex extends Component
+class SettingsIndex extends Component implements HasForms
 {
     use InteractsWithAppNotifications;
+    use InteractsWithForms;
+    use NormalizesDatePickerState;
 
     #[Locked]
     public string $section = '';
@@ -627,6 +634,23 @@ class SettingsIndex extends Component
         $this->holidayIsRecurring = false;
         $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-settings-saved');
+    }
+
+    public function updatedHolidayDate(): void
+    {
+        $this->holidayDate = $this->normalizeDatePickerState($this->holidayDate);
+    }
+
+    public function holidayDateForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            DatePicker::make('holidayDate')
+                ->label(__('production_bench.settings.holiday_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->required()
+                ->disabled(! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace())),
+        ]);
     }
 
     public function saveCalendar(UpdateProductionWorkingCalendar $updateCalendar): void

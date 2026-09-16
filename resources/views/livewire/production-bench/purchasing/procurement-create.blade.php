@@ -60,7 +60,7 @@
         @error('packs')<p class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>@enderror
 
         <section class="sk-card grid gap-4 p-5 sm:grid-cols-2">
-            <label class="text-sm">{{ __('production_bench.procurement.expected_date') }}<input type="date" wire:model="expectedAt" class="sk-input mt-1 w-full"></label>
+            {{ $this->expectedDateForm->getComponent('expectedAt') }}
             <label class="text-sm sm:col-span-2">{{ __('production_bench.common.notes') }}<textarea wire:model="notes" rows="3" class="sk-input mt-1 w-full"></textarea></label>
         </section>
 

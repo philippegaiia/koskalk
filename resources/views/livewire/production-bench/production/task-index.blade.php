@@ -27,8 +27,8 @@
             <label class="text-sm"><span class="font-medium">{{ __('production_bench.production.choose_employee') }}</span><select wire:model.live="employeeId" class="sk-input mt-1 w-full"><option value="">{{ __('production_bench.common.all') }}</option>@foreach ($employees as $employee)<option value="{{ $employee->id }}">{{ $employee->first_name }} {{ $employee->last_name }}{{ $employee->is_active ? '' : ' · '.__('production_bench.common.inactive') }}</option>@endforeach</select></label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-[12rem_12rem_auto] lg:items-end">
-            <label class="text-sm"><span class="font-medium">{{ __('production_bench.production.from_date') }}</span><input wire:model.live="fromDate" type="date" class="sk-input mt-1 w-full"></label>
-            <label class="text-sm"><span class="font-medium">{{ __('production_bench.production.to_date') }}</span><input wire:model.live="toDate" type="date" class="sk-input mt-1 w-full"></label>
+            {{ $this->filterDatesForm->getComponent('fromDate') }}
+            {{ $this->filterDatesForm->getComponent('toDate') }}
             <button type="button" wire:click="clearFilters" class="sk-btn sk-btn-ghost lg:justify-self-end">{{ __('production_bench.common.clear') }}</button>
         </div>
     </section>

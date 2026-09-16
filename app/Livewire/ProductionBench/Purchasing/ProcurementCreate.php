@@ -6,19 +6,27 @@ use App\Actions\Purchasing\ConvertQuotationToPurchaseOrder;
 use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
+use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
-class ProcurementCreate extends Component
+class ProcurementCreate extends Component implements HasForms
 {
+    use InteractsWithForms;
+    use NormalizesDatePickerState;
+
     #[Locked]
     public string $stage;
 
@@ -42,6 +50,21 @@ class ProcurementCreate extends Component
     public function updatedSupplierId(): void
     {
         $this->packs = [];
+    }
+
+    public function updatedExpectedAt(): void
+    {
+        $this->expectedAt = $this->normalizeDatePickerState($this->expectedAt);
+    }
+
+    public function expectedDateForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            DatePicker::make('expectedAt')
+                ->label(__('production_bench.procurement.expected_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y'),
+        ]);
     }
 
     public function useQuotationRequest(ConvertQuotationToPurchaseOrder $convertQuotation): void

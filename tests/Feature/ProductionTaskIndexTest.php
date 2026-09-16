@@ -55,11 +55,16 @@ it('shows today and upcoming/overdue/completed scopes with combined filters', fu
         ->assertSee('Completed task')
         ->set('scope', 'all')
         ->set('status', 'all')
+        ->set('fromDate', today()->toDateString().' 00:00:00')
+        ->assertSet('fromDate', today()->toDateString())
         ->set('departmentId', (string) $department->id)
         ->assertSee('Today task')
         ->assertDontSee('Upcoming task')
         ->set('employeeId', (string) $employee->id)
         ->assertSee('Today task');
+
+    expect($page->instance()->filterDatesForm->getComponent('fromDate')->isNative())->toBeFalse()
+        ->and($page->instance()->filterDatesForm->getComponent('toDate')->isNative())->toBeFalse();
 });
 
 it('keeps task search and assignment options inside the active workspace', function (): void {

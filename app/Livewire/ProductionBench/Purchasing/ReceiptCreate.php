@@ -10,6 +10,7 @@ use App\Enums\ListingPriceBasis;
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockUnitKind;
+use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -25,6 +26,10 @@ use App\Services\Inventory\StorageLocationSelection;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -36,8 +41,11 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-class ReceiptCreate extends Component
+class ReceiptCreate extends Component implements HasForms
 {
+    use InteractsWithForms;
+    use NormalizesDatePickerState;
+
     #[Url(except: '')]
     public string $source = '';
 
@@ -147,6 +155,11 @@ class ReceiptCreate extends Component
         }
     }
 
+    public function updatedReceivedAt(): void
+    {
+        $this->receivedAt = $this->normalizeDatePickerState($this->receivedAt);
+    }
+
     public function updatedListingSearch(): void
     {
         foreach ($this->directListings() as $listing) {
@@ -188,6 +201,12 @@ class ReceiptCreate extends Component
             $this->lineInputs[$lineId]['receipt_price_unit'] = $basis === ListingPriceBasis::PerUnit->value
                 ? ($this->linePriceUnits[$lineId] ?? null)
                 : null;
+
+            return;
+        }
+
+        if ($field === 'expires_at') {
+            $this->lineInputs[$lineId]['expires_at'] = $this->normalizeDatePickerState($value);
 
             return;
         }
@@ -258,6 +277,28 @@ class ReceiptCreate extends Component
                     ->get()
                 : collect(),
         ]);
+    }
+
+    public function receiptDatesForm(Schema $schema): Schema
+    {
+        $components = [
+            DatePicker::make('receivedAt')
+                ->key('received_at')
+                ->label(__('production_bench.receipt.received_on'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->required(),
+        ];
+
+        foreach (array_keys($this->lineInputs) as $lineId) {
+            $components[] = DatePicker::make("lineInputs.{$lineId}.expires_at")
+                ->key("expiry_date_{$lineId}")
+                ->label(__('production_bench.receipt.expiry'))
+                ->native(false)
+                ->displayFormat('d/m/Y');
+        }
+
+        return $schema->components($components);
     }
 
     private function postPurchaseOrder(ReceivePurchaseOrder $action): GoodsReceipt

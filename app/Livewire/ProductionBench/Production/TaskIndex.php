@@ -5,20 +5,27 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\AssignProductionTask;
 use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\ReopenProductionTask;
+use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class TaskIndex extends Component
+class TaskIndex extends Component implements HasForms
 {
+    use InteractsWithForms;
+    use NormalizesDatePickerState;
     use WithPagination;
 
     public string $scope = 'today';
@@ -62,12 +69,30 @@ class TaskIndex extends Component
 
     public function updatedFromDate(): void
     {
+        $this->fromDate = $this->normalizeDatePickerState($this->fromDate);
         $this->resetPage();
     }
 
     public function updatedToDate(): void
     {
+        $this->toDate = $this->normalizeDatePickerState($this->toDate);
         $this->resetPage();
+    }
+
+    public function filterDatesForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            DatePicker::make('fromDate')
+                ->label(__('production_bench.production.from_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live(),
+            DatePicker::make('toDate')
+                ->label(__('production_bench.production.to_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live(),
+        ]);
     }
 
     public function clearFilters(): void

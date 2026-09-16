@@ -743,17 +743,21 @@ it('completes a production from the production sheet', function (): void {
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
     ]);
 
-    Livewire::actingAs($fixture['owner'])
+    $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
         ->assertSee('Complete production')
         ->set('actualOutputQuantity', '95')
-        ->set('manufactureDate', '2026-08-20')
+        ->set('manufactureDate', '2026-08-20 00:00:00')
+        ->assertSet('manufactureDate', '2026-08-20')
         ->call('complete')
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'
                 && str_starts_with($payload['message'], __('production_bench.production.completed'))
                 && $payload['type'] === 'success';
         });
+
+    expect($page->instance()->completionDatesForm->getComponent('manufactureDate')->isNative())->toBeFalse()
+        ->and($page->instance()->completionDatesForm->getComponent('estimatedReadyOn')->isNative())->toBeFalse();
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Completed)
         ->and($production->fresh()->outputLot()->sole()->internal_lot_code)->toBe($production->fresh()->batch_number);

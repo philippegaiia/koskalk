@@ -50,7 +50,7 @@ it('lists productions with workspace filters and links to their details', functi
         'version' => $otherVersion,
     ], 'Lavender soap', '2026-08-12', ProductionRunStatus::Draft);
 
-    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSee('Olive soap')
         ->assertSee('Lavender soap')
         ->assertSee($fixture['production']->planning_batch_number)
@@ -61,9 +61,13 @@ it('lists productions with workspace filters and links to their details', functi
         ->assertDontSee('Lavender soap')
         ->set('search', '')
         ->set('status', '')
-        ->set('dateFrom', '2026-08-12')
+        ->set('dateFrom', '2026-08-12 00:00:00')
+        ->assertSet('dateFrom', '2026-08-12')
         ->assertSee('Lavender soap')
         ->assertDontSee('Olive soap');
+
+    expect($page->instance()->filterDatesForm->getComponent('dateFrom')->isNative())->toBeFalse()
+        ->and($page->instance()->filterDatesForm->getComponent('dateTo')->isNative())->toBeFalse();
 
     expect($otherProduction->workspace->is($fixture['workspace']))->toBeTrue();
 });
@@ -120,7 +124,7 @@ it('shows immutable planning snapshots, requirements, tasks, and employee assign
         ->assertSee('250 g')
         ->assertSee('Cut and cure')
         ->assertSee('Ana Maker')
-        ->assertSee('2026-08-11')
+        ->assertSet('taskDates.'.$fixture['production']->tasks()->firstOrFail()->id, '2026-08-11')
         ->assertSee($fixture['version']->version_number);
 });
 
@@ -142,6 +146,11 @@ it('assigns employees and lets the operator complete or reopen a task', function
     $page->call('assignTask', $task->id, (string) $employee->id)
         ->assertHasNoErrors();
     expect($task->fresh()->employee_id)->toBe($employee->id);
+
+    $page->set("taskDates.{$task->id}", '2026-08-12 00:00:00')
+        ->assertSet("taskDates.{$task->id}", '2026-08-12')
+        ->assertHasNoErrors();
+    expect($task->fresh()->scheduled_for->toDateString())->toBe('2026-08-12');
 
     $page->call('toggleTask', $task->id)->assertHasNoErrors();
     expect($task->fresh()->completed_at)->not->toBeNull();

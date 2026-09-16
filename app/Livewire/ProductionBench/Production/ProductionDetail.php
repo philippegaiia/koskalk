@@ -29,6 +29,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Ingredient;
@@ -62,6 +63,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use NormalizesDatePickerState;
     use WithFileUploads;
 
     public string $productionId = '';
@@ -87,6 +89,9 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public string $manufactureDate = '';
 
     public string $estimatedReadyOn = '';
+
+    /** @var array<int, string> */
+    public array $taskDates = [];
 
     public ?string $productionLocationId = null;
 
@@ -201,6 +206,8 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
     public function rescheduleTask(int $taskId, string $scheduledFor, RescheduleProductionTask $rescheduleProductionTask): void
     {
+        $scheduledFor = $this->normalizeDatePickerState($scheduledFor);
+
         try {
             $rescheduleProductionTask->handle(
                 actor: $this->user(),
@@ -213,6 +220,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
             return;
         }
 
+        $this->taskDates[$taskId] = $scheduledFor;
         $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-task-updated');
     }
@@ -226,6 +234,8 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
             return;
         }
+
+        $this->taskDates[$taskId] = $this->task($taskId)->scheduled_for->toDateString();
 
         $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-task-updated');
@@ -245,6 +255,9 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
         $this->loadSavedActualRows();
         $this->loadSavedProductionState();
+        $this->taskDates = $this->production()->tasks
+            ->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->scheduled_for->toDateString()])
+            ->all();
     }
 
     public function assignProductionLocation(AssignProductionLocation $assignProductionLocation): void
@@ -281,6 +294,8 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
     public function updatedManufactureDate(): void
     {
+        $this->manufactureDate = $this->normalizeDatePickerState($this->manufactureDate);
+
         if ($this->estimatedReadyOn !== '' || $this->manufactureDate === '') {
             return;
         }
@@ -298,6 +313,11 @@ class ProductionDetail extends Component implements HasActions, HasForms
         } catch (\Throwable) {
             $this->estimatedReadyOn = '';
         }
+    }
+
+    public function updatedEstimatedReadyOn(): void
+    {
+        $this->estimatedReadyOn = $this->normalizeDatePickerState($this->estimatedReadyOn);
     }
 
     /**
@@ -1121,6 +1141,49 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 ->required()
                 ->disabled(! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace())),
         ]);
+    }
+
+    public function completionDatesForm(Schema $schema): Schema
+    {
+        $disabled = ! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace());
+
+        return $schema->components([
+            DatePicker::make('manufactureDate')
+                ->label(__('production_bench.production.manufacture_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live()
+                ->disabled($disabled),
+            DatePicker::make('estimatedReadyOn')
+                ->label(__('production_bench.production.estimated_ready_date'))
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->helperText(__('production_bench.production.estimated_ready_date_help'))
+                ->live()
+                ->disabled($disabled),
+        ]);
+    }
+
+    public function taskDatesForm(Schema $schema): Schema
+    {
+        $disabled = ! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace());
+
+        return $schema->components(collect($this->taskDates)
+            ->map(fn (string $date, int $taskId): DatePicker => DatePicker::make("taskDates.{$taskId}")
+                ->key("task_date_{$taskId}")
+                ->label(__('production_bench.production.production_date'))
+                ->hiddenLabel()
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->live()
+                ->disabled($disabled)
+                ->afterStateUpdated(fn (mixed $state) => $this->rescheduleTask(
+                    $taskId,
+                    (string) $state,
+                    app(RescheduleProductionTask::class),
+                )))
+            ->values()
+            ->all());
     }
 
     private function user(): User

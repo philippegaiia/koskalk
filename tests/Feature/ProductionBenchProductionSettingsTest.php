@@ -57,13 +57,16 @@ it('renders the setup workspace and saves employee, task, task set, and calendar
         ->call('saveTaskSet')
         ->assertHasNoErrors()
         ->set('holidayName', 'Summer closure')
-        ->set('holidayDate', '2026-08-15')
+        ->set('holidayDate', '2026-08-15 00:00:00')
+        ->assertSet('holidayDate', '2026-08-15')
         ->set('holidayIsRecurring', true)
         ->call('saveHoliday')
         ->assertHasNoErrors()
         ->set('worksOnWeekends', true)
         ->call('saveCalendar')
         ->assertHasNoErrors();
+
+    expect($page->instance()->holidayDateForm->getComponent('holidayDate')->isNative())->toBeFalse();
 
     expect($employee->fresh()->first_name)->toBe('Ana')
         ->and($taskType->fresh()->default_duration_minutes)->toBe(45)

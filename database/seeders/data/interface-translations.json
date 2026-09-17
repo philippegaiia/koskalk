@@ -24276,6 +24276,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.production_place",
+      "text": {
+        "de": "Produktionsort",
+        "es": "Lugar de producción",
+        "fr": "Lieu de production",
+        "it": "Luogo di produzione",
+        "nl": "Productieplaats",
+        "pt_BR": "Local de produção"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.proposed",
       "text": {
         "de": "Vorgeschlagen",

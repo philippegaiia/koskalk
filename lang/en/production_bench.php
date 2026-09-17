@@ -512,6 +512,7 @@ return [
         'basis_help' => 'For soap, this is the initial oil mass. For cosmetics, it is the total formula mass.',
         'expected_units_help' => 'Used to scale packaging requirements.',
         'production_date' => 'Production date',
+        'production_place' => 'Production place',
         'manufacture_date' => 'Manufacture date',
         'manufacture_date_required' => 'Choose the manufacture date before completing.',
         'production_date_help' => 'Follow-up task dates are calculated from this date.',

@@ -39,6 +39,19 @@ it('references owned English keys from production lifecycle actions', function (
     expect($missingKeys)->toBeEmpty();
 });
 
+it('references owned English keys from the production index view', function (): void {
+    $contents = File::get(resource_path('views/livewire/production-bench/production/production-index.blade.php'));
+    preg_match_all("/__\(['\"]production_bench\.([^'\"]+)/", $contents, $matches);
+
+    $missingKeys = collect($matches[1])
+        ->unique()
+        ->filter(fn (string $key): bool => ! Lang::has("production_bench.{$key}", 'en'))
+        ->values()
+        ->all();
+
+    expect($missingKeys)->toBeEmpty();
+});
+
 it('keeps the production translation catalogue importable', function (): void {
     $this->seed('Database\\Seeders\\SupportedLocaleSeeder');
 

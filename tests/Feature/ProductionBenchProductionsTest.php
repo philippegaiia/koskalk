@@ -632,16 +632,17 @@ it('ignores off-page production ids for bulk display and actions', function (): 
     expect($fixture['production']->fresh()->batch_number)->toBeNull();
 });
 
-it('renders unique action menu ids across desktop and mobile layouts', function (): void {
+it('uses direct row actions without a redundant open link or overflow menu', function (): void {
     $fixture = productionListFixture();
 
     $html = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)->html();
-    preg_match_all('/id="(production-row-actions-(?:trigger-)?[^"]+)"/', $html, $matches);
 
-    expect($matches[1])
-        ->toHaveCount(4)
-        ->and(array_values(array_unique($matches[1])))
-        ->toHaveCount(4);
+    expect($html)
+        ->toContain('data-production-delete-action')
+        ->toContain('data-production-open-indicator')
+        ->not->toContain('production-row-actions-trigger-')
+        ->not->toContain('aria-haspopup="menu"')
+        ->not->toContain('>'.__('production_bench.production.open').'</a>');
 });
 
 it('hides every mutating control on the list while the bench is read-only', function (): void {
@@ -663,7 +664,7 @@ it('hides every mutating control on the list while the bench is read-only', func
     expect(ProductionRun::query()->find($fixture['production']->id))->not->toBeNull();
 });
 
-it('shows the production place under the date and clears the selection when the location filter changes', function (): void {
+it('shows the production place in its own desktop column and clears the selection when the location filter changes', function (): void {
     $fixture = productionListFixture();
     $fixture['workspace']->update(['uses_production_locations' => true]);
     $location = ProductionLocation::factory()->for($fixture['workspace'])->create(['name' => 'Atelier Nord']);
@@ -671,10 +672,28 @@ it('shows the production place under the date and clears the selection when the 
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSee('Atelier Nord')
+        ->assertSeeHtml('data-production-place-header')
+        ->assertSeeHtml('data-production-place-cell')
         ->set('selectedProductionIds', [$fixture['production']->id])
         ->set('locationFilter', $location->public_id)
         ->assertSet('selectedProductionIds', [])
         ->assertSee('Atelier Nord');
+});
+
+it('uses the same top alignment and vertical padding for every desktop production cell', function (): void {
+    $fixture = productionListFixture();
+    $fixture['workspace']->update(['uses_production_locations' => true]);
+
+    $html = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)->html();
+    preg_match_all('/<td(?=[^>]*data-production-cell)[^>]*class="([^"]+)"[^>]*>/', $html, $matches);
+
+    expect($matches[1])->toHaveCount(7);
+
+    foreach ($matches[1] as $classes) {
+        expect($classes)
+            ->toContain('align-top')
+            ->toContain('py-3');
+    }
 });
 
 it('shows the permanent batch number once allocated and the planning reference until then', function (): void {

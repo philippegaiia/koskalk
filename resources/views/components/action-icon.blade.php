@@ -8,6 +8,8 @@
     'minus' => '<path d="M5 12h14" />',
     'more-horizontal' => '<path d="M6 12h.01M12 12h.01M18 12h.01" />',
     'chevron-down' => '<path d="m6 9 6 6 6-6" />',
+    'chevron-right' => '<path d="m9 6 6 6-6 6" />',
+    'trash' => '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />',
     default => '',
 })
 

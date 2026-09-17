@@ -140,3 +140,15 @@ test('the language selector is visible in every user-facing shell', function () 
         ->assertSuccessful()
         ->assertSee('language-selector-app', false);
 });
+
+test('the language selector keeps its dedicated native control appearance', function () {
+    $appStyles = file_get_contents(resource_path('css/app.css'));
+    $sharedStyles = file_get_contents(resource_path('css/shared/soapkraft.css'));
+
+    expect($appStyles)
+        ->toContain('[data-user-shell] select:not(.sk-language-selector-control):not([multiple]):not([size])')
+        ->not->toContain('[data-user-shell] select:not([multiple]):not([size])')
+        ->and($sharedStyles)
+        ->toContain(".sk-language-selector-control {\n        width: 8.5rem;")
+        ->toContain('appearance: none;');
+});

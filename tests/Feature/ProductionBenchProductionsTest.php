@@ -696,6 +696,20 @@ it('uses the same top alignment and vertical padding for every desktop productio
     }
 });
 
+it('keeps the product column flexible and bounds the operational columns', function (): void {
+    $fixture = productionListFixture();
+    $fixture['workspace']->update(['uses_production_locations' => true]);
+
+    $html = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)->html();
+
+    expect($html)
+        ->toContain('data-production-table')
+        ->toContain('table-fixed')
+        ->toContain('data-production-product-column')
+        ->toContain('data-production-actions-column')
+        ->toContain('class="w-36"');
+});
+
 it('shows the permanent batch number once allocated and the planning reference until then', function (): void {
     $fixture = productionListFixture();
 

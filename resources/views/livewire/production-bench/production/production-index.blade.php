@@ -97,7 +97,18 @@
 
                 {{-- Desktop table (lg+) --}}
                 <x-sticky-table-scroll class="hidden lg:block">
-                    <table data-production-table class="w-full {{ $workspace->uses_production_locations ? 'min-w-[880px]' : 'min-w-[720px]' }}">
+                    <table data-production-table class="w-full table-fixed {{ $workspace->uses_production_locations ? 'min-w-[1120px]' : 'min-w-[920px]' }}">
+                        <colgroup>
+                            <col class="w-16" />
+                            <col data-production-product-column />
+                            <col class="w-40" />
+                            @if ($workspace->uses_production_locations)
+                                <col class="w-48" />
+                            @endif
+                            <col class="w-40" />
+                            <col class="w-36" />
+                            <col data-production-actions-column class="w-36" />
+                        </colgroup>
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="w-10 px-5 py-4"><span class="sr-only">{{ __('production_bench.common.select') }}</span></th>

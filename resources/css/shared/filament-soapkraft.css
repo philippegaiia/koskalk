@@ -145,6 +145,11 @@
         outline: none;
     }
 
+    [data-user-shell] .fi-fo-date-time-picker-panel,
+    [data-user-shell] .fi-dropdown-panel {
+        z-index: 40;
+    }
+
     .fi-input-wrp.fi-disabled {
         background: var(--color-field-muted);
     }

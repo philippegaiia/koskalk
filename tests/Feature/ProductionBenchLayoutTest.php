@@ -402,6 +402,14 @@ it('uses the shared sticky header for page-scrolling production tables', functio
     'batch-material detail' => 'production-detail.blade.php',
 ]);
 
+it('keeps form popovers above sticky table headers', function (): void {
+    $stylesheet = file_get_contents(resource_path('css/shared/filament-soapkraft.css'));
+
+    expect($stylesheet)
+        ->toContain("[data-user-shell] .fi-fo-date-time-picker-panel,\n    [data-user-shell] .fi-dropdown-panel {")
+        ->toContain('z-index: 40;');
+});
+
 /**
  * Every production bench Livewire view, one and two directories deep.
  *

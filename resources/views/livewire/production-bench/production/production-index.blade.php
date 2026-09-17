@@ -5,7 +5,9 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
-        @php $mutationLocked = $isReadOnly || ! $canMutate; @endphp
+        @php
+            $numberLocale = auth()->user()?->number_locale;
+        @endphp
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
@@ -14,8 +16,6 @@
             </div>
             @if ($isBenchActive)
                 <div class="flex flex-wrap gap-2">
-                    <button type="button" wire:click="assignSelectedBatchNumbers" wire:confirm="{{ __('production_bench.production.assign_batch_numbers_confirm') }}" wire:loading.attr="disabled" wire:target="assignSelectedBatchNumbers" class="sk-btn sk-btn-secondary" @disabled(! $canMutate)>{{ __('production_bench.production.assign_batch_numbers') }}</button>
-                    <button type="button" wire:click="prepareSelected" class="sk-btn sk-btn-secondary" @disabled(! $canMutate)>{{ __('production_bench.production.prepare_stock') }}</button>
                     <a href="{{ route('production-bench.production.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.new') }}</a>
                 </div>
             @endif
@@ -53,9 +53,22 @@
         @error('selectedProductionIds')
             <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
         @enderror
-        @error('scheduleDate')
-            <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
-        @enderror
+
+        @if ($filteredRecipeName !== null)
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-strong)]">
+                    {{ __('production_bench.production.product_filter', ['product' => $filteredRecipeName]) }}
+                    <button
+                        type="button"
+                        wire:click="clearRecipeFilter"
+                        aria-label="{{ __('production_bench.production.clear_product_filter') }}"
+                        class="grid h-5 w-5 place-items-center rounded-full transition hover:bg-[var(--color-accent)]/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                    >
+                        <x-action-icon name="close" />
+                    </button>
+                </span>
+            </div>
+        @endif
 
         <section aria-labelledby="production-list-heading" class="sk-card overflow-hidden">
             <h2 id="production-list-heading" class="sr-only">{{ __('production_bench.production.index_title') }}</h2>
@@ -73,101 +86,99 @@
                     ];
                 @endphp
 
+                @if ($canMutate && $visibleSelectedProductionIds !== [])
+                    <div role="region" aria-label="{{ __('production_bench.production.bulk_actions') }}" class="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">
+                        <p class="mr-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ __('production_bench.production.selected_count', ['count' => count($visibleSelectedProductionIds)]) }}</p>
+                        <button type="button" wire:click="prepareSelected" wire:loading.attr="disabled" wire:target="prepareSelected" class="sk-btn sk-btn-secondary text-xs">{{ __('production_bench.production.prepare_stock') }}</button>
+                        <button type="button" wire:click="assignSelectedBatchNumbers" wire:confirm="{{ __('production_bench.production.assign_batch_numbers_confirm') }}" wire:loading.attr="disabled" wire:target="assignSelectedBatchNumbers" class="sk-btn sk-btn-secondary text-xs">{{ __('production_bench.production.assign_batch_numbers') }}</button>
+                        <button type="button" wire:click="clearSelection" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.production.clear_selection') }}</button>
+                    </div>
+                @endif
+
                 {{-- Desktop table (lg+) --}}
                 <x-sticky-table-scroll class="hidden lg:block">
-                    <table class="w-full {{ $workspace->uses_production_locations ? 'min-w-[1220px]' : 'min-w-[1100px]' }}">
+                    <table class="w-full {{ $workspace->uses_production_locations ? 'min-w-[720px]' : 'min-w-[640px]' }}">
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-muted)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
-                                <th class="w-10 px-5 py-4"><span class="sr-only">Select</span></th>
-                                <th class="px-5 py-4">{{ __('production_bench.navigation.production_workflow') }}</th>
-                                <th class="px-5 py-4">{{ __('production_bench.production.status_filter') }}</th>
-                                @if ($workspace->uses_production_locations)
-                                    <th class="px-5 py-4">{{ __('locations.production_location') }}</th>
-                                @endif
+                                <th class="w-10 px-5 py-4"><span class="sr-only">{{ __('production_bench.common.select') }}</span></th>
+                                <th class="px-5 py-4">{{ __('production_bench.production.product') }}</th>
                                 <th class="px-5 py-4">{{ __('production_bench.production.production_date') }}</th>
-                                <th class="px-5 py-4">{{ __('production_bench.settings.batch_size') }}</th>
-                                <th class="px-5 py-4">{{ __('production_bench.settings.expected_units') }}</th>
-                                <th class="px-5 py-4">{{ __('production_bench.production.tasks') }}</th>
+                                <th class="px-5 py-4">{{ __('production_bench.production.quantity') }}</th>
+                                <th class="px-5 py-4">{{ __('production_bench.production.status_filter') }}</th>
                                 <th class="px-5 py-4"><span class="sr-only">{{ __('production_bench.common.actions') }}</span></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @foreach ($productions as $production)
                                 @php
-                                    $partialShortage = '0';
-                                    if ($production->status->value === 'scheduled') {
-                                        foreach ($production->requirements as $requirement) {
-                                            $reserved = '0';
-                                            foreach ($requirement->reservations->where('status', \App\Enums\StockReservationStatus::Active) as $r) {
-                                                $reserved = bcadd($reserved, (string) $r->quantity, 9);
-                                            }
-                                            $required = $requirement->ingredient_id !== null
-                                                ? (string) $requirement->required_mass_grams
-                                                : (string) $requirement->required_units;
-                                            if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
-                                                $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
-                                            }
-                                        }
-                                    }
+                                    $identifierLabel = $production->batch_number !== null
+                                        ? __('production_bench.production.batch_number')
+                                        : __('production_bench.production.planning_reference');
+                                    $canSchedule = $canMutate && $production->status->value === 'draft';
+                                    $canDelete = $canMutate && in_array($production->status->value, ['draft', 'scheduled'], true);
+                                    $partiallyReserved = in_array($production->id, $partiallyReservedIds, true);
                                 @endphp
                                 <tr class="cursor-pointer transition hover:bg-[var(--color-panel-muted)]" x-data x-on:click="if (! event.target.closest('a, button, input, select, label')) window.Livewire?.navigate($el.querySelector('a[data-row-link]').href)">
-                                    <td class="px-5 py-4">
+                                    <td class="px-5 py-4 align-top">
                                         <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled(! $canMutate || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->displayRecipeName()]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
                                     </td>
-                                    <td class="px-5 py-4 min-w-0">
+                                    <td class="min-w-0 px-5 py-4">
                                         <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate data-row-link class="block">
-                                            <p class="font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->displayRecipeName() }}</p>
-                                            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
-                                                <span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.planning_reference') }}:</span>
-                                                <span class="font-mono">{{ $production->planning_batch_number }}</span>
-                                                @if ($production->batch_number)
-                                                    · <span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}:</span>
-                                                    <span class="font-mono font-semibold text-[var(--color-ink-strong)]">{{ $production->batch_number }}</span>
-                                                @endif
-                                            </p>
+                                            <p class="line-clamp-2 font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</p>
+                                            <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $identifierLabel }} {{ $production->displayIdentifier() }}</p>
                                         </a>
                                     </td>
-                                    <td class="px-5 py-4">
-                                        <div class="flex flex-wrap items-center gap-1.5">
-                                            <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
-                                            @if ($partialShortage !== '0')
-                                                <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</span>
-                                            @endif
-                                        </div>
+                                    <td class="px-5 py-4 align-top">
+                                        @if ($production->planned_for)
+                                            <p class="whitespace-nowrap font-mono tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $production->planned_for->format('Y-m-d') }}</p>
+                                        @else
+                                            <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.not_scheduled') }}</p>
+                                        @endif
+                                        @if ($workspace->uses_production_locations)
+                                            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
+                                                @if ($production->productionLocation)
+                                                    {{ $production->productionLocation->name }}
+                                                    @if (! $production->productionLocation->is_active)
+                                                        <span class="text-[var(--color-ink-muted)]">({{ __('locations.archived') }})</span>
+                                                    @endif
+                                                @else
+                                                    {{ __('production_bench.production.unassigned') }}
+                                                @endif
+                                            </p>
+                                        @endif
                                     </td>
-                                    @if ($workspace->uses_production_locations)
-                                        <td class="px-5 py-4 text-sm text-[var(--color-ink-strong)]">
-                                            @if ($production->productionLocation)
-                                                {{ $production->productionLocation->name }}
-                                                @if (! $production->productionLocation->is_active)
-                                                    <span class="text-xs text-[var(--color-ink-muted)]">({{ __('locations.archived') }})</span>
-                                                @endif
-                                            @else
-                                                {{ __('production_bench.production.unassigned') }}
-                                            @endif
-                                        </td>
-                                    @endif
-                                    <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</td>
-                                    <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</td>
-                                    <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, auth()->user()?->number_locale) }}</td>
-                                    <td class="px-5 py-4 font-mono tabular-nums text-sm text-[var(--color-ink-strong)] whitespace-nowrap">{{ $production->tasks->count() }}</td>
-                                    <td class="px-5 py-4">
-                                        <div class="flex flex-wrap items-center gap-1.5">
-                                            @if ($canMutate && $production->status->value === 'draft')
+                                    <td class="px-5 py-4 align-top">
+                                        <p class="whitespace-nowrap font-mono tabular-nums text-sm text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, $numberLocale) }} {{ $production->basis_input_unit->value }}</p>
+                                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.expected_units_short', ['count' => \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, $numberLocale)]) }}</p>
+                                    </td>
+                                    <td class="px-5 py-4 align-top">
+                                        <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
+                                        @if ($partiallyReserved)
+                                            <p class="mt-1 text-xs text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved') }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-5 py-4 align-top">
+                                        <div class="flex items-center justify-end gap-1">
+                                            @if ($canSchedule)
                                                 {{ ($this->scheduleDraftAction)(['productionId' => $production->id]) }}
-                                                @if (($scheduleWarnings[$production->id] ?? []) !== [])
-                                                    <div role="status" class="basis-full text-xs text-[var(--color-warning-strong)]">
-                                                        <span class="font-medium">{{ __('locations.capacity_warning') }}</span>
-                                                        @foreach ($scheduleWarnings[$production->id] as $warning)
-                                                            <span class="ml-1">{{ $warning['label'] }}: <span class="font-mono">{{ $warning['count'] }} / {{ $warning['limit'] }}</span></span>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
+                                            @else
+                                                <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.production.open') }}</a>
                                             @endif
-                                            @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
-                                                <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="sk-btn sk-btn-danger text-xs">
-                                                    {{ __('production_bench.production.delete') }}
-                                                </button>
+
+                                            @if ($canDelete)
+                                                <x-production-bench.production-row-actions instance="desktop" :productionId="$production->id" :productionName="$production->displayRecipeName()">
+                                                    <button
+                                                        type="button"
+                                                        role="menuitem"
+                                                        @click.stop="closeMenu(false)"
+                                                        wire:click.stop="deleteProduction({{ $production->id }})"
+                                                        wire:confirm="{{ __('production_bench.production.delete_confirm') }}"
+                                                        wire:loading.attr="disabled"
+                                                        class="flex min-h-11 w-full items-center rounded-md px-3 py-2 text-left text-sm font-medium text-[var(--color-danger-strong)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-danger-strong)]"
+                                                    >
+                                                        {{ __('production_bench.production.delete') }}
+                                                    </button>
+                                                </x-production-bench.production-row-actions>
                                             @endif
                                         </div>
                                     </td>
@@ -177,25 +188,16 @@
                     </table>
                 </x-sticky-table-scroll>
 
-                {{-- Mobile card stack (<lg) --}}
+                {{-- Mobile stack (<lg) --}}
                 <div class="lg:hidden divide-y divide-[var(--color-line)]">
                     @foreach ($productions as $production)
                         @php
-                            $partialShortage = '0';
-                            if ($production->status->value === 'scheduled') {
-                                foreach ($production->requirements as $requirement) {
-                                    $reserved = '0';
-                                    foreach ($requirement->reservations->where('status', \App\Enums\StockReservationStatus::Active) as $r) {
-                                        $reserved = bcadd($reserved, (string) $r->quantity, 9);
-                                    }
-                                    $required = $requirement->ingredient_id !== null
-                                        ? (string) $requirement->required_mass_grams
-                                        : (string) $requirement->required_units;
-                                    if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
-                                        $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
-                                    }
-                                }
-                            }
+                            $identifierLabel = $production->batch_number !== null
+                                ? __('production_bench.production.batch_number')
+                                : __('production_bench.production.planning_reference');
+                            $canSchedule = $canMutate && $production->status->value === 'draft';
+                            $canDelete = $canMutate && in_array($production->status->value, ['draft', 'scheduled'], true);
+                            $partiallyReserved = in_array($production->id, $partiallyReservedIds, true);
                         @endphp
                         <div class="flex gap-4 px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">
                             <div class="pt-1">
@@ -203,45 +205,69 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="block">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->displayRecipeName() }}</h3>
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <h3 class="line-clamp-2 text-base font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h3>
+                                            <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $identifierLabel }} {{ $production->displayIdentifier() }}</p>
+                                        </div>
                                         <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
-                                        @if ($partialShortage !== '0')
-                                            <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</span>
-                                        @endif
                                     </div>
-                                    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                                        <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.planning_reference') }}:</span> <span class="font-mono">{{ $production->planning_batch_number }}</span></span>
-                                        @if ($production->batch_number)
-                                            <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}:</span> <span class="font-mono font-semibold text-[var(--color-ink-strong)]">{{ $production->batch_number }}</span></span>
-                                        @endif
-                                    </div>
-                                    <dl class="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-4">
-                                        <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</dd></div>
-                                        @if ($workspace->uses_production_locations)
-                                            <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('locations.production_location') }}</dt><dd class="mt-1 text-[var(--color-ink-strong)]">{{ $production->productionLocation?->name ?? __('production_bench.production.unassigned') }}@if ($production->productionLocation && ! $production->productionLocation->is_active) <span class="text-xs text-[var(--color-ink-muted)]">({{ __('locations.archived') }})</span>@endif</dd></div>
-                                        @endif
-                                        <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.batch_size') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</dd></div>
-                                        <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.expected_units') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, auth()->user()?->number_locale) }}</dd></div>
-                                        <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.tasks') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->tasks->count() }}</dd></div>
+                                    @if ($partiallyReserved)
+                                        <p class="mt-2 text-xs text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved') }}</p>
+                                    @endif
+                                    <dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                                        <div>
+                                            <dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</dt>
+                                            <dd class="mt-1">
+                                                @if ($production->planned_for)
+                                                    <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for->format('Y-m-d') }}</span>
+                                                @else
+                                                    <span class="text-[var(--color-ink-soft)]">{{ __('production_bench.production.not_scheduled') }}</span>
+                                                @endif
+                                                @if ($workspace->uses_production_locations)
+                                                    <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">
+                                                        @if ($production->productionLocation)
+                                                            {{ $production->productionLocation->name }}
+                                                            @if (! $production->productionLocation->is_active)
+                                                                <span class="text-[var(--color-ink-muted)]">({{ __('locations.archived') }})</span>
+                                                            @endif
+                                                        @else
+                                                            {{ __('production_bench.production.unassigned') }}
+                                                        @endif
+                                                    </span>
+                                                @endif
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.quantity') }}</dt>
+                                            <dd class="mt-1">
+                                                <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, $numberLocale) }} {{ $production->basis_input_unit->value }}</span>
+                                                <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.expected_units_short', ['count' => \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, $numberLocale)]) }}</span>
+                                            </dd>
+                                        </div>
                                     </dl>
                                 </a>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
-                                    @if ($canMutate && $production->status->value === 'draft')
+                                    @if ($canSchedule)
                                         {{ ($this->scheduleDraftAction)(['productionId' => $production->id]) }}
-                                        @if (($scheduleWarnings[$production->id] ?? []) !== [])
-                                            <div role="status" class="basis-full text-xs text-[var(--color-warning-strong)]">
-                                                <span class="font-medium">{{ __('locations.capacity_warning') }}</span>
-                                                @foreach ($scheduleWarnings[$production->id] as $warning)
-                                                    <span class="ml-1">{{ $warning['label'] }}: <span class="font-mono">{{ $warning['count'] }} / {{ $warning['limit'] }}</span></span>
-                                                @endforeach
-                                            </div>
-                                        @endif
+                                    @else
+                                        <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.production.open') }}</a>
                                     @endif
-                                    @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
-                                        <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="sk-btn sk-btn-danger text-xs">
-                                            {{ __('production_bench.production.delete') }}
-                                        </button>
+
+                                    @if ($canDelete)
+                                        <x-production-bench.production-row-actions instance="mobile" :productionId="$production->id" :productionName="$production->displayRecipeName()">
+                                            <button
+                                                type="button"
+                                                role="menuitem"
+                                                @click.stop="closeMenu(false)"
+                                                wire:click.stop="deleteProduction({{ $production->id }})"
+                                                wire:confirm="{{ __('production_bench.production.delete_confirm') }}"
+                                                wire:loading.attr="disabled"
+                                                class="flex min-h-11 w-full items-center rounded-md px-3 py-2 text-left text-sm font-medium text-[var(--color-danger-strong)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-danger-strong)]"
+                                            >
+                                                {{ __('production_bench.production.delete') }}
+                                            </button>
+                                        </x-production-bench.production-row-actions>
                                     @endif
                                 </div>
                             </div>

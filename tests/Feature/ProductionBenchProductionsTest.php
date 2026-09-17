@@ -11,8 +11,10 @@ use App\Models\Employee;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductionFormulaLine;
+use App\Models\ProductionLocation;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionTask;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -496,18 +498,18 @@ function productionListRun(array $fixture, string $name, string $plannedFor, Pro
     ]);
 }
 
-it('does not show a partial-reservation badge for a scheduled run with no reservations', function (): void {
+it('does not show a stock warning for a scheduled run with no reservations', function (): void {
     $fixture = productionListFixture();
 
-    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSee(__('production_bench.production.status.scheduled'))
-        ->assertDontSee(__('production_bench.production.partially_reserved_short', ['short' => '']));
+        ->assertDontSee(__('production_bench.production.partially_reserved'));
 });
 
-it('shows a partial-reservation badge only when reservations are short of requirements', function (): void {
+it('shows one prose stock warning without combining mass and unit shortages', function (): void {
     $fixture = productionListFixture();
     $requirement = ProductionRequirement::factory()->for($fixture['production'], 'productionRun')->create([
-        'required_mass_grams' => '1000.000000000',
+        'required_mass_grams' => '123456789.123000000',
         'kind' => 'ingredient',
         'ingredient_id' => Ingredient::factory()->create()->id,
     ]);
@@ -516,12 +518,191 @@ it('shows a partial-reservation badge only when reservations are short of requir
         'production_run_id' => $fixture['production']->id,
         'production_requirement_id' => $requirement->id,
         'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
-        'quantity' => '400.000000000',
+        'quantity' => '0.123000000',
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+    $packagingRequirement = ProductionRequirement::factory()
+        ->for($fixture['production'], 'productionRun')
+        ->forPackaging()
+        ->create(['required_units' => 87654321]);
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $fixture['production']->id,
+        'production_requirement_id' => $packagingRequirement->id,
+        'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->forPackaging()->create()->id,
+        'quantity' => '1.000000000',
         'created_by_user_id' => $fixture['owner']->id,
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->assertSee(__('production_bench.production.partially_reserved_short', ['short' => '600']));
+        ->assertSee(__('production_bench.production.partially_reserved'))
+        ->assertDontSee('211111109');
+});
+
+it('keeps the selection limited to the visible page by clearing it on every list change', function (): void {
+    $fixture = productionListFixture();
+    $other = productionListRun($fixture, 'Lavender soap', '2026-08-15', ProductionRunStatus::Scheduled);
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('selectedProductionIds', [$fixture['production']->id, $other->id])
+        ->assertSet('selectedProductionIds', [$fixture['production']->id, $other->id]);
+
+    $page->set('search', 'Lavender')->assertSet('selectedProductionIds', []);
+    $page->set('selectedProductionIds', [$fixture['production']->id]);
+    $page->set('status', ProductionRunStatus::Draft->value)->assertSet('selectedProductionIds', []);
+    $page->set('status', '');
+    $page->set('selectedProductionIds', [$fixture['production']->id]);
+    $page->set('dateFrom', '2026-08-12')->assertSet('selectedProductionIds', []);
+    $page->set('dateFrom', '');
+    $page->set('selectedProductionIds', [$fixture['production']->id]);
+    $page->set('perPage', 50)->assertSet('selectedProductionIds', []);
+    $page->set('selectedProductionIds', [$fixture['production']->id]);
+    $page->call('gotoPage', 2)->assertSet('selectedProductionIds', []);
+});
+
+it('shows the active product filter as a clearable chip', function (): void {
+    $fixture = productionListFixture();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertDontSee(__('production_bench.production.clear_product_filter'))
+        ->set('recipeFilter', $fixture['recipe']->public_id)
+        ->assertSee(__('production_bench.production.product_filter', ['product' => 'Olive soap']))
+        ->assertSee(__('production_bench.production.clear_product_filter'))
+        ->call('clearRecipeFilter')
+        ->assertSet('recipeFilter', '')
+        ->assertDontSee(__('production_bench.production.product_filter', ['product' => 'Olive soap']));
+});
+
+it('does not reveal another workspace product through the recipe filter chip', function (): void {
+    $fixture = productionListFixture();
+    $foreignWorkspace = Workspace::factory()->create();
+    $foreignRecipe = Recipe::factory()->for($fixture['recipe']->productFamily, 'productFamily')->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $foreignWorkspace->id,
+        'workspace_id' => $foreignWorkspace->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Confidential foreign product',
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('recipeFilter', $foreignRecipe->public_id)
+        ->assertDontSee('Confidential foreign product')
+        ->assertSee(__('production_bench.production.unknown_product'));
+});
+
+it('shows the bulk toolbar only while productions are selected', function (): void {
+    $fixture = productionListFixture();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertDontSee(__('production_bench.production.prepare_stock'))
+        ->set('selectedProductionIds', [$fixture['production']->id])
+        ->assertSee(__('production_bench.production.selected_count', ['count' => 1]))
+        ->assertSee(__('production_bench.production.prepare_stock'))
+        ->assertSee(__('production_bench.production.assign_batch_numbers'))
+        ->assertSee(__('production_bench.production.clear_selection'))
+        ->call('clearSelection')
+        ->assertDontSee(__('production_bench.production.prepare_stock'));
+});
+
+it('ignores off-page production ids for bulk display and actions', function (): void {
+    $fixture = productionListFixture();
+
+    foreach (range(1, 25) as $sequence) {
+        productionListRun(
+            $fixture,
+            sprintf('Later production %02d', $sequence),
+            '2026-08-10',
+            ProductionRunStatus::Scheduled,
+        );
+    }
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertViewHas('productions', fn ($productions): bool => ! $productions->getCollection()->contains('id', $fixture['production']->id))
+        ->set('selectedProductionIds', [$fixture['production']->id])
+        ->assertDontSee(__('production_bench.production.selected_count', ['count' => 1]))
+        ->call('prepareSelected')
+        ->assertHasErrors('selectedProductionIds')
+        ->assertSet('selectedProductionIds', []);
+
+    $page->set('selectedProductionIds', [$fixture['production']->id])
+        ->call('assignSelectedBatchNumbers')
+        ->assertHasErrors('selectedProductionIds')
+        ->assertSet('selectedProductionIds', []);
+
+    expect($fixture['production']->fresh()->batch_number)->toBeNull();
+});
+
+it('renders unique action menu ids across desktop and mobile layouts', function (): void {
+    $fixture = productionListFixture();
+
+    $html = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)->html();
+    preg_match_all('/id="(production-row-actions-(?:trigger-)?[^"]+)"/', $html, $matches);
+
+    expect($matches[1])
+        ->toHaveCount(4)
+        ->and(array_values(array_unique($matches[1])))
+        ->toHaveCount(4);
+});
+
+it('hides every mutating control on the list while the bench is read-only', function (): void {
+    $fixture = productionListFixture();
+    $fixture['workspace']->productionEntitlement()->update([
+        'status' => 'cancelled',
+        'cancelled_at' => now(),
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee('Olive soap')
+        ->assertDontSee(__('production_bench.production.delete'))
+        ->assertDontSee(__('production_bench.production.schedule_draft'))
+        ->set('selectedProductionIds', [$fixture['production']->id])
+        ->assertDontSee(__('production_bench.production.prepare_stock'))
+        ->call('deleteProduction', $fixture['production']->id)
+        ->assertHasErrors('selectedProductionIds');
+
+    expect(ProductionRun::query()->find($fixture['production']->id))->not->toBeNull();
+});
+
+it('shows the production place under the date and clears the selection when the location filter changes', function (): void {
+    $fixture = productionListFixture();
+    $fixture['workspace']->update(['uses_production_locations' => true]);
+    $location = ProductionLocation::factory()->for($fixture['workspace'])->create(['name' => 'Atelier Nord']);
+    $fixture['production']->update(['production_location_id' => $location->id]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee('Atelier Nord')
+        ->set('selectedProductionIds', [$fixture['production']->id])
+        ->set('locationFilter', $location->public_id)
+        ->assertSet('selectedProductionIds', [])
+        ->assertSee('Atelier Nord');
+});
+
+it('shows the permanent batch number once allocated and the planning reference until then', function (): void {
+    $fixture = productionListFixture();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee(__('production_bench.production.planning_reference').' '.$fixture['production']->planning_batch_number)
+        ->assertDontSee(__('production_bench.production.batch_number').' '.$fixture['production']->planning_batch_number);
+
+    $assignedAt = now();
+    ProductionRunNumberIssuance::query()->create([
+        'workspace_id' => $fixture['production']->workspace_id,
+        'production_run_id' => $fixture['production']->id,
+        'batch_number' => 'B-2026-0001',
+        'serial' => 1,
+        'issued_by_user_id' => $fixture['owner']->id,
+        'issued_at' => $assignedAt,
+    ]);
+    $fixture['production']->update([
+        'batch_number' => 'B-2026-0001',
+        'batch_number_serial' => 1,
+        'batch_number_assigned_at' => $assignedAt,
+        'batch_number_assigned_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee(__('production_bench.production.batch_number').' B-2026-0001')
+        ->assertDontSee($fixture['production']->planning_batch_number);
 });
 
 it('renders a clickable row that navigates to the production detail page', function (): void {

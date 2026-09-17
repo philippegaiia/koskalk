@@ -6,6 +6,7 @@ use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\ScheduleProduction;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockReservationStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\NormalizesDatePickerState;
@@ -66,23 +67,33 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function updatedSearch(): void
     {
+        $this->clearSelection();
         $this->resetPage();
     }
 
     public function updatedStatus(): void
     {
+        $this->clearSelection();
         $this->resetPage();
     }
 
     public function updatedDateFrom(): void
     {
         $this->dateFrom = $this->normalizeDatePickerState($this->dateFrom);
+        $this->clearSelection();
         $this->resetPage();
     }
 
     public function updatedDateTo(): void
     {
         $this->dateTo = $this->normalizeDatePickerState($this->dateTo);
+        $this->clearSelection();
+        $this->resetPage();
+    }
+
+    public function updatedRecipeFilter(): void
+    {
+        $this->clearSelection();
         $this->resetPage();
     }
 
@@ -104,12 +115,31 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function updatedLocationFilter(): void
     {
+        $this->clearSelection();
         $this->resetPage();
     }
 
     public function updatedPerPage(): void
     {
         $this->perPage = $this->normalizedPerPage();
+        $this->clearSelection();
+        $this->resetPage();
+    }
+
+    public function updatedPaginators(): void
+    {
+        $this->clearSelection();
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedProductionIds = [];
+    }
+
+    public function clearRecipeFilter(): void
+    {
+        $this->recipeFilter = '';
+        $this->clearSelection();
         $this->resetPage();
     }
 
@@ -135,58 +165,9 @@ class ProductionIndex extends Component implements HasActions, HasForms
         $this->dispatch('production-deleted');
     }
 
-    /** @var array<int, string> */
-    public array $scheduleDates = [];
-
-    public function scheduleProduction(int $productionId, ScheduleProduction $scheduleProduction): void
-    {
-        try {
-            $this->validate([
-                'scheduleDates.'.$productionId => ['required', 'date_format:Y-m-d'],
-            ]);
-        } catch (ValidationException $exception) {
-            foreach ($exception->errors() as $messages) {
-                foreach ($messages as $message) {
-                    $this->addError('scheduleDate', $message);
-                }
-            }
-
-            return;
-        }
-
-        $date = $this->scheduleDates[$productionId] ?? '';
-
-        try {
-            $production = ProductionRun::query()
-                ->where('workspace_id', $this->workspace()->id)
-                ->findOrFail($productionId);
-
-            $scheduleProduction->handle(
-                actor: $this->user(),
-                production: $production,
-                plannedFor: $date,
-            );
-        } catch (ValidationException $exception) {
-            foreach ($exception->errors() as $field => $messages) {
-                foreach ($messages as $message) {
-                    $this->addError('scheduleDate', $message);
-                }
-            }
-
-            return;
-        }
-
-        unset($this->scheduleDates[$productionId]);
-        $this->showAppNotification(__('production_bench.production.planned_success'));
-        $this->dispatch('production-scheduled');
-    }
-
     public function prepareSelected(): void
     {
-        $this->selectedProductionIds = array_values(array_filter(
-            array_map('intval', $this->selectedProductionIds),
-            fn (int $id): bool => $id > 0,
-        ));
+        $this->constrainSelectionToCurrentPage();
 
         if ($this->selectedProductionIds === []) {
             $this->addError('selectedProductionIds', __('production_bench.production.select_production_to_prepare'));
@@ -201,6 +182,8 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function assignSelectedBatchNumbers(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
+        $this->constrainSelectionToCurrentPage();
+
         try {
             $result = $assignProductionBatchNumbers->handle(
                 actor: $this->user(),
@@ -230,10 +213,11 @@ class ProductionIndex extends Component implements HasActions, HasForms
         $this->dispatch('production-batch-numbers-updated');
     }
 
-    public function render(ProductionBenchAccess $access, ProductionDailyOccupancy $occupancy): View
+    public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $locationFilterId = $this->locationFilterId($workspace);
+        $filteredRecipe = $this->filteredRecipe($workspace);
         $productionLocations = $workspace->uses_production_locations
             ? ProductionLocation::query()
                 ->where('workspace_id', $workspace->id)
@@ -247,9 +231,29 @@ class ProductionIndex extends Component implements HasActions, HasForms
                 WorkspaceMemberRole::Admin,
                 WorkspaceMemberRole::Editor,
             ], true);
-        $productions = ProductionRun::query()
+        $productions = $this->productionQuery($workspace, $locationFilterId, $filteredRecipe?->id)
+            ->paginate($this->normalizedPerPage());
+
+        return view('livewire.production-bench.production.production-index', [
+            'workspace' => $workspace,
+            'isBenchActive' => $access->isActive($workspace),
+            'isReadOnly' => $access->isReadOnly($workspace),
+            'canMutate' => $canMutate,
+            'productions' => $productions,
+            'productionLocations' => $productionLocations,
+            'partiallyReservedIds' => $this->partiallyReservedIds($productions->getCollection()),
+            'visibleSelectedProductionIds' => $this->visibleSelectedProductionIds($productions->getCollection()),
+            'filteredRecipeName' => $this->recipeFilter === ''
+                ? null
+                : ($filteredRecipe?->name ?? __('production_bench.production.unknown_product')),
+        ]);
+    }
+
+    private function productionQuery(Workspace $workspace, ?int $locationFilterId, ?int $recipeId): Builder
+    {
+        return ProductionRun::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['tasks', 'requirements.reservations'])
+            ->with(['requirements.reservations'])
             ->when(
                 $workspace->uses_production_locations,
                 fn (Builder $query): Builder => $query->with('productionLocation'),
@@ -265,41 +269,119 @@ class ProductionIndex extends Component implements HasActions, HasForms
                 });
             })
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))
-            ->when($this->recipeFilter !== '', function (Builder $query): void {
-                $recipeId = Recipe::withoutGlobalScopes()
-                    ->where('public_id', $this->recipeFilter)
-                    ->value('id');
-
-                if ($recipeId === null) {
-                    $query->whereRaw('0 = 1');
-
-                    return;
-                }
-
-                $query->where('recipe_id', $recipeId);
+            ->when($this->recipeFilter !== '', function (Builder $query) use ($recipeId): void {
+                $recipeId === null
+                    ? $query->whereRaw('0 = 1')
+                    : $query->where('recipe_id', $recipeId);
             })
             ->when($locationFilterId !== null, fn (Builder $query): Builder => $query->where('production_location_id', $locationFilterId))
             ->when($this->dateFrom !== '', fn (Builder $query): Builder => $query->whereDate('planned_for', '>=', $this->dateFrom))
             ->when($this->dateTo !== '', fn (Builder $query): Builder => $query->whereDate('planned_for', '<=', $this->dateTo))
             ->orderByRaw('planned_for is null')
             ->orderBy('planned_for')
-            ->orderByDesc('id')
-            ->paginate($this->normalizedPerPage());
+            ->orderByDesc('id');
+    }
 
-        return view('livewire.production-bench.production.production-index', [
-            'workspace' => $workspace,
-            'isBenchActive' => $access->isActive($workspace),
-            'isReadOnly' => $access->isReadOnly($workspace),
-            'canMutate' => $canMutate,
-            'productions' => $productions,
-            'productionLocations' => $productionLocations,
-            'scheduleWarnings' => $this->scheduleWarnings(
-                workspace: $workspace,
-                productions: $productions->getCollection(),
-                productionLocations: $productionLocations,
-                occupancy: $occupancy,
-            ),
-        ]);
+    private function filteredRecipe(Workspace $workspace): ?Recipe
+    {
+        if ($this->recipeFilter === '') {
+            return null;
+        }
+
+        return Recipe::withoutGlobalScopes()
+            ->where('workspace_id', $workspace->id)
+            ->where('public_id', $this->recipeFilter)
+            ->first(['id', 'name']);
+    }
+
+    /** @param Collection<int, ProductionRun> $productions */
+    private function visibleSelectedProductionIds(Collection $productions): array
+    {
+        $selectableIds = $productions
+            ->filter(fn (ProductionRun $production): bool => in_array(
+                $production->status,
+                [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved],
+                true,
+            ))
+            ->pluck('id');
+
+        return collect($this->selectedProductionIdsOnCurrentPage($productions))
+            ->intersect($selectableIds)
+            ->values()
+            ->all();
+    }
+
+    /** @param Collection<int, ProductionRun> $productions */
+    private function selectedProductionIdsOnCurrentPage(Collection $productions): array
+    {
+        return collect($this->normalizedSelectedProductionIds())
+            ->intersect($productions->pluck('id'))
+            ->values()
+            ->all();
+    }
+
+    private function constrainSelectionToCurrentPage(): void
+    {
+        $workspace = $this->workspace();
+        $locationFilterId = $this->locationFilterId($workspace);
+        $filteredRecipe = $this->filteredRecipe($workspace);
+        $productions = $this->productionQuery($workspace, $locationFilterId, $filteredRecipe?->id)
+            ->forPage($this->getPage(), $this->normalizedPerPage())
+            ->get();
+
+        $this->selectedProductionIds = $this->selectedProductionIdsOnCurrentPage($productions);
+    }
+
+    /** @return list<int> */
+    private function normalizedSelectedProductionIds(): array
+    {
+        return collect($this->selectedProductionIds)
+            ->filter(fn (mixed $id): bool => is_int($id) || is_string($id))
+            ->map(fn (int|string $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Productions whose active reservations cover part of a requirement but not all of it.
+     *
+     * Only the fact of a shortfall belongs in the list; a single combined figure would add
+     * mass requirements to piece requirements and mean nothing.
+     *
+     * @param  Collection<int, ProductionRun>  $productions
+     * @return list<int>
+     */
+    private function partiallyReservedIds(Collection $productions): array
+    {
+        $ids = [];
+
+        foreach ($productions as $production) {
+            if ($production->status !== ProductionRunStatus::Scheduled) {
+                continue;
+            }
+
+            foreach ($production->requirements as $requirement) {
+                $reserved = '0';
+
+                foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
+                    $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
+                }
+
+                $required = $requirement->ingredient_id !== null
+                    ? (string) $requirement->required_mass_grams
+                    : (string) $requirement->required_units;
+
+                if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
+                    $ids[] = $production->id;
+
+                    continue 2;
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -310,9 +392,8 @@ class ProductionIndex extends Component implements HasActions, HasForms
         Collection $productions,
         Collection $productionLocations,
         ProductionDailyOccupancy $occupancy,
-        ?array $datesByProduction = null,
+        array $datesByProduction,
     ): array {
-        $datesByProduction ??= $this->scheduleDates;
         $dates = $productions
             ->map(fn (ProductionRun $production): ?string => $datesByProduction[$production->id] ?? null)
             ->filter(fn (?string $date): bool => $date !== null && $this->isDate($date))
@@ -417,27 +498,17 @@ class ProductionIndex extends Component implements HasActions, HasForms
             && $date->format('Y-m-d') === $value;
     }
 
-    public function updated(string $property): void
-    {
-        if (! str_starts_with($property, 'scheduleDates.')) {
-            return;
-        }
-
-        $key = substr($property, strlen('scheduleDates.'));
-        $value = (string) ($this->scheduleDates[$key] ?? '');
-        $date = preg_match('/^\d{4}-\d{2}-\d{2}(?: 00:00:00)?$/', $value) === 1 ? substr($value, 0, 10) : '';
-        $this->scheduleDates[$key] = validator(['date' => $date], ['date' => 'required|date_format:Y-m-d'])->passes() ? $date : '';
-    }
-
     public function scheduleDraftAction(): Action
     {
         return Action::make('scheduleDraft')
             ->label(__('production_bench.production.schedule_draft'))
             ->modalHeading(__('production_bench.production.schedule_draft'))
             ->visible(app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace()))
-            ->fillForm(fn (array $arguments): array => [
-                'planned_for' => $this->scheduleDates[$this->draftForScheduling($arguments)->id] ?? null,
-            ])
+            ->fillForm(function (array $arguments): array {
+                $this->draftForScheduling($arguments);
+
+                return ['planned_for' => null];
+            })
             ->schema(fn (array $arguments): array => [
                 DatePicker::make('planned_for')
                     ->label(__('production_bench.production.production_date'))
@@ -467,7 +538,6 @@ class ProductionIndex extends Component implements HasActions, HasForms
                         $this->getMountedActionSchema()->getStatePath().'.planned_for' => collect($exception->errors())->flatten()->all(),
                     ]);
                 }
-                unset($this->scheduleDates[$production->id]);
                 $this->showAppNotification(__('production_bench.production.planned_success'));
                 $this->dispatch('production-scheduled');
             });

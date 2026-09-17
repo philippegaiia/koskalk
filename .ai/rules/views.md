@@ -10,3 +10,6 @@ Generate all URLs and redirects from named routes with route('name', $params); u
 
 ## Keep marketing and learning content in the CMS
 The CMS at soapkraft.com (WordPress or Ghost) owns the homepage, blog, training, and main end-user documentation. Laravel remains at app.soapkraft.com and owns the application UI, the free soap calculator without registration, concise contextual help, and visible safety/compliance warnings. Link to the CMS for deeper material instead of duplicating it in the application.
+
+## Alpine event names must not begin with a Blade directive name
+Blade compiles any `@word` it has registered, before Alpine ever sees it. `@production-row-actions-opened.window="..."` compiles as Laravel's `@production` environment directive, so the view fails with "syntax error, unexpected end of file, expecting elseif/else/endif". Prefix the event instead (`@bench-production-row-actions-opened`); `@formula-...`, `@click`, `@scroll`, `@resize` and `@keydown` are safe because those words are not directives.

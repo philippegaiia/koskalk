@@ -17820,6 +17820,18 @@
     },
     {
       "group": "production_bench",
+      "key": "common.select",
+      "text": {
+        "de": "Auswählen",
+        "es": "Seleccionar",
+        "fr": "Sélectionner",
+        "it": "Seleziona",
+        "nl": "Selecteren",
+        "pt_BR": "Selecionar"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "common.sort",
       "text": {
         "de": "Sortierung",
@@ -22728,6 +22740,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.bulk_actions",
+      "text": {
+        "de": "Sammelaktionen",
+        "es": "Acciones en bloque",
+        "fr": "Actions groupées",
+        "it": "Azioni in blocco",
+        "nl": "Bulkacties",
+        "pt_BR": "Ações em massa"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.cancel",
       "text": {
         "de": "Produktion stornieren",
@@ -22844,6 +22868,30 @@
         "it": "Scegli un prodotto per vedere i materiali scalati.",
         "nl": "Kies een product om de geschaalde materialen te bekijken.",
         "pt_BR": "Escolha um produto para visualizar seus materiais ajustados."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.clear_product_filter",
+      "text": {
+        "de": "Produktfilter löschen",
+        "es": "Borrar filtro de producto",
+        "fr": "Effacer le filtre produit",
+        "it": "Cancella filtro prodotto",
+        "nl": "Productfilter wissen",
+        "pt_BR": "Limpar filtro de produto"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.clear_selection",
+      "text": {
+        "de": "Auswahl aufheben",
+        "es": "Borrar selección",
+        "fr": "Effacer la sélection",
+        "it": "Cancella selezione",
+        "nl": "Selectie wissen",
+        "pt_BR": "Limpar seleção"
       }
     },
     {
@@ -23144,6 +23192,18 @@
         "it": "Usato per scalare i requisiti di imballaggio.",
         "nl": "Wordt gebruikt om verpakkingsbehoeften te schalen.",
         "pt_BR": "Usado para ajustar as necessidades de embalagem."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.expected_units_short",
+      "text": {
+        "de": "≈ :count Einheiten",
+        "es": "≈ :count unidades",
+        "fr": "≈ :count unités",
+        "it": "≈ :count unità",
+        "nl": "≈ :count eenheden",
+        "pt_BR": "≈ :count unidades"
       }
     },
     {
@@ -23736,6 +23796,30 @@
     },
     {
       "group": "production_bench",
+      "key": "production.not_scheduled",
+      "text": {
+        "de": "Nicht geplant",
+        "es": "Sin programar",
+        "fr": "Non planifiée",
+        "it": "Non pianificata",
+        "nl": "Niet gepland",
+        "pt_BR": "Não programada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.open",
+      "text": {
+        "de": "Öffnen",
+        "es": "Abrir",
+        "fr": "Ouvrir",
+        "it": "Apri",
+        "nl": "Openen",
+        "pt_BR": "Abrir"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.open_tasks",
       "text": {
         "de": "Offene Aufgaben",
@@ -23988,14 +24072,14 @@
     },
     {
       "group": "production_bench",
-      "key": "production.partially_reserved_short",
+      "key": "production.partially_reserved",
       "text": {
-        "de": "Teilweise reserviert — fehlen :short",
-        "es": "Parcialmente reservado — faltan :short",
-        "fr": "Partiellement réservé — manque :short",
-        "it": "Parzialmente riservato — mancano :short",
-        "nl": "Gedeeltelijk gereserveerd — tekort van :short",
-        "pt_BR": "Parcialmente reservado — faltam :short"
+        "de": "Bestand teilweise reserviert",
+        "es": "Existencias parcialmente reservadas",
+        "fr": "Stock partiellement réservé",
+        "it": "Giacenza parzialmente riservata",
+        "nl": "Voorraad gedeeltelijk gereserveerd",
+        "pt_BR": "Estoque parcialmente reservado"
       }
     },
     {
@@ -24156,6 +24240,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.product_filter",
+      "text": {
+        "de": "Produkt: :product",
+        "es": "Producto: :product",
+        "fr": "Produit : :product",
+        "it": "Prodotto: :product",
+        "nl": "Product: :product",
+        "pt_BR": "Produto: :product"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.production_date",
       "text": {
         "de": "Produktionstag",
@@ -24188,6 +24284,18 @@
         "it": "Proposto",
         "nl": "Voorgesteld",
         "pt_BR": "Proposto"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.quantity",
+      "text": {
+        "de": "Menge",
+        "es": "Cantidad",
+        "fr": "Quantité",
+        "it": "Quantità",
+        "nl": "Hoeveelheid",
+        "pt_BR": "Quantidade"
       }
     },
     {
@@ -24444,6 +24552,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.row_actions",
+      "text": {
+        "de": "Aktionen für :name",
+        "es": "Acciones para :name",
+        "fr": "Actions pour :name",
+        "it": "Azioni per :name",
+        "nl": "Acties voor :name",
+        "pt_BR": "Ações para :name"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.save_as_draft",
       "text": {
         "de": "Als Entwurf speichern",
@@ -24536,6 +24656,18 @@
         "it": "Seleziona almeno una produzione pianificata.",
         "nl": "Selecteer minstens één geplande productie.",
         "pt_BR": "Selecione pelo menos uma produção planejada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.selected_count",
+      "text": {
+        "de": ":count ausgewählt",
+        "es": ":count seleccionadas",
+        "fr": ":count sélectionnées",
+        "it": ":count selezionate",
+        "nl": ":count geselecteerd",
+        "pt_BR": ":count selecionadas"
       }
     },
     {

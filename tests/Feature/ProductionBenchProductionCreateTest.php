@@ -397,13 +397,13 @@ it('requires a production date when scheduling a draft from the index', function
     $production = $fixture['recipe']->productionRuns()->firstOrFail();
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->call('scheduleProduction', $production->id)
-        ->assertHasErrors(['scheduleDate']);
+        ->callAction('scheduleDraft', ['planned_for' => null], ['productionId' => $production->id])
+        ->assertHasErrors();
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Draft);
 });
 
-it('schedules a draft from the index with a per-row date and keeps the row value isolated', function (): void {
+it('schedules a draft from the index through the scheduling modal', function (): void {
     $fixture = productionCreateFixture();
 
     Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
@@ -416,8 +416,7 @@ it('schedules a draft from the index with a per-row date and keeps the row value
     $production = $fixture['recipe']->productionRuns()->firstOrFail();
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->set('scheduleDates.'.$production->id, '2026-09-15')
-        ->call('scheduleProduction', $production->id)
+        ->callAction('scheduleDraft', ['planned_for' => '2026-09-15'], ['productionId' => $production->id])
         ->assertHasNoErrors()
         ->assertDispatched('app-notification');
 
@@ -425,7 +424,7 @@ it('schedules a draft from the index with a per-row date and keeps the row value
         ->and($production->fresh()->planned_for->format('Y-m-d'))->toBe('2026-09-15');
 });
 
-it('does not open the scheduling calendar for another workspace production', function (): void {
+it('refuses to open the index scheduling modal for another workspace production', function (): void {
     $fixture = productionCreateFixture();
     $foreign = ProductionRun::factory()->create(['status' => ProductionRunStatus::Draft]);
 

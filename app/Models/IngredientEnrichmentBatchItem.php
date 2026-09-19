@@ -134,11 +134,15 @@ class IngredientEnrichmentBatchItem extends Model
             }
         }
 
-        return $this->status === IngredientEnrichmentItemStatus::Failed
-            ? ($effectiveMode?->isGuidance()
+        return match (true) {
+            // A stale item was researched against state the ingredient no longer has, so
+            // re-running it repeats every stage against the refreshed snapshot.
+            $this->status === IngredientEnrichmentItemStatus::Stale => $orderedStages[array_key_first($orderedStages)],
+            $this->status === IngredientEnrichmentItemStatus::Failed => $effectiveMode?->isGuidance()
                 ? $orderedStages[array_key_last($orderedStages)]
-                : IngredientEnrichmentResearchStage::EuStructured)
-            : null;
+                : IngredientEnrichmentResearchStage::EuStructured,
+            default => null,
+        };
     }
 
     /** @param array<string, mixed> $stage */

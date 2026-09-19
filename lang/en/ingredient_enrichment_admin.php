@@ -181,6 +181,7 @@ return [
         'not_rejectable' => 'Only proposals awaiting review can be rejected.',
         'rejection_reason_required' => 'Give a reason so the rejection remains auditable.',
         'stale' => 'The ingredient changed after research. Start fresh research before approval.',
+        'stale_changed' => 'The ingredient changed after research (:fields). Start fresh research before approval.',
         'apply_failed' => 'The approved proposal could not be applied.',
         'subject_mismatch' => 'The enrichment result no longer matches this intake row.',
         'promotion_display_name_required' => 'A reviewed display name is required before promotion.',

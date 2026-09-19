@@ -10,6 +10,7 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\ApplyPlatformIngredientEnrichment;
 use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
+use App\Services\IngredientEnrichment\IngredientEnrichmentStaleReason;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +23,7 @@ class ApplyApprovedIngredientEnrichment
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly PromoteIngredientIntakeItem $promoter,
         private readonly ApplyApprovedIngredientGuidanceRefresh $guidanceRefresh,
+        private readonly IngredientEnrichmentStaleReason $staleReason,
     ) {}
 
     /** @return array{applied:int,unchanged:int,stale:int,failed:int} */
@@ -74,9 +76,16 @@ class ApplyApprovedIngredientEnrichment
                     ]);
                 }, attempts: 5);
                 $totals[$status]++;
-            } catch (ValidationException) {
-                IngredientEnrichmentBatchItem::query()->whereKey($itemId)->update(['status' => IngredientEnrichmentItemStatus::Stale]);
-                $totals['stale']++;
+            } catch (ValidationException $exception) {
+                // Only the fingerprint guard means the ingredient moved on; every other
+                // apply-time rejection is a failure, not staleness.
+                if (array_key_exists('source_fingerprint', $exception->errors())) {
+                    $this->markStale($itemId);
+                    $totals['stale']++;
+                } else {
+                    $this->recordApplyFailure($itemId, $exception);
+                    $totals['failed']++;
+                }
             } catch (Throwable $exception) {
                 report($exception);
                 IngredientEnrichmentBatchItem::query()->whereKey($itemId)->update([
@@ -91,6 +100,33 @@ class ApplyApprovedIngredientEnrichment
         $this->batches->markAppliedWhenComplete($batch->id);
 
         return $totals;
+    }
+
+    private function markStale(int $itemId): void
+    {
+        $item = IngredientEnrichmentBatchItem::query()->find($itemId);
+        IngredientEnrichmentBatchItem::query()->whereKey($itemId)->update([
+            'status' => IngredientEnrichmentItemStatus::Stale,
+            'failure_message' => $item instanceof IngredientEnrichmentBatchItem
+                ? $this->staleReason->message($item)
+                : __('ingredient_enrichment_admin.validation.stale'),
+        ]);
+    }
+
+    private function recordApplyFailure(int $itemId, ?ValidationException $exception = null): void
+    {
+        $message = $exception instanceof ValidationException
+            ? collect($exception->errors())->flatten()->first()
+            : null;
+
+        IngredientEnrichmentBatchItem::query()
+            ->whereKey($itemId)
+            ->update([
+                'status' => IngredientEnrichmentItemStatus::Failed,
+                'failure_message' => is_string($message) && $message !== ''
+                    ? $message
+                    : __('ingredient_enrichment_admin.validation.apply_failed'),
+            ]);
     }
 
     private function recordPromotionFailure(int $itemId, ?ValidationException $exception = null): void

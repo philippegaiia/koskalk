@@ -13,6 +13,7 @@ use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
+use App\Services\IngredientEnrichment\IngredientEnrichmentInputBuilder;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -214,6 +215,92 @@ it('does not revive a cancelled full enrichment batch during apply completion', 
     app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch->fresh());
 
     expect($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Cancelled);
+});
+
+it('names the changed sections when an approved item goes stale at apply time', function (): void {
+    config()->set('ingredient-enrichment.guidance.minimum_words', 1);
+
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);
+    }
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'stale_review_oil',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Stale Review Oil',
+        'inci_name' => null,
+        'info_markdown' => null,
+    ]);
+    $record = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $result = reviewResult($ingredient, $record['source_fingerprint']);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'snapshot' => $record,
+        'source_fingerprint' => $record['source_fingerprint'],
+        'result' => $result,
+        'plan' => app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result),
+    ]);
+
+    app(ApproveIngredientEnrichmentItem::class)->handle($admin, $item);
+    $ingredient->update(['display_name' => 'Renamed By Hand']);
+
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch);
+
+    expect($totals)->toBe(['applied' => 0, 'unchanged' => 0, 'stale' => 1, 'failed' => 0])
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Stale)
+        ->and($item->fresh()->failure_message)->toContain('canonical.display_name')
+        ->and($ingredient->fresh()->display_name)->toBe('Renamed By Hand');
+});
+
+it('records a non-fingerprint apply rejection as a failure instead of stale', function (): void {
+    config()->set('ingredient-enrichment.guidance.minimum_words', 1);
+
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);
+    }
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'owned_review_oil',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Owned Review Oil',
+        'inci_name' => null,
+        'info_markdown' => null,
+    ]);
+    $record = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $result = reviewResult($ingredient, $record['source_fingerprint']);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'snapshot' => $record,
+        'source_fingerprint' => $record['source_fingerprint'],
+        'result' => $result,
+        'plan' => app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result),
+    ]);
+
+    app(ApproveIngredientEnrichmentItem::class)->handle($admin, $item);
+
+    // A workspace claimed the ingredient between approval and apply, so apply refuses
+    // for a reason that has nothing to do with the source fingerprint.
+    $ingredient->update(['owner_type' => 'workspace', 'owner_id' => 4242]);
+
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch);
+
+    expect($totals)->toBe(['applied' => 0, 'unchanged' => 0, 'stale' => 0, 'failed' => 1])
+        ->and($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->and($item->fresh()->failure_message)->toBe(__('ingredient_enrichment.validation.platform_only_apply'));
 });
 
 /** @return array<string, mixed> */

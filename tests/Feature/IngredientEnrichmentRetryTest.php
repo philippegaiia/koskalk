@@ -10,9 +10,12 @@ use App\Jobs\ResearchIngredientEnrichment;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
+use App\Models\IngredientIntakeItem;
 use App\Models\User;
 use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use App\Services\IngredientEnrichment\IngredientEnrichmentInputBuilder;
+use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
+use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceContextBuilder;
 use Illuminate\Bus\PendingBatch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -317,6 +320,141 @@ it('defines guidance stage order from the persisted batch mode', function (): vo
         IngredientEnrichmentResearchStage::AiGuidanceLocalization,
         IngredientEnrichmentResearchStage::Validation,
     ])->and(IngredientEnrichmentBatchMode::FillMissing->guidanceStages())->toBe([]);
+});
+
+it('retries a stale item from the first stage against a refreshed snapshot', function (): void {
+    Bus::fake();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'stale_retry_oil']);
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
+        'total_count' => 1,
+    ]);
+    $completedStages = collect(IngredientEnrichmentResearchStage::ordered())
+        ->mapWithKeys(fn (IngredientEnrichmentResearchStage $stage): array => [
+            $stage->value => ['stage' => $stage->value, 'status' => 'completed'],
+        ])
+        ->all();
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Stale,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'failure_message' => 'The ingredient changed after research.',
+        'research_stages' => $completedStages,
+    ]);
+    $ingredient->update(['display_name' => 'Renamed After Research']);
+    $currentFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient->fresh());
+
+    expect($currentFingerprint)->not->toBe($snapshot['source_fingerprint']);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
+        ->and($item->fresh()->source_fingerprint)->toBe($currentFingerprint)
+        ->and($item->fresh()->failure_message)->toBeNull()
+        ->and($item->fresh()->research_stages)->toBe([]);
+
+    Bus::assertBatched(function (PendingBatch $pending): bool {
+        return collect($pending->jobs)->contains(
+            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
+        );
+    });
+});
+
+it('retries a stale guidance item without losing its guidance context', function (): void {
+    Bus::fake();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'stale_guidance_oil']);
+    $snapshot = app(IngredientGuidanceContextBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Stale,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'research_stages' => [
+            'ai_guidance_research' => ['status' => 'completed'],
+            'ai_guidance_authoring' => ['status' => 'completed'],
+            'validation' => ['status' => 'completed'],
+        ],
+    ]);
+    $ingredient->update(['info_markdown' => "## Overview\n\nHand edited guidance body."]);
+    $currentFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient->fresh());
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
+        ->and($item->fresh()->source_fingerprint)->toBe($currentFingerprint)
+        ->and($item->fresh()->snapshot)->toHaveKey('guidance_evidence')
+        ->and($item->fresh()->snapshot['subject_public_id'])->toBe((string) $ingredient->public_id)
+        ->and($item->fresh()->research_stages)->toBe([]);
+
+    Bus::assertBatched(function (PendingBatch $pending): bool {
+        return collect($pending->jobs)->contains(
+            fn (mixed $job): bool => $job instanceof GenerateIngredientGuidanceRefresh,
+        ) && collect($pending->jobs)->doesntContain(
+            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
+        );
+    });
+});
+
+it('retries a stale intake row against its refreshed subject', function (): void {
+    Bus::fake();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $intakeItem = IngredientIntakeItem::factory()->create([
+        'original_current_name' => 'Stale intake oil',
+        'normalized_current_name' => 'stale intake oil',
+    ]);
+    $subject = app(IngredientEnrichmentSubjectBuilder::class)->forIntake($intakeItem->fresh());
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->buildForSubject($subject);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'mode' => IngredientEnrichmentBatchMode::Intake,
+        'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => null,
+        'ingredient_intake_item_id' => $intakeItem->id,
+        'catalog_key' => null,
+        'status' => IngredientEnrichmentItemStatus::Stale,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $subject->fingerprint,
+        'research_stages' => collect(IngredientEnrichmentResearchStage::ordered())
+            ->mapWithKeys(fn (IngredientEnrichmentResearchStage $stage): array => [
+                $stage->value => ['stage' => $stage->value, 'status' => 'completed'],
+            ])
+            ->all(),
+    ]);
+    $intakeItem->update(['normalized_current_name' => 'renamed intake oil']);
+    $currentFingerprint = app(IngredientEnrichmentSubjectBuilder::class)
+        ->forIntake($intakeItem->fresh())
+        ->fingerprint;
+
+    expect($currentFingerprint)->not->toBe($subject->fingerprint);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
+        ->and($item->fresh()->source_fingerprint)->toBe($currentFingerprint)
+        ->and($item->fresh()->snapshot['subject_public_id'])->toBe((string) $intakeItem->public_id)
+        ->and($item->fresh()->research_stages)->toBe([]);
+
+    Bus::assertBatched(function (PendingBatch $pending): bool {
+        return collect($pending->jobs)->contains(
+            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
+        );
+    });
 });
 
 it('reopens identity research when retrying an identity unresolved item', function (): void {

@@ -12,6 +12,7 @@ use App\Models\IngredientFattyAcid;
 use App\Models\IngredientFunction;
 use App\Models\IngredientMarketLabel;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 class IngredientEnrichmentSnapshotBuilder
 {
@@ -143,6 +144,66 @@ class IngredientEnrichmentSnapshotBuilder
     public function fingerprint(Ingredient $ingredient): string
     {
         return $this->build($ingredient)['fingerprint'];
+    }
+
+    /**
+     * Summarize what moved between a stored snapshot and the current state.
+     *
+     * Sections carrying more than two changed leaves collapse to the section name so a
+     * wholesale guidance or market-label rewrite stays readable in the admin UI.
+     *
+     * @param  array<string, mixed>  $previous
+     * @param  array<string, mixed>  $current
+     * @return list<string>
+     */
+    public function changedPaths(array $previous, array $current, int $limit = 6): array
+    {
+        $before = $this->flattenPaths($previous);
+        $after = $this->flattenPaths($current);
+
+        $paths = [];
+        foreach ($before as $path => $value) {
+            if (! array_key_exists($path, $after) || $after[$path] !== $value) {
+                $paths[] = $path;
+            }
+        }
+        foreach ($after as $path => $value) {
+            if (! array_key_exists($path, $before)) {
+                $paths[] = $path;
+            }
+        }
+
+        $sections = [];
+        foreach (array_values(array_unique($paths)) as $path) {
+            $sections[Str::before($path, '.')][] = $path;
+        }
+
+        $summary = [];
+        foreach ($sections as $paths) {
+            $summary[] = count($paths) > 2 ? Str::before($paths[0], '.') : implode(', ', $paths);
+        }
+
+        return array_slice(array_values($summary), 0, $limit);
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @return array<string, string|null>
+     */
+    private function flattenPaths(array $snapshot, string $prefix = ''): array
+    {
+        $paths = [];
+        foreach ($snapshot as $key => $value) {
+            $path = $prefix === '' ? (string) $key : $prefix.'.'.$key;
+            if (is_array($value)) {
+                $paths += $this->flattenPaths($value, $path);
+
+                continue;
+            }
+            $paths[$path] = $value === null ? null : (string) $value;
+        }
+
+        return $paths;
     }
 
     /**

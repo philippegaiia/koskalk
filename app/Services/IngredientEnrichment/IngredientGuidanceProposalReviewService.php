@@ -17,6 +17,7 @@ class IngredientGuidanceProposalReviewService
         private readonly IngredientGuidanceRefreshResultValidator $validator,
         private readonly IngredientGuidanceChangePlanner $planner,
         private readonly IngredientEnrichmentBatchService $batches,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
     ) {}
 
     /**
@@ -42,7 +43,12 @@ class IngredientGuidanceProposalReviewService
             $ingredient = Ingredient::query()
                 ->withoutGlobalScopes()
                 ->lockForUpdate()
-                ->findOrFail($locked->ingredient_id);
+                ->find($locked->ingredient_id);
+            if ($this->availability->rejectUnavailable($locked, $ingredient)) {
+                $this->batches->refresh($locked->ingredient_enrichment_batch_id);
+
+                return ['item' => $locked->refresh(), 'stale' => false, 'unavailable' => true];
+            }
             if (! $mode instanceof IngredientEnrichmentBatchMode || ! $mode->isGuidance()) {
                 throw ValidationException::withMessages([
                     'batch' => __('ingredient_enrichment_admin.validation.guidance_batch_mode'),
@@ -135,6 +141,10 @@ class IngredientGuidanceProposalReviewService
             ]);
         }
 
+        if ($outcome['unavailable'] ?? false) {
+            throw ValidationException::withMessages(['item' => $outcome['item']->failure_message]);
+        }
+
         return $outcome['item'];
     }
 
@@ -155,7 +165,12 @@ class IngredientGuidanceProposalReviewService
             $ingredient = Ingredient::query()
                 ->withoutGlobalScopes()
                 ->lockForUpdate()
-                ->findOrFail($locked->ingredient_id);
+                ->find($locked->ingredient_id);
+            if ($this->availability->rejectUnavailable($locked, $ingredient)) {
+                $this->batches->refresh($locked->ingredient_enrichment_batch_id);
+
+                return ['item' => $locked->refresh(), 'stale' => false, 'unavailable' => true];
+            }
             if (! $mode instanceof IngredientEnrichmentBatchMode || ! $mode->isGuidance()) {
                 throw ValidationException::withMessages([
                     'batch' => __('ingredient_enrichment_admin.validation.guidance_batch_mode'),
@@ -191,6 +206,10 @@ class IngredientGuidanceProposalReviewService
             throw ValidationException::withMessages([
                 'item' => __('ingredient_enrichment_admin.validation.stale'),
             ]);
+        }
+
+        if ($outcome['unavailable'] ?? false) {
+            throw ValidationException::withMessages(['item' => $outcome['item']->failure_message]);
         }
 
         return $outcome['item'];

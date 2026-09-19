@@ -12,6 +12,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentEvidenceReconciler;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentResultValidator;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
+use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectAvailability;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -25,6 +26,7 @@ class EditIngredientEnrichmentProposal
         private readonly IngredientEnrichmentPlanner $planner,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly IngredientEnrichmentSubjectBuilder $subjects,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
         private readonly IngredientEnrichmentEvidenceReconciler $evidenceReconciler,
     ) {}
 
@@ -51,16 +53,19 @@ class EditIngredientEnrichmentProposal
                     ->with(['batch', 'existingIngredient'])
                     ->lockForUpdate()
                     ->find($locked->ingredient_intake_item_id);
+
+            if ($this->availability->rejectUnavailable($locked, $locked->ingredient_intake_item_id !== null ? $intake : $ingredient)) {
+                $this->batches->refresh($locked->ingredient_enrichment_batch_id);
+
+                return ['item' => $locked->refresh(), 'stale' => false, 'unavailable' => true];
+            }
             $subject = $intake instanceof IngredientIntakeItem
                 ? $this->subjects->forIntake($intake)
                 : null;
             $stale = $intake instanceof IngredientIntakeItem
                 ? $subject?->fingerprint !== $locked->source_fingerprint
                     || $subject?->subjectPublicId !== (string) ($locked->snapshot['subject_public_id'] ?? '')
-                : ! $ingredient
-                    || $ingredient->owner_type !== null
-                    || $ingredient->owner_id !== null
-                    || $this->snapshots->fingerprint($ingredient) !== $locked->source_fingerprint;
+                : $this->snapshots->fingerprint($ingredient) !== $locked->source_fingerprint;
 
             if ($stale) {
                 $locked->update(['status' => IngredientEnrichmentItemStatus::Stale]);
@@ -140,6 +145,10 @@ class EditIngredientEnrichmentProposal
 
         if ($outcome['stale']) {
             throw ValidationException::withMessages(['item' => __('ingredient_enrichment_admin.validation.stale')]);
+        }
+
+        if ($outcome['unavailable'] ?? false) {
+            throw ValidationException::withMessages(['item' => $outcome['item']->failure_message]);
         }
 
         return $outcome['item'];

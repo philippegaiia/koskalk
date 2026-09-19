@@ -29,6 +29,7 @@ class ApplyIngredientGuidanceRefresh
         private readonly IngredientTranslationService $translations,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly IngredientEnrichmentStaleReason $staleReason,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
     ) {}
 
     /** @return array{applied:int,unchanged:int,stale:int,failed:int} */
@@ -52,7 +53,10 @@ class ApplyIngredientGuidanceRefresh
                         ]);
                     }
 
-                    $ingredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($item->ingredient_id);
+                    $ingredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->find($item->ingredient_id);
+                    if ($this->availability->rejectUnavailable($item, $ingredient)) {
+                        return 'failed';
+                    }
                     $result = is_array($item->result) ? $item->result : [];
                     if ($this->snapshots->fingerprint($ingredient) !== (string) ($result['source_fingerprint'] ?? '')) {
                         $item->update([

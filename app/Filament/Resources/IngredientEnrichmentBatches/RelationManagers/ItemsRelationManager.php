@@ -86,11 +86,11 @@ class ItemsRelationManager extends RelationManager
                 TextColumn::make('failure_code')
                     ->label(__('ingredient_enrichment_admin.fields.failure_code'))
                     ->badge()
-                    ->visible(fn (): bool => $this->getOwnerRecord()->failed_count > 0),
+                    ->visible(fn (): bool => $this->getOwnerRecord()->failed_count + $this->getOwnerRecord()->stale_count > 0),
                 TextColumn::make('failure_message')
                     ->label(__('ingredient_enrichment_admin.fields.failure_message'))
                     ->wrap()
-                    ->visible(fn (): bool => $this->getOwnerRecord()->failed_count > 0),
+                    ->visible(fn (): bool => $this->getOwnerRecord()->failed_count + $this->getOwnerRecord()->stale_count > 0),
                 TextColumn::make('confidence')->badge(),
                 TextColumn::make('warnings')->state(fn (IngredientEnrichmentBatchItem $record): int => count($record->warnings ?? []))->badge(),
                 TextColumn::make('sources')->state(fn (IngredientEnrichmentBatchItem $record): int => count($record->sources ?? []))->badge(),

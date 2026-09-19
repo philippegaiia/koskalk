@@ -389,6 +389,25 @@ it('rejects batch deletion by a non administrator', function (): void {
     $this->assertModelExists($batch);
 });
 
+it('shows stale diagnostics when the batch has no failed items', function (): void {
+    $admin = User::factory()->admin()->create();
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+        'stale_count' => 1,
+        'failed_count' => 0,
+    ]);
+    IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'status' => IngredientEnrichmentItemStatus::Stale,
+        'failure_message' => 'Ingredient changed: canonical.display_name.',
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(ItemsRelationManager::class, [
+        'ownerRecord' => $batch,
+        'pageClass' => ViewIngredientEnrichmentBatch::class,
+    ])->loadTable()->assertSee('Ingredient changed: canonical.display_name.');
+});
+
 it('shows safe failure diagnostics when reviewing a failed item', function (): void {
     $admin = User::factory()->admin()->create();
     $batch = IngredientEnrichmentBatch::factory()->create([

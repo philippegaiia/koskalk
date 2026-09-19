@@ -144,6 +144,7 @@ return [
         ],
     ],
     'validation' => [
+        'subject_unavailable' => 'The ingredient or intake row is no longer available. This item cannot be retried.',
         'fresh_research_localization' => 'Fresh research is not available for guidance localization.',
         'guidance_generation_disabled' => 'Automatic English guidance generation is disabled. Save the approved English guidance, then use Translate guidance.',
         'not_editable' => 'Only proposals awaiting review can be edited.',

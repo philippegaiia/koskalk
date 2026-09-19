@@ -61,6 +61,8 @@ class IngredientEnrichmentBatchItem extends Model
      */
     public const APPLY_REJECTED = 'apply_rejected';
 
+    public const SUBJECT_UNAVAILABLE = 'subject_unavailable';
+
     /** @use HasFactory<IngredientEnrichmentBatchItemFactory> */
     use HasFactory;
 
@@ -124,7 +126,7 @@ class IngredientEnrichmentBatchItem extends Model
         // Re-running the research cannot change the reason the apply was rejected, so a
         // retry would spend the whole pipeline to fail identically.
         if ($this->status === IngredientEnrichmentItemStatus::Failed
-            && $this->failure_code === self::APPLY_REJECTED) {
+            && in_array($this->failure_code, [self::APPLY_REJECTED, self::SUBJECT_UNAVAILABLE], true)) {
             return null;
         }
 
@@ -134,6 +136,10 @@ class IngredientEnrichmentBatchItem extends Model
                 ->reject(fn (IngredientEnrichmentResearchStage $stage): bool => $stage === IngredientEnrichmentResearchStage::AiGuidanceLocalization)
                 ->values()
                 ->all();
+        }
+
+        if ($this->status === IngredientEnrichmentItemStatus::Stale) {
+            return $orderedStages[0];
         }
 
         foreach ($orderedStages as $stage) {
@@ -148,9 +154,6 @@ class IngredientEnrichmentBatchItem extends Model
         }
 
         return match (true) {
-            // A stale item was researched against state the ingredient no longer has, so
-            // re-running it repeats every stage against the refreshed snapshot.
-            $this->status === IngredientEnrichmentItemStatus::Stale => $orderedStages[array_key_first($orderedStages)],
             $this->status === IngredientEnrichmentItemStatus::Failed => $effectiveMode?->isGuidance()
                 ? $orderedStages[array_key_last($orderedStages)]
                 : IngredientEnrichmentResearchStage::EuStructured,

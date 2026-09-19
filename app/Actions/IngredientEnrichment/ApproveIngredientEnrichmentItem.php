@@ -13,6 +13,7 @@ use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
 use App\Services\IngredientEnrichment\IngredientEnrichmentResultValidator;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
+use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectAvailability;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +27,7 @@ class ApproveIngredientEnrichmentItem
         private readonly IngredientEnrichmentPlanner $planner,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly IngredientEnrichmentSubjectBuilder $subjects,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
     ) {}
 
     /** @param list<string> $replaceFields */
@@ -49,6 +51,12 @@ class ApproveIngredientEnrichmentItem
                     ->lockForUpdate()
                     ->find($locked->ingredient_intake_item_id);
 
+            if ($this->availability->rejectUnavailable($locked, $locked->ingredient_intake_item_id !== null ? $intake : $ingredient)) {
+                $this->batches->refresh($locked->ingredient_enrichment_batch_id);
+
+                return ['item' => $locked->refresh(), 'stale' => false, 'unavailable' => true];
+            }
+
             if ($intake instanceof IngredientIntakeItem) {
                 $subject = $this->subjects->forIntake($intake);
                 if ($subject->subjectPublicId !== (string) ($locked->snapshot['subject_public_id'] ?? '')
@@ -58,7 +66,7 @@ class ApproveIngredientEnrichmentItem
 
                     return ['item' => $locked->refresh(), 'stale' => true];
                 }
-            } elseif (! $ingredient || $this->snapshots->fingerprint($ingredient) !== $locked->source_fingerprint) {
+            } elseif ($this->snapshots->fingerprint($ingredient) !== $locked->source_fingerprint) {
                 $locked->update(['status' => IngredientEnrichmentItemStatus::Stale]);
                 $this->batches->refresh($locked->ingredient_enrichment_batch_id);
 
@@ -106,6 +114,10 @@ class ApproveIngredientEnrichmentItem
 
         if ($outcome['stale']) {
             throw ValidationException::withMessages(['item' => __('ingredient_enrichment_admin.validation.stale')]);
+        }
+
+        if ($outcome['unavailable'] ?? false) {
+            throw ValidationException::withMessages(['item' => $outcome['item']->failure_message]);
         }
 
         return $outcome['item'];

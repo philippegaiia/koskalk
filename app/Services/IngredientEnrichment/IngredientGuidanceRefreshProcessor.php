@@ -30,6 +30,7 @@ class IngredientGuidanceRefreshProcessor
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly LocalizedGuidanceHeadings $headings,
         private readonly IngredientGuidanceRefreshResultValidator $validator,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
     ) {}
 
     public function handle(int $itemId): void
@@ -43,10 +44,12 @@ class IngredientGuidanceRefreshProcessor
             $batch = $item->batch()->lockForUpdate()->first();
             $mode = $batch?->mode;
             $ingredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->find($item->ingredient_id);
+            if ($this->availability->rejectUnavailable($item, $ingredient)) {
+                $this->batches->refresh($item->ingredient_enrichment_batch_id);
+
+                return null;
+            }
             if (! $batch || ! $mode instanceof IngredientEnrichmentBatchMode || ! $mode->isGuidance()
-                || ! $ingredient
-                || $ingredient->owner_type !== null
-                || $ingredient->owner_id !== null
                 || $this->snapshots->fingerprint($ingredient) !== $item->source_fingerprint) {
                 $item->update(['status' => IngredientEnrichmentItemStatus::Stale]);
                 $this->batches->refresh($item->ingredient_enrichment_batch_id);

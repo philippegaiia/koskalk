@@ -322,6 +322,50 @@ it('defines guidance stage order from the persisted batch mode', function (): vo
     ])->and(IngredientEnrichmentBatchMode::FillMissing->guidanceStages())->toBe([]);
 });
 
+it('replaces the prior failure explanation when retry discovers changed input', function (): void {
+    Bus::fake();
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create();
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create();
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'failure_code' => 'provider_timeout',
+        'failure_message' => 'Old provider timeout',
+    ]);
+    $ingredient->update(['display_name' => 'Changed after research']);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh())->status->toBe(IngredientEnrichmentItemStatus::Stale)
+        ->failure_code->toBeNull()
+        ->failure_message->toBe(__('ingredient_enrichment_admin.validation.stale_changed', ['fields' => 'canonical.display_name']));
+    expect($batch->fresh()->stale_count)->toBe(1);
+    Bus::assertNothingBatched();
+});
+
+it('restarts all stale research even when a later stage is incomplete', function (IngredientEnrichmentBatchMode $mode): void {
+    Bus::fake();
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create();
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create(['mode' => $mode]);
+    $firstStage = $mode->isGuidance() ? $mode->guidanceStages()[0] : IngredientEnrichmentResearchStage::IdentityPreparation;
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->for($ingredient)->create([
+        'status' => IngredientEnrichmentItemStatus::Stale,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'research_stages' => [$firstStage->value => ['status' => 'completed']],
+    ]);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh())->status->toBe(IngredientEnrichmentItemStatus::Pending)->research_stages->toBe([]);
+    Bus::assertBatched(fn (PendingBatch $pending): bool => count($pending->jobs) === 1);
+})->with([IngredientEnrichmentBatchMode::FillMissing, IngredientEnrichmentBatchMode::GuidanceRefresh, IngredientEnrichmentBatchMode::GuidanceLocalization]);
+
 it('retries a stale item from the first stage against a refreshed snapshot', function (): void {
     Bus::fake();
     $admin = User::factory()->create(['is_admin' => true]);

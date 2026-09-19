@@ -22,6 +22,7 @@ class ResearchIngredientEnrichmentItem
         private readonly IngredientEnrichmentPlanner $planner,
         private readonly IngredientEnrichmentBatchService $batches,
         private readonly IngredientEnrichmentSubjectBuilder $subjectBuilder,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
     ) {}
 
     public function handle(int $itemId, bool $allowGapResearch = false): void
@@ -37,7 +38,12 @@ class ResearchIngredientEnrichmentItem
                     ->with(['batch', 'existingIngredient'])
                     ->lockForUpdate()
                     ->find($item->ingredient_intake_item_id);
-                if (! $intakeItem || $this->subjectBuilder->forIntake($intakeItem)->fingerprint !== $item->source_fingerprint) {
+                if ($this->availability->rejectUnavailable($item, $intakeItem)) {
+                    $this->batches->refresh($item->ingredient_enrichment_batch_id);
+
+                    return null;
+                }
+                if ($this->subjectBuilder->forIntake($intakeItem)->fingerprint !== $item->source_fingerprint) {
                     $item->update(['status' => IngredientEnrichmentItemStatus::Stale]);
                     $this->batches->refresh($item->ingredient_enrichment_batch_id);
 
@@ -57,8 +63,12 @@ class ResearchIngredientEnrichmentItem
             }
 
             $ingredient = Ingredient::query()->withoutGlobalScopes()->lockForUpdate()->find($item->ingredient_id);
-            if (! $ingredient || $ingredient->owner_type !== null || $ingredient->owner_id !== null
-                || $this->snapshotBuilder->fingerprint($ingredient) !== $item->source_fingerprint) {
+            if ($this->availability->rejectUnavailable($item, $ingredient)) {
+                $this->batches->refresh($item->ingredient_enrichment_batch_id);
+
+                return null;
+            }
+            if ($this->snapshotBuilder->fingerprint($ingredient) !== $item->source_fingerprint) {
                 $item->update(['status' => IngredientEnrichmentItemStatus::Stale]);
                 $this->batches->refresh($item->ingredient_enrichment_batch_id);
 

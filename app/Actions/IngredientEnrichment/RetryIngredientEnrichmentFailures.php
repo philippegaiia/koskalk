@@ -13,9 +13,12 @@ use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientIntakeItem;
 use App\Models\User;
+use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use App\Services\IngredientEnrichment\IngredientEnrichmentInputBuilder;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSnapshotBuilder;
 use App\Services\IngredientEnrichment\IngredientEnrichmentStageStore;
+use App\Services\IngredientEnrichment\IngredientEnrichmentStaleReason;
+use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectAvailability;
 use App\Services\IngredientEnrichment\IngredientEnrichmentSubjectBuilder;
 use App\Services\IngredientEnrichment\IngredientGuidanceContextBuilder;
 use Illuminate\Support\Facades\Bus;
@@ -30,6 +33,9 @@ class RetryIngredientEnrichmentFailures
         private readonly IngredientEnrichmentInputBuilder $inputBuilder,
         private readonly IngredientEnrichmentSubjectBuilder $subjects,
         private readonly IngredientGuidanceContextBuilder $contexts,
+        private readonly IngredientEnrichmentSubjectAvailability $availability,
+        private readonly IngredientEnrichmentStaleReason $staleReason,
+        private readonly IngredientEnrichmentBatchService $batches,
     ) {}
 
     public function handle(
@@ -42,6 +48,7 @@ class RetryIngredientEnrichmentFailures
         $retry = DB::transaction(function () use ($batch): array {
             $locked = IngredientEnrichmentBatch::query()->lockForUpdate()->findOrFail($batch->id);
             $ids = [];
+            $changed = false;
             foreach ($locked->items()->whereIn('status', [
                 IngredientEnrichmentItemStatus::Failed->value,
                 IngredientEnrichmentItemStatus::Warning->value,
@@ -53,6 +60,16 @@ class RetryIngredientEnrichmentFailures
                 if (! $retryFrom instanceof IngredientEnrichmentResearchStage) {
                     continue;
                 }
+
+                $subject = $item->ingredient_intake_item_id !== null
+                    ? $item->intakeItem()->lockForUpdate()->first()
+                    : $item->ingredient()->lockForUpdate()->first();
+                if ($this->availability->rejectUnavailable($item, $subject)) {
+                    $changed = true;
+
+                    continue;
+                }
+                $changed = true;
 
                 // A stale item is re-researched from the first stage, so it needs a snapshot
                 // and fingerprint taken from the subject as it is now.
@@ -85,7 +102,11 @@ class RetryIngredientEnrichmentFailures
                 }
 
                 if ($this->snapshots->fingerprint($ingredient) !== $item->source_fingerprint) {
-                    $item->update(['status' => IngredientEnrichmentItemStatus::Stale]);
+                    $item->update([
+                        'status' => IngredientEnrichmentItemStatus::Stale,
+                        'failure_code' => null,
+                        'failure_message' => $this->staleReason->message($item, $ingredient),
+                    ]);
 
                     continue;
                 }
@@ -97,6 +118,10 @@ class RetryIngredientEnrichmentFailures
                     'failure_message' => null,
                 ]);
                 $ids[] = $item->id;
+            }
+
+            if ($changed) {
+                $this->batches->refresh($locked->id);
             }
 
             return [

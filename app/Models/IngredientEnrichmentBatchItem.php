@@ -55,6 +55,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class IngredientEnrichmentBatchItem extends Model
 {
+    /**
+     * Failure code for an apply that was rejected for a reason research cannot repair,
+     * such as an ingredient that has been claimed by a workspace since approval.
+     */
+    public const APPLY_REJECTED = 'apply_rejected';
+
     /** @use HasFactory<IngredientEnrichmentBatchItemFactory> */
     use HasFactory;
 
@@ -113,6 +119,13 @@ class IngredientEnrichmentBatchItem extends Model
         if ($this->failure_code === 'identity_unresolved'
             && ! ($effectiveMode?->isGuidance() ?? false)) {
             return IngredientEnrichmentResearchStage::IdentityPreparation;
+        }
+
+        // Re-running the research cannot change the reason the apply was rejected, so a
+        // retry would spend the whole pipeline to fail identically.
+        if ($this->status === IngredientEnrichmentItemStatus::Failed
+            && $this->failure_code === self::APPLY_REJECTED) {
+            return null;
         }
 
         $orderedStages = $effectiveMode?->guidanceStages() ?? [];

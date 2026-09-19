@@ -459,6 +459,39 @@ it('retries a stale intake row against its refreshed subject', function (): void
     });
 });
 
+it('leaves an apply rejection unretried because re-researching cannot repair it', function (): void {
+    Bus::fake();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create(['catalog_key' => 'claimed_retry_oil']);
+    $snapshot = app(IngredientEnrichmentInputBuilder::class)->build($ingredient);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
+        'total_count' => 1,
+    ]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Failed,
+        'snapshot' => $snapshot,
+        'source_fingerprint' => $snapshot['source_fingerprint'],
+        'failure_code' => IngredientEnrichmentBatchItem::APPLY_REJECTED,
+        'failure_message' => 'Only platform ingredients can be enriched.',
+        'research_stages' => [
+            'identity_preparation' => ['status' => 'completed'],
+            'eu_structured' => ['status' => 'completed'],
+        ],
+    ]);
+
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
+
+    expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Failed)
+        ->and($item->fresh()->failure_code)->toBe(IngredientEnrichmentBatchItem::APPLY_REJECTED)
+        ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::PartiallyFailed);
+
+    Bus::assertNothingBatched();
+});
+
 it('reopens identity research when retrying an identity unresolved item', function (): void {
     Bus::fake();
     $admin = User::factory()->create(['is_admin' => true]);

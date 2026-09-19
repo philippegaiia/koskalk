@@ -123,6 +123,7 @@ class ApplyApprovedIngredientEnrichment
             ->whereKey($itemId)
             ->update([
                 'status' => IngredientEnrichmentItemStatus::Failed,
+                'failure_code' => IngredientEnrichmentBatchItem::APPLY_REJECTED,
                 'failure_message' => is_string($message) && $message !== ''
                     ? $message
                     : __('ingredient_enrichment_admin.validation.apply_failed'),

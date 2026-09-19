@@ -369,11 +369,12 @@ it('retries a stale guidance item without losing its guidance context', function
     Bus::fake();
     $admin = User::factory()->create(['is_admin' => true]);
     $ingredient = Ingredient::factory()->create(['catalog_key' => 'stale_guidance_oil']);
-    $snapshot = app(IngredientGuidanceContextBuilder::class)->build($ingredient);
+    $snapshot = app(IngredientGuidanceContextBuilder::class)->build($ingredient, freshResearch: true);
     $batch = IngredientEnrichmentBatch::factory()->create([
         'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
         'status' => IngredientEnrichmentBatchStatus::PartiallyFailed,
         'total_count' => 1,
+        'fresh_research' => true,
     ]);
     $item = IngredientEnrichmentBatchItem::factory()->create([
         'ingredient_enrichment_batch_id' => $batch->id,
@@ -396,6 +397,7 @@ it('retries a stale guidance item without losing its guidance context', function
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
         ->and($item->fresh()->source_fingerprint)->toBe($currentFingerprint)
         ->and($item->fresh()->snapshot)->toHaveKey('guidance_evidence')
+        ->and($item->fresh()->snapshot['fresh_research'])->toBeTrue()
         ->and($item->fresh()->snapshot['subject_public_id'])->toBe((string) $ingredient->public_id)
         ->and($item->fresh()->research_stages)->toBe([]);
 

@@ -60,6 +60,7 @@ class RetryIngredientEnrichmentFailures
                     $record = $this->refreshSnapshot(
                         $item,
                         $locked->mode instanceof IngredientEnrichmentBatchMode ? $locked->mode : null,
+                        (bool) $locked->fresh_research,
                     );
                     if ($record === null) {
                         continue;
@@ -136,6 +137,7 @@ class RetryIngredientEnrichmentFailures
     private function refreshSnapshot(
         IngredientEnrichmentBatchItem $item,
         ?IngredientEnrichmentBatchMode $mode,
+        bool $freshResearch,
     ): ?array {
         if ($item->ingredient_intake_item_id !== null) {
             $intakeItem = IngredientIntakeItem::query()
@@ -152,8 +154,11 @@ class RetryIngredientEnrichmentFailures
             return null;
         }
 
+        // Guidance contexts carry the batch's fresh-research decision: with it, evidence starts
+        // empty and is re-gathered, without it the persisted evidence is reused. Rebuilding with
+        // the default would quietly turn a fresh-research retry into a reuse run.
         return $mode?->isGuidance() === true
-            ? $this->contexts->build($ingredient)
+            ? $this->contexts->build($ingredient, $freshResearch)
             : $this->inputBuilder->build($ingredient);
     }
 }

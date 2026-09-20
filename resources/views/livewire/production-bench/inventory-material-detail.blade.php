@@ -128,8 +128,8 @@
                             <th class="px-5 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
                             @if ($workspace->uses_storage_locations)
                                 <th class="px-4 py-3">{{ __('locations.storage_location') }}</th>
-                                <th class="px-5 py-3"></th>
                             @endif
+                            <th data-sticky-table-right class="sticky right-0 z-40 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel-muted)] px-3 py-3 text-right"><span class="sr-only">{{ __('production_bench.common.actions') }}</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
@@ -151,11 +151,18 @@
                                 <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
                                 @if ($workspace->uses_storage_locations)
                                     <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->storageLocation?->name ?? __('locations.unassigned') }}</td>
-                                    <td class="px-5 py-3 text-right">{{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}</td>
                                 @endif
+                                <td class="sticky right-0 z-20 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-3 text-right">
+                                    @if ($workspace->uses_storage_locations)
+                                        {{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}
+                                    @endif
+                                    @if (($this->adjustStockAction)(['lot_id' => $lot->id])->isVisible())
+                                        <button wire:click="{{ ($this->adjustStockAction)(['lot_id' => $lot->id])->getLivewireClickHandler() }}" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.adjustment.action') }}</button>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="{{ $workspace->uses_storage_locations ? 9 : 7 }}" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_open_lots') }}</td></tr>
+                            <tr><td colspan="{{ $workspace->uses_storage_locations ? 9 : 8 }}" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_open_lots') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -295,14 +302,45 @@
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($movements as $entry)
                             @php($movement = $entry['movement'])
+                            @php($isDetailedAdjustment = is_array($movement->adjustment_details) && ($movement->adjustment_details['version'] ?? null) === 1)
                             @php($sourceUrl = $this->sourceUrl($movement))
                             @php($sourceLabel = $this->sourceLabel($movement))
                             <tr wire:key="material-activity-{{ $movement->id }}">
                                 <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ $movement->occurred_at?->format('Y-m-d H:i') }}</td>
                                 <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $this->groupLabel($entry['group']) }}</td>
-                                <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $this->movementTypeLabel($movement->type) }}</td>
-                                <td class="numeric px-4 py-3 text-right {{ str_starts_with($entry['quantity_delta'], '-') ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">{{ $entry['quantity_delta'] }}</td>
-                                <td class="px-5 py-3">@if ($sourceUrl)<a href="{{ $sourceUrl }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ $sourceLabel }}</a>@else<span class="text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.source_not_available') }}</span>@endif</td>
+                                <td class="px-4 py-3 text-[var(--color-ink-soft)]">
+                                    <span>{{ $this->movementTypeLabel($movement->type) }}</span>
+                                    @if ($reasonLabel = $this->adjustmentReasonLabel($movement))
+                                        <span class="mt-0.5 block text-xs">{{ $reasonLabel }}</span>
+                                    @endif
+                                </td>
+                                <td class="numeric px-4 py-3 text-right {{ str_starts_with($entry['quantity_delta'], '-') ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]' }}">
+                                    @if ($isDetailedAdjustment)
+                                        {{ $this->adjustmentHistoryQuantity($movement, (string) $movement->quantity_delta) }} {{ $this->adjustmentHistoryUnit($movement) }}
+                                    @else
+                                        {{ $entry['quantity_delta'] }}
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3">
+                                    @if ($isDetailedAdjustment)
+                                        <p class="font-mono text-xs text-[var(--color-ink-strong)]">{{ $movement->stockLot->internal_lot_code }}</p>
+                                        <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.adjustment.user', ['user' => $movement->actor?->name ?? __('production_bench.inventory.adjustment.unknown_user')]) }}</p>
+                                        <details class="mt-1 text-xs text-[var(--color-ink-soft)]">
+                                            <summary class="cursor-pointer font-medium text-[var(--color-accent-strong)]">{{ __('production_bench.inventory.adjustment.details') }}</summary>
+                                            <p class="numeric mt-1">{{ __('production_bench.inventory.adjustment.before_after', [
+                                                'before' => $this->adjustmentHistoryQuantity($movement, (string) $movement->adjustment_details['physical_before']),
+                                                'after' => $this->adjustmentHistoryQuantity($movement, (string) $movement->adjustment_details['physical_after']),
+                                            ]) }} {{ $this->adjustmentHistoryUnit($movement) }}</p>
+                                            @if (filled($movement->note))
+                                                <p class="mt-1 whitespace-pre-wrap break-words">{{ $movement->note }}</p>
+                                            @endif
+                                        </details>
+                                    @elseif ($sourceUrl)
+                                        <a href="{{ $sourceUrl }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ $sourceLabel }}</a>
+                                    @else
+                                        <span class="text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.source_not_available') }}</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_material_activity') }}</td></tr>

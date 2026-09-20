@@ -111,6 +111,7 @@ class MaterialActivityService
         $this->access->assertReadable($actor, $workspace);
 
         $page = $this->movementQuery($workspace, $this->lotIdQuery($workspace, $subject), $from, $to)
+            ->with('actor')
             ->paginate(max(1, $perPage), ['*'], $pageName);
 
         $page->getCollection()->loadMorph('source', [

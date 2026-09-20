@@ -294,7 +294,7 @@
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
-                                <th class="px-5 py-3"></th>
+                                <th data-sticky-table-right class="sticky right-0 z-40 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel-muted)] px-3 py-3"><span class="sr-only">{{ __('production_bench.common.actions') }}</span></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
@@ -372,12 +372,17 @@
                                     @foreach (['physical', 'quarantined', 'reserved', 'available'] as $position)
                                         <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
                                     @endforeach
-                                    <td class="px-5 py-3 text-right">
+                                    <td class="sticky right-0 z-20 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-3 text-right">
                                         @if ($workspace->uses_storage_locations && $canWriteInventory && ($lot->ingredient_id !== null || $lot->packaging_item_id !== null))
                                             {{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}
                                         @endif
                                         @if ($canWriteInventory)
-                                            <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
+                                            <div class="flex flex-col items-end whitespace-nowrap">
+                                                <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
+                                                @if (($this->adjustStockAction)(['lot_id' => $lot->id])->isVisible())
+                                                    <button wire:click="{{ ($this->adjustStockAction)(['lot_id' => $lot->id])->getLivewireClickHandler() }}" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.adjustment.action') }}</button>
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                 </tr>

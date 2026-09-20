@@ -12,6 +12,7 @@ use App\Enums\StockLotStatus;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithStockAdjustments;
 use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -62,6 +63,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithStockAdjustments;
     use InteractsWithStockLotLocations;
     use WithPagination;
 
@@ -1157,6 +1159,11 @@ class InventoryIndex extends Component implements HasActions, HasForms
     private function resetInventoryPages(): void
     {
         $this->resetPage('materials');
+        $this->resetPage('stock-lots');
+    }
+
+    protected function resetStockAdjustmentPaginator(): void
+    {
         $this->resetPage('stock-lots');
     }
 

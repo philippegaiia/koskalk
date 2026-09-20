@@ -18792,6 +18792,390 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.adjustment.action",
+      "text": {
+        "de": "Bestand anpassen",
+        "es": "Ajustar existencias",
+        "fr": "Ajuster le stock",
+        "it": "Rettifica scorte",
+        "nl": "Voorraad aanpassen",
+        "pt_BR": "Ajustar estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.before_after",
+      "text": {
+        "de": ":before → :after",
+        "es": ":before → :after",
+        "fr": ":before → :after",
+        "it": ":before → :after",
+        "nl": ":before → :after",
+        "pt_BR": ":before → :after"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.current_physical",
+      "text": {
+        "de": "Aktueller Istbestand",
+        "es": "Existencias físicas actuales",
+        "fr": "Stock physique actuel",
+        "it": "Scorte fisiche attuali",
+        "nl": "Huidige fysieke voorraad",
+        "pt_BR": "Estoque físico atual"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.current_reserved",
+      "text": {
+        "de": "Reserviert",
+        "es": "Reservado",
+        "fr": "Réservé",
+        "it": "Riservato",
+        "nl": "Gereserveerd",
+        "pt_BR": "Reservado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.details",
+      "text": {
+        "de": "Details zur Anpassung",
+        "es": "Detalles del ajuste",
+        "fr": "Détails de l’ajustement",
+        "it": "Dettagli della rettifica",
+        "nl": "Details van de aanpassing",
+        "pt_BR": "Detalhes do ajuste"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.mode",
+      "text": {
+        "de": "Anpassung",
+        "es": "Ajuste",
+        "fr": "Ajustement",
+        "it": "Rettifica",
+        "nl": "Aanpassing",
+        "pt_BR": "Ajuste"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.modes.add",
+      "text": {
+        "de": "Menge hinzufügen",
+        "es": "Añadir cantidad",
+        "fr": "Ajouter une quantité",
+        "it": "Aggiungi quantità",
+        "nl": "Hoeveelheid toevoegen",
+        "pt_BR": "Adicionar quantidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.modes.remove",
+      "text": {
+        "de": "Menge abziehen",
+        "es": "Retirar cantidad",
+        "fr": "Retirer une quantité",
+        "it": "Rimuovi quantità",
+        "nl": "Hoeveelheid verwijderen",
+        "pt_BR": "Retirar quantidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.modes.set_counted",
+      "text": {
+        "de": "Gezählten Bestand festlegen",
+        "es": "Establecer existencias contadas",
+        "fr": "Définir le stock compté",
+        "it": "Imposta scorte contate",
+        "nl": "Getelde voorraad instellen",
+        "pt_BR": "Definir estoque contado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.no_change",
+      "text": {
+        "de": "Keine Änderung zu speichern.",
+        "es": "No hay cambios que guardar.",
+        "fr": "Aucun changement à enregistrer.",
+        "it": "Nessuna modifica da salvare.",
+        "nl": "Geen wijziging om op te slaan.",
+        "pt_BR": "Nenhuma alteração para salvar."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.note",
+      "text": {
+        "de": "Notiz",
+        "es": "Nota",
+        "fr": "Note",
+        "it": "Nota",
+        "nl": "Notitie",
+        "pt_BR": "Observação"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.note_help",
+      "text": {
+        "de": "Bei „Sonstiges“ erforderlich. Höchstens 1.000 Zeichen.",
+        "es": "Obligatoria si el motivo es Otro. Máximo 1.000 caracteres.",
+        "fr": "Obligatoire pour le motif Autre. Maximum 1 000 caractères.",
+        "it": "Obbligatoria se il motivo è Altro. Massimo 1.000 caratteri.",
+        "nl": "Verplicht bij de reden Anders. Maximaal 1.000 tekens.",
+        "pt_BR": "Obrigatória quando o motivo for Outro. Máximo de 1.000 caracteres."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.preview",
+      "text": {
+        "de": ":before → :after · :direction um :delta",
+        "es": ":before → :after · :direction de :delta",
+        "fr": ":before → :after · :direction de :delta",
+        "it": ":before → :after · :direction di :delta",
+        "nl": ":before → :after · :direction met :delta",
+        "pt_BR": ":before → :after · :direction de :delta"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.preview_decrease",
+      "text": {
+        "de": "Verringerung",
+        "es": "reducción",
+        "fr": "diminution",
+        "it": "riduzione",
+        "nl": "afname",
+        "pt_BR": "redução"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.preview_increase",
+      "text": {
+        "de": "Erhöhung",
+        "es": "aumento",
+        "fr": "augmentation",
+        "it": "aumento",
+        "nl": "toename",
+        "pt_BR": "aumento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.quantity",
+      "text": {
+        "de": "Menge",
+        "es": "Cantidad",
+        "fr": "Quantité",
+        "it": "Quantità",
+        "nl": "Hoeveelheid",
+        "pt_BR": "Quantidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.reason",
+      "text": {
+        "de": "Grund",
+        "es": "Motivo",
+        "fr": "Motif",
+        "it": "Motivo",
+        "nl": "Reden",
+        "pt_BR": "Motivo"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.reasons.damaged_discarded",
+      "text": {
+        "de": "Beschädigt oder entsorgt",
+        "es": "Dañado o desechado",
+        "fr": "Endommagé ou jeté",
+        "it": "Danneggiato o scartato",
+        "nl": "Beschadigd of weggegooid",
+        "pt_BR": "Danificado ou descartado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.reasons.entry_error",
+      "text": {
+        "de": "Eingabefehler",
+        "es": "Error de registro",
+        "fr": "Erreur de saisie",
+        "it": "Errore di inserimento",
+        "nl": "Invoerfout",
+        "pt_BR": "Erro de registro"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.reasons.measurement_difference",
+      "text": {
+        "de": "Messabweichung",
+        "es": "Diferencia de medición",
+        "fr": "Écart de mesure",
+        "it": "Differenza di misurazione",
+        "nl": "Meetverschil",
+        "pt_BR": "Diferença de medição"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.reasons.other",
+      "text": {
+        "de": "Sonstiges",
+        "es": "Otro",
+        "fr": "Autre",
+        "it": "Altro",
+        "nl": "Anders",
+        "pt_BR": "Outro"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.reasons.spillage",
+      "text": {
+        "de": "Verschüttung",
+        "es": "Derrame",
+        "fr": "Perte par déversement",
+        "it": "Versamento accidentale",
+        "nl": "Morsverlies",
+        "pt_BR": "Derramamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.review_required",
+      "text": {
+        "de": "Prüfen Sie die aktualisierten Werte und speichern Sie erneut.",
+        "es": "Revise los valores actualizados y vuelva a guardar.",
+        "fr": "Vérifiez les valeurs actualisées puis enregistrez à nouveau.",
+        "it": "Controlla i valori aggiornati e salva di nuovo.",
+        "nl": "Controleer de vernieuwde waarden en sla opnieuw op.",
+        "pt_BR": "Revise os valores atualizados e salve novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.save",
+      "text": {
+        "de": "Anpassung speichern",
+        "es": "Guardar ajuste",
+        "fr": "Enregistrer l’ajustement",
+        "it": "Salva rettifica",
+        "nl": "Aanpassing opslaan",
+        "pt_BR": "Salvar ajuste"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.shortage_acknowledgement",
+      "text": {
+        "de": "Ich verstehe, dass bestehende Reservierungen erhalten bleiben und der verfügbare Bestand negativ wird.",
+        "es": "Entiendo que se mantendrán las reservas existentes y las existencias disponibles serán negativas.",
+        "fr": "Je comprends que les réservations existantes seront conservées et que le stock disponible sera négatif.",
+        "it": "Comprendo che le prenotazioni esistenti saranno mantenute e le scorte disponibili saranno negative.",
+        "nl": "Ik begrijp dat bestaande reserveringen behouden blijven en de beschikbare voorraad negatief wordt.",
+        "pt_BR": "Entendo que as reservas existentes serão mantidas e o estoque disponível ficará negativo."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.shortage_warning",
+      "text": {
+        "de": "Der angepasste Istbestand (:after) liegt um :shortage unter der reservierten Menge (:reserved).",
+        "es": "Las existencias físicas ajustadas (:after) son inferiores a la cantidad reservada (:reserved) en :shortage.",
+        "fr": "Le stock physique ajusté (:after) est inférieur à la quantité réservée (:reserved) de :shortage.",
+        "it": "Le scorte fisiche rettificate (:after) sono inferiori alla quantità riservata (:reserved) di :shortage.",
+        "nl": "De aangepaste fysieke voorraad (:after) ligt :shortage onder de gereserveerde hoeveelheid (:reserved).",
+        "pt_BR": "O estoque físico ajustado (:after) fica :shortage abaixo da quantidade reservada (:reserved)."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.stale",
+      "text": {
+        "de": "Der Bestand hat sich geändert, während diese Anpassung geöffnet war. Die aktuellen Werte wurden aktualisiert. Prüfen Sie die Anpassung vor dem erneuten Speichern.",
+        "es": "Las existencias cambiaron mientras este ajuste estaba abierto. Se actualizaron los valores actuales; revise el ajuste antes de volver a guardar.",
+        "fr": "Le stock a changé pendant que cet ajustement était ouvert. Les valeurs ont été actualisées ; vérifiez l’ajustement avant de l’enregistrer à nouveau.",
+        "it": "Le scorte sono cambiate mentre questa rettifica era aperta. I valori sono stati aggiornati; controlla la rettifica prima di salvare di nuovo.",
+        "nl": "De voorraad is gewijzigd terwijl deze aanpassing openstond. De huidige waarden zijn vernieuwd; controleer de aanpassing voordat u opnieuw opslaat.",
+        "pt_BR": "O estoque mudou enquanto este ajuste estava aberto. Os valores foram atualizados; revise o ajuste antes de salvar novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.success",
+      "text": {
+        "de": "Bestand angepasst.",
+        "es": "Existencias ajustadas.",
+        "fr": "Stock ajusté.",
+        "it": "Scorte rettificate.",
+        "nl": "Voorraad aangepast.",
+        "pt_BR": "Estoque ajustado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.title",
+      "text": {
+        "de": "Bestand anpassen",
+        "es": "Ajustar existencias",
+        "fr": "Ajuster le stock",
+        "it": "Rettifica scorte",
+        "nl": "Voorraad aanpassen",
+        "pt_BR": "Ajustar estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.unit",
+      "text": {
+        "de": "Einheit",
+        "es": "Unidad",
+        "fr": "Unité",
+        "it": "Unità",
+        "nl": "Eenheid",
+        "pt_BR": "Unidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.unknown_user",
+      "text": {
+        "de": "Unbekannter Benutzer",
+        "es": "Usuario desconocido",
+        "fr": "Utilisateur inconnu",
+        "it": "Utente sconosciuto",
+        "nl": "Onbekende gebruiker",
+        "pt_BR": "Usuário desconhecido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.adjustment.user",
+      "text": {
+        "de": "Angepasst von :user",
+        "es": "Ajustado por :user",
+        "fr": "Ajusté par :user",
+        "it": "Rettificato da :user",
+        "nl": "Aangepast door :user",
+        "pt_BR": "Ajustado por :user"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.adjustments",
       "text": {
         "de": "Anpassungen",
@@ -20732,6 +21116,234 @@
         "it": "Articolo di magazzino sconosciuto",
         "nl": "Onbekend voorraaditem",
         "pt_BR": "Item de estoque desconhecido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_idempotency_conflict",
+      "text": {
+        "de": "Diese Anpassungskennung wurde bereits für andere Eingaben verwendet.",
+        "es": "Esta clave de ajuste ya se utilizó con otros datos.",
+        "fr": "Cette clé d’ajustement a déjà été utilisée avec d’autres données.",
+        "it": "Questa chiave di rettifica è già stata usata con dati diversi.",
+        "nl": "Deze aanpassingssleutel is al gebruikt voor andere invoer.",
+        "pt_BR": "Esta chave de ajuste já foi usada com outros dados."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_idempotency_key",
+      "text": {
+        "de": "Eine gültige Anpassungskennung ist erforderlich.",
+        "es": "Se requiere una clave de ajuste válida.",
+        "fr": "Une clé d’ajustement valide est requise.",
+        "it": "È richiesta una chiave di rettifica valida.",
+        "nl": "Een geldige aanpassingssleutel is vereist.",
+        "pt_BR": "É necessária uma chave de ajuste válida."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_invalid_mode",
+      "text": {
+        "de": "Wählen Sie die Art der Bestandsanpassung.",
+        "es": "Elija cómo ajustar las existencias.",
+        "fr": "Choisissez comment ajuster le stock.",
+        "it": "Scegli come rettificare le scorte.",
+        "nl": "Kies hoe u de voorraad wilt aanpassen.",
+        "pt_BR": "Escolha como ajustar o estoque."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_invalid_quantity",
+      "text": {
+        "de": "Geben Sie eine gültige Dezimalzahl ohne wissenschaftliche Schreibweise ein.",
+        "es": "Introduzca una cantidad decimal válida sin notación científica.",
+        "fr": "Saisissez une quantité décimale valide sans notation scientifique.",
+        "it": "Inserisci una quantità decimale valida senza notazione scientifica.",
+        "nl": "Voer een geldige decimale hoeveelheid in zonder wetenschappelijke notatie.",
+        "pt_BR": "Insira uma quantidade decimal válida sem notação científica."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_invalid_reason",
+      "text": {
+        "de": "Wählen Sie einen gültigen Anpassungsgrund.",
+        "es": "Elija un motivo de ajuste válido.",
+        "fr": "Choisissez un motif d’ajustement valide.",
+        "it": "Scegli un motivo di rettifica valido.",
+        "nl": "Kies een geldige reden voor de aanpassing.",
+        "pt_BR": "Escolha um motivo de ajuste válido."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_invalid_unit",
+      "text": {
+        "de": "Wählen Sie eine für diesen Artikel unterstützte Einheit.",
+        "es": "Elija una unidad compatible con este artículo.",
+        "fr": "Choisissez une unité compatible avec cet article.",
+        "it": "Scegli un’unità supportata per questo articolo.",
+        "nl": "Kies een eenheid die voor dit artikel wordt ondersteund.",
+        "pt_BR": "Escolha uma unidade compatível com este item."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_no_change",
+      "text": {
+        "de": "Keine Änderung zu speichern.",
+        "es": "No hay cambios que guardar.",
+        "fr": "Aucun changement à enregistrer.",
+        "it": "Nessuna modifica da salvare.",
+        "nl": "Geen wijziging om op te slaan.",
+        "pt_BR": "Nenhuma alteração para salvar."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_non_negative",
+      "text": {
+        "de": "Der gezählte Bestand darf nicht negativ sein.",
+        "es": "Las existencias contadas no pueden ser negativas.",
+        "fr": "Le stock compté ne peut pas être négatif.",
+        "it": "Le scorte contate non possono essere negative.",
+        "nl": "De getelde voorraad mag niet negatief zijn.",
+        "pt_BR": "O estoque contado não pode ser negativo."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_note_max",
+      "text": {
+        "de": "Die Notiz darf höchstens 1.000 Zeichen enthalten.",
+        "es": "La nota no puede superar los 1.000 caracteres.",
+        "fr": "La note ne doit pas dépasser 1 000 caractères.",
+        "it": "La nota non può superare i 1.000 caratteri.",
+        "nl": "De notitie mag maximaal 1.000 tekens bevatten.",
+        "pt_BR": "A observação deve ter no máximo 1.000 caracteres."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_other_note_required",
+      "text": {
+        "de": "Fügen Sie bei „Sonstiges“ eine Notiz hinzu.",
+        "es": "Añada una nota si el motivo es Otro.",
+        "fr": "Ajoutez une note pour le motif Autre.",
+        "it": "Aggiungi una nota se il motivo è Altro.",
+        "nl": "Voeg een notitie toe bij de reden Anders.",
+        "pt_BR": "Adicione uma observação quando o motivo for Outro."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_overflow",
+      "text": {
+        "de": "Diese Menge ist zu groß zum Speichern.",
+        "es": "Esta cantidad es demasiado grande para guardarla.",
+        "fr": "Cette quantité est trop grande pour être enregistrée.",
+        "it": "Questa quantità è troppo grande per essere salvata.",
+        "nl": "Deze hoeveelheid is te groot om op te slaan.",
+        "pt_BR": "Essa quantidade é grande demais para ser armazenada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_positive",
+      "text": {
+        "de": "Geben Sie eine Menge größer als null ein.",
+        "es": "Introduzca una cantidad mayor que cero.",
+        "fr": "Saisissez une quantité supérieure à zéro.",
+        "it": "Inserisci una quantità maggiore di zero.",
+        "nl": "Voer een hoeveelheid groter dan nul in.",
+        "pt_BR": "Insira uma quantidade maior que zero."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_precision",
+      "text": {
+        "de": "Verwenden Sie höchstens 9 Nachkommastellen und eine ausreichend große Menge zum Speichern.",
+        "es": "Use como máximo 9 decimales e introduzca una cantidad lo bastante grande para guardarla.",
+        "fr": "Utilisez au maximum 9 décimales et saisissez une quantité suffisamment grande pour être enregistrée.",
+        "it": "Usa al massimo 9 decimali e inserisci una quantità sufficientemente grande da poter essere salvata.",
+        "nl": "Gebruik maximaal 9 decimalen en voer een hoeveelheid in die groot genoeg is om op te slaan.",
+        "pt_BR": "Use no máximo 9 casas decimais e insira uma quantidade suficientemente grande para ser armazenada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_reason_direction",
+      "text": {
+        "de": "Die Gründe „Verschüttung“ und „Beschädigt oder entsorgt“ können den Bestand nur verringern.",
+        "es": "Los motivos Derrame y Dañado o desechado solo pueden reducir las existencias.",
+        "fr": "Les motifs Perte par déversement et Endommagé ou jeté peuvent uniquement réduire le stock.",
+        "it": "I motivi Versamento accidentale e Danneggiato o scartato possono solo ridurre le scorte.",
+        "nl": "De redenen Morsverlies en Beschadigd of weggegooid kunnen de voorraad alleen verminderen.",
+        "pt_BR": "Os motivos Derramamento e Danificado ou descartado só podem reduzir o estoque."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_remove_exceeds_physical",
+      "text": {
+        "de": "Die abgezogene Menge darf den aktuellen Istbestand nicht überschreiten.",
+        "es": "La cantidad retirada no puede superar las existencias físicas actuales.",
+        "fr": "La quantité retirée ne peut pas dépasser le stock physique actuel.",
+        "it": "La quantità rimossa non può superare le scorte fisiche attuali.",
+        "nl": "De verwijderde hoeveelheid mag de huidige fysieke voorraad niet overschrijden.",
+        "pt_BR": "A quantidade retirada não pode exceder o estoque físico atual."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_shortage_ack_required",
+      "text": {
+        "de": "Bestätigen Sie, dass diese Anpassung den Istbestand unter die reservierte Menge senkt.",
+        "es": "Confirme que este ajuste deja menos existencias físicas que las reservadas.",
+        "fr": "Confirmez que cet ajustement laisse un stock physique inférieur à la quantité réservée.",
+        "it": "Conferma che questa rettifica lascia scorte fisiche inferiori alla quantità riservata.",
+        "nl": "Bevestig dat door deze aanpassing de fysieke voorraad onder de gereserveerde hoeveelheid komt.",
+        "pt_BR": "Confirme que este ajuste deixa o estoque físico abaixo da quantidade reservada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_stale",
+      "text": {
+        "de": "Bestand oder Reservierungen haben sich geändert. Prüfen Sie die aktualisierten Werte vor dem erneuten Speichern.",
+        "es": "Las existencias o las reservas cambiaron. Revise los valores actualizados antes de volver a guardar.",
+        "fr": "Le stock ou les réservations ont changé. Vérifiez les valeurs actualisées avant d’enregistrer à nouveau.",
+        "it": "Le scorte o le prenotazioni sono cambiate. Controlla i valori aggiornati prima di salvare di nuovo.",
+        "nl": "De voorraad of reserveringen zijn gewijzigd. Controleer de vernieuwde waarden voordat u opnieuw opslaat.",
+        "pt_BR": "O estoque ou as reservas mudaram. Revise os valores atualizados antes de salvar novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_unsupported_lot",
+      "text": {
+        "de": "Nur Zutaten- und Verpackungschargen können angepasst werden.",
+        "es": "Solo se pueden ajustar lotes de ingredientes y envases.",
+        "fr": "Seuls les lots d’ingrédients et d’emballages peuvent être ajustés.",
+        "it": "È possibile rettificare solo lotti di ingredienti e imballaggi.",
+        "nl": "Alleen partijen ingrediënten en verpakkingen kunnen worden aangepast.",
+        "pt_BR": "Somente lotes de ingredientes e embalagens podem ser ajustados."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.adjustment_whole_count",
+      "text": {
+        "de": "Verpackungsanpassungen müssen in ganzen Einheiten erfolgen.",
+        "es": "Los ajustes de envases deben usar unidades enteras.",
+        "fr": "Les ajustements d’emballages doivent utiliser des unités entières.",
+        "it": "Le rettifiche degli imballaggi devono usare unità intere.",
+        "nl": "Verpakkingsaanpassingen moeten hele eenheden gebruiken.",
+        "pt_BR": "Os ajustes de embalagens devem usar unidades inteiras."
       }
     },
     {

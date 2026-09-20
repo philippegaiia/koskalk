@@ -5,7 +5,9 @@ namespace App\Livewire\ProductionBench;
 use App\Actions\Inventory\SaveMaterialBuffer;
 use App\Actions\Inventory\SaveMaterialStorageLocation;
 use App\Enums\StockMovementType;
+use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithStockAdjustments;
 use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
@@ -27,6 +29,7 @@ use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
 use App\Services\SupplierListingPricePresentation;
 use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -50,6 +53,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithStockAdjustments;
     use InteractsWithStockLotLocations;
     use WithPagination;
 
@@ -202,6 +206,11 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     {
         $this->supplierListingsPerPage = $this->normalizedSupplierListingsPerPage();
         $this->resetPage('supplier-listings');
+    }
+
+    protected function resetStockAdjustmentPaginator(): void
+    {
+        $this->resetPage('activity');
     }
 
     /**
@@ -489,9 +498,57 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         return __('production_bench.inventory.activity_type_'.$type->value);
     }
 
+    public function adjustmentReasonLabel(StockMovement $movement): ?string
+    {
+        $reason = $movement->adjustment_details['reason'] ?? null;
+
+        if (! is_string($reason) || ! in_array($reason, [
+            'measurement_difference',
+            'spillage',
+            'damaged_discarded',
+            'entry_error',
+            'other',
+        ], true)) {
+            return null;
+        }
+
+        return __("production_bench.inventory.adjustment.reasons.{$reason}");
+    }
+
+    public function adjustmentHistoryQuantity(StockMovement $movement, string $quantity): string
+    {
+        $unit = $this->adjustmentHistoryUnit($movement);
+        $displayQuantity = $movement->stockLot->unit_kind === StockUnitKind::Mass
+            ? $this->massConverter->fromGramsSigned($quantity, $unit)
+            : $quantity;
+
+        return NumberLocale::formatAdaptiveDecimal(
+            $displayQuantity,
+            minimumDecimals: 0,
+            maximumDecimals: 9,
+            locale: $this->user()->number_locale,
+        );
+    }
+
+    public function adjustmentHistoryUnit(StockMovement $movement): string
+    {
+        return $movement->stockLot->unit_kind === StockUnitKind::Count
+            ? __('production_bench.inventory.units')
+            : (string) ($movement->adjustment_details['entered_unit'] ?? $this->displayUnit());
+    }
+
     public function groupLabel(string $group): string
     {
         return __('production_bench.inventory.activity_group_'.$group);
+    }
+
+    protected function stockAdjustmentSubjectMatches(StockLot $lot): bool
+    {
+        $subject = $this->subject();
+
+        return $subject instanceof Ingredient
+            ? (int) $lot->ingredient_id === (int) $subject->id && $lot->packaging_item_id === null
+            : (int) $lot->packaging_item_id === (int) $subject->id && $lot->ingredient_id === null;
     }
 
     /**

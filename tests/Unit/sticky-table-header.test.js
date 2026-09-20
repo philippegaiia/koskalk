@@ -3,6 +3,26 @@ import test from 'node:test';
 
 import { createStickyTableHeader } from '../../resources/js/sticky-table-header.js';
 
+test('keeps the action header pinned at the right edge while the overlay scrolls', () => {
+    const cell = { style: {} };
+    const component = createStickyTableHeader();
+    component.$el = { scrollLeft: 0 };
+    component.overlay = { style: {} };
+    component.overlayHeader = { querySelectorAll: () => [cell] };
+    component.overlayTable = { style: { width: '1200px' } };
+    component.geometryDirty = false;
+    component.ensureOverlay = () => {};
+
+    for (const scrollLeft of [0, 150, 400]) {
+        component.$el.scrollLeft = scrollLeft;
+        component.activateOverlay({ style: {} }, {}, { left: 24, width: 800 });
+
+        assert.equal(cell.style.position, 'relative');
+        assert.equal(cell.style.transform, `translateX(${-(400 - scrollLeft)}px)`);
+        assert.equal(component.overlayTable.style.transform, `translate3d(${-scrollLeft}px, 0, 0)`);
+    }
+});
+
 test('uses a fixed header layer instead of moving the live header during page scroll', () => {
     const table = {};
     const header = {

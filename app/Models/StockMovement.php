@@ -28,6 +28,7 @@ use LogicException;
     'reversal_of_stock_movement_id',
     'idempotency_key',
     'note',
+    'adjustment_details',
 ])]
 class StockMovement extends Model
 {
@@ -93,6 +94,7 @@ class StockMovement extends Model
             'quantity_delta' => 'decimal:9',
             'original_quantity' => 'decimal:9',
             'occurred_at' => 'datetime',
+            'adjustment_details' => 'array',
         ];
     }
 }

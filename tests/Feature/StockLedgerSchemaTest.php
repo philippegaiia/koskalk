@@ -51,6 +51,7 @@ it('creates the lot movement and production document schema', function (): void 
             'source_id',
             'reversal_of_stock_movement_id',
             'idempotency_key',
+            'adjustment_details',
         ]))->toBeTrue()
         ->and(Schema::hasColumns('production_documents', [
             'workspace_id',

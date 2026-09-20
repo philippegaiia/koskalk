@@ -77,6 +77,14 @@ export function createStickyTableHeader() {
             }
 
             this.overlayTable.style.transform = `translate3d(${-this.$el.scrollLeft}px, 0, 0)`;
+            this.overlayHeader.querySelectorAll('[data-sticky-table-right]').forEach((cell) => {
+                const remainingScroll = Math.max(0,
+                    parseFloat(this.overlayTable.style.width) - containerBounds.width - this.$el.scrollLeft);
+
+                cell.style.position = 'relative';
+                cell.style.right = 'auto';
+                cell.style.transform = `translateX(${-remainingScroll}px)`;
+            });
         },
 
         ensureOverlay(header, table) {

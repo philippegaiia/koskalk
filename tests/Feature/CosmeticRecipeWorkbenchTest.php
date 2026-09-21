@@ -532,7 +532,8 @@ it('exposes practical controls for choosing and reordering cosmetic phases', fun
         ->toContain('class="border-y border-[var(--color-line)] bg-[var(--color-panel-strong)]"')
         ->not->toContain('data-formula-total class="overflow-hidden rounded-lg')
         ->toContain('data-formula-total-grid')
-        ->toContain('class="grid grid-cols-1 gap-2 p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:p-0"')
+        // Hairline-separated totals grid, matching the soap workbench's totals row.
+        ->toContain('class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0"')
         ->toContain('class="flex flex-wrap items-center gap-3 px-5"')
         ->toContain("moveCosmeticPhase(phase.key, 'up')")
         ->toContain("moveCosmeticPhase(phase.key, 'down')")

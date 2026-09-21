@@ -713,12 +713,12 @@
     }
 
     .sk-formula-table-row {
-        padding: 10px;
+        padding-block: 8px;
         font-size: 14px;
     }
 
     .sk-formula-table-cell {
-        background: white;
+        padding-block: 8px;
     }
 
     .sk-decimal-aligned {
@@ -731,26 +731,38 @@
         text-align: start;
     }
 
+    .sk-formula-table-name {
+        line-height: 18px;
+    }
+
+    .sk-formula-table-inci {
+        font-size: 12px;
+        line-height: 14px;
+    }
+
+    .sk-formula-table-action-cell {
+        padding-block: 0;
+    }
+
     .sk-formula-table-handle-cell {
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        background: white;
+        padding-block: 0;
     }
 
     @media (min-width: 64rem) {
         .sk-formula-table-row {
-            padding: 0;
+            padding-block: 0;
         }
 
-        .sk-formula-table-cell {
-            padding-block: 10px;
+        .sk-formula-table-action-cell {
+            padding-block: 8px;
         }
 
         .sk-formula-table-handle-cell {
             justify-content: center;
-            padding-block: 10px;
-            padding-inline: 0.5rem;
+            padding-block: 8px;
         }
     }
 

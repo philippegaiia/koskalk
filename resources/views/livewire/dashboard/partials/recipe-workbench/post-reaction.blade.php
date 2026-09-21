@@ -34,8 +34,8 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white py-0 sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
+		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('additives', row.id, $event)"
@@ -45,12 +45,12 @@
  <x-action-icon name="drag" />
  </button>
  </div>
-		 <div class="col-span-2 row-start-2 flex flex-col justify-center bg-white py-2.5 sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
- <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
- <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
+		 <div class="col-span-2 row-start-2 flex flex-col justify-center bg-white sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
+ <p class="sk-formula-table-name flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
+ <p class="sk-formula-table-inci mt-1 text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
  <div class="col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents">
-		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
+		 <div class="flex flex-col gap-2 bg-white sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow text-center lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" data-workbench-amount-input="percentage" :aria-label="'Percentage for ' + row.name" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -59,7 +59,7 @@
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
-		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
+		 <div class="flex flex-col gap-2 bg-white sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow text-center lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="syncFormattedInput($el, rowWeight(row), additionWeightDecimals(rowWeight(row)))" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), additionWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" data-workbench-amount-input="weight" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -69,7 +69,7 @@
  </template>
  </div>
  </div>
-		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white py-0 sk-formula-table-cell lg:col-start-5 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
+		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:px-2 lg:row-start-auto">
  <x-recipe-workbench.formula-row-actions phase-key="additives" />
  </div>
  </div>
@@ -111,8 +111,8 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white py-0 sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
+		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('fragrance', row.id, $event)"
@@ -122,12 +122,12 @@
  <x-action-icon name="drag" />
  </button>
  </div>
-		 <div class="col-span-2 row-start-2 flex flex-col justify-center bg-white py-2.5 sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
- <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
- <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
+		 <div class="col-span-2 row-start-2 flex flex-col justify-center bg-white sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
+ <p class="sk-formula-table-name flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
+ <p class="sk-formula-table-inci mt-1 text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
  <div class="col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents">
-		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
+		 <div class="flex flex-col gap-2 bg-white sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow text-center lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" data-workbench-amount-input="percentage" :aria-label="'Percentage for ' + row.name" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -136,7 +136,7 @@
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
-		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
+		 <div class="flex flex-col gap-2 bg-white sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow text-center lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="syncFormattedInput($el, rowWeight(row), additionWeightDecimals(rowWeight(row)))" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), additionWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" data-workbench-amount-input="weight" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -146,7 +146,7 @@
  </template>
  </div>
  </div>
-		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white py-0 sk-formula-table-cell lg:col-start-5 lg:justify-center lg:px-2 lg:py-2.5 lg:row-start-auto">
+		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:px-2 lg:row-start-auto">
  <x-recipe-workbench.formula-row-actions phase-key="fragrance" />
  </div>
  </div>

@@ -720,35 +720,112 @@ it('keeps only one cosmetic phase chooser open', function (): void {
 it('keeps formula table lines compact with responsive vertical padding', function () {
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
     $tablePartials = [
-        view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render(),
-        view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render(),
-        view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render(),
+        'reaction-core' => view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render(),
+        'post-reaction' => view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render(),
+        'cosmetic-formula' => view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render(),
     ];
     $soapTableMarkup = implode("\n", array_slice($tablePartials, 0, 2));
 
     $combinedFormulaTableMarkup = implode("\n", $tablePartials);
 
-    expect($appStylesSource)
-        ->toContain('.sk-formula-table-y')
-        ->toContain('padding-block: 10px')
-        ->toContain('.sk-formula-table-row')
-        ->toContain('font-size: 14px')
-        ->toContain('.sk-formula-table-handle-cell')
-        ->toContain('align-items: center')
-        ->and($combinedFormulaTableMarkup)
-        ->toContain('sk-formula-table-y')
-        ->toContain('sk-formula-table-row')
-        ->toContain('sk-formula-table-cell')
-        ->toContain('sk-formula-table-handle-cell')
-        ->toContain('px-2.5 py-2.5 text-sm sk-formula-table-row')
-        ->toContain('bg-white py-2.5 sk-formula-table-cell')
-        ->toContain('bg-white py-0 sk-formula-table-handle-cell')
-        ->toContain('lg:py-2.5')
-        ->not->toContain('This block is derived from the saponified oils, lye type, water mode, and superfat.')
-        ->not->toContain('py-3.5')
-        ->not->toContain('lg:py-3.5')
-        ->not->toContain('p-2.5 text-sm transition')
-        ->not->toContain('px-4 py-4 text-center');
+    $desktopMediaPattern = '/@media\s*\(min-width:\s*64rem\)\s*\{((?:[^{}]|\{[^{}]*\})*)\}/';
+    preg_match_all($desktopMediaPattern, $appStylesSource, $desktopMediaRules);
+    $desktopStyles = implode("\n", $desktopMediaRules[1]);
+    $baseStyles = preg_replace($desktopMediaPattern, '', $appStylesSource);
+
+    $expectedRules = [
+        'base' => [
+            'sk-formula-table-y' => ['padding-block' => '10px'],
+            'sk-formula-table-row' => ['padding-block' => '8px', 'font-size' => '14px'],
+            'sk-formula-table-cell' => ['padding-block' => '8px'],
+            'sk-formula-table-action-cell' => ['padding-block' => '0'],
+            'sk-formula-table-handle-cell' => ['padding-block' => '0', 'align-items' => 'center'],
+            'sk-formula-table-name' => ['line-height' => '18px'],
+            'sk-formula-table-inci' => ['font-size' => '12px', 'line-height' => '14px'],
+        ],
+        'desktop' => [
+            'sk-formula-table-row' => ['padding-block' => '0'],
+            'sk-formula-table-action-cell' => ['padding-block' => '8px'],
+            'sk-formula-table-handle-cell' => ['padding-block' => '8px'],
+        ],
+    ];
+
+    foreach ($expectedRules as $breakpoint => $rules) {
+        $styles = $breakpoint === 'desktop' ? $desktopStyles : $baseStyles;
+
+        foreach ($rules as $selector => $declarations) {
+            preg_match('/\.'.preg_quote($selector, '/').'\s*\{([^{}]*)\}/', $styles, $rule);
+
+            expect($rule)->toHaveKey(1);
+
+            foreach ($declarations as $property => $value) {
+                expect($rule[1])->toMatch('/(?:^|;)\s*'.preg_quote($property, '/').'\s*:\s*'.preg_quote($value, '/').'\s*;/');
+            }
+        }
+    }
+
+    // Row surface belongs to the bg-* utility on each cell. A background declared
+    // here would lose to the utilities layer and misdescribe the cosmetic rows.
+    foreach (['.sk-formula-table-cell', '.sk-formula-table-handle-cell'] as $selector) {
+        preg_match('/(?:^|[},])\s*'.preg_quote($selector, '/').'\s*\{([^}]*)\}/m', $appStylesSource, $rule);
+
+        expect($rule[1] ?? '')
+            ->toContain('padding-block')
+            ->not->toContain('background');
+    }
+
+    foreach ($tablePartials as $markup) {
+        preg_match_all('/(?<![\w:-])class="([^"]*)"/', $markup, $classAttributes);
+
+        foreach ($classAttributes[1] as $classAttribute) {
+            $classes = preg_split('/\s+/', trim($classAttribute));
+
+            if (array_intersect($classes, ['sk-formula-table-row', 'sk-formula-table-cell', 'sk-formula-table-handle-cell', 'sk-formula-table-action-cell']) !== []) {
+                foreach ($classes as $class) {
+                    expect($class)->not->toMatch('/(?:^|:)(?:p|py|pt|pb)-/');
+                }
+            }
+
+            if (in_array('sk-formula-table-inci', $classes, true) || in_array('sk-formula-table-name', $classes, true)) {
+                foreach ($classes as $class) {
+                    expect($class)->not->toMatch('/(?:^|:)(?:leading-|text-(?:xs|sm|base|lg|xl|[2-9]xl)(?:$|\/)|text-\[(?:length:|[0-9]))/');
+                }
+            }
+        }
+
+        expect($markup)
+            ->toContain('sk-formula-table-y')
+            ->toContain('sk-formula-table-row')
+            ->toContain('sk-formula-table-cell')
+            ->toContain('sk-formula-table-handle-cell')
+            ->toContain('px-2.5 text-sm sk-formula-table-row')
+            ->toContain('lg:bg-[var(--color-line)] lg:px-0')
+            ->toContain('sk-formula-table-action-cell')
+            ->toContain('sk-formula-table-name')
+            ->toContain('sk-formula-table-inci')
+            ->not->toContain('This block is derived from the saponified oils, lye type, water mode, and superfat.')
+            ->not->toContain('py-3.5')
+            ->not->toContain('lg:py-3.5')
+            ->not->toContain('p-2.5 text-sm transition')
+            ->not->toContain('px-4 py-4 text-center');
+    }
+
+    expect(substr_count($combinedFormulaTableMarkup, 'sk-formula-table-name'))
+        ->toBe(4)
+        ->and(substr_count($combinedFormulaTableMarkup, 'sk-formula-table-inci'))
+        ->toBe(4)
+        ->and(substr_count($combinedFormulaTableMarkup, 'sk-formula-table-action-cell'))
+        ->toBe(4);
+
+    // Numeric column headers and the totals row rest on the same tokens in both
+    // workbenches. Only the unbalanced tone intentionally differs: danger for soap
+    // (oils must total 100%), warning for cosmetic.
+    foreach (['reaction-core', 'cosmetic-formula'] as $partial) {
+        expect($tablePartials[$partial])
+            ->toContain('sk-formula-table-y font-medium text-center')
+            ->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]'")
+            ->not->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)]'");
+    }
 
     expect($soapTableMarkup)
         ->toContain('sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none')

@@ -11,6 +11,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/css/**/*.css | .ai/rules/css.md |
+| {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**} | .ai/rules/dashboard-partials-recipe-workbench.md |
 | app/Livewire/Dashboard/IngredientEditor.php | .ai/rules/dashboard.md |
 | {lang/en/workbench.php,database/seeders/data/interface-translations.json} | .ai/rules/data.md |
 | app/Forms/** | .ai/rules/forms.md |

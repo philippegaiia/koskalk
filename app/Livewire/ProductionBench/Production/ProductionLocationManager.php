@@ -47,7 +47,8 @@ class ProductionLocationManager extends Component implements HasForms
                         TextInput::make('name')
                             ->label(__('locations.production_locations.name'))
                             ->required()
-                            ->maxLength(120)
+                            ->maxLength(50)
+                            ->validationMessages(['max' => __('production_bench.validation.location_name_max')])
                             ->autocomplete('off'),
                         TextInput::make('daily_production_limit')
                             ->label(__('locations.production_locations.daily_limit'))

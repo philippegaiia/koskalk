@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'validation' => [
+        'location_name_max' => 'Use no more than 50 characters for the location name.',
+    ],
     'title' => 'Production Bench',
     'navigation' => [
         'home' => 'Dashboard',
@@ -920,6 +923,7 @@ return [
         'incoming' => 'Incoming',
     ],
     'inventory' => [
+        'location' => 'Location',
         'materials' => 'Materials',
         'stock_by_material' => 'Stock by material',
         'materials_title' => 'Stock by material',
@@ -1154,6 +1158,8 @@ return [
         'quantity_delta' => 'Quantity change',
         'source' => 'Source',
         'source_not_available' => 'No source link',
+        'source_receipt' => 'Receipt · :date',
+        'source_receipt_reference' => 'Receipt · :reference · :date',
         'activity_group_received' => 'Received',
         'activity_group_production_consumed' => 'Production consumed',
         'activity_group_other_inbound' => 'Other inbound',

@@ -56,7 +56,7 @@
                             @endphp
                             <tr wire:key="receipt-{{ $receipt->id }}" class="transition hover:bg-[var(--color-panel-strong)]">
                                 <td class="numeric whitespace-nowrap px-5 py-4">{{ $receipt->received_at->format('Y-m-d') }}</td>
-                                <td class="numeric px-4 py-4 font-medium text-[var(--color-ink-strong)]">{{ $receipt->delivery_reference ?: __('production_bench.receipt.no_reference') }}</td>
+                                <td class="numeric px-4 py-4 font-medium text-[var(--color-ink-strong)]"><a href="{{ route('production-bench.purchasing.receipts.show', $receipt) }}" wire:navigate class="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ $receipt->delivery_reference ?: __('production_bench.receipt.no_reference') }}</a></td>
                                 <td class="px-4 py-4">{{ $receipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}</td>
                                 <td class="px-4 py-4">{{ $receipt->supplier->name }}</td>
                                 <td class="numeric px-4 py-4">
@@ -78,7 +78,7 @@
                                         ])
                                     >{{ __("production_bench.receipt.status_{$receiptStatus}") }}</span>
                                 </td>
-                                <td class="px-5 py-4 text-right"><a href="{{ route('production-bench.purchasing.receipts.show', $receipt) }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.open') }}</a></td>
+                                <td class="px-5 py-4 text-right"><x-table-row-action icon="chevron-right" :label="__('production_bench.receipt.open')" href="{{ route('production-bench.purchasing.receipts.show', $receipt) }}" wire:navigate /></td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -57,7 +57,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     use InteractsWithStockLotLocations;
     use WithPagination;
 
-    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+    private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
 
     private const array ALLOWED_SUPPLIER_LISTINGS_PER_PAGE = [10, 25, 50];
 
@@ -484,7 +484,12 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         if ($receipt instanceof GoodsReceipt && (int) $receipt->workspace_id === $workspaceId) {
             return [
                 'url' => route('production-bench.purchasing.receipts.show', $receipt),
-                'label' => $receipt->delivery_reference ?: $receipt->public_id,
+                'label' => __(filled($receipt->delivery_reference)
+                    ? 'production_bench.inventory.source_receipt_reference'
+                    : 'production_bench.inventory.source_receipt', [
+                        'reference' => $receipt->delivery_reference,
+                        'date' => $receipt->received_at->translatedFormat('j M Y'),
+                    ]),
             ];
         }
 

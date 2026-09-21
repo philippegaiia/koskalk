@@ -32,7 +32,7 @@
                                 <td class="px-4 py-4"><p>{{ $supplier->contact_name ?: '—' }}</p>@if ($supplier->email)<p class="text-xs text-[var(--color-ink-soft)]">{{ $supplier->email }}</p>@endif</td>
                                 <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $supplier->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $supplier->is_active ? __('production_bench.common.active') : __('production_bench.common.inactive') }}</span></td>
                                 <td class="numeric px-4 py-4 text-right">{{ $supplier->listings_count }}</td>
-                                <td class="px-5 py-4 text-right">@if ($isBenchActive)<a href="{{ route('production-bench.purchasing.suppliers.edit', $supplier) }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.common.edit') }}</a>@else — @endif</td>
+                                <td class="px-5 py-4 text-right">@if ($isBenchActive)<x-table-row-action icon="pencil" :label="__('production_bench.common.edit')" href="{{ route('production-bench.purchasing.suppliers.edit', $supplier) }}" wire:navigate />@else — @endif</td>
                             </tr>
                         @empty
                             <tr><td colspan="7" class="px-6 py-12 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.supplier.none') }}</td></tr>

@@ -36,7 +36,7 @@ class WorkspaceMaterialInventoryQuery
     ): LengthAwarePaginator {
         $this->access->assertReadable($actor, $workspace);
 
-        $perPage = in_array($perPage, [25, 50, 100], true) ? $perPage : 25;
+        $perPage = in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
         $query = $this->query($workspace, $filters);
 
         $page = $query->paginate($perPage, ['*'], $pageName);

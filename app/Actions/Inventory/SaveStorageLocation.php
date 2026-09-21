@@ -18,7 +18,7 @@ class SaveStorageLocation
     {
         $this->access->assertWritable($actor, $workspace);
         $name = preg_replace('/\s+/', ' ', trim($name)) ?? trim($name);
-        validator(['name' => $name], ['name' => ['required', 'string', 'max:120']])->validate();
+        validator(['name' => $name], ['name' => ['required', 'string', 'max:50']], ['name.max' => __('production_bench.validation.location_name_max')])->validate();
 
         return DB::transaction(function () use ($actor, $workspace, $name, $isActive, $location): StorageLocation {
             $locked = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);

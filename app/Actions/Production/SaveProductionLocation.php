@@ -18,7 +18,7 @@ class SaveProductionLocation
     {
         $this->access->assertWritable($actor, $workspace);
         $name = preg_replace('/\s+/', ' ', trim($name)) ?? trim($name);
-        validator(['name' => $name], ['name' => ['required', 'string', 'max:120']])->validate();
+        validator(['name' => $name], ['name' => ['required', 'string', 'max:50']], ['name.max' => __('production_bench.validation.location_name_max')])->validate();
         validator(['daily_production_limit' => $dailyProductionLimit], ['daily_production_limit' => ['required', 'integer', 'min:1', 'max:1000']])->validate();
 
         return DB::transaction(function () use ($actor, $workspace, $name, $isActive, $location, $dailyProductionLimit): ProductionLocation {

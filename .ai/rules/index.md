@@ -17,6 +17,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | vite.config.js | .ai/rules/general.md |
 | app/Http/** | .ai/rules/http.md |
 | app/Services/IngredientEnrichment/**, app/Services/IngredientIntake/**, app/Actions/IngredientIntake/** | .ai/rules/ingredient-enrichment.md |
+| {app/Livewire/**,app/Services/Inventory/WorkspaceMaterialInventoryQuery.php,resources/views/components/table-pagination.blade.php} | .ai/rules/inventory-views-components.md |
 | app/Actions/Inventory/** | .ai/rules/inventory.md |
 | resources/js/recipe-workbench/** | .ai/rules/js-recipe-workbench.md |
 | app/Http/Controllers/RecipeController.php, resources/views/recipes/**, resources/js/product-creation-selector.js, resources/js/sticky-table-header.js | .ai/rules/js.md |
@@ -31,6 +32,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/livewire/dashboard/partials/recipe-workbench/** | .ai/rules/partials-recipe-workbench.md |
 | app/Http/Controllers/RecipeController.php, app/Policies/RecipePolicy.php, resources/views/**/recipe*.blade.php | .ai/rules/policies-views.md |
 | app/Policies/** | .ai/rules/policies.md |
+| app/Livewire/ProductionBench/Production/** | .ai/rules/production-bench-production.md |
 | {resources/views/livewire/production-bench/purchasing/procurement-index.blade.php,resources/views/livewire/production-bench/purchasing/receipt-detail.blade.php} | .ai/rules/production-bench-purchasing.md |
 | resources/views/components/production-bench/** | .ai/rules/production-bench.md |
 | resources/views/livewire/production-bench/production/*.blade.php | .ai/rules/production.md |

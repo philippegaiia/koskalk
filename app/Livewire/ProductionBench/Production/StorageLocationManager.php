@@ -47,7 +47,8 @@ class StorageLocationManager extends Component implements HasForms
                         TextInput::make('name')
                             ->label(__('locations.storage_locations.name'))
                             ->required()
-                            ->maxLength(120)
+                            ->maxLength(50)
+                            ->validationMessages(['max' => __('production_bench.validation.location_name_max')])
                             ->autocomplete('off'),
                         Toggle::make('is_active')
                             ->label(__('locations.storage_locations.active'))

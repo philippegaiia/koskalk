@@ -28,7 +28,7 @@ class SupplierListingIndex extends Component implements HasForms
     use RestrictsFileUploadsToSchemaComponents;
     use WithPagination;
 
-    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+    private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
 
     private const int OPTION_LIMIT = 20;
 

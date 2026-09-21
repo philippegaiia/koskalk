@@ -24,7 +24,7 @@
                             };
                         @endphp
                         <tr wire:key="procurement-{{ $order->id }}" class="transition hover:bg-[var(--color-panel-strong)]">
-                            <td class="numeric px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $isQuotation ? ($order->quotation_reference ?? __('production_bench.procurement.draft')) : $order->reference }}</td>
+                            <td class="numeric px-5 py-4 font-medium text-[var(--color-ink-strong)]"><a href="{{ route('production-bench.purchasing.procurement.show', $order) }}" wire:navigate class="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ $isQuotation ? ($order->quotation_reference ?? __('production_bench.procurement.draft')) : $order->reference }}</a></td>
                             <td class="px-4 py-4">{{ $order->supplier->name }}</td>
                             <td class="px-4 py-4">
                                 <span
@@ -40,7 +40,7 @@
                                 >{{ __("production_bench.procurement.status_{$orderStatus}") }}</span>
                             </td>
                             <td class="px-4 py-4">{{ $order->currency }}</td>
-                            <td class="px-5 py-4 text-right"><a href="{{ route('production-bench.purchasing.procurement.show', $order) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.procurement.open') }}</a></td>
+                            <td class="px-5 py-4 text-right"><x-table-row-action icon="chevron-right" :label="__('production_bench.procurement.open')" href="{{ route('production-bench.purchasing.procurement.show', $order) }}" wire:navigate /></td>
                         </tr>
                     @empty
                         <tr><td colspan="5" class="px-6 py-12 text-center text-[var(--color-ink-soft)]">{{ $isQuotation ? __('production_bench.procurement.no_quotations') : __('production_bench.procurement.no_orders') }}</td></tr>

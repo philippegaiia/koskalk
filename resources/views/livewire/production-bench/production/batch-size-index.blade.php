@@ -68,10 +68,10 @@
                                 </td>
                                 <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $preset->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $preset->is_active ? __('production_bench.common.active') : __('production_bench.common.inactive') }}</span></td>
                                 <td class="px-5 py-4 text-right">
-                                    <span class="inline-flex items-center gap-3">
+                                    <span class="inline-flex items-center gap-1">
                                         @if ($isBenchActive && ! $isReadOnly)
-                                            <a href="{{ route('production-bench.production.settings.presets.edit', $preset) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.common.edit') }}</a>
-                                            <button type="button" wire:click="delete({{ $preset->id }})" wire:confirm="{{ __('production_bench.settings.delete_preset_confirm') }}" class="font-medium text-[var(--color-danger-strong)] hover:underline">{{ __('production_bench.common.delete') }}</button>
+                                            <x-table-row-action icon="pencil" :label="__('production_bench.common.edit')" href="{{ route('production-bench.production.settings.presets.edit', $preset) }}" wire:navigate />
+                                            <x-table-row-action icon="trash" :label="__('production_bench.common.delete')" wire:click="delete({{ $preset->id }})" wire:confirm="{{ __('production_bench.settings.delete_preset_confirm') }}" />
                                         @else
                                             —
                                         @endif

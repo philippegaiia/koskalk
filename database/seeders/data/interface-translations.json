@@ -19800,6 +19800,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.location",
+      "text": {
+        "de": "Ort",
+        "es": "Ubicación",
+        "fr": "Emplacement",
+        "it": "Ubicazione",
+        "nl": "Locatie",
+        "pt_BR": "Localização"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.lot_created",
       "text": {
         "de": "Bestandsartikel :code erstellt.",
@@ -20948,6 +20960,30 @@
         "it": "Nessun link alla fonte",
         "nl": "Geen bronlink",
         "pt_BR": "Sem link para a fonte"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.source_receipt",
+      "text": {
+        "de": "Wareneingang · :date",
+        "es": "Recepción · :date",
+        "fr": "Réception · :date",
+        "it": "Ricezione · :date",
+        "nl": "Ontvangst · :date",
+        "pt_BR": "Recebimento · :date"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.source_receipt_reference",
+      "text": {
+        "de": "Wareneingang · :reference · :date",
+        "es": "Recepción · :reference · :date",
+        "fr": "Réception · :reference · :date",
+        "it": "Ricezione · :reference · :date",
+        "nl": "Ontvangst · :reference · :date",
+        "pt_BR": "Recebimento · :reference · :date"
       }
     },
     {
@@ -30968,6 +31004,18 @@
         "it": "Area produzione",
         "nl": "Productieomgeving",
         "pt_BR": "Bancada de produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "validation.location_name_max",
+      "text": {
+        "de": "Verwenden Sie höchstens 50 Zeichen für den Standortnamen.",
+        "es": "Utiliza un máximo de 50 caracteres para el nombre de la ubicación.",
+        "fr": "Le nom de l’emplacement ne doit pas dépasser 50 caractères.",
+        "it": "Il nome dell’ubicazione non deve superare 50 caratteri.",
+        "nl": "Gebruik maximaal 50 tekens voor de locatienaam.",
+        "pt_BR": "Use no máximo 50 caracteres para o nome da localização."
       }
     },
     {

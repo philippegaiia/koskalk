@@ -90,7 +90,7 @@ class BatchSizeForm extends Component
 
     public function updatedPerPage(): void
     {
-        if (! in_array($this->perPage, [25, 50, 100], true)) {
+        if (! in_array($this->perPage, [10, 25, 50, 100], true)) {
             $this->perPage = 25;
         }
 

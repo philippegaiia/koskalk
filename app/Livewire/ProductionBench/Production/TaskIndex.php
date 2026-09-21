@@ -43,6 +43,17 @@ class TaskIndex extends Component implements HasForms
 
     public string $toDate = '';
 
+    public int $perPage = 25;
+
+    public function updatedPerPage(): void
+    {
+        if (! in_array($this->perPage, [10, 25, 50, 100], true)) {
+            $this->perPage = 25;
+        }
+
+        $this->resetPage();
+    }
+
     public function updatedScope(): void
     {
         $this->resetPage();
@@ -189,7 +200,7 @@ class TaskIndex extends Component implements HasForms
 
         return view('livewire.production-bench.production.task-index', [
             'workspace' => $workspace,
-            'tasks' => $query->orderBy('scheduled_for')->orderBy('id')->paginate(25),
+            'tasks' => $query->orderBy('scheduled_for')->orderBy('id')->paginate($this->perPage),
             'departments' => Department::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
             'employees' => Employee::query()->where('workspace_id', $workspace->id)->orderBy('last_name')->orderBy('first_name')->get(),
             'isBenchActive' => $access->isActive($workspace),

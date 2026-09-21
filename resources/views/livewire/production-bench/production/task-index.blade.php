@@ -51,8 +51,6 @@
                 <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_tasks_match') }}</p>
             @endforelse
         </div>
-        @if ($tasks->hasPages())
-            <div class="border-t border-[var(--color-line)] px-5 py-4">{{ $tasks->links() }}</div>
-        @endif
+        <x-table-pagination :paginator="$tasks" />
     </section>
 </x-production-bench.page>

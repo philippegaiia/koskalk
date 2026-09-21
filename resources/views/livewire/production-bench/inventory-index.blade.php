@@ -93,15 +93,10 @@
                     {{ $this->materialFiltersForm }}
 
                     <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            class="sk-btn sk-btn-ghost"
-                            aria-controls="material-advanced-filters"
-                            x-bind:aria-expanded="filtersOpen.toString()"
-                            x-on:click="filtersOpen = ! filtersOpen"
-                        >
-                            {{ __('production_bench.common.filters') }}
-                        </button>
+                        <x-table-filter-toggle
+                            controls="material-advanced-filters"
+                            :count="count(array_filter([$materialType !== 'all', $stockState !== 'all', $demandFilter !== 'all', $categoryFilter !== '', $subcategoryFilter !== '']))"
+                        />
 
                         @if ($materialFiltersActive)
                             <button type="button" wire:click="clearMaterialFilters" class="sk-btn sk-btn-ghost">
@@ -240,15 +235,10 @@
                     <p id="lot-register-search-help" class="mt-2 px-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.lot_register_search_help') }}</p>
 
                     <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            class="sk-btn sk-btn-ghost"
-                            aria-controls="lot-advanced-filters"
-                            x-bind:aria-expanded="filtersOpen.toString()"
-                            x-on:click="filtersOpen = ! filtersOpen"
-                        >
-                            {{ __('production_bench.common.filters') }}
-                        </button>
+                        <x-table-filter-toggle
+                            controls="lot-advanced-filters"
+                            :count="count(array_filter([$lotMaterial !== '', $lotStatus !== 'all', $lotSupplier !== '', $lotOrigin !== '', $lotDateFrom !== '' || $lotDateUntil !== '', $lotExpiry !== 'all', $workspace->uses_storage_locations && $lotStorageLocation !== 'all']))"
+                        />
 
                         {{-- Outside the disclosure on purpose: it used to appear only with a
                              material selected and cleared only that, so filtering by supplier
@@ -284,9 +274,6 @@
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
-                                @if ($workspace->uses_storage_locations)
-                                    <th data-storage-location-column class="px-4 py-3">{{ __('locations.storage_location') }}</th>
-                                @endif
                                 <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }}</th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.initial_quantity') }}</th>
@@ -294,6 +281,9 @@
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
+                                @if ($workspace->uses_storage_locations)
+                                    <th data-storage-location-column class="px-4 py-3">{{ __('production_bench.inventory.location') }}</th>
+                                @endif
                                 <th data-sticky-table-right class="sticky right-0 z-40 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel-muted)] px-3 py-3"><span class="sr-only">{{ __('production_bench.common.actions') }}</span></th>
                             </tr>
                         </thead>
@@ -353,11 +343,6 @@
                                             @endif
                                         </p>
                                     </td>
-                                    @if ($workspace->uses_storage_locations)
-                                        <td class="px-4 py-3 text-[var(--color-ink-soft)]">
-                                            {{ $lot->storageLocation?->name ?? __('locations.unassigned') }}
-                                        </td>
-                                    @endif
                                     <td class="px-3 py-3 text-center" data-lot-balance-state="{{ $row['is_exhausted'] ? 'out-of-stock' : 'open' }}" data-lot-handling-status="{{ $lot->status->value }}">
                                         @php($isExhausted = $row['is_exhausted'])
                                         @php($isReleased = $lot->status->value === 'released')
@@ -372,10 +357,12 @@
                                     @foreach (['physical', 'quarantined', 'reserved', 'available'] as $position)
                                         <td class="numeric px-4 py-3 text-right">{{ $row['positions'][$position] }}</td>
                                     @endforeach
+                                    @if ($workspace->uses_storage_locations)
+                                        <td class="px-4 py-3 text-[var(--color-ink-soft)]">
+                                            <x-production-bench.lot-location :$lot :action="($this->changeStorageLocationAction)(['lot_id' => $lot->id])" />
+                                        </td>
+                                    @endif
                                     <td class="sticky right-0 z-20 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-3 text-right">
-                                        @if ($workspace->uses_storage_locations && $canWriteInventory && ($lot->ingredient_id !== null || $lot->packaging_item_id !== null))
-                                            {{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}
-                                        @endif
                                         @if ($canWriteInventory)
                                             <div class="flex flex-col items-end whitespace-nowrap">
                                                 <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>

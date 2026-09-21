@@ -68,7 +68,7 @@
                                 <span class="numeric font-semibold">{{ $buffer }} {{ $displayUnit }}</span>
                             </p>
                         @else
-                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.buffer_none') }}</p>
+                            <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.buffer_none') }}</p>
                         @endif
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
@@ -84,18 +84,22 @@
                         <div>
                             <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('locations.usual_storage_location') }}</h2>
                             <p class="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('locations.usual_storage_location_help') }}</p>
-                            @if ($defaultStorageLocation)
-                                <p class="mt-2 text-sm text-[var(--color-ink-strong)]">
-                                    {{ $defaultStorageLocation->name }}
-                                    @if (! $defaultStorageLocation->is_active)
-                                        <span class="ml-1 rounded-full bg-[var(--color-field-muted)] px-2 py-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('locations.inactive') }}</span>
-                                    @endif
-                                </p>
-                            @else
-                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('locations.unassigned') }}</p>
-                            @endif
+                            <div class="mt-2 flex items-center gap-1">
+                                @if ($defaultStorageLocation)
+                                    <p class="text-sm text-[var(--color-ink-strong)]">
+                                        {{ $defaultStorageLocation->name }}
+                                        @if (! $defaultStorageLocation->is_active)
+                                            <span class="ml-1 rounded-full bg-[var(--color-field-muted)] px-2 py-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('locations.inactive') }}</span>
+                                        @endif
+                                    </p>
+                                @else
+                                    <p class="text-sm text-[var(--color-ink-soft)]">{{ __('locations.unassigned') }}</p>
+                                @endif
+                                @if ($this->editStorageLocationAction->isVisible())
+                                    <x-table-row-action icon="pencil" :label="__('locations.usual_storage_location')" :wire:click="$this->editStorageLocationAction->getLivewireClickHandler()" />
+                                @endif
+                            </div>
                         </div>
-                        {{ $this->editStorageLocationAction }}
                     </div>
                 </div>
             @endif
@@ -119,7 +123,7 @@
                 <table class="w-full min-w-[900px] text-left text-sm">
                     <thead wire:ignore.self data-sticky-table-header class="relative z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
-                            <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                            <th class="min-w-72 px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
                             <th class="px-4 py-3">{{ __('production_bench.common.status') }}</th>
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
@@ -127,7 +131,7 @@
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
                             @if ($workspace->uses_storage_locations)
-                                <th class="px-4 py-3">{{ __('locations.storage_location') }}</th>
+                                <th class="px-4 py-3">{{ __('production_bench.inventory.location') }}</th>
                             @endif
                             <th data-sticky-table-right class="sticky right-0 z-40 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel-muted)] px-3 py-3 text-right"><span class="sr-only">{{ __('production_bench.common.actions') }}</span></th>
                         </tr>
@@ -137,7 +141,7 @@
                             @php($lot = $row['lot'])
                             @php($supplier = $lot->goodsReceiptLine?->goodsReceipt?->supplier ?? $lot->supplierListing?->supplier)
                             <tr wire:key="material-open-lot-{{ $lot->id }}">
-                                <td class="px-5 py-3">
+                                <td class="min-w-72 px-5 py-3">
                                     <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
                                     <p class="mt-0.5 font-mono text-sm text-[var(--color-ink-strong)]">{{ $lot->internal_lot_code }}</p>
                                     @if ($lot->supplier_batch_number)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.supplier_batch') }}: {{ $lot->supplier_batch_number }}</p>@endif
@@ -148,14 +152,13 @@
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['physical'] }}</td>
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['reserved'] }}</td>
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>
-                                <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
+                                <td class="numeric whitespace-nowrap px-5 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
                                 @if ($workspace->uses_storage_locations)
-                                    <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $lot->storageLocation?->name ?? __('locations.unassigned') }}</td>
+                                    <td class="px-4 py-3 text-[var(--color-ink-soft)]">
+                                        <x-production-bench.lot-location :$lot :action="($this->changeStorageLocationAction)(['lot_id' => $lot->id])" />
+                                    </td>
                                 @endif
                                 <td class="sticky right-0 z-20 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-3 text-right">
-                                    @if ($workspace->uses_storage_locations)
-                                        {{ ($this->changeStorageLocationAction)(['lot_id' => $lot->id]) }}
-                                    @endif
                                     @if (($this->adjustStockAction)(['lot_id' => $lot->id])->isVisible())
                                         <button wire:click="{{ ($this->adjustStockAction)(['lot_id' => $lot->id])->getLivewireClickHandler() }}" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.adjustment.action') }}</button>
                                     @endif
@@ -306,7 +309,7 @@
                             @php($sourceUrl = $this->sourceUrl($movement))
                             @php($sourceLabel = $this->sourceLabel($movement))
                             <tr wire:key="material-activity-{{ $movement->id }}">
-                                <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ $movement->occurred_at?->format('Y-m-d H:i') }}</td>
+                                <td class="numeric whitespace-nowrap px-5 py-3 text-[var(--color-ink-soft)]">{{ $movement->occurred_at?->format('Y-m-d H:i') }}</td>
                                 <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $this->groupLabel($entry['group']) }}</td>
                                 <td class="px-4 py-3 text-[var(--color-ink-soft)]">
                                     <span>{{ $this->movementTypeLabel($movement->type) }}</span>

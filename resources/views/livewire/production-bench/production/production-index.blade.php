@@ -180,18 +180,13 @@
                                             @endif
 
                                             @if ($canDelete)
-                                                <button
+                                                <x-table-row-action icon="trash" label="{{ __('production_bench.production.delete') }}"
                                                     data-production-delete-action
-                                                    type="button"
                                                     wire:click.stop="deleteProduction({{ $production->id }})"
                                                     wire:confirm="{{ __('production_bench.production.delete_confirm') }}"
                                                     wire:loading.attr="disabled"
                                                     aria-label="{{ __('production_bench.production.delete') }}: {{ $production->displayRecipeName() }}"
-                                                    title="{{ __('production_bench.production.delete') }}"
-                                                    class="grid size-11 place-items-center rounded-md text-[var(--color-ink-muted)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)]"
-                                                >
-                                                    <x-action-icon name="trash" />
-                                                </button>
+                                                />
                                             @endif
 
                                             <span data-production-open-indicator aria-hidden="true" class="grid size-11 place-items-center text-[var(--color-ink-muted)]">
@@ -274,18 +269,13 @@
                                         @endif
 
                                         @if ($canDelete)
-                                            <button
-                                                data-production-delete-action
-                                                type="button"
+                                            <x-table-row-action icon="trash" label="{{ __('production_bench.production.delete') }}"
+                                                    data-production-delete-action
                                                 wire:click.stop="deleteProduction({{ $production->id }})"
                                                 wire:confirm="{{ __('production_bench.production.delete_confirm') }}"
                                                 wire:loading.attr="disabled"
                                                 aria-label="{{ __('production_bench.production.delete') }}: {{ $production->displayRecipeName() }}"
-                                                title="{{ __('production_bench.production.delete') }}"
-                                                class="grid size-11 place-items-center rounded-md text-[var(--color-ink-muted)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)]"
-                                            >
-                                                <x-action-icon name="trash" />
-                                            </button>
+                                                />
                                         @endif
                                     </div>
                                 @endif

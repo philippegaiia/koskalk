@@ -960,7 +960,7 @@ it('leaves packaging buffers unconverted', function (): void {
     expect(WorkspaceMaterialSetting::query()->value('buffer_quantity'))->toBe('12.000000000');
 });
 
-it('links only the movement sources that belong to the workspace', function (): void {
+it('labels receipt sources readably and links only sources in the workspace', function (?string $reference): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
     $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
@@ -969,7 +969,7 @@ it('links only the movement sources that belong to the workspace', function (): 
         ->direct()
         ->for($workspace)
         ->for(Supplier::factory()->for($workspace), 'supplier')
-        ->create(['delivery_reference' => 'DEL-OURS']);
+        ->create(['delivery_reference' => $reference, 'received_at' => '2026-09-19']);
 
     // The source is a morphTo, so nothing in the schema ties it to the movement's
     // workspace. A foreign record must not surface its identifier here, and its
@@ -997,10 +997,11 @@ it('links only the movement sources that belong to the workspace', function (): 
         'subject' => $ingredient->public_id,
         'subjectType' => 'ingredient',
     ])
-        ->assertSee('DEL-OURS')
+        ->assertSee($reference === null ? 'Receipt · 19 Sep 2026' : 'Receipt · DEL-OURS · 19 Sep 2026')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.receipts.show', $ownReceipt).'"')
         ->assertDontSee('DEL-THEIRS')
         ->assertSee(__('production_bench.inventory.source_not_available'));
-});
+})->with(['with a delivery reference' => ['DEL-OURS'], 'without a delivery reference' => [null]]);
 
 it('keeps the material detail table headers in view', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();

@@ -8,7 +8,7 @@
     // allow-list. Binding them all to `perPage` would make one control rewrite
     // the other's page size, so the model and the options are both injectable.
     'perPageModel' => 'perPage',
-    'perPageOptions' => [25, 50, 100],
+    'perPageOptions' => [10, 25, 50, 100],
 ])
 
 @php

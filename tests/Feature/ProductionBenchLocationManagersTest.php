@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Inventory\SaveStorageLocation;
+use App\Actions\Production\SaveProductionLocation;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\PlanningPreferences;
 use App\Livewire\ProductionBench\Production\ProductionLocationManager;
@@ -12,6 +14,7 @@ use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -205,3 +208,36 @@ function locationManagerFixture(
 
     return compact('owner', 'workspace');
 }
+
+it('limits location names to fifty characters in forms and save actions', function (string $manager, string $action, string $model): void {
+    $fixture = locationManagerFixture(usesProductionLocations: true, usesStorageLocations: true);
+    $this->actingAs($fixture['owner']);
+
+    Livewire::test($manager)
+        ->fillForm(['name' => str_repeat('é', 51)])
+        ->call('save')
+        ->assertHasFormErrors(['name' => 'max']);
+
+    $arguments = [
+        'actor' => $fixture['owner'],
+        'workspace' => $fixture['workspace'],
+        'name' => str_repeat('é', 51),
+    ];
+    if ($manager === ProductionLocationManager::class) {
+        $arguments['dailyProductionLimit'] = 1;
+    }
+
+    expect(fn () => app($action)->handle(...$arguments))->toThrow(ValidationException::class);
+
+    expect($model::query()->count())->toBe(0);
+
+    Livewire::test($manager)
+        ->fillForm(['name' => str_repeat('é', 50)])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($model::query()->sole()->name)->toBe(str_repeat('é', 50));
+})->with([
+    'storage' => [StorageLocationManager::class, SaveStorageLocation::class, StorageLocation::class],
+    'production' => [ProductionLocationManager::class, SaveProductionLocation::class, ProductionLocation::class],
+]);

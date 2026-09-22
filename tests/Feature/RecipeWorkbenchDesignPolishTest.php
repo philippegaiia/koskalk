@@ -2479,7 +2479,8 @@ it('uses category fallback tiles for both soap and cosmetic ingredient browsers'
 
         expect($rendered)
             ->toContain('ingredient.fallback_image_url')
-            ->toContain("ingredient.image_url ? '' : 'is-fallback'")
+            ->toContain("ingredient.image_url && !imageFailed ? '' : 'is-fallback'")
+            ->toContain('x-on:error="imageFailed = true"')
             ->not->toContain('ingredientCategoryCode(ingredient)');
     }
 });

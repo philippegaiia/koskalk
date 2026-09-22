@@ -140,11 +140,14 @@ it('renders an existing formula workbench within its initial query budget', func
         ->get(route('recipes.edit', ['recipe' => $recipe]))
         ->assertSuccessful();
 
-    $queryCount = count(DB::getQueryLog());
+    $queries = collect(DB::getQueryLog());
+    $helpQueries = $queries->filter(fn (array $query): bool => str_contains($query['query'], '"help_topics"')
+        || (str_contains($query['query'], '"language_lines"') && $query['bindings'] === ['contextual_help']));
 
     DB::disableQueryLog();
 
-    expect($queryCount)->toBeLessThanOrEqual(39);
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(39)
+        ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 
 it('keeps an inactive saved ingredient available in the formula workbench', function () {

@@ -1304,7 +1304,7 @@
         vertical-align: middle;
     }
     .sk-help-trigger:hover { background: var(--color-field-muted); color: var(--color-ink-strong); }
-    .sk-help-trigger:focus-visible, .sk-help-topic-list button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+    .sk-help-trigger:focus-visible, .sk-help-topic-list button:focus-visible { outline: 1px solid var(--color-accent); outline-offset: 3px; }
     .sk-help-topic-list { display: grid; gap: 0.5rem; }
     .sk-help-topic-list button { width: 100%; text-align: start; padding: 0.75rem; border-radius: 0.5rem; background: var(--color-field-muted); }
     .sk-help-prose > * + * { margin-block-start: 0.9rem; }

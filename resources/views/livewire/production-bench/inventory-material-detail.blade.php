@@ -124,8 +124,8 @@
                     <thead wire:ignore.self data-sticky-table-header class="relative z-20 bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                         <tr>
                             <th class="min-w-72 px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
-                            <th class="px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
-                            <th class="px-4 py-3">{{ __('production_bench.common.status') }}</th>
+                            <th class="min-w-40 px-4 py-3">{{ __('production_bench.inventory.lot_supplier') }}</th>
+                            <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }}</th>
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
@@ -147,8 +147,12 @@
                                     @if ($lot->supplier_batch_number)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.supplier_batch') }}: {{ $lot->supplier_batch_number }}</p>@endif
                                     @if ($lot->expires_at)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.expires_on') }}: {{ $lot->expires_at->format('Y-m-d') }}</p>@endif
                                 </td>
-                                <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ $supplier?->name ?? __('production_bench.inventory.supplier_unknown') }}</td>
-                                <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ $lot->status->value === 'released' ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span></td>
+                                <td class="min-w-40 px-4 py-3 text-[var(--color-ink-soft)]">{{ $supplier?->name ?? __('production_bench.inventory.supplier_unknown') }}</td>
+                                <td class="px-3 py-3 text-center" data-lot-handling-status="{{ $lot->status->value }}">
+                                    @php($isReleased = $lot->status->value === 'released')
+                                    <span class="mx-auto block size-2.5 shrink-0 rounded-full {{ $isReleased ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]' }}" aria-hidden="true"></span>
+                                    <span class="sr-only">{{ $isReleased ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span>
+                                </td>
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['physical'] }}</td>
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['reserved'] }}</td>
                                 <td class="numeric px-4 py-3 text-right">{{ $row['positions']['available'] }}</td>

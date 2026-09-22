@@ -373,6 +373,45 @@ it('renders the material detail headings in French for a French interface locale
         ->assertDontSeeHtml('>Supplier<');
 });
 
+it('shows accessible handling status dots and a wider supplier column in open lots', function (bool $released, string $color, string $label): void {
+    ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
+    $ingredient = Ingredient::factory()->create();
+    $lotFactory = StockLot::factory()->for($workspace)->for($ingredient);
+    $lot = ($released ? $lotFactory->released() : $lotFactory)->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000',
+    ]);
+    $this->actingAs($user);
+
+    $html = Livewire::test(InventoryMaterialDetail::class, [
+        'subject' => $ingredient->public_id,
+        'subjectType' => 'ingredient',
+    ])->html();
+    $document = new DOMDocument;
+    @$document->loadHTML($html);
+    $xpath = new DOMXPath($document);
+    $statusCells = $xpath->query('//*[@data-material-open-lots]//td[@data-lot-handling-status="'.$lot->status->value.'"]');
+
+    expect($statusCells)->toHaveCount(1);
+    $statusCell = $statusCells->item(0);
+    $dots = $xpath->query('.//span[@aria-hidden="true"]', $statusCell);
+    expect($dots)->toHaveCount(1);
+    expect($dots->item(0)->getAttribute('class'))
+        ->toContain('size-2.5', 'rounded-full', 'bg-[var(--color-'.$color.')]');
+    $labels = $xpath->query('.//span[@class="sr-only"]', $statusCell);
+    expect($labels)->toHaveCount(1);
+    expect(trim($labels->item(0)->textContent))->toBe(__('production_bench.inventory.'.$label));
+    expect($xpath->query('//*[@data-material-open-lots]//thead//th[2]')->item(0)->getAttribute('class'))
+        ->toContain('min-w-40');
+    expect($xpath->query('//*[@data-material-open-lots]//tbody/tr/td[2]')->item(0)->getAttribute('class'))
+        ->toContain('min-w-40');
+})->with([
+    'released' => [true, 'success', 'released'],
+    'quarantined' => [false, 'warning', 'quarantined'],
+]);
+
 it('shows the material name and lot code together in the open lots table', function (): void {
     ['user' => $user, 'workspace' => $workspace] = materialDetailWorkspace();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Audit rosemary oil']);

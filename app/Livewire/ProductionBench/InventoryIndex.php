@@ -23,6 +23,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\InventoryHelpTopics;
 use App\Services\CurrencyCatalog;
 use App\Services\Inventory\InventoryQuantityPresenter;
 use App\Services\Inventory\StorageLocationSelection;
@@ -867,6 +868,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     }
 
     public function render(
+        InventoryHelpTopics $helpTopics,
         ProductionBenchAccess $access,
         StockPositionService $positions,
         WorkspaceMaterialInventoryQuery $inventoryQuery,
@@ -904,6 +906,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'lotStorageLocationOptions' => $this->lotStorageLocationOptions(),
             'lotMaterialLabel' => $this->lotMaterialLabel($workspace),
             'lotFiltersActive' => $this->lotFiltersActive(),
+            'contextualHelp' => $helpTopics->resolve($this->mode, (bool) $workspace->uses_storage_locations, app()->getLocale()),
             'displayUnit' => $displayUnit,
         ]);
     }

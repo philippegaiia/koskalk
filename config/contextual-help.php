@@ -10,6 +10,17 @@ return [
         'prompt_version' => 'help-translation-v1',
     ],
     'topics' => [
+        'inventory.overview' => ['domain' => 'production_inventory'],
+        'inventory.quantities' => ['domain' => 'production_inventory'],
+        'inventory.lots_and_status' => ['domain' => 'production_inventory'],
+        'inventory.opening_stock' => ['domain' => 'production_inventory'],
+        'inventory.receiving_stock' => ['domain' => 'production_inventory'],
+        'inventory.adjustments' => ['domain' => 'production_inventory'],
+        'inventory.reservations' => ['domain' => 'production_inventory'],
+        'inventory.buffer_stock' => ['domain' => 'production_inventory'],
+        'inventory.storage_locations' => ['domain' => 'production_inventory'],
+        'inventory.material_history' => ['domain' => 'production_inventory'],
+
         'shared.formula_basics' => ['domain' => 'shared_workbench'],
         'shared.ingredient_selection' => ['domain' => 'shared_workbench'],
         'shared.quantities_and_units' => ['domain' => 'shared_workbench'],

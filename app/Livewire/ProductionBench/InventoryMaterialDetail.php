@@ -21,6 +21,7 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
+use App\Services\ContextualHelp\InventoryHelpTopics;
 use App\Services\Inventory\InventoryQuantityPresenter;
 use App\Services\Inventory\MaterialActivityService;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
@@ -344,6 +345,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     }
 
     public function render(
+        InventoryHelpTopics $helpTopics,
         MaterialActivityService $activityService,
         StockPositionService $positions,
         WorkspaceMaterialSupplierListingsQuery $supplierListingQuery,
@@ -432,6 +434,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             'isActive' => $this->renderAccess['isActive'],
             'isReadOnly' => $this->renderAccess['isReadOnly'],
             'canWriteInventory' => $this->renderAccess['canWrite'],
+            'contextualHelp' => $helpTopics->resolve('detail', (bool) $workspace->uses_storage_locations, app()->getLocale()),
             'displayUnit' => $displayUnit,
             'materialName' => $this->subject() instanceof Ingredient
                 ? (string) $this->subject()->localizedDisplayName()

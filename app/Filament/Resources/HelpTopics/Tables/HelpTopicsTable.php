@@ -30,7 +30,7 @@ class HelpTopicsTable
             }),
             TextColumn::make('last_edit')->state(fn (HelpTopic $record) => $record->locales->map(fn ($locale) => $locale->latestRevision?->created_at)->filter()->max())->since(),
         ])->filters([
-            SelectFilter::make('domain')->options(['shared_workbench' => 'Shared workbench', 'soap_workbench' => 'Soap workbench', 'cosmetic_workbench' => 'Cosmetic workbench']),
+            SelectFilter::make('domain')->options(['shared_workbench' => 'Shared workbench', 'soap_workbench' => 'Soap workbench', 'cosmetic_workbench' => 'Cosmetic workbench', 'production_inventory' => 'Production inventory']),
             TernaryFilter::make('archived_at')->label('Archived')->nullable()->default(false),
         ])->recordActions([EditAction::make()])->defaultSort('key')->emptyStateHeading('No help topics registered');
     }

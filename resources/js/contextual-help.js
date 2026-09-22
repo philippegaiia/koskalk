@@ -124,7 +124,7 @@ export function createContextualHelp({ document, window }) {
         tabs = scope.tabs ?? {};
         currentKeys = [];
         currentTopic = null;
-        currentTab = 'formula';
+        currentTab = Object.keys(tabs)[0] ?? 'formula';
     }
 
     function refreshScope() {

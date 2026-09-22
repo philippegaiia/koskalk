@@ -5,13 +5,17 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         @if ($isReadOnly)
             <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
         @endif
 
-        <header>
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.lot_register') : __('production_bench.inventory.stock_by_material') }}</h1>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : __('production_bench.inventory.materials_help') }}</p>
+        <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.lot_register') : __('production_bench.inventory.stock_by_material') }}</h1>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : __('production_bench.inventory.materials_help') }}</p>
+            </div>
+            <x-contextual-help.index-button :help="$contextualHelp" tab="inventory" />
         </header>
 
         @if ($mode === 'materials')
@@ -135,8 +139,8 @@
                             <tr>
                                 <th class="sticky left-0 z-30 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.material') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }} <x-contextual-help.trigger topic="inventory.quantities" :topics="$contextualHelp['topics']" /></th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }} <x-contextual-help.trigger topic="inventory.reservations" :topics="$contextualHelp['topics']" /></th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.required') }}</th>
@@ -220,7 +224,10 @@
                         <p class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
                     </div>
                     @if ($canWriteInventory)
-                        {{ $this->addStockAction }}
+                        <div class="flex items-center gap-2">
+                            {{ $this->addStockAction }}
+                            <x-contextual-help.trigger topic="inventory.opening_stock" :topics="$contextualHelp['topics']" />
+                        </div>
                     @endif
                 </div>
                 {{-- Same stacking context the material filters need: Filament renders dropdown
@@ -274,15 +281,15 @@
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th class="sticky left-0 z-30 w-64 min-w-64 border-r border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
-                                <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }}</th>
+                                <th class="px-3 py-3 text-center">{{ __('production_bench.common.status') }} <x-contextual-help.trigger topic="inventory.lots_and_status" :topics="$contextualHelp['topics']" /></th>
                                 <th class="px-4 py-3">{{ __('production_bench.inventory.stocked_on') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.initial_quantity') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.physical') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.quarantined') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }} <x-contextual-help.trigger topic="inventory.reservations" :topics="$contextualHelp['topics']" /></th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }} <x-contextual-help.trigger topic="inventory.quantities" :topics="$contextualHelp['topics']" /></th>
                                 @if ($workspace->uses_storage_locations)
-                                    <th data-storage-location-column class="px-4 py-3">{{ __('production_bench.inventory.location') }}</th>
+                                    <th data-storage-location-column class="px-4 py-3">{{ __('production_bench.inventory.location') }} <x-contextual-help.trigger topic="inventory.storage_locations" :topics="$contextualHelp['topics']" /></th>
                                 @endif
                                 <th data-sticky-table-right class="sticky right-0 z-40 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel-muted)] px-3 py-3"><span class="sr-only">{{ __('production_bench.common.actions') }}</span></th>
                             </tr>

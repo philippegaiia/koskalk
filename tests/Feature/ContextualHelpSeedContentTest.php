@@ -15,19 +15,22 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('installs all English drafts and never replaces owner edits on repeat installation', function () {
+it('installs all English drafts and never replaces owner edits on repeat installation', function (string $filename, int $count) {
     SupportedLocale::factory()->create(['code' => 'en']);
-    $manifest = app(HelpContentManifest::class)->decode(file_get_contents(database_path('seeders/data/contextual-help.en.json')));
-    expect($manifest['topics'])->toHaveCount(32)
-        ->and(array_diff(array_keys(app(HelpTopicRegistry::class)->definitions()), array_column($manifest['topics'], 'key')))->toBe([]);
+    $manifest = app(HelpContentManifest::class)->decode(file_get_contents(database_path('seeders/data/'.$filename)));
+    expect($manifest['topics'])->toHaveCount($count);
+    expect(array_diff(array_column($manifest['topics'], 'key'), array_keys(app(HelpTopicRegistry::class)->definitions())))->toBe([]);
     $importer = app(HelpContentImporter::class);
     $preview = $importer->preview($manifest, HelpContentImportMode::Bootstrap);
     $importer->apply($manifest, HelpContentImportMode::Bootstrap, $preview['selection'], $preview['manifest_hash']);
-    expect(HelpTopic::count())->toBe(32)->and(HelpTopicRevision::count())->toBe(32)
+    expect(HelpTopic::count())->toBe($count)->and(HelpTopicRevision::count())->toBe($count)
         ->and(HelpTopicLocale::whereNotNull('published_revision_id')->count())->toBe(0);
     $locale = HelpTopicLocale::query()->first();
     $draft = app(SaveHelpTopicDraft::class)->handle(User::factory()->admin()->create(), $locale, new HelpContentInput('Owner wording', 'My reviewed explanation.', null), $locale->lock_version);
     $preview = $importer->preview($manifest, HelpContentImportMode::Bootstrap);
     $importer->apply($manifest, HelpContentImportMode::Bootstrap, $preview['selection'], $preview['manifest_hash']);
-    expect($locale->fresh()->latest_revision_id)->toBe($draft->id)->and(HelpTopicRevision::count())->toBe(33);
-});
+    expect($locale->fresh()->latest_revision_id)->toBe($draft->id)->and(HelpTopicRevision::count())->toBe($count + 1);
+})->with([
+    ['contextual-help.en.json', 32],
+    ['contextual-help.inventory.en.json', 10],
+]);

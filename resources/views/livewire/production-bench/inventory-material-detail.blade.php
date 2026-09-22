@@ -5,6 +5,7 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         @if ($isReadOnly)
             <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
         @endif
@@ -15,11 +16,12 @@
                 <h1 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $materialName }}</h1>
                 @if ($materialCode)<p class="mt-1 font-mono text-sm text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
             </div>
+            <x-contextual-help.index-button :help="$contextualHelp" tab="inventory" />
         </header>
 
         <section data-material-stock-summary class="sk-card overflow-hidden" aria-labelledby="current-position-heading">
             <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <h2 id="current-position-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.current_position') }}</h2>
+                <h2 id="current-position-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.current_position') }} <x-contextual-help.trigger topic="inventory.quantities" :topics="$contextualHelp['topics']" /></h2>
                 <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.current_position_help', ['unit' => $displayUnit]) }}</p>
             </div>
 
@@ -60,7 +62,7 @@
             <div data-material-buffer class="border-t border-[var(--color-line)] p-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h2 id="buffer-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.buffer_stock') }}</h2>
+                        <h2 id="buffer-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.buffer_stock') }} <x-contextual-help.trigger topic="inventory.buffer_stock" :topics="$contextualHelp['topics']" /></h2>
                         <p class="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.buffer_stock_help') }}</p>
                         @if ($buffer !== null)
                             <p class="mt-2 text-sm {{ $bufferBelow ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-soft)]' }}">
@@ -82,7 +84,7 @@
                 <div data-material-storage-location class="border-t border-[var(--color-line)] p-5">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('locations.usual_storage_location') }}</h2>
+                            <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('locations.usual_storage_location') }} <x-contextual-help.trigger topic="inventory.storage_locations" :topics="$contextualHelp['topics']" /></h2>
                             <p class="mt-1 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('locations.usual_storage_location_help') }}</p>
                             <div class="mt-2 flex items-center gap-1">
                                 @if ($defaultStorageLocation)
@@ -114,7 +116,7 @@
         <section data-material-open-lots class="@container overflow-clip sk-card" aria-labelledby="open-lots-heading">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 id="open-lots-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.open_lots') }}</h2>
+                    <h2 id="open-lots-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.open_lots') }} <x-contextual-help.trigger topic="inventory.lots_and_status" :topics="$contextualHelp['topics']" /></h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.open_lots_help') }}</p>
                 </div>
                 <a data-material-view-all-lots href="{{ $lotRegisterUrl }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.view_all_lots') }} →</a>

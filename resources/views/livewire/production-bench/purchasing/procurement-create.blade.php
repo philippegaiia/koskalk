@@ -1,5 +1,9 @@
 <x-production-bench.page active="purchasing" :subnavigation="$isQuotation ? 'quotations' : 'orders'">
-    <header><h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.new_quotation') : __('production_bench.procurement.new_order') }}</h1></header>
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <h1 class="flex-1 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.new_quotation') : __('production_bench.procurement.new_order') }}</h1>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+    </header>
 
     <form wire:submit="save" class="space-y-4 pb-24">
         @unless ($isQuotation)

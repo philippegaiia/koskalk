@@ -1,14 +1,16 @@
 <x-production-bench.page active="purchasing" subnavigation="receipts">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ __('production_bench.receipt.workflow') }}</p>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.new') }}</h1>
         </div>
         <a href="{{ route('production-bench.purchasing.receipts') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.common.cancel') }}</a>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
     </header>
 
     <section aria-labelledby="receipt-source-heading" class="space-y-3">
-        <h2 id="receipt-source-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.choose_source') }}</h2>
+        <h2 id="receipt-source-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.choose_source') }} <x-contextual-help.trigger topic="purchasing.receiving_deliveries" :topics="$contextualHelp['topics']" /></h2>
         <div class="grid gap-3 sm:grid-cols-2">
             <button type="button" wire:click="chooseSource('purchase_order')" wire:loading.attr="disabled" wire:target="chooseSource" aria-pressed="{{ $source === 'purchase_order' ? 'true' : 'false' }}" @class(['min-h-20 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]', 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]' => $source === 'purchase_order', 'border-[var(--color-line)] bg-[var(--color-panel)] hover:bg-[var(--color-panel-strong)]' => $source !== 'purchase_order'])>
                 <span class="block font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.receive_order') }}</span>

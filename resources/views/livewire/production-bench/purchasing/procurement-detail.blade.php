@@ -3,8 +3,9 @@
         <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
     @endif
 
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ $order->supplier->code }} · {{ $order->supplier->name }}</p>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.quotation_request') : __('production_bench.procurement.purchase_order') }}</h1>
             <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $isQuotation ? ($order->quotation_reference ?? __('production_bench.procurement.draft')) : $order->reference }}</p>
@@ -13,6 +14,7 @@
             @endif
         </div>
         <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ $order->status->value }}</span>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
     </header>
 
     <section>
@@ -20,9 +22,9 @@
             <div class="min-w-[700px] space-y-2 px-1 py-2 text-left text-sm">
             <div class="grid grid-cols-[minmax(0,1.15fr)_minmax(10rem,1fr)_7rem_minmax(12.5rem,1.15fr)] bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
                 <div class="px-4 py-2.5">{{ __('production_bench.procurement.item') }}</div>
-                <div class="px-4 py-2.5">{{ __('production_bench.procurement.purchase_format') }}</div>
+                <div class="px-4 py-2.5">{{ __('production_bench.procurement.purchase_format') }} <x-contextual-help.trigger topic="purchasing.purchase_formats" :topics="$contextualHelp['topics']" /></div>
                 <div class="px-4 py-2.5 text-right">{{ __('production_bench.procurement.quantity') }}</div>
-                <div class="px-4 py-2.5 text-right">{{ __('production_bench.procurement.price') }}</div>
+                <div class="px-4 py-2.5 text-right">{{ __('production_bench.procurement.price') }} <x-contextual-help.trigger topic="purchasing.prices_and_currency" :topics="$contextualHelp['topics']" /></div>
             </div>
 
             @foreach ($order->lines as $line)
@@ -93,7 +95,7 @@
 
     @if ($emailText)
         <section class="sk-card space-y-3 p-5" x-data="{ copied: false }">
-            <div class="flex items-center justify-between gap-3"><h2 class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.procurement.email_text') }}</h2><button type="button" class="sk-btn sk-btn-outline" @click="navigator.clipboard.writeText($refs.email.value); copied = true; setTimeout(() => copied = false, 1500)"><span x-text="copied ? '{{ __('production_bench.procurement.copied') }}' : '{{ __('production_bench.procurement.copy') }}'">{{ __('production_bench.procurement.copy') }}</span></button></div>
+            <div class="flex items-center justify-between gap-3"><h2 class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.procurement.email_text') }} <x-contextual-help.trigger topic="purchasing.purchase_orders" :topics="$contextualHelp['topics']" /></h2><button type="button" class="sk-btn sk-btn-outline" @click="navigator.clipboard.writeText($refs.email.value); copied = true; setTimeout(() => copied = false, 1500)"><span x-text="copied ? '{{ __('production_bench.procurement.copied') }}' : '{{ __('production_bench.procurement.copy') }}'">{{ __('production_bench.procurement.copy') }}</span></button></div>
             <textarea x-ref="email" readonly rows="10" class="sk-input w-full font-mono text-xs">{{ $emailText }}</textarea>
         </section>
     @endif

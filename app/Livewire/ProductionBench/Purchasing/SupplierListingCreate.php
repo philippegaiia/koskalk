@@ -15,6 +15,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -396,9 +397,10 @@ class SupplierListingCreate extends Component implements HasForms
             ->model(SupplierListing::class);
     }
 
-    public function render(): View
+    public function render(PurchasingHelpTopics $helpTopics): View
     {
         return view('livewire.production-bench.purchasing.supplier-listing-create', [
+            'contextualHelp' => $helpTopics->resolve('listings', app()->getLocale()),
             'lockedSupplier' => $this->lockedSupplierPublicId === null ? null : $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId),
         ]);
     }

@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Purchasing;
 use App\Models\GoodsReceipt;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -24,11 +25,12 @@ class ReceiptIndex extends Component
         $this->resetPage();
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(PurchasingHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
 
         return view('livewire.production-bench.purchasing.receipt-index', [
+            'contextualHelp' => $helpTopics->resolve('receipts', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'receipts' => GoodsReceipt::query()

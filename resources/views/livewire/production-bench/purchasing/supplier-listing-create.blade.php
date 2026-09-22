@@ -1,11 +1,13 @@
 <x-production-bench.page active="purchasing" :subnavigation="$navigationSection">
-    <header>
-        <div>
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0 flex-1">
             @if ($lockedSupplier)
                 <p class="sk-eyebrow">{{ $lockedSupplier->code }} · {{ $lockedSupplier->name }}</p>
             @endif
             <h1 @class(['mt-2' => $lockedSupplier, 'text-3xl font-semibold text-[var(--color-ink-strong)]'])>{{ $editingListingPublicId ? __('production_bench.listing.edit') : __('production_bench.listing.new') }}</h1>
         </div>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
     </header>
 
     <form wire:submit="save" class="space-y-4 pb-24">

@@ -7,6 +7,7 @@ use App\Actions\Purchasing\SaveSupplier;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\CurrencyCatalog;
 use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\Select;
@@ -105,9 +106,11 @@ class SupplierEdit extends Component implements HasForms
             ->model($this->supplier instanceof Supplier ? $this->supplier : Supplier::class);
     }
 
-    public function render(): View
+    public function render(PurchasingHelpTopics $helpTopics): View
     {
-        return view('livewire.production-bench.purchasing.supplier-edit');
+        return view('livewire.production-bench.purchasing.supplier-edit', [
+            'contextualHelp' => $helpTopics->resolve('suppliers', app()->getLocale()),
+        ]);
     }
 
     /** @return array<int, Section> */

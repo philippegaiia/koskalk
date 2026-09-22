@@ -21,6 +21,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ExchangeRateService;
 use App\Services\Inventory\StorageLocationSelection;
 use App\Services\MassConverter;
@@ -252,13 +253,14 @@ class ReceiptCreate extends Component implements HasForms
             ->canAutoConvert($currency, $this->workspace()->default_currency);
     }
 
-    public function render(): View
+    public function render(PurchasingHelpTopics $helpTopics): View
     {
         $workspace = $this->workspace();
 
         $orders = $this->eligibleOrders();
 
         return view('livewire.production-bench.purchasing.receipt-create', [
+            'contextualHelp' => $helpTopics->resolve('receipts', app()->getLocale()),
             'workspace' => $workspace,
             'orders' => $orders,
             'selectedOrder' => $this->selectedOrder($orders),

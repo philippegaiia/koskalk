@@ -9,11 +9,13 @@
             <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
         @endif
 
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.suppliers') }}</h1>
+            <h1 class="flex-1 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.suppliers') }}</h1>
             @if ($isBenchActive)
                 <a href="{{ route('production-bench.purchasing.suppliers.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.supplier.add') }}</a>
             @endif
+            <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
         </header>
 
         <section class="overflow-hidden sk-card">

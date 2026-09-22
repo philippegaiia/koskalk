@@ -3,11 +3,13 @@
         <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
     @endif
 
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.quotation_requests') : __('production_bench.procurement.purchase_orders') }}</h1>
+        <h1 class="flex-1 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.quotation_requests') : __('production_bench.procurement.purchase_orders') }}</h1>
         @if ($isBenchActive)
             <a href="{{ $isQuotation ? route('production-bench.purchasing.quotations.create') : route('production-bench.purchasing.orders.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ $isQuotation ? __('production_bench.procurement.new_quotation') : __('production_bench.procurement.new_order') }}</a>
         @endif
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
     </header>
 
     <section class="overflow-hidden sk-card">

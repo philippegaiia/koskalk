@@ -9,8 +9,9 @@
             <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
         @endif
 
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+            <div class="min-w-0 flex-1">
                 <p class="numeric sk-eyebrow">{{ $supplier->code }}</p>
                 <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $supplier->name }}</h1>
             </div>
@@ -20,6 +21,7 @@
                     <a href="{{ route('production-bench.purchasing.suppliers.listings.create', $supplier) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.listing.add') }}</a>
                 @endif
             </div>
+            <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
         </header>
 
         <section class="grid gap-4 lg:grid-cols-3">
@@ -57,7 +59,7 @@
 
         <section class="overflow-hidden sk-card">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] p-5 sm:flex-row sm:items-end sm:justify-between">
-                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.listing.listings') }}</h2>
+                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.listing.listings') }} <x-contextual-help.trigger topic="purchasing.listings" :topics="$contextualHelp['topics']" /></h2>
                 <label class="space-y-1"><span class="text-sm font-medium">{{ __('production_bench.common.status') }}</span><select wire:model.live="listingStatus" class="sk-input"><option value="active">{{ __('production_bench.common.active') }}</option><option value="all">{{ __('production_bench.common.all') }}</option><option value="inactive">{{ __('production_bench.common.inactive') }}</option></select></label>
             </div>
             <div class="overflow-x-auto">

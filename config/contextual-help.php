@@ -10,6 +10,18 @@ return [
         'prompt_version' => 'help-translation-v1',
     ],
     'topics' => [
+        'purchasing.suppliers' => ['domain' => 'production_purchasing'],
+        'purchasing.listings' => ['domain' => 'production_purchasing'],
+        'purchasing.purchase_formats' => ['domain' => 'production_purchasing'],
+        'purchasing.prices_and_currency' => ['domain' => 'production_purchasing'],
+        'purchasing.quotations' => ['domain' => 'production_purchasing'],
+        'purchasing.purchase_orders' => ['domain' => 'production_purchasing'],
+        'purchasing.incoming_stock' => ['domain' => 'production_purchasing'],
+        'purchasing.receiving_deliveries' => ['domain' => 'production_purchasing'],
+        'purchasing.partial_deliveries' => ['domain' => 'production_purchasing'],
+        'purchasing.corrections' => ['domain' => 'production_purchasing'],
+        'purchasing.receipt_documents' => ['domain' => 'production_purchasing'],
+
         'inventory.overview' => ['domain' => 'production_inventory'],
         'inventory.quantities' => ['domain' => 'production_inventory'],
         'inventory.lots_and_status' => ['domain' => 'production_inventory'],

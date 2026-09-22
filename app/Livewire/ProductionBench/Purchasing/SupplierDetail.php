@@ -6,6 +6,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
 use Illuminate\Contracts\View\View;
@@ -46,12 +47,14 @@ class SupplierDetail extends Component
     }
 
     public function render(
+        PurchasingHelpTopics $helpTopics,
         ProductionBenchAccess $access,
         SupplierListingPricePresentation $pricePresentation,
     ): View {
         $workspace = $this->workspace();
 
         return view('livewire.production-bench.purchasing.supplier-detail', [
+            'contextualHelp' => $helpTopics->resolve('suppliers', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'listingRows' => $this->supplier->listings()

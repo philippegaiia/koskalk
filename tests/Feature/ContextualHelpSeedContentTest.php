@@ -33,4 +33,5 @@ it('installs all English drafts and never replaces owner edits on repeat install
 })->with([
     ['contextual-help.en.json', 32],
     ['contextual-help.inventory.en.json', 10],
+    ['contextual-help.purchasing.en.json', 11],
 ]);

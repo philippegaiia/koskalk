@@ -1,7 +1,11 @@
 <x-production-bench.page active="purchasing" subnavigation="suppliers">
-    <header>
-        <p class="sk-eyebrow">{{ $supplier->code }}</p>
-        <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.supplier.edit') }}</h1>
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0 flex-1">
+            <p class="sk-eyebrow">{{ $supplier->code }}</p>
+            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.supplier.edit') }}</h1>
+        </div>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
     </header>
 
     <form wire:submit="save" class="space-y-4 pb-24">

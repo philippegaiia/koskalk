@@ -13,6 +13,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProcurementDocumentFormatter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
@@ -156,7 +157,7 @@ class ProcurementDetail extends Component
         session()->flash('status', 'Purchase order issued.');
     }
 
-    public function render(ProductionBenchAccess $access, ProcurementDocumentFormatter $formatter): View
+    public function render(PurchasingHelpTopics $helpTopics, ProductionBenchAccess $access, ProcurementDocumentFormatter $formatter): View
     {
         $order = $this->order()->load([
             'supplier',
@@ -167,6 +168,7 @@ class ProcurementDetail extends Component
         $hasIssuedDocument = $order->quotation_snapshot !== null || $order->purchase_order_snapshot !== null;
 
         return view('livewire.production-bench.purchasing.procurement-detail', [
+            'contextualHelp' => $helpTopics->resolve('procurement', app()->getLocale()),
             'emailText' => $hasIssuedDocument ? $formatter->emailText($order) : null,
             'isReadOnly' => $access->isReadOnly($this->workspace()),
             'order' => $order,

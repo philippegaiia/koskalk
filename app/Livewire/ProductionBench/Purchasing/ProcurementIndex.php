@@ -6,6 +6,7 @@ use App\Enums\ProcurementStage;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
@@ -34,7 +35,7 @@ class ProcurementIndex extends Component
         $this->resetPage();
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(PurchasingHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $orders = PurchaseOrder::query()
@@ -45,6 +46,7 @@ class ProcurementIndex extends Component
             ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.procurement-index', [
+            'contextualHelp' => $helpTopics->resolve('procurement', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'isQuotation' => ProcurementStage::from($this->stage) === ProcurementStage::Quotation,

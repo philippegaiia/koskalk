@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -163,7 +164,7 @@ class ProcurementCreate extends Component implements HasForms
         $this->redirectRoute('production-bench.purchasing.procurement.show', ['purchaseOrder' => $order], navigate: true);
     }
 
-    public function render(): View
+    public function render(PurchasingHelpTopics $helpTopics): View
     {
         $workspace = $this->workspace();
         $suppliers = Supplier::query()
@@ -192,6 +193,7 @@ class ProcurementCreate extends Component implements HasForms
                 ->get();
 
         return view('livewire.production-bench.purchasing.procurement-create', [
+            'contextualHelp' => $helpTopics->resolve('procurement', app()->getLocale()),
             'isQuotation' => ProcurementStage::from($this->stage) === ProcurementStage::Quotation,
             'listings' => $listings,
             'suppliers' => $suppliers,

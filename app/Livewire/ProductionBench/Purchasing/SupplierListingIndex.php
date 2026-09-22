@@ -7,6 +7,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
 use Filament\Forms\Components\Select;
@@ -99,6 +100,7 @@ class SupplierListingIndex extends Component implements HasForms
     }
 
     public function render(
+        PurchasingHelpTopics $helpTopics,
         ProductionBenchAccess $access,
         SupplierListingPricePresentation $pricePresentation,
     ): View {
@@ -162,6 +164,7 @@ class SupplierListingIndex extends Component implements HasForms
             ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.supplier-listing-index', [
+            'contextualHelp' => $helpTopics->resolve('listings', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'listingRows' => $listings->through(fn (SupplierListing $listing): array => [

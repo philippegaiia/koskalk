@@ -12,8 +12,9 @@
         <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
     @endif
 
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ $receipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}</p>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.singular') }}</h1>
             <p class="numeric mt-1 text-sm text-[var(--color-ink-soft)]">{{ $receipt->delivery_reference ?: __('production_bench.receipt.no_reference') }}</p>
@@ -27,6 +28,7 @@
                 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' => $receiptStatus === 'reversed',
             ])
         >{{ __("production_bench.receipt.status_{$receiptStatus}") }}</span>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
     </header>
 
     <dl class="grid gap-x-6 gap-y-4 border-y border-[var(--color-line)] py-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -41,7 +43,7 @@
         <section aria-labelledby="outstanding-order-lines-heading" data-outstanding-order-lines class="sk-card space-y-4 p-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 id="outstanding-order-lines-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.outstanding_items') }}</h2>
+                    <h2 id="outstanding-order-lines-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.outstanding_items') }} <x-contextual-help.trigger topic="purchasing.partial_deliveries" :topics="$contextualHelp['topics']" /></h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.outstanding_items_help', ['order' => $receipt->purchaseOrder->reference]) }}</p>
                 </div>
                 @if ($canReceiveOutstanding)
@@ -105,7 +107,7 @@
 
     <section aria-labelledby="receipt-documents-heading" class="space-y-4">
         <div>
-            <h2 id="receipt-documents-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.documents') }}</h2>
+            <h2 id="receipt-documents-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.documents') }} <x-contextual-help.trigger topic="purchasing.receipt_documents" :topics="$contextualHelp['topics']" /></h2>
             <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.documents_help') }}</p>
         </div>
 

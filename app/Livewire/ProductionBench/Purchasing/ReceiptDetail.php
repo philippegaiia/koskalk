@@ -15,6 +15,7 @@ use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\MediaAssetUploadService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
@@ -174,7 +175,7 @@ class ReceiptDetail extends Component
         session()->flash('documentStatus', __('production_bench.receipt.document_detached'));
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(PurchasingHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $receipt = $this->receipt()->load([
             'supplier',
@@ -210,6 +211,7 @@ class ReceiptDetail extends Component
         $canWrite = $access->canWrite($this->user(), $this->workspace());
 
         return view('livewire.production-bench.purchasing.receipt-detail', [
+            'contextualHelp' => $helpTopics->resolve('receipts', app()->getLocale()),
             'receipt' => $receipt,
             'outstandingOrderLines' => $outstandingOrderLines,
             'isReadOnly' => $isReadOnly,

@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Purchasing;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -81,7 +82,7 @@ class SupplierIndex extends Component implements HasForms
         $this->resetPage();
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(PurchasingHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $search = trim((string) ($this->filters['search'] ?? ''));
@@ -113,6 +114,7 @@ class SupplierIndex extends Component implements HasForms
             ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.supplier-index', [
+            'contextualHelp' => $helpTopics->resolve('suppliers', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'suppliers' => $suppliers,

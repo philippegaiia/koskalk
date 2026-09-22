@@ -153,6 +153,8 @@
             :type="session('error') ? 'error' : 'success'"
         />
 
+        <x-contextual-help.panel />
+
         @filamentScripts
     </body>
 </html>

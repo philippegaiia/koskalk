@@ -4,6 +4,7 @@ return [
     'catalogue_locales' => ['de', 'es', 'fr', 'it', 'nl', 'pt_BR'],
 
     'sources' => [
+        'contextual_help' => ['*'],
         'account' => ['*'],
         'dashboard' => ['*'],
         'formula_documents' => ['*'],

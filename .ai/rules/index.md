@@ -51,3 +51,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/components/workflow-action-bar.blade.php | .ai/rules/views-components.md |
 | resources/views/livewire/production-bench/inventory*.blade.php | .ai/rules/views-livewire-production-bench.md |
 | resources/views/** | .ai/rules/views.md |
+| app/Services/ContextualHelp/** | .ai/rules/contextual-help.md |

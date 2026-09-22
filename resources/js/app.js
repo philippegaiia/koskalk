@@ -1,3 +1,4 @@
+import { createContextualHelp } from './contextual-help';
 import './bootstrap';
 import { createAppNotification } from './app-notification';
 import { createClassificationPrompt } from './classification-prompt';
@@ -57,3 +58,6 @@ document.addEventListener('livewire:navigated', () => {
     initializeSidebar();
     queueMicrotask(() => consumeIngredientEditorNotification());
 });
+
+const contextualHelp = createContextualHelp({ document, window });
+contextualHelp.mount();

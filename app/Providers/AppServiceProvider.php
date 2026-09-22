@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\ExchangeRateProvider;
+use App\Contracts\HelpTranslationClient;
 use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceLocalizationClient;
@@ -11,6 +12,7 @@ use App\Contracts\IngredientIdentityNameLocalizationClient;
 use App\Contracts\IngredientResearchClient;
 use App\Listeners\CreateDefaultCompany;
 use App\Listeners\SyncPlanEntitlementFromPaddleSubscription;
+use App\Services\ContextualHelp\OpenAiHelpTranslationClient;
 use App\Services\FrankfurterExchangeRateProvider;
 use App\Services\IngredientEnrichment\OpenAiIngredientEditorialClient;
 use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(HelpTranslationClient::class, OpenAiHelpTranslationClient::class);
         $this->app->scoped(LocalePreferenceResolver::class);
         $this->app->singleton(SourcePublisherDomainResolver::class);
         $this->app->bind(ExchangeRateProvider::class, FrankfurterExchangeRateProvider::class);

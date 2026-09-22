@@ -1,6 +1,6 @@
 <section x-show="activeWorkbenchTab === 'instructions'" x-cloak role="tabpanel" aria-labelledby="tab-instructions" id="panel-instructions">
  <header class="border-b border-[var(--color-line)] pb-4">
- <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.instructions.title') }}</h3>
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.instructions.title') }} <x-contextual-help.trigger topic="shared.manufacturing_procedure" :topics="$contextualHelp['topics'] ?? []" /></h3>
  <p class="mt-2 max-w-[75ch] text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workbench.instructions.intro') }}</p>
  </header>
 

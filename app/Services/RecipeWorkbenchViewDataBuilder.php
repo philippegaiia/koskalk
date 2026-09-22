@@ -12,6 +12,8 @@ use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\HelpTopicResolver;
+use App\Services\ContextualHelp\WorkbenchHelpTopics;
 use App\Support\NumberLocale;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Translation\Translator;
@@ -25,6 +27,8 @@ class RecipeWorkbenchViewDataBuilder
         private readonly RecipeFormulaItemLimitService $recipeFormulaItemLimitService,
         private readonly CurrencyCatalog $currencyCatalog,
         private readonly Translator $translator,
+        private readonly WorkbenchHelpTopics $helpTopics,
+        private readonly HelpTopicResolver $helpResolver,
     ) {}
 
     /**
@@ -44,7 +48,12 @@ class RecipeWorkbenchViewDataBuilder
         $defaultMassGrams = $productFamily->calculation_basis === 'total_formula' ? '100' : '1000';
         $massDisplaySystem = $user?->company()?->mass_display_system ?? MassDisplaySystem::Metric;
 
+        $helpScope = $this->helpTopics->forSurface($productFamily->slug, $user instanceof User);
+        $helpContent = $this->helpResolver->resolve($helpScope['keys'], app()->getLocale());
+        $helpTabs = array_map(fn (array $keys): array => array_values(array_intersect($keys, array_keys($helpContent))), $helpScope['tabs']);
+
         return [
+            'contextualHelp' => ['topics' => $helpContent, 'tabs' => $helpTabs],
             'productFamily' => [
                 'id' => $productFamily->id,
                 'name' => $productFamily->name,

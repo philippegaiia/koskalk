@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BetaInviteAcceptanceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HelpContentExportDownloadController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\LocalePreferenceController;
@@ -38,6 +39,10 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::middleware('auth')->group(function (): void {
+    Route::get('/admin/help-content-exports/{helpContentExport}/download', HelpContentExportDownloadController::class)
+        ->whereUuid('helpContentExport')
+        ->middleware('throttle:20,1')
+        ->name('help-content-exports.download');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::view('/email/verify', 'auth.verify-email')->name('verification.notice');
 });

@@ -13,7 +13,7 @@
  <div class="flex flex-col gap-4">
  <div>
  <p class="sk-eyebrow">{{ __('workbench.packaging.plan.title') }}</p>
- <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.title') }}</h3>
+ <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.title') }} <x-contextual-help.trigger topic="shared.packaging" :topics="$contextualHelp['topics'] ?? []" /></h3>
  <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.packaging.plan.help') }}</p>
  </div>
 

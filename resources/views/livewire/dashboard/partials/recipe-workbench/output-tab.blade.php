@@ -8,7 +8,7 @@
  <section class="sk-card p-5" aria-labelledby="output-cosmetic-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <h2 id="output-cosmetic-heading" class="sk-eyebrow">{{ __('workbench.output.cosmetic.title') }}</h2>
+ <h2 id="output-cosmetic-heading" class="sk-eyebrow">{{ __('workbench.output.cosmetic.title') }} <x-contextual-help.trigger topic="cosmetic.output_basis" :topics="$contextualHelp['topics'] ?? []" /></h2>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.help') }}</p>
  </div>
  <div class="flex flex-col items-start gap-3 lg:items-end">
@@ -88,7 +88,7 @@
  <section class="sk-card p-5" aria-labelledby="output-soap-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <h2 id="output-soap-heading" class="sk-eyebrow">{{ __('workbench.output.soap.title') }}</h2>
+ <h2 id="output-soap-heading" class="sk-eyebrow">{{ __('workbench.output.soap.title') }} <x-contextual-help.trigger topic="soap.output_basis" :topics="$contextualHelp['topics'] ?? []" /></h2>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.help') }}</p>
  </div>
  <div class="flex flex-col items-start gap-3 lg:items-end">

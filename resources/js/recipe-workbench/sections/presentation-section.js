@@ -1025,6 +1025,7 @@ export function createPresentationSection() {
             if (this.isQualityApplicable('cure_speed') && quality.cure_speed < 35) {
                 flags.push({
                     label: 'Slow cure',
+                    helpKey: 'soap.qualities.cure',
                     explanation: 'This bar likely benefits from a longer cure before it shows its best hardness, feel, and lather.',
                 });
             }
@@ -1032,6 +1033,7 @@ export function createPresentationSection() {
             if (this.isQualityApplicable('dos_risk') && quality.dos_risk >= 35) {
                 flags.push({
                     label: 'DOS risk',
+                    helpKey: 'soap.qualities.dos',
                     explanation: 'Higher unsaturation means storage conditions, fresh oils, and antioxidants matter more here.',
                 });
             }
@@ -1039,6 +1041,7 @@ export function createPresentationSection() {
             if (this.isQualityApplicable('slime_risk') && quality.slime_risk >= 35) {
                 flags.push({
                     label: 'Slime tendency',
+                    helpKey: 'soap.qualities.cure',
                     explanation: 'High-oleic styles can feel slimy early on, especially before a long cure has finished smoothing them out.',
                 });
             }
@@ -1060,6 +1063,7 @@ export function createPresentationSection() {
             if (this.isQualityApplicable('cure_speed') && this.isQualityApplicable('slime_risk') && mu > 65 && vs < 12 && hs < 20) {
                 flags.push({
                     label: 'Castile-like',
+                    helpKey: 'soap.qualities.cure',
                     explanation: 'This profile behaves like a high-oleic soap: gentle and slow, often improving dramatically with a long cure.',
                 });
             }
@@ -1072,22 +1076,27 @@ export function createPresentationSection() {
             const warningLabels = {
                 high_koh_context_process_dependent: {
                     label: 'High-KOH process context',
+                    helpKey: 'soap.qualities.liquid',
                     explanation: 'High-KOH and liquid soap metrics are process-dependent tendencies, not bar-soap score targets.',
                 },
                 negative_superfat_requires_neutralization_and_ph_control: {
                     label: 'Negative superfat needs pH control',
+                    helpKey: 'soap.qualities.liquid',
                     explanation: 'Negative superfat liquid soap requires neutralization strategy and pH control before use.',
                 },
                 positive_liquid_superfat_may_cloud_or_separate: {
                     label: 'Liquid superfat stability',
+                    helpKey: 'soap.qualities.liquid',
                     explanation: 'Positive superfat in liquid soap may cloud, thicken unpredictably, or separate.',
                 },
                 high_polyunsaturated_dos_risk: {
                     label: 'High polyunsaturated DOS risk',
+                    helpKey: 'soap.qualities.dos',
                     explanation: 'The polyunsaturated fatty-acid level increases DOS sensitivity, so fresh oils and careful storage matter.',
                 },
                 very_high_polyunsaturated_dos_risk: {
                     label: 'Very high DOS risk',
+                    helpKey: 'soap.qualities.dos',
                     explanation: 'The polyunsaturated fatty-acid level is very high and may need reformulation, antioxidants, or stricter storage controls.',
                 },
             };

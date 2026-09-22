@@ -248,3 +248,28 @@ php artisan tinker --execute 'dump([
 ```
 
 Expected disks are `r2_public`, `r2_private`, `r2_private`, `r2_private`, `local`, and `r2_backups`. Never dump complete filesystem configuration in production because it contains credentials.
+
+## Contextual-help snapshots and recovery
+
+Contextual help is edited in the database. Ordinary application deployments preserve it; replacing or resetting the database requires restoring it. The Git-tracked English catalogue is an initial draft set, **not** an ongoing mirror of owner edits.
+
+Help snapshots use the private `r2_backups` disk (`CONTEXTUAL_HELP_DISK` can override it) and versioned JSON manifests. Each verified object is stored under `help-content/YYYY/MM/DD/<export-uuid>/<attempt-token>.json`. The attempt token prevents a delayed worker from overwriting another successful upload. The database records byte length and SHA-256; downloads verify both before returning bytes through an administrator-authorized route.
+
+Snapshots are requested after publication, withdrawal, and archival changes. Production also captures one at 02:45 UTC daily. A pre-import snapshot is required and verified before merging into nonempty content; remote failure prevents the merge. Full database backups remain necessary and include drafts edited since the last help snapshot.
+
+```shell
+# Synchronous verified snapshot on the configured private disk:
+php artisan help:snapshot
+# Export a portable local JSON file:
+php artisan help:export --output=/secure/path/help-content.json
+# Preview restoration into an entirely empty help store:
+php artisan help:import /secure/path/help-content.json --mode=restore-empty
+# Apply only after inspecting the preview (production requires --force):
+php artisan help:import /secure/path/help-content.json --mode=restore-empty --apply --force --no-interaction
+```
+
+`restore-empty` preserves topic/revision UUIDs, histories, publication heads, English source references, and translation candidates/audit metadata. In-flight translation requests become failed audit records; restoring does not start paid calls. Users currently have no cross-installation UUID, so portable author/publisher/requester links are null. Local attribution remains intact in the source database; use the full database backup when restoring those account relationships is required.
+
+`merge-drafts` imports selected content as drafts and never changes live publication heads. The maintenance page previews current and incoming content per topic/language, records the reviewed file digest and target versions, then rechecks them when applying. A changed file or concurrent edit requires a new preview. Known UUIDs are idempotent; conflicting UUID reuse is rejected. Archived topics remain untouched. Translation request history and candidate-only languages are included.
+
+Keep downloaded snapshots outside the repository and retain a verified copy before replacing an installation. Existing R2 lifecycle rules for database dumps should be reviewed for the `help-content/` prefix; the application does not assume or install a retention rule for help objects. Neither a pending export nor a failed export is evidence of a recoverable backup.

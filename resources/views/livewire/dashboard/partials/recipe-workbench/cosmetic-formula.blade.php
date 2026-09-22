@@ -2,7 +2,7 @@
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.cosmetic.title') }}</h3>
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.cosmetic.title') }} <x-contextual-help.trigger topic="cosmetic.phases" :topics="$contextualHelp['topics'] ?? []" /></h3>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.cosmetic.instruction') }}</p>
  </div>
  <div data-formula-balance-status aria-live="polite" :class="oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-warning-strong)]'" class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors">

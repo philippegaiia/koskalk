@@ -3,7 +3,7 @@
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <h3 id="post-reaction-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.additions.title') }}</h3>
+ <h3 id="post-reaction-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.additions.title') }} <x-contextual-help.trigger topic="soap.post_reaction_additions" :topics="$contextualHelp['topics'] ?? []" /></h3>
  </div>
  <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${format(totalAdditionPercentage(), 1)}% of oils`"></span>
  </div>

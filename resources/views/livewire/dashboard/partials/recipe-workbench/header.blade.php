@@ -5,6 +5,9 @@
 @endphp
 
 <section class="{{ $isPublicCalculator ? 'pb-1' : 'sk-formula-header' }}">
+    @if (! empty($contextualHelp['topics']))
+        <button type="button" data-help-index @click="$dispatch('contextual-help:index', { tab: activeWorkbenchTab })" x-show="(@js($contextualHelp['tabs'])[activeWorkbenchTab] || []).length" class="sk-btn sk-btn-ghost float-right" aria-controls="contextual-help-panel">{{ __('contextual_help.help') }}</button>
+    @endif
     @if ($isPublicCalculator)
         <div class="flex flex-wrap items-center gap-2">
             <p class="sk-eyebrow">{{ __('workbench.header.section') }}</p>

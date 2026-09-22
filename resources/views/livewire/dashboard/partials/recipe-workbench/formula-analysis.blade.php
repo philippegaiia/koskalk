@@ -24,7 +24,7 @@
     >
         <div class="sk-section-header sk-section-header-reference flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="sk-eyebrow">{{ __('workbench.headings.soap_qualities') }}</p>
+                <p class="sk-eyebrow">{{ __('workbench.headings.soap_qualities') }} <x-contextual-help.trigger topic="soap.qualities" :topics="$contextualHelp['topics'] ?? []" /></p>
                 <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">
                     {{ __('workbench.qualities.disclaimer') }}
                 </p>
@@ -112,7 +112,12 @@
                             <div class="mt-1.5 divide-y divide-[var(--color-line)]">
                                 <template x-for="flag in qualityFlags()" :key="flag.label">
                                     <div class="grid gap-0.5 py-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                                        <div class="text-xs font-medium leading-4 text-[var(--color-ink-strong)]" x-text="flag.label"></div>
+                                        <div class="text-xs font-medium leading-4 text-[var(--color-ink-strong)]">
+                                            <span x-text="flag.label"></span>
+                                            @foreach (['soap.qualities.cure', 'soap.qualities.dos', 'soap.qualities.liquid'] as $stateTopic)
+                                                <span x-show="flag.helpKey === @js($stateTopic)"><x-contextual-help.trigger :topic="$stateTopic" :topics="$contextualHelp['topics'] ?? []" /></span>
+                                            @endforeach
+                                        </div>
                                         <div class="text-xs leading-4 text-[var(--color-ink-soft)]" x-text="flag.explanation"></div>
                                     </div>
                                 </template>

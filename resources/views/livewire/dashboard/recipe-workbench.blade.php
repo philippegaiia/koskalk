@@ -1,9 +1,12 @@
 @php
     $isCosmeticWorkbench = ($workbench['productFamily']['slug'] ?? 'soap') === 'cosmetic';
     $isPublicCalculator = request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false);
+    $contextualHelp = $workbench['contextualHelp'] ?? ['topics' => [], 'tabs' => []];
+    unset($workbench['contextualHelp']);
 @endphp
 
-<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
+<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval) $dispatch('contextual-help:modal')" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
+ <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
  <div class="space-y-4">
  @include('livewire.dashboard.partials.recipe-workbench.header')
  @include('livewire.dashboard.partials.recipe-workbench.navigation')

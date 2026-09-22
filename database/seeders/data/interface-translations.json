@@ -695,6 +695,66 @@
       }
     },
     {
+      "group": "contextual_help",
+      "key": "about",
+      "text": {
+        "de": "Hilfe: :topic",
+        "es": "Ayuda: :topic",
+        "fr": "Aide : :topic",
+        "it": "Aiuto: :topic",
+        "nl": "Help: :topic",
+        "pt_BR": "Ajuda: :topic"
+      }
+    },
+    {
+      "group": "contextual_help",
+      "key": "back",
+      "text": {
+        "de": "Alle Themen",
+        "es": "Todos los temas",
+        "fr": "Tous les sujets",
+        "it": "Tutti gli argomenti",
+        "nl": "Alle onderwerpen",
+        "pt_BR": "Todos os tópicos"
+      }
+    },
+    {
+      "group": "contextual_help",
+      "key": "close",
+      "text": {
+        "de": "Hilfe schließen",
+        "es": "Cerrar ayuda",
+        "fr": "Fermer l’aide",
+        "it": "Chiudi aiuto",
+        "nl": "Help sluiten",
+        "pt_BR": "Fechar ajuda"
+      }
+    },
+    {
+      "group": "contextual_help",
+      "key": "help",
+      "text": {
+        "de": "Hilfe",
+        "es": "Ayuda",
+        "fr": "Aide",
+        "it": "Aiuto",
+        "nl": "Help",
+        "pt_BR": "Ajuda"
+      }
+    },
+    {
+      "group": "contextual_help",
+      "key": "index_title",
+      "text": {
+        "de": "Hilfe zu diesem Tab",
+        "es": "Ayuda para esta pestaña",
+        "fr": "Aide pour cet onglet",
+        "it": "Aiuto per questa scheda",
+        "nl": "Hulp bij dit tabblad",
+        "pt_BR": "Ajuda para esta aba"
+      }
+    },
+    {
       "group": "dashboard",
       "key": "create.cosmetic",
       "text": {

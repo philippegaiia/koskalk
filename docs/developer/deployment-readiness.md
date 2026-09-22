@@ -54,3 +54,26 @@ The `RegulatoryRegimeSeeder` shipped with the Canada labelling release and must 
 - Check the production log and browser errors before allowing wider access.
 
 For the detailed backup and restore procedure, use [storage-and-backups.md](./storage-and-backups.md). For catalogue modes, locale activation, and translation recovery, use [localization.md](./localization.md).
+
+## Contextual help rollout
+
+Run the normal migration and supported-locale steps first. For a first installation without existing help content:
+
+```shell
+php artisan help:import database/seeders/data/contextual-help.en.json --mode=bootstrap
+php artisan help:import database/seeders/data/contextual-help.en.json --mode=bootstrap --apply --force --no-interaction
+```
+
+This installs 32 **unpublished English drafts**. Bootstrap never replaces existing revisions or owner edits. Review and publish each topic from Admin → Content → Help Topics, then request translations and accept reviewed candidates as drafts. Publishing remains a separate action. Application-interface translations for panel buttons use the ordinary interface catalogue commands above.
+
+For a replacement installation, restore a downloaded help snapshot **before bootstrap or `help:register-topics`**; `restore-empty` requires all topic, locale, revision, and translation-request tables to be empty. Follow the recovery commands in [storage-and-backups.md](./storage-and-backups.md). Never use `migrate:fresh` on a database with content to preserve.
+
+Run a database worker for the dedicated `content` queue:
+
+```shell
+php artisan queue:work database --queue=content --sleep=3 --timeout=150 --tries=3
+```
+
+Jobs have a 120-second timeout; `DB_QUEUE_RETRY_AFTER` must exceed the worker timeout (keep the existing 2100-second default if other jobs require it). Translation jobs explicitly permit one attempt; uncertain provider calls are never retried automatically. The scheduler redispatches durable pending jobs every five minutes and expires stalled translation attempts after ten minutes. A new paid attempt is requested explicitly in the editor.
+
+Verify a manual snapshot in Admin → Content → Help imports & backups before release. Confirm the recorded snapshot checksum, private download, and an isolated restore. Help reads only published content and falls back to published English when a translation is missing or out of date. Editing English alone does not invalidate a live translation; publishing changed English does.

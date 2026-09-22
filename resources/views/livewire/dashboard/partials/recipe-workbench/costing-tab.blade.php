@@ -3,7 +3,7 @@
  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
  <div>
  <p class="sk-eyebrow">{{ __('workbench.costing.settings.title') }}</p>
- <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.settings.title') }}</h3>
+ <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.settings.title') }} <x-contextual-help.trigger topic="shared.costing" :topics="$contextualHelp['topics'] ?? []" /></h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.costing.settings.help') }}</p>
  </div>
  <div class="rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">

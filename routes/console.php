@@ -23,3 +23,15 @@ Schedule::command('media:fail-stale-assets')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('help:snapshot')
+    ->dailyAt('02:45')
+    ->timezone('UTC')
+    ->environments(['production'])
+    ->withoutOverlapping(120)
+    ->onOneServer();
+
+Schedule::command('help:recover-jobs')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();

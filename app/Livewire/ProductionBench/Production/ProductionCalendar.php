@@ -8,6 +8,7 @@ use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -195,7 +196,7 @@ class ProductionCalendar extends Component
         ));
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $productionLocations = $workspace->uses_production_locations
@@ -206,6 +207,7 @@ class ProductionCalendar extends Component
             : collect();
 
         return view('livewire.production-bench.production.production-calendar', [
+            'contextualHelp' => $helpTopics->resolve('calendar', app()->getLocale()),
             'workspace' => $workspace,
             'productionLocations' => $productionLocations,
             'events' => $this->events(),

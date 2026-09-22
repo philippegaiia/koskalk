@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -174,7 +175,7 @@ class TaskIndex extends Component implements HasForms
         }
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $searchOperator = ProductionTask::query()->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
@@ -199,6 +200,7 @@ class TaskIndex extends Component implements HasForms
         $this->applyDateScope($query);
 
         return view('livewire.production-bench.production.task-index', [
+            'contextualHelp' => $helpTopics->resolve('tasks', app()->getLocale()),
             'workspace' => $workspace,
             'tasks' => $query->orderBy('scheduled_for')->orderBy('id')->paginate($this->perPage),
             'departments' => Department::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),

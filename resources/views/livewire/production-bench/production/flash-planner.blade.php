@@ -23,8 +23,9 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+            <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
                 <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.flash.title') }}</h1>
                 <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.intro') }}</p>
@@ -32,6 +33,7 @@
             @if ($isReadOnly)
                 <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
             @endif
+            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
         </header>
 
         <section aria-labelledby="flash-lines-heading" class="sk-card space-y-5 p-5 sm:p-6">

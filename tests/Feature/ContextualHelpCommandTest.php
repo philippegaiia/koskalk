@@ -14,10 +14,10 @@ uses(RefreshDatabase::class);
 
 it('registers identities idempotently without inventing content', function (): void {
     $this->artisan('help:register')->assertSuccessful();
-    expect(HelpTopic::query()->count())->toBe(53);
+    expect(HelpTopic::query()->count())->toBe(66);
     expect(HelpTopicLocale::query()->count())->toBe(0);
     $this->artisan('help:register')->assertSuccessful();
-    expect(HelpTopic::query()->count())->toBe(53);
+    expect(HelpTopic::query()->count())->toBe(66);
 });
 
 it('exports private JSON to a new local path and refuses an overwrite', function (): void {

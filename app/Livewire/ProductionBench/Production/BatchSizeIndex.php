@@ -6,6 +6,7 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionBatchPreset;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -61,7 +62,7 @@ class BatchSizeIndex extends Component
         $this->showAppNotification(__('production_bench.settings.batch_size_deleted'));
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $search = trim($this->search);
@@ -85,6 +86,7 @@ class BatchSizeIndex extends Component
             ->paginate($this->perPage);
 
         return view('livewire.production-bench.production.batch-size-index', [
+            'contextualHelp' => $helpTopics->resolve('presets', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'presets' => $presets,

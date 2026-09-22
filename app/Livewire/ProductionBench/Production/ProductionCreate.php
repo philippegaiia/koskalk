@@ -14,6 +14,7 @@ use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\ProductionAvailabilityPreview;
 use App\Services\Production\ProductionDailyOccupancy;
 use App\Services\Production\ProductionLocationSelection;
@@ -264,6 +265,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
     }
 
     public function render(
+        ProductionHelpTopics $helpTopics,
         ProductionBenchAccess $access,
         ProductionAvailabilityPreview $availabilityPreview,
         ProductionDailyOccupancy $occupancy,
@@ -280,6 +282,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
             : collect();
 
         return view('livewire.production-bench.production.production-create', [
+            'contextualHelp' => $helpTopics->resolve('create', app()->getLocale()),
             'workspace' => $workspace,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),

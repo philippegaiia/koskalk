@@ -8,8 +8,9 @@
         @php
             $numberLocale = auth()->user()?->number_locale;
         @endphp
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+            <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
                 <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.index_title') }}</h1>
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.index_intro') }}</p>
@@ -19,6 +20,7 @@
                     <a href="{{ route('production-bench.production.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.new') }}</a>
                 </div>
             @endif
+            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
         </header>
 
         <section aria-label="{{ __('production_bench.common.search') }}" class="sk-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">

@@ -9,6 +9,7 @@ use App\Models\ProductionBatchPreset;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
@@ -210,7 +211,7 @@ class BatchSizeForm extends Component
         $this->redirectRoute('production-bench.production.settings.presets', navigate: true);
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $search = trim($this->productSearch);
@@ -224,6 +225,7 @@ class BatchSizeForm extends Component
             ->paginate($this->perPage);
 
         return view('livewire.production-bench.production.batch-size-form', [
+            'contextualHelp' => $helpTopics->resolve('presets', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'massUnits' => MassUnit::cases(),

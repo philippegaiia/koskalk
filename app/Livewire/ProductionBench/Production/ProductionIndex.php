@@ -15,6 +15,7 @@ use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\ProductionDailyOccupancy;
 use App\Services\ProductionBenchAccess;
 use Filament\Actions\Action;
@@ -213,7 +214,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
         $this->dispatch('production-batch-numbers-updated');
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $locationFilterId = $this->locationFilterId($workspace);
@@ -235,6 +236,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
             ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.production.production-index', [
+            'contextualHelp' => $helpTopics->resolve('index', app()->getLocale()),
             'workspace' => $workspace,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),

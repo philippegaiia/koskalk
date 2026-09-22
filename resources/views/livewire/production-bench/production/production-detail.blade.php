@@ -25,6 +25,8 @@
                 <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
             @endif
 
+            <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+
             <header class="sk-card space-y-5 p-5 sm:p-6" data-testid="production-header">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0">
@@ -40,12 +42,13 @@
                             <span>{{ __('production_bench.settings.batch_size') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['basis'] }}</strong></span>
                             <span>{{ __('production_bench.settings.expected_units') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['expected_units'] }}</strong></span>
                             @if ($identity['formula_version'])
-                                <span>{{ __('production_bench.production.formula.source_version') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['formula_version'] }}</strong></span>
+                                <span>{{ __('production_bench.production.formula.source_version') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['formula_version'] }}</strong> <x-contextual-help.trigger topic="production.formula_snapshot" :topics="$contextualHelp['topics']" /></span>
                             @endif
                         </div>
                     </div>
 
                     <div class="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                        <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
                         @if ($primaryAction === 'schedule')
                             <div class="flex flex-col gap-1 sm:flex-row sm:items-start">
                                 <div class="min-w-48">{{ $this->planningDateForm }}</div>
@@ -174,7 +177,7 @@
 
             <section data-testid="batch-materials-table" aria-labelledby="batch-materials-heading" class="sk-card overflow-hidden">
                 <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
-                    <h2 id="batch-materials-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.batch_materials') }}</h2>
+                    <h2 id="batch-materials-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.batch_materials') }} <x-contextual-help.trigger topic="production.start_and_actuals" :topics="$contextualHelp['topics']" /></h2>
                     <span class="sr-only">{{ __('production_bench.production.formula.title') }}</span>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.batch_materials_help') }}</p>
                 </div>
@@ -273,7 +276,7 @@
 
             @if ($production->status === \App\Enums\ProductionRunStatus::InProduction)
                 <section aria-labelledby="readiness-heading" class="sk-card overflow-hidden">
-                    <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="readiness-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.readiness_title') }}</h2></div>
+                    <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="readiness-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.readiness_title') }} <x-contextual-help.trigger topic="production.completion" :topics="$contextualHelp['topics']" /></h2></div>
                     <ul class="divide-y divide-[var(--color-line)] text-sm">
                         @foreach ([
                             'actuals' => 'readiness_actuals',
@@ -293,7 +296,7 @@
 
                 <section id="completion-section" aria-labelledby="completion-heading" class="sk-card space-y-4 p-5 sm:p-6">
                     <div>
-                        <h2 id="completion-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.complete_title') }}</h2>
+                        <h2 id="completion-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.complete_title') }} <x-contextual-help.trigger topic="production.completion" :topics="$contextualHelp['topics']" /></h2>
                         <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.complete_help') }}</p>
                     </div>
                     @error('production') <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
@@ -318,7 +321,7 @@
                 </section>
 
                 <section aria-labelledby="abort-heading" class="sk-card space-y-4 p-5 sm:p-6">
-                    <div><h2 id="abort-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.abort_title') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.abort_help') }}</p></div>
+                    <div><h2 id="abort-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.abort_title') }} <x-contextual-help.trigger topic="production.cancel_abort" :topics="$contextualHelp['topics']" /></h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.abort_help') }}</p></div>
                     <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.abort_reason') }}</span><textarea wire:model="abortReason" rows="2" maxlength="2000" required @disabled($mutationLocked) class="sk-input mt-1 w-full"></textarea></label>
                     @error('abort_reason') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     <div class="flex justify-end"><button type="button" wire:click="abort" wire:confirm="{{ __('production_bench.production.abort_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.abort') }}</button></div>
@@ -328,7 +331,7 @@
             @if ($production->outputLot !== null)
                 <section id="output-lot-section" aria-labelledby="output-lot-heading" class="sk-card overflow-hidden">
                     <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
-                        <div class="flex flex-wrap items-center justify-between gap-2"><h2 id="output-lot-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.output_lot') }}</h2><span class="font-mono text-sm font-semibold text-[var(--color-ink-strong)]">{{ $production->outputLot->internal_lot_code }}</span></div>
+                        <div class="flex flex-wrap items-center justify-between gap-2"><h2 id="output-lot-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.output_lot') }} <x-contextual-help.trigger topic="production.output_lot" :topics="$contextualHelp['topics']" /></h2><span class="font-mono text-sm font-semibold text-[var(--color-ink-strong)]">{{ $production->outputLot->internal_lot_code }}</span></div>
                         <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $production->outputLot->subjectName() }} · {{ $production->outputLot->status->value === 'quarantined' ? __('production_bench.production.output_awaiting_release') : __('production_bench.production.output_released_label') }}@if ($production->outputLot->estimated_ready_on) · {{ __('production_bench.production.output_estimated_ready', ['date' => $production->outputLot->estimated_ready_on->format('Y-m-d')]) }} @endif</p>
                         @if ($output['actual'] !== null)
                             <div class="mt-4 grid gap-3 border-t border-[var(--color-line)] pt-4 text-sm sm:grid-cols-4">
@@ -364,7 +367,7 @@
             @endif
 
             <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">
-                <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }}</h2></div>
+                <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }} <x-contextual-help.trigger topic="production.tasks" :topics="$contextualHelp['topics']" /></h2></div>
                 @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror
                 <div class="divide-y divide-[var(--color-line)]">
                     @forelse ($production->tasks as $task)
@@ -391,7 +394,7 @@
             </section>
 
             <section aria-labelledby="journal-heading" class="sk-card overflow-hidden">
-                <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="journal-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.journal') }}</h2></div>
+                <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="journal-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.journal') }} <x-contextual-help.trigger topic="production.journal" :topics="$contextualHelp['topics']" /></h2></div>
                 <div class="divide-y divide-[var(--color-line)]">
                     @forelse ($production->journalEntries as $entry)
                         <div class="px-5 py-4 sm:px-6"><p class="whitespace-pre-line text-sm text-[var(--color-ink-strong)]">{{ $entry->body }}</p><p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $entry->created_at?->format('Y-m-d H:i') }} · {{ $entry->createdBy?->name ?? __('production_bench.production.journal_unknown_author') }}</p></div>
@@ -438,7 +441,7 @@
 
             @if (in_array($production->status->value, ['draft', 'scheduled', 'reserved'], true))
                 <section aria-labelledby="cancel-production-heading" class="sk-card space-y-4 p-5 sm:p-6">
-                    <div><h2 id="cancel-production-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.cancel') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.cancel_help') }}</p></div>
+                    <div><h2 id="cancel-production-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.cancel') }} <x-contextual-help.trigger topic="production.cancel_abort" :topics="$contextualHelp['topics']" /></h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.cancel_help') }}</p></div>
                     <form wire:submit="cancel" class="space-y-3"><label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.cancel_reason') }}</span><textarea wire:model="cancellationReason" rows="2" required @disabled($mutationLocked) class="sk-input mt-1 w-full"></textarea>@error('cancellationReason')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label><button type="submit" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.cancel') }}</button></form>
                 </section>
             @endif

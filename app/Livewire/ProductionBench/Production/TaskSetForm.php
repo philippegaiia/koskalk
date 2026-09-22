@@ -9,6 +9,7 @@ use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -221,7 +222,7 @@ class TaskSetForm extends Component
         $this->redirectRoute('production-bench.production.settings.task-sets', navigate: true);
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $search = trim($this->productSearch);
@@ -253,6 +254,7 @@ class TaskSetForm extends Component
             ->paginate($this->perPage);
 
         return view('livewire.production-bench.production.task-set-form', [
+            'contextualHelp' => $helpTopics->resolve('task_sets', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'taskTypes' => $taskTypes,

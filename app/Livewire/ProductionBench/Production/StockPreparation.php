@@ -6,6 +6,7 @@ use App\Actions\Production\PrepareProductionStock;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\StockReservationProposalService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
@@ -89,6 +90,7 @@ class StockPreparation extends Component
     }
 
     public function render(
+        ProductionHelpTopics $helpTopics,
         ProductionBenchAccess $access,
         StockReservationProposalService $proposalService,
     ): View {
@@ -110,6 +112,7 @@ class StockPreparation extends Component
         }
 
         return view('livewire.production-bench.production.stock-preparation', [
+            'contextualHelp' => $helpTopics->resolve('stock', app()->getLocale()),
             'workspace' => $workspace,
             'productions' => $productions,
             'proposals' => $proposalService->forProductions($productions),

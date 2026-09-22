@@ -1,11 +1,13 @@
 <x-production-bench.page active="tasks">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.tasks') }}</h1>
             <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.task_list_help') }}</p>
         </div>
         <a href="{{ route('production-bench.production.calendar') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.navigation.calendar') }}</a>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
     </header>
 
     @if ($isReadOnly)

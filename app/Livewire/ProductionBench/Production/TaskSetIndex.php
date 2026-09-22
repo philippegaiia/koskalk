@@ -6,6 +6,7 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionTaskSet;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -61,7 +62,7 @@ class TaskSetIndex extends Component
         $this->showAppNotification(__('production_bench.settings.task_set_deleted'));
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionHelpTopics $helpTopics, ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
         $search = trim($this->search);
@@ -86,6 +87,7 @@ class TaskSetIndex extends Component
             ->paginate($this->perPage);
 
         return view('livewire.production-bench.production.task-set-index', [
+            'contextualHelp' => $helpTopics->resolve('task_sets', app()->getLocale()),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'taskSets' => $taskSets,

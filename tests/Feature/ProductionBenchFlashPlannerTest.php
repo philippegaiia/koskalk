@@ -155,7 +155,12 @@ it('keeps the flash planner lookup query count bounded on the initial render', f
 
     Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class);
 
-    expect(count($queries))->toBeLessThanOrEqual(12);
+    [$helpQueries, $plannerQueries] = collect($queries)->partition(
+        fn (string $sql): bool => str_contains($sql, 'from "help_topic'),
+    );
+
+    expect($plannerQueries->count())->toBeLessThanOrEqual(12);
+    expect($helpQueries->count())->toBeLessThanOrEqual(3);
 });
 
 /** @return array{owner: User, workspace: Workspace, recipe: Recipe, preset: ProductionBatchPreset} */

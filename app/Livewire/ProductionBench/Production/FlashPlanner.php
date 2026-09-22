@@ -11,6 +11,7 @@ use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\FlashDateProposalService;
 use App\Services\Production\FlashPlanFingerprint;
 use App\Services\Production\FlashProductionSimulator;
@@ -182,6 +183,7 @@ class FlashPlanner extends Component implements HasActions, HasForms
     }
 
     public function render(
+        ProductionHelpTopics $helpTopics,
         FlashProductionSimulator $simulator,
         ProductionBenchAccess $access,
     ): View {
@@ -197,6 +199,7 @@ class FlashPlanner extends Component implements HasActions, HasForms
         }
 
         return view('livewire.production-bench.production.flash-planner', [
+            'contextualHelp' => $helpTopics->resolve('flash', app()->getLocale()),
             'workspace' => $workspace,
             'productionLocations' => $workspace->uses_production_locations ? ProductionLocation::query()->where('workspace_id', $workspace->id)->where('is_active', true)->orderBy('name')->get() : collect(),
             'isBenchActive' => $access->isActive($workspace),

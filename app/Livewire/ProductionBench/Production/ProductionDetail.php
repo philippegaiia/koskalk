@@ -39,6 +39,7 @@ use App\Models\ProductionTask;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\MediaAssetUploadService;
 use App\Services\Production\ProductionDailyOccupancy;
 use App\Services\Production\ProductionDetailPresenter;
@@ -824,6 +825,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
     }
 
     public function render(
+        ProductionHelpTopics $helpTopics,
         ProductionBenchAccess $access,
         ProductionDailyOccupancy $occupancy,
         ProductionDetailPresenter $detailPresenter,
@@ -854,6 +856,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $completionReadiness = $this->completionReadiness($production);
 
         return view('livewire.production-bench.production.production-detail', [
+            'contextualHelp' => $helpTopics->resolve('detail', app()->getLocale()),
             'workspace' => $workspace,
             'production' => $production,
             'productionDetail' => $productionDetail,

@@ -5,8 +5,9 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+            <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
                 <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.create_title') }}</h1>
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.create_intro') }}</p>
@@ -14,13 +15,14 @@
             @if ($isReadOnly)
                 <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
             @endif
+            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
         </header>
 
         <form class="space-y-6">
 
             <section aria-labelledby="production-details-heading" class="sk-card space-y-5 p-5 sm:p-6">
                 <div>
-                    <h2 id="production-details-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.details') }}</h2>
+                    <h2 id="production-details-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.details') }} <x-contextual-help.trigger topic="production.batch_size" :topics="$contextualHelp['topics']" /></h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.details_help') }}</p>
                 </div>
 
@@ -122,7 +124,7 @@
 
             <section aria-labelledby="requirements-heading" class="sk-card overflow-hidden">
                 <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
-                    <h2 id="requirements-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.requirements_preview') }}</h2>
+                    <h2 id="requirements-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.requirements_preview') }} <x-contextual-help.trigger topic="production.formula_snapshot" :topics="$contextualHelp['topics']" /></h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.requirements_help') }}</p>
                 </div>
                 @if ($preview['error'])
@@ -164,7 +166,7 @@
 
             <section aria-labelledby="task-preview-heading" class="sk-card overflow-hidden">
                 <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
-                    <h2 id="task-preview-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.task_schedule') }}</h2>
+                    <h2 id="task-preview-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.task_schedule') }} <x-contextual-help.trigger topic="production.tasks" :topics="$contextualHelp['topics']" /></h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.task_schedule_help') }}</p>
                 </div>
                 @if ($preview['tasks'])

@@ -5,13 +5,15 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+            <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
                 <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.calendar.title') }}</h1>
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.calendar.intro') }}</p>
             </div>
             <a href="{{ route('production-bench.production.index') }}" wire:navigate class="sk-btn sk-btn-secondary">{{ __('production_bench.production.index_title') }}</a>
+            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
         </header>
 
         @error('range')

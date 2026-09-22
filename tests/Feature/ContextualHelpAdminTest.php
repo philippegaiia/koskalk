@@ -12,6 +12,7 @@ use App\Models\HelpTopicLocale;
 use App\Models\HelpTopicRevision;
 use App\Models\HelpTranslationRequest;
 use App\Models\User;
+use Filament\Actions\ActionGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
@@ -124,4 +125,29 @@ it('shows the candidate comparison and accepts it only as an unpublished draft',
     expect($fr->fresh()->latestRevision->title)->toBe('Aide')
         ->and($fr->fresh()->published_revision_id)->toBeNull()
         ->and($request->fresh()->status)->toBe(HelpTranslationRequestStatus::Accepted);
+});
+
+it('shows a readable help heading and groups secondary editor actions', function () {
+    $topic = HelpTopic::factory()->create(['key' => 'cosmetic.formula_basis']);
+    $locale = HelpTopicLocale::factory()->for($topic, 'topic')->create();
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+    app(SaveHelpTopicDraft::class)->handle($admin, $locale, new HelpContentInput('Cosmetic formula basis', 'Use the complete formula.', null), 0);
+
+    $page = Livewire::test(EditHelpTopic::class, ['record' => $topic->public_id])
+        ->assertSee('Cosmetic formula basis')
+        ->assertSee('sk-help-editor-header', escape: false)
+        ->assertSee('More')
+        ->assertActionExists('history')
+        ->assertActionExists('restore')
+        ->assertActionExists('archive');
+
+    expect($page->instance()->getTitle())->toBe('Cosmetic formula basis')
+        ->and(array_values($page->instance()->getBreadcrumbs()))->toBe(['Contextual Help', 'Cosmetic formula basis']);
+
+    $actions = collect($page->instance()->getCachedHeaderActions());
+    $more = $actions->last();
+    expect($more)->toBeInstanceOf(ActionGroup::class)
+        ->and(array_keys($more->getFlatActions()))->toBe(['withdraw', 'history', 'restore', 'archive'])
+        ->and($actions->first()->getColor())->toBe('gray');
 });

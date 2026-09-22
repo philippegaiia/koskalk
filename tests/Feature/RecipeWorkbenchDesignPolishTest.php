@@ -1791,6 +1791,11 @@ assert.ok(nestedPhase.added.includes('border-[color-mix(in_oklab,var(--color-acc
 assert.ok(!nestedPhase.added.includes('ring-2'));
 assert.ok(!nestedPhase.added.includes('ring-offset-2'));
 
+const cosmeticPhase = createElement(['border-y']);
+cosmeticPhase.id = 'cosmetic-phase-a';
+workbench.highlightFormulaTarget(cosmeticPhase, false);
+assert.deepEqual(cosmeticPhase.added, ['sk-added-phase-highlight']);
+
 const outerPhase = createElement(['sk-card']);
 workbench.highlightFormulaTarget(outerPhase, false);
 

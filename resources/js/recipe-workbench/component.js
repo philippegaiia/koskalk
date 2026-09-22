@@ -826,6 +826,8 @@ function createCatalogSection() {
 
             if (el.classList.contains('sk-formula-table-row')) {
                 highlightClasses = ['sk-added-row-highlight'];
+            } else if (el.id?.startsWith('cosmetic-phase-')) {
+                highlightClasses = ['sk-added-phase-highlight'];
             } else if (el.classList.contains('sk-inset')) {
                 highlightClasses = ['border-[color-mix(in_oklab,var(--color-accent)_55%,transparent)]'];
             } else {

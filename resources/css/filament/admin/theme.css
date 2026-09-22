@@ -4,3 +4,40 @@
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+
+.fi-header.sk-help-editor-header {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.sk-help-editor-header > div {
+    min-width: 0;
+}
+
+.sk-help-editor-header .fi-breadcrumbs {
+    display: block;
+    overflow-x: auto;
+}
+
+.sk-help-editor-header .fi-breadcrumbs-list {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.sk-help-editor-header .fi-header-heading,
+.sk-help-editor-header .fi-header-subheading {
+    overflow-wrap: anywhere;
+}
+
+.fi-header.sk-help-editor-header .fi-header-actions-ctn {
+    margin-top: 0;
+}
+
+.sk-help-editor-header .fi-header-actions-ctn > .fi-ac {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.sk-help-editor-header .fi-btn {
+    border-radius: 9999px;
+}

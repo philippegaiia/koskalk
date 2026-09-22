@@ -21,6 +21,7 @@ use App\Models\SupportedLocale;
 use App\Services\ContextualHelp\HelpContentRenderer;
 use App\Services\ContextualHelp\WorkbenchHelpTopics;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -81,6 +82,22 @@ class EditHelpTopic extends EditRecord
         return $record->refresh();
     }
 
+    public function getTitle(): string
+    {
+        return $this->selectedLocale()->latestRevision?->title
+            ?: ($this->publishedEnglish()?->publishedRevision?->title ?: $this->getRecord()->key);
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [HelpTopicResource::getUrl('index') => 'Contextual Help', $this->getTitle()];
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.help-topics.editor-header');
+    }
+
     public function getSubheading(): ?string
     {
         $locale = $this->selectedLocale();
@@ -89,7 +106,7 @@ class EditHelpTopic extends EditRecord
             $status .= ' · Needs review against current English';
         }
 
-        return strtoupper($this->editingLocale).' · '.$status.' · Save draft, preview, then publish.';
+        return strtoupper($this->editingLocale).' · '.$status.' · '.$this->getRecord()->key;
     }
 
     protected function getSavedNotificationTitle(): ?string
@@ -104,7 +121,7 @@ class EditHelpTopic extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
+        $actions = [
             Action::make('language')->label('Language')->schema([
                 Select::make('locale')->options(fn (): array => SupportedLocale::query()->ordered()->pluck('name', 'code')->all())->required()->default($this->editingLocale),
             ])->modalDescription('Changing language discards unsaved changes. Save your draft first.')
@@ -191,6 +208,24 @@ class EditHelpTopic extends EditRecord
                     app(SetHelpTopicArchived::class)->handle(auth()->user(), $topic, $this->intendedArchived);
                     $this->record = $topic->fresh();
                 }),
+        ];
+
+        $secondaryNames = ['withdraw', 'history', 'restore', 'archive'];
+        $primaryActions = [];
+        $secondaryActions = [];
+        foreach ($actions as $action) {
+            if (in_array($action->getName(), $secondaryNames, true)) {
+                $secondaryActions[] = $action->color('gray');
+            } else {
+                $primaryActions[] = $action->getName() === 'publish'
+                    ? $action
+                    : $action->color('gray')->outlined();
+            }
+        }
+
+        return [
+            ...$primaryActions,
+            ActionGroup::make($secondaryActions)->label('More')->button()->color('gray')->outlined(),
         ];
     }
 

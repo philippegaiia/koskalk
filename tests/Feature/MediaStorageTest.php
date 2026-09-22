@@ -1,11 +1,14 @@
 <?php
 
+use App\Models\Ingredient;
+use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\MediaStorage;
 use App\Services\RecipeMediaRollbackGuard;
 use App\Services\RecipeRichContentAttachmentProvider;
 use App\Services\RecipeVersionDeletionService;
+use App\Services\RecipeWorkbenchIngredientCatalogBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -412,3 +415,23 @@ function withExifOrientation(string $jpeg, int $orientation): string
 
     return substr($jpeg, 0, 2).$segment.substr($jpeg, 2);
 }
+
+it('builds workbench image URLs without checking remote file existence', function (): void {
+    config(['media.disk' => 'public']);
+    $disk = Mockery::mock(Storage::fake('public'))->makePartial();
+    $disk->shouldNotReceive('exists');
+    Storage::set('public', $disk);
+    $family = ProductFamily::factory()->create(['slug' => 'cosmetic', 'calculation_basis' => 'total_formula']);
+    $icon = Ingredient::factory()->create([
+        'owner_type' => null, 'owner_id' => null, 'is_active' => true,
+        'icon_image_path' => 'ingredients/icons/olive.webp',
+    ]);
+    $photo = Ingredient::factory()->create([
+        'owner_type' => null, 'owner_id' => null, 'is_active' => true,
+        'icon_image_path' => null, 'featured_image_path' => 'ingredients/images/coconut.webp',
+    ]);
+    $catalogue = collect(app(RecipeWorkbenchIngredientCatalogBuilder::class)->build(null, $family))->keyBy('id');
+    expect($catalogue[$icon->id]['image_url'])->toBe($disk->url($icon->icon_image_path))
+        ->and($catalogue[$photo->id]['image_url'])->toBe($disk->url($photo->featured_image_path))
+        ->and($catalogue[$icon->id]['fallback_image_url'])->toBe($icon->categoryFallbackImageUrl());
+});

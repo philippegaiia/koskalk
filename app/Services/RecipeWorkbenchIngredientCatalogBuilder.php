@@ -75,7 +75,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
                         ->eligibleAliases($ingredient->aliases, $translationLocales)
                         ->pluck('name')
                         ->all(),
-                    'image_url' => $ingredient->pickerImageUrl(),
+                    'image_url' => $ingredient->pickerImageUrl(verifyExistence: false),
                     'fallback_image_url' => $ingredient->categoryFallbackImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),

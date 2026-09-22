@@ -251,7 +251,7 @@ class Ingredient extends Model
         return $this->hasMany(RecipeVersionCostingItem::class);
     }
 
-    public function featuredImageUrl(): ?string
+    public function featuredImageUrl(bool $verifyExistence = true): ?string
     {
         $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::IngredientMain);
 
@@ -260,11 +260,11 @@ class Ingredient extends Model
         }
 
         return $this->owner_type === null
-            ? MediaStorage::publicUrl($this->featured_image_path)
+            ? ($verifyExistence ? MediaStorage::publicUrl($this->featured_image_path) : MediaStorage::publicUrlWithoutExistenceCheck($this->featured_image_path))
             : MediaStorage::ingredientUrl($this, $this->featured_image_path);
     }
 
-    public function iconImageUrl(): ?string
+    public function iconImageUrl(bool $verifyExistence = true): ?string
     {
         $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::IngredientIconOverride)
             ?? $this->mediaAssetForRole(MediaAssetUsageRole::IngredientMain);
@@ -274,13 +274,13 @@ class Ingredient extends Model
         }
 
         return $this->owner_type === null
-            ? MediaStorage::publicUrl($this->icon_image_path)
+            ? ($verifyExistence ? MediaStorage::publicUrl($this->icon_image_path) : MediaStorage::publicUrlWithoutExistenceCheck($this->icon_image_path))
             : MediaStorage::ingredientUrl($this, $this->icon_image_path);
     }
 
-    public function pickerImageUrl(): ?string
+    public function pickerImageUrl(bool $verifyExistence = true): ?string
     {
-        return $this->iconImageUrl() ?? $this->featuredImageUrl();
+        return $this->iconImageUrl($verifyExistence) ?? $this->featuredImageUrl($verifyExistence);
     }
 
     public function categoryFallbackImageUrl(): string

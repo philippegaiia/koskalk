@@ -31,11 +31,11 @@
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
- <div class="sk-ingredient-image-tile" :class="ingredient.image_url ? '' : 'is-fallback'">
- <template x-if="ingredient.image_url">
- <img :src="ingredient.image_url" :alt="ingredient.name" loading="lazy" decoding="async" />
+ <div x-data="{ imageFailed: false }" class="sk-ingredient-image-tile" :class="ingredient.image_url && !imageFailed ? '' : 'is-fallback'">
+ <template x-if="ingredient.image_url && !imageFailed">
+ <img x-on:error="imageFailed = true" :src="ingredient.image_url" :alt="ingredient.name" loading="lazy" decoding="async" />
  </template>
- <template x-if="! ingredient.image_url">
+ <template x-if="! ingredient.image_url || imageFailed">
  <img :src="ingredient.fallback_image_url" :alt="ingredient.name" loading="lazy" decoding="async" />
  </template>
  </div>

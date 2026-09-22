@@ -34,8 +34,43 @@ it('sends only published family help to the workbench and keeps drafts out of th
     $published = HelpTopicRevision::factory()->create(['help_topic_locale_id' => $locale->id, 'title' => 'Published answer']);
     $draft = HelpTopicRevision::factory()->create(['help_topic_locale_id' => $locale->id, 'revision_number' => 2, 'title' => 'Private draft']);
     $locale->update(['latest_revision_id' => $draft->id, 'published_revision_id' => $published->id]);
+    $specificTopic = HelpTopic::factory()->create(['key' => 'soap.qualities.cure']);
+    $specificLocale = HelpTopicLocale::factory()->create(['help_topic_id' => $specificTopic->id]);
+    $specificRevision = HelpTopicRevision::factory()->create(['help_topic_locale_id' => $specificLocale->id]);
+    $specificLocale->update(['latest_revision_id' => $specificRevision->id, 'published_revision_id' => $specificRevision->id]);
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($family, null, null);
     expect($payload['contextualHelp']['topics']['soap.water_mode']['title'])->toBe('Published answer')
         ->and(json_encode($payload))->not->toContain('Private draft')
-        ->and(array_keys($payload['contextualHelp']['tabs']))->toBe(['formula', 'output']);
+        ->and(array_keys($payload['contextualHelp']['tabs']))->toBe(['formula', 'output'])
+        ->and($payload['contextualHelp']['tabs']['formula'])->toBe(['soap.water_mode'])
+        ->and(array_keys($payload['contextualHelp']['topics']))->toContain('soap.qualities.cure');
+});
+
+it('keeps the Formula index short while retaining specific topics for contextual triggers', function () {
+    $topics = app(WorkbenchHelpTopics::class);
+    foreach (['soap', 'cosmetic'] as $family) {
+        $scope = $topics->forSurface($family, true);
+        expect($scope['index']['formula'])->toHaveCount(7)->toContain('shared.saving_and_history')
+            ->and(array_diff($scope['index']['formula'], $scope['keys']))->toBe([]);
+        expect($topics->forSurface($family, false)['index']['formula'])->toHaveCount(6)->not->toContain('shared.saving_and_history');
+    }
+    $soap = $topics->forSurface('soap', true);
+    expect($soap['keys'])->toContain('soap.qualities.cure', 'soap.qualities.dos', 'soap.fatty_acids')
+        ->and($soap['index']['formula'])->not->toContain('soap.qualities.cure', 'soap.qualities.dos', 'soap.fatty_acids')
+        ->and($topics->locations('soap.qualities.cure'))->toContain('Soap · Formula');
+});
+
+it('renders a visible labelled Help button with an icon in the header', function () {
+    $html = view('livewire.dashboard.partials.recipe-workbench.header', [
+        'workbench' => [],
+        'contextualHelp' => ['topics' => ['soap.water_mode' => ['title' => 'Water mode']], 'tabs' => ['formula' => ['soap.water_mode']]],
+    ])->render();
+    $document = new DOMDocument;
+    @$document->loadHTML($html);
+    $button = (new DOMXPath($document))->query('//button[@data-help-index]')->item(0);
+    expect($button)->not->toBeNull()
+        ->and(trim($button->textContent))->toBe('Help')
+        ->and($button->getAttribute('class'))->toContain('sk-btn-outline')->not->toContain('sk-btn-ghost', 'float-right')
+        ->and($button->getElementsByTagName('svg')->length)->toBe(1)
+        ->and($button->hasAttribute('disabled'))->toBeFalse();
 });

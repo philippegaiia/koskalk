@@ -50,7 +50,7 @@ class RecipeWorkbenchViewDataBuilder
 
         $helpScope = $this->helpTopics->forSurface($productFamily->slug, $user instanceof User);
         $helpContent = $this->helpResolver->resolve($helpScope['keys'], app()->getLocale());
-        $helpTabs = array_map(fn (array $keys): array => array_values(array_intersect($keys, array_keys($helpContent))), $helpScope['tabs']);
+        $helpTabs = array_map(fn (array $keys): array => array_values(array_intersect($keys, array_keys($helpContent))), $helpScope['index']);
 
         return [
             'contextualHelp' => ['topics' => $helpContent, 'tabs' => $helpTabs],

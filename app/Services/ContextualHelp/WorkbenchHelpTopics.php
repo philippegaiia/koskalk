@@ -4,11 +4,11 @@ namespace App\Services\ContextualHelp;
 
 final class WorkbenchHelpTopics
 {
-    /** @return array{keys: list<string>, tabs: array<string, list<string>>} */
+    /** @return array{keys: list<string>, tabs: array<string, list<string>>, index: array<string, list<string>>} */
     public function forSurface(string $family, bool $canPersist): array
     {
         if (! in_array($family, ['soap', 'cosmetic'], true)) {
-            return ['keys' => [], 'tabs' => []];
+            return ['keys' => [], 'tabs' => [], 'index' => []];
         }
         $formula = ['shared.formula_basics', 'shared.ingredient_selection', 'shared.quantities_and_units', 'shared.ifra_context'];
         $formula = [...$formula, ...($family === 'soap' ? [
@@ -25,7 +25,19 @@ final class WorkbenchHelpTopics
             $tabs['instructions'] = ['shared.manufacturing_procedure', 'shared.media'];
         }
 
-        return ['keys' => array_values(array_unique(array_merge(...array_values($tabs)))), 'tabs' => $tabs];
+        $index = $tabs;
+        $index['formula'] = [
+            'shared.formula_basics',
+            'shared.ingredient_selection',
+            ...($family === 'soap' ? [
+                'soap.alkali_and_purity', 'soap.water_mode', 'soap.superfat', 'soap.qualities',
+            ] : [
+                'cosmetic.phases', 'shared.quantities_and_units', 'cosmetic.application_context', 'cosmetic.preservation_and_ph',
+            ]),
+            ...($canPersist ? ['shared.saving_and_history'] : []),
+        ];
+
+        return ['keys' => array_values(array_unique(array_merge(...array_values($tabs)))), 'tabs' => $tabs, 'index' => $index];
     }
 
     /** @return list<string> */

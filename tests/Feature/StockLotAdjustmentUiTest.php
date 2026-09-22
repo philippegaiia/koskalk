@@ -8,6 +8,8 @@ use App\Models\Ingredient;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
+use App\Models\Supplier;
+use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -366,3 +368,35 @@ it('renders material lot controls without per-lot database queries', function (i
         ->and($queries->filter(fn (array $query): bool => str_starts_with($query['query'], 'select * from "stock_lots" where') && str_contains($query['query'], '"stock_lots"."id" ='))->count())
         ->toBe(0);
 })->with([10, 100]);
+
+it('shares material and supplier reads and refreshes permissions on the next request', function (): void {
+    [$actor, $workspace, $ingredient, $lot] = adjustmentUiFixture();
+    $workspace->update(['uses_storage_locations' => true]);
+    $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Shared supplier']);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    $lot->update(['supplier_listing_id' => $listing->id]);
+    $this->actingAs($actor);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+    try {
+        $page = Livewire::test(InventoryMaterialDetail::class, [
+            'subject' => $ingredient->public_id,
+            'subjectType' => 'ingredient',
+        ])->assertSee('Shared supplier')->assertSee('Adjustment oil');
+        $queries = collect(DB::getQueryLog());
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    foreach (['suppliers', 'ingredient_translations', 'workspace_production_entitlements'] as $table) {
+        expect($queries->filter(fn (array $query): bool => preg_match('/^select (?:\*|"status") from "'.$table.'"/', $query['query']) === 1)->count())
+            ->toBe(1);
+    }
+    expect($queries->filter(fn (array $query): bool => str_starts_with($query['query'], 'select * from "ingredients"'))->count())->toBe(1);
+
+    app(ProductionBenchAccess::class)->cancel($actor, $workspace);
+    $page->call('mountAction', 'editBuffer')->assertActionNotMounted()
+        ->assertActionHidden('editBuffer')
+        ->assertActionHidden('adjustStock', ['lot_id' => $lot->id]);
+});

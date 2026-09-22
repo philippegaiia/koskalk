@@ -7,10 +7,10 @@ use App\Models\PackagingItem;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use App\Services\ProductionBenchAccess;
 
 /**
  * The purchasing catalogue half of a material: every supplier listing that can
@@ -31,6 +31,7 @@ final class WorkspaceMaterialSupplierListingsQuery
         int $perPage = 10,
         string $pageName = 'supplier-listings',
         ?int $page = null,
+        bool $loadSuppliers = true,
     ): LengthAwarePaginator {
         $this->access->assertReadable($actor, $workspace);
 
@@ -43,7 +44,7 @@ final class WorkspaceMaterialSupplierListingsQuery
                 fn (Builder $query): Builder => $query->where('ingredient_id', $subject->id),
                 fn (Builder $query): Builder => $query->where('packaging_item_id', $subject->id),
             )
-            ->with('supplier')
+            ->with($loadSuppliers ? ['supplier'] : [])
             ->orderByDesc('is_active')
             ->orderBy(
                 // Ordered by the supplier's name rather than by supplier_id, so

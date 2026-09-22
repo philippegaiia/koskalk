@@ -16,6 +16,7 @@ use App\Models\PackagingItem;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
@@ -56,6 +57,9 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     use InteractsWithStockAdjustments;
     use InteractsWithStockLotLocations;
     use WithPagination;
+
+    /** @var array{isActive: bool, isReadOnly: bool, canWrite: bool}|null */
+    private ?array $renderAccess = null;
 
     private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
 
@@ -283,7 +287,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->modalDescription(__('production_bench.inventory.buffer_stock_help'))
             ->modalSubmitActionLabel(__('production_bench.inventory.save_buffer'))
             ->modalCancelActionLabel(__('production_bench.common.cancel'))
-            ->visible(fn (): bool => $this->productionBenchAccess->canWrite($this->user(), $this->workspace()))
+            ->visible(fn (): bool => $this->canRenderWriteControls())
             ->fillForm(fn (): array => [
                 'buffer_quantity' => $this->displayBufferQuantity($this->currentBufferGrams()),
             ])
@@ -305,7 +309,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->modalSubmitActionLabel(__('locations.save'))
             ->modalCancelActionLabel(__('production_bench.common.cancel'))
             ->visible(fn (): bool => $this->workspace()->uses_storage_locations
-                && $this->productionBenchAccess->canWrite($this->user(), $this->workspace()))
+                && $this->canRenderWriteControls())
             ->fillForm(fn (): array => [
                 'storage_location_id' => $this->materialSetting()?->default_storage_location_id,
             ])
@@ -335,7 +339,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ->label(__('production_bench.inventory.clear_buffer'))
             ->color('danger')
             ->visible(fn (): bool => $this->currentBufferGrams() !== null
-                && $this->productionBenchAccess->canWrite($this->user(), $this->workspace()))
+                && $this->canRenderWriteControls())
             ->action(fn () => $this->saveBufferFromModal(['buffer_quantity' => null]));
     }
 
@@ -347,6 +351,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     ): View {
         $workspace = $this->workspace();
         $access = $this->productionBenchAccess;
+        $this->renderAccess = $access->viewState($this->user(), $workspace);
         $displayUnit = $this->displayUnit();
         $rawPosition = $activityService->currentPosition($this->user(), $workspace, $this->subject());
         $rawPosition['required'] = bcsub(
@@ -381,7 +386,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             ),
             $displayUnit,
         );
-        $openLotModels = $activityService->openLots($this->user(), $workspace, $this->subject());
+        $openLotModels = $activityService->openLots($this->user(), $workspace, $this->subject(), loadSuppliers: false);
 
         if ($workspace->uses_storage_locations) {
             $openLotModels->load('storageLocation');
@@ -404,6 +409,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                 $this->subject(),
                 $this->normalizedSupplierListingsPerPage(),
                 'supplier-listings',
+                loadSuppliers: false,
             )
             ->through(fn (SupplierListing $listing): array => [
                 'listing' => $listing,
@@ -412,11 +418,20 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
                 'price' => $pricePresentation->present($listing, $workspace),
             ]);
 
+        $supplierOwners = $openLotModels->flatMap(fn (StockLot $lot): array => [
+            $lot->supplierListing, $lot->goodsReceiptLine?->goodsReceipt,
+        ])->filter()->concat($supplierListings->getCollection()->pluck('listing'));
+        $suppliers = Supplier::query()->where('workspace_id', $workspace->id)
+            ->whereIn('id', $supplierOwners->pluck('supplier_id')->filter()->unique())->get()->keyBy('id');
+        foreach ($supplierOwners as $owner) {
+            $owner->setRelation('supplier', $suppliers->get($owner->supplier_id));
+        }
+
         return view('livewire.production-bench.inventory-material-detail', [
             'workspace' => $workspace,
-            'isActive' => $access->isActive($workspace),
-            'isReadOnly' => $access->isReadOnly($workspace),
-            'canWriteInventory' => $access->canWrite($this->user(), $workspace),
+            'isActive' => $this->renderAccess['isActive'],
+            'isReadOnly' => $this->renderAccess['isReadOnly'],
+            'canWriteInventory' => $this->renderAccess['canWrite'],
             'displayUnit' => $displayUnit,
             'materialName' => $this->subject() instanceof Ingredient
                 ? (string) $this->subject()->localizedDisplayName()
@@ -859,6 +874,11 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         return in_array($this->supplierListingsPerPage, self::ALLOWED_SUPPLIER_LISTINGS_PER_PAGE, true)
             ? $this->supplierListingsPerPage
             : 10;
+    }
+
+    private function canRenderWriteControls(): bool
+    {
+        return $this->renderAccess['canWrite'] ?? $this->productionBenchAccess->canWrite($this->user(), $this->workspace());
     }
 
     private function user(): User

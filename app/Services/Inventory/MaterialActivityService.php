@@ -114,6 +114,8 @@ class MaterialActivityService
             ->with('actor')
             ->paginate(max(1, $perPage), ['*'], $pageName);
 
+        $this->attachSubject($page->getCollection()->pluck('stockLot')->filter(), $subject);
+
         $page->getCollection()->loadMorph('source', [
             GoodsReceiptLine::class => ['goodsReceipt'],
             GoodsReceipt::class => [],
@@ -145,18 +147,15 @@ class MaterialActivityService
      *
      * @return Collection<int, StockLot>
      */
-    public function openLots(User $actor, Workspace $workspace, Ingredient|PackagingItem $subject): Collection
+    public function openLots(User $actor, Workspace $workspace, Ingredient|PackagingItem $subject, bool $loadSuppliers = true): Collection
     {
         $this->access->assertReadable($actor, $workspace);
 
-        return StockLot::query()
+        $lots = StockLot::query()
             ->whereIn('id', $this->lotIdQuery($workspace, $subject))
-            ->with([
-                'ingredient.translations',
-                'packagingItem',
-                'supplierListing.supplier',
-                'goodsReceiptLine.goodsReceipt.supplier',
-            ])
+            ->with($loadSuppliers
+                ? ['supplierListing.supplier', 'goodsReceiptLine.goodsReceipt.supplier']
+                : ['supplierListing', 'goodsReceiptLine.goodsReceipt'])
             ->withSum('movements', 'quantity_delta')
             ->withSum([
                 'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', 'active'),
@@ -173,6 +172,22 @@ class MaterialActivityService
             ->orderBy('id')
             ->limit(self::OpenLotLimit)
             ->get();
+
+        $this->attachSubject($lots, $subject);
+
+        return $lots;
+    }
+
+    /** @param Collection<int, StockLot> $lots */
+    private function attachSubject(Collection $lots, Ingredient|PackagingItem $subject): void
+    {
+        if ($subject instanceof Ingredient) {
+            $subject->loadMissing('translations');
+        }
+        foreach ($lots as $lot) {
+            $lot->setRelation('ingredient', $subject instanceof Ingredient ? $subject : null);
+            $lot->setRelation('packagingItem', $subject instanceof PackagingItem ? $subject : null);
+        }
     }
 
     /** @param  Builder<StockLot>  $lotIds */
@@ -248,8 +263,7 @@ class MaterialActivityService
             ->whereIn('stock_lot_id', $lotIds)
             ->whereBetween('occurred_at', [$from, $to])
             ->with([
-                'stockLot.ingredient.translations',
-                'stockLot.packagingItem',
+                'stockLot',
                 'source',
             ])
             ->orderByDesc('occurred_at')

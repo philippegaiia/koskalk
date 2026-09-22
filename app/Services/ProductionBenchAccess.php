@@ -49,6 +49,19 @@ class ProductionBenchAccess
         return $this->hasManageRole($actor, $workspace) && $this->isActive($workspace);
     }
 
+    /** @return array{isActive: bool, isReadOnly: bool, canWrite: bool} */
+    public function viewState(User $actor, Workspace $workspace): array
+    {
+        $status = WorkspaceProductionEntitlement::query()->whereBelongsTo($workspace)->value('status');
+        $isActive = $status === ProductionBenchEntitlementStatus::Active;
+
+        return [
+            'isActive' => $isActive,
+            'isReadOnly' => $status === ProductionBenchEntitlementStatus::Cancelled,
+            'canWrite' => $isActive && $this->hasManageRole($actor, $workspace),
+        ];
+    }
+
     public function assertWritable(User $actor, Workspace $workspace): void
     {
         $this->assertCanManage($actor, $workspace);

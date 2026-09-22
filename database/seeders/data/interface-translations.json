@@ -35508,6 +35508,30 @@
     },
     {
       "group": "workbench",
+      "key": "output.common.glycerin",
+      "text": {
+        "de": "Glycerin",
+        "es": "Glicerina",
+        "fr": "Glycérine",
+        "it": "Glicerina",
+        "nl": "Glycerine",
+        "pt_BR": "Glicerina"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.inci_name",
+      "text": {
+        "de": "INCI-Name",
+        "es": "Nombre INCI",
+        "fr": "Nom INCI",
+        "it": "Nome INCI",
+        "nl": "INCI-naam",
+        "pt_BR": "Nome INCI"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.common.ingredient",
       "text": {
         "de": "Ingredient",
@@ -35556,6 +35580,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.common.potassium_hydroxide",
+      "text": {
+        "de": "Kaliumhydroxid",
+        "es": "Hidróxido de potasio",
+        "fr": "Hydroxyde de potassium",
+        "it": "Idrossido di potassio",
+        "nl": "Kaliumhydroxide",
+        "pt_BR": "Hidróxido de potássio"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.common.role",
       "text": {
         "de": "Role",
@@ -35576,6 +35612,18 @@
         "it": "% soap",
         "nl": "% soap",
         "pt_BR": "% soap"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.sodium_hydroxide",
+      "text": {
+        "de": "Natriumhydroxid",
+        "es": "Hidróxido de sodio",
+        "fr": "Hydroxyde de sodium",
+        "it": "Idrossido di sodio",
+        "nl": "Natriumhydroxide",
+        "pt_BR": "Hidróxido de sódio"
       }
     },
     {
@@ -35636,6 +35684,18 @@
         "it": "User-created or user-modified ingredient. Data has not been verified by Soapkraft.",
         "nl": "User-created or user-modified ingredient. Data has not been verified by Soapkraft.",
         "pt_BR": "User-created or user-modified ingredient. Data has not been verified by Soapkraft."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.water",
+      "text": {
+        "de": "Wasser",
+        "es": "Agua",
+        "fr": "Eau",
+        "it": "Acqua",
+        "nl": "Water",
+        "pt_BR": "Água"
       }
     },
     {
@@ -36194,12 +36254,12 @@
       "group": "workbench",
       "key": "output.soap.composition_help",
       "text": {
-        "de": "Main ingredient rows normalized on the cured basis.",
-        "es": "Main ingredient rows normalized on the cured basis.",
-        "fr": "Principales lignes d’ingrédients normalisées sur la base après cure.",
-        "it": "Main ingredient rows normalized on the cured basis.",
-        "nl": "Main ingredient rows normalized on the cured basis.",
-        "pt_BR": "Main ingredient rows normalized on the cured basis."
+        "de": "Hauptbestandteile auf die gereifte Seifenmasse normiert, mit gebräuchlichen Inhaltsstoffnamen unter den INCI-Namen.",
+        "es": "Filas de ingredientes principales normalizadas sobre la base curada, con los nombres comunes debajo de los nombres INCI.",
+        "fr": "Principaux ingrédients normalisés sur la base après cure, avec leurs noms courants sous les noms INCI.",
+        "it": "Righe degli ingredienti principali normalizzate sulla base stagionata, con i nomi comuni sotto i nomi INCI.",
+        "nl": "De hoofdingrediënten genormaliseerd op basis van de gerijpte zeep, met gebruikelijke ingrediëntnamen onder de INCI-namen.",
+        "pt_BR": "Linhas dos ingredientes principais normalizadas sobre a base curada, com os nomes comuns abaixo dos nomes INCI."
       }
     },
     {
@@ -36248,6 +36308,42 @@
         "it": "The cured ingredient output used to prepare labels and review declared fragrance components.",
         "nl": "The cured ingredient output used to prepare labels and review declared fragrance components.",
         "pt_BR": "The cured ingredient output used to prepare labels and review declared fragrance components."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.incorporated_composition",
+      "text": {
+        "de": "Zutaten wie hinzugefügt",
+        "es": "Ingredientes tal como se añadieron",
+        "fr": "Ingrédients tels qu’ajoutés",
+        "it": "Ingredienti come aggiunti",
+        "nl": "Ingrediënten zoals toegevoegd",
+        "pt_BR": "Ingredientes conforme adicionados"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.incorporated_empty",
+      "text": {
+        "de": "Fügen Sie genügend Formeldaten hinzu, um die Zutaten wie hinzugefügt anzuzeigen.",
+        "es": "Añade suficientes datos de la fórmula para mostrar los ingredientes tal como se añadieron.",
+        "fr": "Ajoutez suffisamment de données à la formule pour afficher les ingrédients tels qu’ajoutés.",
+        "it": "Aggiungi dati sufficienti alla formula per mostrare gli ingredienti come aggiunti.",
+        "nl": "Voeg voldoende formulegegevens toe om de ingrediënten zoals toegevoegd weer te geven.",
+        "pt_BR": "Adicione dados suficientes à fórmula para mostrar os ingredientes conforme adicionados."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.incorporated_help",
+      "text": {
+        "de": "Vor Verseifung und Reifung, einschließlich Verdünnungsflüssigkeiten und Alkalien. Die Prozentwerte beziehen sich auf das Gesamtgewicht der Formel.",
+        "es": "Antes de la saponificación y el curado, incluidos los líquidos de dilución y los álcalis. Los porcentajes se basan en el peso total de la fórmula.",
+        "fr": "Avant saponification et cure, y compris les liquides de dilution et les alcalis. Les pourcentages sont calculés sur le poids total de la formule.",
+        "it": "Prima della saponificazione e della stagionatura, inclusi i liquidi di diluizione e gli alcali. Le percentuali si riferiscono al peso totale della formula.",
+        "nl": "Vóór verzeping en rijping, inclusief verdunningsvloeistoffen en alkaliën. De percentages zijn gebaseerd op het totale formulegewicht.",
+        "pt_BR": "Antes da saponificação e da cura, incluindo líquidos de diluição e álcalis. As porcentagens são calculadas sobre o peso total da fórmula."
       }
     },
     {

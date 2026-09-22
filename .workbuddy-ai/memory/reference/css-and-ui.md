@@ -152,6 +152,57 @@ Collapsing the sidebar only widens the column, so 272px is the conservative case
 **Do not invent a reference viewport.** 1280 was my own pick and it is now a *narrow* desktop —
 below the range the app targets. Derive the number from the CSS instead of choosing one.
 
+## Formula table rows (recipe workbench)
+
+Shared by `reaction-core` (soap oils), `post-reaction` (soap additives + fragrance) and
+`cosmetic-formula`; all three use the same `sk-formula-table-*` classes in `app.css`.
+
+- Horizontal padding is deliberately per column (handle, values and names each differ) — leave it
+  in Tailwind. Only the vertical axis is worth consolidating.
+- **Row height floor is the 40px drag handle (`size-10`), not the text.** Tightening padding to 8px
+  and line heights to 18px / 14px drops the name cell to 52px, but the row still stops at 56px —
+  a floor for ordinary rows, not a height: wrapped names or INCI text make rows taller. Going
+  lower means shrinking the handle button and the `min-h-10` value cells.
+- **A kept `py-0` kills a component-layer `padding-block` even inside a desktop media query** —
+  layer order is breakpoint-agnostic. Handle and action cells need their 0px mobile / 8px desktop
+  padding fully defined in shared CSS, with the utility removed, not half in each.
+- **Tailwind font-size utilities also set line-height** (`text-xs` = 12px / 16px, `text-sm` =
+  14px / 20px). A components-layer class that only sets `line-height` on an element carrying
+  `text-xs` is dead; the shared class must own both font-size and line-height. Inheritance from a
+  `text-sm` wrapper is safe to override directly on the element.
+- **A components-layer `background` is dead for the same reason.** Every cell carries a `bg-*`
+  utility, so `.sk-formula-table-cell` / `.sk-formula-table-handle-cell` declaring
+  `background: white` never applied and misdescribed the cosmetic rows (they render panel).
+  Row surface belongs to the utility; the polish test now asserts neither rule declares
+  `background` (it also asserts the rule contains `padding-block`, so an unmatched regex fails
+  loudly instead of passing on an empty match).
+- **Row surface: soap is `bg-white`, cosmetic is `bg-[var(--color-panel)]`, and that split is
+  DELIBERATE — do not "unify" it.** `CosmeticRecipeWorkbenchTest` asserts
+  `->not->toContain('bg-white')` on the rendered `cosmetic-formula` partial; the guard arrived
+  in the same commit (`1ec5c59e`, 2026-08-21) that moved cosmetic rows off white. Cosmetic rows
+  sit inside a panel phase band, so they are intentionally flat against it. Most *other*
+  workbench table bodies are white (costing ×2, packaging, output-tab ×2 — output-tab serves
+  both workbenches, ingredient-list tbody), but that majority is not licence to change
+  cosmetic: check for a `not->toContain` guard before touching a surface.
+- **Numeric headers and the totals row are parity-checked too** (soap `reaction-core` vs
+  cosmetic): both rest on `bg-[var(--color-field-muted)]`, both numeric headers are
+  `text-center`. The *unbalanced* tone differs on purpose — danger for soap (oils must total
+  100% to saponify), warning for cosmetic.
+- **Cosmetic's totals inner grid now matches soap's hairline grid** — `gap-2
+  bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[...] lg:gap-px lg:p-0`, byte-identical to
+  soap's. It previously used bare `gap-2` with no line background, pinned by
+  `CosmeticRecipeWorkbenchTest:535`; that pin came from `1ec5c59e`, the *same* deliberate
+  cosmetic redesign that made rows panel, so the flat look was intentional. Changing it was an
+  explicit owner decision (2026-09-21), not drift removal — if the flat totals look comes back
+  into question, this and the row surface are one design decision, not two.
+- **`flex items-center` vs `flex flex-col justify-center` on the name cell is not a divergence.**
+  `reaction-core` and `cosmetic-formula` wrap name + INCI in an inner div beside the ingredient
+  inspector trigger; `post-reaction` has no inspector, so it puts the two `<p>` straight in the
+  cell — `flex-col` is required there, and switching it to `items-center` would lay them side
+  by side. Don't "unify" this one.
+- `tests/Feature/RecipeWorkbenchDesignPolishTest.php` ("keeps formula table lines compact...")
+  pins the exact class strings and `padding-block: 10px` — update it in the same change.
+
 ## Sticky table headers
 
 **Two different designs; pick deliberately.** `sticky top-0` resolves against the *nearest scroll

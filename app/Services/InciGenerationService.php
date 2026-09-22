@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
+use App\Support\InciName;
 use App\Support\NumberLocale;
 use Illuminate\Support\Str;
 
@@ -422,6 +423,7 @@ class InciGenerationService
                 'declaration_rows' => $declarationRows,
                 'final_labels' => $finalLabels,
                 'final_label_text' => implode(', ', $finalLabels),
+                'display_final_label_text' => implode(', ', array_map(InciName::display(...), $finalLabels)),
                 'plain_label_text' => $plainLanguageTexts[$definition['key']] ?? null,
                 'warnings' => $ingredientRowsState['fallback_warnings'],
             ];
@@ -1229,6 +1231,7 @@ class InciGenerationService
 
                 return [
                     'label' => $row['label'],
+                    'display_label' => InciName::display($row['label']),
                     'weight' => round((float) $row['weight'], 5),
                     'lye_liquid_weight' => round((float) $row['lye_liquid_weight'], 5),
                     'percent_of_formula' => $formulaWeight > 0
@@ -1620,6 +1623,7 @@ class InciGenerationService
 
                 return [
                     'label' => $row['label'],
+                    'display_label' => InciName::display($row['label']),
                     'percent_of_formula' => $percentOfFormula,
                     'percent_of_cured_basis' => $curedWeight !== null && $curedWeight > 0
                         ? round((($percentOfFormula * $formulaWeight) / $curedWeight), 5)

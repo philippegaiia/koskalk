@@ -556,10 +556,14 @@ export function createPresentationSection() {
                 return this.generatedIngredientListText;
             }
 
-            const ingredientLabels = this.curedSoapIngredientRows.map((row) => row.label);
+            if (this.activeIngredientListVariantKey === 'incorporated_ingredients') {
+                return this.activeIngredientListVariant?.display_final_label_text ?? this.generatedIngredientListText;
+            }
+
+            const ingredientLabels = this.curedSoapIngredientRows.map((row) => row.display_label || row.label);
             const allergenLabels = this.curedSoapDeclarationRows
                 .filter((row) => row.included_in_inci)
-                .map((row) => row.label);
+                .map((row) => row.display_label || row.label);
 
             return [...ingredientLabels, ...allergenLabels].join(', ');
         },
@@ -581,6 +585,34 @@ export function createPresentationSection() {
                 this.labelingBasis?.residual_water_weight
                 ?? (this.curedSoapOutputBasisWeight * 0.11),
             );
+        },
+
+        get incorporatedSoapIngredientRows() {
+            if (this.isCosmeticFormula) {
+                return [];
+            }
+
+            return (this.ingredientListVariants.find((variant) => variant.key === 'incorporated_ingredients')
+                ?.ingredient_rows ?? []).filter((row) => this.number(row.weight) > 0);
+        },
+
+        get incorporatedSoapIngredientTotalPercent() {
+            return this.incorporatedSoapIngredientRows.reduce((sum, row) => sum + this.number(row.percent_of_formula), 0);
+        },
+
+        outputIngredientCommonName(row) {
+            const label = String(row.label ?? '').trim().toUpperCase();
+            const standaloneNames = {
+                AQUA: 'water',
+                GLYCERIN: 'glycerin',
+                'SODIUM HYDROXIDE': 'sodium_hydroxide',
+                'POTASSIUM HYDROXIDE': 'potassium_hydroxide',
+            };
+            const commonName = standaloneNames[label]
+                ? this.t(`output.common.${standaloneNames[label]}`)
+                : [...new Set(row.source_ingredients ?? [])].filter(Boolean).join(', ');
+
+            return commonName.toUpperCase() === label ? '' : commonName;
         },
 
         get curedSoapIngredientRows() {

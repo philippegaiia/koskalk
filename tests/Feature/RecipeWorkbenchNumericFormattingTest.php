@@ -726,7 +726,7 @@ it('uses unit-aware precision for soap lye, liquids, additions, and batch totals
         ->toContain('this.calculatedMassDecimals(wetWeight)')
         ->toContain('this.calculatedMassDecimals(curedWeight)')
         ->and($output)
-        ->toContain('format(curedSoapIngredientTotalPercent, 1)')
+        ->toContain('formatPercentageTotal(curedSoapIngredientTotalPercent)')
         ->not->toContain('row.adjusted_weight')
         ->not->toContain('curedSoapMassDecimals')
         ->not->toContain('format(row.adjusted_weight, 2)');

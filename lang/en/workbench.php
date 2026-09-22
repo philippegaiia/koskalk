@@ -359,6 +359,11 @@ return [
     ],
     'output' => [
         'common' => [
+            'inci_name' => 'INCI name',
+            'water' => 'Water',
+            'glycerin' => 'Glycerin',
+            'sodium_hydroxide' => 'Sodium hydroxide',
+            'potassium_hydroxide' => 'Potassium hydroxide',
             'ingredient' => 'Ingredient',
             'phase' => 'Phase',
             'formula_percent' => '% formula',
@@ -390,7 +395,10 @@ return [
             'help' => 'The cured ingredient output used to prepare labels and review declared fragrance components.',
             'basis' => 'Cured basis',
             'composition' => 'Cured soap composition',
-            'composition_help' => 'Main ingredient rows normalized on the cured basis.',
+            'composition_help' => 'Main ingredient rows normalized on the cured basis, with common ingredient names below the INCI names.',
+            'incorporated_composition' => 'Ingredients as added',
+            'incorporated_help' => 'Before saponification and curing, including dilution liquids and alkalis. Percentages use the full formula weight.',
+            'incorporated_empty' => 'Add enough formula data to show the ingredients as added.',
             'cured_basis' => 'Cured basis',
             'empty' => 'Add enough formula data to resolve the cured-soap ingredient output.',
             'label_basis' => 'Label basis',

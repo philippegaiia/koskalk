@@ -121,6 +121,14 @@ it('returns a generated ingredient list and declaration details in the live prev
     $declarationRows = collect($result['labeling']['declaration_rows'])->keyBy('label');
     $listVariants = collect($result['labeling']['list_variants'])->keyBy('key');
     $incorporatedVariant = $listVariants['incorporated_ingredients'];
+    $incorporatedRows = collect($incorporatedVariant['ingredient_rows'])->keyBy('label');
+    $curedRows = collect($listVariants['saponified_with_superfat']['ingredient_rows'])->keyBy('label');
+
+    expect($incorporatedVariant['display_final_label_text'])->toContain('Sodium hydroxide', 'Linalool');
+    expect($declarationRows['LINALOOL']['display_label'])->toBe('Linalool');
+    expect($incorporatedRows['SODIUM HYDROXIDE']['display_label'])->toBe('Sodium hydroxide');
+    expect($incorporatedRows['OLEA EUROPAEA FRUIT OIL']['display_label'])->toBe('Olea europaea fruit oil');
+    expect($curedRows['SODIUM OLIVATE']['display_label'])->toBe('Sodium olivate');
 
     expect($result['ok'])->toBeTrue()
         ->and($result['labeling']['default_variant_key'])->toBe('saponified_with_superfat')

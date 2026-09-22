@@ -106,14 +106,21 @@
  <p class="border-b border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.label_basis_help') }}</p>
  <template x-if="curedSoapIngredientRows.length > 0">
  <div class="overflow-x-auto">
- <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
+ <table class="w-full min-w-[52rem] table-fixed divide-y divide-[var(--color-line)] text-sm">
  <caption class="sr-only">{{ __('workbench.output.soap.composition') }}</caption>
- <thead class="text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
+ <colgroup>
+ <col class="w-12">
+ <col class="w-2/5">
+ <col>
+ <col class="w-40">
+ <col>
+ </colgroup>
+ <thead class="text-left text-xs font-semibold text-[var(--color-ink-soft)]">
  <tr>
  <th scope="col" class="px-4 py-3 text-center">#</th>
  <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.label') }}</th>
  <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.role') }}</th>
- <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.soap_percent') }}</th>
+ <th scope="col" class="px-4 py-3 text-center">{{ __('workbench.output.common.soap_percent') }}</th>
  <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.sources') }}</th>
  </tr>
  </thead>
@@ -121,9 +128,12 @@
  <template x-for="(row, index) in curedSoapIngredientRows" :key="row.label">
  <tr>
  <td class="numeric px-4 py-3 align-middle text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
- <td class="px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
+ <td class="px-4 py-3 align-middle">
+ <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.display_label || row.label"></p>
+ <p x-show="outputIngredientCommonName(row)" class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="outputIngredientCommonName(row)"></p>
+ </td>
  <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
- <td class="numeric px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 3)}%`"></span></td>
+ <td class="numeric px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 3)}%`"></span></td>
  <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">
@@ -138,7 +148,7 @@
  <td class="px-4 py-3"></td>
  <td class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
  <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.cured_basis') }}</td>
- <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${format(curedSoapIngredientTotalPercent, 1)}%`"></span></td>
+ <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(curedSoapIngredientTotalPercent)}%`"></span></td>
  <td class="px-4 py-3"></td>
  </tr>
  </tbody>
@@ -152,6 +162,58 @@
  </template>
  </div>
  </div>
+
+ <details class="mt-4 rounded-lg border border-[var(--color-line)]" data-incorporated-composition>
+ <summary class="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+ {{ __('workbench.output.soap.incorporated_composition') }}
+ </summary>
+ <p class="border-t border-[var(--color-line)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.incorporated_help') }}</p>
+ <template x-if="incorporatedSoapIngredientRows.length > 0">
+ <div class="overflow-x-auto">
+ <table class="w-full min-w-[52rem] table-fixed divide-y divide-[var(--color-line)] text-sm">
+ <caption class="sr-only">{{ __('workbench.output.soap.incorporated_composition') }}</caption>
+ <colgroup>
+ <col class="w-12">
+ <col class="w-2/5">
+ <col>
+ <col class="w-40">
+ </colgroup>
+ <thead class="text-left text-xs font-semibold text-[var(--color-ink-soft)]">
+ <tr>
+ <th scope="col" class="px-4 py-3 text-center">#</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.ingredient') }}</th>
+ <th scope="col" class="px-4 py-3">{{ __('workbench.output.common.inci_name') }}</th>
+ <th scope="col" class="px-4 py-3 text-center">{{ __('workbench.output.common.formula_percent') }}</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-[var(--color-line)]">
+ <template x-for="(row, index) in incorporatedSoapIngredientRows" :key="row.label">
+ <tr>
+ <td class="numeric px-4 py-3 text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
+ <td class="px-4 py-3">
+ <p class="flex items-center gap-1 font-medium text-[var(--color-ink-strong)]">
+ <span x-text="outputIngredientCommonName(row) || row.display_label || row.label"></span>
+ <span x-show="row.source_is_user_owned?.some(Boolean)" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span>
+ </p>
+
+ </td>
+ <td class="px-4 py-3 break-words text-[var(--color-ink-soft)]" x-text="row.display_label || row.label"></td>
+ <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_formula)" x-text="`${format(row.percent_of_formula, 3)}%`"></span></td>
+ </tr>
+ </template>
+ <tr class="bg-[var(--color-panel)]">
+ <td class="px-4 py-3"></td>
+ <td colspan="2" class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
+ <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(incorporatedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(incorporatedSoapIngredientTotalPercent)}%`"></span></td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </template>
+ <template x-if="incorporatedSoapIngredientRows.length === 0">
+ <p class="px-4 py-5 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.incorporated_empty') }}</p>
+ </template>
+ </details>
  </section>
 
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')

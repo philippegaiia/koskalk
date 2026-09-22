@@ -5945,6 +5945,38 @@ JS;
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
 
+it('keeps the incorporated composition collapsed and exclusive to the soap output', function (): void {
+    $soapOutput = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isCosmeticWorkbench' => false,
+        'isPublicCalculator' => true,
+    ])->render();
+    $cosmeticOutput = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isCosmeticWorkbench' => true,
+        'isPublicCalculator' => true,
+    ])->render();
+    $document = new DOMDocument;
+    @$document->loadHTML($soapOutput);
+    $xpath = new DOMXPath($document);
+
+    expect($xpath->query('//details[@data-incorporated-composition and not(@open)]'))->toHaveCount(1);
+    expect($xpath->query('//details[@data-incorporated-composition]//table'))->toHaveCount(1);
+    $headings = $xpath->query('//details[@data-incorporated-composition]//th');
+    expect(array_map(fn (DOMNode $heading): string => trim($heading->textContent), iterator_to_array($headings)))
+        ->toBe(['#', 'Ingredient', 'INCI name', '% formula']);
+    expect($xpath->query('//details[@data-incorporated-composition]//tbody/template/tr/td'))->toHaveCount(4);
+    expect($xpath->query('//details[@data-incorporated-composition]//tbody/tr/td[@colspan="2"]'))->toHaveCount(1);
+    expect($soapOutput)->toContain('outputIngredientCommonName(row) || row.display_label || row.label');
+    $compositionTables = $xpath->query('//table[colgroup]');
+    expect($compositionTables)->toHaveCount(2);
+    foreach ($compositionTables as $table) {
+        $columns = $xpath->query('./colgroup/col', $table);
+        expect($columns->item(0)->getAttribute('class'))->toBe('w-12');
+        expect($columns->item(1)->getAttribute('class'))->toBe('w-2/5');
+    }
+    expect($soapOutput)->toContain('ingredientListUndo = null');
+    expect($cosmeticOutput)->not->toContain('data-incorporated-composition')->not->toContain('ingredientListUndo = null');
+});
+
 it('pins the cured composition table to the saponified variant while lists follow the selection', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';
@@ -5973,20 +6005,21 @@ const workbench = {
         final_label_text: 'SODIUM OLIVATE, AQUA, LAVANDULA ANGUSTIFOLIA FLOWER WATER',
         plain_label_text: 'Saponified Oils of (Olive Oil), Water, Glycerin',
         ingredient_rows: [
-          { label: 'SODIUM OLIVATE', weight: 860, lye_liquid_weight: 0, kind: 'saponified_oil' },
-          { label: 'AQUA', weight: 200, lye_liquid_weight: 190, kind: 'water' },
-          { label: 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', weight: 210, lye_liquid_weight: 190, kind: 'lye_liquid' },
+          { label: 'SODIUM OLIVATE', display_label: 'Sodium olivate', weight: 860, lye_liquid_weight: 0, kind: 'saponified_oil' },
+          { label: 'AQUA', display_label: 'Aqua', weight: 200, lye_liquid_weight: 190, kind: 'water' },
+          { label: 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', display_label: 'Lavandula angustifolia flower water', weight: 210, lye_liquid_weight: 190, kind: 'lye_liquid' },
         ],
-        declaration_rows: [{ label: 'LINALOOL', percent_of_formula: 0.15, included_in_inci: true }],
+        declaration_rows: [{ label: 'LINALOOL', display_label: 'Linalool', percent_of_formula: 0.15, included_in_inci: true }],
       },
       {
         key: 'incorporated_ingredients',
         final_label_text: 'OLIVE OIL, AQUA, SODIUM HYDROXIDE',
+        display_final_label_text: 'Olive oil, Aqua, Sodium hydroxide',
         plain_label_text: 'Lavender Water, Olive Oil, Sodium Hydroxide, Water',
         ingredient_rows: [
-          { label: 'OLIVE OIL', weight: 800, lye_liquid_weight: 0, kind: 'ingredient' },
-          { label: 'AQUA', weight: 200, lye_liquid_weight: 200, kind: 'water' },
-          { label: 'SODIUM HYDROXIDE', weight: 144, lye_liquid_weight: 0, kind: 'lye' },
+          { label: 'OLIVE OIL', weight: 800, percent_of_formula: 70, lye_liquid_weight: 0, kind: 'ingredient', source_ingredients: ['Olive oil'] },
+          { label: 'AQUA', display_label: 'Aqua', weight: 200, percent_of_formula: 17.5, lye_liquid_weight: 200, kind: 'water' },
+          { label: 'SODIUM HYDROXIDE', weight: 144, percent_of_formula: 12.5, lye_liquid_weight: 0, kind: 'lye' },
           { label: 'POTASSIUM HYDROXIDE', weight: 0, lye_liquid_weight: 0, kind: 'lye' },
         ],
         declaration_rows: [],
@@ -5994,6 +6027,7 @@ const workbench = {
     ],
   },
   number: (value) => Number(value ?? 0),
+  t: (key) => ({ 'output.common.water': 'Water', 'output.common.glycerin': 'Glycerin' }[key] ?? key),
 };
 
 Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
@@ -6008,7 +6042,23 @@ assert.equal(workbench.curedSoapDeclarationRows.length, 1);
 assert.equal(workbench.generatedIngredientListText.includes('OLIVE OIL'), true);
 assert.equal(workbench.generatedPlainLanguageListText, 'Lavender Water, Olive Oil, Sodium Hydroxide, Water');
 
+assert.equal(workbench.curedSoapOutputListText, 'Olive oil, Aqua, Sodium hydroxide');
+workbench.useGeneratedIngredientListAsFinal();
+assert.equal(workbench.finalIngredientList, 'Olive oil, Aqua, Sodium hydroxide');
+assert.deepEqual(workbench.incorporatedSoapIngredientRows.map(row => row.label), ['OLIVE OIL', 'AQUA', 'SODIUM HYDROXIDE']);
+assert.equal(workbench.incorporatedSoapIngredientRows[1].weight, 200);
+assert.equal(workbench.incorporatedSoapIngredientTotalPercent, 100);
+assert.equal(workbench.outputIngredientCommonName({ label: 'SODIUM OLIVATE', display_label: 'Sodium olivate', source_ingredients: ['Olive oil'] }), 'Olive oil');
+assert.equal(workbench.outputIngredientCommonName({ label: 'AQUA', display_label: 'Aqua', source_ingredients: ['Lye water'] }), 'Water');
+assert.equal(workbench.outputIngredientCommonName({ label: 'GLYCERIN', source_ingredients: ['Saponification'] }), '');
+assert.equal(workbench.outputIngredientCommonName({ label: 'PARFUM', source_ingredients: ['Lavender', 'Rose', 'Lavender'] }), 'Lavender, Rose');
+assert.equal(workbench.outputIngredientCommonName({ label: 'UNKNOWN' }), '');
+
 workbench.selectIngredientListVariant('saponified_with_superfat');
+assert.equal(workbench.curedSoapOutputListText, 'Sodium olivate, Lavandula angustifolia flower water, Aqua, Linalool');
+assert.equal(workbench.incorporatedSoapIngredientRows.length, 3);
+workbench.useGeneratedIngredientListAsFinal();
+assert.equal(workbench.finalIngredientList, 'Sodium olivate, Lavandula angustifolia flower water, Aqua, Linalool');
 
 assert.equal(workbench.generatedPlainLanguageListText, 'Saponified Oils of (Olive Oil), Water, Glycerin');
 assert.deepEqual(
@@ -6027,11 +6077,14 @@ const legacyWorkbench = {
     ],
   },
   number: (value) => Number(value ?? 0),
+  t: (key) => ({ 'output.common.water': 'Water', 'output.common.glycerin': 'Glycerin' }[key] ?? key),
 };
 
 Object.defineProperties(legacyWorkbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
 
 assert.equal(legacyWorkbench.generatedPlainLanguageListText, 'Legacy plain text');
+assert.deepEqual(legacyWorkbench.incorporatedSoapIngredientRows, []);
+assert.equal(legacyWorkbench.incorporatedSoapIngredientTotalPercent, 0);
 JS;
 
     $process = Process::fromShellCommandline(

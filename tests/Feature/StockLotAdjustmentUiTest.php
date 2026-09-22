@@ -336,3 +336,33 @@ it('renders lot action controls without per-lot database queries', function (int
         ->and($queries->filter(fn (array $query): bool => str_starts_with($query['query'], 'select * from "stock_lots" where') && str_contains($query['query'], '"stock_lots"."id" ='))->count())
         ->toBe(0);
 })->with([25, 100]);
+
+it('renders material lot controls without per-lot database queries', function (int $lotCount): void {
+    [$actor, $workspace, $ingredient] = adjustmentUiFixture();
+    $workspace->update(['uses_storage_locations' => true]);
+    StockLot::factory()->count($lotCount - 1)->for($workspace)->for($ingredient)->released()->create()
+        ->each(fn (StockLot $lot) => StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $workspace->id,
+            'quantity_delta' => '1000.000000000',
+        ]));
+    $this->actingAs($actor);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+    try {
+        Livewire::test(InventoryMaterialDetail::class, [
+            'subject' => $ingredient->public_id,
+            'subjectType' => 'ingredient',
+        ])
+            ->assertViewHas('openLots', fn ($lots): bool => $lots->count() === min($lotCount, 10))
+            ->assertSee(__('production_bench.inventory.adjustment.action'));
+        $queries = collect(DB::getQueryLog());
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($queries->filter(fn (array $query): bool => str_contains($query['query'], 'workspace_production_entitlements'))->count())
+        ->toBeLessThanOrEqual(7)
+        ->and($queries->filter(fn (array $query): bool => str_starts_with($query['query'], 'select * from "stock_lots" where') && str_contains($query['query'], '"stock_lots"."id" ='))->count())
+        ->toBe(0);
+})->with([10, 100]);

@@ -390,6 +390,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
         $openLots = $openLotModels
             ->map(fn (StockLot $lot): array => [
                 'lot' => $lot,
+                'supports_adjustment' => $this->stockAdjustmentSupportsLot($lot),
                 'positions' => collect($positions->forLotWithLoadedMovementSum($lot))
                     ->only(['physical', 'reserved', 'available'])
                     ->map(fn (string $quantity): string => $this->formatQuantity($quantity, $displayUnit))
@@ -415,6 +416,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
             'workspace' => $workspace,
             'isActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'canWriteInventory' => $access->canWrite($this->user(), $workspace),
             'displayUnit' => $displayUnit,
             'materialName' => $this->subject() instanceof Ingredient
                 ? (string) $this->subject()->localizedDisplayName()

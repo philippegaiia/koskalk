@@ -159,11 +159,11 @@
                                 <td class="numeric whitespace-nowrap px-5 py-3 text-[var(--color-ink-soft)]">{{ $lot->stocked_at->format('Y-m-d') }}</td>
                                 @if ($workspace->uses_storage_locations)
                                     <td class="px-4 py-3 text-[var(--color-ink-soft)]">
-                                        <x-production-bench.lot-location :$lot :action="($this->changeStorageLocationAction)(['lot_id' => $lot->id])" />
+                                        <x-production-bench.lot-location :$lot :can-change="$canWriteInventory" :action="($this->changeStorageLocationAction)(['lot_id' => $lot->id])" />
                                     </td>
                                 @endif
                                 <td class="sticky right-0 z-20 w-32 border-l border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-3 text-right">
-                                    @if (($this->adjustStockAction)(['lot_id' => $lot->id])->isVisible())
+                                    @if ($canWriteInventory && $row['supports_adjustment'])
                                         <button wire:click="{{ ($this->adjustStockAction)(['lot_id' => $lot->id])->getLivewireClickHandler() }}" wire:loading.attr="disabled" type="button" class="inline-flex min-h-9 items-center px-2 text-xs font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.adjustment.action') }}</button>
                                     @endif
                                 </td>

@@ -239,8 +239,12 @@ trait InteractsWithStockAdjustments
             ->where('workspace_id', $this->workspace()->id)
             ->find((int) $lotId);
 
-        if (! $lot instanceof StockLot
-            || (($lot->ingredient_id === null) === ($lot->packaging_item_id === null))
+        return $lot instanceof StockLot && $this->stockAdjustmentSupportsLot($lot);
+    }
+
+    protected function stockAdjustmentSupportsLot(StockLot $lot): bool
+    {
+        if ((($lot->ingredient_id === null) === ($lot->packaging_item_id === null))
             || $lot->recipe_id !== null) {
             return false;
         }

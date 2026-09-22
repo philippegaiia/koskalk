@@ -13,6 +13,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -307,3 +308,31 @@ function adjustmentUiFixture(): array
 
     return [$actor, $workspace, $ingredient, $lot];
 }
+
+it('renders lot action controls without per-lot database queries', function (int $perPage): void {
+    [$actor, $workspace, $ingredient] = adjustmentUiFixture();
+    $workspace->update(['uses_storage_locations' => true]);
+    StockLot::factory()->count($perPage - 1)->for($workspace)->for($ingredient)->released()->create()
+        ->each(fn (StockLot $lot) => StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $workspace->id,
+            'quantity_delta' => '1000.000000000',
+        ]));
+    $this->actingAs($actor);
+    $component = Livewire::test(InventoryIndex::class, ['mode' => 'stock']);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+    try {
+        $component->set('perPage', $perPage)
+            ->assertViewHas('lots', fn ($lots): bool => $lots->count() === $perPage)
+            ->assertSee(__('production_bench.inventory.adjustment.action'));
+        $queries = collect(DB::getQueryLog());
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($queries->filter(fn (array $query): bool => str_contains($query['query'], 'workspace_production_entitlements'))->count())
+        ->toBeLessThanOrEqual(6)
+        ->and($queries->filter(fn (array $query): bool => str_starts_with($query['query'], 'select * from "stock_lots" where') && str_contains($query['query'], '"stock_lots"."id" ='))->count())
+        ->toBe(0);
+})->with([25, 100]);

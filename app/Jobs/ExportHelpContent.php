@@ -18,7 +18,7 @@ class ExportHelpContent implements ShouldQueue
     public function __construct(public int $exportId)
     {
         $this->onConnection('database');
-        $this->onQueue(config('contextual-help.queue', 'content'));
+        $this->onQueue(config('contextual-help.queue', config('ingredient-enrichment.direct_ai.queue', 'enrichment')));
     }
 
     /** @return list<int> */

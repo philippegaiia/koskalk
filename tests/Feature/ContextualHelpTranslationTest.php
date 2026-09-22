@@ -51,7 +51,7 @@ it('reuses active requests and captures the configured model and source without 
     expect($request->reasoning_effort)->toBe('medium');
     expect($request->source_english_revision_id)->toBe($source->id);
     expect($target->refresh()->latest_revision_id)->toBeNull();
-    Queue::assertPushed(TranslateHelpTopic::class, fn ($job) => $job->requestId === $request->id && $job->connection === 'database' && $job->queue === 'content');
+    Queue::assertPushed(TranslateHelpTopic::class, fn ($job) => $job->requestId === $request->id && $job->connection === 'database' && $job->queue === config('ingredient-enrichment.direct_ai.queue'));
     Queue::assertPushed(TranslateHelpTopic::class, 1);
 });
 

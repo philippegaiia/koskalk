@@ -68,12 +68,12 @@ This installs 32 **unpublished English drafts**. Bootstrap never replaces existi
 
 For a replacement installation, restore a downloaded help snapshot **before bootstrap or `help:register-topics`**; `restore-empty` requires all topic, locale, revision, and translation-request tables to be empty. Follow the recovery commands in [storage-and-backups.md](./storage-and-backups.md). Never use `migrate:fresh` on a database with content to preserve.
 
-Run a database worker for the dedicated `content` queue:
+Help jobs share the ingredient enrichment queue (`INGREDIENT_ENRICHMENT_QUEUE`, default `enrichment`). Use the normal ingredient worker. Restart long-running workers after deployment so they load the new job classes. For the default configuration:
 
 ```shell
-php artisan queue:work database --queue=content --sleep=3 --timeout=150 --tries=3
+php artisan queue:work database --queue=enrichment --sleep=3 --timeout=2000 --tries=3
 ```
 
-Jobs have a 120-second timeout; `DB_QUEUE_RETRY_AFTER` must exceed the worker timeout (keep the existing 2100-second default if other jobs require it). Translation jobs explicitly permit one attempt; uncertain provider calls are never retried automatically. The scheduler redispatches durable pending jobs every five minutes and expires stalled translation attempts after ten minutes. A new paid attempt is requested explicitly in the editor.
+Help jobs retain a 120-second timeout; the shared worker allows the longer ingredient jobs. `DB_QUEUE_RETRY_AFTER` must exceed the longest job timeout (keep the existing 2100-second default if other jobs require it). Translation jobs explicitly permit one attempt; uncertain provider calls are never retried automatically. The scheduler redispatches durable pending jobs every five minutes and expires stalled translation attempts after ten minutes. A new paid attempt is requested explicitly in the editor.
 
 Verify a manual snapshot in Admin → Content → Help imports & backups before release. Confirm the recorded snapshot checksum, private download, and an isolated restore. Help reads only published content and falls back to published English when a translation is missing or out of date. Editing English alone does not invalidate a live translation; publishing changed English does.

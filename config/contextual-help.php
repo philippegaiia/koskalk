@@ -3,7 +3,7 @@
 return [
     'enabled' => env('CONTEXTUAL_HELP_ENABLED', true),
     'disk' => env('CONTEXTUAL_HELP_DISK', 'r2_backups'),
-    'queue' => 'content',
+    'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'enrichment'),
     'translation' => [
         'model' => env('HELP_TRANSLATION_MODEL'),
         'reasoning_effort' => env('HELP_TRANSLATION_REASONING_EFFORT'),

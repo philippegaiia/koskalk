@@ -41,7 +41,7 @@ it('verifies private remote bytes and treats duplicate successful delivery as a 
     $job->handle($service);
     expect(Storage::disk('r2_backups')->allFiles())->toHaveCount(1);
     expect($job->connection)->toBe('database');
-    expect($job->queue)->toBe('content');
+    expect($job->queue)->toBe(config('ingredient-enrichment.direct_ai.queue'));
 });
 
 it('records remote verification failure visibly and can retry without overwriting an earlier attempt', function (): void {
@@ -88,7 +88,7 @@ it('requires administrator permission for manual snapshots and queues on the dat
     $export = app(RequestHelpContentExport::class)->handle($admin);
     expect($export->requested_by)->toBe($admin->id);
     expect($export->status)->toBe(HelpContentExportStatus::Pending);
-    Queue::assertPushed(ExportHelpContent::class, fn (ExportHelpContent $job): bool => $job->exportId === $export->id && $job->connection === 'database' && $job->queue === 'content');
+    Queue::assertPushed(ExportHelpContent::class, fn (ExportHelpContent $job): bool => $job->exportId === $export->id && $job->connection === 'database' && $job->queue === config('ingredient-enrichment.direct_ai.queue'));
 });
 
 it('rejects a remote checksum mismatch even when the remote size is correct', function (): void {

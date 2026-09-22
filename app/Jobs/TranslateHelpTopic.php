@@ -20,7 +20,7 @@ class TranslateHelpTopic implements ShouldQueue
     public function __construct(public int $requestId)
     {
         $this->onConnection('database');
-        $this->onQueue(config('contextual-help.queue', 'content'));
+        $this->onQueue(config('contextual-help.queue', config('ingredient-enrichment.direct_ai.queue', 'enrichment')));
         $this->afterCommit();
     }
 

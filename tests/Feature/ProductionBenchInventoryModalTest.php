@@ -275,7 +275,7 @@ it('creates a stock lot from the modal with an automatic internal batch number',
     expect($lot->origin)->toBe(StockLotOrigin::OpeningBalance)
         ->and($lot->supplier_listing_id)->toBe($listing->id)
         ->and($lot->supplier_batch_number)->toBe('SUP-2026-42')
-        ->and($lot->internal_lot_code)->toMatch('/^SK-\d{6}-\d{4}$/')
+        ->and($lot->internal_lot_code)->toMatch('/^SK-\d{6}-1$/')
         ->and($lot->historical_unit_cost)->toBe('0.011250000')
         ->and($lot->currency)->toBe($listing->currency)
         ->and($lot->movements()->sole()->original_quantity)->toBe('2.500000000')

@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "captured_at": "2026-09-22T22:00:00+00:00",
-  "export_uuid": "4efd44c4-835f-5596-869c-8cd5b9d9dab0",
+  "captured_at": "2026-09-23T05:34:31+00:00",
+  "export_uuid": "8a6d3132-57ce-46a3-ae4b-7f1d3be7c457",
   "topics": [
     {
       "public_id": "21c8aafa-9d3b-517c-981e-b6020b172a9d",
@@ -11,24 +11,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "48a142c6-3ebc-5131-ad09-b0d83287f337",
+          "latest_revision_uuid": "20ccb83c-83a8-4934-b315-b3b622b92077",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "48a142c6-3ebc-5131-ad09-b0d83287f337",
+              "public_id": "20ccb83c-83a8-4934-b315-b3b622b92077",
               "revision_number": 1,
-              "title": "Planning a production batch",
-              "summary": "Choose a Product, check its saved formula and batch size, then schedule the batch. Planning alone does not reserve or consume stock.",
-              "body_markdown": "Start from a Product with a saved formula. Review the material requirements and expected output before saving the batch.\n\nA draft is preparation work. Scheduling gives the batch a production date. Prepare its stock separately, assign its permanent batch number, and start it when you are ready to manufacture.\n\nThe usual sequence is Scheduled → Reserved → In production → Completed. Completing production creates an output lot in quarantine; releasing that lot is a separate action.\n\nUse the batch details to follow the next available step. A planned quantity is an estimate, so record the quantities actually used and produced during execution.",
+              "title": "Plan a production batch",
+              "summary": "Choose a saved product formula, check the batch size, then schedule production. Planning does not reserve or consume stock.",
+              "body_markdown": "1. Choose the product and check its saved formula.\n2. Enter the batch size and expected output.\n3. Review the ingredient and packaging requirements.\n4. Save the plan and set its production date.\n5. Prepare stock, assign the permanent batch number, then start when ready.\n\nThe usual sequence is **Scheduled → Reserved → In production → Completed**.\n\nCompletion creates an output lot in **quarantine**. Release that lot separately after its tasks and readiness checks are complete.\n\nOpen the batch details to find the next available action.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -43,24 +43,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "4247e8c3-6de2-5b27-8b10-80a791ec583b",
+          "latest_revision_uuid": "9fe5c46d-0ad1-4bf8-8f07-6f097c2723eb",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "4247e8c3-6de2-5b27-8b10-80a791ec583b",
+              "public_id": "9fe5c46d-0ad1-4bf8-8f07-6f097c2723eb",
               "revision_number": 1,
               "title": "Which formula does this batch use?",
-              "summary": "A batch keeps a copy of the saved formula used when it was created. Later formula edits do not change that batch.",
-              "body_markdown": "Check the source formula version and material requirements before preparing stock. The batch records its formula composition and calculated quantities so you can see what was planned.\n\nChanging an editable batch size rescales that recorded formula; it does not load a newer saved formula. If you need a different composition, create a batch from the correct saved formula.\n\nThe batch formula records what you planned to make. It does not replace recording actual material use, manufacturing observations, or your product checks.",
+              "summary": "A batch keeps the saved formula it was created from. Later formula edits do not change that batch.",
+              "body_markdown": "Before preparing stock, check:\n\n- The source formula version.\n- The planned ingredients and quantities.\n- The expected output and packaging requirements.\n\nChanging the batch size rescales this recorded formula. It does not load a newer formula.\n\n### I changed the product formula\n\nCreate a new batch from the correct saved formula if you need a different composition. Review the old plan and cancel it if you no longer need it.\n\nDuring production, record actual material use separately. The formula records the plan, not what you actually used.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -75,24 +75,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "9c80b704-b42b-54ea-a015-cb3ea1de58e9",
+          "latest_revision_uuid": "38412fa7-f945-43f1-81bf-c603abc411e4",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "9c80b704-b42b-54ea-a015-cb3ea1de58e9",
+              "public_id": "38412fa7-f945-43f1-81bf-c603abc411e4",
               "revision_number": 1,
-              "title": "Batch size and expected units",
-              "summary": "Batch size scales the formula. Expected units describe the planned number of finished items and are used for packaging requirements.",
-              "body_markdown": "Read the basis shown for the Product: soap uses oil mass, while cosmetic formulas use total formula mass. For example, 5 kg of oils is not the same as 5 kg of finished soap.\n\nEnter the mass and its unit, then the expected number of items. Check both ingredient and packaging requirements in the preview before saving. At completion, record the actual output rather than simply copying the expected quantity.\n\nBatch size presets save a commonly used mass and expected unit count. Assign a preset to the Products it fits, and check the values when planning each batch.\n\nYou can change a draft or scheduled batch's size before stock is reserved. Release its reservations before changing a reserved plan, then prepare stock again for the revised requirements.",
+              "title": "Set batch size and expected units",
+              "summary": "Batch size sets ingredient quantities. Expected units set the planned number of finished items and their packaging needs.",
+              "body_markdown": "1. Check the mass basis: **oil mass for soap**, or **total formula mass for cosmetics**.\n2. Enter the batch mass and its unit.\n3. Enter the expected number of finished items.\n4. Review both ingredient and packaging requirements before saving.\n\n**Example:** 5 kg of oils does not mean 5 kg of finished soap.\n\nUse a batch size preset for a size you make often. Check that its mass and unit count fit the chosen product.\n\n### I need to change the size\n\nEdit a draft or scheduled batch before reserving stock. For a reserved batch, release its reservations first, change the size, then prepare stock again.\n\nAt completion, enter the actual output. Do not copy the expected count unless it matches what you produced.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -107,24 +107,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "85221f92-6758-5bfb-82c2-d94f7c10b29c",
+          "latest_revision_uuid": "6653e972-220a-4782-aaba-38f57bbaf661",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "85221f92-6758-5bfb-82c2-d94f7c10b29c",
+              "public_id": "6653e972-220a-4782-aaba-38f57bbaf661",
               "revision_number": 1,
-              "title": "Production dates and the calendar",
-              "summary": "The production date anchors the batch schedule. Review the related task dates whenever you move a batch.",
-              "body_markdown": "Use the calendar to see planned batches and tasks together. Open a batch or task to review its details before changing its schedule.\n\nTask sets place tasks before, on, or after the production date. Offsets use calendar days. When an offset falls on a non-working day, preparation tasks move to the previous working day and follow-up tasks move to the next one. Day-zero tasks stay on the production date.\n\nWorking days and holidays come from your planning settings. Review the resulting dates, especially where you have manually adjusted a task.\n\nScheduling is not stock preparation: reserve the required lots separately and check readiness again before starting.",
+              "title": "Set production and task dates",
+              "summary": "The production date anchors the task schedule. Review task dates after moving a batch.",
+              "body_markdown": "1. Choose the production date.\n2. Review the batch and its tasks on the calendar.\n3. Check dates against your working days, holidays, and capacity.\n4. Prepare stock separately before starting.\n\nTask offsets use **calendar days**:\n\n- A negative offset schedules preparation before production.\n- Zero schedules work on the production date.\n- A positive offset schedules follow-up work.\n\nIf an offset falls on a non-working day, preparation moves to the previous working day and follow-up moves to the next. Day-zero tasks stay on the production date.\n\nCheck planning settings if dates look unexpected. Recheck any manually adjusted tasks after rescheduling.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -139,24 +139,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "6718a965-f84e-5c3e-9919-0e24e670d1f6",
+          "latest_revision_uuid": "a6c8c42f-ff7a-4bd7-8374-b3c613d8f2d4",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "6718a965-f84e-5c3e-9919-0e24e670d1f6",
+              "public_id": "a6c8c42f-ff7a-4bd7-8374-b3c613d8f2d4",
               "revision_number": 1,
-              "title": "Planning several batches at once",
-              "summary": "Use the Flash planner to preview material needs and proposed dates for several batches before creating them.",
-              "body_markdown": "Add the Products and batch quantities you want to plan. Check the batch sizes, expected units, and combined material requirements.\n\nChoose the scheduling options and generate a date preview. Review the proposed days against your working calendar and capacity before confirming.\n\nIf you change the inputs, refresh the preview before generating the batches. The saved batches use the formulas and settings validated for that proposal.\n\nGenerating batches creates production plans. It does not reserve stock or start manufacturing. Open Stock preparation afterwards to allocate lots and resolve shortages.",
+              "title": "Plan several batches at once",
+              "summary": "Use the Flash planner to preview combined material needs and dates before creating several batches.",
+              "body_markdown": "1. Add the products and quantities you want to make.\n2. Check each batch size and expected unit count.\n3. Review the combined material requirements.\n4. Choose scheduling options and generate the date preview.\n5. Check the proposed dates, then generate the batches.\n\n**Changed an input?** Refresh the preview before generating batches.\n\nThe planner creates production plans. Open **Stock preparation** next to reserve lots and resolve shortages. Generating a plan does not reserve stock or start manufacturing.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -171,24 +171,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "2ac2a876-3615-54a0-a17c-bfe573e24572",
+          "latest_revision_uuid": "b5ea1013-6fb8-4921-9ab2-e227e15cc1c6",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "2ac2a876-3615-54a0-a17c-bfe573e24572",
+              "public_id": "b5ea1013-6fb8-4921-9ab2-e227e15cc1c6",
               "revision_number": 1,
-              "title": "Reserving lots for a batch",
-              "summary": "Stock preparation sets aside specific ingredient and packaging lots. Reservations reduce available stock without reducing physical stock.",
-              "body_markdown": "Review each requirement and the proposed lots. Automatic allocation prioritizes eligible lots by expiry; use manual allocation when you need a particular lot or a split across lots.\n\nOnly eligible released lots can be reserved. Quarantine, availability dates, expiry dates, and existing reservations affect what can be used.\n\nPartial preparation is allowed. Available quantities can be reserved while a shortage remains visible. The batch becomes Reserved only when all material requirements are fully covered.\n\nReceive missing material or correct the stock record, then prepare the remaining quantities. Before manufacturing, check readiness again: a lot that was suitable when planned may no longer be usable on the start date.\n\nReleasing reservations makes those quantities available again. It does not remove physical stock.",
+              "title": "Reserve lots for a batch",
+              "summary": "Stock preparation sets aside specific lots. Reservations reduce available stock but leave physical stock unchanged.",
+              "body_markdown": "1. Review each ingredient and packaging requirement.\n2. Check the proposed lots. Automatic allocation prioritizes eligible lots by expiry.\n3. Use manual allocation to choose a specific lot or split a quantity across lots.\n4. Reserve the quantities and review any remaining shortages.\n\nThe batch becomes **Reserved** only when every requirement is covered. You can reserve part of the stock while waiting for the rest.\n\n### A lot is missing or cannot be reserved\n\nCheck its released status, availability date, expiry date, and unreserved quantity. Quarantined lots are not eligible.\n\nReceive missing material or correct an inaccurate stock record, then prepare the remaining quantities. Check readiness again before starting: a reserved lot may no longer be usable on the start date.\n\nReleasing reservations makes the quantities available again. It does not remove physical stock.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -203,24 +203,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "7b637fae-d0da-5de2-a3f6-6835090eb3d1",
+          "latest_revision_uuid": "db33ab77-cf6e-4352-bee6-664cd3e6f694",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "7b637fae-d0da-5de2-a3f6-6835090eb3d1",
+              "public_id": "db33ab77-cf6e-4352-bee6-664cd3e6f694",
               "revision_number": 1,
-              "title": "Starting and recording actual use",
-              "summary": "Start after stock is fully reserved and the batch has its permanent number. Record the lots and quantities actually used, including calculated water where shown.",
-              "body_markdown": "Starting changes the batch to In production. It checks reservation coverage and whether the reserved lots are usable now.\n\nFor each material, enter the quantity actually used against its lot. Ingredients use mass; packaging uses whole units. Split a requirement across lots if needed. Check the actual calculated-water quantity separately where the batch includes it.\n\nSave actuals as you work. Saving records the usage but does not yet deduct physical stock. Consumption is posted when you complete or abort the batch.\n\nIf actual use differs from the plan, record what really happened. Review shortages and stock discrepancies before finishing; posting consumption can reveal a negative stock balance.",
+              "title": "Start production and record actual use",
+              "summary": "Start once all stock is reserved and the batch has its permanent number. Then record the lots and quantities actually used.",
+              "body_markdown": "1. Check the permanent batch number and stock readiness.\n2. Start the batch. Its status becomes **In production**.\n3. Enter actual ingredient quantities by lot, using the displayed mass unit.\n4. Enter actual packaging use in whole units. Split usage across lots when needed.\n5. Check calculated water separately where shown, then save actuals.\n\n### Start is blocked\n\nCheck that all requirements are reserved and the reserved lots are usable now. Also check that the permanent batch number is assigned.\n\nSaving actuals records usage. Physical stock is deducted when you **complete or abort** the batch.\n\nEnter what really happened, even when it differs from the plan. Review discrepancies before finishing; recorded consumption can reveal negative stock.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -235,24 +235,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "d09902a7-cb53-50b5-9e8c-abc3c8a157e9",
+          "latest_revision_uuid": "b5c97536-97dd-491c-8c33-8761627336ee",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "d09902a7-cb53-50b5-9e8c-abc3c8a157e9",
+              "public_id": "b5c97536-97dd-491c-8c33-8761627336ee",
               "revision_number": 1,
-              "title": "Completing the batch",
-              "summary": "Completion posts the recorded material consumption, releases reservations, and creates an output lot in quarantine.",
-              "body_markdown": "Check every material's actual usage, the actual water quantity where applicable, and the manufacturing date before completing.\n\nRecord the actual output: a whole number of units for finished goods, or a mass for a manufactured ingredient. The output must be positive.\n\nCompletion saves consumption and cost information, releases the batch's remaining reservations, and creates its output lot using the permanent batch number.\n\nFollow-up tasks can still be outstanding when production is completed. The output stays quarantined until you release it after the required tasks and readiness checks.",
+              "title": "Complete a batch",
+              "summary": "Completion records material consumption, releases reservations, and creates a quarantined output lot.",
+              "body_markdown": "Before completing:\n\n1. Check actual usage for every ingredient and packaging item.\n2. Check actual water where applicable.\n3. Confirm the manufacturing date.\n4. Enter the actual output: whole units for finished goods, or mass for a manufactured ingredient.\n5. Add any final journal observations, then complete the batch.\n\nOutput must be **greater than zero**.\n\nCompletion posts consumption and costs, releases remaining reservations, and creates the output lot with the permanent batch number.\n\n### Why is the output still quarantined?\n\nCompletion and release are separate. Finish all remaining tasks and check readiness, then release the output lot.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -267,24 +267,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "1e9cb119-6937-55f6-8204-a4927221187b",
+          "latest_revision_uuid": "fd1bbe5f-2cb9-46f2-90dc-10eab526edd1",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "1e9cb119-6937-55f6-8204-a4927221187b",
+              "public_id": "fd1bbe5f-2cb9-46f2-90dc-10eab526edd1",
               "revision_number": 1,
-              "title": "Quarantine and release of the output",
-              "summary": "A completed batch produces a quarantined lot. Release it separately when all its tasks are complete and it is ready to use.",
-              "body_markdown": "Check the output quantity, manufacturing date, and estimated ready date on the batch. Quarantine keeps the lot from being treated as released stock.\n\nAll batch tasks must be complete before release. If you release before the estimated ready date, the app asks you to confirm the early release; this does not bypass the task check.\n\nRelease changes the lot's handling status, not its quantity. It records your decision that the output is ready; it does not perform laboratory or product-quality checks for you.\n\nFor a manufactured ingredient, the released output lot can be used in a later production, subject to the usual lot eligibility checks.",
+              "title": "Release a completed output lot",
+              "summary": "Completed output starts in quarantine. Release it when all batch tasks are complete and the output is ready.",
+              "body_markdown": "1. Check the output quantity, manufacturing date, and estimated ready date.\n2. Complete every outstanding batch task.\n3. Carry out your product checks.\n4. Release the output lot when it is ready.\n\n### Release is blocked\n\nCheck for incomplete tasks. All batch tasks must be complete.\n\nReleasing before the estimated ready date requires confirmation. That confirmation does not bypass the task check.\n\nRelease changes the handling status, not the quantity. It records your readiness decision; it does not perform quality checks.\n\nA released manufactured-ingredient lot can supply a later batch if it meets the usual lot eligibility checks.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -299,24 +299,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "1daadfeb-5ddb-5708-a3cd-d3847f0997ac",
+          "latest_revision_uuid": "ce382366-d31e-4659-ab6a-bb1725326279",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "1daadfeb-5ddb-5708-a3cd-d3847f0997ac",
+              "public_id": "ce382366-d31e-4659-ab6a-bb1725326279",
               "revision_number": 1,
-              "title": "Following production tasks",
-              "summary": "Tasks track the work around a batch, from preparation to follow-up. Complete them as the work is done.",
-              "body_markdown": "Use the Tasks page for work across batches, or the batch's task list for a single production. Review each task's date, assignment, and status.\n\nTask sets generate a schedule around the production date. Dates can be adjusted before production starts; check the calendar after any change.\n\nCompleting a task does not consume materials or complete the batch. Record actual usage and finish production through the batch actions.\n\nA batch can be completed while follow-up tasks remain, but every task must be complete before its output lot can be released.",
+              "title": "Follow production tasks",
+              "summary": "Use Tasks to track work across batches. Mark each task complete when the work is done.",
+              "body_markdown": "- Open **Tasks** for work across batches.\n- Open a batch's task list to focus on that production.\n- Check each task's date, assignment, and status.\n- Adjust dates before production starts when needed, then review the calendar.\n\nCompleting a task does not consume stock or complete the batch. Record actual usage and use the batch actions for those steps.\n\nA batch can be completed while follow-up tasks remain. Its output cannot be released until **every task is complete**.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -331,24 +331,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "c08be787-2d60-5e12-88b1-1132c7de80fb",
+          "latest_revision_uuid": "93b55a21-f95f-4c5e-a2fc-561019dd6a8d",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "c08be787-2d60-5e12-88b1-1132c7de80fb",
+              "public_id": "93b55a21-f95f-4c5e-a2fc-561019dd6a8d",
               "revision_number": 1,
-              "title": "Reusable task sets",
-              "summary": "A task set defines the preparation, production-day, and follow-up tasks to generate for selected Products.",
-              "body_markdown": "Add the task types needed for the process and set their duration and offset from the production date. Use a negative offset for preparation, zero for production day, and a positive offset for follow-up.\n\nInclude at least one day-zero task. Assign the set to the Products it applies to, and keep it active when it should be offered for planning.\n\nWhen tasks are generated, their names, durations, and offsets are copied into the batch schedule. Editing the task set later does not rewrite those existing tasks.\n\nReview the task preview when planning. Working days and holidays can move tasks whose offsets fall on non-working days.",
+              "title": "Create a reusable task set",
+              "summary": "A task set supplies the preparation, production-day, and follow-up tasks for selected products.",
+              "body_markdown": "1. Add the task types your process needs.\n2. Set each task's duration and offset from the production date.\n3. Include at least one task with an offset of **zero**.\n4. Assign the set to the relevant products and keep it active for planning.\n5. Check the task preview when creating a batch.\n\nUse negative offsets for preparation, zero for production day, and positive offsets for follow-up.\n\n### I edited the set, but an existing batch did not change\n\nGenerated tasks keep the names, durations, and offsets copied when they were created. Editing the set does not rewrite existing tasks.\n\nWorking days and holidays can shift tasks whose offsets fall on non-working days.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -363,24 +363,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "d44a6b75-e824-576a-aac6-7ebd19f31f75",
+          "latest_revision_uuid": "3bfaf7f1-b087-4496-914d-5649e05d8b58",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "d44a6b75-e824-576a-aac6-7ebd19f31f75",
+              "public_id": "3bfaf7f1-b087-4496-914d-5649e05d8b58",
               "revision_number": 1,
-              "title": "Keeping a batch journal",
-              "summary": "Use the journal for observations and supporting documents while the batch is in progress.",
-              "body_markdown": "Record useful observations such as process adjustments, measured values, unusual events, or the reason for a decision. Attach supporting documents or images with a short note where helpful.\n\nKeep actual ingredient and packaging quantities in the material-use fields. A journal note does not update consumption, reservations, or output quantity.\n\nAdd the information before completing, cancelling, or aborting the batch, as those states close the journal-entry controls.",
+              "title": "Keep a batch journal",
+              "summary": "Record observations and supporting files before completing, cancelling, or aborting the batch.",
+              "body_markdown": "Useful entries include:\n\n- Measured values and process adjustments.\n- Unusual events and how you handled them.\n- Reasons for production decisions.\n- Supporting images or documents with a short explanation.\n\nEnter ingredient and packaging quantities in the **actual-use fields**. A journal note does not update stock, reservations, or output.\n\n### I cannot add an entry\n\nCheck the batch status. Journal entry controls close when the batch is completed, cancelled, or aborted.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -395,24 +395,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "0b99ccce-21d7-5854-a705-af82bfac01f7",
+          "latest_revision_uuid": "ac24cb18-f91d-4142-aac1-4696b5314999",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "0b99ccce-21d7-5854-a705-af82bfac01f7",
+              "public_id": "ac24cb18-f91d-4142-aac1-4696b5314999",
               "revision_number": 1,
-              "title": "Cancel before starting; abort after starting",
-              "summary": "Cancel a batch that will not start. Abort a batch already in production, after recording any materials it used.",
-              "body_markdown": "Cancellation is available for draft, scheduled, and reserved batches. Enter a reason. It cancels active reservations without consuming material or creating an output lot.\n\nAborting is for a batch already In production. First save the quantities actually consumed, then enter the reason for stopping. Aborting posts that recorded consumption and releases the remaining reservations.\n\nAn aborted batch creates no output lot. Review its actual usage carefully before confirming so the stock record reflects what was used.",
+              "title": "Cancel or abort a batch",
+              "summary": "Cancel before production starts. Abort after it starts, once you have saved the quantities actually used.",
+              "body_markdown": "### Cancel a batch that will not start\n\n1. Open the draft, scheduled, or reserved batch.\n2. Choose cancellation and enter a reason.\n3. Confirm the action.\n\nCancellation releases active reservations. It does not consume materials or create output.\n\n### Abort a batch already in production\n\n1. Enter and save all actual material use.\n2. Check the quantities carefully.\n3. Choose abort, enter the reason, and confirm.\n\nAborting posts the saved consumption and releases remaining reservations. It creates **no output lot**.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T22:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -420,5 +420,5 @@
       ]
     }
   ],
-  "digest": "5c80b22ca1e9dfb57fe192b4aaf92086acc0c954482398e6e991da85bc9dc99d"
+  "digest": "e4713f90dae61af6ea20d35aadb61838eb1396a8adbbe9921670fa13002bc6d2"
 }

@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "export_uuid": "77824ee0-000f-5525-8460-c4ba5d74887c",
-  "captured_at": "2026-09-22T00:00:00+00:00",
+  "export_uuid": "34284e89-f8bb-4ed3-b2d8-fd10e7a90745",
+  "captured_at": "2026-09-23T05:34:31+00:00",
   "topics": [
     {
       "public_id": "f6ef728d-9618-599c-b4a4-fc900ed51838",
@@ -11,24 +11,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "a4f42f6d-fbe2-5441-8147-e310fd13cb15",
+          "latest_revision_uuid": "92c5a568-7a81-442a-9f19-ea5b38cb3b72",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "a4f42f6d-fbe2-5441-8147-e310fd13cb15",
+              "public_id": "92c5a568-7a81-442a-9f19-ea5b38cb3b72",
               "revision_number": 1,
-              "title": "Working with a formula",
-              "summary": "A Product holds its formula and related information. The workbench shows the formulation you are currently editing.",
-              "body_markdown": "Choose the calculation family when creating the Product. Soap and cosmetic formulas use different percentage bases, so check the family before entering ingredients.\n\nThe Formula tab contains ingredients and formulation settings. Output shows the resulting calculations. Packaging, Costing, and Instructions keep related work together. Editing a value updates the working formulation; use Save when you want to keep it.",
+              "title": "Build and save a formula",
+              "summary": "Enter ingredients and quantities in Formula. Choose Save to keep your changes.",
+              "body_markdown": "1. Check the calculation method: soap percentages usually refer to oils; cosmetic percentages refer to the whole formula.\n2. Add ingredients and enter their amounts.\n3. Check the totals and any messages.\n4. Choose **Save**.\n\n### Where to go next\n\n- **Packaging:** components needed for each finished unit.\n- **Costing:** ingredient and packaging costs.\n- **Composition & labeling:** calculated composition and ingredient lists.\n- **Instructions & media:** manufacturing steps and supporting files.\n\nChanging a value recalculates the working formula. It does not replace saving.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -43,24 +43,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "f98a558b-f6ac-54d8-a130-ae0751055221",
+          "latest_revision_uuid": "44aadb56-9c5c-4a1e-b7c7-984ffd24a94e",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "f98a558b-f6ac-54d8-a130-ae0751055221",
+              "public_id": "44aadb56-9c5c-4a1e-b7c7-984ffd24a94e",
               "revision_number": 1,
-              "title": "Finding and adding ingredients",
-              "summary": "Use the ingredient selector to find an available ingredient and add it to the appropriate part of your formula.",
-              "body_markdown": "Search by the available names and review the ingredient details when you need more context. The catalogue can include shared platform ingredients and ingredients available in your workspace.\n\nChoose the destination carefully: soap reaction-core ingredients and later additions have different roles, while cosmetic ingredients belong to phases. After adding an ingredient, enter its amount and check the formula totals. A catalogue function or description does not establish suitability for every use.",
+              "title": "Find and add an ingredient",
+              "summary": "Search in Add ingredients, choose the destination, then enter the amount in the new row.",
+              "body_markdown": "1. Open **Add ingredients** and search by name or INCI.\n2. Check the ingredient details to confirm you have the right material.\n3. Choose its destination: a soap section or a cosmetic phase.\n4. Enter a percentage or weight in the new row.\n5. Check the total and choose **Save**.\n\n### Cannot find or add it?\n\nCheck the library filters and spelling. A material in the library may not be eligible for every formula section. For soap saponification, use an oil with supported soap chemistry.\n\nA listed function does not guarantee that the ingredient suits your intended use.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -75,24 +75,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "5452d887-c6e4-52b0-99c2-f45f9b4b1c70",
+          "latest_revision_uuid": "252cc341-9311-4628-b789-80bfb68ed204",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "5452d887-c6e4-52b0-99c2-f45f9b4b1c70",
+              "public_id": "252cc341-9311-4628-b789-80bfb68ed204",
               "revision_number": 1,
-              "title": "Amounts, percentages, and units",
-              "summary": "Check both the entry mode and the displayed unit before changing an ingredient amount.",
-              "body_markdown": "Percentage and weight entry describe the same working formula through different inputs. Changing the display unit converts the amount; it does not change the physical quantity.\n\nFor example, 1 kilogram and 1,000 grams describe the same mass. The percentage denominator depends on the calculation family and section. Displayed numbers may be rounded for readability while calculations retain more precision. Review totals rather than trying to correct a difference caused only by display rounding.",
+              "title": "Enter amounts and choose units",
+              "summary": "Check the entry mode and unit before typing. Changing units converts the amount; it does not change the batch.",
+              "body_markdown": "- **Percentage:** enter a share of the basis shown beside the field.\n- **Weight:** enter the ingredient mass in the displayed unit.\n- **Unit conversion:** 1 kg and 1,000 g are the same quantity.\n\nSoap oil percentages refer to total oils. Cosmetic percentages refer to the whole formula, across all phases. Check the basis for soap additions separately.\n\n### A total looks slightly different\n\nThe screen rounds numbers, while calculations keep more precision. Check the balance message before changing ingredients to correct a small display difference.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -107,24 +107,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "369d582b-9a34-572f-81ae-34e601978c49",
+          "latest_revision_uuid": "642ef411-237f-423c-8773-c62807882de8",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "369d582b-9a34-572f-81ae-34e601978c49",
+              "public_id": "642ef411-237f-423c-8773-c62807882de8",
               "revision_number": 1,
-              "title": "Saving and reviewing history",
-              "summary": "Save keeps the current work. Saved formula history lets you review earlier saved states.",
-              "body_markdown": "A Product is the continuing record; a Saved formula captures a formulation at a particular save. Check the saved state before leaving if you have changed amounts or settings.\n\nUse the Product sheet and available history controls to review saved information. Some Product content is maintained separately from formula calculations. Ingredient catalogue and regulatory reference data can also change, so an earlier save is not a permanent certification of the information currently shown.",
+              "title": "Save changes and review history",
+              "summary": "Choose Save after editing. Use Product sheet and the history controls to review saved versions.",
+              "body_markdown": "1. Finish your changes and check the formula status.\n2. Choose **Save** and wait for confirmation.\n3. Open **Product sheet** to check the saved product.\n4. Use its history controls to inspect an earlier formula.\n\n### Before restoring an earlier version\n\nCheck its ingredients and amounts. Review the result after restoring, then confirm which version you intend to use.\n\nHistory preserves formula versions, not every linked fact. Ingredient details and reference data remain current. Instructions and other product information may be managed separately from formula history.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -139,24 +139,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "439176cf-860b-54c6-9d3d-cf7d692b893c",
+          "latest_revision_uuid": "3d17cb9c-3383-4816-b306-8dca15419665",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "439176cf-860b-54c6-9d3d-cf7d692b893c",
+              "public_id": "3d17cb9c-3383-4816-b306-8dca15419665",
               "revision_number": 1,
-              "title": "Locked formulas",
-              "summary": "A locked formula can be reviewed but cannot be edited until an authorized workspace member unlocks it.",
-              "body_markdown": "Locking protects the Product from ordinary editing. The available Unlock action depends on your workspace role; being able to view a Product does not necessarily let you unlock it.\n\nRead the formula, inspect its output, and open contextual help while it is locked. Help controls do not unlock fields or change formula values. If you need to revise the formulation, use the authorized Unlock action first, then save your changes.",
+              "title": "Why is the formula locked?",
+              "summary": "A locked formula is read-only. The workspace owner or an admin in that workspace can unlock it.",
+              "body_markdown": "You can still read the formula, inspect its output, and open Help.\n\n### To make a change\n\n1. Ask the workspace owner or a workspace admin to unlock the product, or choose **Unlock product** if you have that permission.\n2. Make the change and choose **Save**.\n3. Lock it again when you want to protect it from further editing.\n\nAn Editor or Viewer cannot unlock a formula. Application admin access alone does not grant workspace editing rights.\n\nThe lock protects formula edits. Linked ingredient facts can still change.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -171,24 +171,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "6347b7cd-daf9-5df5-bf5e-024d77a0922c",
+          "latest_revision_uuid": "ee536260-a20d-4bd1-a6a1-c8c2d7eaaeb6",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "6347b7cd-daf9-5df5-bf5e-024d77a0922c",
+              "public_id": "ee536260-a20d-4bd1-a6a1-c8c2d7eaaeb6",
               "revision_number": 1,
-              "title": "Planning packaging",
-              "summary": "Add the packaging needed for the Product so its quantities can contribute to costing.",
-              "body_markdown": "Select the relevant packaging items and enter the quantity required per finished unit. Check that the intended unit and packaging item match your production arrangement.\n\nPackaging quantities and ingredient quantities describe different parts of the Product. A packaging entry does not change the chemical formula. Review the Packaging and Costing tabs together, especially when changing the number of finished units or using several packaging items for one unit.",
+              "title": "Add packaging to a product",
+              "summary": "Enter the number of each packaging component needed for one finished unit.",
+              "body_markdown": "1. Open **Packaging**.\n2. Select a library item, such as a jar, lid, or label.\n3. Enter its quantity per finished unit.\n4. Repeat for the other components and choose **Save**.\n5. Open **Costing** to check the prices and totals.\n\n**Example:** one jar, one lid, and one label each have a quantity of 1 for a single jar of cream.\n\nIf an item is missing, create it in the packaging library. Adding packaging does not change ingredient percentages or create stock.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -203,24 +203,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "65ac6e64-e58d-5823-b29a-8d9607577143",
+          "latest_revision_uuid": "7cad613e-2059-4064-9cbf-a0e3978cf662",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "65ac6e64-e58d-5823-b29a-8d9607577143",
+              "public_id": "7cad613e-2059-4064-9cbf-a0e3978cf662",
               "revision_number": 1,
-              "title": "Reading product costs",
-              "summary": "Costing combines available ingredient and packaging prices with the quantities used by the Product.",
-              "body_markdown": "Check the batch basis, number of finished units, and displayed currency before comparing results. Missing or outdated source prices can make a cost incomplete even when the formula amounts are correct.\n\nReview ingredient and packaging contributions separately to find unexpected totals. Changing the soap oil quantity or cosmetic batch quantity changes the calculation basis. The result is a planning calculation from the recorded inputs; it is not a supplier invoice or a selling-price recommendation.",
+              "title": "Check product costs",
+              "summary": "Check the batch size, finished-unit count, and prices before relying on the cost per unit.",
+              "body_markdown": "1. Check the batch basis and currency in **Costing**.\n2. Check the number of finished units.\n3. Review ingredient prices and their mass units.\n4. Review packaging prices and quantities.\n5. Read the cost summary.\n\n### A cost is missing or unexpected\n\nCheck for a blank price, an outdated price, or a price entered for the wrong unit. Packaging prices are per item, not per purchased box.\n\nSoap batch size uses oil mass; cosmetic batch size uses total formula mass. These costs estimate the recorded inputs. They are not a supplier invoice or a suggested selling price.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -235,24 +235,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "c9a8ba62-ed93-5af5-8d14-8b2f151cf7a3",
+          "latest_revision_uuid": "608c05cd-f7fd-45e3-82ca-269161a06465",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "c9a8ba62-ed93-5af5-8d14-8b2f151cf7a3",
+              "public_id": "608c05cd-f7fd-45e3-82ca-269161a06465",
               "revision_number": 1,
-              "title": "Manufacturing procedure",
-              "summary": "Use Instructions to keep the Product’s manufacturing procedure alongside its formula.",
-              "body_markdown": "Write the practical steps that explain how this Product is made, using the formula and equipment actually intended for the work. The procedure is Product content, separate from the ingredient calculation.\n\nReview it after changing phases, ingredients, or formulation settings. A recalculated amount does not automatically rewrite your instructions. Keep essential process checks clear in the procedure, and use the associated media area for supporting material when helpful.",
+              "title": "Write manufacturing instructions",
+              "summary": "Keep the practical manufacturing steps in Instructions & media, alongside the formula.",
+              "body_markdown": "Write a numbered procedure in the order the work is done. Include:\n\n- The phase or ingredients used at each step.\n- The equipment and processing conditions for your method.\n- Checks that must be completed before moving on.\n- Supporting files that explain the process.\n\nReview the instructions whenever you change ingredients, phases, or formula settings. Recalculating quantities does not rewrite the procedure.\n\nKeep actual observations from a production batch in its journal, rather than changing the standard procedure to describe one batch.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -267,24 +267,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "26438016-7edf-552d-9738-a5e28bd138b7",
+          "latest_revision_uuid": "ee738773-21e1-4acb-8005-0406dd86e02c",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "26438016-7edf-552d-9738-a5e28bd138b7",
+              "public_id": "ee738773-21e1-4acb-8005-0406dd86e02c",
               "revision_number": 1,
-              "title": "Supporting files",
-              "summary": "Use the media controls to associate supporting files with the Product’s instructions.",
-              "body_markdown": "Choose an existing file or use the available upload flow. Give supporting material enough context that another authorized workspace member can understand why it belongs to the Product.\n\nA file attachment does not change the formula calculation. Check that the file still applies when you revise the procedure or formulation. Access follows the application’s media permissions; do not assume that attaching a file creates a public link.",
+              "title": "Attach supporting files",
+              "summary": "Select an existing library file or upload one, then attach it to the product.",
+              "body_markdown": "1. Open the media controls in **Instructions & media**.\n2. Select the file you need, or upload a new one.\n3. Wait for processing to finish if it is a new upload.\n4. Check that the file appears on the intended product.\n\nUse clear names so others can identify the file. Recheck attachments after changing the formula or procedure.\n\nIf a file is missing, check its status in **Media Library**. Attaching a file does not change the formula or make the file publicly accessible.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -299,24 +299,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "d2c7baaa-caa0-57cc-ad6c-958a7ffcdcfa",
+          "latest_revision_uuid": "5c1e7106-f8bc-483d-b542-07348d12d5a7",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "d2c7baaa-caa0-57cc-ad6c-958a7ffcdcfa",
+              "public_id": "5c1e7106-f8bc-483d-b542-07348d12d5a7",
               "revision_number": 1,
-              "title": "Using compliance guidance",
-              "summary": "The output provides reference-based guidance to review. It does not approve the Product for sale.",
-              "body_markdown": "Check the selected market or framework and the completeness of the ingredient information used by the calculation. Missing reference data and a missing warning are different things: absence of a warning does not establish that every requirement has been checked.\n\nReview the relevant output messages and supporting source information before using a declaration or limit. Keep essential warnings visible while making decisions. Your final formulation, declarations, and documentation still require an appropriate review.",
+              "title": "What does the guidance check?",
+              "summary": "Composition & labeling provides guidance from recorded reference data. It does not approve a product for sale.",
+              "body_markdown": "Before using the output:\n\n1. Check the selected label market and product use.\n2. Check ingredient identities, composition, and source data.\n3. Read each warning and follow up on missing information.\n4. Review the final ingredient list and supporting documents.\n\n**No warning does not mean everything was checked.** Missing data can leave a question unanswered.\n\nUse the output to support your product review. The app does not replace the checks required for your finished product.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -331,24 +331,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "f5116a38-4b12-56a1-b954-55b15e401deb",
+          "latest_revision_uuid": "b508f885-8d51-40f3-9ef1-a055d3ea43ea",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "f5116a38-4b12-56a1-b954-55b15e401deb",
+              "public_id": "b508f885-8d51-40f3-9ef1-a055d3ea43ea",
               "revision_number": 1,
-              "title": "When ingredient information changes",
-              "summary": "A Saved formula preserves the formulation, but does not freeze every ingredient or reference-data update.",
-              "body_markdown": "A review notice can appear when the catalogue information used by a saved formulation changes. Recheck the affected ingredient and the resulting output before relying on an earlier interpretation.\n\nThe notice is not an instruction to change the amount automatically. Compare what changed, whether it affects your Product, and whether your final declarations or supporting documents need updating. Saving a formula and reviewing current reference information are separate steps.",
+              "title": "Review changed ingredient information",
+              "summary": "A saved formula keeps its ingredient amounts, but linked ingredient facts can be updated later.",
+              "body_markdown": "When a review notice appears:\n\n1. Open the affected ingredient and check what changed.\n2. Review **Composition & labeling** and any related warnings.\n3. Check whether your final ingredient list or supporting documents need an update.\n4. Change the formula only if your review calls for it.\n\nA notice does not mean you must automatically change the ingredient amount. It means information used by the formula has changed.\n\nAn earlier save is not a frozen copy of all ingredient and reference data.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -363,24 +363,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "034f3866-7ee2-5dcb-a0ca-89a94ce80e71",
+          "latest_revision_uuid": "d29838e9-0da3-46a4-8f1e-0d5dab2e93ff",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "034f3866-7ee2-5dcb-a0ca-89a94ce80e71",
+              "public_id": "d29838e9-0da3-46a4-8f1e-0d5dab2e93ff",
               "revision_number": 1,
-              "title": "Soap reaction core",
-              "summary": "The reaction core contains the ingredients and settings used to calculate saponification.",
-              "body_markdown": "Review the saponifiable ingredients, selected alkali, superfat setting, and dilution-liquid calculation together. The oil basis drives the main soap ingredient percentages.\n\nLater additions are presented separately because they do not have the same role in the reaction calculation. Moving an ingredient between sections is a formulation decision, not just a visual reordering. Check the resulting alkali and liquid amounts whenever the reaction core changes.",
+              "title": "Understand the Saponification section",
+              "summary": "Put the oils used for the soap reaction in Saponification. Put later additions in Formula additions.",
+              "body_markdown": "Check these together:\n\n- **Oils:** their amounts and supported soap chemistry.\n- **Lye type and purity:** the material you intend to use.\n- **Superfat:** the setting used to calculate the alkali requirement.\n- **Water calculation:** the basis used for dilution liquid.\n\nOil percentages refer to total oils. Moving an ingredient out of this section changes its role in the calculation.\n\nAfter changing an oil or moving it between sections, recheck the calculated alkali and liquid amounts. Moving a row is not just a layout change.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -395,24 +395,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "e0168583-303e-5e2c-ae1c-3f5e56af9309",
+          "latest_revision_uuid": "eb733c9f-7c0f-474c-bfb9-12ae6aeace27",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "e0168583-303e-5e2c-ae1c-3f5e56af9309",
+              "public_id": "eb733c9f-7c0f-474c-bfb9-12ae6aeace27",
               "revision_number": 1,
-              "title": "Alkali type and purity",
-              "summary": "Choose the alkali and the supported purity that match the material used in the formula.",
-              "body_markdown": "The workbench supports sodium hydroxide and potassium hydroxide calculations, including the available mixture settings. For potassium hydroxide, the authored purity choices are 90% and 100%.\n\nPurity affects how the selected material is represented in the calculation. It is not a quality score. Verify the material information before choosing a setting, and review calculated amounts after changing it. Some soap-quality interpretations are unavailable or treated differently for high-KOH workflows.",
+              "title": "Choose lye type and purity",
+              "summary": "Choose the alkali and purity that match your material, then recheck the calculated amounts.",
+              "body_markdown": "1. Open **Edit settings**.\n2. Choose sodium hydroxide (NaOH), potassium hydroxide (KOH), or the available dual-lye option.\n3. Check the purity and, for dual lye, the proportions.\n4. Review the new alkali and liquid amounts.\n\nThe supported KOH purity choices are **90%** and **100%**. Check your material information before choosing.\n\nPurity is a calculation input, not a quality rating. Some bar-soap quality values are unavailable or interpreted differently in high-KOH formulas.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -427,24 +427,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "7d52a190-b9ef-51bc-bad1-b9d2ed51c8c8",
+          "latest_revision_uuid": "2859b658-bbba-4b46-ad4f-507d1ee070d9",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "7d52a190-b9ef-51bc-bad1-b9d2ed51c8c8",
+              "public_id": "2859b658-bbba-4b46-ad4f-507d1ee070d9",
               "revision_number": 1,
-              "title": "Choosing a water calculation mode",
-              "summary": "The three water modes use different denominators. The same number means a different amount in each mode.",
-              "body_markdown": "## Available modes\n\n- Percentage of oils relates the dilution-liquid amount to the oil basis. At 30% with 1,000 g of oils, that basis gives 300 g of liquid.\n- Liquid-to-alkali ratio relates the liquid amount to the calculated alkali amount.\n- Alkali concentration expresses the alkali share of the calculated solution basis.\n\nChanging modes changes the meaning of the entered value. Recheck the calculated liquid amount rather than carrying the same number across modes without review.",
+              "title": "Choose a water calculation mode",
+              "summary": "Each water mode uses a different basis. Recheck the liquid amount whenever you change modes.",
+              "body_markdown": "In **Edit settings**, choose **Calculate water by**:\n\n- **Water as % of oils:** liquid relative to total oil mass. With 1,000 g of oils, 30% gives 300 g of liquid.\n- **Water : lye ratio:** liquid relative to the calculated alkali amount.\n- **Lye concentration:** alkali as a share of the calculated solution.\n\nThen enter the value for that mode and check the resulting liquid quantity.\n\n**Do not copy the same number from one mode into another.** A percentage, a ratio, and a concentration describe different relationships.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -459,24 +459,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "b32ac518-b8b2-5c07-b05b-8ea540f2d9bc",
+          "latest_revision_uuid": "5a9bfadd-f5e4-4024-afd0-febd5a1d51e6",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "b32ac518-b8b2-5c07-b05b-8ea540f2d9bc",
+              "public_id": "5a9bfadd-f5e4-4024-afd0-febd5a1d51e6",
               "revision_number": 1,
-              "title": "Dilution liquids and alkali solution",
-              "summary": "Water and its substitutes are dilution liquids. The mixture containing dissolved alkali is the alkali solution.",
-              "body_markdown": "Use the dilution-liquid controls to describe the selected liquid inputs. Their amounts contribute to the formula’s liquid calculation; they are not additional saponifiable oils.\n\nReview the composition shown by the app when using a substitute. Do not assume that every liquid is pure water. The soap-quality model uses total dilution liquid as a process proxy and does not measure the water fraction of every substitute. The completed alkali solution includes the alkali as well as the liquid.",
+              "title": "Use water or another dilution liquid",
+              "summary": "Dilution liquids include water and its substitutes. The alkali solution is the liquid plus the dissolved alkali.",
+              "body_markdown": "1. Select the dilution liquids you intend to use.\n2. Enter their amounts using the basis shown.\n3. Check the total liquid and alkali quantities.\n4. Review any available composition information for a substitute.\n\nMilk, hydrosols, and other substitutes are not necessarily pure water. They are also not additional saponifiable oils.\n\nThe soap-quality estimates use total dilution liquid as an input. They do not measure the water fraction of every substitute or test the finished solution.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -491,24 +491,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "d9f97ca7-1320-5c17-bc1d-06640cda7680",
+          "latest_revision_uuid": "4a09f45c-eb2f-4619-bc49-edfbf7b853d0",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "d9f97ca7-1320-5c17-bc1d-06640cda7680",
+              "public_id": "4a09f45c-eb2f-4619-bc49-edfbf7b853d0",
               "revision_number": 1,
-              "title": "Understanding the superfat setting",
-              "summary": "Superfat adjusts the soap calculation’s alkali requirement. It is a formulation setting, not a measured result.",
-              "body_markdown": "Changing superfat can affect the calculated alkali, liquid amount under some water modes, and displayed soap-quality tendencies. Review these outputs together.\n\nThe number does not identify which particular ingredient remains unsaponified in the finished Product. Negative settings belong only to the app’s supported guarded workflows and require the existing warning review. Do not use a positive or negative setting as proof that the finished Product has been tested.",
+              "title": "Understand the superfat setting",
+              "summary": "Superfat changes the calculated alkali requirement. It is a setting, not a measurement of the finished soap.",
+              "body_markdown": "After changing superfat, check:\n\n- The calculated alkali amount.\n- The liquid amount, which can change with the water mode.\n- Any affected quality estimates and warnings.\n\nThe setting does not identify which oil remains unsaponified.\n\nIf you use a supported negative-superfat workflow, follow its displayed warnings. Neither a positive nor a negative setting proves that the finished soap has been tested.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -523,24 +523,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "afddcaa7-70c7-5159-b450-4239c60e0c49",
+          "latest_revision_uuid": "35e34d1e-c23c-4aa3-9c36-2c7e6883a994",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "afddcaa7-70c7-5159-b450-4239c60e0c49",
+              "public_id": "35e34d1e-c23c-4aa3-9c36-2c7e6883a994",
               "revision_number": 1,
-              "title": "Later soap additions",
-              "summary": "The Additions section keeps ingredients outside the reaction core separate from the saponification calculation.",
-              "body_markdown": "Check the percentage basis shown for the section before entering an amount. Soap additions expressed as a percentage of oils are not percentages of the final wet or cured Product.\n\nFor example, 2% of a 1,000 g oil basis means 20 g of an addition, even though the complete batch contains other material. Review the output totals and ingredient lists after adding it. Placement in this section does not by itself establish a suitable addition time or processing method.",
+              "title": "Add fragrance and other later additions",
+              "summary": "Soap additions shown as % oils use the oil mass, not the weight of the finished batch.",
+              "body_markdown": "1. Add the ingredient to the correct part of **Formula additions**.\n2. Check whether you are entering a weight or **% oils**.\n3. Enter the amount and review the batch totals.\n4. Recheck **Composition & labeling**, then save.\n\n**Example:** 2% of 1,000 g of oils is 20 g of an addition. It is not 2% of the final wet or cured soap.\n\nThe section separates these ingredients from saponification. It does not choose the right addition time or manufacturing method for you.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -555,24 +555,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "83c79f9e-3d44-5904-a4fc-59cb68b07d78",
+          "latest_revision_uuid": "19adb352-46ea-4f0a-b437-857b9eb58d13",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "83c79f9e-3d44-5904-a4fc-59cb68b07d78",
+              "public_id": "19adb352-46ea-4f0a-b437-857b9eb58d13",
               "revision_number": 1,
-              "title": "Reading the fatty-acid profile",
-              "summary": "The profile combines available fatty-acid information for the formula’s relevant ingredients.",
-              "body_markdown": "Use it to compare the composition underlying the soap-quality estimates. It describes an ingredient-weighted profile, not a laboratory analysis of the finished Product.\n\nCoverage matters: missing ingredient data can limit the interpretation. Check available ingredient details when a value looks unexpected. Two different oils can contribute similar fatty acids, while processing and formulation choices can still lead to different practical results.",
+              "title": "Read the fatty-acid profile",
+              "summary": "The profile combines the recorded fatty-acid data for the relevant oils in your formula.",
+              "body_markdown": "Use the profile to compare the composition behind the soap-quality estimates.\n\n### A value looks unexpected\n\n- Check which oils are in the Saponification section.\n- Check their amounts.\n- Open the ingredient details and look for missing or incomplete fatty-acid data.\n\nThe profile is calculated from ingredient data. It is not a laboratory analysis of the finished soap.\n\nSimilar profiles can still give different practical results because the process and other formula choices also matter.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -587,24 +587,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "6b8fde78-c9ff-5b03-b2a0-f352f99bad21",
+          "latest_revision_uuid": "e1a42730-4ed9-4053-ac3c-82cfb87bab31",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "6b8fde78-c9ff-5b03-b2a0-f352f99bad21",
+              "public_id": "e1a42730-4ed9-4053-ac3c-82cfb87bab31",
               "revision_number": 1,
-              "title": "Interpreting soap qualities",
-              "summary": "Soap-quality values are comparative estimates from the formula. They are not measurements or guarantees.",
-              "body_markdown": "The model uses fatty-acid composition and supported formulation settings to show tendencies. Read the accompanying interpretation and applicability information, not just the number.\n\nHardness and longevity describe different ideas: a physically hard bar can still dissolve relatively quickly during use. The normal bar reference is approximately four weeks, not a simulated curing timeline. High-KOH and unfinished workflows have limitations, and some metrics are deliberately unavailable.",
+              "title": "Read soap-quality estimates",
+              "summary": "Use the quality values to compare formulas. They are estimates, not measured results or guarantees.",
+              "body_markdown": "Read the explanation and any limitation beside each value.\n\n- **Hardness:** how firm the bar is expected to be.\n- **Longevity:** how well it is expected to last during use.\n- **Cure-related values:** comparison aids, not a countdown to readiness.\n\nA hard bar can still dissolve quickly. The usual bar reference is about four weeks; the app does not simulate your curing conditions.\n\nIf a value is unavailable, check the formula context. Some bar-only values do not apply to high-KOH or unfinished workflows. Unavailable does not mean zero.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -619,24 +619,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "0f40970f-4275-52f7-8b59-420c8cffa9e9",
+          "latest_revision_uuid": "50d01420-4b59-4b4e-befc-83e9818deb3f",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "0f40970f-4275-52f7-8b59-420c8cffa9e9",
+              "public_id": "50d01420-4b59-4b4e-befc-83e9818deb3f",
               "revision_number": 1,
-              "title": "Cure-related interpretation",
-              "summary": "A cure-related index helps compare formulations. It does not tell you that a Product is ready after a specific number of days.",
-              "body_markdown": "Read the explanation beside the current result and consider the model’s intended bar or liquid-soap context. The estimate is based on formulation inputs; it does not observe your actual batch.\n\nStorage conditions, processing, and practical checks are not captured by the number alone. Treat a cure flag as context for review rather than a countdown, a measurement of remaining water, or proof that curing is complete.",
+              "title": "Does the cure value mean the soap is ready?",
+              "summary": "No. The cure-related value compares formulas; it does not give a reliable ready date for your batch.",
+              "body_markdown": "Use the value with the explanation shown beside it.\n\nThe app does not observe:\n\n- Your actual manufacturing process.\n- Storage and drying conditions.\n- The remaining water in the batch.\n- The practical checks you perform.\n\nA cure flag is a reason to review the formula and process. It is not confirmation that curing is complete.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -651,24 +651,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "39adfadd-8dc6-5022-b775-cda2dc2ca8fe",
+          "latest_revision_uuid": "b2b6bbd4-11c5-469c-91dd-23824d3a8006",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "39adfadd-8dc6-5022-b775-cda2dc2ca8fe",
+              "public_id": "b2b6bbd4-11c5-469c-91dd-23824d3a8006",
               "revision_number": 1,
-              "title": "Oxidation-risk indication",
-              "summary": "The DOS indication is a comparative formulation signal, not the probability that a particular batch will develop a defect.",
-              "body_markdown": "Review the current fatty-acid profile and the explanation accompanying the flag. The model does not measure the actual condition of your raw materials or the storage history of the finished Product.\n\nDo not assume that adding a named antioxidant automatically applies a protection factor to the calculation. The current model has defined limitations, and bar-related interpretation is unavailable in some high-KOH contexts.",
+              "title": "Read the oxidation-risk indication",
+              "summary": "The DOS indication compares formula tendencies. It does not predict whether a particular batch will develop defects.",
+              "body_markdown": "Check the fatty-acid profile and the explanation beside the flag.\n\nThe calculation does not measure the condition of your oils or how the finished soap has been stored.\n\n### Why did an antioxidant not change the value?\n\nAdding an antioxidant by name does not automatically apply a protective effect to this calculation.\n\nSome bar-related interpretations are unavailable in high-KOH formulas. Treat an unavailable value as a model limit, not a risk score of zero.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -683,24 +683,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "52ed8125-d6a3-5728-95b1-1178bc2d2a76",
+          "latest_revision_uuid": "c2504ca7-17fd-46e8-9327-675bd57ac00d",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "52ed8125-d6a3-5728-95b1-1178bc2d2a76",
+              "public_id": "c2504ca7-17fd-46e8-9327-675bd57ac00d",
               "revision_number": 1,
-              "title": "Qualities in KOH and liquid workflows",
-              "summary": "Bar-soap target ranges do not apply directly to every KOH or liquid-soap formulation.",
-              "body_markdown": "The workbench presents supported KOH values as tendencies and hides some bar-only metrics when the model is outside its intended range. An unavailable result is not a score of zero.\n\nRead the applicability messages, especially for unfinished negative-superfat workflows. The displayed indices do not establish final dilution, viscosity, clarity, stability, or completion of the process. Compare only results that share an applicable basis.",
+              "title": "Read qualities for KOH and liquid soap",
+              "summary": "Bar-soap target ranges do not apply directly to every KOH or liquid-soap formula.",
+              "body_markdown": "Check whether each value applies to the formula you are making.\n\n- Some values are shown only as tendencies.\n- Some bar-only values are hidden.\n- **Unavailable** is not the same as zero.\n\nRead the messages for unfinished or negative-superfat workflows before comparing results.\n\nThe indices do not establish final dilution, viscosity, clarity, stability, or process completion. They describe only the parts of the formula that the model supports.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -715,24 +715,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "77087a47-5089-560a-b9ba-c7d21dd694c2",
+          "latest_revision_uuid": "ffb97fe3-a3fb-4f19-8951-fc4f9689575a",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "77087a47-5089-560a-b9ba-c7d21dd694c2",
+              "public_id": "ffb97fe3-a3fb-4f19-8951-fc4f9689575a",
               "revision_number": 1,
-              "title": "Understanding soap output bases",
-              "summary": "Soap output can describe incorporated ingredients and the estimated composition after reaction on different mass bases.",
-              "body_markdown": "The oil basis, complete wet batch, and estimated cured Product are not interchangeable denominators. A percentage can change because the basis changes even when the original ingredient amount has not.\n\nCheck each table heading before comparing values. Reaction and evaporation estimates affect the resulting composition, while incorporated quantities describe what went into the formulation. Use the displayed basis and relevant assumptions when reviewing a total or preparing a final ingredient declaration.",
+              "title": "Why do soap percentages differ between tables?",
+              "summary": "Oil mass, wet batch mass, and estimated cured mass are different bases for calculating a percentage.",
+              "body_markdown": "Check the table heading before comparing values:\n\n- **Oil basis:** the mass of the oils used in saponification.\n- **Wet batch:** the complete batch before the estimated loss of water.\n- **Cured output:** the estimated result after reaction and water loss.\n\nThe same ingredient amount can represent a different percentage on each basis.\n\nIngredients as added describe the inputs. Resulting-composition views include calculation assumptions. Review those assumptions before using a generated ingredient list.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -747,24 +747,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "133c3577-5e0b-5a6d-affe-e1166b42aeaf",
+          "latest_revision_uuid": "1dad93b0-fbd1-429f-9420-157bd1cb82fc",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "133c3577-5e0b-5a6d-affe-e1166b42aeaf",
+              "public_id": "1dad93b0-fbd1-429f-9420-157bd1cb82fc",
               "revision_number": 1,
-              "title": "Reviewing soap ingredient lists",
-              "summary": "The generated lists help you review naming and composition options. Check and own the final text.",
-              "body_markdown": "Look at the selected market and whether a list describes incorporated ingredients or the app’s resulting-composition approach. Common names and INCI names serve different purposes and are not interchangeable in every context.\n\nReview source ingredient information, substitutions, additions, and any warnings before using the output. Missing canonical information may require further work. A generated list does not establish that a particular declaration is suitable for every market or Product.",
+              "title": "Review and copy a soap ingredient list",
+              "summary": "Choose the appropriate list in Composition & labeling, review it, then copy it or edit a final version.",
+              "body_markdown": "1. Check the selected label market.\n2. Choose **Ingredients as added** or **Saponified oils + superfat**, as appropriate for your review.\n3. Check ingredient names, additions, declarations, and warnings.\n4. Copy the list or review the saved final text.\n\nINCI names and plain-language names serve different purposes. Check which list you are using.\n\n### The list is empty or out of date\n\nCheck for missing ingredient data. After changing the formula, review any final list you edited yourself; it may no longer match.\n\nA generated list does not confirm that the label meets every requirement for your market.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -779,24 +779,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "32bd801d-90d2-592d-9cdd-cdc28eb02849",
+          "latest_revision_uuid": "4ea42850-8765-4afa-864d-9aad68a2298a",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "32bd801d-90d2-592d-9cdd-cdc28eb02849",
+              "public_id": "4ea42850-8765-4afa-864d-9aad68a2298a",
               "revision_number": 1,
-              "title": "Cosmetic formula basis",
-              "summary": "Cosmetic ingredient percentages use the total-formula basis, including ingredients across all phases.",
-              "body_markdown": "Check that the complete formulation reaches the intended total. Phases organize the work but do not each need to total 100%.\n\nFor example, an ingredient at 5% of a 200 g total formula corresponds to 10 g. Changing the total batch amount scales the relevant weights. Review percentage and weight entry carefully, and distinguish a displayed rounding difference from an actual incomplete formula.",
+              "title": "How cosmetic percentages add up",
+              "summary": "All ingredient percentages, across every phase, share one total of 100%.",
+              "body_markdown": "Ingredient percentages are calculated against the whole formula. The percentages across all phases must add up to 100%; each phase contributes only its share of that total.\n\n### Example\n\n- Phase A: 70% of the formula.\n- Phase B: 25%.\n- Phase C: 5%.\n- Total: **100%**.\n\nAn ingredient at 5% in a 200 g formula weighs 10 g. Changing the total batch size scales its weight.\n\nIf a total looks slightly different, check the balance message before correcting a display-rounding difference.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -811,24 +811,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "98fcdf0b-27c4-5e53-914b-b1eb6f25981f",
+          "latest_revision_uuid": "882a7f21-0820-4698-ac2b-e2485097d39e",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "98fcdf0b-27c4-5e53-914b-b1eb6f25981f",
+              "public_id": "882a7f21-0820-4698-ac2b-e2485097d39e",
               "revision_number": 1,
-              "title": "Organizing cosmetic phases",
-              "summary": "Phases group ingredients to make the formulation and procedure easier to follow.",
-              "body_markdown": "Add ingredients to the intended destination phase, then review that phase’s contents. Use the available controls to organize, rename, and order phases as needed.\n\nThe phase name is an organizational label; it does not automatically determine processing temperature or mixing instructions. Ingredient percentages still use the total-formula basis across phases. Check the manufacturing procedure whenever reorganizing the formula changes how the Product should be made.",
+              "title": "Organize ingredients into phases",
+              "summary": "Use phases to group ingredients. Their percentages still add up to one whole formula.",
+              "body_markdown": "1. Create or rename a phase so its purpose is clear.\n2. Add each ingredient to the intended phase.\n3. Check its amount and the total across all phases.\n4. Put the phases in the order that helps you follow the process.\n5. Update the manufacturing instructions if the process changes.\n\nA phase name is a label. It does not set a mixing temperature or write processing instructions.\n\nYou do not need 100% in each phase. All phases together make 100%.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -843,24 +843,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "03c88f32-cbbb-5c39-8168-8568cb36e07b",
+          "latest_revision_uuid": "812d5b3e-8ef2-46f6-a411-046754df328f",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "03c88f32-cbbb-5c39-8168-8568cb36e07b",
+              "public_id": "812d5b3e-8ef2-46f6-a411-046754df328f",
               "revision_number": 1,
-              "title": "Ingredient functions",
-              "summary": "Functions describe possible roles of an ingredient and help explain the formula’s composition.",
-              "body_markdown": "Review the ingredient details and the context of your Product when using function information. An ingredient may have several possible functions; that does not mean each one is achieved in every formula.\n\nThe function label does not establish an effective amount, compatibility, or performance claim. Keep your selected ingredients and amounts aligned with the actual formulation work and supporting information.",
+              "title": "What do ingredient functions mean?",
+              "summary": "Functions describe possible roles, such as thickening or emulsifying. They do not prove an ingredient will perform that role in your formula.",
+              "body_markdown": "Use the ingredient details and supplier information to check:\n\n- The role you need the ingredient to perform.\n- Its intended use and amount.\n- Whether it fits the rest of your formula and process.\n\nOne ingredient can have several functions. They may not all apply in your product.\n\nA function label is not an effective-dose recommendation, a compatibility check, or evidence for a product claim.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -875,24 +875,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "9512441a-8473-510d-9a26-411dbe5411a8",
+          "latest_revision_uuid": "85ff5ae7-01c3-4bab-8adf-eaaf93a36303",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "9512441a-8473-510d-9a26-411dbe5411a8",
+              "public_id": "85ff5ae7-01c3-4bab-8adf-eaaf93a36303",
               "revision_number": 1,
-              "title": "Product application context",
-              "summary": "Product type and use settings provide context for the guidance shown by the workbench.",
-              "body_markdown": "Check the selected Product type and exposure or use information before interpreting related output. The finished-product classification and the calculation family describe different things.\n\nWhere IFRA context is available, review the proposed category and supporting information rather than assuming that a broad Product name determines every applicable detail. A context selection helps organize the guidance; it does not replace a review of the finished formulation.",
+              "title": "Check product type and use",
+              "summary": "Product type and use settings affect the guidance shown in the workbench.",
+              "body_markdown": "1. Check the finished product type.\n2. Check its use, such as rinse-off or leave-on.\n3. Review the label market.\n4. If using IFRA guidance, check the suggested category against the actual product use.\n\nThe product type describes what you make. The calculation method determines how the formula is calculated.\n\nA suggested category is a starting point. Check the relevant supplier information before relying on the guidance.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -907,24 +907,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "5a9ffe81-c8f4-532d-9fde-be4a1d3b0d9e",
+          "latest_revision_uuid": "0a72fa22-6f74-4d3d-820e-425ad39f9a8d",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "5a9ffe81-c8f4-532d-9fde-be4a1d3b0d9e",
+              "public_id": "0a72fa22-6f74-4d3d-820e-425ad39f9a8d",
               "revision_number": 1,
-              "title": "Preservation and pH: limits of the app",
-              "summary": "The workbench does not measure the finished Product’s pH or demonstrate that its preservation is effective.",
-              "body_markdown": "Ingredient functions and reference information can help you understand the recorded formulation, but they are not results from testing your batch. A preservative appearing in the ingredient list is not proof of an effective preservation system.\n\nKeep relevant formulation checks and supporting results with your Product documentation. Do not interpret a calculated total, a completed form, or the absence of a warning as evidence that pH, stability, or preservation has been verified.",
+              "title": "Does the app check preservation or pH?",
+              "summary": "No. The workbench does not measure pH or test whether your preservation system works.",
+              "body_markdown": "The app records your formula and displays available ingredient information. It does not test the finished batch.\n\n- A preservative in the formula is not proof of effective preservation.\n- A total of 100% does not confirm stability.\n- No warning does not mean pH or preservation has been verified.\n\nKeep your relevant checks and supporting results with the product documentation. Entering a result in a note does not turn it into a calculated measurement.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -939,24 +939,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "289e99c2-0fc1-5423-a3ce-9727930561cb",
+          "latest_revision_uuid": "5b970972-0714-49b5-96ac-61b2ca937ba6",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "289e99c2-0fc1-5423-a3ce-9727930561cb",
+              "public_id": "5b970972-0714-49b5-96ac-61b2ca937ba6",
               "revision_number": 1,
-              "title": "Cosmetic output",
-              "summary": "Cosmetic output uses the complete formula rather than the soap oil and reaction bases.",
-              "body_markdown": "Review totals across every phase. Phase grouping does not change the denominator used for total-formula percentages. The displayed amounts describe the recorded formulation and selected batch size.\n\nCheck ingredient naming and available reference-data messages separately from the quantity totals. A mathematically complete formula does not establish that every ingredient detail or final declaration is complete.",
+              "title": "Read cosmetic composition output",
+              "summary": "Cosmetic output uses the whole formula, across all phases, at the selected batch size.",
+              "body_markdown": "1. Check the total formula quantity and unit.\n2. Check that the ingredients across all phases add up as intended.\n3. Review ingredient names and any missing-data messages.\n4. Check the generated ingredient list separately from the quantity totals.\n\nMoving an ingredient between phases does not change the percentage basis.\n\nA balanced formula can still have incomplete ingredient or declaration data. Correct those gaps before relying on the output.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -971,24 +971,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "e4733473-c755-5a80-8510-c6f5e5aa7f18",
+          "latest_revision_uuid": "0eee547e-b9dd-4599-b950-31c2592f5e4a",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "e4733473-c755-5a80-8510-c6f5e5aa7f18",
+              "public_id": "0eee547e-b9dd-4599-b950-31c2592f5e4a",
               "revision_number": 1,
-              "title": "Reviewing cosmetic ingredient lists",
-              "summary": "Use the generated ingredient information as a starting point for the Product’s final declaration.",
-              "body_markdown": "Check the selected market, ingredient identities, relevant declarations, and any output warnings. Ingredient amounts and naming data both affect how you interpret the generated list.\n\nReview the final text after formula changes and after relevant catalogue updates. If you maintain an edited final declaration, confirm that it still matches the current Product. Generating a list does not approve the formulation or establish that all market-specific requirements have been covered.",
+              "title": "Review and copy a cosmetic ingredient list",
+              "summary": "Review the generated list in Composition & labeling before copying it or saving an edited final version.",
+              "body_markdown": "1. Check the label market and ingredient identities.\n2. Read the declarations and warnings.\n3. Review the generated INCI or plain-language list.\n4. Copy it or edit the final text as needed.\n\n### A saved list no longer matches\n\nFormula changes and ingredient-data updates can affect the list. Recheck any final text you edited yourself. Use **Use generated** only after checking the current generated version.\n\nA generated list is a starting point for review, not approval of the formula or its label.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -1003,24 +1003,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "08b507f7-5f97-5082-9b69-007d60709f6e",
+          "latest_revision_uuid": "872f4079-3aad-492b-8034-e3c8aff09c36",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "08b507f7-5f97-5082-9b69-007d60709f6e",
+              "public_id": "872f4079-3aad-492b-8034-e3c8aff09c36",
               "revision_number": 1,
-              "title": "IFRA context",
-              "summary": "IFRA category and certificate information provides optional, reference-based fragrance guidance.",
-              "body_markdown": "Review the Product’s actual use and the category context presented by the app. A suggested category is a starting point for review, and the available reference information is tied to its amendment and source data.\n\nDo not infer fragrance-creation status from the finished Product alone. A missing category or certificate is not proof that no restriction applies. Use the available guidance alongside the relevant supplier information and the Product’s final review.",
+              "title": "Use IFRA fragrance guidance",
+              "summary": "Check the product use, IFRA category, and relevant supplier certificate before relying on fragrance guidance.",
+              "body_markdown": "1. Check the actual use of the finished product.\n2. Review the category proposed by the app.\n3. Check the relevant certificate, amendment, and source information.\n4. Review the resulting guidance for your formula.\n\n### A category or certificate is missing\n\nMissing information does not mean there is no restriction. Check the supplier information and the product context.\n\nDo not infer fragrance-creation status from the finished product alone. IFRA guidance is optional in the app and remains part of your wider product review.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -1028,5 +1028,5 @@
       ]
     }
   ],
-  "digest": "178b6341c7c5d7e5e3af375fb76fb5bf4b57f8ca64b9c6b0ffa11d998f22c226"
+  "digest": "2276ce92016e8bbdcf40a391c861a1e148c819f2e77987e3f74c9c8e3ea35614"
 }

@@ -18,6 +18,20 @@ it('preserves safe app relative help links', function () {
     expect($result['body_html'])->toContain('href="/calculator"');
 });
 
+it('preserves ordered instructions and nested choices in help content', function () {
+    $input = new HelpContentInput('Adjust stock', 'Record the quantity you counted.', "### Correct a balance\n\n1. Open the lot.\n2. Choose an operation:\n\n   - Set the counted quantity.\n   - Add the extra quantity.\n\n3. Check the unit and save.");
+
+    $result = app(HelpContentRenderer::class)->renderInput($input);
+
+    $document = new DOMDocument;
+    $document->loadHTML($result['body_html']);
+    $xpath = new DOMXPath($document);
+    expect($xpath->query('//h3')->item(0)->textContent)->toBe('Correct a balance');
+    expect($xpath->query('//ol/li'))->toHaveCount(3);
+    expect($xpath->query('//ol/li[2]/ul/li'))->toHaveCount(2);
+    expect($xpath->query('//ol/li[3]')->item(0)->textContent)->toContain('Check the unit and save.');
+});
+
 it('rejects unsupported and unsafe authored content', function (string $markdown) {
     app(HelpContentValidator::class)->validate(new HelpContentInput('Help', 'A visible summary.', $markdown));
 })->with([

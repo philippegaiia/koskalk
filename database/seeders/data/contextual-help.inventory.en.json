@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "captured_at": "2026-09-22T00:00:00+00:00",
-  "export_uuid": "41994e96-c557-5e07-94ce-7e4b601afb53",
+  "captured_at": "2026-09-23T05:34:31+00:00",
+  "export_uuid": "e26e97a2-b234-4e69-a2e4-846c246b02c5",
   "topics": [
     {
       "public_id": "c338fa07-2d56-5139-ae80-520663d5ce66",
@@ -11,24 +11,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "8a2dd5a5-7160-589c-b227-e03a0968fa2e",
+          "latest_revision_uuid": "57189ada-31d4-47d0-9d07-5c2350d0d474",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "8a2dd5a5-7160-589c-b227-e03a0968fa2e",
+              "public_id": "57189ada-31d4-47d0-9d07-5c2350d0d474",
               "revision_number": 1,
-              "title": "Finding your stock",
-              "summary": "Use Stock by material for an overall view, then open a material or the Lot Register to see individual batches.",
-              "body_markdown": "Stock by material brings together ingredient and packaging quantities. Use the search and filters to find a material, identify shortages, or see which materials are below their buffer.\n\nOpen a material to see its current position, open lots, supplier listings, and movement history. The Lot Register shows each batch separately, including its internal lot code, supplier batch, status, and remaining quantity.\n\nCheck the displayed unit before comparing quantities. Ingredient stock is measured by mass; packaging stock is measured in units.",
+              "title": "Find a material or lot",
+              "summary": "Use Stock by material for totals. Use the Lot Register to find a specific batch.",
+              "body_markdown": "1. Search for the ingredient or packaging item in **Stock by material**.\n2. Open it to see its stock, lots, supplier listings, and activity.\n3. Use **Lot Register** when you need a specific internal lot code or supplier batch.\n\nIngredient stock uses mass units. Packaging stock uses item counts. Check the unit before comparing quantities.\n\n### A lot is missing\n\nCheck the register filters, including whether exhausted lots are hidden. A material's Open lots section shows up to ten lots; use **View all lots** for the full register.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -43,24 +43,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "dfe795cc-84cb-5d3d-b45c-e59e35b7f23c",
+          "latest_revision_uuid": "ab92e41a-6921-4e94-a579-4dca83c3a894",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "dfe795cc-84cb-5d3d-b45c-e59e35b7f23c",
+              "public_id": "ab92e41a-6921-4e94-a579-4dca83c3a894",
               "revision_number": 1,
-              "title": "Understanding stock quantities",
-              "summary": "Physical stock is what the records say you hold. Available stock excludes quarantined quantities and stock already reserved for production.",
-              "body_markdown": "- **Physical:** the balance of recorded stock movements.\n- **Quarantined:** physical stock held out of availability.\n- **Reserved:** stock allocated to production from released lots.\n- **Available:** released physical stock minus its active reservations.\n- **Incoming:** quantities still expected from ordered or partially received purchase orders. They are not yet physical stock.\n- **Required:** production demand still needing stock, after existing reservations.\n\n**Forecast = Available + Incoming − Required.** Existing reservations are already reflected in Available and are not deducted again through Required.\n\nFor example, 10 kg of released stock with 3 kg reserved leaves 7 kg available. With 4 kg incoming and another 5 kg required, the forecast is 6 kg.\n\nA negative forecast signals a planning shortage. Check the relevant production demand and incoming orders; a forecast does not mean the goods have arrived.",
+              "title": "Understand stock figures",
+              "summary": "Physical is recorded stock on hand. Available excludes quarantine and active reservations. Incoming has not arrived yet.",
+              "body_markdown": "- **Physical:** balance of recorded stock movements.\n- **Quarantined:** physical stock held out of availability.\n- **Reserved:** released stock allocated to production.\n- **Available:** released physical stock minus active reservations.\n- **Incoming:** stock still expected from issued purchase orders.\n- **Required:** production demand not yet covered by reservations.\n\n**Forecast = Available + Incoming − Required.** Reservations are already accounted for; do not subtract them again.\n\n### Example\n\n10 kg released, with 3 kg reserved, leaves 7 kg available. Add 4 kg incoming and subtract 5 kg required: forecast is **6 kg**.\n\nA negative forecast signals a planned shortage. Check demand and outstanding orders; Incoming is not usable stock.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -75,24 +75,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "671201bb-fcea-5ef3-8aab-26c3d11b02bf",
+          "latest_revision_uuid": "f205dbf4-bd28-4eee-9cee-dff47baf3195",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "671201bb-fcea-5ef3-8aab-26c3d11b02bf",
+              "public_id": "f205dbf4-bd28-4eee-9cee-dff47baf3195",
               "revision_number": 1,
-              "title": "Working with lots and status",
-              "summary": "A lot represents one batch of material. Released and Quarantined describe whether it is available; Exhausted describes its remaining balance.",
-              "body_markdown": "The internal lot code identifies the batch in Soapkraft. Keep the supplier batch number as well when available, so you can trace the material back to its source.\n\n**Released** stock can contribute to availability. **Quarantined** stock is kept out of availability while you review it. Changing handling status does not add or remove physical stock.\n\nA lot is shown as **Exhausted** only when both its physical quantity and active reserved quantity are zero. A negative balance, or a zero balance with an active reservation, still needs attention and remains open.\n\nUse the Lot Register filters to include exhausted lots or find a specific batch. A material's Open lots section shows up to ten lots; use View all lots for the complete register.",
+              "title": "Understand lot status",
+              "summary": "Released and Quarantined describe handling status. Exhausted describes whether a lot has any stock or reservations left.",
+              "body_markdown": "- **Released:** can contribute to availability, subject to the lot's dates and other eligibility checks.\n- **Quarantined:** held out of availability while you review it.\n- **Exhausted:** both physical quantity and active reserved quantity are zero.\n\nChanging Released or Quarantined status does not change physical quantity.\n\nKeep both references when available:\n\n- **Internal lot code:** identifies the batch in Soapkraft.\n- **Supplier batch number:** traces it back to the supplier.\n\nA zero or negative balance with an active reservation still needs attention. Check the affected production allocations.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -107,24 +107,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "90a2f807-fbbe-5c17-8d83-816bccc7cd8c",
+          "latest_revision_uuid": "18baa9f9-ba05-4891-9a29-966cada4d8be",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "90a2f807-fbbe-5c17-8d83-816bccc7cd8c",
+              "public_id": "18baa9f9-ba05-4891-9a29-966cada4d8be",
               "revision_number": 1,
-              "title": "Entering stock you already hold",
-              "summary": "Use Add stock manually in the Lot Register to enter an existing batch that has not yet been recorded in Soapkraft.",
-              "body_markdown": "Choose the correct material and supplier listing, enter the quantity already on hand, and check the unit and cost. The listing determines the entry unit and currency. Record the supplier batch, expiry date, and stock date where applicable.\n\nThe app creates an internal lot code and an opening stock movement. Use a date of today or earlier.\n\nEnter each batch separately when you need separate traceability. Do not enter a batch manually if it is already recorded through a goods receipt: that would count the same stock twice.\n\nIf an existing lot has the wrong remaining quantity, use Adjust stock on that lot instead of creating another opening entry.",
+              "title": "Enter stock you already have",
+              "summary": "Use Add stock manually for an existing batch that has not already been entered through a receipt.",
+              "body_markdown": "1. Open **Lot Register** and choose **Add stock manually**.\n2. Select the material and supplier listing.\n3. Enter the quantity on hand. Check the listing's unit and currency.\n4. Check the cost, supplier batch, expiry date, and internal lot details.\n5. Use a stock date of today or earlier, then save.\n\nEnter batches separately when they need separate traceability. The entry creates a lot and an opening stock movement.\n\n**Avoid duplicates:** do not enter the same delivery here and through Purchasing. To correct an existing lot balance, use **Adjust stock** instead.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -139,24 +139,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "39bc28c8-3625-5523-a1d8-5b28dd2c4e91",
+          "latest_revision_uuid": "e58ed032-3bd4-49a9-98dc-7cb9d09f2cf8",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "39bc28c8-3625-5523-a1d8-5b28dd2c4e91",
+              "public_id": "e58ed032-3bd4-49a9-98dc-7cb9d09f2cf8",
               "revision_number": 1,
-              "title": "Recording an incoming delivery",
-              "summary": "A purchase order contributes to Incoming stock. Posting a goods receipt records the quantities actually received as physical stock.",
-              "body_markdown": "Use the receiving workflow in Purchasing for a supplier delivery. Check the material, received quantity, unit, supplier batch, and any expiry information before posting the receipt.\n\nA draft receipt does not increase physical stock. Posting creates the stock records for the received quantities. For a partial delivery, record only what arrived; the outstanding order quantity remains incoming.\n\nAvoid also entering the same delivery through Add stock manually. Use the receipt as the source for tracing purchased stock.\n\nIf a received lot is quarantined, its physical quantity is recorded but it does not contribute to Available stock until released.",
+              "title": "Record a supplier delivery",
+              "summary": "Post a goods receipt in Purchasing to turn an incoming delivery into recorded physical stock.",
+              "body_markdown": "1. Choose the order-receiving workflow, or a direct receipt if there is no order in Soapkraft.\n2. Enter only what arrived.\n3. Check quantities, units, prices, supplier batches, and expiry information.\n4. Check each lot's handling status and post the receipt.\n\nPosting creates stock records. Filling in a receipt form alone does not add stock.\n\n### The stock is physical but not available\n\nCheck whether the lot is quarantined or reserved. A quarantined receipt stays out of Available stock until released.\n\nDo not record the same delivery again through **Add stock manually**.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -171,24 +171,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "cdde1969-00ff-5d23-b9e5-644c177b0d73",
+          "latest_revision_uuid": "a5292e27-4d01-4b55-a958-a7afd7baa0f5",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "cdde1969-00ff-5d23-b9e5-644c177b0d73",
+              "public_id": "a5292e27-4d01-4b55-a958-a7afd7baa0f5",
               "revision_number": 1,
-              "title": "Correcting a lot quantity",
-              "summary": "Use Adjust stock when a recorded lot balance differs from what you actually hold. The correction is added to its movement history.",
-              "body_markdown": "Open Adjust stock on the affected lot and choose the operation:\n\n- **Set counted quantity:** enter the total quantity now present in that lot.\n- **Add quantity:** enter only the amount to add to its current balance.\n- **Remove quantity:** enter only the amount to subtract.\n\nCheck the unit, select the reason, and add a note when needed. An Other reason requires a note. Review the resulting balance before saving.\n\nThe adjustment preserves the original receipt and adds a correction movement. It does not cancel production reservations. If the new balance leaves reserved stock uncovered, review the warning and the affected production work.\n\nIf stock changes while the adjustment is open, reload and review the current balance before trying again.",
+              "title": "Correct a lot balance",
+              "summary": "Use Adjust stock when the recorded balance differs from your count. The correction stays in the movement history.",
+              "body_markdown": "1. Open **Adjust stock** on the affected lot.\n2. Choose the operation:\n\n   - **Set counted quantity:** the total now present.\n   - **Add quantity:** only the amount to add.\n   - **Remove quantity:** only the amount to subtract.\n\n3. Check the unit, select a reason, and review the resulting balance.\n4. Add a note if needed; **Other** requires one. Save the adjustment.\n\nThe correction does not cancel reservations. If the new balance cannot cover them, review the affected production allocations.\n\nIf stock changed while the form was open, reload and check the current balance before trying again.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -203,24 +203,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "814ba3ca-4345-5ad3-95d5-6e4bed79b170",
+          "latest_revision_uuid": "ab032126-5216-42b7-bc50-977197713960",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "814ba3ca-4345-5ad3-95d5-6e4bed79b170",
+              "public_id": "ab032126-5216-42b7-bc50-977197713960",
               "revision_number": 1,
-              "title": "Understanding reserved stock",
-              "summary": "A reservation allocates a lot quantity to production. It reduces availability without changing the physical stock balance.",
-              "body_markdown": "For a released lot, Available is its Physical quantity minus active reservations. The same material can have reservations across several lots.\n\nManage allocations from the relevant production work. Reserving material is not the same as consuming it: consumption is recorded through production stock movements.\n\nThe Required figure in the material overview and forecast covers demand still needing stock after reservations, so allocated quantities are not counted twice.\n\nIf a stock adjustment reduces a lot below its reserved quantity, the reservations are not automatically removed. Review the affected allocations before continuing production.",
+              "title": "Why is stock reserved?",
+              "summary": "A reservation sets aside a lot quantity for production. It reduces availability without reducing physical stock.",
+              "body_markdown": "For a released lot:\n\n**Available = Physical − active reservations.**\n\nOpen the relevant production work to review or release its allocations. Releasing a reservation makes that quantity available again; it does not add physical stock.\n\n### There is physical stock, but not enough available\n\nCheck whether another batch has reserved it. Also check quarantine and lot eligibility.\n\nIf a stock adjustment leaves less stock than the reserved quantity, the reservations remain. Review those allocations before starting production. The overview's Required figure already excludes demand covered by reservations.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -235,24 +235,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "021198f4-22ce-507a-b54f-f5803c2c6d5b",
+          "latest_revision_uuid": "c1bb3c7c-3c3d-4dd7-8e0a-e2b42ee27eaa",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "021198f4-22ce-507a-b54f-f5803c2c6d5b",
+              "public_id": "c1bb3c7c-3c3d-4dd7-8e0a-e2b42ee27eaa",
               "revision_number": 1,
-              "title": "Setting a stock buffer",
-              "summary": "A buffer is the minimum available quantity you want to keep for a material. It helps you spot when stock is running low.",
-              "body_markdown": "Open the material details to set or change its buffer. Use the displayed unit and choose a quantity appropriate for your working stock.\n\nThe app marks the material as below buffer when its Available quantity falls below that level. Use the Below buffer filter in Stock by material to find these materials together.\n\nA buffer does not reserve a lot, create a purchase order, or change physical stock. It is a planning threshold. Review production needs and incoming orders before deciding what to buy.\n\nClearing the buffer removes the threshold without changing stock or reservations.",
+              "title": "Set a stock buffer",
+              "summary": "A buffer marks the minimum available quantity you want to keep for a material.",
+              "body_markdown": "1. Open the material details.\n2. Set a buffer in the displayed unit.\n3. Use **Below buffer** in Stock by material to find materials that need attention.\n\nThe comparison uses **Available** stock, not total physical stock. Reservations can therefore put a material below its buffer.\n\nA buffer does not reserve stock or order a delivery. Check production demand and incoming orders before deciding what to buy.\n\nClear the buffer to remove the threshold. Stock and reservations stay unchanged.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -267,24 +267,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "35e8bb43-562f-5f95-8594-11065644dbd7",
+          "latest_revision_uuid": "51a4f960-e51d-4421-be1c-912b2308e9de",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "35e8bb43-562f-5f95-8594-11065644dbd7",
+              "public_id": "51a4f960-e51d-4421-be1c-912b2308e9de",
               "revision_number": 1,
-              "title": "Locating stored stock",
-              "summary": "A storage location records where a lot is kept. A material can also have a usual storage location for new stock entries.",
-              "body_markdown": "Use the lot's location control when a batch moves to another storage area. Changing its location does not change its quantity or handling status.\n\nOn the material details page, set a usual storage location when most new batches go to the same place. Check the location on each entry; changing the usual location does not relocate existing lots.\n\nStorage locations are enabled separately from production locations in workspace settings. When storage locations are disabled, their controls are hidden and existing assignments are retained.",
+              "title": "Set or change a storage location",
+              "summary": "A lot's location says where that batch is stored. A material's usual location is a default for new stock entries.",
+              "body_markdown": "- To move an existing batch, change the location on that **lot**.\n- To suggest a location for future entries, set the material's **usual storage location**.\n\nCheck the location on each new entry. Changing the usual location does not move existing lots.\n\n### The location control is missing\n\nCheck the workspace's storage-location setting. Storage locations and production locations are enabled separately. Disabling storage locations hides the controls but keeps existing assignments.\n\nA location change does not alter quantity or handling status.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -299,24 +299,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "b67d0bbc-2325-5bec-a1e1-30b40d212f61",
+          "latest_revision_uuid": "9c1944a9-2930-4e85-bfcc-ea0944c58a8b",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "b67d0bbc-2325-5bec-a1e1-30b40d212f61",
+              "public_id": "9c1944a9-2930-4e85-bfcc-ea0944c58a8b",
               "revision_number": 1,
-              "title": "Reading a material’s movement history",
-              "summary": "The activity section explains how physical stock changed over the selected period, from its opening balance to its closing balance.",
-              "body_markdown": "Choose the period you want to review. Opening physical stock is the balance before that period; Closing physical stock includes its recorded movements.\n\nReceipts and other inbound movements add stock. Production consumption and other outbound movements subtract it. Adjustments record corrections. The reconciliation line brings these amounts together so you can compare them with the closing balance.\n\nUse a movement's source link to inspect the related record. Adjustment details show the reason, recorded user, and before-and-after quantities where available.\n\nChanging the period or page only changes what you see. It does not alter stock. Reservations affect availability, but reserving a quantity alone does not create a physical stock movement.",
+              "title": "Explain a stock balance",
+              "summary": "Use the activity section to see how receipts, usage, and adjustments changed physical stock over a period.",
+              "body_markdown": "1. Select the period you want to check.\n2. Read the opening physical balance.\n3. Review inbound, outbound, and adjustment movements.\n4. Compare the reconciliation with the closing balance.\n5. Open a movement's source to inspect the related record.\n\nAdjustment details show the reason, recorded user, and before-and-after quantities where available.\n\n### Availability changed without a movement\n\nCheck reservations. Reserving stock changes availability but does not move physical stock.\n\nChanging the period or page changes only the displayed history, not the stock.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T00:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -324,5 +324,5 @@
       ]
     }
   ],
-  "digest": "f2531947a2de9ecd9ea39f47e97a63c6f167098441e65abcc58eb15a5abf89bb"
+  "digest": "47563de99663bbaaedda459af9ef6f6043ead105f9e523ac3bd7d781aa9c119b"
 }

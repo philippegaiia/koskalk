@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "captured_at": "2026-09-22T21:00:00+00:00",
-  "export_uuid": "0badfd0c-94d3-56d6-9671-77662daab7c0",
+  "captured_at": "2026-09-23T05:34:31+00:00",
+  "export_uuid": "47b730db-0643-43b7-bb37-4aa5739083f5",
   "topics": [
     {
       "public_id": "be2bad5e-9b89-5874-84c9-fc0798ede0a7",
@@ -11,24 +11,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "1ccb7ef0-3472-5228-940f-5d12b25a4494",
+          "latest_revision_uuid": "021766c0-5261-4b55-b33e-d99744e40aad",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "1ccb7ef0-3472-5228-940f-5d12b25a4494",
+              "public_id": "021766c0-5261-4b55-b33e-d99744e40aad",
               "revision_number": 1,
-              "title": "Keeping supplier details",
-              "summary": "Create a supplier once, then add a listing for each material and purchase format you buy from them.",
-              "body_markdown": "Record the supplier name, your supplier code, contact details, and address. Their default currency helps initialize new listings; check each listing's currency before using it.\n\nOpen the supplier to see its listings and update its details. A supplier listing connects that supplier to an ingredient or packaging item and describes the format offered for purchase.\n\nIssued purchasing documents keep the supplier details recorded at issue time. Updating today's contact details does not rewrite those documents.\n\nIf a supplier already has listings or orders, Delete deactivates it instead of removing the purchasing history.",
+              "title": "Create and maintain a supplier",
+              "summary": "Create the supplier once. Add a listing for each material and purchase format you buy from them.",
+              "body_markdown": "1. Enter the supplier's name, your supplier code, contact details, and address.\n2. Check the default currency.\n3. Add the supplier's listings and verify each listing's currency.\n\nA listing links the supplier to a material and describes the format you buy.\n\n### I changed the details, but an issued document still shows the old ones\n\nIssued documents keep the supplier details recorded when issued. Updating the supplier does not rewrite them.\n\nDeleting a supplier with listings or orders **deactivates** it. Its purchasing history remains.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -43,24 +43,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "5b24449b-1bfd-5b22-a6e2-45acf8fdf05b",
+          "latest_revision_uuid": "29f3fcf0-f4d0-49f6-bda0-08719dd937b5",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "5b24449b-1bfd-5b22-a6e2-45acf8fdf05b",
+              "public_id": "29f3fcf0-f4d0-49f6-bda0-08719dd937b5",
               "revision_number": 1,
-              "title": "Choosing a supplier listing",
-              "summary": "A listing describes one supplier’s offer for one material: its purchase format, quantity, unit, and price.",
-              "body_markdown": "Choose the ingredient or packaging item used in your workspace, then enter the supplier's item name or reference where useful. The supplier reference is separate from your internal material code.\n\nUse separate listings when a supplier offers different purchase formats, such as a 1 kg bag and a 5 kg bucket. Orders use the selected listing to calculate the quantity represented by each pack.\n\nReview the listing before creating an order. Updating a listing does not rewrite an issued order or a posted receipt.\n\nDeactivate offers you no longer use. If a listing has already been used in an order or stock lot, Delete deactivates it and preserves its history.",
+              "title": "Choose a supplier listing",
+              "summary": "A listing is one supplier offer for one material: its purchase format, quantity, unit, and price.",
+              "body_markdown": "1. Select the ingredient or packaging item.\n2. Enter the supplier's item name or reference.\n3. Define the quantity in one purchase format and its unit.\n4. Enter the price and check its basis and currency.\n\nUse separate listings for different formats, such as a 1 kg bag and a 5 kg bucket.\n\nThe supplier reference is separate from your internal material code.\n\n### I updated a listing, but the order did not change\n\nIssued orders and posted receipts keep their recorded details. Listing edits do not rewrite them.\n\nDeactivate offers you no longer use. Deleting a listing already used in an order or stock lot deactivates it and preserves its history.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -75,24 +75,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "92774260-b108-5485-9d7a-e348e7887777",
+          "latest_revision_uuid": "99e78306-ad26-4d31-9206-1dabc5ac9165",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "92774260-b108-5485-9d7a-e348e7887777",
+              "public_id": "99e78306-ad26-4d31-9206-1dabc5ac9165",
               "revision_number": 1,
-              "title": "Packs and actual quantities",
-              "summary": "The number of packs tells the app how many purchase formats you ordered or received. The actual quantity tells it how much stock arrived.",
-              "body_markdown": "Define what one purchase format contains in the supplier listing. For example, one bucket may contain 5 kg, while one box may contain 100 packaging items.\n\nAn order for three 5 kg buckets represents 15 kg. An order for three boxes of 100 items represents 300 items. Enter the number of packs in the order, not the total kilograms or item count.\n\nWhen receiving, check both Packs received and Actual quantity. Two 5 kg buckets normally represent 10 kg, but the actual quantity should reflect what arrived. Stock follows the actual quantity; order fulfilment follows the number of packs received.\n\nUse mass units for ingredients and item counts for packaging. Check the displayed unit before entering a number.",
+              "title": "Enter packs and actual quantities",
+              "summary": "Packs track order fulfilment. Actual quantity determines how much stock a receipt adds.",
+              "body_markdown": "First define what **one pack** contains in the supplier listing.\n\n- Three buckets of 5 kg represent **3 packs and 15 kg**.\n- Three boxes of 100 packaging items represent **3 packs and 300 items**.\n\nEnter the **number of packs** on the order, not the total mass or item count.\n\nWhen receiving:\n\n1. Enter the packs that arrived.\n2. Check the actual quantity and displayed unit.\n3. Adjust the actual quantity to match the delivery before posting.\n\nFor example, two 5 kg buckets normally contain 10 kg. Stock follows the actual quantity you record; the order's remaining packs follow **Packs received**.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -107,24 +107,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "f1e25ff1-af2f-53a4-82be-8621c46fa0b2",
+          "latest_revision_uuid": "a6e0353e-5636-4850-9c4b-732667d59433",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "f1e25ff1-af2f-53a4-82be-8621c46fa0b2",
+              "public_id": "a6e0353e-5636-4850-9c4b-732667d59433",
               "revision_number": 1,
-              "title": "Checking price basis and currency",
-              "summary": "Choose whether the price is per unit or for the whole purchase format. Check the currency separately from the quantity unit.",
-              "body_markdown": "For a 5 kg bucket, 8 EUR per kg and 40 EUR for the whole purchase format describe the same price. Entering 40 as a price per kg would give a very different total.\n\nA listing can be used for a quotation before its price is known. Record or confirm line prices before issuing a purchase order. All lines on one purchasing document must use the same currency.\n\nAt receipt, review the actual price basis and amount. The order or listing supplies the currency; it cannot be changed to another currency just for that receipt.\n\nWhen the receipt currency differs from your workspace currency, check the exchange-rate information. If an automatic rate is unavailable, supply the required manual rate. This affects the recorded workspace cost, not the quantity received.",
+              "title": "Check price basis and currency",
+              "summary": "Check whether the price is per unit or for the whole purchase format. Then check the currency.",
+              "body_markdown": "**Example:** a 5 kg bucket costs 40 EUR. Enter either:\n\n- **8 EUR per kg**, or\n- **40 EUR for the whole format**.\n\nEntering 40 as the price per kg would price the bucket at 200 EUR.\n\nBefore issuing a purchase order, confirm a price for every line. All lines on one document must use the same currency. A quotation can start without known prices.\n\nAt receipt, check the actual price and its basis. The order or listing supplies the currency; the receipt cannot switch it to another currency.\n\n### An exchange rate is required\n\nIf the receipt currency differs from your workspace currency, check the rate. Enter a manual rate when an automatic one is unavailable. It affects the recorded workspace cost, not the quantity received.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -139,24 +139,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "6fc9adc1-93dc-5d24-b787-d36c37e8764d",
+          "latest_revision_uuid": "f7539f0d-e14f-404d-9931-ea764157d7a1",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "6fc9adc1-93dc-5d24-b787-d36c37e8764d",
+              "public_id": "f7539f0d-e14f-404d-9931-ea764157d7a1",
               "revision_number": 1,
-              "title": "Requesting a quotation",
-              "summary": "A quotation request asks a supplier for prices. It does not create incoming stock or add physical stock.",
-              "body_markdown": "Select the supplier, listings, and number of packs, then create the quotation draft. Issue the request when its contents are ready.\n\nIssuing prepares a document and email text. Use the available output to contact the supplier yourself; issuing does not send an email automatically.\n\nRecord the returned prices on the quotation, then convert it to a purchase order when you decide to buy. Conversion can leave prices to be completed, but the resulting order cannot be issued until every line has a price.\n\nReview the purchase order before issuing it. A quotation and an issued purchase order are different steps in the workflow.",
+              "title": "Request a quotation",
+              "summary": "A quotation asks for prices. It does not create incoming or physical stock.",
+              "body_markdown": "1. Select the supplier, listings, and number of packs.\n2. Create the quotation draft and review it.\n3. Issue the request to prepare its document and email text.\n4. Send the request to the supplier yourself.\n5. Record the returned prices and convert the quotation to an order when you decide to buy.\n\n**Issuing does not send an email automatically.**\n\nReview the converted purchase order before issuing it. You can convert before all prices are known, but every order line needs a price before the order can be issued.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -171,24 +171,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "cbc720fa-2395-5bc8-b7d3-65cb29f3779f",
+          "latest_revision_uuid": "87f7819b-ad26-4441-be24-1b5b0ae54a1e",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "cbc720fa-2395-5bc8-b7d3-65cb29f3779f",
+              "public_id": "87f7819b-ad26-4441-be24-1b5b0ae54a1e",
               "revision_number": 1,
-              "title": "Preparing and issuing a purchase order",
-              "summary": "Create a draft order, check its packs and prices, then issue it to record the purchase as ordered.",
-              "body_markdown": "Start directly from supplier listings or use an existing quotation request. Review the supplier, formats, quantities, prices, currency, and expected date.\n\nBefore issuing, check the delivery information and any shipping, discount, or tax amounts. Issuing records a snapshot of the order details and makes its outstanding quantities incoming stock.\n\nThe app prepares the document and email text; you still send the order to the supplier yourself. Issuing does not send it automatically.\n\nUse Receive purchase order when goods arrive. An order is Incomplete while packs remain outstanding and Complete when all ordered packs have been received. These labels describe fulfilment, not payment.",
+              "title": "Prepare and issue a purchase order",
+              "summary": "A draft prepares the purchase. Issuing the order records its outstanding quantities as incoming stock.",
+              "body_markdown": "1. Start from supplier listings or convert a quotation.\n2. Check the supplier, formats, packs, prices, and currency.\n3. Check the expected date, delivery details, shipping, discounts, and tax.\n4. Issue the order when the details are correct.\n5. Send the prepared document or email text to the supplier yourself.\n\n**Issuing does not send the order automatically.**\n\nUse **Receive purchase order** when goods arrive.\n\n- **Incomplete:** ordered packs remain outstanding.\n- **Complete:** all ordered packs have been received.\n\nThese labels describe delivery fulfilment, not payment. Issued orders keep a copy of the details recorded at issue time.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -203,24 +203,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "a24f0a9f-d55d-5383-9e58-4e3a4ce983bc",
+          "latest_revision_uuid": "acf39496-60e4-4817-ad61-3a9bc12d6beb",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "a24f0a9f-d55d-5383-9e58-4e3a4ce983bc",
+              "public_id": "acf39496-60e4-4817-ad61-3a9bc12d6beb",
               "revision_number": 1,
-              "title": "When ordered stock becomes available",
-              "summary": "Outstanding quantities on issued purchase orders appear as Incoming. They become physical stock only when a goods receipt is posted.",
-              "body_markdown": "Quotation requests and draft orders do not increase Incoming stock. Issued orders contribute their outstanding pack quantities, using the quantity per pack recorded on the order.\n\nPosting a receipt adds its actual received quantity to stock and reduces the order's outstanding packs. A partial delivery leaves the rest incoming.\n\nIncoming is a planning figure, not stock you can use now. Quarantined receipts also stay out of Available stock until released.\n\nReversing an order receipt can reopen outstanding quantities on that order. Check the order and inventory after a correction.",
+              "title": "When does ordered stock become available?",
+              "summary": "Issued orders add Incoming stock. Posting a receipt adds Physical stock. Quarantined stock is not Available.",
+              "body_markdown": "- **Quotation or draft order:** no increase in Incoming.\n- **Issued order:** outstanding packs contribute to Incoming.\n- **Posted receipt:** actual received quantity adds to Physical; received packs reduce Incoming.\n- **Quarantined receipt:** stays out of Available until released.\n\nA partial delivery leaves the remaining packs incoming.\n\n### I issued an order, but cannot use its stock\n\nIncoming is a planning figure. Record the actual delivery with a goods receipt, then check the lots' status and eligibility.\n\nReversing an order receipt can reopen outstanding packs. Recheck both the order and inventory after a correction.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -235,24 +235,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "7ae35f53-99c2-52f0-9c1b-80d7b91e597f",
+          "latest_revision_uuid": "98f52c26-8eb9-4aea-89c3-9840c6e849d4",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "7ae35f53-99c2-52f0-9c1b-80d7b91e597f",
+              "public_id": "98f52c26-8eb9-4aea-89c3-9840c6e849d4",
               "revision_number": 1,
-              "title": "Recording a delivery",
-              "summary": "Choose Receive purchase order for an existing order, or Direct receipt for a delivery without an order in Soapkraft.",
-              "body_markdown": "For an order receipt, select the correct order and enter only the lines and packs that arrived. For a direct receipt, choose the supplier and its listings.\n\nCheck the receipt date, delivery reference, packs, actual quantities, units, and prices. Record supplier batch numbers and expiry dates where applicable. Review the released or quarantined status before posting.\n\nPosting creates the receipt, stock lots, and stock movements. Opening the form or changing its fields does not add stock. Do not also enter the same delivery as manual opening stock.\n\nAfter posting, open the receipt to inspect the received items and attach supporting documents. Use a further receipt for a later delivery.",
+              "title": "Record a delivery",
+              "summary": "Use Receive purchase order for an existing order, or Direct receipt when there is no order in Soapkraft.",
+              "body_markdown": "1. Select the order, or choose the supplier and listings for a direct receipt.\n2. Include only the lines and packs that arrived.\n3. Check the receipt date, delivery reference, actual quantities, units, and prices.\n4. Record supplier batch numbers and expiry dates where applicable.\n5. Check whether the stock should be released or quarantined, then post the receipt.\n\n**Posting creates stock lots and movements.** Opening or filling the form does not add stock.\n\nOpen the posted receipt to check received items and attach documents. Use another receipt for a later delivery.\n\nDo not also enter this delivery as manual opening stock: that would count it twice.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -267,24 +267,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "0e6e4c11-b0e5-5269-bc51-4dd186ba1e53",
+          "latest_revision_uuid": "2f5a5ad0-a6fb-45fd-bf42-21eb4c5b46f9",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "0e6e4c11-b0e5-5269-bc51-4dd186ba1e53",
+              "public_id": "2f5a5ad0-a6fb-45fd-bf42-21eb4c5b46f9",
               "revision_number": 1,
-              "title": "Receiving part of an order",
-              "summary": "Record only the packs that arrived. Leave unreceived lines out of this receipt so they remain outstanding on the order.",
-              "body_markdown": "You can receive some lines or fewer packs than ordered. The app prevents receiving more packs than remain outstanding on an order line.\n\nCheck Actual quantity as well as Packs received. Actual quantity determines the stock added; the number of received packs determines whether the order is fulfilled.\n\nOn the receipt detail, Received items shows that receipt's fixed contents. Still to receive shows the order's remaining quantities and lets you start another receipt.\n\nIn the receipt register, order receipts show Complete or Incomplete based on the order's current fulfilment. An earlier partial receipt can therefore show Complete after a later delivery. Direct receipts show Posted; reversed receipts show Reversed.",
+              "title": "Receive part of an order",
+              "summary": "Enter only the packs that arrived. Leave other lines out so they remain outstanding.",
+              "body_markdown": "1. Select the delivered lines.\n2. Enter the packs received, up to the number still outstanding.\n3. Check **Actual quantity** as well as **Packs received**.\n4. Post this receipt. Use another receipt when the rest arrives.\n\nActual quantity controls stock added. Packs received control order fulfilment.\n\nOn the receipt details:\n\n- **Received items** shows this receipt's fixed contents.\n- **Still to receive** shows the order's remaining quantities and lets you start another receipt.\n\n### Why does an earlier partial receipt now say Complete?\n\nOrder receipts show the order's **current** fulfilment. A later delivery can make the order Complete without changing the earlier receipt's contents.\n\nDirect receipts show **Posted**. Reversed receipts show **Reversed**.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -299,24 +299,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "7f20d839-6ba9-5c41-9943-e0488fd8a354",
+          "latest_revision_uuid": "5a810de7-1625-4e75-b1a3-c8999b15fe4e",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "7f20d839-6ba9-5c41-9943-e0488fd8a354",
+              "public_id": "5a810de7-1625-4e75-b1a3-c8999b15fe4e",
               "revision_number": 1,
-              "title": "Correcting purchasing records",
-              "summary": "Review quantities and prices before posting. A posted receipt is corrected by reversal and a new receipt, preserving the original record.",
-              "body_markdown": "Line prices can be recorded before a purchase order is issued. Issued documents preserve their recorded details; changing a supplier listing does not update them.\n\nTo undo a posted receipt, open it, enter a clear reversal reason, and use Reverse receipt. This reverses the whole receipt, including every received line. Create a new receipt with the correct information when appropriate.\n\nA reversal adds opposite stock movements rather than deleting history. It can reopen an order's outstanding packs. If stock from the receipt has already been used or reserved, review the resulting balances and allocations; reversal can leave a shortage or negative stock.\n\nFor a later stock-count difference, use Adjust stock on the affected lot instead. Do not reverse a receipt merely to cancel undelivered order items: reversal removes quantities already received.\n\nCancel on an entry form leaves that form; it does not cancel an issued order or reverse a posted receipt.",
+              "title": "Correct a purchasing record",
+              "summary": "Reverse an incorrect posted receipt, then record the correct receipt. Use Adjust stock for a later stock-count difference.",
+              "body_markdown": "### The posted receipt is wrong\n\n1. Open the receipt and review every line.\n2. Enter a clear reversal reason.\n3. Choose **Reverse receipt**.\n4. Check inventory and the order's outstanding packs.\n5. Create the correct receipt when appropriate.\n\nReversal applies to the **whole receipt**, not one line. It adds opposite stock movements and preserves the original record.\n\nIf the stock was already used or reserved, reversal can leave negative stock or a shortage. Review balances and allocations.\n\n### The stock count changed later\n\nUse **Adjust stock** on the affected lot. Do not reverse a delivery merely to cancel items that never arrived.\n\nChanging a supplier listing does not change an issued document. **Cancel** on an entry form only leaves the form; it does not cancel an issued order or reverse a receipt.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -331,24 +331,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "358d8d5e-7aa3-585a-b8fe-200a07aee669",
+          "latest_revision_uuid": "91e4cfc7-03af-4c69-a2ab-1b60aa6e1e96",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "358d8d5e-7aa3-585a-b8fe-200a07aee669",
+              "public_id": "91e4cfc7-03af-4c69-a2ab-1b60aa6e1e96",
               "revision_number": 1,
-              "title": "Keeping delivery documents with the receipt",
-              "summary": "Attach invoices and delivery notes to the receipt, and link batch-specific documents to the relevant received lots.",
-              "body_markdown": "Open the receipt's Documents section, choose the document type, and select the file. Where a type belongs to a lot, select the received lots it covers.\n\nUse receipt-level documents for the delivery as a whole. Use lot-level documents for information specific to a batch, such as its analysis or safety documentation.\n\nCheck the selected receipt or lots before attaching the file. A document attachment supports traceability; it does not change received quantities, prices, or lot status.",
+              "title": "Attach delivery and lot documents",
+              "summary": "Keep delivery-wide documents on the receipt. Link batch-specific documents to the received lots they describe.",
+              "body_markdown": "1. Open the receipt's **Documents** section.\n2. Choose the document type and file.\n3. For a lot-level type, select the received lots it covers.\n4. Check the selection, then attach the file.\n\nUse receipt-level documents for invoices or delivery notes. Use lot-level documents for batch-specific information, such as analysis documents.\n\nAttaching a document does not change quantities, prices, or lot status.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-09-22T21:00:00+00:00"
+              "created_at": "2026-09-23T05:34:31+00:00"
             }
           ],
           "translation_requests": []
@@ -356,5 +356,5 @@
       ]
     }
   ],
-  "digest": "aa629ce846cdc8101f9052f5ee429f488a621fcaf0ea1297ab93e5f72f1a2646"
+  "digest": "4ad3c96a9265978e45f0b58edc5aadf526e3f073d300cad163478333509acb97"
 }

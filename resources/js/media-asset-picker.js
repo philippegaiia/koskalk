@@ -28,6 +28,7 @@ export function createMediaAssetPicker(options) {
         uploadProgress: 0,
         uploadError: null,
         uploadFilename: '',
+        uploadCompletion: '',
 
         init() {
             if (this.embedded) {
@@ -171,6 +172,7 @@ export function createMediaAssetPicker(options) {
 
             this.open = true;
             this.activeTab = 'library';
+            this.uploadCompletion = '';
             const generation = ++this.pendingUploadGeneration;
             this.pendingUpload = {
                 id: Number(detail.assetId),
@@ -361,8 +363,15 @@ export function createMediaAssetPicker(options) {
                 };
 
                 if (result.status === 'ready') {
-                    this.select(this.pendingUpload.id, false);
+                    const assetId = this.pendingUpload.id;
+                    if (this.open && !this.selected(assetId)) {
+                        this.select(assetId);
+                    }
+                    this.uploadCompletion = this.selected(assetId)
+                        ? this.messages.uploadSelected
+                        : this.messages.uploadAvailable;
                     this.pendingUpload = null;
+                    this.search = '';
                     await this.loadAssets(true);
 
                     return;

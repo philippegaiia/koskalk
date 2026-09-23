@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
 use App\Jobs\RegenerateMediaAssetConversionsJob;
 use App\Models\MediaAsset;
 use App\Models\User;
@@ -13,7 +15,33 @@ use Illuminate\Validation\ValidationException;
 
 class MediaAssetLibraryService
 {
-    public function __construct(private readonly MediaAssetReferencePurger $referencePurger) {}
+    public function __construct(
+        private readonly MediaAssetReferencePurger $referencePurger,
+        private readonly MediaLabelService $labels,
+    ) {}
+
+    /**
+     * @param  array<int, int|string>  $labelIds
+     */
+    public function saveSettings(User $user, MediaAsset $asset, string $displayName, array $labelIds, float $focalX, float $focalY): void
+    {
+        Gate::forUser($user)->authorize('update', $asset);
+
+        DB::transaction(function () use ($user, $asset, $displayName, $labelIds, $focalX, $focalY): void {
+            $lockedAsset = MediaAsset::query()->lockForUpdate()->findOrFail($asset->id);
+            Gate::forUser($user)->authorize('update', $lockedAsset);
+            abort_unless($lockedAsset->status === MediaAssetStatus::Ready, 409);
+
+            $this->rename($user, $lockedAsset, $displayName);
+            $this->labels->sync($user, $lockedAsset, $labelIds);
+
+            if ($lockedAsset->type === MediaAssetType::Image
+                && ! $lockedAsset->usesDocumentImageProfile()
+                && ($lockedAsset->focal_x !== $focalX || $lockedAsset->focal_y !== $focalY)) {
+                $this->updateFocalPoint($user, $lockedAsset, $focalX, $focalY);
+            }
+        }, attempts: 5);
+    }
 
     public function rename(User $user, MediaAsset $asset, string $displayName): void
     {

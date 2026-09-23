@@ -102,7 +102,7 @@ it('limits editor cleanup to their own unreferenced pending assets', function ()
         ->and(Gate::forUser($admin)->allows('delete', $ownReady))->toBeTrue();
 });
 
-it('retains document image source resolution while ordinary images stay capped and PDFs keep the 150 KB limit', function () {
+it('retains document image source resolution while ordinary images stay capped and PDFs keep the 180 KB limit', function () {
     Storage::fake('local');
     config()->set('media.asset_disk', 'local');
     config()->set('media.asset_pending_disk', 'local');
@@ -137,7 +137,7 @@ it('retains document image source resolution while ordinary images stay capped a
     );
     $ordinaryMaster = $ordinaryImage->getFirstMedia('master');
 
-    expect(mediaRecoveryImageDimensions($ordinaryMaster->getPath()))->toBe([600, 800]);
+    expect(mediaRecoveryImageDimensions($ordinaryMaster->getPath()))->toBe([750, 1000]);
 
     mock(PdfPreviewRenderer::class)
         ->shouldReceive('pageCount')->once()->andReturnNull()
@@ -145,7 +145,7 @@ it('retains document image source resolution while ordinary images stay capped a
     $pdf = app(MediaAssetUploadService::class)->start(
         $user,
         $workspace,
-        mediaRecoveryPdfUpload(150 * 1024),
+        mediaRecoveryPdfUpload(180 * 1024),
         [MediaAssetType::Image, MediaAssetType::Pdf],
         processSynchronously: true,
         documentImage: true,
@@ -153,7 +153,7 @@ it('retains document image source resolution while ordinary images stay capped a
 
     expect($pdf->refresh()->type)->toBe(MediaAssetType::Pdf)
         ->and($pdf->document_image)->toBeFalse()
-        ->and($pdf->original_size)->toBe(150 * 1024)
+        ->and($pdf->original_size)->toBe(180 * 1024)
         ->and($pdf->status)->toBe(MediaAssetStatus::Ready)
         ->and(app(EntitlementService::class)->mediaAssetUsageFor($user)['used'])->toBe(3);
 });
@@ -258,7 +258,7 @@ function mediaRecoveryWorkspace(?int $limit = null): array
     return [$user, $workspace];
 }
 
-function mediaRecoveryPdfUpload(int $bytes = 150 * 1024): UploadedFile
+function mediaRecoveryPdfUpload(int $bytes = 180 * 1024): UploadedFile
 {
     $path = tempnam(sys_get_temp_dir(), 'media-recovery-pdf-');
     $header = "%PDF-1.4\n";

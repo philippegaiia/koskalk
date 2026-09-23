@@ -226,6 +226,85 @@ it('cascades finished-product taxonomy options and clears child filters', functi
         ->assertViewHas('productCategoryOptions', fn ($options): bool => $options->keys()->all() === ['home-fragrance']);
 });
 
+it('switches product status live and clears status-only filters', function () {
+    $fixture = recipesIndexTaxonomyFixture();
+    $this->actingAs($fixture['user']);
+    Recipe::query()->where('name', 'Winter Candle')->update(['archived_at' => now()]);
+
+    Livewire::actingAs($fixture['user'])->test(RecipesIndex::class)
+        ->assertSee('Daily Moisturizer')
+        ->assertDontSee('Winter Candle')
+        ->assertDontSeeHtml('data-product-clear-filters')
+        ->set('archivedFilter', 'archived')
+        ->assertSee('Winter Candle')
+        ->assertDontSee('Daily Moisturizer')
+        ->assertSee('1 matching product')
+        ->assertSeeHtml('data-product-clear-filters')
+        ->set('archivedFilter', '')
+        ->assertSee('Winter Candle')
+        ->assertSee('Daily Moisturizer')
+        ->assertSee('3 matching products')
+        ->call('clearFilters')
+        ->assertSet('archivedFilter', 'active')
+        ->assertSee('Daily Moisturizer')
+        ->assertDontSee('Winter Candle')
+        ->assertDontSeeHtml('data-product-clear-filters');
+});
+
+it('explains an empty archived result as a filter result rather than a new account', function () {
+    $fixture = recipesIndexTaxonomyFixture();
+
+    Livewire::actingAs($fixture['user'])->test(RecipesIndex::class)
+        ->set('archivedFilter', 'archived')
+        ->assertSee('0 matching products')
+        ->assertSee('No products match these filters')
+        ->assertSee('Try another search or clear your filters.')
+        ->assertDontSee('No products yet')
+        ->assertSeeHtml('data-product-clear-filters');
+});
+
+it('summarizes classification filters and resets search classification and status together', function () {
+    $fixture = recipesIndexTaxonomyFixture();
+
+    Livewire::actingAs($fixture['user'])->test(RecipesIndex::class)
+        ->set('search', 'Daily')
+        ->set('productAreaFilter', 'personal-care')
+        ->set('productCategoryFilter', 'skin-care')
+        ->set('productTypeFilter', 'face-cream')
+        ->assertSee('Personal care · Skin care · Face cream')
+        ->assertSeeHtml('data-product-filter-count')
+        ->assertSee('1 matching product')
+        ->set('archivedFilter', '')
+        ->assertSee('Personal care · Skin care · Face cream · All statuses')
+        ->call('clearFilters')
+        ->assertSet('search', '')
+        ->assertSet('productAreaFilter', '')
+        ->assertSet('productCategoryFilter', '')
+        ->assertSet('productTypeFilter', '')
+        ->assertSet('archivedFilter', 'active')
+        ->assertDontSeeHtml('data-product-active-filters')
+        ->assertDontSeeHtml('data-product-filter-count')
+        ->assertSee('3 products');
+});
+
+it('keeps classification fields inside an accessible filter panel outside the toolbar', function () {
+    $user = User::factory()->create();
+    $component = Livewire::actingAs($user)->test(RecipesIndex::class);
+    $document = new DOMDocument;
+    @$document->loadHTML($component->html());
+    $xpath = new DOMXPath($document);
+    $toggle = $xpath->query('//button[@data-product-filter-toggle]')->item(0);
+    $panel = $xpath->query('//*[@data-product-filter-panel]')->item(0);
+
+    expect($xpath->query('//*[@data-product-filter-toolbar]//select'))->toHaveCount(1);
+    expect($xpath->query('//*[@data-product-filter-toolbar]//input[@type="search"]'))->toHaveCount(1);
+    expect($xpath->query('//*[@data-product-filter-panel]//select'))->toHaveCount(3);
+    expect($toggle->getAttribute('aria-controls'))->toBe($panel->getAttribute('id'));
+    expect($panel->getAttribute('role'))->toBe('dialog')
+        ->and($panel->getAttribute('aria-modal'))->toBe('true')
+        ->and($panel->getAttribute('x-show'))->toBe('filtersOpen');
+});
+
 it('filters Products by area category and type URL state', function (): void {
     $fixture = recipesIndexTaxonomyFixture();
 
@@ -294,6 +373,98 @@ it('uses the product type fallback image when the recipe has no uploaded image',
         ->assertSuccessful()
         ->assertSee('product-types/fallback-images/cream-lotion.webp', false)
         ->assertSee('Cream / lotion');
+});
+
+it('paginates products in stable groups of twelve and restores a page from the URL', function () {
+    $fixture = recipesIndexTaxonomyFixture();
+    $products = Recipe::factory()->count(13)->create([
+        'product_family_id' => $fixture['cosmeticFamily']->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $fixture['user']->id,
+        'visibility' => Visibility::Private,
+        'created_at' => now()->addMinute(),
+    ]);
+    $this->actingAs($fixture['user']);
+
+    $component = Livewire::test(RecipesIndex::class)
+        ->assertViewHas('recipeCount', 16)
+        ->assertViewHas('recipes', fn ($recipes): bool => $recipes->modelKeys() === $products->reverse()->take(12)->values()->modelKeys())
+        ->assertSeeHtml('aria-label="'.__('table.pagination.label').'"')
+        ->assertDontSeeHtml('wire:model.live="perPage"')
+        ->call('nextPage')
+        ->assertViewHas('recipes', fn ($recipes): bool => $recipes->count() === 4 && $recipes->first()->is($products->first()))
+        ->assertViewHas('recipeCount', 16);
+
+    Livewire::withQueryParams(['page' => 2])->test(RecipesIndex::class)
+        ->assertViewHas('recipes', fn ($recipes): bool => $recipes->currentPage() === 2 && $recipes->count() === 4);
+
+    $component->call('previousPage')
+        ->assertViewHas('recipes', fn ($recipes): bool => $recipes->currentPage() === 1 && $recipes->count() === 12);
+});
+
+it('returns to the first page when a product filter changes', function (string $property, string $value) {
+    $fixture = recipesIndexTaxonomyFixture();
+    Recipe::factory()->count(10)->create([
+        'product_family_id' => $fixture['cosmeticFamily']->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $fixture['user']->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $this->actingAs($fixture['user']);
+
+    Livewire::test(RecipesIndex::class)
+        ->call('gotoPage', 2)
+        ->set($property, $value)
+        ->assertSet('paginators.page', 1)
+        ->assertViewHas('recipes', fn ($recipes): bool => $recipes->currentPage() === 1);
+})->with([
+    ['search', 'Daily Moisturizer'],
+    ['archivedFilter', 'all'],
+    ['productAreaFilter', 'personal-care'],
+    ['productCategoryFilter', 'skin-care'],
+    ['productTypeFilter', 'face-cream'],
+]);
+
+it('clears filters back to page one and hides pagination for a single page', function () {
+    $fixture = recipesIndexTaxonomyFixture();
+    $this->actingAs($fixture['user']);
+
+    Livewire::test(RecipesIndex::class)
+        ->set('archivedFilter', 'all')
+        ->call('gotoPage', 2)
+        ->call('clearFilters')
+        ->assertSet('paginators.page', 1)
+        ->assertSee('Daily Moisturizer')
+        ->assertDontSeeHtml('aria-label="'.__('table.pagination.label').'"');
+});
+
+it('keeps filter options from other pages and excludes other users product types', function () {
+    $fixture = recipesIndexTaxonomyFixture();
+    $privateType = ProductType::factory()->create(['product_family_id' => $fixture['cosmeticFamily']->id]);
+    $otherUser = User::factory()->create();
+    Recipe::factory()->create([
+        'product_family_id' => $fixture['cosmeticFamily']->id,
+        'product_type_id' => $privateType->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'visibility' => Visibility::Private,
+    ]);
+    Recipe::factory()->count(12)->create([
+        'product_family_id' => $fixture['cosmeticFamily']->id,
+        'product_type_id' => null,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $fixture['user']->id,
+        'visibility' => Visibility::Private,
+        'created_at' => now()->addMinute(),
+    ]);
+    $this->actingAs($fixture['user']);
+
+    Livewire::test(RecipesIndex::class)
+        ->assertViewHas('recipeCount', 15)
+        ->assertViewHas('productTypeOptions', fn ($options): bool => $options->keys()->sort()->values()->all() === ['candle-wax-melt', 'face-cream', 'shampoo'])
+        ->set('productTypeFilter', 'candle-wax-melt')
+        ->assertSee('Winter Candle')
+        ->assertViewHas('recipeCount', 1);
 });
 
 /**

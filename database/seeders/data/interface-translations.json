@@ -14532,6 +14532,30 @@
     },
     {
       "group": "media_library",
+      "key": "batch_completed",
+      "text": {
+        "de": "{1} :count Datei hochgeladen. Vorschauen werden vorbereitet.|[2,*] :count Dateien hochgeladen. Vorschauen werden vorbereitet.",
+        "es": "{1} :count archivo subido. Se están preparando las vistas previas.|[2,*] :count archivos subidos. Se están preparando las vistas previas.",
+        "fr": "{1} :count fichier téléversé. Les aperçus sont en préparation.|[2,*] :count fichiers téléversés. Les aperçus sont en préparation.",
+        "it": "{1} :count file caricato. Preparazione delle anteprime in corso.|[2,*] :count file caricati. Preparazione delle anteprime in corso.",
+        "nl": "{1} :count bestand geüpload. Voorbeelden worden voorbereid.|[2,*] :count bestanden geüpload. Voorbeelden worden voorbereid.",
+        "pt_BR": "{1} :count arquivo enviado. As prévias estão sendo preparadas.|[2,*] :count arquivos enviados. As prévias estão sendo preparadas."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "batch_failed",
+      "text": {
+        "de": "{1} :count Datei konnte nicht hochgeladen werden. Versuchen Sie es unten erneut.|[2,*] :count Dateien konnten nicht hochgeladen werden. Versuchen Sie es unten erneut.",
+        "es": "{1} No se pudo subir :count archivo. Reinténtalo abajo.|[2,*] No se pudieron subir :count archivos. Reinténtalo abajo.",
+        "fr": "{1} :count fichier n’a pas pu être téléversé. Réessayez ci-dessous.|[2,*] :count fichiers n’ont pas pu être téléversés. Réessayez ci-dessous.",
+        "it": "{1} Impossibile caricare :count file. Riprova qui sotto.|[2,*] Impossibile caricare :count file. Riprova qui sotto.",
+        "nl": "{1} :count bestand kon niet worden geüpload. Probeer het hieronder opnieuw.|[2,*] :count bestanden konden niet worden geüpload. Probeer het hieronder opnieuw.",
+        "pt_BR": "{1} Não foi possível enviar :count arquivo. Tente novamente abaixo.|[2,*] Não foi possível enviar :count arquivos. Tente novamente abaixo."
+      }
+    },
+    {
+      "group": "media_library",
       "key": "batch_file_failed",
       "text": {
         "de": ":name konnte nicht hochgeladen werden. Versuchen Sie es erneut oder entfernen Sie die Datei.",
@@ -14760,6 +14784,30 @@
     },
     {
       "group": "media_library",
+      "key": "empty.filtered",
+      "text": {
+        "de": "Versuchen Sie eine andere Suche oder löschen Sie Ihre Filter.",
+        "es": "Prueba otra búsqueda o borra los filtros.",
+        "fr": "Essayez une autre recherche ou effacez les filtres.",
+        "it": "Prova un’altra ricerca o cancella i filtri.",
+        "nl": "Probeer een andere zoekopdracht of wis je filters.",
+        "pt_BR": "Tente outra busca ou limpe os filtros."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "empty.start",
+      "text": {
+        "de": "Laden Sie Bilder oder Dokumente hoch, um Ihre Mediathek zu starten.",
+        "es": "Sube imágenes o documentos para empezar tu biblioteca.",
+        "fr": "Importez des images ou des documents pour commencer votre médiathèque.",
+        "it": "Carica immagini o documenti per iniziare la tua libreria.",
+        "nl": "Upload afbeeldingen of documenten om je bibliotheek te beginnen.",
+        "pt_BR": "Envie imagens ou documentos para começar sua biblioteca."
+      }
+    },
+    {
+      "group": "media_library",
       "key": "empty.title",
       "text": {
         "de": "Keine Medien gefunden",
@@ -14832,6 +14880,18 @@
     },
     {
       "group": "media_library",
+      "key": "filters.clear",
+      "text": {
+        "de": "Filter löschen",
+        "es": "Borrar filtros",
+        "fr": "Effacer les filtres",
+        "it": "Cancella filtri",
+        "nl": "Filters wissen",
+        "pt_BR": "Limpar filtros"
+      }
+    },
+    {
+      "group": "media_library",
       "key": "filters.images",
       "text": {
         "de": "Bilder",
@@ -14840,6 +14900,18 @@
         "it": "Immagini",
         "nl": "Afbeeldingen",
         "pt_BR": "Imagens"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "filters.more",
+      "text": {
+        "de": "Filter",
+        "es": "Filtros",
+        "fr": "Filtres",
+        "it": "Filtri",
+        "nl": "Filters",
+        "pt_BR": "Filtros"
       }
     },
     {
@@ -14864,6 +14936,18 @@
         "it": "Stato di elaborazione",
         "nl": "Verwerkingsstatus",
         "pt_BR": "Status do processamento"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "filters.remove",
+      "text": {
+        "de": "Filter entfernen: :name",
+        "es": "Quitar filtro: :name",
+        "fr": "Retirer le filtre : :name",
+        "it": "Rimuovi filtro: :name",
+        "nl": "Filter verwijderen: :name",
+        "pt_BR": "Remover filtro: :name"
       }
     },
     {
@@ -15180,6 +15264,54 @@
     },
     {
       "group": "media_library",
+      "key": "open_image",
+      "text": {
+        "de": "Bild öffnen",
+        "es": "Abrir imagen",
+        "fr": "Ouvrir l’image",
+        "it": "Apri immagine",
+        "nl": "Afbeelding openen",
+        "pt_BR": "Abrir imagem"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "open_image_for",
+      "text": {
+        "de": ":name in einem neuen Tab öffnen",
+        "es": "Abrir :name en una pestaña nueva",
+        "fr": "Ouvrir :name dans un nouvel onglet",
+        "it": "Apri :name in una nuova scheda",
+        "nl": ":name openen in een nieuw tabblad",
+        "pt_BR": "Abrir :name em uma nova aba"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "open_pdf",
+      "text": {
+        "de": "PDF öffnen",
+        "es": "Abrir PDF",
+        "fr": "Ouvrir le PDF",
+        "it": "Apri PDF",
+        "nl": "PDF openen",
+        "pt_BR": "Abrir PDF"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "open_pdf_for",
+      "text": {
+        "de": ":name als PDF in einem neuen Tab öffnen",
+        "es": "Abrir :name como PDF en una pestaña nueva",
+        "fr": "Ouvrir :name au format PDF dans un nouvel onglet",
+        "it": "Apri :name come PDF in una nuova scheda",
+        "nl": ":name als PDF openen in een nieuw tabblad",
+        "pt_BR": "Abrir :name como PDF em uma nova aba"
+      }
+    },
+    {
+      "group": "media_library",
       "key": "original_filename",
       "text": {
         "de": "Original: :name",
@@ -15312,6 +15444,30 @@
     },
     {
       "group": "media_library",
+      "key": "panel.discard",
+      "text": {
+        "de": "Verwerfen und schließen",
+        "es": "Descartar y cerrar",
+        "fr": "Abandonner et fermer",
+        "it": "Scarta e chiudi",
+        "nl": "Verwerpen en sluiten",
+        "pt_BR": "Descartar e fechar"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.discard_prompt",
+      "text": {
+        "de": "Ungespeicherte Änderungen verwerfen?",
+        "es": "¿Descartar los cambios sin guardar?",
+        "fr": "Abandonner les modifications non enregistrées ?",
+        "it": "Scartare le modifiche non salvate?",
+        "nl": "Niet-opgeslagen wijzigingen verwerpen?",
+        "pt_BR": "Descartar as alterações não salvas?"
+      }
+    },
+    {
+      "group": "media_library",
       "key": "panel.groups.documents",
       "text": {
         "de": "Produktionsdokumente",
@@ -15372,6 +15528,30 @@
     },
     {
       "group": "media_library",
+      "key": "panel.keep_editing",
+      "text": {
+        "de": "Weiter bearbeiten",
+        "es": "Seguir editando",
+        "fr": "Continuer à modifier",
+        "it": "Continua a modificare",
+        "nl": "Verder bewerken",
+        "pt_BR": "Continuar editando"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.new_label_help",
+      "text": {
+        "de": "Neue Labels bleiben in Ihrer Bibliothek. Speichern Sie die Änderungen, um sie dieser Datei zuzuweisen.",
+        "es": "Las etiquetas nuevas permanecen en tu biblioteca. Guarda los cambios para aplicarlas a este archivo.",
+        "fr": "Les nouvelles étiquettes restent dans votre bibliothèque. Enregistrez les modifications pour les appliquer à ce fichier.",
+        "it": "Le nuove etichette restano nella libreria. Salva le modifiche per applicarle a questo file.",
+        "nl": "Nieuwe labels blijven in je bibliotheek. Sla wijzigingen op om ze aan dit bestand toe te wijzen.",
+        "pt_BR": "Os novos rótulos permanecem na biblioteca. Salve as alterações para aplicá-los a este arquivo."
+      }
+    },
+    {
+      "group": "media_library",
       "key": "panel.no_matching_usages",
       "text": {
         "de": "Keine Verwendungen entsprechen dieser Suche.",
@@ -15392,6 +15572,54 @@
         "it": "Questa immagine non è ancora utilizzata.",
         "nl": "Deze afbeelding wordt nog niet gebruikt.",
         "pt_BR": "Esta imagem ainda não foi utilizada."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.save",
+      "text": {
+        "de": "Änderungen speichern",
+        "es": "Guardar cambios",
+        "fr": "Enregistrer les modifications",
+        "it": "Salva modifiche",
+        "nl": "Wijzigingen opslaan",
+        "pt_BR": "Salvar alterações"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.save_failed",
+      "text": {
+        "de": "Änderungen wurden nicht gespeichert. Prüfen Sie die Felder und versuchen Sie es erneut.",
+        "es": "No se guardaron los cambios. Revisa los campos e inténtalo de nuevo.",
+        "fr": "Les modifications n’ont pas été enregistrées. Vérifiez les champs et réessayez.",
+        "it": "Le modifiche non sono state salvate. Controlla i campi e riprova.",
+        "nl": "Wijzigingen zijn niet opgeslagen. Controleer de velden en probeer opnieuw.",
+        "pt_BR": "As alterações não foram salvas. Revise os campos e tente novamente."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.saved",
+      "text": {
+        "de": "Änderungen gespeichert",
+        "es": "Cambios guardados",
+        "fr": "Modifications enregistrées",
+        "it": "Modifiche salvate",
+        "nl": "Wijzigingen opgeslagen",
+        "pt_BR": "Alterações salvas"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.saving",
+      "text": {
+        "de": "Wird gespeichert…",
+        "es": "Guardando…",
+        "fr": "Enregistrement…",
+        "it": "Salvataggio…",
+        "nl": "Opslaan…",
+        "pt_BR": "Salvando…"
       }
     },
     {
@@ -15440,6 +15668,18 @@
         "it": "Dettagli immagine",
         "nl": "Afbeeldingsdetails",
         "pt_BR": "Detalhes da imagem"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "panel.unsaved",
+      "text": {
+        "de": "Ungespeicherte Änderungen",
+        "es": "Cambios sin guardar",
+        "fr": "Modifications non enregistrées",
+        "it": "Modifiche non salvate",
+        "nl": "Niet-opgeslagen wijzigingen",
+        "pt_BR": "Alterações não salvas"
       }
     },
     {
@@ -15518,12 +15758,12 @@
       "group": "media_library",
       "key": "picker.clear",
       "text": {
-        "de": "Auswahl entfernen",
-        "es": "Quitar selección",
-        "fr": "Retirer la sélection",
-        "it": "Rimuovi selezione",
-        "nl": "Selectie verwijderen",
-        "pt_BR": "Remover seleção"
+        "de": "Aus Formular entfernen",
+        "es": "Quitar del formulario",
+        "fr": "Retirer de ce formulaire",
+        "it": "Rimuovi dal modulo",
+        "nl": "Uit formulier verwijderen",
+        "pt_BR": "Remover do formulário"
       }
     },
     {
@@ -15890,12 +16130,12 @@
       "group": "media_library",
       "key": "picker.select_documents",
       "text": {
-        "de": "Wähle bis zu :count verfügbare Dokumente aus.",
-        "es": "Selecciona hasta :count documentos disponibles.",
-        "fr": "Sélectionnez jusqu’à :count documents disponibles.",
-        "it": "Seleziona fino a :count documenti pronti.",
-        "nl": "Selecteer maximaal :count beschikbare documenten.",
-        "pt_BR": "Selecione até :count documentos prontos."
+        "de": "Wählen Sie bis zu :count verfügbare Dokumente (PDFs oder Bilder).",
+        "es": "Selecciona hasta :count documentos disponibles (PDF o imágenes).",
+        "fr": "Sélectionnez jusqu’à :count documents disponibles (PDF ou images).",
+        "it": "Seleziona fino a :count documenti disponibili (PDF o immagini).",
+        "nl": "Selecteer maximaal :count beschikbare documenten (pdf’s of afbeeldingen).",
+        "pt_BR": "Selecione até :count documentos disponíveis (PDFs ou imagens)."
       }
     },
     {
@@ -15932,6 +16172,18 @@
         "it": "Carica",
         "nl": "Uploaden",
         "pt_BR": "Enviar"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "picker.upload_available",
+      "text": {
+        "de": "Upload in Ihrer Bibliothek bereit. Wählen Sie ihn aus, sobald Platz in Ihrer Auswahl ist.",
+        "es": "Archivo listo en tu biblioteca. Selecciónalo cuando haya espacio en tu selección.",
+        "fr": "Fichier prêt dans votre bibliothèque. Sélectionnez-le lorsqu’une place est disponible dans votre sélection.",
+        "it": "File pronto nella libreria. Selezionalo quando c’è spazio nella selezione.",
+        "nl": "Upload gereed in je bibliotheek. Selecteer deze zodra er ruimte is in je selectie.",
+        "pt_BR": "Arquivo pronto na biblioteca. Selecione-o quando houver espaço na seleção."
       }
     },
     {
@@ -16004,6 +16256,18 @@
         "it": "Formati accettati: :formats. Dimensione massima: :max MB.",
         "nl": "Geaccepteerde formaten: :formats. Maximale grootte: :max MB.",
         "pt_BR": "Formatos aceitos: :formats. Tamanho máximo: :max MB."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "picker.upload_selected",
+      "text": {
+        "de": "Upload bereit und ausgewählt. Speichern Sie das Formular, um die Auswahl zu übernehmen.",
+        "es": "Archivo listo y seleccionado. Guarda el formulario para aplicar la selección.",
+        "fr": "Fichier prêt et sélectionné. Enregistrez le formulaire pour appliquer votre sélection.",
+        "it": "File pronto e selezionato. Salva il modulo per applicare la selezione.",
+        "nl": "Upload gereed en geselecteerd. Sla het formulier op om je selectie toe te passen.",
+        "pt_BR": "Arquivo pronto e selecionado. Salve o formulário para aplicar a seleção."
       }
     },
     {
@@ -16388,6 +16652,18 @@
         "it": "Carica immagine",
         "nl": "Afbeelding uploaden",
         "pt_BR": "Enviar imagem"
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "upload_files",
+      "text": {
+        "de": "Dateien hochladen",
+        "es": "Subir archivos",
+        "fr": "Importer des fichiers",
+        "it": "Carica file",
+        "nl": "Bestanden uploaden",
+        "pt_BR": "Enviar arquivos"
       }
     },
     {
@@ -32448,6 +32724,18 @@
     },
     {
       "group": "products",
+      "key": "empty.adjust_filters",
+      "text": {
+        "de": "Versuche eine andere Suche oder setze die Filter zurück.",
+        "es": "Prueba otra búsqueda o borra los filtros.",
+        "fr": "Essayez une autre recherche ou effacez les filtres.",
+        "it": "Prova un’altra ricerca o cancella i filtri.",
+        "nl": "Probeer een andere zoekopdracht of wis de filters.",
+        "pt_BR": "Tente outra busca ou limpe os filtros."
+      }
+    },
+    {
+      "group": "products",
       "key": "empty.description",
       "text": {
         "de": "Erstelle deine erste Seife oder dein erstes Kosmetikprodukt und bearbeite anschließend Rezeptur und Verpackung im Arbeitsbereich.",
@@ -32556,6 +32844,42 @@
     },
     {
       "group": "products",
+      "key": "filters.close",
+      "text": {
+        "de": "Filter schließen",
+        "es": "Cerrar filtros",
+        "fr": "Fermer les filtres",
+        "it": "Chiudi filtri",
+        "nl": "Filters sluiten",
+        "pt_BR": "Fechar filtros"
+      }
+    },
+    {
+      "group": "products",
+      "key": "filters.done",
+      "text": {
+        "de": "Fertig",
+        "es": "Listo",
+        "fr": "Terminé",
+        "it": "Fine",
+        "nl": "Gereed",
+        "pt_BR": "Concluído"
+      }
+    },
+    {
+      "group": "products",
+      "key": "filters.more",
+      "text": {
+        "de": "Filter",
+        "es": "Filtros",
+        "fr": "Filtres",
+        "it": "Filtri",
+        "nl": "Filters",
+        "pt_BR": "Filtros"
+      }
+    },
+    {
+      "group": "products",
       "key": "filters.search.aria_label",
       "text": {
         "de": "Produkte suchen",
@@ -32588,6 +32912,18 @@
         "it": "Nome, categoria o tipo di prodotto",
         "nl": "Productnaam, categorie of type",
         "pt_BR": "Nome, categoria ou tipo de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "filters.search_placeholder",
+      "text": {
+        "de": "Produkte suchen",
+        "es": "Buscar productos",
+        "fr": "Rechercher des produits",
+        "it": "Cerca prodotti",
+        "nl": "Producten zoeken",
+        "pt_BR": "Buscar produtos"
       }
     },
     {
@@ -32660,6 +32996,18 @@
         "it": "Tipo",
         "nl": "Type",
         "pt_BR": "Tipo"
+      }
+    },
+    {
+      "group": "products",
+      "key": "filters.updating",
+      "text": {
+        "de": "Wird aktualisiert…",
+        "es": "Actualizando…",
+        "fr": "Mise à jour…",
+        "it": "Aggiornamento…",
+        "nl": "Bijwerken…",
+        "pt_BR": "Atualizando…"
       }
     },
     {

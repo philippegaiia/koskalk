@@ -96,6 +96,8 @@ class MediaLibraryIndex extends Component
 
         abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
 
+        $this->resetErrorBag();
+        $this->newLabelName = '';
         $this->selectedAssetId = $asset->id;
         $this->assetPanelTab = $tab;
         $this->usageSearch = '';
@@ -179,8 +181,60 @@ class MediaLibraryIndex extends Component
         );
     }
 
+    public function saveAssetSettings(
+        float $focalX,
+        float $focalY,
+        CurrentAppUserResolver $resolver,
+        MediaAssetLibraryService $library,
+    ): bool {
+        $user = $resolver->resolve();
+        $asset = $this->selectedAssetId === null
+            ? null
+            : $this->workspaceAsset($this->selectedAssetId, $user);
+
+        abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
+        $this->resetErrorBag();
+
+        try {
+            $library->saveSettings(
+                $user,
+                $asset,
+                $this->displayNames[$asset->id] ?? '',
+                $this->selectedLabelIds,
+                $focalX,
+                $focalY,
+            );
+        } catch (ValidationException $exception) {
+            $this->assetPanelTab = 'settings';
+
+            foreach ($exception->errors() as $key => $messages) {
+                $this->addError(match ($key) {
+                    'display_name' => "displayNames.{$asset->id}",
+                    'labels' => 'selectedLabelIds',
+                    default => $key,
+                }, $messages[0]);
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
     public function updatingSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset('search', 'typeFilter', 'usageFilter', 'statusFilter', 'labelFilter');
+        $this->resetPage();
+    }
+
+    public function removeLabelFilter(int $labelId): void
+    {
+        $this->labelFilter = $this->withoutId($this->labelFilter, $labelId);
         $this->resetPage();
     }
 
@@ -208,7 +262,7 @@ class MediaLibraryIndex extends Component
         CurrentAppUserResolver $resolver,
         MediaAssetUploadService $uploads,
         MediaLabelService $labels,
-    ): void {
+    ): bool {
         $user = $resolver->resolve();
         $workspace = $user?->company();
 
@@ -230,9 +284,8 @@ class MediaLibraryIndex extends Component
         }
 
         $this->reset('upload');
-        $this->showAppNotification(
-            __('media_library.messages.upload_processing', ['name' => $asset->original_filename]),
-        );
+
+        return true;
     }
 
     public function createLabel(
@@ -260,7 +313,7 @@ class MediaLibraryIndex extends Component
             abort_unless($asset instanceof MediaAsset, 404);
 
             $this->selectedLabelIds[] = $label->id;
-            $labels->sync($user, $asset, $this->selectedLabelIds);
+            $this->selectedLabelIds = $labels->validateSelection($user, $asset, $this->selectedLabelIds);
         }
     }
 
@@ -269,7 +322,7 @@ class MediaLibraryIndex extends Component
         CurrentAppUserResolver $resolver,
         MediaLabelService $labels,
     ): void {
-        $this->syncSelectedLabels(
+        $this->stageSelectedLabels(
             [...$this->selectedLabelIds, $labelId],
             $resolver,
             $labels,
@@ -281,7 +334,7 @@ class MediaLibraryIndex extends Component
         CurrentAppUserResolver $resolver,
         MediaLabelService $labels,
     ): void {
-        $this->syncSelectedLabels(
+        $this->stageSelectedLabels(
             $this->withoutId($this->selectedLabelIds, $labelId),
             $resolver,
             $labels,
@@ -534,7 +587,7 @@ class MediaLibraryIndex extends Component
     /**
      * @param  array<int, int|string>  $labelIds
      */
-    private function syncSelectedLabels(
+    private function stageSelectedLabels(
         array $labelIds,
         CurrentAppUserResolver $resolver,
         MediaLabelService $labels,
@@ -546,7 +599,7 @@ class MediaLibraryIndex extends Component
         abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
 
         try {
-            $labels->sync($user, $asset, $labelIds);
+            $selectedIds = $labels->validateSelection($user, $asset, $labelIds);
         } catch (ValidationException $exception) {
             $this->addError('selectedLabelIds', $exception->validator->errors()->first('labels'));
 
@@ -554,11 +607,7 @@ class MediaLibraryIndex extends Component
         }
 
         $this->resetErrorBag('selectedLabelIds');
-        $this->selectedLabelIds = $asset->labels()
-            ->orderBy('media_asset_label.created_at')
-            ->pluck('media_labels.id')
-            ->all();
-        $this->showAppNotification(__('media_library.messages.labels_updated'));
+        $this->selectedLabelIds = $selectedIds;
     }
 
     /**

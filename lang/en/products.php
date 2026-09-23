@@ -78,6 +78,11 @@ return [
     ],
     'filters' => [
         'aria_label' => 'Product filters',
+        'more' => 'Filters',
+        'close' => 'Close filters',
+        'done' => 'Done',
+        'updating' => 'Updating…',
+        'search_placeholder' => 'Search products',
         'search' => [
             'label' => 'Search',
             'placeholder' => 'Product name, area, category, or type',
@@ -107,6 +112,7 @@ return [
         'matching' => '{0} 0 matching products|{1} :count matching product|[2,*] :count matching products',
     ],
     'empty' => [
+        'adjust_filters' => 'Try another search or clear your filters.',
         'no_matches' => 'No products match these filters',
         'try_again' => 'Try another product name, area, category, or type.',
         'no_items' => 'No products yet',

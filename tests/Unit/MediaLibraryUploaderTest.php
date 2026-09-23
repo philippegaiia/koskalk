@@ -23,6 +23,7 @@ const livewire = {
     },
     async uploadAsset() {
         started.push(uploaded.at(-1));
+        return true;
     },
 };
 const uploader = createMediaLibraryUploader({
@@ -54,6 +55,11 @@ assert.equal(uploader.files[0].status, 'failed');
 assert.equal(uploader.files[0].error, 'bad.png could not be uploaded.');
 assert.equal(uploader.currentProgress, 60);
 assert.equal(uploader.uploading, false);
+assert.equal(uploader.completedCount, 2);
+assert.equal(uploader.failedCount, 1);
+uploader.removeFile(0);
+assert.equal(uploader.failedCount, 0);
+assert.equal(uploader.files.length, 0);
 JS;
 
     $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
@@ -95,6 +101,41 @@ uploader.removeFile(4);
 assert.equal(uploader.overQuotaLimit, false);
 assert.equal(uploader.canUpload, true);
 assert.equal(uploader.batchOverflow, 0);
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('retains rejected uploads for retry and counts only accepted files against quota', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createMediaLibraryUploader } from './resources/js/media-library-uploader.js';
+let accepted = false;
+const uploader = createMediaLibraryUploader({
+    livewire: {
+        upload(property, file, finish) {finish();},
+        async uploadAsset() {return accepted;},
+    },
+    maxFiles: 5, remaining: 1, messages: {uploadFailed: 'Retry :name'},
+});
+uploader.selectFiles({target: {files: [{name: 'photo.png'}]}});
+await uploader.uploadBatch();
+assert.equal(uploader.completedCount, 0);
+assert.equal(uploader.failedCount, 1);
+assert.equal(uploader.remaining, 1);
+assert.equal(uploader.canUpload, true);
+accepted = true;
+await uploader.uploadBatch();
+assert.equal(uploader.completedCount, 1);
+assert.equal(uploader.failedCount, 0);
+assert.equal(uploader.files.length, 0);
+assert.equal(uploader.remaining, 0);
+uploader.selectFiles({target: {files: [{name: 'next.png'}]}});
+assert.equal(uploader.completedCount, 0);
+assert.equal(uploader.canUpload, false);
 JS;
 
     $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());

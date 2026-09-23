@@ -317,7 +317,7 @@ class MediaAssetProcessingService
             $isDocumentImage = $asset->usesDocumentImageProfile();
             $maxEdge = $isDocumentImage
                 ? max($width, $height)
-                : (int) config('media.asset_uploads.master_max_edge', 800);
+                : (int) config('media.asset_uploads.master_max_edge', 1000);
             $masterPath = tempnam(sys_get_temp_dir(), 'soapkraft-master-');
 
             if ($masterPath === false) {

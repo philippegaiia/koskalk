@@ -100,6 +100,10 @@ it('exposes removable selections, upload persistence details, and readable filen
         ->toContain('getFileAttachmentsAcceptedFileTypes()')
         ->toContain('getFileAttachmentsMaxSize()')
         ->toContain('data-ingredient-editor-ignore-dirty')
+        ->toContain('data-media-picker-selection-check')
+        ->toContain('x-bind:aria-pressed="selected(asset.id)"')
+        ->toContain('x-bind:title="asset.display_name')
+        ->toContain('data-media-picker-filename class="line-clamp-2')
         ->toContain('break-words')
         ->toContain('[overflow-wrap:anywhere]')
         ->not->toContain('class="block truncate px-2 pt-2 text-sm font-medium"')
@@ -294,6 +298,54 @@ await picker.removeUpload();
 assert.equal(picker.pendingUpload.generation, 2);
 assert.equal(picker.pendingUpload.failureReason, 'try again');
 assert.equal(polledGeneration, 2);
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('finishes uploads consistently without toggling selections or reopening a closed picker', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createMediaAssetPicker } from './resources/js/media-asset-picker.js';
+globalThis.window = {clearTimeout() {}};
+for (const scenario of ['single', 'multiple', 'embedded', 'already-selected', 'full', 'closed']) {
+    const multiple = ['multiple', 'already-selected', 'full'].includes(scenario);
+    const initial = scenario === 'already-selected' ? [42] : scenario === 'full' ? [1] : multiple ? [] : null;
+    const picker = createMediaAssetPicker({
+        embedded: scenario === 'embedded', multiple, maximumItems: 1, state: initial,
+        messages: {uploadSelected: 'selected', uploadAvailable: 'available'},
+    });
+    let focused = 0;
+    picker.$nextTick = callback => callback();
+    picker.opener = {focus() {focused++;}};
+    picker.open = scenario !== 'closed';
+    picker.search = 'unrelated';
+    picker.pendingUpload = {id: 42, generation: 1, statusUrl: '/status'};
+    picker.request = async () => ({status: 'ready'});
+    picker.loadAssets = async () => {};
+    await picker.pollUpload(1);
+    assert.equal(picker.pendingUpload, null);
+    assert.equal(picker.search, '');
+    if (scenario === 'single') {
+        assert.equal(picker.state, 42);
+        assert.equal(picker.open, false);
+        assert.equal(focused, 1);
+    } else if (scenario === 'closed') {
+        assert.equal(picker.state, null);
+        assert.equal(picker.open, false);
+        assert.equal(focused, 0);
+    } else if (scenario === 'full') {
+        assert.deepEqual(picker.state, [1]);
+        assert.equal(picker.uploadCompletion, 'available');
+    } else {
+        assert.deepEqual(picker.state, multiple ? [42] : 42);
+        assert.equal(picker.open, true);
+        assert.equal(picker.uploadCompletion, 'selected');
+    }
+}
 JS;
 
     $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());

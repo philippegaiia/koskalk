@@ -49,6 +49,8 @@
             embedded: @js($embedded),
             acceptedTypes: @js($acceptedTypes),
             messages: {
+                uploadSelected: @js(__('media_library.picker.upload_selected')),
+                uploadAvailable: @js(__('media_library.picker.upload_available')),
                 refreshFailed: @js(__('media_library.picker.refresh_failed')),
                 uploadFailed: @js($acceptsDocuments ? __('media_library.picker.document_upload_failed') : __('media_library.picker.upload_failed')),
                 pollingStopped: @js(__('media_library.picker.polling_stopped')),
@@ -73,7 +75,7 @@
                             @else
                                 <span class="grid size-14 shrink-0 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-xs font-semibold text-[var(--color-ink-soft)]">PDF</span>
                             @endif
-                            <div class="min-w-0 max-w-full"><span class="block max-w-52 break-words [overflow-wrap:anywhere] text-sm font-medium text-[var(--color-ink-strong)]">{{ $asset->displayName() }}</span>@if (filled($asset->display_name) && $asset->display_name !== $asset->original_filename)<span class="block max-w-52 break-words [overflow-wrap:anywhere] text-xs text-[var(--color-ink-soft)]">{{ $asset->original_filename }}</span>@endif@if ($acceptsDocuments && $asset->status === \App\Enums\MediaAssetStatus::Ready && ($asset->type === \App\Enums\MediaAssetType::Pdf || $asset->usesDocumentImageProfile()))<a href="{{ route('media.download', $asset) }}" target="_blank" rel="noopener" class="mt-1 inline-block text-xs font-medium text-[var(--color-accent-strong)] underline">{{ __('media_library.documents.download') }}</a>@endif</div>
+                            <div class="min-w-0 max-w-full"><span title="{{ $asset->displayName() }}" class="line-clamp-2 max-w-52 break-words [overflow-wrap:anywhere] text-sm font-medium text-[var(--color-ink-strong)]">{{ $asset->displayName() }}</span>@if (filled($asset->display_name) && $asset->display_name !== $asset->original_filename)<span class="block max-w-52 break-words [overflow-wrap:anywhere] text-xs text-[var(--color-ink-soft)]">{{ $asset->original_filename }}</span>@endif@if ($acceptsDocuments && $asset->status === \App\Enums\MediaAssetStatus::Ready && ($asset->type === \App\Enums\MediaAssetType::Pdf || $asset->usesDocumentImageProfile()))<a href="{{ route('media.download', $asset) }}" target="_blank" rel="noopener" class="mt-1 inline-block text-xs font-medium text-[var(--color-accent-strong)] underline">{{ __('media_library.documents.download') }}</a>@endif</div>
                         </div>
                     @endforeach
                 </div>
@@ -83,7 +85,7 @@
 
             <div class="flex flex-wrap gap-2">
                 <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : ($isMultiple ? __('media_library.picker.choose_multiple') : __('media_library.picker.choose')) }}</button>
-                <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-bind:aria-describedby="(multiple ? (Array.isArray(state) && state.length) : state) ? '{{ $pickerId }}-remove-selection-help' : null" x-on:click="state = multiple ? [] : null" class="sk-btn border border-[var(--color-line)] text-[var(--color-ink-soft)]">{{ __('media_library.picker.clear') }}</button>
+                <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-bind:aria-describedby="(multiple ? (Array.isArray(state) && state.length) : state) ? '{{ $pickerId }}-remove-selection-help' : null" x-on:click="state = multiple ? [] : null" class="min-h-9 px-2 text-xs font-medium text-[var(--color-ink-soft)] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-[var(--color-active)]">{{ __('media_library.picker.clear') }}</button>
             </div>
             <p id="{{ $pickerId }}-remove-selection-help" x-show="multiple ? (Array.isArray(state) && state.length) : state" class="max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.remove_selection_help') }}</p>
         @endunless
@@ -110,6 +112,7 @@
                     <div id="{{ $pickerId }}-library-panel" aria-labelledby="{{ $pickerId }}-library-tab" x-show="activeTab === 'library'" role="tabpanel" class="space-y-4">
                         <label for="{{ $pickerId }}-search" class="sr-only">{{ __('media_library.picker.search_label') }}</label>
                         <input autocomplete="off" id="{{ $pickerId }}-search" x-ref="search" x-model="search" x-on:input.debounce.350ms="loadAssets(true)" type="search" placeholder="{{ __('media_library.picker.search_placeholder') }}" class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
+                        <p x-cloak x-show="uploadCompletion && ! pendingUpload" x-text="uploadCompletion" role="status" aria-live="polite" class="text-sm text-[var(--color-ink-soft)]"></p>
                         <div data-media-picker-pending-status x-show="pendingUpload" role="status" aria-live="polite" aria-atomic="true" class="rounded-xl border border-[var(--color-line)] bg-[var(--color-accent-soft)] p-4">
                             <div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold text-[var(--color-ink-strong)]"><span x-show="pendingUpload?.status === 'processing'">{{ $acceptsDocuments ? __('media_library.picker.processing_document') : __('media_library.picker.processing') }}</span><span x-show="pendingUpload?.status === 'failed'">{{ $acceptsDocuments ? __('media_library.picker.document_failed') : __('media_library.picker.failed') }}</span></p><span x-show="pendingUpload?.status === 'processing'" class="text-sm tabular-nums text-[var(--color-ink-soft)]" x-text="`${pendingUpload?.progress ?? 0}%`"></span></div>
                             <div x-show="pendingUpload?.status === 'processing'" class="mt-3 h-2 overflow-hidden rounded-full bg-white/70"><div class="h-full rounded-full bg-[var(--color-accent)] transition-all" x-bind:style="`width: ${pendingUpload?.progress ?? 0}%`"></div></div>
@@ -120,11 +123,15 @@
                         <div x-show="! assetsLoading && ! assetsError && assets.length === 0" class="py-12 text-center"><p class="font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.picker.empty_title') }}</p><p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ $acceptsDocuments ? __('media_library.picker.empty_documents_description') : __('media_library.picker.empty_description') }}</p></div>
                         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                             <template x-for="asset in assets" x-bind:key="asset.id">
-                                <div class="overflow-hidden rounded-xl border border-[var(--color-line)] text-left">
-                                    <button type="button" data-media-picker-asset x-bind:data-media-picker-status="asset.status" x-bind:data-media-picker-selectable="asset.status === 'ready' ? 'true' : 'false'" x-bind:disabled="asset.status !== 'ready'" x-on:click="select(asset.id)" x-bind:aria-pressed="selected(asset.id)" x-bind:class="selected(asset.id) ? 'ring-2 ring-[var(--color-active)]/25' : ''" class="block w-full text-left disabled:cursor-not-allowed disabled:opacity-65">
+                                <div x-bind:class="selected(asset.id) ? 'border-[var(--color-active)] ring-1 ring-[var(--color-active)]' : 'border-[var(--color-line)]'" class="min-w-0 overflow-hidden rounded-xl border bg-[var(--color-panel)] text-left">
+                                    <button type="button" data-media-picker-asset x-bind:data-media-picker-status="asset.status" x-bind:data-media-picker-selectable="asset.status === 'ready' ? 'true' : 'false'" x-bind:disabled="asset.status !== 'ready'" x-on:click="select(asset.id)" x-bind:aria-pressed="selected(asset.id)" x-bind:title="asset.display_name === asset.original_filename ? asset.display_name : `${asset.display_name} · ${asset.original_filename}`" class="relative block w-full text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)] disabled:cursor-not-allowed disabled:opacity-65">
                                         <span x-bind:class="preserveAspectRatio ? 'aspect-[4/3]' : 'aspect-square'" class="grid place-items-center bg-[var(--color-panel-strong)]"><img x-show="asset.thumbnail_url" x-bind:src="preserveAspectRatio ? asset.preview_url : asset.thumbnail_url" alt="" x-bind:class="preserveAspectRatio ? 'object-contain' : 'object-cover'" class="size-full" draggable="false" /><span x-show="! asset.thumbnail_url" class="text-xs font-semibold text-[var(--color-ink-soft)]" x-text="asset.status === 'processing' ? `${asset.progress}%` : (asset.type === 'pdf' && asset.status === 'ready' ? 'PDF' : messages.processingFailed)"></span></span>
-                                        <span class="block break-words [overflow-wrap:anywhere] px-2 pt-2 text-sm font-medium" x-text="asset.display_name"></span>
-                                        <span x-show="asset.display_name !== asset.original_filename" class="block break-words [overflow-wrap:anywhere] px-2 pb-2 text-xs text-[var(--color-ink-soft)]" x-text="asset.original_filename"></span>
+                                        <span x-show="selected(asset.id)" aria-hidden="true" data-media-picker-selection-check class="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-[var(--color-active)] text-[var(--color-on-accent)] shadow-sm">
+                                            <x-filament::icon icon="heroicon-m-check" class="size-4" />
+                                        </span>
+                                        <span class="block h-14 px-2.5 py-2">
+                                            <span data-media-picker-filename class="line-clamp-2 break-words [overflow-wrap:anywhere] text-xs font-medium leading-5 text-[var(--color-ink-strong)]" x-text="asset.display_name"></span>
+                                        </span>
                                     </button>
                                     <a x-show="asset.download_url" x-bind:href="asset.download_url" target="_blank" rel="noopener" class="block px-2 pb-2 text-xs font-medium text-[var(--color-accent-strong)] underline" x-text="messages.download"></a>
                                 </div>
@@ -135,7 +142,7 @@
                     <div id="{{ $pickerId }}-upload-panel" aria-labelledby="{{ $pickerId }}-upload-tab" x-show="activeTab === 'upload'" role="tabpanel" class="space-y-4">
                         @if ($canUpload)
                             <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_description') }}</p>
-                            <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __($acceptsDocuments ? 'media_library.picker.document_upload_requirements' : 'media_library.picker.upload_requirements', ['formats' => $acceptedFormatLabels, 'max' => $maximumUploadSizeMb, 'pdfMax' => config('media.asset_uploads.pdf.max_size_kb', 150)]) }}</p>
+                            <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __($acceptsDocuments ? 'media_library.picker.document_upload_requirements' : 'media_library.picker.upload_requirements', ['formats' => $acceptedFormatLabels, 'max' => $maximumUploadSizeMb, 'pdfMax' => config('media.asset_uploads.pdf.max_size_kb', 180)]) }}</p>
                             <div data-media-picker-upload-form class="space-y-4">
                                 <div>
                                     <span class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ $acceptsDocuments ? __('media_library.picker.document') : __('media_library.picker.image') }}</span>

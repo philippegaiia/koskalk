@@ -216,10 +216,10 @@ class MediaAssetUploadService
         $maxBytes = ((int) config('media.asset_uploads.max_size_kb', 10240)) * 1024;
         $mimeType = $upload->getMimeType();
 
-        if ($extension === 'pdf' && ($upload->getSize() ?: 0) > (int) config('media.asset_uploads.pdf.max_size_kb', 150) * 1024) {
+        if ($extension === 'pdf' && ($upload->getSize() ?: 0) > (int) config('media.asset_uploads.pdf.max_size_kb', 180) * 1024) {
             throw ValidationException::withMessages([
                 'upload' => __('media_library.validation.pdf_size', [
-                    'max' => (int) config('media.asset_uploads.pdf.max_size_kb', 150),
+                    'max' => (int) config('media.asset_uploads.pdf.max_size_kb', 180),
                 ]),
             ]);
         }

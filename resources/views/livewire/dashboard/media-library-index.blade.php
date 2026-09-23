@@ -1,181 +1,204 @@
-<div class="mx-auto w-full max-w-app space-y-6" @if ($hasProcessingAssets) wire:poll.5s.visible @endif>
+<div class="mx-auto w-full max-w-app space-y-5" @if ($hasProcessingAssets) wire:poll.5s.visible @endif>
     <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
-    <section class="sk-card p-5 sm:p-6">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div data-media-library-summary data-contextual-help-heading class="min-w-0 flex-1">
-                <p class="sk-eyebrow">{{ __('media_library.eyebrow') }}</p>
-                <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('media_library.title') }}</h3>
-                <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                    {{ __('media_library.description') }}
-                </p>
-                <p class="mt-5 text-sm text-[var(--color-ink-soft)]">
+    <form
+        @if ($canUpdateMedia)
+        x-data="mediaLibraryUploader({
+            livewire: $wire,
+            maxFiles: 5,
+            remaining: @js($usage['remaining']),
+            messages: {
+                selectedFiles: @js(__('media_library.selected_files')),
+                batchLimit: @js(__('media_library.batch_limit')),
+                batchPosition: @js(__('media_library.batch_position')),
+                batchQuota: @js(__('media_library.batch_quota')),
+                uploadFailed: @js(__('media_library.batch_file_failed')),
+                removeFile: @js(__('media_library.remove_file')),
+                completed: @js(__('media_library.batch_completed')),
+                failed: @js(__('media_library.batch_failed')),
+            },
+        })"
+        x-on:submit.prevent="uploadBatch()"
+        @endif
+        class="space-y-3"
+    >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div data-media-library-summary data-contextual-help-heading class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.title') }}</h3>
+                <p class="text-xs tabular-nums text-[var(--color-ink-soft)]">
                     @if ($usage['limit'] === null)
                         {{ __('media_library.quota.unlimited', ['used' => $usage['used']]) }}
                     @else
                         {{ __('media_library.quota.limited', ['used' => $usage['used'], 'limit' => $usage['limit']]) }}
-                        @if (! $usage['allowed'])
-                            · {{ __('media_library.uploads_blocked') }}
-                        @endif
                     @endif
                 </p>
             </div>
-
             @if ($canUpdateMedia)
-                <form
-                    x-data="mediaLibraryUploader({
-                        livewire: $wire,
-                        maxFiles: 5,
-                        remaining: @js($usage['remaining']),
-                        messages: {
-                            selectedFiles: @js(__('media_library.selected_files')),
-                            batchLimit: @js(__('media_library.batch_limit')),
-                            batchPosition: @js(__('media_library.batch_position')),
-                            batchQuota: @js(__('media_library.batch_quota')),
-                            uploadFailed: @js(__('media_library.batch_file_failed')),
-                            removeFile: @js(__('media_library.remove_file')),
-                        },
-                    })"
-                    x-on:submit.prevent="uploadBatch()"
-                    class="flex w-full max-w-md flex-col gap-3 lg:items-end"
-                >
-                    <input
-                        id="media-library-upload"
-                        x-ref="fileInput"
-                        x-on:change="selectFiles($event)"
-                        data-media-library-file-input
-                        type="file"
-                        multiple
-                        accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
-                        @disabled(! $usage['allowed'])
-                        @if (! $usage['allowed']) data-media-upload-disabled @endif
-                        class="peer sr-only"
-                    />
-                    <div class="flex w-full min-h-12 flex-wrap items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] p-2">
-                        <label
-                            for="media-library-upload"
-                            aria-disabled="{{ $usage['allowed'] ? 'false' : 'true' }}"
-                            class="sk-btn cursor-pointer border border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)] aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
-                        >
-                            {{ __('media_library.choose_files') }}
-                        </label>
-                        <span
-                            class="min-w-0 flex-1 truncate text-sm text-[var(--color-ink-soft)]"
-                            x-text="files.length ? choiceMessage('selectedFiles', files.length) : @js(__('media_library.picker.no_file_selected'))"
-                        ></span>
-                    </div>
-
-                    <div
-                        x-cloak
-                        x-show="files.length"
-                        data-media-library-selected-files
-                        class="w-full overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)]"
-                    >
-                        <template x-for="(entry, index) in files" x-bind:key="entry.id">
-                            <div class="border-b border-[var(--color-line)] px-3 py-2 last:border-b-0">
-                                <div class="flex items-center gap-3">
-                                    <div class="min-w-0 flex-1">
-                                        <p data-media-library-selected-filename class="truncate text-xs font-medium leading-5 text-[var(--color-ink-strong)]" x-text="entry.name"></p>
-                                        <p x-show="entry.error" x-text="entry.error" role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]"></p>
-                                    </div>
-                                    <span
-                                        x-show="entry.status === 'uploading'"
-                                        class="text-xs tabular-nums text-[var(--color-ink-soft)]"
-                                        x-text="`${entry.progress}%`"
-                                    ></span>
-                                    <button
-                                        type="button"
-                                        data-media-library-remove-file
-                                        x-on:click="removeFile(index)"
-                                        x-bind:disabled="uploading"
-                                        x-bind:aria-label="message('removeFile', { name: entry.name })"
-                                        class="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
-                                    >
-                                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
-                                            <path stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <p
-                        x-cloak
-                        x-show="overBatchLimit"
-                        data-media-library-batch-limit
-                        role="alert"
-                        class="w-full text-xs leading-5 text-[var(--color-danger-strong)]"
-                        x-text="message('batchLimit', { max: maxFiles, count: batchOverflow })"
-                    ></p>
-                    <p
-                        x-cloak
-                        x-show="overQuotaLimit"
-                        role="alert"
-                        class="w-full text-xs leading-5 text-[var(--color-danger-strong)]"
-                        x-text="message('batchQuota', { count: remaining })"
-                    ></p>
-                    @error('upload')
-                        <p class="w-full text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
-                    @enderror
-
-                    @if ($labels->isNotEmpty())
-                        <details class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-sm">
-                            <summary class="cursor-pointer text-xs font-medium text-[var(--color-ink-soft)]">
-                                {{ __('media_library.labels.apply_on_upload') }}
-                            </summary>
-                            <div class="mt-2 grid grid-cols-2 gap-2">
-                                @foreach ($labels as $label)
-                                    <label class="flex items-center gap-2 text-xs text-[var(--color-ink-strong)]">
-                                        <input wire:model="uploadLabelIds" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
-                                        <span class="truncate">{{ $label->name }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </details>
-                    @endif
-
-                    <div
-                        x-cloak
-                        x-show="uploading"
-                        data-media-library-batch-progress
-                        role="status"
-                        aria-live="polite"
-                        aria-atomic="true"
-                        class="w-full space-y-1.5"
-                    >
-                        <div class="flex items-center justify-between gap-3 text-xs text-[var(--color-ink-soft)]">
-                            <span class="inline-flex items-center gap-2">
-                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4 motion-safe:animate-spin" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" d="M12 3a9 9 0 1 1-9 9" />
-                                </svg>
-                                <span x-text="message('batchPosition', { current: currentIndex + 1, total: files.length })"></span>
-                            </span>
-                            <span class="tabular-nums" x-text="`${currentProgress}%`"></span>
-                        </div>
-                        <div
-                            role="progressbar"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            x-bind:aria-valuenow="currentProgress"
-                            class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-field-muted)]"
-                        >
-                            <div class="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-150" x-bind:style="`width: ${currentProgress}%`"></div>
-                        </div>
-                    </div>
-
-                    <button type="submit" x-bind:disabled="! canUpload" class="sk-btn sk-btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60">
-                        <span x-show="! uploading">{{ __('media_library.upload_selected') }}</span>
-                        <span x-show="uploading">{{ __('media_library.uploading') }}</span>
-                    </button>
-                </form>
+                <button type="button" x-on:click="$refs.fileInput.click()" x-bind:disabled="uploading || @js(! $usage['allowed'])" @disabled(! $usage['allowed']) class="sk-btn sk-btn-primary gap-2 disabled:cursor-not-allowed disabled:opacity-60">
+                    <x-filament::icon icon="heroicon-m-plus" class="size-4" />
+                    {{ __('media_library.upload_files') }}
+                </button>
             @endif
         </div>
-    </section>
+        @if (! $usage['allowed'])
+            <p class="text-sm text-[var(--color-ink-soft)]">{{ __('media_library.uploads_blocked') }}</p>
+        @endif
+        @if ($canUpdateMedia)
+            <div x-cloak x-show="! uploading && (completedCount || failedCount)" data-media-upload-summary role="status" aria-live="polite" aria-atomic="true" class="text-sm text-[var(--color-ink-soft)]">
+                <p x-show="completedCount" x-text="choiceMessage('completed', completedCount)"></p>
+                <p x-show="failedCount" x-text="choiceMessage('failed', failedCount)" class="text-[var(--color-danger-strong)]"></p>
+            </div>
+            <input
+                id="media-library-upload"
+                aria-label="{{ __('media_library.choose_files') }}"
+                tabindex="-1"
+                x-ref="fileInput"
+                x-on:change="selectFiles($event)"
+                data-media-library-file-input
+                type="file"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
+                @disabled(! $usage['allowed'])
+                @if (! $usage['allowed']) data-media-upload-disabled @endif
+                class="peer sr-only"
+            />
+            <div x-cloak x-show="files.length" data-media-upload-queue class="space-y-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                <p class="text-sm font-medium text-[var(--color-ink-strong)]" x-text="choiceMessage('selectedFiles', files.length)"></p>
+                <div
+                    x-cloak
+                    x-show="files.length"
+                    data-media-library-selected-files
+                    class="w-full divide-y divide-[var(--color-line)]"
+                >
+                    <template x-for="(entry, index) in files" x-bind:key="entry.id">
+                        <div class="border-b border-[var(--color-line)] px-3 py-2 last:border-b-0">
+                            <div class="flex items-center gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <p data-media-library-selected-filename class="truncate text-xs font-medium leading-5 text-[var(--color-ink-strong)]" x-text="entry.name"></p>
+                                    <p x-show="entry.error" x-text="entry.error" role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]"></p>
+                                </div>
+                                <span
+                                    x-show="entry.status === 'uploading'"
+                                    class="text-xs tabular-nums text-[var(--color-ink-soft)]"
+                                    x-text="`${entry.progress}%`"
+                                ></span>
+                                <button
+                                    type="button"
+                                    data-media-library-remove-file
+                                    x-on:click="removeFile(index)"
+                                    x-bind:disabled="uploading"
+                                    x-bind:aria-label="message('removeFile', { name: entry.name })"
+                                    class="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <p
+                    x-cloak
+                    x-show="overBatchLimit"
+                    data-media-library-batch-limit
+                    role="alert"
+                    class="w-full text-xs leading-5 text-[var(--color-danger-strong)]"
+                    x-text="message('batchLimit', { max: maxFiles, count: batchOverflow })"
+                ></p>
+                <p
+                    x-cloak
+                    x-show="overQuotaLimit"
+                    role="alert"
+                    class="w-full text-xs leading-5 text-[var(--color-danger-strong)]"
+                    x-text="message('batchQuota', { count: remaining })"
+                ></p>
+                @error('upload')
+                    <p class="w-full text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                @enderror
+
+                @if ($labels->isNotEmpty())
+                    <details class="w-full py-2 text-sm">
+                        <summary class="cursor-pointer text-xs font-medium text-[var(--color-ink-soft)]">
+                            {{ __('media_library.labels.apply_on_upload') }}
+                        </summary>
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            @foreach ($labels as $label)
+                                <label class="flex items-center gap-2 text-xs text-[var(--color-ink-strong)]">
+                                    <input wire:model="uploadLabelIds" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
+                                    <span class="truncate">{{ $label->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </details>
+                @endif
+
+                <div
+                    x-cloak
+                    x-show="uploading"
+                    data-media-library-batch-progress
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    class="w-full space-y-1.5"
+                >
+                    <div class="flex items-center justify-between gap-3 text-xs text-[var(--color-ink-soft)]">
+                        <span class="inline-flex items-center gap-2">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4 motion-safe:animate-spin" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" d="M12 3a9 9 0 1 1-9 9" />
+                            </svg>
+                            <span x-text="message('batchPosition', { current: currentIndex + 1, total: files.length })"></span>
+                        </span>
+                        <span class="tabular-nums" x-text="`${currentProgress}%`"></span>
+                    </div>
+                    <div
+                        role="progressbar"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        x-bind:aria-valuenow="currentProgress"
+                        class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-field-muted)]"
+                    >
+                        <div class="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-150" x-bind:style="`width: ${currentProgress}%`"></div>
+                    </div>
+                </div>
+
+                <button type="submit" x-bind:disabled="! canUpload" class="sk-btn sk-btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60">
+                    <span x-show="! uploading">{{ __('media_library.upload_selected') }}</span>
+                    <span x-show="uploading">{{ __('media_library.uploading') }}</span>
+                </button>
+            </div>
+        @endif
+    </form>
 
     <section data-media-gallery-section class="space-y-4">
-        <div data-media-filter-toolbar class="flex flex-col gap-4 sk-card px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div role="group" class="flex flex-wrap items-center gap-2" aria-label="{{ __('media_library.filters.aria_label') }}">
+        @php
+            $hasFilters = $search !== '' || $typeFilter !== 'all' || $usageFilter !== 'all' || $statusFilter !== 'all' || $labelFilter !== [];
+            $advancedFilterCount = (int) ($usageFilter !== 'all') + (int) ($statusFilter !== 'all') + count($labelFilter);
+        @endphp
+        <div data-media-filter-toolbar x-data="{ filtersOpen: false }" class="space-y-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <label class="sk-field min-w-0 basis-full sm:basis-64 sm:flex-1">
+                    <span class="sr-only">{{ __('media_library.search') }}</span>
+                    <x-filament::icon icon="heroicon-m-magnifying-glass" class="size-4 shrink-0 text-[var(--color-ink-soft)]" />
+                    <input autocomplete="off" wire:model.live.debounce.250ms="search" type="search" placeholder="{{ __('media_library.picker.search_placeholder') }}" class="sk-field-control" />
+                </label>
+                <div data-media-type-filter role="group" aria-label="{{ __('media_library.filters.type') }}" class="flex items-center rounded-lg bg-[var(--color-panel-strong)] p-1">
+                    @foreach (['all' => 'all', 'image' => 'images', 'pdf' => 'pdfs'] as $value => $labelKey)
+                        <button type="button" wire:click="$set('typeFilter', '{{ $value }}')" aria-pressed="{{ $typeFilter === $value ? 'true' : 'false' }}" class="{{ $typeFilter === $value ? 'bg-[var(--color-panel)] text-[var(--color-ink-strong)] shadow-sm' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' }} min-h-9 rounded-md px-3 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
+                            {{ __('media_library.filters.'.$labelKey) }}
+                        </button>
+                    @endforeach
+                </div>
+                <button type="button" x-on:click="filtersOpen = ! filtersOpen" x-bind:aria-expanded="filtersOpen" aria-controls="media-library-filters" class="sk-btn sk-btn-outline gap-2">
+                    <x-filament::icon icon="heroicon-m-adjustments-horizontal" class="size-4" />
+                    {{ __('media_library.filters.more') }}
+                    @if ($advancedFilterCount)
+                        <span class="rounded-full bg-[var(--color-active-soft)] px-1.5 text-xs text-[var(--color-active-strong)]">{{ $advancedFilterCount }}</span>
+                    @endif
+                </button>
+            </div>
+            <div id="media-library-filters" x-cloak x-show="filtersOpen" role="group" aria-label="{{ __('media_library.filters.aria_label') }}" class="flex flex-wrap items-center gap-3 border-y border-[var(--color-line)] py-3">
                 <div data-media-usage-filter role="group" class="flex items-center gap-2" aria-label="{{ __('media_library.filters.usage') }}">
                     <span id="media-usage-filter-label" class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-soft)]">
                         {{ __('media_library.filters.usage') }}
@@ -189,19 +212,11 @@
                     </div>
                 </div>
 
-                <span aria-hidden="true" class="mx-1 hidden h-6 w-px bg-[var(--color-line)] sm:block"></span>
-
                 <select data-media-status-filter wire:model.live="statusFilter" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs text-[var(--color-ink-soft)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" aria-label="{{ __('media_library.filters.processing_status') }}">
                     <option value="all">{{ __('media_library.statuses.all') }}</option>
                     <option value="processing">{{ __('media_library.statuses.processing') }}</option>
                     <option value="ready">{{ __('media_library.statuses.ready') }}</option>
                     <option value="failed">{{ __('media_library.statuses.failed') }}</option>
-                </select>
-
-                <select data-media-type-filter wire:model.live="typeFilter" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs text-[var(--color-ink-soft)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" aria-label="{{ __('media_library.filters.type') }}">
-                    <option value="all">{{ __('media_library.filters.all_types') }}</option>
-                    <option value="image">{{ __('media_library.filters.images') }}</option>
-                    <option value="pdf">{{ __('media_library.filters.pdfs') }}</option>
                 </select>
 
                 @if ($labels->isNotEmpty())
@@ -212,7 +227,7 @@
                                 <span class="ml-1 text-[var(--color-accent-strong)]">· {{ count($labelFilter) }}</span>
                             @endif
                         </summary>
-                        <div class="absolute left-0 z-20 mt-2 min-w-52 space-y-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 shadow-lg">
+                        <div class="absolute right-0 z-20 mt-2 min-w-52 space-y-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 shadow-lg">
                             @foreach ($labels as $label)
                                 <label class="flex items-center gap-2 text-xs text-[var(--color-ink-strong)]">
                                     <input wire:model.live="labelFilter" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
@@ -223,28 +238,63 @@
                     </details>
                 @endif
             </div>
-
-            <label class="sk-field min-w-64">
-                <span class="text-[var(--color-ink-soft)]">{{ __('media_library.search') }}</span>
-                <input autocomplete="off" wire:model.live.debounce.250ms="search" type="search" placeholder="{{ __('media_library.search_placeholder') }}" class="sk-field-control" />
-            </label>
+            @if ($hasFilters)
+                <div data-media-active-filters class="flex flex-wrap items-center gap-2 text-xs">
+                    @foreach (['search' => $search, 'usageFilter' => $usageFilter === 'all' ? '' : __('media_library.filters.'.$usageFilter), 'statusFilter' => $statusFilter === 'all' ? '' : __('media_library.statuses.'.$statusFilter)] as $property => $filterLabel)
+                        @if ($filterLabel !== '')
+                            <button type="button" wire:click="$set('{{ $property }}', '{{ $property === 'search' ? '' : 'all' }}')" aria-label="{{ __('media_library.filters.remove', ['name' => $filterLabel]) }}" class="inline-flex min-h-8 max-w-full items-center gap-2 rounded-full bg-[var(--color-panel-strong)] px-3 text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-[var(--color-active)]">
+                                <span class="truncate">{{ $filterLabel }}</span><span aria-hidden="true">×</span>
+                            </button>
+                        @endif
+                    @endforeach
+                    @foreach ($labels->whereIn('id', $labelFilter) as $label)
+                        <button type="button" wire:click="removeLabelFilter({{ $label->id }})" aria-label="{{ __('media_library.filters.remove', ['name' => $label->name]) }}" class="inline-flex min-h-8 max-w-full items-center gap-2 rounded-full bg-[var(--color-panel-strong)] px-3 text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-[var(--color-active)]">
+                            <span class="truncate">{{ $label->name }}</span><span aria-hidden="true">×</span>
+                        </button>
+                    @endforeach
+                    <button data-media-clear-filters type="button" wire:click="clearFilters" class="min-h-8 px-2 font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ __('media_library.filters.clear') }}</button>
+                </div>
+            @endif
         </div>
 
         @if ($assets->isEmpty())
             <div class="sk-card px-5 py-12 text-center">
                 <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.empty.title') }}</h4>
-                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.empty.description') }}</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ $hasFilters ? __('media_library.empty.filtered') : __('media_library.empty.start') }}</p>
             </div>
         @else
-            <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+            <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
                 @foreach ($assets as $asset)
                     @php
                         $canRemoveAsset = $canDeleteMedia || ($asset->status !== \App\Enums\MediaAssetStatus::Ready && $user instanceof \App\Models\User && $user->can('delete', $asset));
+                        $isPdfAsset = $asset->type === \App\Enums\MediaAssetType::Pdf;
+                        $canOpenAsset = $asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->getFirstMedia($isPdfAsset ? 'document' : 'master');
                     @endphp
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="sk-card overflow-hidden">
                         <div data-media-card-preview class="relative grid w-full aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
+                            @if ($canOpenAsset)
+                                <a
+                                    @if ($isPdfAsset) data-media-open-pdf @else data-media-open-image @endif
+                                    href="{{ $isPdfAsset ? route('media.download', [$asset, 'inline' => 1]) : route('media.show', [$asset, 'master']) }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="{{ __($isPdfAsset ? 'media_library.open_pdf_for' : 'media_library.open_image_for', ['name' => $asset->displayName()]) }}"
+                                    title="{{ __($isPdfAsset ? 'media_library.open_pdf_for' : 'media_library.open_image_for', ['name' => $asset->displayName()]) }}"
+                                    class="absolute inset-0 z-10 {{ $isPdfAsset ? 'cursor-pointer' : 'cursor-zoom-in' }} focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
+                                ></a>
+                            @endif
                             @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
-                                <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" loading="lazy" decoding="async" class="size-full object-cover" />
+                                <img
+                                    src="{{ route('media.show', [$asset, 'thumbnail']) }}"
+                                    srcset="{{ route('media.show', [$asset, 'thumbnail']) }} 240w, {{ route('media.show', [$asset, 'catalog']) }} 400w"
+                                    sizes="auto, (min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
+                                    width="240"
+                                    height="240"
+                                    alt=""
+                                    loading="lazy"
+                                    decoding="async"
+                                    class="size-full object-cover"
+                                />
                             @elseif ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->type === \App\Enums\MediaAssetType::Pdf)
                                 <div data-media-pdf-placeholder class="grid size-full place-items-center p-6 text-center text-[var(--color-ink-soft)]">
                                     <div>
@@ -274,7 +324,7 @@
                                     aria-haspopup="dialog"
                                     aria-controls="media-asset-panel"
                                     aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
-                                    class="group absolute inset-0 z-10 cursor-pointer rounded-[var(--radius-md)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
+                                    class="group absolute right-0 top-0 z-10 size-11 cursor-pointer rounded-bl-lg focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
                                 >
                                     <span
                                         data-media-settings-cue
@@ -287,9 +337,9 @@
                             @endif
                         </div>
 
-                        <div class="space-y-2.5 p-3">
+                        <div class="space-y-0.5 p-3">
                             <div data-media-card-name-row class="min-w-0">
-                                <h4 data-media-display-name class="truncate text-[11px] font-medium leading-4 text-[var(--color-ink-strong)]" title="{{ $asset->displayName() }}">{{ $asset->displayName() }}</h4>
+                                <h4 data-media-display-name class="truncate text-xs font-medium leading-5 text-[var(--color-ink-strong)]" title="{{ $asset->displayName() }}">{{ $asset->displayName() }}</h4>
                             </div>
 
                             <div data-media-card-meta-row class="min-w-0">
@@ -303,13 +353,13 @@
                                             aria-haspopup="dialog"
                                             aria-controls="media-asset-panel"
                                             aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
-                                            class="text-[10px] font-medium text-[var(--color-accent-strong)] underline decoration-current/40 underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                            class="inline-flex min-h-6 items-center text-xs font-medium text-[var(--color-accent-strong)] underline decoration-current/40 underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                         >
                                             {{ trans_choice('media_library.usage', $asset->logical_usages_count, ['count' => $asset->logical_usages_count]) }}
                                             <span aria-hidden="true">›</span>
                                         </button>
                                         @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && ($asset->type === \App\Enums\MediaAssetType::Pdf || $asset->usesDocumentImageProfile()))
-                                            <a href="{{ route('media.download', $asset) }}" class="text-[10px] font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
+                                            <a href="{{ route('media.download', $asset) }}" class="inline-flex min-h-6 items-center text-xs font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
                                                 {{ __('media_library.documents.download') }}
                                             </a>
                                         @endif
@@ -355,14 +405,9 @@
         <div
             data-media-asset-panel
             id="media-asset-panel"
-            x-data="{
-                closePanel() {
-                    const trigger = document.getElementById('media-asset-settings-{{ $selectedAsset->id }}')
-                        ?? document.getElementById('media-asset-usage-{{ $selectedAsset->id }}')
-
-                    $wire.closeAssetPanel().then(() => $nextTick(() => trigger?.focus()))
-                },
-            }"
+            wire:key="media-asset-panel-{{ $selectedAsset->id }}"
+            x-data="mediaAssetPanel({ livewire: $wire, assetId: {{ $selectedAsset->id }}, focalX: {{ $selectedAsset->focal_x }}, focalY: {{ $selectedAsset->focal_y }} })"
+            x-on:beforeunload.window="if (dirty || saving) { $event.preventDefault(); $event.returnValue = ''; }"
             x-on:keydown.escape.window="closePanel()"
             x-on:click.self="closePanel()"
             class="fixed inset-0 z-[80] flex justify-end bg-black/40"
@@ -386,6 +431,22 @@
                         <p class="mt-0.5 truncate text-[11px] text-[var(--color-ink-soft)]" title="{{ $selectedAsset->original_filename }}">
                             {{ __('media_library.original_filename', ['name' => $selectedAsset->original_filename]) }}
                         </p>
+                        @php
+                            $selectedIsPdf = $selectedAsset->type === \App\Enums\MediaAssetType::Pdf;
+                        @endphp
+                        @if ($selectedAsset->status === \App\Enums\MediaAssetStatus::Ready && $selectedAsset->getFirstMedia($selectedIsPdf ? 'document' : 'master'))
+                            <a
+                                @if ($selectedIsPdf) data-media-panel-open-pdf @else data-media-panel-open-image @endif
+                                href="{{ $selectedIsPdf ? route('media.download', [$selectedAsset, 'inline' => 1]) : route('media.show', [$selectedAsset, 'master']) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="{{ __($selectedIsPdf ? 'media_library.open_pdf_for' : 'media_library.open_image_for', ['name' => $selectedAsset->displayName()]) }}"
+                                class="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                            >
+                                {{ __($selectedIsPdf ? 'media_library.open_pdf' : 'media_library.open_image') }}
+                                <span aria-hidden="true">↗</span>
+                            </a>
+                        @endif
                     </div>
                     <button
                         x-ref="closeButton"
@@ -421,17 +482,16 @@
                     </button>
                 </div>
 
-                <div data-media-panel-scroll class="min-h-0 flex-1 overflow-y-auto p-5">
+                <fieldset x-bind:disabled="saving" data-media-panel-scroll class="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
                     @if ($assetPanelTab === 'settings')
                         @if ($canUpdateMedia && $selectedAsset->status === \App\Enums\MediaAssetStatus::Ready)
                             <div class="space-y-6">
-                                <form data-media-panel-section wire:submit="renameFromInput({{ $selectedAsset->id }})" class="space-y-2.5">
+                                <form data-media-panel-section x-on:submit.prevent="saveSettings()" class="space-y-2.5">
                                     <label class="block text-xs font-medium text-[var(--color-ink-soft)]" for="display-name-{{ $selectedAsset->id }}">
                                         {{ __('media_library.display_name') }}
                                     </label>
                                     <div class="flex gap-2">
                                         <input id="display-name-{{ $selectedAsset->id }}" wire:model="displayNames.{{ $selectedAsset->id }}" type="text" maxlength="255" required @if ($errors->has('displayNames.'.$selectedAsset->id)) aria-describedby="display-name-error-{{ $selectedAsset->id }}" @endif aria-invalid="{{ $errors->has('displayNames.'.$selectedAsset->id) ? 'true' : 'false' }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
-                                        <button type="submit" class="sk-btn sk-btn-outline px-3 text-xs">{{ __('media_library.save_name') }}</button>
                                     </div>
                                     @error('displayNames.'.$selectedAsset->id)
                                         <p id="display-name-error-{{ $selectedAsset->id }}" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
@@ -541,6 +601,7 @@
                                         <input wire:model="newLabelName" type="text" maxlength="30" placeholder="{{ __('media_library.labels.new_placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-xs text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
                                         <button type="submit" class="sk-btn sk-btn-outline px-3 text-xs">{{ __('media_library.labels.add') }}</button>
                                     </form>
+                                    <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.panel.new_label_help') }}</p>
                                     @error('newLabelName')
                                         <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                                     @enderror
@@ -555,8 +616,6 @@
                                         data-media-panel-section
                                         data-media-focal-editor
                                         x-data="{
-                                            focalX: {{ $selectedAsset->focal_x }},
-                                            focalY: {{ $selectedAsset->focal_y }},
                                             isDragging: false,
                                             clampFocalPoint(value) {
                                                 return Math.min(100, Math.max(0, Math.round(value)));
@@ -625,15 +684,9 @@
                                             </div>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            wire:click="updateFocalPoint({{ $selectedAsset->id }}, focalX, focalY)"
-                                            wire:loading.attr="disabled"
-                                            wire:target="updateFocalPoint"
-                                            class="sk-btn sk-btn-primary mt-4"
-                                        >
-                                            {{ __('media_library.crop.save') }}
-                                        </button>
+                                        @error('focal_point')
+                                            <p role="alert" class="mt-2 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                                        @enderror
                                     </section>
                                 @endif
                             </div>
@@ -687,7 +740,23 @@
                             </div>
                         @endif
                     @endif
-                </div>
+                </fieldset>
+
+                @if ($canUpdateMedia && $selectedAsset->status === \App\Enums\MediaAssetStatus::Ready)
+                    <div data-media-save-bar class="space-y-3 border-t border-[var(--color-line)] px-5 py-3">
+                        <div x-cloak x-show="confirmingClose" class="space-y-2" role="alert">
+                            <p class="text-sm text-[var(--color-ink-strong)]">{{ __('media_library.panel.discard_prompt') }}</p>
+                            <div class="flex flex-wrap gap-3">
+                                <button x-ref="keepEditing" type="button" x-on:click="confirmingClose = false" class="min-h-9 text-xs font-medium text-[var(--color-ink-strong)] underline">{{ __('media_library.panel.keep_editing') }}</button>
+                                <button type="button" x-on:click="discardAndClose()" class="min-h-9 text-xs font-medium text-[var(--color-danger-strong)] underline">{{ __('media_library.panel.discard') }}</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <p role="status" aria-live="polite" class="text-xs text-[var(--color-ink-soft)]" x-text="saving ? @js(__('media_library.panel.saving')) : (saveError ? @js(__('media_library.panel.save_failed')) : (dirty ? @js(__('media_library.panel.unsaved')) : (justSaved ? @js(__('media_library.panel.saved')) : '')))"></p>
+                            <button type="button" x-on:click="saveSettings()" x-bind:disabled="saving || ! dirty" class="sk-btn sk-btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-45">{{ __('media_library.panel.save') }}</button>
+                        </div>
+                    </div>
+                @endif
 
                 @if ($canDeleteMedia && $selectedAsset->status === \App\Enums\MediaAssetStatus::Ready)
                     <footer class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
@@ -700,6 +769,7 @@
                             <span></span>
                         @endif
                         <button
+                            x-bind:disabled="saving"
                             data-media-delete-action
                             type="button"
                             wire:click="remove({{ $selectedAsset->id }})"

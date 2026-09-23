@@ -17,14 +17,14 @@ return [
     'asset_uploads' => [
         'max_size_kb' => 10240,
         'max_pixels' => 25_000_000,
-        'master_max_edge' => 800,
+        'master_max_edge' => 1000,
         'quality' => 85,
         'document_quality' => 95,
         'accepted_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
         'accepted_image_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
         'accepted_document_extensions' => ['pdf'],
         'pdf' => [
-            'max_size_kb' => 150,
+            'max_size_kb' => 180,
             'max_pages' => 50,
             'pdfinfo_binary' => env('PDFINFO_BINARY', 'pdfinfo'),
             'pdftoppm_binary' => env('PDFTOPPM_BINARY', 'pdftoppm'),

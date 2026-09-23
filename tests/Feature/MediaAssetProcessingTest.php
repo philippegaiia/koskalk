@@ -38,6 +38,40 @@ it('rejects a text payload renamed as an image before storing pending media', fu
         ->and(Storage::disk('local')->allFiles('media-assets/pending'))->toBeEmpty();
 });
 
+it('accepts an image at the ten megabyte upload limit', function () {
+    Queue::fake([NormalizeMediaAssetJob::class]);
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        UploadedFile::fake()->image('boundary.png')->size(10240),
+    );
+
+    $this->assertModelExists($asset);
+    Storage::disk('local')->assertExists($asset->pending_path);
+    Queue::assertPushed(NormalizeMediaAssetJob::class);
+});
+
+it('rejects an image above ten megabytes before reserving media or storing files', function () {
+    Queue::fake([NormalizeMediaAssetJob::class]);
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+
+    expect(fn () => app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        UploadedFile::fake()->image('oversized.png')->size(10241),
+    ))->toThrow(ValidationException::class);
+
+    $this->assertDatabaseCount('media_assets', 0);
+    expect(Storage::disk('local')->allFiles('media-assets/pending'))->toBeEmpty();
+    Queue::assertNothingPushed();
+});
+
 it('turns pending storage failures into a retryable upload validation error', function () {
     Queue::fake();
     config()->set('media.asset_pending_disk', 'unconfigured-pending-disk');
@@ -159,7 +193,7 @@ it('rejects a renamed payload and oversized files as pdf documents', function ()
         $workspace,
         UploadedFile::fake()->create('large.pdf', 10241, 'application/pdf'),
         $allowedTypes,
-    ))->toThrow(ValidationException::class, '150 KB');
+    ))->toThrow(ValidationException::class, '180 KB');
 });
 
 beforeEach(function () {
@@ -170,21 +204,21 @@ beforeEach(function () {
     config()->set('media-library.conversions_disk_name', 'local');
 });
 
-it('accepts a PDF at 150 KB and rejects one byte above before reserving media', function () {
+it('accepts a PDF at 180 KB and rejects one byte above before reserving media', function () {
     Queue::fake();
     [$user, $workspace] = mediaProcessingWorkspace(10);
     $header = "%PDF-1.4\n";
-    $content = $header.str_repeat(' ', 150 * 1024 - strlen($header));
+    $content = $header.str_repeat(' ', 180 * 1024 - strlen($header));
 
     $asset = app(MediaAssetUploadService::class)->start(
         $user, $workspace, UploadedFile::fake()->createWithContent('coa.pdf', $content), [MediaAssetType::Pdf],
     );
-    expect($asset->original_size)->toBe(153600);
+    expect($asset->original_size)->toBe(184320);
     Queue::assertPushed(NormalizeMediaAssetJob::class, 1);
 
     expect(fn () => app(MediaAssetUploadService::class)->start(
         $user, $workspace, UploadedFile::fake()->createWithContent('tds.pdf', $content.' '), [MediaAssetType::Pdf],
-    ))->toThrow(ValidationException::class, '150 KB');
+    ))->toThrow(ValidationException::class, '180 KB');
     expect(MediaAsset::query()->count())->toBe(1);
     expect(Storage::disk('local')->allFiles('media-assets/pending'))->toHaveCount(1);
     Queue::assertPushed(NormalizeMediaAssetJob::class, 1);
@@ -301,7 +335,7 @@ it('ignores a stale queued job after retry or removal rotates the token', functi
     expect($asset->refresh()->status)->toBe(MediaAssetStatus::Processing);
 });
 
-it('creates an uncropped 800 master and the required focal and contained conversions', function () {
+it('creates an uncropped 1000 master and the required focal and contained conversions', function () {
     Queue::fake();
     [$user, $workspace] = mediaProcessingWorkspace(limit: 2);
     $asset = app(MediaAssetUploadService::class)->start(
@@ -321,7 +355,7 @@ it('creates an uncropped 800 master and the required focal and contained convers
         ->and($asset->pending_path)->toBeNull()
         ->and($master)->not->toBeNull()
         ->and($master->file_name)->toEndWith('.webp')
-        ->and(mediaImageDimensions($master->getPath()))->toBe([600, 800])
+        ->and(mediaImageDimensions($master->getPath()))->toBe([750, 1000])
         ->and(mediaImageDimensions($master->getPath('recipe-index')))->toBe([360, 480])
         ->and(mediaImageDimensions($master->getPath('catalog')))->toBe([400, 400])
         ->and(mediaImageDimensions($master->getPath('thumbnail')))->toBe([240, 240])
@@ -441,6 +475,7 @@ it('upscales small source images to every required square conversion size', func
     $master = $asset->refresh()->getFirstMedia('master');
 
     expect($master)->not->toBeNull()
+        ->and(mediaImageDimensions($master->getPath()))->toBe([80, 60])
         ->and(mediaImageDimensions($master->getPath('catalog')))->toBe([400, 400])
         ->and(mediaImageDimensions($master->getPath('thumbnail')))->toBe([240, 240])
         ->and(mediaImageDimensions($master->getPath('icon')))->toBe([96, 96]);

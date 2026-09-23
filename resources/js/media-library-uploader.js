@@ -2,6 +2,8 @@ export function createMediaLibraryUploader(options) {
     return {
         files: [],
         uploading: false,
+        completedCount: 0,
+        failedCount: 0,
         currentIndex: 0,
         currentProgress: 0,
         livewire: options.livewire,
@@ -29,6 +31,8 @@ export function createMediaLibraryUploader(options) {
         },
 
         selectFiles(event) {
+            this.completedCount = 0;
+            this.failedCount = 0;
             this.files = Array.from(event.target.files ?? []).map((file, index) => ({
                 id: `${file.name}-${file.size ?? 0}-${file.lastModified ?? 0}-${index}`,
                 file,
@@ -43,6 +47,7 @@ export function createMediaLibraryUploader(options) {
         removeFile(index) {
             if (!this.uploading) {
                 this.files.splice(index, 1);
+                this.failedCount = this.files.filter((entry) => entry.status === 'failed').length;
             }
         },
 
@@ -52,6 +57,8 @@ export function createMediaLibraryUploader(options) {
             }
 
             this.uploading = true;
+            this.completedCount = 0;
+            this.failedCount = 0;
 
             try {
                 for (const [index, entry] of this.files.entries()) {
@@ -61,7 +68,12 @@ export function createMediaLibraryUploader(options) {
                 }
             } finally {
                 this.uploading = false;
+                this.completedCount = this.files.filter((entry) => entry.status === 'queued').length;
                 this.files = this.files.filter((entry) => entry.status === 'failed');
+                this.failedCount = this.files.length;
+                if (this.remaining !== null) {
+                    this.remaining = Math.max(0, this.remaining - this.completedCount);
+                }
             }
         },
 
@@ -76,7 +88,9 @@ export function createMediaLibraryUploader(options) {
                         entry.file,
                         async () => {
                             try {
-                                await this.livewire.uploadAsset();
+                                if (await this.livewire.uploadAsset() !== true) {
+                                    throw new Error('Upload was not accepted');
+                                }
                                 entry.status = 'queued';
                             } catch {
                                 this.failEntry(entry);

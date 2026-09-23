@@ -94,6 +94,15 @@ class MediaLabelService
      */
     public function sync(User $user, MediaAsset $asset, array $labelIds): void
     {
+        $asset->labels()->sync($this->validateSelection($user, $asset, $labelIds));
+    }
+
+    /**
+     * @param  array<int, int|string>  $labelIds
+     * @return array<int, int>
+     */
+    public function validateSelection(User $user, MediaAsset $asset, array $labelIds): array
+    {
         Gate::forUser($user)->authorize('update', $asset);
 
         $ids = collect($labelIds)
@@ -121,7 +130,7 @@ class MediaLabelService
             ]);
         }
 
-        $asset->labels()->sync($workspaceLabelIds);
+        return $ids->all();
     }
 
     /**

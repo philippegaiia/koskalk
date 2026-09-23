@@ -18,67 +18,134 @@
     </section>
 
     @php
-        $hasFilters = $searchTerm !== '' || $selectedProductArea !== '' || $selectedProductCategory !== '' || $selectedProductType !== '';
+        $classificationFilters = collect([
+            $selectedProductArea !== '' ? $productAreaOptions->get($selectedProductArea, $selectedProductArea) : null,
+            $selectedProductCategory !== '' ? $productCategoryOptions->get($selectedProductCategory, $selectedProductCategory) : null,
+            $selectedProductType !== '' ? $productTypeOptions->get($selectedProductType, $selectedProductType) : null,
+        ])->filter();
+        $hasFilters = $searchTerm !== '' || $classificationFilters->isNotEmpty() || $archivedFilter !== 'active';
     @endphp
 
     @if ($currentUser)
-        <div class="flex min-w-0 flex-col items-stretch gap-2">
-            <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" aria-label="{{ __('products.filters.aria_label') }}">
-                <label class="sk-field sm:min-w-80 lg:min-w-[24rem]">
-                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.search.label') }}</span>
-                    <input autocomplete="off"
+        <section
+            data-product-filters
+            x-data="{ filtersOpen: false }"
+            x-on:keydown.escape.window="if (filtersOpen) { filtersOpen = false; $refs.filtersTrigger.focus() }"
+            aria-label="{{ __('products.filters.aria_label') }}"
+            class="relative space-y-2"
+        >
+            <div data-product-filter-toolbar class="grid min-w-0 grid-cols-[minmax(0,1fr)_7.5rem_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:gap-3">
+                <label class="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 text-sm focus-within:border-[var(--color-accent)] focus-within:ring-1 focus-within:ring-[var(--color-accent)]">
+                    <x-heroicon-o-magnifying-glass class="size-4 shrink-0 text-[var(--color-ink-soft)]" aria-hidden="true" />
+                    <span class="sr-only">{{ __('products.filters.search.aria_label') }}</span>
+                    <input
+                        autocomplete="off"
                         wire:model.live.debounce.250ms="search"
-                        type="text"
-                        placeholder="{{ __('products.filters.search.placeholder') }}"
-                        class="sk-field-control"
-                        aria-label="{{ __('products.filters.search.aria_label') }}"
+                        type="search"
+                        placeholder="{{ __('products.filters.search_placeholder') }}"
+                        class="sk-field-control w-full"
                     />
                 </label>
-                <label class="sk-field">
-                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.area.label') }}</span>
-                    <select wire:model.live="productAreaFilter" class="sk-select-control">
-                        <option value="">{{ __('products.filters.area.all') }}</option>
-                        @foreach ($productAreaOptions as $productAreaSlug => $productAreaName)
-                            <option value="{{ $productAreaSlug }}">{{ $productAreaName }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="sk-field">
-                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.category.label') }}</span>
-                    <select wire:model.live="productCategoryFilter" class="sk-select-control">
-                        <option value="">{{ __('products.filters.category.all') }}</option>
-                        @foreach ($productCategoryOptions as $productCategorySlug => $productCategoryName)
-                            <option value="{{ $productCategorySlug }}">{{ $productCategoryName }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="sk-field">
-                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.type.label') }}</span>
-                    <select wire:model.live="productTypeFilter" class="sk-select-control">
-                        <option value="">{{ __('products.filters.type.all') }}</option>
-                        @foreach ($productTypeOptions as $productTypeSlug => $productTypeName)
-                            <option value="{{ $productTypeSlug }}">{{ $productTypeName }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="sk-field">
-                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.status.label') }}</span>
-                    <select wire:model.live="archivedFilter" class="sk-select-control">
+                <label class="min-w-0">
+                    <span class="sr-only">{{ __('products.filters.status.label') }}</span>
+                    <select wire:model.live="archivedFilter" class="flex h-11 w-full min-w-0 items-center rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] pl-3 text-sm text-[var(--color-ink-strong)]" title="{{ __('products.filters.status.label') }}">
                         <option value="active">{{ __('products.filters.status.active') }}</option>
                         <option value="archived">{{ __('products.filters.status.archived') }}</option>
                         <option value="">{{ __('products.filters.status.all') }}</option>
                     </select>
                 </label>
-                @if ($hasFilters)
-                    <button type="button" wire:click="clearFilters" class="sk-btn sk-btn-outline shrink-0">
-                        {{ __('products.actions.clear_filters') }}
-                    </button>
-                @endif
+                <button
+                    data-product-filter-toggle
+                    x-ref="filtersTrigger"
+                    type="button"
+                    x-on:click="filtersOpen = ! filtersOpen"
+                    x-bind:aria-expanded="filtersOpen.toString()"
+                    aria-controls="product-classification-filters"
+                    aria-haspopup="dialog"
+                    title="{{ __('products.filters.more') }}"
+                    class="flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-field-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                >
+                    <x-heroicon-o-adjustments-horizontal class="size-4 shrink-0" aria-hidden="true" />
+                    <span class="sr-only sm:not-sr-only">{{ __('products.filters.more') }}</span>
+                    @if ($classificationFilters->isNotEmpty())
+                        <span data-product-filter-count class="text-xs font-semibold tabular-nums text-[var(--color-accent-strong)]">{{ $classificationFilters->count() }}</span>
+                    @endif
+                </button>
             </div>
-            <p class="px-1 text-xs text-[var(--color-ink-soft)]">
-                {{ trans_choice($hasFilters ? 'products.count.matching' : 'products.count.all', $recipeCount, ['count' => $recipeCount]) }}
-            </p>
-        </div>
+
+            <div
+                x-cloak
+                x-show="filtersOpen"
+                x-on:click="filtersOpen = false"
+                class="fixed inset-0 z-40 bg-[var(--color-ink-strong)]/25 sm:bg-transparent"
+                aria-hidden="true"
+            ></div>
+            <div
+                data-product-filter-panel
+                id="product-classification-filters"
+                x-cloak
+                x-show="filtersOpen"
+                x-trap.inert.noscroll="filtersOpen"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="product-filter-heading"
+                class="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-12 sm:w-96 sm:rounded-xl"
+            >
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <h3 id="product-filter-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('products.filters.more') }}</h3>
+                    <button type="button" x-on:click="filtersOpen = false" aria-label="{{ __('products.filters.close') }}" class="-mr-2 grid size-11 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">
+                        <x-heroicon-m-x-mark class="size-4" aria-hidden="true" />
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <label class="block space-y-1.5">
+                        <span class="block text-xs font-medium text-[var(--color-ink-soft)]">{{ __('products.filters.area.label') }}</span>
+                        <select wire:model.live="productAreaFilter" class="flex h-11 w-full min-w-0 items-center rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] pl-3 text-sm text-[var(--color-ink-strong)]">
+                            <option value="">{{ __('products.filters.area.all') }}</option>
+                            @foreach ($productAreaOptions as $productAreaSlug => $productAreaName)
+                                <option value="{{ $productAreaSlug }}">{{ $productAreaName }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block space-y-1.5">
+                        <span class="block text-xs font-medium text-[var(--color-ink-soft)]">{{ __('products.filters.category.label') }}</span>
+                        <select wire:model.live="productCategoryFilter" class="flex h-11 w-full min-w-0 items-center rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] pl-3 text-sm text-[var(--color-ink-strong)]">
+                            <option value="">{{ __('products.filters.category.all') }}</option>
+                            @foreach ($productCategoryOptions as $productCategorySlug => $productCategoryName)
+                                <option value="{{ $productCategorySlug }}">{{ $productCategoryName }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block space-y-1.5">
+                        <span class="block text-xs font-medium text-[var(--color-ink-soft)]">{{ __('products.filters.type.label') }}</span>
+                        <select wire:model.live="productTypeFilter" class="flex h-11 w-full min-w-0 items-center rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] pl-3 text-sm text-[var(--color-ink-strong)]">
+                            <option value="">{{ __('products.filters.type.all') }}</option>
+                            @foreach ($productTypeOptions as $productTypeSlug => $productTypeName)
+                                <option value="{{ $productTypeSlug }}">{{ $productTypeName }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
+                <div class="mt-5 flex items-center justify-end border-t border-[var(--color-line)] pt-4">
+                    <button type="button" x-on:click="filtersOpen = false" class="sk-btn sk-btn-primary min-h-11">{{ __('products.filters.done') }}</button>
+                </div>
+            </div>
+
+            <div data-product-filter-summary class="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+                <p role="status" aria-live="polite" aria-atomic="true">
+                    {{ trans_choice($hasFilters ? 'products.count.matching' : 'products.count.all', $recipeCount, ['count' => $recipeCount]) }}
+                </p>
+                @if ($classificationFilters->isNotEmpty() || $archivedFilter !== 'active')
+                    <p data-product-active-filters class="min-w-0 break-words">
+                        {{ $classificationFilters->concat($archivedFilter !== 'active' ? [__('products.filters.status.'.($archivedFilter === 'archived' ? 'archived' : 'all'))] : [])->implode(' · ') }}
+                    </p>
+                @endif
+                @if ($hasFilters)
+                    <button data-product-clear-filters type="button" wire:click="clearFilters" class="min-h-8 font-medium text-[var(--color-accent-strong)] underline underline-offset-2 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('products.actions.clear_filters') }}</button>
+                @endif
+                <span wire:loading.delay wire:target="search,archivedFilter,productAreaFilter,productCategoryFilter,productTypeFilter,clearFilters">{{ __('products.filters.updating') }}</span>
+            </div>
+        </section>
     @endif
 
     @if (! $currentUser)
@@ -90,7 +157,7 @@
         <section class="sk-card p-8 text-center">
             <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $hasFilters ? __('products.empty.no_matches') : __('products.empty.no_items') }}</h4>
             <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
-                {{ $hasFilters ? __('products.empty.try_again') : __('products.empty.description') }}
+                {{ $hasFilters ? __('products.empty.adjust_filters') : __('products.empty.description') }}
             </p>
             @if (! $hasFilters)
                 <div class="mt-5 flex flex-wrap justify-center gap-2">
@@ -141,10 +208,11 @@
                             <button
                                 type="button"
                                 @click="menuOpen = !menuOpen"
-                                class="grid size-10 place-items-center rounded-lg bg-white/80 backdrop-blur transition hover:bg-white sm:size-8"
+                                :aria-expanded="menuOpen.toString()"
+                                class="grid size-10 place-items-center rounded-lg border border-[var(--color-line)]/60 bg-[var(--color-panel)] text-[var(--color-ink-strong)] transition-colors duration-150 hover:border-[var(--color-line)] hover:bg-[color-mix(in_oklab,var(--color-panel)_80%,var(--color-panel-strong))] aria-expanded:border-[var(--color-line)] aria-expanded:bg-[color-mix(in_oklab,var(--color-panel)_80%,var(--color-panel-strong))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] motion-reduce:transition-none sm:size-8"
                                 aria-label="{{ __('products.accessibility.actions', ['product' => $recipe->name]) }}"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-[var(--color-ink-soft)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                                 </svg>
                             </button>
@@ -282,5 +350,8 @@
                 </article>
             @endforeach
         </div>
+        @if ($recipes->hasPages())
+            <x-table-pagination :paginator="$recipes" :show-per-page="false" />
+        @endif
     @endif
 </div>

@@ -53,7 +53,8 @@ it('uses product-first terminology throughout the recipes index', function () {
         ->assertSeeText('Manage your products.')
         ->assertSeeText('Create and manage finished products, including their formulas, packaging, and saved versions.')
         ->assertSeeText('New product')
-        ->assertSee('placeholder="Product name, area, category, or type"', false)
+        ->assertSee('placeholder="Search products"', false)
+        ->assertSeeText('Filters')
         ->assertSeeText('All areas')
         ->assertSeeText('All categories')
         ->assertSeeText('All types')
@@ -95,7 +96,10 @@ it('loads product index interface copy from the database', function () {
         'actions.new_product' => 'Nouveau produit',
         'actions.open_workbench' => 'Ouvrir l’atelier',
         'filters.search.label' => 'Rechercher',
-        'filters.search.placeholder' => 'Nom, catégorie ou type de produit',
+        'filters.search_placeholder' => 'Rechercher des produits',
+        'filters.more' => 'Filtres',
+        'filters.close' => 'Fermer les filtres',
+        'filters.done' => 'Terminé',
         'filters.area.label' => 'Zone',
         'filters.area.all' => 'Toutes les zones',
         'filters.category.label' => 'Catégorie',
@@ -118,7 +122,10 @@ it('loads product index interface copy from the database', function () {
         ->assertSeeText('Gérez vos produits.')
         ->assertSeeText('Créez et gérez vos savons et produits cosmétiques, avec leurs formules, emballages et versions enregistrées.')
         ->assertSeeText('Nouveau produit')
-        ->assertSee('placeholder="Nom, catégorie ou type de produit"', false)
+        ->assertSee('placeholder="Rechercher des produits"', false)
+        ->assertSeeText('Filtres')
+        ->assertSeeText('Terminé')
+        ->assertSeeHtml('aria-label="Fermer les filtres"')
         ->assertSeeText('Toutes les zones')
         ->assertSeeText('Toutes les catégories')
         ->assertSeeText('Tous les types')

@@ -13,9 +13,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class RecipesIndex extends Component
 {
+    use WithPagination;
+
     #[Url(as: 'q')]
     public string $search = '';
 
@@ -57,15 +60,14 @@ class RecipesIndex extends Component
 
             $this->scopeArchiveState($recipesQuery);
 
-            $optionRecipes = Recipe::query()
-                ->with([
-                    'productType.productCategory.productArea',
-                ])
-                ->get(['id', 'product_family_id', 'product_type_id']);
+            $availableProductTypes = ProductType::query()
+                ->with('productCategory.productArea')
+                ->whereIn('id', Recipe::query()->select('product_type_id'))
+                ->get();
 
-            $productAreaOptions = $this->productAreaOptions($optionRecipes);
-            $productCategoryOptions = $this->productCategoryOptions($optionRecipes, $selectedProductArea);
-            $productTypeOptions = $this->productTypeOptions($optionRecipes, $selectedProductArea, $selectedProductCategory);
+            $productAreaOptions = $this->productAreaOptions($availableProductTypes);
+            $productCategoryOptions = $this->productCategoryOptions($availableProductTypes, $selectedProductArea);
+            $productTypeOptions = $this->productTypeOptions($availableProductTypes, $selectedProductArea, $selectedProductCategory);
 
             if ($selectedProductArea !== '') {
                 $recipesQuery->whereHas(
@@ -103,9 +105,10 @@ class RecipesIndex extends Component
 
             $recipes = $recipesQuery
                 ->latest()
-                ->get();
+                ->orderByDesc('id')
+                ->paginate(12);
 
-            $recipeCount = $recipes->count();
+            $recipeCount = $recipes->total();
         }
 
         return view('livewire.dashboard.recipes-index', [
@@ -133,9 +136,11 @@ class RecipesIndex extends Component
         };
     }
 
-    public function updatedArchivedFilter(): void
+    public function updated(string $property): void
     {
-        $this->resetPage();
+        if (in_array($property, ['search', 'archivedFilter', 'productAreaFilter', 'productCategoryFilter', 'productTypeFilter'], true)) {
+            $this->resetPage();
+        }
     }
 
     public function updatedProductAreaFilter(): void
@@ -156,16 +161,17 @@ class RecipesIndex extends Component
         $this->productCategoryFilter = '';
         $this->productTypeFilter = '';
         $this->archivedFilter = 'active';
+        $this->resetPage();
     }
 
     /**
-     * @param  Collection<int, Recipe>  $recipes
+     * @param  Collection<int, ProductType>  $productTypes
      * @return Collection<string, string>
      */
-    private function productAreaOptions(Collection $recipes): Collection
+    private function productAreaOptions(Collection $productTypes): Collection
     {
-        return $recipes
-            ->map(fn (Recipe $recipe): ?ProductArea => $recipe->productType?->productCategory?->productArea)
+        return $productTypes
+            ->map(fn (ProductType $productType): ?ProductArea => $productType->productCategory?->productArea)
             ->filter()
             ->unique('slug')
             ->sortBy(fn (ProductArea $productArea): array => [$productArea->sort_order, $productArea->localizedName()])
@@ -173,14 +179,14 @@ class RecipesIndex extends Component
     }
 
     /**
-     * @param  Collection<int, Recipe>  $recipes
+     * @param  Collection<int, ProductType>  $productTypes
      * @return Collection<string, string>
      */
-    private function productCategoryOptions(Collection $recipes, string $selectedProductArea): Collection
+    private function productCategoryOptions(Collection $productTypes, string $selectedProductArea): Collection
     {
-        return $recipes
-            ->filter(fn (Recipe $recipe): bool => $selectedProductArea === '' || $recipe->productType?->productCategory?->productArea?->slug === $selectedProductArea)
-            ->map(fn (Recipe $recipe): ?ProductCategory => $recipe->productType?->productCategory)
+        return $productTypes
+            ->filter(fn (ProductType $productType): bool => $selectedProductArea === '' || $productType->productCategory?->productArea?->slug === $selectedProductArea)
+            ->map(fn (ProductType $productType): ?ProductCategory => $productType->productCategory)
             ->filter()
             ->unique('slug')
             ->sortBy(fn (ProductCategory $productCategory): array => [$productCategory->sort_order, $productCategory->localizedName()])
@@ -188,15 +194,14 @@ class RecipesIndex extends Component
     }
 
     /**
-     * @param  Collection<int, Recipe>  $recipes
+     * @param  Collection<int, ProductType>  $productTypes
      * @return Collection<string, string>
      */
-    private function productTypeOptions(Collection $recipes, string $selectedProductArea, string $selectedProductCategory): Collection
+    private function productTypeOptions(Collection $productTypes, string $selectedProductArea, string $selectedProductCategory): Collection
     {
-        return $recipes
-            ->filter(fn (Recipe $recipe): bool => $selectedProductArea === '' || $recipe->productType?->productCategory?->productArea?->slug === $selectedProductArea)
-            ->filter(fn (Recipe $recipe): bool => $selectedProductCategory === '' || $recipe->productType?->productCategory?->slug === $selectedProductCategory)
-            ->map(fn (Recipe $recipe): ?ProductType => $recipe->productType)
+        return $productTypes
+            ->filter(fn (ProductType $productType): bool => $selectedProductArea === '' || $productType->productCategory?->productArea?->slug === $selectedProductArea)
+            ->filter(fn (ProductType $productType): bool => $selectedProductCategory === '' || $productType->productCategory?->slug === $selectedProductCategory)
             ->filter()
             ->unique('slug')
             ->sortBy('sort_order')

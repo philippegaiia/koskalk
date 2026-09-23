@@ -40,10 +40,10 @@ class MediaAssetDownloadController extends Controller
                 : $mediaAsset->displayName().'.pdf')
             : Str::beforeLast($mediaAsset->displayName(), '.').'.webp';
 
-        return $disk->download($path, $downloadName, [
+        return $disk->response($path, $downloadName, [
             'Content-Type' => $isPdf ? 'application/pdf' : 'image/webp',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
-        ]);
+        ], $isPdf && $request->boolean('inline') ? 'inline' : 'attachment');
     }
 }

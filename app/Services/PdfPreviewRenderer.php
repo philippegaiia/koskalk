@@ -86,8 +86,8 @@ class PdfPreviewRenderer
             Image::load($pngPath)
                 ->fit(
                     Fit::Max,
-                    (int) config('media.asset_uploads.master_max_edge', 800),
-                    (int) config('media.asset_uploads.master_max_edge', 800),
+                    (int) config('media.asset_uploads.master_max_edge', 1000),
+                    (int) config('media.asset_uploads.master_max_edge', 1000),
                 )
                 ->format('webp')
                 ->quality((int) config('media.asset_uploads.quality', 85))

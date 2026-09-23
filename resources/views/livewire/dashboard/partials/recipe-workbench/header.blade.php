@@ -2,6 +2,7 @@
     $workbench = $workbench ?? [];
     $recipePublicId = $workbench['recipe']['public_id'] ?? null;
     $isPublicCalculator = $isPublicCalculator ?? false;
+    $contextualHelp = $contextualHelp ?? ['topics' => [], 'tabs' => []];
 @endphp
 
 <section class="{{ $isPublicCalculator ? 'pb-1' : 'sk-formula-header' }}">

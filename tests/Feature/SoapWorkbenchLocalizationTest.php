@@ -32,6 +32,7 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         ->toContain('Duplicate product')
         ->not->toContain('Formula name')
         ->not->toContain('Lock formula')
+        ->not->toContain('data-help-index')
         ->and($navigation)
         ->toContain('aria-label="Product sections"')
         ->toContain('Product sheet')

@@ -38,3 +38,6 @@ Internal material codes are optional, workspace-authored mnemonic references and
 
 ## Calibrate soap qualities from fatty acids and preserve DOS
 Use fatty-acid composition, never oil names, for quality calibration. Preserve the documented anchors: quick acids ~24–25% at 5% superfat near cleansing 40, reference coconut at 0% near 100 and 20% near 42. Hardness means approximately four weeks and differs from longevity; total dilution liquid is the process proxy. Keep DOS unchanged until material-specific additive dose data supports protection factors. See docs/developer/soap-quality-calibration.md for the empirical contract and limitations.
+
+## Keep ingredient lot numbering independent and transaction-bound
+Ingredient internal lot settings and per-period counters are separate from production run batch numbering. Allocate ingredient numbers inside the acquisition transaction while holding the workspace lock; manual entries reserve their code without advancing the automatic counter. Stock-lot codes share a workspace namespace with packaging, so legacy SK-date sequence scans must match numeric serials only and compare numerically, never lexicographically or by a four-character suffix.

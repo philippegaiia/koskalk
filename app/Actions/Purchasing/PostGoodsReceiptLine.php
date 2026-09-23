@@ -24,6 +24,7 @@ use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\ExchangeRateService;
 use App\Services\InternalLotCodeGenerator;
+use App\Services\Inventory\IngredientLotNumberService;
 use App\Services\Inventory\StorageLocationSelection;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -32,6 +33,7 @@ class PostGoodsReceiptLine
 {
     public function __construct(
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
+        private readonly IngredientLotNumberService $ingredientNumbers,
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly ExchangeRateService $exchangeRateService,
         private readonly StorageLocationSelection $locations,
@@ -59,6 +61,7 @@ class PostGoodsReceiptLine
         ?string $expiresAt = null,
         ?string $notes = null,
         array $storageLocationInput = [],
+        ?string $internalLotCode = null,
     ): GoodsReceiptLine {
         $this->assertCoherent(
             $actor,
@@ -139,7 +142,9 @@ class PostGoodsReceiptLine
             'ingredient_id' => $ingredientId,
             'packaging_item_id' => $packagingItemId,
             'organic_status' => $organicStatus,
-            'internal_lot_code' => $this->lotCodeGenerator->next($workspace),
+            'internal_lot_code' => $subject instanceof Ingredient
+                ? $this->ingredientNumbers->allocate($workspace, $subject, $stockedAt, $internalLotCode)
+                : $this->lotCodeGenerator->next($workspace),
             'supplier_batch_number' => $supplierBatchNumber,
             'origin' => StockLotOrigin::PurchaseReceipt,
             'unit_kind' => $unitKind,

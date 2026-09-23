@@ -52,11 +52,13 @@ class GoodsReceiptInputValidator
     {
         Validator::make([
             'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
+            'internal_lot_code' => $input['internal_lot_code'] ?? null,
             'expires_at' => $input['expires_at'] ?? null,
             'notes' => $input['notes'] ?? null,
             'manual_exchange_rate' => $input['manual_exchange_rate'] ?? null,
         ], [
             'supplier_batch_number' => ['nullable', 'string', 'max:120'],
+            'internal_lot_code' => ['nullable', 'string', 'max:64'],
             'expires_at' => ['nullable', 'string'],
             'notes' => ['nullable', 'string', 'max:'.self::NotesMaxLength],
             'manual_exchange_rate' => ['nullable', 'string', 'max:32'],

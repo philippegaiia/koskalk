@@ -17,6 +17,7 @@ use App\Enums\Visibility;
 use App\Models\CurrentMaterialPrice;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
+use App\Models\IngredientLotNumberCounter;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
@@ -866,3 +867,27 @@ it('assigns optional locations to purchase order lots and honors explicit cleari
     $receipt = app(ReceivePurchaseOrder::class)->handle($owner, $order, 'order-location', null, [$line], '2026-09-21');
     expect($receipt->lines()->sole()->stockLot->storage_location_id)->toBe($clear ? null : $location->id);
 })->with([false, true])->with([false, true]);
+
+it('rolls back ingredient lot counters when a later receipt line fails', function (): void {
+    $this->travelTo(now()->setDate(2026, 9, 23));
+    [$owner, $workspace, $supplier, $ingredient, $listing] = directReceiptContext();
+    StockLot::factory()->for($workspace)->for($ingredient)->create(['internal_lot_code' => 'DUPLICATE']);
+    $input = [
+        'listing' => $listing, 'packs_received' => 1, 'actual_quantity' => '5', 'actual_unit' => 'kg',
+        'receipt_price_basis' => ListingPriceBasis::PerUnit, 'receipt_price_amount' => '10',
+        'receipt_price_unit' => 'kg', 'currency' => 'EUR',
+    ];
+    $action = app(ReceiveDirectGoodsReceipt::class);
+    expect(fn () => $action->handle(
+        actor: $owner, workspace: $workspace, supplier: $supplier, idempotencyKey: 'failed-receipt',
+        lines: [$input, [...$input, 'internal_lot_code' => 'DUPLICATE']], receivedAt: '2026-09-23',
+    ))->toThrow(ValidationException::class);
+    expect(IngredientLotNumberCounter::query()->where('workspace_id', $workspace->id)->exists())->toBeFalse();
+    expect(GoodsReceipt::query()->where('workspace_id', $workspace->id)->count())->toBe(0);
+    expect(StockLot::query()->where('workspace_id', $workspace->id)->count())->toBe(1);
+    $receipt = $action->handle(
+        actor: $owner, workspace: $workspace, supplier: $supplier, idempotencyKey: 'successful-receipt',
+        lines: [$input], receivedAt: '2026-09-23',
+    );
+    expect($receipt->lines->sole()->stockLot->internal_lot_code)->toBe('SK-260923-1');
+});

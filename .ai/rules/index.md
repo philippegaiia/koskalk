@@ -9,6 +9,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | bootstrap/app.php | .ai/rules/bootstrap.md |
 | app/Console/Commands/** | .ai/rules/commands.md |
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
+| app/Services/ContextualHelp/** | .ai/rules/contextual-help.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/css/**/*.css | .ai/rules/css.md |
 | {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**} | .ai/rules/dashboard-partials-recipe-workbench.md |
@@ -51,4 +52,3 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/components/workflow-action-bar.blade.php | .ai/rules/views-components.md |
 | resources/views/livewire/production-bench/inventory*.blade.php | .ai/rules/views-livewire-production-bench.md |
 | resources/views/** | .ai/rules/views.md |
-| app/Services/ContextualHelp/** | .ai/rules/contextual-help.md |

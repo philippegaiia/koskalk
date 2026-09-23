@@ -44,6 +44,7 @@ class ReceiveDirectGoodsReceipt
      *   currency: string,
      *   manual_exchange_rate?: ?string,
      *   supplier_batch_number?: ?string,
+     *   internal_lot_code?: ?string,
      *   expires_at?: ?string,
      *   notes?: ?string,
      * }>  $lines
@@ -157,6 +158,7 @@ class ReceiveDirectGoodsReceipt
                     ),
                     manualRate: $line['manual_exchange_rate'],
                     supplierBatchNumber: $line['supplier_batch_number'],
+                    internalLotCode: $line['internal_lot_code'],
                     expiresAt: $line['expires_at'],
                     notes: $line['notes'],
                     storageLocationInput: $line['storage_location_input'],
@@ -178,6 +180,7 @@ class ReceiveDirectGoodsReceipt
      *   receipt_price_unit?: ?string,
      *   currency: string,
      *   supplier_batch_number?: ?string,
+     *   internal_lot_code?: ?string,
      *   expires_at?: ?string,
      *   notes?: ?string,
      * }  $input
@@ -194,6 +197,7 @@ class ReceiveDirectGoodsReceipt
      *   currency: string,
      *   manual_exchange_rate: ?string,
      *   supplier_batch_number: ?string,
+     *   internal_lot_code: ?string,
      *   expires_at: ?string,
      *   notes: ?string,
      * }
@@ -303,6 +307,7 @@ class ReceiveDirectGoodsReceipt
                 : null,
             'storage_location_input' => array_key_exists('storage_location_id', $input) ? ['storage_location_id' => $input['storage_location_id']] : [],
             'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
+            'internal_lot_code' => $input['internal_lot_code'] ?? null,
             'expires_at' => $input['expires_at'] ?? null,
             'notes' => $input['notes'] ?? null,
         ];

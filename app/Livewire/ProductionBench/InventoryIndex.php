@@ -55,6 +55,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -842,7 +843,14 @@ class InventoryIndex extends Component implements HasActions, HasForms
                     ->schema([
                         TextEntry::make('internal_batch_number')
                             ->label(__('production_bench.inventory.internal_batch'))
-                            ->state(__('production_bench.inventory.internal_batch_generated')),
+                            ->state(__('production_bench.inventory.internal_batch_generated'))
+                            ->visible(fn (Get $get): bool => $this->activeSupplierListing((int) $get('supplier_listing_id'))?->ingredient_id === null),
+                        TextInput::make('internal_lot_code')
+                            ->label(__('lot_numbering.manual_label'))
+                            ->helperText(__('lot_numbering.manual_help'))
+                            ->placeholder(__('lot_numbering.automatic'))
+                            ->maxLength(64)
+                            ->visible(fn (Get $get): bool => $this->activeSupplierListing((int) $get('supplier_listing_id'))?->ingredient_id !== null),
                         TextInput::make('supplier_batch_number')
                             ->label(__('production_bench.inventory.supplier_batch'))
                             ->maxLength(255),
@@ -1432,21 +1440,29 @@ class InventoryIndex extends Component implements HasActions, HasForms
             ? bcdiv($pricePerUnit, $this->massConverter->toGrams('1', $unit), 12)
             : $pricePerUnit;
 
-        $lot = $this->createOpeningStockLot->handle(
-            actor: $this->user(),
-            workspace: $workspace,
-            listing: $listing,
-            quantity: (string) $data['quantity'],
-            unit: $unit,
-            pricePerCanonicalUnit: $pricePerCanonicalUnit,
-            currency: $listing->currency,
-            idempotencyKey: (string) Str::uuid(),
-            supplierBatchNumber: filled($data['supplier_batch_number'] ?? null) ? (string) $data['supplier_batch_number'] : null,
-            stockedAt: (string) $data['stocked_at'],
-            expiresAt: filled($data['expires_at'] ?? null) ? (string) $data['expires_at'] : null,
-            notes: filled($data['notes'] ?? null) ? (string) $data['notes'] : null,
-            storageLocationInput: $this->storageLocationInput($data),
-        );
+        try {
+            $lot = $this->createOpeningStockLot->handle(
+                actor: $this->user(),
+                workspace: $workspace,
+                listing: $listing,
+                quantity: (string) $data['quantity'],
+                unit: $unit,
+                pricePerCanonicalUnit: $pricePerCanonicalUnit,
+                currency: $listing->currency,
+                idempotencyKey: (string) Str::uuid(),
+                supplierBatchNumber: filled($data['supplier_batch_number'] ?? null) ? (string) $data['supplier_batch_number'] : null,
+                internalLotCode: filled($data['internal_lot_code'] ?? null) ? (string) $data['internal_lot_code'] : null,
+                stockedAt: (string) $data['stocked_at'],
+                expiresAt: filled($data['expires_at'] ?? null) ? (string) $data['expires_at'] : null,
+                notes: filled($data['notes'] ?? null) ? (string) $data['notes'] : null,
+                storageLocationInput: $this->storageLocationInput($data),
+            );
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(collect($exception->errors())
+                ->mapWithKeys(fn (array $messages, string $field): array => [
+                    $field === 'internal_lot_code' ? 'mountedActions.0.data.internal_lot_code' : $field => $messages,
+                ])->all());
+        }
 
         $this->showAppNotification(__('production_bench.inventory.lot_created', ['code' => $lot->internal_lot_code]));
     }

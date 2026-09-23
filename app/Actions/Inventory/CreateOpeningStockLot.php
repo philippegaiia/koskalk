@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\InternalLotCodeGenerator;
+use App\Services\Inventory\IngredientLotNumberService;
 use App\Services\Inventory\StorageLocationSelection;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -29,6 +30,7 @@ class CreateOpeningStockLot
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
+        private readonly IngredientLotNumberService $ingredientNumbers,
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly StorageLocationSelection $locations,
     ) {}
@@ -48,6 +50,7 @@ class CreateOpeningStockLot
         ?string $expiresAt = null,
         ?string $notes = null,
         array $storageLocationInput = [],
+        ?string $internalLotCode = null,
     ): StockLot {
         $this->access->assertWritable($actor, $workspace);
 
@@ -102,6 +105,7 @@ class CreateOpeningStockLot
             $notes,
             $isMass,
             $canonicalQuantity,
+            $internalLotCode,
         ): StockLot {
             $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
             $this->access->assertWritable($actor, $workspace);
@@ -124,7 +128,9 @@ class CreateOpeningStockLot
                 'ingredient_id' => $isMass ? $subject->id : null,
                 'packaging_item_id' => $isMass ? null : $subject->id,
                 'organic_status' => $currentListing->organic_status,
-                'internal_lot_code' => $this->lotCodeGenerator->next($workspace),
+                'internal_lot_code' => $isMass
+                    ? $this->ingredientNumbers->allocate($workspace, $subject, $stockedAt ?? now()->toDateString(), $internalLotCode)
+                    : $this->lotCodeGenerator->next($workspace),
                 'supplier_batch_number' => $supplierBatchNumber,
                 'origin' => StockLotOrigin::OpeningBalance,
                 'unit_kind' => $isMass ? StockUnitKind::Mass : StockUnitKind::Count,

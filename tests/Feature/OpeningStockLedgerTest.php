@@ -83,7 +83,7 @@ it('posts mass opening stock in canonical grams and is idempotent', function ():
         ->and($lot->supplier_batch_number)->toBe('SUP-42')
         ->and($lot->provenance_complete)->toBeTrue()
         ->and($lot->supplier_listing_id)->toBe($listing->id)
-        ->and($lot->internal_lot_code)->toMatch('/^SK-\d{6}-\d{4}$/')
+        ->and($lot->internal_lot_code)->toMatch('/^SK-\d{6}-1$/')
         ->and($lot->movements)->toHaveCount(1)
         ->and($lot->movements->first()->quantity_delta)->toBe('1133.980925000')
         ->and($lot->movements->first()->original_quantity)->toBe('2.500000000')

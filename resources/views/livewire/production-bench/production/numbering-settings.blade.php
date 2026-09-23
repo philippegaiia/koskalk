@@ -2,7 +2,7 @@
     <header>
         <p class="sk-eyebrow">{{ __('production_bench.navigation.settings') }}</p>
         <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.numbering') }}</h1>
-        <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.numbering_help') }}</p>
+        <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('lot_numbering.page_help') }}</p>
     </header>
 
     @if (! $isEditable)
@@ -14,7 +14,7 @@
     <form wire:submit="save" class="space-y-6">
         <section class="sk-card space-y-5 p-5" aria-labelledby="permanent-number-heading">
             <div>
-                <h2 id="permanent-number-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.numbering') }}</h2>
+                <h2 id="permanent-number-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('lot_numbering.production_title') }}</h2>
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.numbering_future_help') }}</p>
             </div>
 
@@ -32,8 +32,9 @@
                 </label>
 
                 <label class="text-sm">
-                    <span class="font-medium">{{ __('production_bench.settings.number_digits') }}</span>
-                    <input wire:model.live="permanentPadding" type="text" inputmode="numeric" class="sk-input mt-1 w-full" autocomplete="off" @readonly(! $isEditable) @error('permanentPadding') aria-describedby="number-digits-error" @enderror>
+                    <span class="font-medium">{{ __('lot_numbering.padding') }}</span>
+                    <input wire:model.live="permanentPadding" type="text" inputmode="numeric" class="sk-input mt-1 w-full" autocomplete="off" @readonly(! $isEditable) aria-describedby="number-digits-help @error('permanentPadding') number-digits-error @enderror">
+                    <span id="number-digits-help" class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('lot_numbering.padding_help') }}</span>
                     @error('permanentPadding')<span id="number-digits-error" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                 </label>
 
@@ -45,21 +46,25 @@
             </div>
 
             <div class="rounded-xl bg-[var(--color-panel-muted)] p-4">
-                <span class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('production_bench.settings.number_preview') }}</span>
+                <span class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('lot_numbering.preview') }}</span>
                 <output aria-live="polite" class="mt-1 block font-mono text-lg text-[var(--color-ink-strong)]">{{ $example }}</output>
             </div>
         </section>
 
-        <section class="sk-card p-5" aria-labelledby="temporary-counter-heading">
-            <label class="text-sm">
-                <span id="temporary-counter-heading" class="font-medium">{{ __('production_bench.settings.temporary_counter') }}</span>
-                <input value="{{ $nextPlanningSerial }}" readonly aria-describedby="temporary-counter-help" class="sk-input mt-1 w-full bg-[var(--color-panel-muted)] text-[var(--color-ink-soft)]">
-                <span id="temporary-counter-help" class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.settings.temporary_counter_help') }}</span>
-            </label>
-        </section>
+        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm" aria-label="{{ __('lot_numbering.planning_reference') }}">
+            <span class="font-medium">{{ __('lot_numbering.planning_reference') }}</span>
+            <span class="font-mono">T{{ str_pad($nextPlanningSerial, 5, '0', STR_PAD_LEFT) }}</span>
+            <p class="w-full text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.settings.temporary_counter_help') }}</p>
+        </div>
 
-        <div class="flex justify-end">
-            <button type="submit" class="sk-btn sk-btn-primary" @disabled(! $isEditable)>{{ __('production_bench.common.save_changes') }}</button>
+        <div class="flex flex-wrap items-center justify-end gap-3">
+            @if ($this->only(['permanentPrefix', 'nextPermanentSerial', 'permanentPadding', 'permanentSuffix']) != $savedSettings)<span class="text-sm text-[var(--color-ink-soft)]">{{ __('lot_numbering.unsaved') }}</span>@endif
+            <button type="submit" class="sk-btn sk-btn-primary" wire:loading.attr="disabled" wire:target="save" @disabled(! $isEditable)>
+                <span wire:loading.remove wire:target="save">{{ __('lot_numbering.save_production') }}</span>
+                <span wire:loading wire:target="save">{{ __('lot_numbering.saving') }}</span>
+            </button>
         </div>
     </form>
+
+    <livewire:production-bench.production.ingredient-lot-number-settings />
 </x-production-bench.page>

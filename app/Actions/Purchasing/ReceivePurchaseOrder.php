@@ -41,6 +41,7 @@ class ReceivePurchaseOrder
      *   currency?: string,
      *   manual_exchange_rate?: ?string,
      *   supplier_batch_number?: ?string,
+     *   internal_lot_code?: ?string,
      *   expires_at?: ?string,
      *   notes?: ?string,
      * }>  $lines
@@ -271,6 +272,7 @@ class ReceivePurchaseOrder
                     ),
                     manualRate: $input['manual_exchange_rate'] ?? null,
                     supplierBatchNumber: $input['supplier_batch_number'] ?? null,
+                    internalLotCode: $input['internal_lot_code'] ?? null,
                     expiresAt: $input['expires_at'] ?? null,
                     notes: $input['notes'] ?? null,
                     storageLocationInput: array_key_exists('storage_location_id', $input) ? ['storage_location_id' => $input['storage_location_id']] : [],

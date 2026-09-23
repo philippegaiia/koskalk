@@ -333,6 +333,7 @@ class ReceiptCreate extends Component implements HasForms
                     ? (string) $input['manual_exchange_rate']
                     : null,
                 'supplier_batch_number' => filled($input['supplier_batch_number']) ? $input['supplier_batch_number'] : null,
+                'internal_lot_code' => filled($input['internal_lot_code'] ?? null) ? $input['internal_lot_code'] : null,
                 'expires_at' => filled($input['expires_at']) ? $input['expires_at'] : null,
                 'notes' => filled($input['notes']) ? $input['notes'] : null,
                 ...$this->storageLocationInput($input),
@@ -374,6 +375,7 @@ class ReceiptCreate extends Component implements HasForms
                     ? (string) $input['manual_exchange_rate']
                     : null,
                 'supplier_batch_number' => filled($input['supplier_batch_number']) ? $input['supplier_batch_number'] : null,
+                'internal_lot_code' => filled($input['internal_lot_code'] ?? null) ? $input['internal_lot_code'] : null,
                 'expires_at' => filled($input['expires_at']) ? $input['expires_at'] : null,
                 'notes' => filled($input['notes']) ? $input['notes'] : null,
                 ...$this->storageLocationInput($input),
@@ -422,6 +424,7 @@ class ReceiptCreate extends Component implements HasForms
             $rules["lineInputs.$id.receipt_price_unit"] = ['nullable', 'string', 'max:24'];
             $rules["lineInputs.$id.currency"] = ['required', 'string', Rule::in([$model->currency])];
             $rules["lineInputs.$id.manual_exchange_rate"] = ['nullable', 'numeric', 'gt:0'];
+            $rules["lineInputs.$id.internal_lot_code"] = ['nullable', 'string', 'max:64'];
             $rules["lineInputs.$id.supplier_batch_number"] = ['nullable', 'string', 'max:120'];
             $rules["lineInputs.$id.expires_at"] = ['nullable', 'date_format:Y-m-d'];
             $rules["lineInputs.$id.notes"] = ['nullable', 'string', 'max:5000'];
@@ -500,6 +503,7 @@ class ReceiptCreate extends Component implements HasForms
             'currency' => $line->currency,
             'manual_exchange_rate' => '',
             'supplier_batch_number' => '',
+            'internal_lot_code' => '',
             'expires_at' => '',
             'notes' => '',
         ];
@@ -534,6 +538,7 @@ class ReceiptCreate extends Component implements HasForms
             'currency' => $listing->currency,
             'manual_exchange_rate' => '',
             'supplier_batch_number' => '',
+            'internal_lot_code' => '',
             'expires_at' => '',
             'notes' => '',
         ];

@@ -16,6 +16,7 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
+use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -1077,3 +1078,23 @@ it('shows receive delivery only for writable issued orders with outstanding quan
         ->assertOk()
         ->assertDontSee('Receive delivery');
 });
+
+it('posts manual internal ingredient lot numbers from purchase order and direct receipt forms', function (string $source): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [$supplier, $listing, $order, $line] = outstandingReceiptOrder($owner, $workspace);
+    $this->actingAs($owner);
+    $params = ['source' => $source];
+    if ($source === GoodsReceiptSource::PurchaseOrder->value) {
+        $params['order'] = $order->public_id;
+    }
+    $component = Livewire::withQueryParams($params)->test(ReceiptCreate::class);
+    if ($source === GoodsReceiptSource::Direct->value) {
+        $component->set('supplierId', $supplier->id);
+    }
+    $id = $source === GoodsReceiptSource::Direct->value ? $listing->id : $line->id;
+    $component->set("selected.$id", true)
+        ->set("lineInputs.$id.internal_lot_code", 'MANUAL-INGREDIENT-42')
+        ->set("lineInputs.$id.receipt_price_amount", '10')
+        ->call('post')->assertHasNoErrors()->assertRedirect();
+    expect(StockLot::query()->where('workspace_id', $workspace->id)->sole()->internal_lot_code)->toBe('MANUAL-INGREDIENT-42');
+})->with([GoodsReceiptSource::Direct->value, GoodsReceiptSource::PurchaseOrder->value]);

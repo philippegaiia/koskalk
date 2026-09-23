@@ -13,6 +13,7 @@ use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class NumberingSettings extends Component
@@ -30,6 +31,10 @@ class NumberingSettings extends Component
     public string $nextPlanningSerial = '';
 
     public string $example = '';
+
+    /** @var array<string, string> */
+    #[Locked]
+    public array $savedSettings = [];
 
     public ?string $statusMessage = null;
 
@@ -118,6 +123,7 @@ class NumberingSettings extends Component
         $this->permanentPadding = (string) $settings->permanent_padding;
         $this->permanentSuffix = $settings->permanent_suffix;
         $this->nextPlanningSerial = (string) $settings->next_planning_serial;
+        $this->savedSettings = $this->only(['permanentPrefix', 'nextPermanentSerial', 'permanentPadding', 'permanentSuffix']);
         $this->refreshExample($numbers);
     }
 

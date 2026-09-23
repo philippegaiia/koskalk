@@ -301,3 +301,37 @@ it('rejects an expiry date before the stock date', function (): void {
 
     expect(StockLot::query()->count())->toBe(0);
 });
+
+it('accepts an optional ingredient internal lot number through the stock modal', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $listing = inventoryModalListing($workspace);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->callAction('addStock', data: [
+            'supplier_listing_id' => $listing->id,
+            'quantity' => '2', 'unit' => 'kg', 'price_per_unit' => '10',
+            'currency' => $workspace->default_currency, 'stocked_at' => today()->toDateString(),
+            'internal_lot_code' => 'MY-INGREDIENT-42',
+        ])->assertHasNoFormErrors();
+
+    expect(StockLot::query()->where('workspace_id', $workspace->id)->sole()->internal_lot_code)->toBe('MY-INGREDIENT-42');
+});
+
+it('shows duplicate internal lot number errors beside the stock modal field', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $listing = inventoryModalListing($workspace);
+    StockLot::factory()->for($workspace)->create(['internal_lot_code' => 'EXISTING-LOT']);
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->callAction('addStock', data: [
+            'supplier_listing_id' => $listing->id,
+            'quantity' => '2', 'unit' => 'kg', 'price_per_unit' => '10',
+            'currency' => $workspace->default_currency, 'stocked_at' => today()->toDateString(),
+            'internal_lot_code' => 'EXISTING-LOT',
+        ])->assertHasFormErrors(['internal_lot_code'])
+        ->assertMountedActionModalSee(__('lot_numbering.validation.duplicate'));
+
+    expect(StockLot::query()->where('workspace_id', $workspace->id)->count())->toBe(1);
+});

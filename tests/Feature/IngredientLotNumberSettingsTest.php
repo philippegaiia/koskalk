@@ -4,15 +4,59 @@ use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\IngredientLotNumberSettings;
 use App\Models\IngredientLotNumberCounter;
 use App\Models\IngredientLotNumberSetting;
+use App\Models\InterfaceTranslation;
 use App\Models\ProductionRunNumberSetting;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Translations\EnglishTranslationSource;
+use App\Services\Translations\InterfaceTranslationCatalogue;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('renders numbering settings and validation in each supported language', function (string $locale, string $heading, string $noDate): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', $locale)->update(['is_active' => true]);
+    expect(app(EnglishTranslationSource::class)->get('lot_numbering', 'title'))->toBe('Ingredient internal lot numbers');
+    $rows = collect(app(InterfaceTranslationCatalogue::class)->read(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'lot_numbering')->keyBy('key');
+    foreach ($rows as $row) {
+        InterfaceTranslation::query()->create($row);
+    }
+    [$owner] = lotSettingsWorkspace();
+    $owner->update(['locale' => $locale]);
+    app()->setLocale($locale);
+
+    $this->actingAs($owner)->get(route('production-bench.production.settings.numbering'))
+        ->assertSeeText($heading)
+        ->assertSeeText($rows['production_title']['text'][$locale])
+        ->assertDontSeeText('Ingredient internal lot numbers');
+
+    Livewire::actingAs($owner)->test(IngredientLotNumberSettings::class)
+        ->set('data.date_format', 'none')
+        ->assertSee($noDate)
+        ->assertSee($rows['no_date_help']['text'][$locale])
+        ->assertSee($rows['counter_change_help']['text'][$locale])
+        ->set('data.prefix', '<script>')->call('save')
+        ->assertHasErrors('data.prefix')
+        ->assertSee($rows['validation.affix']['text'][$locale]);
+
+    foreach ($rows as $key => $row) {
+        expect(__('lot_numbering.'.$key))->toBe($row['text'][$locale]);
+    }
+})->with([
+    ['de', 'Interne Chargennummern für Zutaten', 'Kein Datum'],
+    ['es', 'Números internos de lote de ingredientes', 'Sin fecha'],
+    ['fr', 'Numéros de lot internes des ingrédients', 'Sans date'],
+    ['it', 'Numeri di lotto interni degli ingredienti', 'Senza data'],
+    ['nl', 'Interne lotnummers van ingrediënten', 'Geen datum'],
+    ['pt_BR', 'Números internos de lote de ingredientes', 'Sem data'],
+]);
 
 function lotSettingsWorkspace(): array
 {

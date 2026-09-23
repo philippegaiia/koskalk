@@ -9,6 +9,7 @@ return [
         'dashboard' => ['*'],
         'formula_documents' => ['*'],
         'ingredients' => ['*'],
+        'lot_numbering' => ['*'],
         'media' => ['*'],
         'media_library' => ['*'],
         'navigation' => ['*'],

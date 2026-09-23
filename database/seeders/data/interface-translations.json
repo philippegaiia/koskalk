@@ -13871,6 +13871,618 @@
       }
     },
     {
+      "group": "lot_numbering",
+      "key": "automatic",
+      "text": {
+        "de": "Automatisch generiert",
+        "es": "Generado automáticamente",
+        "fr": "Généré automatiquement",
+        "it": "Generato automaticamente",
+        "nl": "Automatisch gegenereerd",
+        "pt_BR": "Gerado automaticamente"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "continuous_help",
+      "text": {
+        "de": "Läuft über alle Datumsangaben hinweg weiter. Bereits vergebene Zählerwerte können nicht erneut verwendet werden.",
+        "es": "Continúa independientemente de la fecha. Los valores del contador ya asignados no pueden reutilizarse.",
+        "fr": "Continue quelle que soit la date. Les valeurs de compteur déjà attribuées ne peuvent pas être réutilisées.",
+        "it": "Continua indipendentemente dalla data. I valori del contatore già assegnati non possono essere riutilizzati.",
+        "nl": "Telt door ongeacht de datum. Eerder toegewezen tellerwaarden kunnen niet opnieuw worden gebruikt.",
+        "pt_BR": "Continua independentemente da data. Valores do contador já atribuídos não podem ser reutilizados."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "counter_change",
+      "text": {
+        "de": "Die Zählerrücksetzung wechselt von :before zu :after. Nächster Zählerwert: :number.",
+        "es": "El reinicio del contador cambia de :before a :after. Siguiente valor del contador: :number.",
+        "fr": "La remise à zéro du compteur passe de :before à :after. Prochaine valeur du compteur : :number.",
+        "it": "L’azzeramento del contatore passa da :before a :after. Prossimo valore del contatore: :number.",
+        "nl": "Het opnieuw beginnen van de teller verandert van :before naar :after. Volgende tellerwaarde: :number.",
+        "pt_BR": "O reinício do contador muda de :before para :after. Próximo valor do contador: :number."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "counter_change_help",
+      "text": {
+        "de": "Prüfen Sie den nächsten Zählerwert vor dem Speichern. Sie können ihn erhöhen, um die bisherige Folge fortzusetzen. Bestehende Chargennummern bleiben unverändert; bereits verwendete Nummern werden übersprungen.",
+        "es": "Comprueba el siguiente valor del contador antes de guardar. Puedes aumentarlo para continuar la secuencia anterior. Los números de lote existentes no cambian; los números ya utilizados se omiten.",
+        "fr": "Vérifiez la prochaine valeur du compteur avant d’enregistrer. Vous pouvez l’augmenter pour poursuivre votre séquence précédente. Les numéros de lot existants restent inchangés ; les numéros déjà utilisés sont ignorés.",
+        "it": "Controlla il prossimo valore del contatore prima di salvare. Puoi aumentarlo per continuare la sequenza precedente. I numeri di lotto esistenti restano invariati; quelli già utilizzati vengono saltati.",
+        "nl": "Controleer de volgende tellerwaarde voordat je opslaat. Je kunt deze verhogen om de vorige reeks voort te zetten. Bestaande lotnummers blijven ongewijzigd; nummers die al in gebruik zijn worden overgeslagen.",
+        "pt_BR": "Confira o próximo valor do contador antes de salvar. Você pode aumentá-lo para continuar a sequência anterior. Os números de lote existentes permanecem inalterados; números já utilizados são ignorados."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "counter_help",
+      "text": {
+        "de": "Gilt für den Zeitraum mit dem heutigen Datum (:date). Rückdatierte Chargen verwenden ihren eigenen Zeitraum. Bereits vergebene Zählerwerte können nicht erneut verwendet werden.",
+        "es": "Se aplica al período que incluye hoy (:date). Los lotes con fecha anterior utilizan su propio período. Los valores del contador ya asignados no pueden reutilizarse.",
+        "fr": "S’applique à la période contenant la date d’aujourd’hui (:date). Les lots antidatés utilisent leur propre période. Les valeurs de compteur déjà attribuées ne peuvent pas être réutilisées.",
+        "it": "Si applica al periodo che include oggi (:date). I lotti retrodatati usano il proprio periodo. I valori del contatore già assegnati non possono essere riutilizzati.",
+        "nl": "Geldt voor de periode waarin vandaag (:date) valt. Loten met een eerdere datum gebruiken hun eigen periode. Eerder toegewezen tellerwaarden kunnen niet opnieuw worden gebruikt.",
+        "pt_BR": "Aplica-se ao período que inclui hoje (:date). Lotes com data retroativa usam seu próprio período. Valores do contador já atribuídos não podem ser reutilizados."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "created",
+      "text": {
+        "de": "Erstellungsdatum der Charge",
+        "es": "Fecha de creación del lote",
+        "fr": "Date de création du lot",
+        "it": "Data di creazione del lotto",
+        "nl": "Aanmaakdatum van het lot",
+        "pt_BR": "Data de criação do lote"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "daily",
+      "text": {
+        "de": "Jeden Tag",
+        "es": "Cada día",
+        "fr": "Chaque jour",
+        "it": "Ogni giorno",
+        "nl": "Elke dag",
+        "pt_BR": "A cada dia"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "date_format",
+      "text": {
+        "de": "Datumsformat",
+        "es": "Formato de fecha",
+        "fr": "Format de date",
+        "it": "Formato della data",
+        "nl": "Datumnotatie",
+        "pt_BR": "Formato de data"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "date_source",
+      "text": {
+        "de": "Zu verwendendes Datum",
+        "es": "Fecha que se utilizará",
+        "fr": "Date à utiliser",
+        "it": "Data da utilizzare",
+        "nl": "Te gebruiken datum",
+        "pt_BR": "Data a utilizar"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "help",
+      "text": {
+        "de": "Legen Sie fest, wie neue Zutatenchargen beim Erfassen des Anfangsbestands oder beim Wareneingang nummeriert werden. Bestehende Chargennummern bleiben unverändert.",
+        "es": "Elige cómo numerar los nuevos lotes de ingredientes al registrar existencias iniciales o recibir una entrega. Los números de lote existentes no cambian.",
+        "fr": "Choisissez comment numéroter les nouveaux lots d’ingrédients lors de la saisie du stock initial ou de la réception d’une livraison. Les numéros de lot existants restent inchangés.",
+        "it": "Scegli come numerare i nuovi lotti di ingredienti quando registri le scorte iniziali o ricevi una consegna. I numeri di lotto esistenti restano invariati.",
+        "nl": "Kies hoe nieuwe ingrediëntloten worden genummerd bij het invoeren van de beginvoorraad of het ontvangen van een levering. Bestaande lotnummers blijven ongewijzigd.",
+        "pt_BR": "Escolha como numerar novos lotes de ingredientes ao registrar o estoque inicial ou receber uma entrega. Os números de lote existentes permanecem inalterados."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "hyphen",
+      "text": {
+        "de": "Bindestrich (-)",
+        "es": "Guion (-)",
+        "fr": "Tiret (-)",
+        "it": "Trattino (-)",
+        "nl": "Koppelteken (-)",
+        "pt_BR": "Hífen (-)"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "include_material_code",
+      "text": {
+        "de": "Internen Materialcode der Zutat einschließen",
+        "es": "Incluir el código interno de material del ingrediente",
+        "fr": "Inclure le code matière interne de l’ingrédient",
+        "it": "Includi il codice materiale interno dell’ingrediente",
+        "nl": "Interne materiaalcode van het ingrediënt opnemen",
+        "pt_BR": "Incluir o código interno de material do ingrediente"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "manual_help",
+      "text": {
+        "de": "Leer lassen, um die automatische Nummerierung zu verwenden. Diese Nummer ist unabhängig von der Lieferantenchargennummer.",
+        "es": "Déjalo en blanco para usar la numeración automática. Es independiente del número de lote del proveedor.",
+        "fr": "Laissez vide pour utiliser la numérotation automatique. Ce numéro est distinct du numéro de lot fournisseur.",
+        "it": "Lascia vuoto per usare la numerazione automatica. Questo numero è distinto dal numero di lotto del fornitore.",
+        "nl": "Laat leeg om automatische nummering te gebruiken. Dit nummer staat los van het batchnummer van de leverancier.",
+        "pt_BR": "Deixe em branco para usar a numeração automática. Este número é separado do número de lote do fornecedor."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "manual_label",
+      "text": {
+        "de": "Interne Chargennummer (optional)",
+        "es": "Número interno de lote (opcional)",
+        "fr": "Numéro de lot interne (facultatif)",
+        "it": "Numero di lotto interno (facoltativo)",
+        "nl": "Intern lotnummer (optioneel)",
+        "pt_BR": "Número interno de lote (opcional)"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "material_code_help",
+      "text": {
+        "de": "Verwendet den Zutatencode des Arbeitsbereichs, z. B. OLIVE. Falls er fehlt, ergänzen Sie den Code oder geben Sie eine Chargennummer manuell ein.",
+        "es": "Utiliza el código del ingrediente del espacio de trabajo, como OLIVE. Si falta, añade el código o introduce un número de lote manual.",
+        "fr": "Utilise le code de l’ingrédient dans l’espace de travail, par exemple OLIVE. S’il manque, ajoutez le code ou saisissez un numéro de lot manuellement.",
+        "it": "Usa il codice dell’ingrediente nell’area di lavoro, ad esempio OLIVE. Se manca, aggiungi il codice o inserisci un numero di lotto manualmente.",
+        "nl": "Gebruikt de ingrediëntcode van de werkruimte, zoals OLIVE. Als deze ontbreekt, voeg je de code toe of voer je handmatig een lotnummer in.",
+        "pt_BR": "Usa o código do ingrediente no espaço de trabalho, como OLIVE. Se estiver ausente, adicione o código ou insira um número de lote manualmente."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "monthly",
+      "text": {
+        "de": "Jeden Monat",
+        "es": "Cada mes",
+        "fr": "Chaque mois",
+        "it": "Ogni mese",
+        "nl": "Elke maand",
+        "pt_BR": "A cada mês"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "never",
+      "text": {
+        "de": "Nie",
+        "es": "Nunca",
+        "fr": "Jamais",
+        "it": "Mai",
+        "nl": "Nooit",
+        "pt_BR": "Nunca"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "next_number",
+      "text": {
+        "de": "Nächster Zählerwert",
+        "es": "Siguiente valor del contador",
+        "fr": "Prochaine valeur du compteur",
+        "it": "Prossimo valore del contatore",
+        "nl": "Volgende tellerwaarde",
+        "pt_BR": "Próximo valor do contador"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "no_date",
+      "text": {
+        "de": "Kein Datum",
+        "es": "Sin fecha",
+        "fr": "Sans date",
+        "it": "Senza data",
+        "nl": "Geen datum",
+        "pt_BR": "Sem data"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "no_date_help",
+      "text": {
+        "de": "Ohne Datum läuft der Zähler ohne Zurücksetzen weiter.",
+        "es": "Sin fecha, el contador continúa sin reiniciarse.",
+        "fr": "Sans date, le compteur continue sans remise à zéro.",
+        "it": "Senza data, il contatore continua senza azzerarsi.",
+        "nl": "Zonder datum telt de teller door zonder opnieuw te beginnen.",
+        "pt_BR": "Sem data, o contador continua sem reiniciar."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "none",
+      "text": {
+        "de": "Keines",
+        "es": "Ninguno",
+        "fr": "Aucun",
+        "it": "Nessuno",
+        "nl": "Geen",
+        "pt_BR": "Nenhum"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "padding",
+      "text": {
+        "de": "Mindestanzahl der Zählerstellen",
+        "es": "Dígitos mínimos del contador",
+        "fr": "Nombre minimum de chiffres du compteur",
+        "it": "Numero minimo di cifre del contatore",
+        "nl": "Minimumaantal tellercijfers",
+        "pt_BR": "Número mínimo de dígitos do contador"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "padding_help",
+      "text": {
+        "de": "4 ergibt 0006. Größere Zahlen behalten alle Stellen.",
+        "es": "4 produce 0006. Los números mayores conservan todos sus dígitos.",
+        "fr": "4 donne 0006. Les nombres plus grands conservent tous leurs chiffres.",
+        "it": "4 produce 0006. I numeri più grandi mantengono tutte le cifre.",
+        "nl": "4 geeft 0006. Grotere getallen behouden al hun cijfers.",
+        "pt_BR": "4 resulta em 0006. Números maiores mantêm todos os dígitos."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "page_help",
+      "text": {
+        "de": "Verwalten Sie Chargennummern für Produktionsläufe und interne Chargennummern für Zutaten unabhängig voneinander.",
+        "es": "Gestiona por separado los números de lote de producción y los números internos de lote de ingredientes.",
+        "fr": "Gérez séparément les numéros de lot de production et les numéros de lot internes des ingrédients.",
+        "it": "Gestisci separatamente i numeri di lotto di produzione e i numeri di lotto interni degli ingredienti.",
+        "nl": "Beheer batchnummers van productieruns en interne lotnummers van ingrediënten afzonderlijk.",
+        "pt_BR": "Gerencie separadamente os números de lote de produção e os números internos de lote de ingredientes."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "planning_reference",
+      "text": {
+        "de": "Nächste Planungsreferenz",
+        "es": "Siguiente referencia de planificación",
+        "fr": "Prochaine référence de planification",
+        "it": "Prossimo riferimento di pianificazione",
+        "nl": "Volgende planningsreferentie",
+        "pt_BR": "Próxima referência de planejamento"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "prefix",
+      "text": {
+        "de": "Präfix",
+        "es": "Prefijo",
+        "fr": "Préfixe",
+        "it": "Prefisso",
+        "nl": "Voorvoegsel",
+        "pt_BR": "Prefixo"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "preview",
+      "text": {
+        "de": "Beispielnummer",
+        "es": "Número de ejemplo",
+        "fr": "Exemple de numéro",
+        "it": "Numero di esempio",
+        "nl": "Voorbeeldnummer",
+        "pt_BR": "Exemplo de número"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "preview_context",
+      "text": {
+        "de": "Beispieldatum: :date · Zutatencode: OLIVE. Die endgültige Nummer wird beim Speichern der Charge vergeben.",
+        "es": "Fecha de ejemplo: :date · Código del ingrediente: OLIVE. El número definitivo se asigna al guardar el lote.",
+        "fr": "Date d’exemple : :date · Code ingrédient : OLIVE. Le numéro définitif est attribué lors de l’enregistrement du lot.",
+        "it": "Data di esempio: :date · Codice ingrediente: OLIVE. Il numero definitivo viene assegnato al salvataggio del lotto.",
+        "nl": "Voorbeelddatum: :date · Ingrediëntcode: OLIVE. Het definitieve nummer wordt toegewezen wanneer het lot wordt opgeslagen.",
+        "pt_BR": "Data de exemplo: :date · Código do ingrediente: OLIVE. O número definitivo é atribuído ao salvar o lote."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "preview_invalid",
+      "text": {
+        "de": "Füllen Sie die Format- und Zählerfelder aus, um ein Beispiel zu sehen.",
+        "es": "Completa los campos de formato y contador para ver un ejemplo.",
+        "fr": "Complétez les champs de format et de compteur pour voir un exemple.",
+        "it": "Completa i campi del formato e del contatore per vedere un esempio.",
+        "nl": "Vul de velden voor de notatie en de teller in om een voorbeeld te zien.",
+        "pt_BR": "Preencha os campos de formato e contador para ver um exemplo."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "production_title",
+      "text": {
+        "de": "Chargennummern für Produktionsläufe",
+        "es": "Números de lote de producción",
+        "fr": "Numéros de lot de production",
+        "it": "Numeri di lotto di produzione",
+        "nl": "Batchnummers van productieruns",
+        "pt_BR": "Números de lote de produção"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "reset_help",
+      "text": {
+        "de": "Das Datumsformat muss den Zeitraum der Rücksetzung enthalten. Jeder neue Zeitraum beginnt bei 1.",
+        "es": "El formato de fecha debe incluir el período de reinicio. Cada nuevo período comienza en 1.",
+        "fr": "Le format de date doit inclure la période de remise à zéro. Chaque nouvelle période commence à 1.",
+        "it": "Il formato della data deve includere il periodo di azzeramento. Ogni nuovo periodo inizia da 1.",
+        "nl": "De datumnotatie moet de periode bevatten waarin de teller opnieuw begint. Elke nieuwe periode begint bij 1.",
+        "pt_BR": "O formato de data deve incluir o período de reinício. Cada novo período começa em 1."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "reset_period",
+      "text": {
+        "de": "Zähler zurücksetzen",
+        "es": "Reiniciar contador",
+        "fr": "Remise à zéro du compteur",
+        "it": "Azzeramento del contatore",
+        "nl": "Teller opnieuw beginnen",
+        "pt_BR": "Reiniciar contador"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "save",
+      "text": {
+        "de": "Zutatennummerierung speichern",
+        "es": "Guardar numeración de ingredientes",
+        "fr": "Enregistrer la numérotation des ingrédients",
+        "it": "Salva numerazione ingredienti",
+        "nl": "Ingrediëntnummering opslaan",
+        "pt_BR": "Salvar numeração de ingredientes"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "save_production",
+      "text": {
+        "de": "Produktionsnummerierung speichern",
+        "es": "Guardar numeración de producción",
+        "fr": "Enregistrer la numérotation de production",
+        "it": "Salva numerazione di produzione",
+        "nl": "Productienummering opslaan",
+        "pt_BR": "Salvar numeração de produção"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "saved",
+      "text": {
+        "de": "Nummerierung der Zutatenchargen gespeichert.",
+        "es": "Numeración de lotes de ingredientes guardada.",
+        "fr": "Numérotation des lots d’ingrédients enregistrée.",
+        "it": "Numerazione dei lotti di ingredienti salvata.",
+        "nl": "Nummering van ingrediëntloten opgeslagen.",
+        "pt_BR": "Numeração dos lotes de ingredientes salva."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "saving",
+      "text": {
+        "de": "Wird gespeichert…",
+        "es": "Guardando…",
+        "fr": "Enregistrement…",
+        "it": "Salvataggio…",
+        "nl": "Opslaan…",
+        "pt_BR": "Salvando…"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "separator",
+      "text": {
+        "de": "Trennzeichen",
+        "es": "Separador",
+        "fr": "Séparateur",
+        "it": "Separatore",
+        "nl": "Scheidingsteken",
+        "pt_BR": "Separador"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "slash",
+      "text": {
+        "de": "Schrägstrich (/)",
+        "es": "Barra (/)",
+        "fr": "Barre oblique (/)",
+        "it": "Barra (/)",
+        "nl": "Schuine streep (/)",
+        "pt_BR": "Barra (/)"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "stocked",
+      "text": {
+        "de": "Wareneingangs- / Einlagerungsdatum",
+        "es": "Fecha de recepción / entrada en existencias",
+        "fr": "Date de réception / mise en stock",
+        "it": "Data di ricezione / ingresso in magazzino",
+        "nl": "Ontvangst- / voorraaddatum",
+        "pt_BR": "Data de recebimento / entrada em estoque"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "suffix",
+      "text": {
+        "de": "Suffix",
+        "es": "Sufijo",
+        "fr": "Suffixe",
+        "it": "Suffisso",
+        "nl": "Achtervoegsel",
+        "pt_BR": "Sufixo"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "title",
+      "text": {
+        "de": "Interne Chargennummern für Zutaten",
+        "es": "Números internos de lote de ingredientes",
+        "fr": "Numéros de lot internes des ingrédients",
+        "it": "Numeri di lotto interni degli ingredienti",
+        "nl": "Interne lotnummers van ingrediënten",
+        "pt_BR": "Números internos de lote de ingredientes"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "underscore",
+      "text": {
+        "de": "Unterstrich (_)",
+        "es": "Guion bajo (_)",
+        "fr": "Tiret bas (_)",
+        "it": "Trattino basso (_)",
+        "nl": "Liggend streepje (_)",
+        "pt_BR": "Sublinhado (_)"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "unsaved",
+      "text": {
+        "de": "Ungespeicherte Änderungen",
+        "es": "Cambios sin guardar",
+        "fr": "Modifications non enregistrées",
+        "it": "Modifiche non salvate",
+        "nl": "Niet-opgeslagen wijzigingen",
+        "pt_BR": "Alterações não salvas"
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.affix",
+      "text": {
+        "de": "Verwenden Sie nur Buchstaben, Ziffern, Bindestriche, Unterstriche, Punkte oder Schrägstriche.",
+        "es": "Usa solo letras, números, guiones, guiones bajos, puntos o barras.",
+        "fr": "Utilisez uniquement des lettres, des chiffres, des tirets, des tirets bas, des points ou des barres obliques.",
+        "it": "Usa solo lettere, numeri, trattini, trattini bassi, punti o barre.",
+        "nl": "Gebruik alleen letters, cijfers, koppeltekens, liggende streepjes, punten of schuine strepen.",
+        "pt_BR": "Use apenas letras, números, hífens, sublinhados, pontos ou barras."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.counter_behind",
+      "text": {
+        "de": "Der Zähler ist bereits weitergelaufen. Geben Sie :number oder einen höheren Wert ein oder laden Sie die Einstellungen neu.",
+        "es": "El contador ya ha avanzado. Introduce :number o un valor superior, o vuelve a cargar los ajustes.",
+        "fr": "Le compteur a déjà avancé. Saisissez :number ou une valeur supérieure, ou rechargez les paramètres.",
+        "it": "Il contatore è già avanzato. Inserisci :number o un valore superiore, oppure ricarica le impostazioni.",
+        "nl": "De teller is al verder gegaan. Voer :number of een hogere waarde in, of laad de instellingen opnieuw.",
+        "pt_BR": "O contador já avançou. Insira :number ou um valor maior, ou recarregue as configurações."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.duplicate",
+      "text": {
+        "de": "Diese interne Chargennummer wird in diesem Arbeitsbereich bereits verwendet. Geben Sie eine andere Nummer ein oder lassen Sie das Feld für die automatische Nummerierung leer.",
+        "es": "Este número interno de lote ya se utiliza en este espacio de trabajo. Introduce otro número o déjalo en blanco para usar la numeración automática.",
+        "fr": "Ce numéro de lot interne est déjà utilisé dans cet espace de travail. Saisissez un autre numéro ou laissez vide pour utiliser la numérotation automatique.",
+        "it": "Questo numero di lotto interno è già in uso in questa area di lavoro. Inserisci un altro numero o lascia vuoto per usare la numerazione automatica.",
+        "nl": "Dit interne lotnummer is al in gebruik in deze werkruimte. Voer een ander nummer in of laat het veld leeg voor automatische nummering.",
+        "pt_BR": "Este número interno de lote já está em uso neste espaço de trabalho. Insira outro número ou deixe em branco para usar a numeração automática."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.exhausted",
+      "text": {
+        "de": "Der Chargenzähler hat seinen Grenzwert erreicht. Geben Sie eine Chargennummer manuell ein.",
+        "es": "El contador de lotes ha alcanzado su límite. Introduce un número de lote manualmente.",
+        "fr": "Le compteur de lots a atteint sa limite. Saisissez un numéro de lot manuellement.",
+        "it": "Il contatore dei lotti ha raggiunto il limite. Inserisci un numero di lotto manualmente.",
+        "nl": "De lotteller heeft zijn limiet bereikt. Voer handmatig een lotnummer in.",
+        "pt_BR": "O contador de lotes atingiu seu limite. Insira um número de lote manualmente."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.material_code_required",
+      "text": {
+        "de": "Für das konfigurierte Format benötigt diese Zutat einen internen Materialcode. Ergänzen Sie den Code oder geben Sie eine interne Chargennummer manuell ein.",
+        "es": "Este ingrediente necesita un código interno de material para el formato configurado. Añade su código o introduce un número interno de lote manualmente.",
+        "fr": "Cet ingrédient nécessite un code matière interne pour le format configuré. Ajoutez son code ou saisissez un numéro de lot interne manuellement.",
+        "it": "Questo ingrediente richiede un codice materiale interno per il formato configurato. Aggiungi il codice o inserisci un numero di lotto interno manualmente.",
+        "nl": "Dit ingrediënt heeft een interne materiaalcode nodig voor de ingestelde notatie. Voeg de code toe of voer handmatig een intern lotnummer in.",
+        "pt_BR": "Este ingrediente precisa de um código interno de material para o formato configurado. Adicione o código ou insira um número interno de lote manualmente."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.number_format",
+      "text": {
+        "de": "Chargennummern dürfen höchstens 64 Zeichen lang sein und nur Buchstaben, Ziffern, Bindestriche, Unterstriche, Punkte oder Schrägstriche enthalten.",
+        "es": "Los números de lote deben tener como máximo 64 caracteres y usar solo letras, números, guiones, guiones bajos, puntos o barras.",
+        "fr": "Les numéros de lot doivent comporter au maximum 64 caractères et utiliser uniquement des lettres, des chiffres, des tirets, des tirets bas, des points ou des barres obliques.",
+        "it": "I numeri di lotto devono contenere al massimo 64 caratteri e usare solo lettere, numeri, trattini, trattini bassi, punti o barre.",
+        "nl": "Lotnummers mogen maximaal 64 tekens bevatten en alleen uit letters, cijfers, koppeltekens, liggende streepjes, punten of schuine strepen bestaan.",
+        "pt_BR": "Os números de lote devem ter no máximo 64 caracteres e usar apenas letras, números, hífens, sublinhados, pontos ou barras."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "validation.reset_date",
+      "text": {
+        "de": "Fügen Sie das Jahr für jährliche Rücksetzungen, Jahr und Monat für monatliche Rücksetzungen oder ein vollständiges Datum für tägliche Rücksetzungen ein.",
+        "es": "Incluye el año para reinicios anuales, el año y el mes para reinicios mensuales, o una fecha completa para reinicios diarios.",
+        "fr": "Incluez l’année pour les remises à zéro annuelles, l’année et le mois pour les remises à zéro mensuelles, ou une date complète pour les remises à zéro quotidiennes.",
+        "it": "Includi l’anno per gli azzeramenti annuali, anno e mese per quelli mensili o una data completa per quelli giornalieri.",
+        "nl": "Neem het jaar op voor een jaarlijkse herstart, jaar en maand voor een maandelijkse herstart, of een volledige datum voor een dagelijkse herstart.",
+        "pt_BR": "Inclua o ano para reinícios anuais, ano e mês para reinícios mensais ou uma data completa para reinícios diários."
+      }
+    },
+    {
+      "group": "lot_numbering",
+      "key": "yearly",
+      "text": {
+        "de": "Jedes Jahr",
+        "es": "Cada año",
+        "fr": "Chaque année",
+        "it": "Ogni anno",
+        "nl": "Elk jaar",
+        "pt_BR": "A cada ano"
+      }
+    },
+    {
       "group": "media",
       "key": "current_image",
       "text": {

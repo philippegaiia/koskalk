@@ -6,7 +6,7 @@
 <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-identity">
     <p class="sk-eyebrow">{{ __('ingredients.editor.reference.technical_eyebrow') }}</p>
     <h2 id="ingredient-reference-identity" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">
-        {{ $referenceData['name'] ?: $notAvailable }}
+        {{ $referenceData['name'] ?: $notAvailable }} <x-contextual-help.trigger topic="ingredients.identity" :topics="$contextualHelp['topics']" />
     </h2>
     <dl class="mt-5 grid gap-4 sm:grid-cols-2">
         <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">

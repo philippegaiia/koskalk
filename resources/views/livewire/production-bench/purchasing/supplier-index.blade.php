@@ -11,11 +11,14 @@
 
         <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <h1 class="flex-1 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.suppliers') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 class="flex-1 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.suppliers') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+            </div>
             @if ($isBenchActive)
                 <a href="{{ route('production-bench.purchasing.suppliers.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.supplier.add') }}</a>
             @endif
-            <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
         </header>
 
         <section class="overflow-hidden sk-card">

@@ -1,9 +1,13 @@
 <div class="mx-auto w-full max-w-app space-y-6">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <section class="sk-card p-5 sm:p-6" aria-label="{{ __('packaging.page.aria_label') }}">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('packaging.page.title') }}</p>
-                <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('packaging.page.heading') }}</h3>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('packaging.page.heading') }}</h3>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
+                </div>
                 <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
                     {{ __('packaging.page.intro') }}
                 </p>

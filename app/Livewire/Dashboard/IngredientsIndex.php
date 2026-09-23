@@ -10,6 +10,7 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\EntitlementService;
@@ -120,6 +121,7 @@ class IngredientsIndex extends Component
     }
 
     public function render(
+        MaterialHelpTopics $helpTopics,
         EntitlementService $entitlementService,
         IngredientFormulaMutationService $ingredientFormulaMutationService,
         IngredientFormulaUsageService $ingredientFormulaUsageService,
@@ -151,6 +153,7 @@ class IngredientsIndex extends Component
             : collect();
 
         return view('livewire.dashboard.ingredients-index', [
+            'contextualHelp' => $helpTopics->resolve('ingredients', app()->getLocale()),
             'currentUser' => $currentUser,
             'canCreateIngredients' => $canCreateIngredients,
             'canDuplicateIngredients' => $canCreateIngredients,

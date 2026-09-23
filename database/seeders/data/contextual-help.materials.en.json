@@ -1,0 +1,424 @@
+{
+  "format_version": 1,
+  "captured_at": "2026-09-23T03:00:00+00:00",
+  "export_uuid": "a726367f-f735-5eed-bb29-3c89ad500436",
+  "topics": [
+    {
+      "public_id": "b2366801-4b60-5bac-826e-e706f2c06ce6",
+      "key": "ingredients.catalogue",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "c0055682-6103-5214-a97d-695618feed13",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "c0055682-6103-5214-a97d-695618feed13",
+              "revision_number": 1,
+              "title": "Choosing an ingredient",
+              "summary": "Search the library before creating a new ingredient. Use a Soapkraft reference as it is, or make a private copy when you need different ingredient data.",
+              "body_markdown": "Use the catalogue filters to switch between Soapkraft ingredients, your own ingredients, and entries with a price. Open a result to check its identity and composition before adding it to a formula.\n\nSoapkraft ingredient data is managed by the platform. Your workspace can add its own costing price, internal code, and guidance without changing the shared reference.\n\nCreate a private ingredient for a material that is missing. If a suitable reference already exists and needs changes, use Duplicate to create an editable copy. Check which workspace will receive it before confirming.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "467de302-0abc-52dd-b034-641ec8e0547a",
+      "key": "ingredients.duplicate",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "1b164792-e893-5dc0-9885-cf8dee0c606f",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "1b164792-e893-5dc0-9885-cf8dee0c606f",
+              "revision_number": 1,
+              "title": "Making an editable copy",
+              "summary": "Duplicate a reference when you need to change its ingredient data. You do not need a copy just to add your own price, code, or workspace guidance.",
+              "body_markdown": "Choose the source ingredient, review the destination workspace and the new name, then create the copy. Open it and check the identity, composition, and technical information before using it.\n\nThe copy is a separate private ingredient. Existing formulas continue to use the original until you explicitly replace it.\n\nFor an oil used in soap saponification, start from a trusted Soapkraft oil when you need an editable copy with inherited soap chemistry. Creating an oil from scratch does not make it eligible for saponification calculations.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "421a5f95-1176-5a6f-93dd-8dfcbf571f49",
+      "key": "ingredients.identity",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "a2322fae-3bfd-543c-8b09-3aeef46f7649",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "a2322fae-3bfd-543c-8b09-3aeef46f7649",
+              "revision_number": 1,
+              "title": "Names, INCI, and identifiers",
+              "summary": "Use the display name to recognize the material, and the identity fields to describe what it actually is.",
+              "body_markdown": "Start with the supplier's technical documents. Enter the INCI name and available identifiers in their own fields; a trade name or supplier reference is not a substitute for an INCI name.\n\nFor a blend, check the composition and component identities as well as the name printed on the container. Avoid guessing identifiers when the supplier has not provided enough information.\n\nYour internal material code is a workspace reference. The supplier's item reference belongs to its supplier listing.\n\nAfter changing ingredient identity or composition, review the labeling and guidance of formulas that use it. Saved formulas still refer to current ingredient facts.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "a97df594-8e46-53a8-85f1-75e03096c1be",
+      "key": "ingredients.classification",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "43c850e5-cf8e-5bc8-8c2c-5c03138167db",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "43c850e5-cf8e-5bc8-8c2c-5c03138167db",
+              "revision_number": 1,
+              "title": "Category, functions, and guidance",
+              "summary": "Choose the category that describes the material. Functions describe its role; neither a category nor a suggested classification proves it is suitable for your formula.",
+              "body_markdown": "Use the supplier's description and technical evidence to choose the category and subcategory. A material can have several functions, such as thickening and stabilizing.\n\nCheck suggested classifications before applying them. Review aromatic-compliance information where relevant to the material and its use.\n\nAllergen, substance, and IFRA information helps you review a formula. Missing information is not a zero concentration or an approval. Keep the visible warnings in view and check your supplier documentation and intended use.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "2f249fd2-09f4-5eb9-8289-45ca58f74590",
+      "key": "ingredients.composition",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "b0787345-b6a8-5617-a0eb-9ab9d9a8fb1d",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "b0787345-b6a8-5617-a0eb-9ab9d9a8fb1d",
+              "revision_number": 1,
+              "title": "Describing a blend",
+              "summary": "A blend is one ingredient made from several components. Component percentages describe that ingredient, not your finished formula.",
+              "body_markdown": "Select Blend, add the component ingredients, and enter their shares using reliable composition data. Follow the total shown in the editor and balance the composition to 100%.\n\nFor example, if a blend contains 20% of a component and you use the blend at 5% in a formula, that component contributes 1% of the formula.\n\nChanging a blend's composition can change ingredient declarations and calculated substance contributions in formulas that use it. Review those formulas after saving.\n\nDo not switch a blend to a single ingredient merely to hide incomplete composition: that removes composition information after confirmation.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "3a513097-733a-555d-b6f0-3255719320a8",
+      "key": "ingredients.soap_chemistry",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "f09f62b2-e26e-5f7b-8396-b6ca890a6e60",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "f09f62b2-e26e-5f7b-8396-b6ca890a6e60",
+              "revision_number": 1,
+              "title": "Using an oil in soap calculations",
+              "summary": "Choose a trusted Soapkraft oil for saponification, or duplicate one to retain its soap chemistry. A manually created oil is not automatically usable in the soap reaction.",
+              "body_markdown": "SAP data determines the calculated alkali requirement. Fatty-acid data supports the displayed soap profile. These values describe different things and should come from appropriate technical evidence.\n\nIn an editable copy of a trusted oil, check the inherited values against the material you actually use before changing them. Adding an oil category or a name does not establish trusted soap chemistry.\n\nIf the editor shows the carrier-oil warning, use its library link to find a suitable trusted oil rather than entering guessed values. Detailed explanations of fatty acids and soap qualities belong in the learning documentation.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "449a7c4a-7418-53f0-8be9-1def49c59f8c",
+      "key": "ingredients.guidance_and_documents",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "0378d5e2-ff52-54ed-b57c-e5ec77d2acdc",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "0378d5e2-ff52-54ed-b57c-e5ec77d2acdc",
+              "revision_number": 1,
+              "title": "Keeping useful ingredient guidance",
+              "summary": "Keep handling notes, supplier information, and supporting files with the ingredient so they are available when you formulate.",
+              "body_markdown": "Use guidance for practical instructions you want to see again, such as supplier-recommended processing conditions. Use source notes and documents to retain the evidence behind those instructions.\n\nOn a Soapkraft reference, workspace guidance lets you adapt the instructions for your team without changing the shared ingredient. Check whether you are viewing platform guidance or your workspace's version.\n\nKeep numerical composition, identifiers, allergens, and other technical values in their dedicated fields. Writing a value in a note does not change the app's calculations.\n\nReview generated text against your documents before relying on it.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "ac128fd8-9795-50fd-a710-56edc3aae513",
+      "key": "ingredients.editing_and_removal",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "9ce5c8a9-b523-5311-b050-f17e9962cdf2",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "9ce5c8a9-b523-5311-b050-f17e9962cdf2",
+              "revision_number": 1,
+              "title": "Changing or removing an ingredient",
+              "summary": "Check where an ingredient is used before changing or deleting it. Changes to a shared ingredient record can affect more than the formula you are working on.",
+              "body_markdown": "Use the catalogue's usage information and the removal dialog to review affected formulas and blends. A private ingredient can be used as a component of another blend as well as directly in a formula.\n\nIf the ingredient is in use, choose the offered replacement or removal action only after reviewing its consequences. Some changes are blocked when affected formulas or ingredients cannot be edited.\n\nReplacing a material does not prove the substitute has the same SAP value, composition, or function. Recheck quantities, ingredient declarations, guidance, and costs afterwards.\n\nA formula lock protects formula editing; it does not freeze all linked ingredient facts. Review affected formulas after technical ingredient edits even when their composition has not changed.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "c03316d2-c04e-571c-b9ff-d2d6d6872aa3",
+      "key": "materials.codes",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "934b6242-6367-5070-b10e-21a0048e3cbb",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "934b6242-6367-5070-b10e-21a0048e3cbb",
+              "revision_number": 1,
+              "title": "Using an internal material code",
+              "summary": "An internal code is an optional reference chosen by your workspace, such as OIL-001 or BOX-100. It is separate from a supplier item code and a stock lot number.",
+              "body_markdown": "Use a short, consistent code if it helps you recognize materials in formulas, purchasing, inventory, and production. Leave it blank if names are enough for your workflow.\n\nYou can assign your own code to a Soapkraft ingredient without duplicating its shared record. Another workspace can use a different code for the same reference.\n\nA material code identifies the ingredient or packaging item. A lot number identifies a particular delivery or production lot, and a supplier reference identifies an offer from that supplier.\n\nPreviously created production requirements and purchasing lines keep the code recorded when they were created.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "7cc18ddf-3ffa-59ac-99eb-3d89ff939fa8",
+      "key": "materials.prices",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "fcb0707a-5347-57e2-8f99-9e45a3283e5e",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "fcb0707a-5347-57e2-8f99-9e45a3283e5e",
+              "revision_number": 1,
+              "title": "Catalogue prices and purchasing prices",
+              "summary": "Your catalogue price is a costing input. Check the displayed unit and currency before entering it; supplier offers and received lots have their own prices.",
+              "body_markdown": "For ingredients, enter the price for the mass unit shown in the column. For packaging, enter the price of one item. For example, a box of 100 empty jars costing 40 gives a catalogue unit price of 0.40 per jar.\n\nYou can enter a workspace price for a Soapkraft ingredient without changing its shared data or making a private copy.\n\nA supplier listing describes a particular supplier's purchase format, price, and currency. A goods receipt records what was actually received and its cost.\n\nChanging a catalogue price does not receive stock or rewrite posted receipt costs. Check the costing view after changing prices and distinguish an estimate from a production's recorded costs.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "b2035262-01bb-5c5d-a510-1ae9c3150c34",
+      "key": "packaging.library",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "aa6b0fb8-3389-5423-bccb-0fd73a1dfcbb",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "aa6b0fb8-3389-5423-bccb-0fd73a1dfcbb",
+              "revision_number": 1,
+              "title": "Adding reusable packaging",
+              "summary": "Create one library item for each packaging component you use, such as a jar, lid, label, or carton, then select it in your Products.",
+              "body_markdown": "Give the item a recognizable name and category. Use notes to distinguish its size, material, or finish, and add an image if it helps you identify it.\n\nUse separate items when components must be costed or stocked separately. A jar and its lid can then have different suppliers, quantities, and stock balances.\n\nAdding an item to the library does not add it to a Product or create stock. Add it to the Product's packaging plan, and record receipts or opening stock through Inventory or Purchasing when using the Production Bench.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "bf6c8915-6365-52f1-8924-f98a5acd2b83",
+      "key": "packaging.quantities_and_costs",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "db446a86-f900-5a07-ba3a-2b8dcc6e23a1",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "db446a86-f900-5a07-ba3a-2b8dcc6e23a1",
+              "revision_number": 1,
+              "title": "Packaging quantities and unit cost",
+              "summary": "The library price is for one packaging item. The Product's packaging plan determines how many items are needed for its output.",
+              "body_markdown": "Enter the cost of one jar, label, box, or other item, even when you buy it in packs. For example, divide the price of a 200-label roll by 200 to get the label unit cost.\n\nIn the Product, check the packaging quantity and basis shown for each line. Review the resulting requirement when planning production, especially for cartons shared by several finished items.\n\nRecord the supplier's pack size in its listing so orders and receipts can convert purchased packs into stock units. Do not use the catalogue unit price field to describe a pack quantity.\n\nWhen making a batch, record the packaging units actually used, including any extra items consumed.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "516488aa-959e-5a31-803a-d75848543f1c",
+      "key": "packaging.editing_and_removal",
+      "domain": "material_library",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "e4bfdafe-4824-53b0-acc2-f4cccd8c12d8",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "e4bfdafe-4824-53b0-acc2-f4cccd8c12d8",
+              "revision_number": 1,
+              "title": "Editing or deleting packaging",
+              "summary": "Review where packaging is used before deleting it. Removing a used item can also remove it from affected formulas and costing records.",
+              "body_markdown": "Change a name or note when you are describing the same item more clearly. Create a separate library item for a genuinely different size or component when you need to keep both available.\n\nRead the deletion dialog carefully. If the packaging is in use, the removal action affects those uses as well as the library entry; it is not just hiding an item from the list.\n\nThe app blocks removal where affected formulas cannot be changed. Resolve the affected uses deliberately, and recheck the Product's packaging plan and costs afterwards.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T03:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    }
+  ],
+  "digest": "c08d50542b1bab316c84efbed529e0e3eb7b34b131024f3e2e3c4c5ac7938488"
+}

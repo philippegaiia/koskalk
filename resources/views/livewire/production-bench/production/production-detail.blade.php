@@ -37,7 +37,10 @@
                                 <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.production_date') }}: <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['planned_for'] }}</span></p>
                             @endif
                         </div>
-                        <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $identity['product_name'] }}</h1>
+                        <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $identity['product_name'] }}</h1>
+                            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+                        </div>
                         <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-[var(--color-ink-soft)]">
                             <span>{{ __('production_bench.settings.batch_size') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['basis'] }}</strong></span>
                             <span>{{ __('production_bench.settings.expected_units') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['expected_units'] }}</strong></span>
@@ -48,7 +51,7 @@
                     </div>
 
                     <div class="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-                        <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+
                         @if ($primaryAction === 'schedule')
                             <div class="flex flex-col gap-1 sm:flex-row sm:items-start">
                                 <div class="min-w-48">{{ $this->planningDateForm }}</div>

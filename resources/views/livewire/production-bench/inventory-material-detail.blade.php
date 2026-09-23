@@ -13,10 +13,13 @@
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <a href="{{ route('production-bench.inventory') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">← {{ __('production_bench.inventory.stock_by_material') }}</a>
-                <h1 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $materialName }}</h1>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $materialName }}</h1>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="inventory" />
+                </div>
                 @if ($materialCode)<p class="mt-1 font-mono text-sm text-[var(--color-ink-soft)]">{{ $materialCode }}</p>@endif
             </div>
-            <x-contextual-help.index-button :help="$contextualHelp" tab="inventory" />
+
         </header>
 
         <section data-material-stock-summary class="sk-card overflow-hidden" aria-labelledby="current-position-heading">

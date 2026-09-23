@@ -10,6 +10,7 @@ use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
 use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaAssetUsageService;
 use App\Services\PackagingItemAuthoringService;
@@ -23,12 +24,14 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -164,6 +167,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         return $schema
             ->components([
                 Section::make(__('packaging.editor.form.section'))
+                    ->afterHeader([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'packaging.quantities_and_costs'])])
                     ->description(__('packaging.editor.form.description'))
                     ->columns([
                         'md' => 2,
@@ -204,9 +208,17 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
             ->model($this->currentPackagingItem() ?? PackagingItem::class);
     }
 
+    /** @return array{topics: array<string, array>, tabs: array<string, list<string>>} */
+    #[Computed]
+    public function contextualHelp(): array
+    {
+        return app(MaterialHelpTopics::class)->resolve('packaging_item', app()->getLocale());
+    }
+
     public function render(): View
     {
         return view('livewire.dashboard.packaging-item-editor', [
+            'contextualHelp' => $this->contextualHelp,
             'packagingItem' => $this->currentPackagingItem(),
         ]);
     }

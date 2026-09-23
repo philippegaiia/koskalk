@@ -27,6 +27,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
+use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\IngredientClassificationPromptBuilder;
 use App\Services\IngredientIdentitySynchronizer;
@@ -70,6 +71,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -928,6 +930,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->badgeColor('danger')
                             ->schema([
                                 Section::make(__('ingredients.editor.overview.basics_section'))
+                                    ->afterHeader([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'ingredients.identity'])])
                                     ->description(__('ingredients.editor.details.description'))
                                     ->extraAttributes(['data-ingredient-basics-section' => true])
                                     ->columns([
@@ -963,6 +966,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->helperText(__('ingredients.editor.overview.inci_helper'))
                                             ->maxLength(255),
                                         TextInput::make('material_code')
+                                            ->afterLabel([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'materials.codes'])])
                                             ->label(__('ingredients.editor.overview.material_code'))
                                             ->helperText(__('ingredients.editor.material_code.helper'))
                                             ->placeholder(__('ingredients.editor.material_code.placeholder'))
@@ -970,6 +974,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->visible(fn (): bool => $this->canEditIngredientData()),
                                     ]),
                                 Section::make(__('ingredients.editor.classification.section'))
+                                    ->afterHeader([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'ingredients.classification'])])
                                     ->description(__('ingredients.editor.classification.description'))
                                     ->extraAttributes(['data-ingredient-classification-section' => true])
                                     ->schema([
@@ -1011,6 +1016,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->maxItems(10),
                                     ]),
                                 Section::make(__('ingredients.editor.overview.identifiers_section'))
+                                    ->afterHeader([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'ingredients.identity'])])
                                     ->description(__('ingredients.editor.identity.description'))
                                     ->extraAttributes(['data-ingredient-identity-section' => true])
                                     ->columns([
@@ -1040,6 +1046,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->badgeColor('danger')
                             ->schema([
                                 Section::make(__('ingredients.editor.guidance_files.guidance_section'))
+                                    ->afterHeader([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'ingredients.guidance_and_documents'])])
                                     ->description(__('ingredients.editor.guidance_files.guidance_description'))
                                     ->extraAttributes(['data-ingredient-guidance-section' => true])
                                     ->visible(fn (): bool => ! $this->isCurrentPlatformIngredient())
@@ -1095,6 +1102,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->visible(fn (): bool => $this->soapChemistryAvailable())
                             ->schema([
                                 Section::make(__('ingredients.editor.soap.section'))
+                                    ->afterHeader([SchemaView::make('components.contextual-help.schema-trigger')->viewData(['topic' => 'ingredients.soap_chemistry'])])
                                     ->description(__('ingredients.editor.soap.description'))
                                     ->columns([
                                         'md' => 2,
@@ -1846,6 +1854,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
             || ! ($canEditIngredientData ?? $this->canEditIngredientData());
     }
 
+    /** @return array{topics: array<string, array>, tabs: array<string, list<string>>} */
+    #[Computed]
+    public function contextualHelp(): array
+    {
+        return app(MaterialHelpTopics::class)->resolve('ingredient', app()->getLocale());
+    }
+
     public function render(): View
     {
         $ingredient = $this->currentIngredient();
@@ -1925,6 +1940,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         return view('livewire.dashboard.ingredient-editor', [
+            'contextualHelp' => $this->contextualHelp,
             'ingredient' => $ingredient,
             'identityState' => $identityState,
             'canEditIngredientData' => $canEditIngredientData,

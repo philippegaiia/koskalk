@@ -12,10 +12,13 @@
 
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.lot_register') : __('production_bench.inventory.stock_by_material') }}</h1>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.lot_register') : __('production_bench.inventory.stock_by_material') }}</h1>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="inventory" />
+                </div>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : __('production_bench.inventory.materials_help') }}</p>
             </div>
-            <x-contextual-help.index-button :help="$contextualHelp" tab="inventory" />
+
         </header>
 
         @if ($mode === 'materials')

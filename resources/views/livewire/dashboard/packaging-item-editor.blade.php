@@ -1,4 +1,5 @@
 <div class="mx-auto w-full max-w-app space-y-6">
+ <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
  <section class="sk-card p-5 sm:p-6">
  <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
@@ -7,9 +8,12 @@
  ← {{ __('packaging.editor.actions.back') }}
  </a>
  @endif
- <h3 class="{{ $packagingItem ? 'mt-3' : '' }} text-2xl font-semibold text-[var(--color-ink-strong)]">
+ <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+     <h3 class="{{ $packagingItem ? 'mt-3' : '' }} text-2xl font-semibold text-[var(--color-ink-strong)]">
  {{ $packagingItem ? __('packaging.editor.edit.heading') : __('packaging.editor.create.heading') }}
  </h3>
+     <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
+ </div>
  <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
  {{ $packagingItem ? __('packaging.editor.edit.intro') : __('packaging.editor.create.intro') }}
  </p>

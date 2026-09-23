@@ -3,10 +3,13 @@
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ __('production_bench.receipt.workflow') }}</p>
-            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.new') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.new') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+            </div>
         </div>
         <a href="{{ route('production-bench.purchasing.receipts') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.common.cancel') }}</a>
-        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
     </header>
 
     <section aria-labelledby="receipt-source-heading" class="space-y-3">

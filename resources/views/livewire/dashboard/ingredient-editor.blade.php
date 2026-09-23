@@ -48,6 +48,7 @@
  wire:ignore.self
  data-ingredient-editor
  class="mx-auto w-full max-w-app space-y-6">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
  <section aria-labelledby="ingredient-editor-title">
  <nav aria-label="{{ __('ingredients.editor.common.breadcrumb') }}" class="flex min-h-10 flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-ink-soft)]">
  <a href="{{ route('ingredients.index') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-md text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
@@ -58,7 +59,8 @@
  </nav>
 
  <div class="mt-3 max-w-3xl">
- <h1 id="ingredient-editor-title" class="text-3xl font-semibold tracking-tight text-[var(--color-ink-strong)]">
+ <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+     <h1 id="ingredient-editor-title" class="text-3xl font-semibold tracking-tight text-[var(--color-ink-strong)]">
  {{ $isPlatformIngredient
      ? __('ingredients.editor.reference.heading')
      : ($isReadOnlyIngredient
@@ -67,6 +69,8 @@
              ? __('ingredients.editor.create.heading')
              : __('ingredients.editor.edit.heading', ['ingredient' => $ingredientContext]))) }}
  </h1>
+     <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
+ </div>
  <p class="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--color-ink-soft)]">
  @if ($isPlatformIngredient)
  {{ __('ingredients.editor.reference.intro') }}
@@ -89,7 +93,7 @@
 
  @if (! $isPlatformIngredient && $isCarrierOil && ! $hasSoapChemistry)
  <aside data-ingredient-carrier-oil-warning class="mt-4 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-warning-strong)]" aria-labelledby="carrier-oil-guidance-title">
- <p id="carrier-oil-guidance-title" class="font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.carrier_oil_warning.heading') }}</p>
+ <p id="carrier-oil-guidance-title" class="font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.carrier_oil_warning.heading') }} <x-contextual-help.trigger topic="ingredients.soap_chemistry" :topics="$contextualHelp['topics']" /></p>
  <p class="mt-1">
  {{ __('ingredients.editor.carrier_oil_warning.description') }}
  <a data-ingredient-carrier-oil-duplication-link href="{{ route('ingredients.index') }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-accent)] underline-offset-2 hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.editor.carrier_oil_warning.duplicate_link') }}</a>
@@ -108,7 +112,7 @@
      'editorDirtyGuard' => true,
  ])
  <p class="mt-2 max-w-[70ch] text-xs leading-5 text-[var(--color-ink-soft)]">
- {{ __('ingredients.editor.duplicate_hint') }}
+ {{ __('ingredients.editor.duplicate_hint') }} <x-contextual-help.trigger topic="ingredients.duplicate" :topics="$contextualHelp['topics']" />
  </p>
  </div>
  @endif

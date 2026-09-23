@@ -16,7 +16,10 @@
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ $receipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}</p>
-            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.singular') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.singular') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+            </div>
             <p class="numeric mt-1 text-sm text-[var(--color-ink-soft)]">{{ $receipt->delivery_reference ?: __('production_bench.receipt.no_reference') }}</p>
         </div>
         <span
@@ -28,7 +31,7 @@
                 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' => $receiptStatus === 'reversed',
             ])
         >{{ __("production_bench.receipt.status_{$receiptStatus}") }}</span>
-        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
     </header>
 
     <dl class="grid gap-x-6 gap-y-4 border-y border-[var(--color-line)] py-5 sm:grid-cols-2 lg:grid-cols-4">

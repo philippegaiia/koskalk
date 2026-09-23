@@ -37,7 +37,7 @@
     <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-material-code">
         <p class="sk-eyebrow">{{ __('ingredients.editor.material_code.workspace_eyebrow') }}</p>
         <h2 id="ingredient-reference-material-code" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-            {{ __('ingredients.editor.material_code.workspace_heading') }}
+            {{ __('ingredients.editor.material_code.workspace_heading') }} <x-contextual-help.trigger topic="materials.codes" :topics="$contextualHelp['topics']" />
         </h2>
         @if (filled($workspaceName ?? null))
             <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
@@ -55,7 +55,7 @@
 <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-classification">
     <p class="sk-eyebrow">{{ __('ingredients.editor.reference.section') }}</p>
     <h2 id="ingredient-reference-classification" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-        {{ __('ingredients.editor.reference.classification') }}
+        {{ __('ingredients.editor.reference.classification') }} <x-contextual-help.trigger topic="ingredients.classification" :topics="$contextualHelp['topics']" />
     </h2>
     <dl class="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
@@ -93,7 +93,7 @@
     <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-composition">
         <p class="sk-eyebrow">{{ __('ingredients.editor.reference.technical_eyebrow') }}</p>
         <h2 id="ingredient-reference-composition" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-            {{ __('ingredients.editor.reference.composition') }}
+            {{ __('ingredients.editor.reference.composition') }} <x-contextual-help.trigger topic="ingredients.composition" :topics="$contextualHelp['topics']" />
         </h2>
         @if (count($referenceData['components'] ?? []) > 0)
             <div class="mt-5 overflow-x-auto">
@@ -138,7 +138,7 @@
     <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-guidance">
         <p class="sk-eyebrow">{{ __('ingredients.editor.reference.technical_eyebrow') }}</p>
         <h2 id="ingredient-reference-guidance" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-            {{ __('ingredients.editor.reference.guidance') }}
+            {{ __('ingredients.editor.reference.guidance') }} <x-contextual-help.trigger topic="ingredients.guidance_and_documents" :topics="$contextualHelp['topics']" />
         </h2>
         <div class="sk-rich-content mt-5 max-w-none">
             {!! data_get($referenceData, 'guidance.html') !!}
@@ -171,7 +171,7 @@
     <section class="sk-card p-5 sm:p-6" aria-labelledby="ingredient-reference-soap">
         <p class="sk-eyebrow">{{ __('ingredients.editor.reference.technical_eyebrow') }}</p>
         <h2 id="ingredient-reference-soap" class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-            {{ __('ingredients.editor.reference.soap_chemistry') }}
+            {{ __('ingredients.editor.reference.soap_chemistry') }} <x-contextual-help.trigger topic="ingredients.soap_chemistry" :topics="$contextualHelp['topics']" />
         </h2>
         <dl class="mt-5 grid gap-4 sm:grid-cols-2">
             <div>

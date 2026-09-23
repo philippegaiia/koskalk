@@ -6,6 +6,7 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\CurrentMaterialPrice;
 use App\Models\PackagingItem;
 use App\Models\User;
+use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\PackagingItemAuthoringService;
 use App\Services\PackagingItemFormulaMutationService;
@@ -189,7 +190,7 @@ class PackagingItemsIndex extends Component
         $this->finishDeletion(__('packaging.status.removed_and_deleted', ['item' => $packagingItemName]));
     }
 
-    public function render(PackagingItemFormulaMutationService $packagingItemFormulaMutationService): View
+    public function render(MaterialHelpTopics $helpTopics, PackagingItemFormulaMutationService $packagingItemFormulaMutationService): View
     {
         $items = $this->items();
         $currentUser = $this->currentUser();
@@ -198,6 +199,7 @@ class PackagingItemsIndex extends Component
             : null;
 
         return view('livewire.dashboard.packaging-items-index', [
+            'contextualHelp' => $helpTopics->resolve('packaging', app()->getLocale()),
             'currentUser' => $currentUser,
             'items' => $items,
             'unitPriceLabel' => __('packaging.price.column', [

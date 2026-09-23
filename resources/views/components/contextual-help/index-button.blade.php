@@ -1,15 +1,20 @@
-@props(['help', 'tab'])
+@props(['help', 'tab' => null, 'dynamicTab' => false])
 
-@if (! empty($help['tabs'][$tab]))
+@if ($dynamicTab ? ! empty($help['topics']) : ! empty($help['tabs'][$tab]))
     <button
         type="button"
         x-data
-        @click="$dispatch('contextual-help:index', { tab: @js($tab) })"
+        @if ($dynamicTab)
+            @click="$dispatch('contextual-help:index', { tab: activeWorkbenchTab })"
+            x-show="(@js($help['tabs'])[activeWorkbenchTab] || []).length"
+        @else
+            @click="$dispatch('contextual-help:index', { tab: @js($tab) })"
+        @endif
         data-help-index
-        class="sk-btn sk-btn-outline shrink-0 self-start text-[var(--color-ink-strong)] shadow-sm"
+        class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-field-muted)] hover:text-[var(--color-accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
         aria-controls="contextual-help-panel"
     >
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9a2.25 2.25 0 0 1 4.5 0c0 1.5-2.25 1.5-2.25 3M12 16h.01"/></svg>
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.5C9.5 5 6 4.5 3 5v14c3-.5 6.5 0 9 1.5m0-14C14.5 5 18 4.5 21 5v14c-3-.5-6.5 0-9 1.5m0-14v14"/></svg>
         {{ __('contextual_help.help') }}
     </button>
 @endif

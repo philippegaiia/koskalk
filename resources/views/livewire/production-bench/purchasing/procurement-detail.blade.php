@@ -7,14 +7,17 @@
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ $order->supplier->code }} · {{ $order->supplier->name }}</p>
-            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.quotation_request') : __('production_bench.procurement.purchase_order') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.quotation_request') : __('production_bench.procurement.purchase_order') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+            </div>
             <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $isQuotation ? ($order->quotation_reference ?? __('production_bench.procurement.draft')) : $order->reference }}</p>
             @if ($isQuotation)
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.procurement.quotation_detail_help') }}</p>
             @endif
         </div>
         <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ $order->status->value }}</span>
-        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
     </header>
 
     <section>

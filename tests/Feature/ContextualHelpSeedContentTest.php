@@ -35,4 +35,5 @@ it('installs all English drafts and never replaces owner edits on repeat install
     ['contextual-help.inventory.en.json', 10],
     ['contextual-help.purchasing.en.json', 11],
     ['contextual-help.production.en.json', 13],
+    ['contextual-help.materials.en.json', 13],
 ]);

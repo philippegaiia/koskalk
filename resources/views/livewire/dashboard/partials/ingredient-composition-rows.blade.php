@@ -32,7 +32,7 @@
 >
     <div class="flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
-            <h3 id="composition-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.composition.section') }}</h3>
+            <h3 id="composition-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.composition.section') }} <x-contextual-help.trigger topic="ingredients.composition" :topics="$editor->contextualHelp['topics']" /></h3>
             <p class="mt-1 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('ingredients.editor.composition.description') }}</p>
         </div>
         <p role="status" aria-live="polite" class="shrink-0 rounded-full bg-[var(--color-field-muted)] px-3 py-1.5 text-sm">

@@ -6,7 +6,10 @@
     <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0 flex-1">
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.plural') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.plural') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+            </div>
             <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.index_help') }}</p>
         </div>
         @if ($isBenchActive)
@@ -15,7 +18,7 @@
                 <a href="{{ route('production-bench.purchasing.receipts.create', ['source' => 'direct']) }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('production_bench.receipt.direct') }}</a>
             </div>
         @endif
-        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
     </header>
 
     @if ($receipts->isEmpty())

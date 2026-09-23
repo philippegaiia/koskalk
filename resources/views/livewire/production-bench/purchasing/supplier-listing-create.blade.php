@@ -5,9 +5,12 @@
             @if ($lockedSupplier)
                 <p class="sk-eyebrow">{{ $lockedSupplier->code }} · {{ $lockedSupplier->name }}</p>
             @endif
-            <h1 @class(['mt-2' => $lockedSupplier, 'text-3xl font-semibold text-[var(--color-ink-strong)]'])>{{ $editingListingPublicId ? __('production_bench.listing.edit') : __('production_bench.listing.new') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 @class(['mt-2' => $lockedSupplier, 'text-3xl font-semibold text-[var(--color-ink-strong)]'])>{{ $editingListingPublicId ? __('production_bench.listing.edit') : __('production_bench.listing.new') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+            </div>
         </div>
-        <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
     </header>
 
     <form wire:submit="save" class="space-y-4 pb-24">

@@ -27,13 +27,16 @@
         <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
-                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.flash.title') }}</h1>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.flash.title') }}</h1>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+                </div>
                 <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.intro') }}</p>
             </div>
             @if ($isReadOnly)
                 <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
             @endif
-            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+
         </header>
 
         <section aria-labelledby="flash-lines-heading" class="sk-card space-y-5 p-5 sm:p-6">

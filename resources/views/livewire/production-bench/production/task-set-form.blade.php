@@ -3,11 +3,14 @@
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ __('production_bench.navigation.settings') }}</p>
-            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $editing ? __('production_bench.settings.edit_task_set') : __('production_bench.settings.new_task_set') }}</h1>
+            <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $editing ? __('production_bench.settings.edit_task_set') : __('production_bench.settings.new_task_set') }}</h1>
+                <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+            </div>
             <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_sets_help') }}</p>
         </div>
         <a href="{{ route('production-bench.production.settings.task-sets') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.common.cancel') }}</a>
-        <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+
     </header>
 
     @if ($isReadOnly)

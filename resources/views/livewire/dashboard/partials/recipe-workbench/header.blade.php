@@ -5,7 +5,7 @@
 @endphp
 
 <section class="{{ $isPublicCalculator ? 'pb-1' : 'sk-formula-header' }}">
-    <div class="flex items-center justify-between gap-4">
+    <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
     @if ($isPublicCalculator)
         <div class="flex flex-wrap items-center gap-2">
             <p class="sk-eyebrow">{{ __('workbench.header.section') }}</p>
@@ -28,15 +28,7 @@
         </nav>
     @endif
 
-    @if (! empty($contextualHelp['topics']))
-        <button type="button" data-help-index @click="$dispatch('contextual-help:index', { tab: activeWorkbenchTab })" x-show="(@js($contextualHelp['tabs'])[activeWorkbenchTab] || []).length" class="sk-btn sk-btn-outline shrink-0 text-[var(--color-ink-strong)] shadow-sm" aria-controls="contextual-help-panel">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5">
-                <circle cx="12" cy="12" r="9" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9a2.25 2.25 0 0 1 4.5 0c0 1.5-2.25 1.5-2.25 3m0 3h.01" />
-            </svg>
-            {{ __('contextual_help.help') }}
-        </button>
-    @endif
+        <x-contextual-help.index-button :help="$contextualHelp" :dynamic-tab="true" />
     </div>
 
     <div class="{{ $isPublicCalculator ? 'mt-2' : 'mt-3' }} flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

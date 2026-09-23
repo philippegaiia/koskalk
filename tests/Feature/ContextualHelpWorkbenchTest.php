@@ -70,7 +70,8 @@ it('renders a visible labelled Help button with an icon in the header', function
     $button = (new DOMXPath($document))->query('//button[@data-help-index]')->item(0);
     expect($button)->not->toBeNull()
         ->and(trim($button->textContent))->toBe('Help')
-        ->and($button->getAttribute('class'))->toContain('sk-btn-outline')->not->toContain('sk-btn-ghost', 'float-right')
+        ->and($button->parentNode->hasAttribute('data-contextual-help-heading'))->toBeTrue()
+        ->and($button->getAttribute('class'))->not->toContain('sk-btn-outline', 'shadow-sm', 'float-right')
         ->and($button->getElementsByTagName('svg')->length)->toBe(1)
         ->and($button->hasAttribute('disabled'))->toBeFalse();
 });

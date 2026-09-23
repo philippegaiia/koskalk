@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum HelpTopicDomain: string
 {
+    case MaterialLibrary = 'material_library';
     case SharedWorkbench = 'shared_workbench';
     case SoapWorkbench = 'soap_workbench';
     case ProductionRuns = 'production_runs';

@@ -2,17 +2,22 @@
     class="mx-auto w-full max-w-app space-y-6"
     x-on:ingredient-removal-closed.window="$nextTick(() => (document.getElementById($event.detail.triggerId) ?? document.getElementById('ingredient-catalog-heading'))?.focus())"
 >
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <section class="sk-card p-5 sm:p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
                 <p class="sk-eyebrow">{{ __('ingredients.page.eyebrow') }}</p>
-                <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('ingredients.page.heading') }}</h3>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('ingredients.page.heading') }}</h3>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
+                </div>
                 <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
                     {{ __('ingredients.page.intro') }}
                 </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3 lg:justify-end">
+
                 <a href="{{ route('dashboard') }}" wire:navigate class="sk-btn sk-btn-outline">
                     {{ __('ingredients.actions.back_to_dashboard') }}
                 </a>

@@ -10,13 +10,16 @@
             <div class="min-w-0 flex-1">
                 <a href="{{ route('production-bench.production.index') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">← {{ __('production_bench.production.back_to_list') }}</a>
                 <p class="mt-4 sk-eyebrow">{{ __('production_bench.production.prepare_stock') }}</p>
-                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.prepare_stock_title') }}</h1>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.prepare_stock_title') }}</h1>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+                </div>
                 <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.prepare_stock_help') }}</p>
             </div>
             @if ($isReadOnly)
                 <span role="status" class="rounded-full bg-[var(--color-warning-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</span>
             @endif
-            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+
         </header>
 
         @error('productions')

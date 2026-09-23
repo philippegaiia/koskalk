@@ -13,7 +13,10 @@
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div class="min-w-0 flex-1">
                 <p class="numeric sk-eyebrow">{{ $supplier->code }}</p>
-                <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $supplier->name }}</h1>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $supplier->name }}</h1>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+                </div>
             </div>
             <div class="flex flex-wrap gap-3">
                 @if ($isBenchActive)
@@ -21,7 +24,7 @@
                     <a href="{{ route('production-bench.purchasing.suppliers.listings.create', $supplier) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.listing.add') }}</a>
                 @endif
             </div>
-            <x-contextual-help.index-button :help="$contextualHelp" tab="purchasing" />
+
         </header>
 
         <section class="grid gap-4 lg:grid-cols-3">

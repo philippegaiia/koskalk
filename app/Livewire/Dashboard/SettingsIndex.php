@@ -7,6 +7,7 @@ use App\Enums\WorkspaceMemberRole;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\CurrencyCatalog;
 use App\Services\LocalePreferenceResolver;
 use App\Support\NumberLocale;
@@ -176,7 +177,7 @@ class SettingsIndex extends Component
         $this->workspaceMessage = __('settings.status.workspace_saved');
     }
 
-    public function render(): View
+    public function render(ApplicationHelpTopics $helpTopics): View
     {
         $currencyOptions = collect($this->currencyCatalog->options(
             app()->getLocale(),
@@ -187,7 +188,10 @@ class SettingsIndex extends Component
             'searchText' => "{$code} {$name}",
         ])->values()->all();
 
-        return view('livewire.dashboard.settings-index', compact('currencyOptions'));
+        return view('livewire.dashboard.settings-index', [
+            'currencyOptions' => $currencyOptions,
+            'contextualHelp' => $helpTopics->resolve($this->activeTab, app()->getLocale()),
+        ]);
     }
 
     /**

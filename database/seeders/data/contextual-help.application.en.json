@@ -1,0 +1,296 @@
+{
+  "format_version": 1,
+  "captured_at": "2026-09-23T08:00:00+00:00",
+  "export_uuid": "07590608-b16d-5505-871c-a8be09d4586d",
+  "topics": [
+    {
+      "public_id": "7071b6ca-2086-54ec-a344-074b1cc64f05",
+      "key": "products.getting_started",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "f233bf29-4f69-5e9c-baea-b9525b9c057d",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "f233bf29-4f69-5e9c-baea-b9525b9c057d",
+              "revision_number": 1,
+              "title": "Creating your first product",
+              "summary": "Choose New product, select what you are making, then build and save its formula in the workbench.",
+              "body_markdown": "Start with the finished product you want to make, such as a soap bar or a body lotion. The product type helps choose the appropriate workbench. If more than one calculation method is offered, select the one that matches your process.\n\nGive the product a recognizable name, add ingredients and quantities, then choose Save. Continue with packaging, costing, composition and labeling, and instructions as needed.\n\nThe product card opens the workbench. The Product sheet link inside the workbench opens the saved product view. Your product type and calculation method are not interchangeable: create a separate product if you need a different calculation method.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "84ebbb86-bcb4-5a9a-9bb0-91260f97d3ab",
+      "key": "products.finding_and_archiving",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "f7f6595b-c6b9-5634-b35e-bb77bb340b13",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "f7f6595b-c6b9-5634-b35e-bb77bb340b13",
+              "revision_number": 1,
+              "title": "Finding and archiving products",
+              "summary": "Search by name and use Status or Filters to narrow the product list. Archived products are hidden from the Active list.",
+              "body_markdown": "Start with the search field. Use Filters to narrow by product area, category, or type. If a product seems to be missing, change Status from Active to All or Archived and check any classification filters.\n\nUse the actions menu on a product card to archive a product you are no longer working on. Archiving keeps the record; it does not erase the product or its history. Select Archived to find it again and use its actions menu to restore it.\n\nBefore removing anything permanently, review the available action and its confirmation. Archiving is the useful choice when you simply want to keep the current list tidy.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "6726efab-d569-5999-9e21-66600ad14aa8",
+      "key": "products.versions_and_copies",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "d9da1dd8-4a9e-5b44-90c4-ba7112213fb3",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "d9da1dd8-4a9e-5b44-90c4-ba7112213fb3",
+              "revision_number": 1,
+              "title": "Saving versions or making a copy",
+              "summary": "Save changes when you are continuing the same product. Duplicate when you want a separate product to develop independently.",
+              "body_markdown": "Open a product to continue working in its workbench. Choose Save after changes; leaving the page is not a substitute for saving. Use the workbench history to review saved versions.\n\nDuplicate from the product actions when you want a separate starting point, such as another package size or a new formulation idea. Give the copy a clear name and review its formula and packaging before using it. Later edits to the copy do not update the original.\n\nA formula lock protects a saved formula from editing until an authorized owner or workspace admin unlocks it. If editing controls are disabled, check the lock state and your workspace permissions.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "b316ef67-f6ba-520c-8440-e36c2d7cdb51",
+      "key": "media.uploading",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "3cce85ed-5323-5fd3-affb-70399a051151",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "3cce85ed-5323-5fd3-affb-70399a051151",
+              "revision_number": 1,
+              "title": "Uploading files and checking their status",
+              "summary": "Use Upload files to add images or PDF documents to your workspace library. Wait for processing to finish before selecting a new file elsewhere.",
+              "body_markdown": "Choose Upload files and review the selected files before starting the upload. The page shows the upload queue and any file-specific error. Check the displayed library allowance if uploading is unavailable.\n\nUploading and processing are separate steps. A file may have finished uploading while its preview is still being prepared. A Processing status means it is not ready yet.\n\nIf processing fails, inspect the error and use Retry when available. Check the original file if the retry fails again. Do not repeatedly upload the same file just because its preview has not appeared yet.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "2fff1554-ef21-5ec5-b766-f4772e2ccbe4",
+      "key": "media.organizing",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "0df97145-7137-515a-87d6-da76e520e002",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "0df97145-7137-515a-87d6-da76e520e002",
+              "revision_number": 1,
+              "title": "Finding and organizing files",
+              "summary": "Use search and the file filters to find a document or image. Open a file to inspect its details, labels, and uses.",
+              "body_markdown": "Use a descriptive file name so you can recognize the file when selecting it for a product or document. Labels let you group related files without uploading extra copies.\n\nCombine search with type, status, usage, or label filters when the library grows. Clear the filters if an expected file is missing.\n\nOpen an image to check its preview. Where focal-point editing is available, choose the part of the image that should remain visible when a preview is cropped. This changes how the image is framed, not the subject of the original file.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "abb99b5e-9334-545c-9dec-8b1f371e13f6",
+      "key": "media.reuse_and_removal",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "873824e7-21eb-576c-b146-0f19891ceca3",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "873824e7-21eb-576c-b146-0f19891ceca3",
+              "revision_number": 1,
+              "title": "Reusing files and checking before deletion",
+              "summary": "Select an existing library file when you need it again. Check its uses before deleting it from the library.",
+              "body_markdown": "A file in the library can be attached to more than one product, ingredient, packaging item, or supported document record. Reuse the existing file through the file picker instead of uploading another copy.\n\nOpen the file and inspect its uses before deleting it. Removing an attachment from one record and deleting the library file have different effects: deleting the library file can affect every record that uses it. Read the deletion confirmation and listed impact carefully.\n\nIf you only want to stop showing a file on one product, remove that attachment from the product. Library deletion is restricted by workspace permissions; contact your owner or admin if that action is unavailable.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "c142372b-2ac0-5187-90cc-3ad20cb9f20f",
+      "key": "settings.language",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "675b483b-fd23-5f57-8aec-48897c8710c3",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "675b483b-fd23-5f57-8aec-48897c8710c3",
+              "revision_number": 1,
+              "title": "Choosing your interface language",
+              "summary": "Select a language under Preferences and choose Save preferences. This is a setting for your account.",
+              "body_markdown": "The language setting controls the interface text shown to you. It does not rewrite product names, ingredient notes, instructions, or other text you have entered.\n\nPublished help uses a reviewed translation when one is available for the current English version. Otherwise the topic appears in English, so you can still read the guidance.\n\nChoose your number format separately if you prefer a different decimal separator from the usual format for that language.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "114ff998-5038-52a3-aa04-0b10bdc6c144",
+      "key": "settings.numbers",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "36f2d1de-7c3d-5cc7-bc30-b86c64b10ea4",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "36f2d1de-7c3d-5cc7-bc30-b86c64b10ea4",
+              "revision_number": 1,
+              "title": "Choosing how numbers are displayed",
+              "summary": "Number format controls decimal and grouping separators. It does not change the quantities in your formulas.",
+              "body_markdown": "Under Preferences, choose the number format you want to read and use, then choose Save preferences. For example, a quantity may be shown as 1,234.56 or 1 234,56 depending on the selected format.\n\nWhen entering amounts, follow the separators shown by the interface. Changing the number format does not convert grams to ounces or alter ingredient percentages.\n\nMeasurement units are separate: your workspace measurement system sets the starting unit for new formulas, and an individual formula can still be converted between supported mass units.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "a2fcdb5b-ac84-5337-80e5-af01720b72a3",
+      "key": "settings.workspace",
+      "domain": "application",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "a17c9520-08e4-5bf0-877a-e93439c5d2f9",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "a17c9520-08e4-5bf0-877a-e93439c5d2f9",
+              "revision_number": 1,
+              "title": "Understanding shared workspace defaults",
+              "summary": "Workspace name, default currency, and measurement system are shared settings. Only the workspace owner can change them.",
+              "body_markdown": "Open the Workspace tab and check that you are in the intended workspace. Change the name, default currency, or measurement system, then choose Save workspace settings.\n\nThe default currency is used for workspace costing and pricing. Do not use a currency change as a way to correct a supplier price; review that price and its currency on the relevant record. When receiving goods in a currency without an automatic exchange rate, enter the rate manually.\n\nMetric starts new formulas in metric units and shows ingredient prices per kilogram. US customary uses ounces and pounds, with ingredient prices per pound. You can still convert an individual formula between g, kg, oz, and lb.\n\nThese shared defaults are separate from your personal language and number format. Production scheduling and numbering have their own settings in the Production bench.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-09-23T08:00:00+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    }
+  ],
+  "digest": "2a5c4ffd35aa49368c74bb3183449fd5a9fb0e0c1c6496bf5befbfab6d6fa143"
+}

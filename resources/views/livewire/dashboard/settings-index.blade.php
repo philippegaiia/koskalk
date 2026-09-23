@@ -1,5 +1,9 @@
 <div class="mx-auto max-w-3xl space-y-6">
-    <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('settings.page.intro') }}</p>
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <div data-contextual-help-heading class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('settings.page.intro') }}</p>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
+    </div>
 
     <div class="flex gap-2 border-b border-[var(--color-line)] pb-px">
         <button

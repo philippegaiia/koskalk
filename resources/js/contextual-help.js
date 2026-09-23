@@ -167,7 +167,10 @@ export function createContextualHelp({ document, window }) {
         }
     }
     const onOpen = event => openTopic(event.detail.key, event.target);
-    const onIndex = event => openIndex(event.detail.tab, event.target);
+    const onIndex = event => {
+        refreshScope();
+        openIndex(event.detail.tab, event.target);
+    };
     const onNavigate = () => replaceScope({});
     const onModal = () => close({ restoreFocus: false });
     const onResize = () => { if (isOpen) render({ focus: true }); };

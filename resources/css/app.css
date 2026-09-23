@@ -1282,6 +1282,15 @@
 }
 
 @layer components {
+    @keyframes help-introduction {
+        0%, 100% { box-shadow: 0 0 0 0 transparent; }
+        35%, 70% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--color-accent) 18%, transparent); }
+    }
+    .sk-help-index { animation: help-introduction 2s ease-out 1; }
+    @media (prefers-reduced-motion: reduce) {
+        .sk-help-index { animation: none; }
+    }
+
     .sk-help-panel {
         position: fixed;
         inset: 0 0 0 auto;

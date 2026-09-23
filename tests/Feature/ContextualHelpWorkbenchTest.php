@@ -60,7 +60,7 @@ it('keeps the Formula index short while retaining specific topics for contextual
         ->and($topics->locations('soap.qualities.cure'))->toContain('Soap · Formula');
 });
 
-it('renders a visible labelled Help button with an icon in the header', function () {
+it('renders a labelled Help button for the top bar while retaining the workbench tab context', function () {
     $html = view('livewire.dashboard.partials.recipe-workbench.header', [
         'workbench' => [],
         'contextualHelp' => ['topics' => ['soap.water_mode' => ['title' => 'Water mode']], 'tabs' => ['formula' => ['soap.water_mode']]],
@@ -70,7 +70,8 @@ it('renders a visible labelled Help button with an icon in the header', function
     $button = (new DOMXPath($document))->query('//button[@data-help-index]')->item(0);
     expect($button)->not->toBeNull()
         ->and(trim($button->textContent))->toBe('Help')
-        ->and($button->parentNode->hasAttribute('data-contextual-help-heading'))->toBeTrue()
+        ->and($button->parentNode->getAttribute('x-teleport'))->toBe('#contextual-help-topbar')
+        ->and($button->getAttribute('x-show'))->toContain('activeWorkbenchTab')
         ->and($button->getAttribute('class'))->not->toContain('sk-btn-outline', 'shadow-sm', 'float-right')
         ->and($button->getElementsByTagName('svg')->length)->toBe(1)
         ->and($button->hasAttribute('disabled'))->toBeFalse();

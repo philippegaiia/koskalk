@@ -1,8 +1,12 @@
 <div class="mx-auto max-w-app space-y-6">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <section class="sk-card p-6" aria-label="{{ __('products.page.aria_label') }}">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
-                <h3 class="text-2xl font-semibold text-[var(--color-ink-strong)]">{{ __('products.page.heading') }}</h3>
+                <div data-contextual-help-heading class="flex flex-wrap items-center gap-3">
+                    <h3 class="text-2xl font-semibold text-[var(--color-ink-strong)]">{{ __('products.page.heading') }}</h3>
+                    <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
+                </div>
                 <p class="mt-3 max-w-4xl text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('products.page.intro') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">

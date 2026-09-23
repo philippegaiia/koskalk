@@ -1,7 +1,9 @@
 <div class="mx-auto w-full max-w-app space-y-6" @if ($hasProcessingAssets) wire:poll.5s.visible @endif>
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
     <section class="sk-card p-5 sm:p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div data-media-library-summary class="min-w-0 flex-1">
+            <div data-media-library-summary data-contextual-help-heading class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('media_library.eyebrow') }}</p>
                 <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('media_library.title') }}</h3>
                 <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">

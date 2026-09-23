@@ -6,6 +6,7 @@ use App\Models\ProductArea;
 use App\Models\ProductCategory;
 use App\Models\ProductType;
 use App\Models\Recipe;
+use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,7 +31,7 @@ class RecipesIndex extends Component
     #[Url(as: 'archived')]
     public string $archivedFilter = 'active';
 
-    public function render(): View
+    public function render(ApplicationHelpTopics $helpTopics): View
     {
         $currentUser = app(CurrentAppUserResolver::class)->resolve();
         $recipes = collect();
@@ -108,6 +109,7 @@ class RecipesIndex extends Component
         }
 
         return view('livewire.dashboard.recipes-index', [
+            'contextualHelp' => $helpTopics->resolve('products', app()->getLocale()),
             'currentUser' => $currentUser,
             'recipeCount' => $recipeCount,
             'productAreaOptions' => $productAreaOptions,

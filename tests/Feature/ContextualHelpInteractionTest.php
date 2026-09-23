@@ -99,3 +99,32 @@ JS;
     $process->run();
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
+
+it('loads the latest page scope when opening help after a settings tab update', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createContextualHelp } from './resources/js/contextual-help.js';
+const handlers = new Map();
+let scope = { topics: {language: {title: 'Language'}}, tabs: {page: ['language']} };
+const document = {
+    querySelector: selector => selector === '[data-contextual-help-scope]' ? {textContent: JSON.stringify(scope)} : null,
+    addEventListener: (name, handler) => handlers.set(name, handler), removeEventListener: name => handlers.delete(name),
+};
+const window = {matchMedia: () => ({matches: true, addEventListener() {}, removeEventListener() {}}), addEventListener() {}, removeEventListener() {}};
+const help = createContextualHelp({document, window});
+help.mount();
+handlers.get('contextual-help:index')({detail: {tab: 'page'}, target: null});
+assert.deepEqual(help.currentKeys, ['language']);
+scope = {topics: {workspace: {title: 'Workspace'}}, tabs: {page: ['workspace']}};
+handlers.get('contextual-help:index')({detail: {tab: 'page'}, target: null});
+assert.deepEqual(help.currentKeys, ['workspace']);
+scope = {};
+handlers.get('contextual-help:index')({detail: {tab: 'page'}, target: null});
+assert.equal(help.isOpen, false);
+assert.deepEqual(help.currentKeys, []);
+help.destroy();
+JS;
+    $process = Process::fromShellCommandline('node --input-type=module -e '.escapeshellarg($script), base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});

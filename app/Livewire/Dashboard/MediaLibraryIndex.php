@@ -20,6 +20,7 @@ use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetLibraryService;
@@ -393,6 +394,7 @@ class MediaLibraryIndex extends Component
     }
 
     public function render(
+        ApplicationHelpTopics $helpTopics,
         CurrentAppUserResolver $resolver,
         EntitlementService $entitlements,
     ): View {
@@ -433,6 +435,7 @@ class MediaLibraryIndex extends Component
             : collect();
 
         return view('livewire.dashboard.media-library-index', [
+            'contextualHelp' => $helpTopics->resolve('media', app()->getLocale()),
             'assets' => $assets,
             'usage' => $usage,
             'user' => $user,

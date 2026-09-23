@@ -8,6 +8,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/**, app/*.php | .ai/rules/app.md |
 | bootstrap/app.php | .ai/rules/bootstrap.md |
 | app/Console/Commands/** | .ai/rules/commands.md |
+| resources/views/components/contextual-help/** | .ai/rules/components-contextual-help.md |
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
 | app/Services/ContextualHelp/** | .ai/rules/contextual-help.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |

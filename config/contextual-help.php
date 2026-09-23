@@ -10,6 +10,16 @@ return [
         'prompt_version' => 'help-translation-v1',
     ],
     'topics' => [
+        'products.getting_started' => ['domain' => 'application'],
+        'products.finding_and_archiving' => ['domain' => 'application'],
+        'products.versions_and_copies' => ['domain' => 'application'],
+        'media.uploading' => ['domain' => 'application'],
+        'media.organizing' => ['domain' => 'application'],
+        'media.reuse_and_removal' => ['domain' => 'application'],
+        'settings.language' => ['domain' => 'application'],
+        'settings.numbers' => ['domain' => 'application'],
+        'settings.workspace' => ['domain' => 'application'],
+
         'ingredients.catalogue' => ['domain' => 'material_library'],
         'ingredients.duplicate' => ['domain' => 'material_library'],
         'ingredients.identity' => ['domain' => 'material_library'],

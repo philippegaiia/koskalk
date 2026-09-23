@@ -18,6 +18,7 @@ use App\Models\HelpTopicLocale;
 use App\Models\HelpTopicRevision;
 use App\Models\HelpTranslationRequest;
 use App\Models\SupportedLocale;
+use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\ContextualHelp\HelpContentRenderer;
 use App\Services\ContextualHelp\InventoryHelpTopics;
 use App\Services\ContextualHelp\MaterialHelpTopics;
@@ -290,7 +291,7 @@ class EditHelpTopic extends EditRecord
 
         return [
             'domain' => str_replace('_', ' ', $this->getRecord()->domain->value),
-            'locations' => [...app(WorkbenchHelpTopics::class)->locations($this->getRecord()->key), ...app(InventoryHelpTopics::class)->locations($this->getRecord()->key), ...app(PurchasingHelpTopics::class)->locations($this->getRecord()->key), ...app(ProductionHelpTopics::class)->locations($this->getRecord()->key), ...app(MaterialHelpTopics::class)->locations($this->getRecord()->key)],
+            'locations' => [...app(WorkbenchHelpTopics::class)->locations($this->getRecord()->key), ...app(InventoryHelpTopics::class)->locations($this->getRecord()->key), ...app(PurchasingHelpTopics::class)->locations($this->getRecord()->key), ...app(ProductionHelpTopics::class)->locations($this->getRecord()->key), ...app(MaterialHelpTopics::class)->locations($this->getRecord()->key), ...app(ApplicationHelpTopics::class)->locations($this->getRecord()->key)],
             'english' => $english ? app(HelpContentRenderer::class)->render($english) : null,
         ];
     }

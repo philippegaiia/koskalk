@@ -114,7 +114,7 @@
 
             <div data-sidebar-background class="flex min-h-dvh min-w-0 flex-col">
                 <header class="bg-[color:oklch(from_var(--color-panel)_l_c_h_/_0.90)] px-6 py-4 backdrop-blur lg:px-8">
-                    <div class="flex items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
                             <button
                                 type="button"
@@ -135,7 +135,8 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-4 sm:gap-5">
+                        <div class="ml-auto flex items-center gap-3 sm:gap-5">
+                            <div id="contextual-help-topbar" class="flex shrink-0 items-center"></div>
                             <x-language-selector id="app" class="text-[var(--color-ink-soft)]" />
                             <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">{{ __('navigation.items.home') }}</a>
                         </div>

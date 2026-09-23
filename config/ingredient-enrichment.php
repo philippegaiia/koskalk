@@ -98,9 +98,9 @@ return [
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
-        'model' => env('INGREDIENT_ENRICHMENT_MODEL', 'gpt-5.6-terra'),
+        'model' => env('INGREDIENT_ENRICHMENT_MODEL', 'gpt-6-luna'),
         'reasoning_effort' => env('INGREDIENT_ENRICHMENT_REASONING_EFFORT', 'low'),
-        'localization_model' => env('INGREDIENT_ENRICHMENT_LOCALIZATION_MODEL', 'gpt-5.6-luna'),
+        'localization_model' => env('INGREDIENT_ENRICHMENT_LOCALIZATION_MODEL', 'gpt-6-luna'),
         'localization_reasoning_effort' => env('INGREDIENT_ENRICHMENT_LOCALIZATION_REASONING_EFFORT', 'xhigh'),
         'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 600),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),

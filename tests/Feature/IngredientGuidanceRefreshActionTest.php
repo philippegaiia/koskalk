@@ -112,7 +112,7 @@ it('exposes update translations in the guidance section for saved English guidan
     $batch = IngredientEnrichmentBatch::query()->latest('id')->firstOrFail();
 
     expect($batch->mode)->toBe(IngredientEnrichmentBatchMode::GuidanceLocalization)
-        ->and($batch->model)->toBe('gpt-5.6-luna')
+        ->and($batch->model)->toBe('gpt-6-luna')
         ->and($batch->reasoning_effort)->toBe('xhigh')
         ->and($batch->items()->whereBelongsTo($ingredient)->exists())->toBeTrue();
 

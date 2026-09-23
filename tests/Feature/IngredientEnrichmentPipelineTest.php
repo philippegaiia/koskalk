@@ -214,7 +214,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
     Http::assertSent(function (Request $request): bool {
         $input = (string) data_get($request->data(), 'input');
 
-        return data_get($request->data(), 'model') === 'gpt-5.6-luna'
+        return data_get($request->data(), 'model') === 'gpt-6-luna'
             && data_get($request->data(), 'reasoning.effort') === 'xhigh'
             && data_get($request->data(), 'text.format.schema.properties.translations.items.required') === [
                 'locale', 'display_name', 'saponification_name',

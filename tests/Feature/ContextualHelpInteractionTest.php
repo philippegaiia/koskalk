@@ -71,6 +71,17 @@ handlers.get('keydown')({target:heading,key:'Tab',preventDefault(){prevented=tru
 assert.equal(prevented,true); assert.equal(document.activeElement,back);
 media.matches=true; resize();
 assert.equal(panel.attrs.role,'complementary'); assert.equal(main.inert,false); assert.equal(existingInert.inert,true); assert.equal(document.body.style.overflow,'auto');
+handlers.get('click')({target:back});
+assert.equal(help.isOpen,true);
+const indexButton=node('BUTTON');
+indexButton.closest=selector=>selector==='[data-help-index]'?indexButton:null;
+handlers.get('click')({target:indexButton});
+assert.equal(help.isOpen,true);
+const outsideInput=node('INPUT');
+outsideInput.focus();
+handlers.get('click')({target:outsideInput,preventDefault(){throw new Error('Outside clicks must keep their default action');}});
+assert.equal(help.isOpen,false); assert.equal(panel.hidden,true); assert.equal(document.activeElement,outsideInput);
+help.openTopic('two',origin);
 handlers.get('keydown')({target:heading,key:'Escape',preventDefault(){},stopPropagation(){}});
 assert.equal(help.isOpen,false); assert.equal(document.activeElement,origin);
 help.openTopic('two',origin); windowHandlers.get('open-modal')(); assert.equal(help.isOpen,false);

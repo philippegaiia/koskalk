@@ -135,7 +135,12 @@ export function createContextualHelp({ document, window }) {
 
     function onClick(event) {
         const origin = event.target.closest?.('[data-help-key], [data-help-close], [data-help-back]');
-        if (!origin) return;
+        if (!origin) {
+            if (isOpen && !panel()?.contains(event.target) && !event.target.closest?.('[data-help-index]')) {
+                close({ restoreFocus: false });
+            }
+            return;
+        }
         if (origin.hasAttribute('data-help-key')) {
             event.preventDefault();
             openTopic(origin.dataset.helpKey, origin);

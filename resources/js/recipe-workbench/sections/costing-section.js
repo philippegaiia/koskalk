@@ -230,7 +230,11 @@ export function createCostingSection(payload) {
                         return null;
                     }
 
-                    const weight = selectedWeights[lyeType] * scaleRatio;
+                    const weight = convertCostingMass(
+                        selectedWeights[lyeType],
+                        this.oilUnit,
+                        this.costingBaseOilUnit,
+                    ) * scaleRatio;
 
                     return {
                         rowId: `${ingredient.ingredient_id}:lye_alkali:${index + 1}`,

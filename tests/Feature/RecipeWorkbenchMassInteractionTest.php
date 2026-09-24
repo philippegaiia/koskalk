@@ -282,6 +282,109 @@ JS;
     expect($process->getOutput())->toBe('');
 });
 
+it('preserves alkali masses percentages and costs when changing costing units', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createCostingSection } = await import('./resources/js/recipe-workbench/sections/costing-section.js');
+const gramsPerUnit = { g: 1, kg: 1000, oz: 28.349523125, lb: 453.59237 };
+const assertClose = (actual, expected) => {
+    assert.ok(Math.abs(actual - expected) < 1e-7, `${actual} differs from ${expected}`);
+};
+
+for (const useBackend of [true, false]) {
+    for (const [formulaUnit, gramsPerFormulaUnit] of Object.entries(gramsPerUnit)) {
+        for (const lyeType of ['naoh', 'koh', 'dual']) {
+            for (const batchGrams of [null, 1000, 2000]) {
+                const naohGrams = lyeType === 'koh' ? 0 : 146.5928 * (lyeType === 'dual' ? 0.6 : 1);
+                const kohGrams = lyeType === 'naoh' ? 0 : (205.6 / 0.9) * (lyeType === 'dual' ? 0.4 : 1);
+                const oil = { id: 'coconut', ingredient_id: 1, name: 'Coconut oil', percentage: 100, koh_sap_value: 0.257 };
+                const state = {
+                    oilWeight: 1000 / gramsPerFormulaUnit,
+                    oilUnit: formulaUnit,
+                    oilRows: [oil],
+                    superfat: 20,
+                    lyeType,
+                    kohPurity: 90,
+                    dualKohPercentage: 40,
+                    waterMode: 'percent_of_oils',
+                    waterValue: 38,
+                    backendCalculation: useBackend ? {
+                        lye: { selected: {
+                            naoh_weight: naohGrams / gramsPerFormulaUnit,
+                            koh_to_weigh: kohGrams / gramsPerFormulaUnit,
+                        } },
+                    } : null,
+                    costingOilWeight: batchGrams,
+                    costingOilUnit: 'g',
+                    costingUnitsProduced: 12,
+                    costingAlkaliIngredients: {
+                        naoh: { ingredient_id: 2, name: 'NaOH', default_price_per_kg: 3 },
+                        koh: { ingredient_id: 3, name: 'KOH', default_price_per_kg: 6 },
+                    },
+                    phaseItems: { saponified_oils: [oil] },
+                    phaseOrder: [],
+                    isCosmeticFormula: false,
+                    costingPriceByRowId: { coconut: 12 },
+                    packagingCostRows: [],
+                    ingredientForRow: () => ({ default_price_per_kg: 12 }),
+                    t: (key) => key,
+                };
+                Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
+                state.scheduleCostingSave = () => {};
+
+                const scale = (batchGrams ?? 1000) / 1000;
+                const expectedCost = (12 + naohGrams / 1000 * 3 + kohGrams / 1000 * 6) * scale;
+
+                for (const unit of ['g', 'kg', 'oz', 'lb', 'g']) {
+                    state.changeCostingUnit(unit);
+
+                    assertClose(state.costingBaseOilWeight * gramsPerUnit[unit], 1000 * scale);
+                    const alkaliRows = state.costingAlkaliRows();
+                    assert.equal(alkaliRows.length, lyeType === 'dual' ? 2 : 1);
+                    for (const row of alkaliRows) {
+                        const expectedGrams = row.ingredient_id === 2 ? naohGrams : kohGrams;
+                        assert.equal(row.weightUnit, unit);
+                        assertClose(row.weight * gramsPerUnit[unit], expectedGrams * scale);
+                        assertClose(row.percentage, expectedGrams / 10);
+                    }
+                    assertClose(state.totalBatchCost, expectedCost);
+                    assertClose(state.costPerUnit, expectedCost / 12);
+                }
+            }
+        }
+    }
+}
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->mustRun();
+
+    expect($process->getOutput())->toBe('');
+});
+
 it('uses costing conversion actions for all four mass units', function (): void {
     $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
 

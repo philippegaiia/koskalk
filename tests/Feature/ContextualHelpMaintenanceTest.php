@@ -282,3 +282,21 @@ it('denies backup removal after administrator access is revoked', function (): v
 
     expect($export->fresh()->removed_at)->toBeNull();
 });
+
+it('distinguishes identical failures and updates the remaining count when older entries fill the list', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $exports = HelpContentExport::factory()->count(25)->create(['status' => HelpContentExportStatus::Failed, 'created_at' => now()->startOfMinute()]);
+    $deleted = $exports->last();
+    $nextOlder = $exports->get(4);
+    $page = Livewire::test(HelpContentMaintenance::class)
+        ->assertSee('25 backups · 25 failed')
+        ->assertSee('Backup #'.$deleted->id)
+        ->assertDontSee('wire:key="export-'.$nextOlder->public_id.'"', false);
+
+    $page->call('removeExport', $deleted->public_id)->assertHasNoErrors()
+        ->assertSee('24 backups · 24 failed')
+        ->assertDontSee('wire:key="export-'.$deleted->public_id.'"', false)
+        ->assertSee('wire:key="export-'.$nextOlder->public_id.'"', false);
+
+    expect($deleted->fresh()->removed_at)->not->toBeNull();
+});

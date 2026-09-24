@@ -172,8 +172,9 @@ class HelpContentMaintenance extends Page
 
     public function removeExport(string $publicId, HelpContentBackupRemoval $removal): void
     {
+        $export = HelpContentExport::query()->where('public_id', $publicId)->firstOrFail();
         $removal->remove($this->user(), $publicId);
-        Notification::make()->title('Backup deleted')->success()->send();
+        Notification::make()->title('Backup #'.$export->id.' deleted')->success()->send();
     }
 
     public function clearFailedExports(HelpContentBackupRemoval $removal): void
@@ -189,9 +190,13 @@ class HelpContentMaintenance extends Page
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
+        $failedCount = HelpContentExport::query()->whereNull('removed_at')->where('status', HelpContentExportStatus::Failed)->count();
+
         return [
+            'backupCount' => HelpContentExport::query()->whereNull('removed_at')->count(),
+            'failedCount' => $failedCount,
             'lastSuccessfulExport' => HelpContentExport::query()->whereNull('removed_at')->where('status', HelpContentExportStatus::Succeeded)->latest('completed_at')->latest('id')->first(),
-            'hasFailedExports' => HelpContentExport::query()->whereNull('removed_at')->where('status', HelpContentExportStatus::Failed)->exists(),
+            'hasFailedExports' => $failedCount > 0,
             'recentExports' => HelpContentExport::query()->whereNull('removed_at')->latest('id')->limit(20)->get(),
         ];
     }

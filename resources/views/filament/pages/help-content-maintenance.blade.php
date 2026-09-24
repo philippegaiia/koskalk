@@ -3,11 +3,12 @@
         <x-slot name="heading">Verified backups</x-slot>
         <x-slot name="description">Keep a portable copy of all drafts, publications, and translation history.</x-slot>
 
+        <p class="mb-4 text-sm text-gray-500" role="status">{{ $backupCount }} backups · {{ $failedCount }} failed</p>
         <div class="flex flex-wrap items-center justify-between gap-4">
             @if ($lastSuccessfulExport)
                 <div class="space-y-1">
                     <x-filament::badge color="success">Last verified backup</x-filament::badge>
-                    <p class="text-sm font-medium">{{ $lastSuccessfulExport->completed_at->format('M j, Y · H:i') }} UTC</p>
+                    <p class="text-sm font-medium">Backup #{{ $lastSuccessfulExport->id }} · {{ $lastSuccessfulExport->completed_at->format('M j, Y · H:i:s') }} UTC</p>
                     <p class="text-sm text-gray-500">{{ number_format($lastSuccessfulExport->size_bytes / 1024, 1) }} KiB · {{ ucfirst($lastSuccessfulExport->reason->value) }}</p>
                     <details class="text-xs text-gray-500"><summary class="cursor-pointer">SHA-256 checksum</summary><code class="break-all">{{ $lastSuccessfulExport->checksum }}</code></details>
                 </div>
@@ -33,14 +34,15 @@
         @enderror
 
         @if ($recentExports->isNotEmpty())
-            <div class="mt-6 divide-y divide-gray-200 dark:divide-gray-700" aria-label="Recent backups">
+            <p class="mt-6 text-xs text-gray-500">Recent backups. Deleting an entry reveals older backups when more are available.</p>
+            <div class="mt-2 divide-y divide-gray-200 dark:divide-gray-700" aria-label="Recent backups">
                 @foreach ($recentExports as $export)
                     @continue($lastSuccessfulExport?->id === $export->id)
                     <div class="flex flex-wrap items-center justify-between gap-3 py-3" wire:key="export-{{ $export->public_id }}">
                         <div class="space-y-1">
                             <div class="flex items-center gap-3">
                                 <x-filament::badge :color="$export->status === \App\Enums\HelpContentExportStatus::Succeeded ? 'success' : ($export->status === \App\Enums\HelpContentExportStatus::Failed ? 'danger' : 'warning')">{{ ucfirst($export->status->value) }}</x-filament::badge>
-                                <span class="text-sm">{{ $export->created_at->format('M j, H:i') }} UTC · {{ str_replace('_', ' ', ucfirst($export->reason->value)) }}</span>
+                                <span class="text-sm">Backup #{{ $export->id }} · {{ $export->created_at->format('M j, H:i:s') }} UTC · {{ str_replace('_', ' ', ucfirst($export->reason->value)) }}</span>
                             </div>
                             @if ($export->error_message)
                                 <p class="text-sm text-gray-500">{{ $export->error_message }}</p>

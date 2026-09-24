@@ -300,3 +300,40 @@ it('distinguishes identical failures and updates the remaining count when older 
 
     expect($deleted->fresh()->removed_at)->not->toBeNull();
 });
+
+it('bulk deletes only selected backups and clears their selection', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    Storage::fake('local');
+    Storage::disk('local')->put('selected.json', '{}');
+    $success = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Succeeded, 'disk' => 'local', 'path' => 'selected.json', 'completed_at' => now(), 'size_bytes' => 2]);
+    $failed = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed]);
+    $keep = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed]);
+
+    Livewire::test(HelpContentMaintenance::class)->set('selectedBackups', [$success->public_id, $failed->public_id])
+        ->call('removeSelectedExports')->assertHasNoErrors()->assertSet('selectedBackups', []);
+
+    expect($success->fresh()->removed_at)->not->toBeNull();
+    expect($failed->fresh()->removed_at)->not->toBeNull();
+    expect($keep->fresh()->removed_at)->toBeNull();
+    Storage::disk('local')->assertMissing('selected.json');
+});
+
+it('rejects a bulk selection containing an active backup before deleting any entry', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $failed = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed]);
+    $active = HelpContentExport::factory()->create();
+
+    Livewire::test(HelpContentMaintenance::class)->set('selectedBackups', [$failed->public_id, $active->public_id])
+        ->call('removeSelectedExports')->assertHasErrors(['selectedBackups']);
+
+    expect(HelpContentExport::query()->whereNotNull('removed_at')->count())->toBe(0);
+});
+
+it('selects only deletable backups shown on the page', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $failed = HelpContentExport::factory()->count(23)->create(['status' => HelpContentExportStatus::Failed]);
+    HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Running]);
+
+    Livewire::test(HelpContentMaintenance::class)->call('selectVisibleBackups')
+        ->assertSet('selectedBackups', $failed->reverse()->take(19)->pluck('public_id')->values()->all());
+});

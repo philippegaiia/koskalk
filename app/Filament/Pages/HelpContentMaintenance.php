@@ -50,6 +50,9 @@ class HelpContentMaintenance extends Page
     /** @var list<string> */
     public array $selectedChanges = [];
 
+    /** @var list<string> */
+    public array $selectedBackups = [];
+
     public static function getNavigationGroup(): ?string
     {
         return 'Content';
@@ -174,7 +177,34 @@ class HelpContentMaintenance extends Page
     {
         $export = HelpContentExport::query()->where('public_id', $publicId)->firstOrFail();
         $removal->remove($this->user(), $publicId);
+        $this->selectedBackups = array_values(array_diff($this->selectedBackups, [$publicId]));
         Notification::make()->title('Backup #'.$export->id.' deleted')->success()->send();
+    }
+
+    public function selectVisibleBackups(): void
+    {
+        Gate::authorize('export', HelpTopic::class);
+        $data = $this->getViewData();
+        $this->selectedBackups = $data['recentExports']->when($data['lastSuccessfulExport'], fn ($exports) => $exports->push($data['lastSuccessfulExport']))
+            ->filter(fn (HelpContentExport $export): bool => in_array($export->status, [HelpContentExportStatus::Succeeded, HelpContentExportStatus::Failed], true))
+            ->pluck('public_id')->unique()->values()->all();
+    }
+
+    public function removeSelectedExports(HelpContentBackupRemoval $removal): void
+    {
+        Gate::authorize('export', HelpTopic::class);
+        $this->validate(['selectedBackups' => ['required', 'array', 'max:21'], 'selectedBackups.*' => ['required', 'uuid', 'distinct']]);
+        $count = count($this->selectedBackups);
+        $eligible = HelpContentExport::query()->whereIn('public_id', $this->selectedBackups)->whereNull('removed_at')
+            ->whereIn('status', [HelpContentExportStatus::Succeeded, HelpContentExportStatus::Failed])->count();
+        if ($eligible !== $count) {
+            throw ValidationException::withMessages(['selectedBackups' => 'Some selected backups are no longer available for deletion. Clear the selection and select again.']);
+        }
+        foreach ($this->selectedBackups as $publicId) {
+            $removal->remove($this->user(), $publicId);
+            $this->selectedBackups = array_values(array_diff($this->selectedBackups, [$publicId]));
+        }
+        Notification::make()->title($count.' backups deleted')->success()->send();
     }
 
     public function clearFailedExports(HelpContentBackupRemoval $removal): void
@@ -184,6 +214,7 @@ class HelpContentMaintenance extends Page
         foreach ($ids as $publicId) {
             $removal->remove($this->user(), $publicId, failedOnly: true);
         }
+        $this->selectedBackups = array_values(array_diff($this->selectedBackups, $ids->all()));
         Notification::make()->title('Failed backups cleared')->success()->send();
     }
 

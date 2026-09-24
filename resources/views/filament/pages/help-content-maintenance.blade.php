@@ -7,7 +7,10 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
             @if ($lastSuccessfulExport)
                 <div class="space-y-1">
-                    <x-filament::badge color="success">Last verified backup</x-filament::badge>
+                    <label class="flex items-center gap-3">
+                        <x-filament::input.checkbox wire:model.live="selectedBackups" :value="$lastSuccessfulExport->public_id" aria-label="Select backup #{{ $lastSuccessfulExport->id }}" />
+                        <x-filament::badge color="success">Last verified backup</x-filament::badge>
+                    </label>
                     <p class="text-sm font-medium">Backup #{{ $lastSuccessfulExport->id }} · {{ $lastSuccessfulExport->completed_at->format('M j, Y · H:i:s') }} UTC</p>
                     <p class="text-sm text-gray-500">{{ number_format($lastSuccessfulExport->size_bytes / 1024, 1) }} KiB · {{ ucfirst($lastSuccessfulExport->reason->value) }}</p>
                     <details class="text-xs text-gray-500"><summary class="cursor-pointer">SHA-256 checksum</summary><code class="break-all">{{ $lastSuccessfulExport->checksum }}</code></details>
@@ -24,6 +27,19 @@
             </x-filament::button>
         </div>
 
+        @if ($backupCount)
+            <div class="mt-6 flex flex-wrap items-center gap-3" aria-label="Backup selection">
+                <x-filament::button color="gray" size="sm" wire:click="selectVisibleBackups">Select shown</x-filament::button>
+                @if (count($selectedBackups))
+                    <span class="text-sm" role="status">{{ count($selectedBackups) }} selected</span>
+                    <x-filament::button color="gray" size="sm" wire:click="$set('selectedBackups', [])">Clear selection</x-filament::button>
+                    <x-filament::button color="danger" size="sm" icon="heroicon-o-trash" wire:click="removeSelectedExports" wire:confirm="Delete the selected backups and their stored JSON files? Your help texts and translations will not change." wire:loading.attr="disabled">Delete selected ({{ count($selectedBackups) }})</x-filament::button>
+                @endif
+            </div>
+        @endif
+        @error('selectedBackups')
+            <p role="alert" class="mt-4 text-sm text-danger-600">{{ $message }}</p>
+        @enderror
         @if ($hasFailedExports)
             <div class="mt-6 flex justify-end">
                 <x-filament::button color="gray" size="sm" wire:click="clearFailedExports" wire:confirm="Clear all failed backups, including entries outside this list? Any associated backup files will be deleted. Your help texts and translations will not change." wire:loading.attr="disabled">Clear failed backups</x-filament::button>
@@ -41,6 +57,9 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 py-3" wire:key="export-{{ $export->public_id }}">
                         <div class="space-y-1">
                             <div class="flex items-center gap-3">
+                                @if (in_array($export->status, [\App\Enums\HelpContentExportStatus::Failed, \App\Enums\HelpContentExportStatus::Succeeded], true))
+                                    <x-filament::input.checkbox wire:model.live="selectedBackups" :value="$export->public_id" aria-label="Select backup #{{ $export->id }}" />
+                                @endif
                                 <x-filament::badge :color="$export->status === \App\Enums\HelpContentExportStatus::Succeeded ? 'success' : ($export->status === \App\Enums\HelpContentExportStatus::Failed ? 'danger' : 'warning')">{{ ucfirst($export->status->value) }}</x-filament::badge>
                                 <span class="text-sm">Backup #{{ $export->id }} · {{ $export->created_at->format('M j, H:i:s') }} UTC · {{ str_replace('_', ' ', ucfirst($export->reason->value)) }}</span>
                             </div>

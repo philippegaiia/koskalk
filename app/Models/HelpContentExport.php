@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'requires_admin_authorization',
     'public_id',
+    'removed_at',
     'status',
     'processing_token',
     'disk',
@@ -60,6 +61,7 @@ class HelpContentExport extends Model
             'captured_at' => 'immutable_datetime',
             'started_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
+            'removed_at' => 'immutable_datetime',
         ];
     }
 }

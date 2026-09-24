@@ -9,6 +9,7 @@ use App\Enums\HelpContentImportMode;
 use App\Models\HelpContentExport;
 use App\Models\HelpTopic;
 use App\Models\User;
+use App\Services\ContextualHelp\HelpContentBackupRemoval;
 use App\Services\ContextualHelp\HelpContentExportService;
 use App\Services\ContextualHelp\HelpContentImporter;
 use App\Services\ContextualHelp\HelpContentManifest;
@@ -164,17 +165,34 @@ class HelpContentMaintenance extends Page
     public function retryExport(string $publicId, HelpContentExportService $exports): void
     {
         Gate::authorize('export', HelpTopic::class);
-        $export = HelpContentExport::query()->where('public_id', $publicId)->where('status', HelpContentExportStatus::Failed)->firstOrFail();
+        $export = HelpContentExport::query()->where('public_id', $publicId)->whereNull('removed_at')->where('status', HelpContentExportStatus::Failed)->firstOrFail();
         $exports->dispatch($export);
         Notification::make()->title('Backup retry requested')->success()->send();
+    }
+
+    public function removeExport(string $publicId, HelpContentBackupRemoval $removal): void
+    {
+        $removal->remove($this->user(), $publicId);
+        Notification::make()->title('Backup deleted')->success()->send();
+    }
+
+    public function clearFailedExports(HelpContentBackupRemoval $removal): void
+    {
+        Gate::authorize('export', HelpTopic::class);
+        $ids = HelpContentExport::query()->whereNull('removed_at')->where('status', HelpContentExportStatus::Failed)->pluck('public_id');
+        foreach ($ids as $publicId) {
+            $removal->remove($this->user(), $publicId, failedOnly: true);
+        }
+        Notification::make()->title('Failed backups cleared')->success()->send();
     }
 
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
         return [
-            'lastSuccessfulExport' => HelpContentExport::query()->where('status', HelpContentExportStatus::Succeeded)->latest('completed_at')->latest('id')->first(),
-            'recentExports' => HelpContentExport::query()->whereIn('status', [HelpContentExportStatus::Pending, HelpContentExportStatus::Running, HelpContentExportStatus::Failed])->latest('id')->limit(20)->get(),
+            'lastSuccessfulExport' => HelpContentExport::query()->whereNull('removed_at')->where('status', HelpContentExportStatus::Succeeded)->latest('completed_at')->latest('id')->first(),
+            'hasFailedExports' => HelpContentExport::query()->whereNull('removed_at')->where('status', HelpContentExportStatus::Failed)->exists(),
+            'recentExports' => HelpContentExport::query()->whereNull('removed_at')->latest('id')->limit(20)->get(),
         ];
     }
 

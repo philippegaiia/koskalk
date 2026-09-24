@@ -15,7 +15,7 @@ class HelpContentExportDownloadController extends Controller
     public function __invoke(HelpContentExport $helpContentExport): StreamedResponse
     {
         Gate::authorize('export', HelpTopic::class);
-        abort_unless($helpContentExport->status === HelpContentExportStatus::Succeeded && $helpContentExport->disk && $helpContentExport->path && $helpContentExport->checksum, 404);
+        abort_unless($helpContentExport->removed_at === null && $helpContentExport->status === HelpContentExportStatus::Succeeded && $helpContentExport->disk && $helpContentExport->path && $helpContentExport->checksum, 404);
         $disk = Storage::disk($helpContentExport->disk);
         abort_unless($disk->exists($helpContentExport->path), 404);
         $size = $disk->size($helpContentExport->path);

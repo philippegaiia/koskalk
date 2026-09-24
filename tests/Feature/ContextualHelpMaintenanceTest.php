@@ -207,3 +207,78 @@ it('shows failed backup status and preserves the preview when a required pre-imp
     expect(HelpTopicRevision::query()->count())->toBe(0);
     expect(HelpContentExport::query()->sole()->status)->toBe(HelpContentExportStatus::Failed);
 });
+
+it('removes a backup file from storage and the list while retaining its audit record', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    Storage::fake('local');
+    Storage::disk('local')->put('help-content/review.json', '{}');
+    $export = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Succeeded, 'disk' => 'local', 'path' => 'help-content/review.json', 'completed_at' => now(), 'size_bytes' => 2, 'checksum' => hash('sha256', '{}')]);
+
+    Livewire::test(HelpContentMaintenance::class)->call('removeExport', $export->public_id)->assertHasNoErrors()->assertSee('No verified backup yet.');
+
+    Storage::disk('local')->assertMissing('help-content/review.json');
+    expect($export->fresh()->removed_at)->not->toBeNull();
+    $this->get(route('help-content-exports.download', $export))->assertNotFound();
+});
+
+it('clears all failed backups including those beyond the recent list without removing active or successful backups', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $failed = HelpContentExport::factory()->count(23)->create(['status' => HelpContentExportStatus::Failed]);
+    $pending = HelpContentExport::factory()->create();
+    $running = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Running]);
+    $succeeded = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Succeeded, 'completed_at' => now(), 'size_bytes' => 2]);
+
+    Livewire::test(HelpContentMaintenance::class)->call('clearFailedExports')->assertHasNoErrors();
+
+    expect(HelpContentExport::query()->whereNotNull('removed_at')->count())->toBe($failed->count());
+    foreach ([$pending, $running, $succeeded] as $export) {
+        expect($export->fresh()->removed_at)->toBeNull();
+    }
+});
+
+it('rejects removing active backups on the server', function (HelpContentExportStatus $status): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $export = HelpContentExport::factory()->create(['status' => $status]);
+
+    Livewire::test(HelpContentMaintenance::class)->call('removeExport', $export->public_id)->assertHasErrors(['backupRemoval']);
+
+    expect($export->fresh()->removed_at)->toBeNull();
+})->with([HelpContentExportStatus::Pending, HelpContentExportStatus::Running]);
+
+it('keeps the entry when its backup file cannot be removed', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $disk = Mockery::mock(Storage::fake('local'))->makePartial();
+    $disk->put('backup.json', '{}');
+    $disk->shouldReceive('delete')->once()->with('backup.json')->andReturnFalse();
+    Storage::set('local', $disk);
+    $export = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed, 'disk' => 'local', 'path' => 'backup.json']);
+
+    Livewire::test(HelpContentMaintenance::class)->call('removeExport', $export->public_id)->assertHasErrors(['backupRemoval']);
+
+    expect($export->fresh()->removed_at)->toBeNull();
+    Storage::disk('local')->assertExists('backup.json');
+});
+
+it('does not retry or regenerate a removed failed backup', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    Queue::fake();
+    $export = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed, 'removed_at' => now()]);
+
+    expect(fn () => Livewire::test(HelpContentMaintenance::class)->call('retryExport', $export->public_id))->toThrow(ModelNotFoundException::class);
+    app()->call([new ExportHelpContent($export->id), 'handle']);
+
+    Queue::assertNothingPushed();
+    expect($export->fresh()->status)->toBe(HelpContentExportStatus::Failed);
+});
+
+it('denies backup removal after administrator access is revoked', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+    $export = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed]);
+    $page = Livewire::test(HelpContentMaintenance::class);
+    $admin->update(['is_admin' => false]);
+
+    $page->call('removeExport', $export->public_id)->assertForbidden();
+
+    expect($export->fresh()->removed_at)->toBeNull();
+});

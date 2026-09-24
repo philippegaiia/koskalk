@@ -14,6 +14,7 @@
                 <x-filament::button tag="a" color="gray" icon="heroicon-o-arrow-down-tray" :href="route('help-content-exports.download', $lastSuccessfulExport)">
                     Download JSON
                 </x-filament::button>
+                <x-filament::button color="gray" size="sm" icon="heroicon-o-trash" wire:click="removeExport('{{ $lastSuccessfulExport->public_id }}')" wire:confirm="Delete this backup and its stored JSON file? Your help texts and translations will not change." wire:loading.attr="disabled">Delete backup</x-filament::button>
             @else
                 <p class="text-sm text-gray-500">No verified backup yet.</p>
             @endif
@@ -22,22 +23,39 @@
             </x-filament::button>
         </div>
 
+        @if ($hasFailedExports)
+            <div class="mt-6 flex justify-end">
+                <x-filament::button color="gray" size="sm" wire:click="clearFailedExports" wire:confirm="Clear all failed backups, including entries outside this list? Any associated backup files will be deleted. Your help texts and translations will not change." wire:loading.attr="disabled">Clear failed backups</x-filament::button>
+            </div>
+        @endif
+        @error('backupRemoval')
+            <p role="alert" class="mt-4 text-sm text-danger-600">{{ $message }}</p>
+        @enderror
+
         @if ($recentExports->isNotEmpty())
-            <div class="mt-6 divide-y divide-gray-200 dark:divide-gray-700" aria-label="Pending and failed backups">
+            <div class="mt-6 divide-y divide-gray-200 dark:divide-gray-700" aria-label="Recent backups">
                 @foreach ($recentExports as $export)
+                    @continue($lastSuccessfulExport?->id === $export->id)
                     <div class="flex flex-wrap items-center justify-between gap-3 py-3" wire:key="export-{{ $export->public_id }}">
                         <div class="space-y-1">
                             <div class="flex items-center gap-3">
-                                <x-filament::badge :color="$export->status === \App\Enums\HelpContentExportStatus::Failed ? 'danger' : 'warning'">{{ ucfirst($export->status->value) }}</x-filament::badge>
+                                <x-filament::badge :color="$export->status === \App\Enums\HelpContentExportStatus::Succeeded ? 'success' : ($export->status === \App\Enums\HelpContentExportStatus::Failed ? 'danger' : 'warning')">{{ ucfirst($export->status->value) }}</x-filament::badge>
                                 <span class="text-sm">{{ $export->created_at->format('M j, H:i') }} UTC · {{ str_replace('_', ' ', ucfirst($export->reason->value)) }}</span>
                             </div>
                             @if ($export->error_message)
                                 <p class="text-sm text-gray-500">{{ $export->error_message }}</p>
                             @endif
                         </div>
+                        <div class="flex flex-wrap items-center gap-2">
                         @if ($export->status === \App\Enums\HelpContentExportStatus::Failed)
                             <x-filament::button color="gray" size="sm" wire:click="retryExport('{{ $export->public_id }}')" wire:loading.attr="disabled" wire:target="retryExport">Retry backup</x-filament::button>
+                        @elseif ($export->status === \App\Enums\HelpContentExportStatus::Succeeded)
+                            <x-filament::button tag="a" color="gray" size="sm" :href="route('help-content-exports.download', $export)">Download JSON</x-filament::button>
                         @endif
+                        @if (in_array($export->status, [\App\Enums\HelpContentExportStatus::Failed, \App\Enums\HelpContentExportStatus::Succeeded], true))
+                            <x-filament::button color="gray" size="sm" icon="heroicon-o-trash" wire:click="removeExport('{{ $export->public_id }}')" wire:confirm="Delete this backup entry and any stored JSON file? Your help texts and translations will not change." wire:loading.attr="disabled">Delete</x-filament::button>
+                        @endif
+                        </div>
                     </div>
                 @endforeach
             </div>

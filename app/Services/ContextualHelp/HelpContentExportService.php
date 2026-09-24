@@ -41,7 +41,7 @@ final class HelpContentExportService
     public function run(HelpContentExport $export): HelpContentExport
     {
         $token = (string) Str::uuid();
-        $claimed = HelpContentExport::query()->whereKey($export->id)->whereIn('status', [HelpContentExportStatus::Pending->value, HelpContentExportStatus::Failed->value])->update([
+        $claimed = HelpContentExport::query()->whereKey($export->id)->whereNull('removed_at')->whereIn('status', [HelpContentExportStatus::Pending->value, HelpContentExportStatus::Failed->value])->update([
             'status' => HelpContentExportStatus::Running, 'processing_token' => $token, 'started_at' => now(), 'completed_at' => null, 'error_code' => null, 'error_message' => null,
         ]);
         if (! $claimed) {

@@ -10,7 +10,7 @@ class HomeController extends Controller
     public function index(Request $request): RedirectResponse
     {
         if ($request->user()) {
-            return redirect()->route('recipes.start');
+            return redirect()->route('dashboard');
         }
 
         return redirect()->route('login');

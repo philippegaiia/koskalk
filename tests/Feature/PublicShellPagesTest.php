@@ -2,6 +2,8 @@
 
 use App\Models\InterfaceTranslation;
 use App\Models\User;
+use Dom\Element;
+use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 
@@ -86,12 +88,24 @@ it('redirects guests from the application root to login', function () {
         ->assertRedirect(route('login'));
 });
 
-it('redirects authenticated homepage visitors to Product creation', function () {
+it('redirects authenticated homepage visitors to the overview', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('home'))
-        ->assertRedirect(route('recipes.start'));
+        ->assertRedirect(route('dashboard'));
+});
+
+it('links the top bar overview directly to the dashboard', function () {
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('dashboard'));
+
+    $document = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    $links = $document->querySelectorAll('header a');
+    $overviewLinks = collect($links)->filter(fn (Element $link): bool => trim($link->textContent) === __('navigation.items.overview'));
+
+    expect($overviewLinks)->toHaveCount(1);
+    expect($overviewLinks->first()->getAttribute('href'))->toBe(route('dashboard'));
 });
 
 it('renders public interface database translations with an English fallback', function () {

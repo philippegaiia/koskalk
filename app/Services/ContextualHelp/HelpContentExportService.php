@@ -27,11 +27,63 @@ final class HelpContentExportService
         return $export;
     }
 
+    public function requestPublication(int $actorId): void
+    {
+        DB::afterCommit(function () use ($actorId): void {
+            try {
+                cache()->lock('help-publication-backup-request', 30)->block(5, function () use ($actorId): void {
+                    DB::transaction(function () use ($actorId): void {
+                        $pending = HelpContentExport::query()->whereNull('removed_at')
+                            ->where('reason', HelpContentExportReason::Publication)
+                            ->where('status', HelpContentExportStatus::Pending)->lockForUpdate()->first();
+                        if ($pending) {
+                            return;
+                        }
+                        $export = HelpContentExport::query()->create([
+                            'reason' => HelpContentExportReason::Publication,
+                            'status' => HelpContentExportStatus::Pending,
+                            'requested_by' => $actorId,
+                            'disk' => config('contextual-help.disk'),
+                            'format_version' => 1,
+                        ]);
+                        $this->dispatch($export);
+                    }, attempts: 5);
+                });
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        });
+    }
+
+    public function scheduled(): ?HelpContentExport
+    {
+        $previous = HelpContentExport::query()->whereNull('removed_at')
+            ->where('status', HelpContentExportStatus::Succeeded)->latest('completed_at')->latest('id')->first();
+        if ($previous?->disk && $previous->path && $previous->checksum) {
+            $storage = Storage::disk($previous->disk);
+            if ($storage->exists($previous->path)) {
+                $json = $storage->get($previous->path);
+                if (hash_equals($previous->checksum, hash('sha256', $json))) {
+                    $saved = $this->manifest->decode($json);
+                    $current = $this->snapshot->capture();
+                    if ($this->manifest->hash(['topics' => $saved['topics']]) === $this->manifest->hash(['topics' => $current['topics']])) {
+                        return null;
+                    }
+                }
+            }
+        }
+
+        return $this->run($this->request(HelpContentExportReason::Scheduled, dispatch: false));
+    }
+
     public function dispatch(HelpContentExport $export): void
     {
         DB::afterCommit(function () use ($export): void {
             try {
-                ExportHelpContent::dispatch($export->id);
+                $job = ExportHelpContent::dispatch($export->id);
+                if ($export->reason === HelpContentExportReason::Publication) {
+                    $job->delay($export->created_at->addMinutes(2));
+                }
             } catch (Throwable $exception) {
                 report($exception);
             }

@@ -14,6 +14,7 @@ use App\Services\ContextualHelp\HelpContentManifest;
 use App\Services\ContextualHelp\HelpContentSnapshot;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -129,4 +130,70 @@ it('exports authored history without depending on nonexistent portable user iden
     expect($exported['published_by_uuid'])->toBeNull()
         ->and($exported['revisions'][0]['created_by_uuid'])->toBeNull()
         ->and($revision->fresh()->created_by)->toBe($author->id);
+});
+
+it('combines publication requests into one delayed backup but starts a new one after processing starts', function (): void {
+    Queue::fake();
+    $actor = User::factory()->admin()->create();
+    $service = app(HelpContentExportService::class);
+    $this->travelTo(now()->startOfSecond());
+
+    foreach (range(1, 88) as $index) {
+        $service->requestPublication($actor->id);
+    }
+
+    $export = HelpContentExport::query()->sole();
+    Queue::assertPushed(ExportHelpContent::class, 1);
+    Queue::assertPushed(ExportHelpContent::class, fn ($job): bool => $job->delay->equalTo(now()->addMinutes(2)));
+    $export->update(['status' => HelpContentExportStatus::Running]);
+    $service->requestPublication($actor->id);
+    expect(HelpContentExport::query()->count())->toBe(2);
+    Queue::assertPushed(ExportHelpContent::class, 2);
+});
+
+it('skips unchanged scheduled content but backs up draft and publication changes', function (): void {
+    Storage::fake('r2_backups');
+    $topic = HelpTopic::factory()->create(['key' => 'shared.formula_basics']);
+    $locale = HelpTopicLocale::factory()->create(['help_topic_id' => $topic->id]);
+    $revision = HelpTopicRevision::factory()->create(['help_topic_locale_id' => $locale->id]);
+    $locale->update(['latest_revision_id' => $revision->id]);
+    $service = app(HelpContentExportService::class);
+    $service->scheduled();
+    $this->travel(1)->day();
+
+    $this->artisan('help:snapshot')->expectsOutput('Help content is unchanged; no new backup needed.')->assertSuccessful();
+    expect(HelpContentExport::query()->count())->toBe(1);
+
+    $locale->update(['published_revision_id' => $revision->id]);
+    expect($service->scheduled()?->status)->toBe(HelpContentExportStatus::Succeeded);
+    $draft = HelpTopicRevision::factory()->create(['help_topic_locale_id' => $locale->id, 'revision_number' => 2]);
+    $locale->update(['latest_revision_id' => $draft->id]);
+    expect($service->scheduled()?->status)->toBe(HelpContentExportStatus::Succeeded);
+    expect(Storage::disk('r2_backups')->allFiles())->toHaveCount(3);
+});
+
+it('replaces a missing scheduled backup and always allows manual and pre-import backups', function (): void {
+    Storage::fake('r2_backups');
+    $service = app(HelpContentExportService::class);
+    $first = $service->scheduled();
+    Storage::disk('r2_backups')->delete($first->path);
+
+    expect($service->scheduled()?->status)->toBe(HelpContentExportStatus::Succeeded);
+    expect($service->run($service->request(HelpContentExportReason::Manual, dispatch: false))->status)->toBe(HelpContentExportStatus::Succeeded);
+    expect($service->beforeImport()->status)->toBe(HelpContentExportStatus::Succeeded);
+    expect(HelpContentExport::query()->count())->toBe(4);
+});
+
+it('does not request a publication backup for a rolled back change', function (): void {
+    Queue::fake();
+    $actor = User::factory()->admin()->create();
+    $service = app(HelpContentExportService::class);
+
+    expect(fn () => DB::transaction(function () use ($service, $actor): void {
+        $service->requestPublication($actor->id);
+        throw new RuntimeException('Publication rolled back.');
+    }))->toThrow(RuntimeException::class, 'Publication rolled back.');
+
+    expect(HelpContentExport::query()->count())->toBe(0);
+    Queue::assertNothingPushed();
 });

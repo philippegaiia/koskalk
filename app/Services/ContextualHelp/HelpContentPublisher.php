@@ -2,9 +2,6 @@
 
 namespace App\Services\ContextualHelp;
 
-use App\Enums\HelpContentExportReason;
-use App\Enums\HelpContentExportStatus;
-use App\Models\HelpContentExport;
 use App\Models\HelpTopic;
 use App\Models\HelpTopicLocale;
 use Illuminate\Support\Facades\DB;
@@ -66,12 +63,6 @@ final class HelpContentPublisher
 
     private function requestSnapshot(int $actorId): void
     {
-        $export = HelpContentExport::query()->create([
-            'status' => HelpContentExportStatus::Pending,
-            'reason' => HelpContentExportReason::Publication,
-            'requested_by' => $actorId,
-            'format_version' => 1,
-        ]);
-        $this->exports->dispatch($export);
+        $this->exports->requestPublication($actorId);
     }
 }

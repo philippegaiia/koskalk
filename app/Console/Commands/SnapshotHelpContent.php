@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\HelpContentExportReason;
 use App\Enums\HelpContentExportStatus;
 use App\Services\ContextualHelp\HelpContentExportService;
 use Illuminate\Console\Command;
@@ -17,7 +16,12 @@ class SnapshotHelpContent extends Command
     public function handle(HelpContentExportService $exports): int
     {
         try {
-            $export = $exports->run($exports->request(HelpContentExportReason::Scheduled, dispatch: false));
+            $export = $exports->scheduled();
+            if ($export === null) {
+                $this->info('Help content is unchanged; no new backup needed.');
+
+                return self::SUCCESS;
+            }
             if ($export->status !== HelpContentExportStatus::Succeeded) {
                 $this->error('Snapshot did not complete successfully.');
 

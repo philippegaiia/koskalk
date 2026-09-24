@@ -13,3 +13,6 @@ The owner wants newly authored English help published locally so it can be revie
 
 ## Retire backup files without deleting the audit record
 Admin backup removal deletes the stored file then marks removed_at; retain HelpContentExport audit rows. Only succeeded/failed exports can be removed under a row lock. List, download, retry, and worker claim paths must reject removed exports so queued retries cannot recreate them. Help topics, revisions, and translations are not affected.
+
+## Combine publication backups and skip unchanged scheduled snapshots
+Publication, withdrawal, and archive changes request a shared pending publication export after commit, under a cache lock. Dispatch delays that export until two minutes after creation, including recovery dispatches. Never combine with a running export. Scheduled snapshots compare complete topics/history/audit data against a checksum-verified retained backup and skip unchanged content; manual and pre-import snapshots remain unconditional.

@@ -21,6 +21,12 @@ class PaddleBillingService
             && filled(config('cashier.api_key'));
     }
 
+    public function isAvailable(): bool
+    {
+        return (bool) config('billing.available', false)
+            && $this->isConfigured();
+    }
+
     /**
      * @return Collection<int, Plan>
      */
@@ -36,6 +42,8 @@ class PaddleBillingService
 
     public function checkoutFor(User $user, Plan $plan): Checkout
     {
+        abort_unless($this->isAvailable(), 503);
+
         return $user->checkout($plan->paddle_price_id)
             ->customData([
                 'subscription_type' => self::SUBSCRIPTION_TYPE,

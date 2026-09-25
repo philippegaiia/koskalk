@@ -235,10 +235,14 @@
             @endif
 
             @if ($hasActiveSubscription)
-                <form method="POST" action="{{ route('billing.payment-method.update') }}" class="mt-4">
-                    @csrf
-                    <button type="submit" class="sk-btn sk-btn-outline w-full justify-center">{{ __('account.actions.update_payment_method') }}</button>
-                </form>
+                @if ($billingReady)
+                    <form method="POST" action="{{ route('billing.payment-method.update') }}" class="mt-4">
+                        @csrf
+                        <button type="submit" class="sk-btn sk-btn-outline w-full justify-center">{{ __('account.actions.update_payment_method') }}</button>
+                    </form>
+                @else
+                    <p class="mt-4 text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('account.billing.payment_update_unavailable') }}</p>
+                @endif
             @elseif (! $billingReady)
                 <p class="mt-4 text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('account.billing.online_checkout_unavailable') }}</p>
             @endif

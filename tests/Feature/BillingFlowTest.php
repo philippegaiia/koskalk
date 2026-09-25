@@ -3,6 +3,7 @@
 use App\Models\Plan;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
+use App\Services\Billing\PaddleBillingService;
 use App\Services\EntitlementService;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Contracts\Foundation\Application;
@@ -11,11 +12,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Laravel\Paddle\Cashier;
 use Laravel\Paddle\Events\SubscriptionCanceled;
 use Laravel\Paddle\Events\SubscriptionCreated;
 use Laravel\Paddle\Events\SubscriptionPaused;
 use Laravel\Paddle\Events\SubscriptionUpdated;
 use Laravel\Paddle\Subscription;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 uses(RefreshDatabase::class);
 
@@ -93,6 +96,7 @@ it('allows production console commands to boot before Paddle is configured', fun
 
 it('shows billable plans with checkout disabled until Paddle keys are configured', function () {
     config([
+        'billing.available' => true,
         'cashier.api_key' => null,
         'cashier.client_side_token' => null,
     ]);
@@ -116,6 +120,27 @@ it('shows billable plans with checkout disabled until Paddle keys are configured
         ->assertSeeText('Online checkout is not available yet.');
 });
 
+it('keeps checkout unavailable by default when Paddle credentials are present', function (): void {
+    config([
+        'cashier.api_key' => 'pdl_test_api_key',
+        'cashier.client_side_token' => 'test_client_token',
+    ]);
+
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create(['slug' => 'growth']);
+    billingSubscriptionFor($user, 'active', 'pri_growth_monthly', 'pro_growth');
+
+    $this->actingAs($user)
+        ->get(route('account'))
+        ->assertSuccessful()
+        ->assertSeeText('Checkout unavailable')
+        ->assertSeeText(__('account.billing.payment_update_unavailable'))
+        ->assertDontSee(route('billing.checkout', $plan), false)
+        ->assertDontSee(route('billing.payment-method.update'), false);
+});
+
 it('does not start Paddle checkout when billing keys are missing', function () {
     config([
         'cashier.api_key' => null,
@@ -133,6 +158,75 @@ it('does not start Paddle checkout when billing keys are missing', function () {
         ->assertSessionHas('billing_status', __('account.billing.online_checkout_unavailable'));
 });
 
+it('does not start Paddle checkout while availability is off despite configured credentials', function (): void {
+    config([
+        'billing.available' => false,
+        'cashier.api_key' => 'pdl_test_api_key',
+        'cashier.client_side_token' => 'test_client_token',
+    ]);
+
+    $user = User::factory()->create();
+    $user->customer()->create([
+        'paddle_id' => 'cus_test_checkout_disabled',
+        'name' => $user->name,
+        'email' => $user->email,
+    ]);
+    $plan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create(['slug' => 'growth']);
+
+    $this->actingAs($user)
+        ->get(route('billing.checkout', $plan))
+        ->assertRedirect(route('account'))
+        ->assertSessionHas('billing_status', __('account.billing.online_checkout_unavailable'));
+});
+
+it('refuses checkout creation through the billing service while availability is off', function (): void {
+    config([
+        'billing.available' => false,
+        'cashier.api_key' => 'pdl_test_api_key',
+        'cashier.client_side_token' => 'test_client_token',
+    ]);
+
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create(['slug' => 'growth']);
+
+    expect(fn () => app(PaddleBillingService::class)->checkoutFor($user, $plan))
+        ->toThrow(HttpException::class);
+});
+
+it('starts checkout when availability and Paddle credentials are enabled', function (): void {
+    config([
+        'billing.available' => true,
+        'cashier.api_key' => 'pdl_test_api_key',
+        'cashier.client_side_token' => 'test_client_token',
+    ]);
+
+    $user = User::factory()->create();
+    $user->customer()->create([
+        'paddle_id' => 'cus_test_checkout_enabled',
+        'name' => $user->name,
+        'email' => $user->email,
+    ]);
+    $plan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create(['slug' => 'growth']);
+
+    $this->actingAs($user)
+        ->get(route('account'))
+        ->assertSuccessful()
+        ->assertSee(route('billing.checkout', $plan), false)
+        ->assertDontSeeText('Checkout unavailable');
+
+    $this->actingAs($user)
+        ->get(route('billing.checkout', $plan))
+        ->assertSuccessful()
+        ->assertViewIs('billing.checkout')
+        ->assertViewHas('plan', $plan);
+});
+
 it('does not start a payment method update when billing keys are missing', function () {
     config([
         'cashier.api_key' => null,
@@ -148,7 +242,42 @@ it('does not start a payment method update when billing keys are missing', funct
         ->assertSessionHas('billing_status', __('account.billing.payment_update_unavailable'));
 });
 
+it('does not start a payment method update while billing availability is off', function (): void {
+    config([
+        'billing.available' => false,
+        'cashier.api_key' => 'pdl_test_api_key',
+        'cashier.client_side_token' => 'test_client_token',
+    ]);
+    Cashier::fake([
+        'subscriptions/sub_test_payment_method' => [
+            'data' => [
+                'management_urls' => [
+                    'update_payment_method' => 'https://billing.example.test/update',
+                ],
+            ],
+        ],
+    ]);
+
+    $user = User::factory()->create();
+    $user->subscriptions()->create([
+        'type' => 'default',
+        'paddle_id' => 'sub_test_payment_method',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('billing.payment-method.update'))
+        ->assertRedirect(route('account'))
+        ->assertSessionHas('billing_status', __('account.billing.payment_update_unavailable'));
+});
+
 it('syncs the app entitlement when Paddle creates a paid subscription', function () {
+    config([
+        'billing.available' => false,
+        'cashier.api_key' => 'pdl_test_api_key',
+        'cashier.client_side_token' => 'test_client_token',
+    ]);
+
     $this->seed(PlanSeeder::class);
 
     $user = User::factory()->create();

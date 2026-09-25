@@ -33,7 +33,7 @@ class AccountController extends Controller
                 ->mapWithKeys(fn ($billingPlan): array => [
                     $billingPlan->id => $planPresenter->present($billingPlan),
                 ]),
-            'billingReady' => $billing->isConfigured(),
+            'billingReady' => $billing->isAvailable(),
             'currentSubscription' => $billing->currentSubscriptionFor($user),
         ]);
     }

@@ -19,7 +19,7 @@ class BillingController extends Controller
     ): View|RedirectResponse {
         abort_unless($plan->is_active && $plan->isBillable(), 404);
 
-        if (! $billing->isConfigured()) {
+        if (! $billing->isAvailable()) {
             return redirect()
                 ->route('account')
                 ->with('billing_status', __('account.billing.online_checkout_unavailable'));
@@ -34,7 +34,7 @@ class BillingController extends Controller
 
     public function updatePaymentMethod(Request $request, PaddleBillingService $billing): RedirectResponse
     {
-        if (! $billing->isConfigured()) {
+        if (! $billing->isAvailable()) {
             return redirect()
                 ->route('account')
                 ->with('billing_status', __('account.billing.payment_update_unavailable'));

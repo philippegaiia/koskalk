@@ -104,6 +104,7 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
     $workbench = [
         'recipe' => [
             'public_id' => 'recipe-test',
+            'can_manage_lock' => true,
             'has_saved_formula' => true,
             'is_locked' => false,
             'saved_formula_url' => $savedFormulaUrl,

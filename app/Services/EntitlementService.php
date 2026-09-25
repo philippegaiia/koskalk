@@ -12,6 +12,7 @@ use App\Models\PlanLimit;
 use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -144,6 +145,44 @@ class EntitlementService
         );
     }
 
+    public function planForWorkspace(Workspace $workspace): ?Plan
+    {
+        $ownerId = Workspace::withoutGlobalScopes()->whereKey($workspace->id)->value('owner_user_id');
+
+        if ($ownerId === null) {
+            return null;
+        }
+
+        return UserEntitlement::query()
+            ->where('user_id', $ownerId)
+            ->active()
+            ->with('plan')
+            ->orderByRaw('starts_at IS NULL')
+            ->latest('starts_at')
+            ->latest('id')
+            ->first()?->plan;
+    }
+
+    public function assignBetaPlan(User $user): UserEntitlement
+    {
+        $plan = Plan::query()
+            ->where('slug', 'free-beta')
+            ->where('is_active', true)
+            ->first();
+
+        if (! $plan instanceof Plan) {
+            throw new RuntimeException('No active Free beta plan is configured.');
+        }
+
+        return $user->entitlements()->firstOrCreate([
+            'plan_id' => $plan->id,
+            'status' => 'active',
+        ], [
+            'source' => 'beta_invitation',
+            'starts_at' => now(),
+        ]);
+    }
+
     /**
      * @template T
      *
@@ -265,6 +304,7 @@ class EntitlementService
         $entitlement = $user->entitlements()
             ->active()
             ->with('plan.limits')
+            ->orderByRaw('starts_at IS NULL')
             ->latest('starts_at')
             ->latest('id')
             ->first();

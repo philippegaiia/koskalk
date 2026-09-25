@@ -55,27 +55,20 @@ it('cancels and resumes production bench without discarding its entitlement reco
         ->and($resumed->archive_eligible_at)->toBeNull();
 });
 
-it('allows editors to manage production bench but rejects viewers', function (): void {
-    $owner = User::factory()->create();
-    $editor = User::factory()->create();
-    $viewer = User::factory()->create();
-    $workspace = Workspace::factory()->for($owner, 'owner')->create();
-
-    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
-        'role' => WorkspaceMemberRole::Editor,
-    ]);
-    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
-        'role' => WorkspaceMemberRole::Viewer,
-    ]);
-
+it('reserves production bench entitlement changes for the actual owner', function (WorkspaceMemberRole $role): void {
+    $workspace = Workspace::factory()->create();
+    $member = User::factory()->create();
+    WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => $role]);
     $access = app(ProductionBenchAccess::class);
+    $entitlement = $access->activate($workspace->owner, $workspace);
+    $before = $entitlement->refresh()->getRawOriginal();
 
-    expect($access->activate($editor, $workspace)->status)
-        ->toBe(ProductionBenchEntitlementStatus::Active);
+    foreach (['activate', 'cancel', 'resume'] as $method) {
+        expect(fn () => $access->{$method}($member, $workspace))->toThrow(AuthorizationException::class);
+    }
 
-    $access->cancel($editor, $workspace);
-    $access->resume($viewer, $workspace);
-})->throws(AuthorizationException::class);
+    expect($entitlement->fresh()->getRawOriginal())->toBe($before);
+})->with(WorkspaceMemberRole::cases());
 
 it('exposes an actor-aware production bench write capability', function (): void {
     $owner = User::factory()->create();
@@ -140,7 +133,7 @@ it('does not depend on plan limits or team size', function (): void {
         'role' => WorkspaceMemberRole::Editor,
     ]);
 
-    $entitlement = app(ProductionBenchAccess::class)->activate($member, $workspace);
+    $entitlement = app(ProductionBenchAccess::class)->activate($owner, $workspace);
 
     expect($entitlement->status)->toBe(ProductionBenchEntitlementStatus::Active)
         ->and(app(ProductionBenchAccess::class)->isActive($workspace))->toBeTrue();

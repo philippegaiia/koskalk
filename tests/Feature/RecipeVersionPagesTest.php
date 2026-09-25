@@ -146,7 +146,8 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(39)
+    // Includes fresh workspace authority and dedicated lock-control policy lookups.
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(41)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 

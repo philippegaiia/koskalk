@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
@@ -28,6 +29,18 @@ class RecipePolicy
     public function update(User $user, Recipe $recipe): bool
     {
         return $this->isWorkspaceOwner($user, $recipe);
+    }
+
+    public function manageLock(User $user, Recipe $recipe): bool
+    {
+        if ($recipe->workspace_id !== null) {
+            return $this->workspaceHasRole($user, $recipe->workspace_id, [
+                WorkspaceMemberRole::Owner,
+                WorkspaceMemberRole::Admin,
+            ]);
+        }
+
+        return $recipe->isOwnedBy($user);
     }
 
     public function delete(User $user, Recipe $recipe): bool

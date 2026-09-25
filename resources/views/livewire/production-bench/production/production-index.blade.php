@@ -134,7 +134,7 @@
                                         ? __('production_bench.production.batch_number')
                                         : __('production_bench.production.planning_reference');
                                     $canSchedule = $canMutate && $production->status->value === 'draft';
-                                    $canDelete = $canMutate && in_array($production->status->value, ['draft', 'scheduled'], true);
+                                    $canDelete = $canDeleteRecords && in_array($production->status->value, ['draft', 'scheduled'], true);
                                     $partiallyReserved = in_array($production->id, $partiallyReservedIds, true);
                                 @endphp
                                 <tr class="cursor-pointer transition hover:bg-[var(--color-panel-muted)]" x-data x-on:click="if (! event.target.closest('a, button, input, select, label')) window.Livewire?.navigate($el.querySelector('a[data-row-link]').href)">
@@ -213,7 +213,7 @@
                                 ? __('production_bench.production.batch_number')
                                 : __('production_bench.production.planning_reference');
                             $canSchedule = $canMutate && $production->status->value === 'draft';
-                            $canDelete = $canMutate && in_array($production->status->value, ['draft', 'scheduled'], true);
+                            $canDelete = $canDeleteRecords && in_array($production->status->value, ['draft', 'scheduled'], true);
                             $partiallyReserved = in_array($production->id, $partiallyReservedIds, true);
                         @endphp
                         <div class="flex gap-4 px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">

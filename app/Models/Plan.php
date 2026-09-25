@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'name', 'description', 'paddle_product_id', 'paddle_price_id', 'billing_interval', 'price_label', 'is_default', 'is_active', 'display_order'])]
+#[Fillable(['slug', 'name', 'description', 'paddle_product_id', 'paddle_price_id', 'billing_interval', 'price_label', 'is_default', 'is_active', 'display_order', 'allows_collaboration', 'allows_production_bench'])]
 class Plan extends Model
 {
     /** @use HasFactory<PlanFactory> */
@@ -47,6 +47,8 @@ class Plan extends Model
         return [
             'is_default' => 'bool',
             'is_active' => 'bool',
+            'allows_collaboration' => 'bool',
+            'allows_production_bench' => 'bool',
         ];
     }
 }

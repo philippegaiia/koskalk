@@ -41,3 +41,6 @@ Use fatty-acid composition, never oil names, for quality calibration. Preserve t
 
 ## Keep ingredient lot numbering independent and transaction-bound
 Ingredient internal lot settings and per-period counters are separate from production run batch numbering. Allocate ingredient numbers inside the acquisition transaction while holding the workspace lock; manual entries reserve their code without advancing the automatic counter. Stock-lot codes share a workspace namespace with packaging, so legacy SK-date sequence scans must match numeric serials only and compare numerically, never lexicographically or by a four-character suffix.
+
+## Workspace capabilities require an explicit owner entitlement
+Resolve feature grants from the workspace actual owner's current active entitlement, never from a member's personal plan or the default-plan fallback. Null feature flags deny; unlimited limits do not grant features. Production Bench plan eligibility creates missing grants only and must preserve existing active/cancelled states.

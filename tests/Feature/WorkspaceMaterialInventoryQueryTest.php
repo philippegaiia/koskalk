@@ -4,7 +4,6 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockMovementType;
-use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientAlias;
 use App\Models\IngredientTranslation;
@@ -20,7 +19,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceMaterialSetting;
-use App\Models\WorkspaceMember;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,22 +28,12 @@ uses(RefreshDatabase::class);
 
 if (! function_exists('inventoryReadActor')) {
     /**
-     * Returns a user who is a member of the workspace, creating an owner when
-     * the workspace has no members yet. Used to satisfy the actor-first
+     * Returns the actual owner of the workspace. Used to satisfy the actor-first
      * signature of the inventory read services under test.
      */
     function inventoryReadActor(Workspace $workspace): User
     {
-        $member = $workspace->users()->first();
-
-        if ($member instanceof User) {
-            return $member;
-        }
-
-        $actor = User::factory()->create();
-        WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => WorkspaceMemberRole::Owner]);
-
-        return $actor;
+        return $workspace->owner()->firstOrFail();
     }
 }
 

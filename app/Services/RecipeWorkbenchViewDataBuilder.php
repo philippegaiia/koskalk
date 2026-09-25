@@ -62,7 +62,7 @@ class RecipeWorkbenchViewDataBuilder
             ],
             'productType' => $this->productTypeData($productType),
             'productTypes' => $this->productTypes($productFamily, $productType),
-            'recipe' => $this->recipeData($recipe),
+            'recipe' => $this->recipeData($recipe, $user),
             'savedDraft' => $savedDraft,
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
             'ingredients' => $ingredients,
@@ -165,7 +165,7 @@ class RecipeWorkbenchViewDataBuilder
     /**
      * @return array<string, mixed>|null
      */
-    private function recipeData(?Recipe $recipe): ?array
+    private function recipeData(?Recipe $recipe, ?User $user): ?array
     {
         if (! $recipe instanceof Recipe) {
             return null;
@@ -185,6 +185,7 @@ class RecipeWorkbenchViewDataBuilder
             'manufacturing_instructions' => $recipe->manufacturing_instructions,
             'featured_image_url' => $recipe->featuredImageUrl(),
             'is_locked' => $recipe->isLocked(),
+            'can_manage_lock' => $user?->can('manageLock', $recipe) ?? false,
             'locked_at' => $recipe->locked_at?->toISOString(),
             'locked_by' => $recipe->locked_by,
             'has_saved_formula' => $hasSavedFormula,

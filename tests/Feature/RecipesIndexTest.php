@@ -197,7 +197,12 @@ it('only resolves owned workspace ids once while rendering the recipes index', f
         ->get(route('recipes.index'))
         ->assertSuccessful();
 
-    expect($workspaceQueries)->toHaveCount(1);
+    [$lockAuthorityQueries, $discoveryQueries] = collect($workspaceQueries)->partition(
+        fn (string $sql): bool => str_contains($sql, 'select exists'),
+    );
+
+    expect($discoveryQueries)->toHaveCount(1)
+        ->and($lockAuthorityQueries)->toHaveCount(1);
 });
 
 it('searches Products by finished-product area category and type names', function (string $searchTerm): void {

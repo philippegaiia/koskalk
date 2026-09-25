@@ -187,7 +187,7 @@ class RecipeController extends Controller
 
         $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
 
-        $this->authorize('update', $recipe);
+        $this->authorize('manageLock', $recipe);
 
         if (! $recipe->isLocked()) {
             $recipe->update([
@@ -209,7 +209,7 @@ class RecipeController extends Controller
 
         $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
 
-        $this->authorize('update', $recipe);
+        $this->authorize('manageLock', $recipe);
 
         if ($recipe->isLocked()) {
             $recipe->update([

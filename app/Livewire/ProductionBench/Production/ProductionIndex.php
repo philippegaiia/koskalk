@@ -225,9 +225,10 @@ class ProductionIndex extends Component implements HasActions, HasForms
                 ->orderBy('name')
                 ->get()
             : collect();
+        $role = $workspace->roleFor($this->user());
         $canMutate = $access->isActive($workspace)
             && ! $access->isReadOnly($workspace)
-            && in_array($workspace->roleFor($this->user()), [
+            && in_array($role, [
                 WorkspaceMemberRole::Owner,
                 WorkspaceMemberRole::Admin,
                 WorkspaceMemberRole::Editor,
@@ -241,6 +242,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
+            'canDeleteRecords' => $canMutate && in_array($role, [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true),
             'productions' => $productions,
             'productionLocations' => $productionLocations,
             'partiallyReservedIds' => $this->partiallyReservedIds($productions->getCollection()),

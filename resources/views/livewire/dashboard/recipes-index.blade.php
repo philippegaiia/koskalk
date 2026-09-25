@@ -244,20 +244,22 @@
                                             {{ __('products.actions.duplicate') }}
                                         </button>
                                     </form>
-                                    @if ($isLocked)
-                                        <form method="POST" action="{{ route('recipes.unlock', $recipe) }}">
-                                            @csrf
-                                            <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
-                                                {{ __('products.actions.unlock') }}
-                                            </button>
-                                        </form>
-                                    @else
-                                        <form method="POST" action="{{ route('recipes.lock', $recipe) }}">
-                                            @csrf
-                                            <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
-                                                {{ __('products.actions.lock') }}
-                                            </button>
-                                        </form>
+                                    @if ($canManageRecipeLocks[$recipe->id] ?? false)
+                                        @if ($isLocked)
+                                            <form method="POST" action="{{ route('recipes.unlock', $recipe) }}">
+                                                @csrf
+                                                <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                                    {{ __('products.actions.unlock') }}
+                                                </button>
+                                            </form>
+                                        @else
+                                            <form method="POST" action="{{ route('recipes.lock', $recipe) }}">
+                                                @csrf
+                                                <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                                    {{ __('products.actions.lock') }}
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
                                     <hr class="my-1 border-[var(--color-line)]" />
                                     @if ($hasProductionHistory && $recipe->archived_at === null)

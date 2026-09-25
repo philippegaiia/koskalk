@@ -15,6 +15,7 @@ use App\Actions\Production\SyncProductionBatchPresetProducts;
 use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Actions\Production\UpdateProductionWorkingCalendar;
 use App\Enums\MassUnit;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
@@ -674,6 +675,7 @@ class SettingsIndex extends Component implements HasForms
             'workspace' => $workspace,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'canDeleteRecords' => in_array($workspace->roleFor($this->user()), [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true),
             'employees' => Employee::query()->where('workspace_id', $workspace->id)->with('departments')->orderBy('last_name')->orderBy('first_name')->get(),
             'departments' => Department::query()->where('workspace_id', $workspace->id)->withCount(['employees', 'productionTaskTypes', 'productionTasks'])->orderByDesc('is_active')->orderBy('name')->get(),
             'taskTypes' => ProductionTaskType::query()->where('workspace_id', $workspace->id)->with('department')->orderBy('name')->get(),

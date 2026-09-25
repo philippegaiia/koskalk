@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 class BetaInviteService
 {
@@ -20,6 +19,7 @@ class BetaInviteService
     public function __construct(
         private readonly EntitlementService $entitlementService,
         private readonly WorkspaceProvisioner $workspaceProvisioner,
+        private readonly WorkspaceCapabilities $workspaceCapabilities,
     ) {}
 
     public function issue(User $administrator, string $email, string $workspaceName): string
@@ -123,12 +123,9 @@ class BetaInviteService
             ]);
             $user->forceFill(['email_verified_at' => now()])->save();
 
-            $this->workspaceProvisioner->ensureOwnerWorkspace($user, $invite->workspace_name);
-            $this->entitlementService->assignDefaultPlan($user);
-
-            if (! $user->entitlements()->exists()) {
-                throw new RuntimeException('No active default plan is configured.');
-            }
+            $workspace = $this->workspaceProvisioner->ensureOwnerWorkspace($user, $invite->workspace_name);
+            $this->entitlementService->assignBetaPlan($user);
+            $this->workspaceCapabilities->provisionProductionBench($workspace);
 
             $invite->forceFill(['accepted_at' => now()])->save();
 

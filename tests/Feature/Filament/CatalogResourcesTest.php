@@ -1071,6 +1071,57 @@ it('adds formula line defaults to new billable plans without overwriting edits',
     expect($plan->fresh()->limits()->where('key', 'formula_items_per_recipe')->value('value'))->toBe(37);
 });
 
+it('preserves absent limits when an administrator edits an existing plan', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $plan = Plan::factory()->billable()->create();
+
+    Livewire::test(EditPlan::class, ['record' => $plan->id])
+        ->fillForm(['name' => 'Updated offer'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($plan->fresh()->name)->toBe('Updated offer');
+    expect($plan->fresh()->allows_collaboration)->toBeNull();
+    expect($plan->fresh()->allows_production_bench)->toBeNull();
+    expect($plan->limits()->count())->toBe(0);
+});
+
+it('saves explicit plan capabilities independently from unlimited capacity', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $plan = Plan::factory()->create();
+
+    Livewire::test(EditPlan::class, ['record' => $plan->id])
+        ->fillForm([
+            'allows_collaboration' => '0',
+            'allows_production_bench' => '1',
+            'limits' => [['key' => 'workspace_members', 'value' => null]],
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($plan->fresh()->allows_collaboration)->toBeFalse();
+    expect($plan->fresh()->allows_production_bench)->toBeTrue();
+    expect($plan->limits()->sole()->value)->toBeNull();
+});
+
+it('lets an administrator save member capacity and formula history limits', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+    $plan = Plan::factory()->create();
+
+    Livewire::test(EditPlan::class, ['record' => $plan->id])
+        ->fillForm(['limits' => [
+            ['key' => 'workspace_members', 'value' => 5],
+            ['key' => 'saved_formula_history', 'value' => 20],
+        ]])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($plan->limits()->orderBy('key')->pluck('value', 'key')->all())->toBe([
+        'saved_formula_history' => 20,
+        'workspace_members' => 5,
+    ]);
+});
+
 it('renders the user management resource with plan subscription and usage context', function () {
     $admin = User::factory()->admin()->create();
     $customer = User::factory()->create([

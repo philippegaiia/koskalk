@@ -158,27 +158,12 @@ class Workspace extends Model
 
     public function hasMember(User $user): bool
     {
-        return $this->owner_user_id === $user->id
-            || WorkspaceMember::withoutGlobalScopes()
-                ->where('workspace_id', $this->id)
-                ->where('user_id', $user->id)
-                ->exists();
+        return $this->roleFor($user) !== null;
     }
 
     public function roleFor(User $user): ?WorkspaceMemberRole
     {
-        if ($this->owner_user_id === $user->id) {
-            return WorkspaceMemberRole::Owner;
-        }
-
-        $role = WorkspaceMember::withoutGlobalScopes()
-            ->where('workspace_id', $this->id)
-            ->where('user_id', $user->id)
-            ->value('role');
-
-        return $role instanceof WorkspaceMemberRole
-            ? $role
-            : ($role === null ? null : WorkspaceMemberRole::from($role));
+        return $user->workspaceRoleFor($this->id);
     }
 
     protected function casts(): array

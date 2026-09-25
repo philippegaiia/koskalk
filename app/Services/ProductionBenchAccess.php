@@ -28,6 +28,11 @@ class ProductionBenchAccess
         return $this->writeStatus($actor, $workspace, ProductionBenchEntitlementStatus::Active);
     }
 
+    public function canManageEntitlement(User $actor, Workspace $workspace): bool
+    {
+        return $workspace->roleFor($actor) === WorkspaceMemberRole::Owner;
+    }
+
     public function isActive(Workspace $workspace): bool
     {
         return WorkspaceProductionEntitlement::query()
@@ -111,14 +116,18 @@ class ProductionBenchAccess
         Workspace $workspace,
         ProductionBenchEntitlementStatus $status,
     ): WorkspaceProductionEntitlement {
-        $this->assertCanManage($actor, $workspace);
+        if (! $this->canManageEntitlement($actor, $workspace)) {
+            throw new AuthorizationException;
+        }
 
         return DB::transaction(function () use ($actor, $status, $workspace): WorkspaceProductionEntitlement {
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($workspace->id);
 
-            $this->assertCanManage($actor, $lockedWorkspace);
+            if (! $this->canManageEntitlement($actor, $lockedWorkspace)) {
+                throw new AuthorizationException;
+            }
 
             $entitlement = WorkspaceProductionEntitlement::query()
                 ->whereBelongsTo($lockedWorkspace)

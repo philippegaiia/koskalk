@@ -46,6 +46,21 @@ class PlanForm
                     ->columns([
                         'md' => 2,
                     ]),
+                Section::make(__('plans.features.title'))
+                    ->schema([
+                        Select::make('allows_collaboration')
+                            ->label(__('plans.features.collaboration'))
+                            ->options([1 => __('plans.features.enabled'), 0 => __('plans.features.disabled')])
+                            ->placeholder(__('plans.features.not_configured'))
+                            ->native(false),
+                        Select::make('allows_production_bench')
+                            ->label(__('plans.features.production_bench'))
+                            ->options([1 => __('plans.features.enabled'), 0 => __('plans.features.disabled')])
+                            ->placeholder(__('plans.features.not_configured'))
+                            ->helperText(__('plans.features.production_bench_help'))
+                            ->native(false),
+                    ])
+                    ->columns(['md' => 2]),
                 Section::make('Billing')
                     ->description('Map a paid plan to the Paddle product and price IDs. Leave empty for a free/internal plan.')
                     ->icon(Heroicon::CreditCard)
@@ -82,6 +97,8 @@ class PlanForm
                                 Select::make('key')
                                     ->options([
                                         'saved_recipes' => 'Saved recipes',
+                                        'saved_formula_history' => __('plans.limits.saved_formula_history'),
+                                        'workspace_members' => __('plans.limits.workspace_members'),
                                         'private_ingredients' => 'Private ingredients',
                                         'formula_items_per_recipe' => __('plans.limits.formula_items_per_recipe'),
                                         'production_batches' => 'Production batches',

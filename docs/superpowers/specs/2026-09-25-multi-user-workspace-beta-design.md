@@ -1,7 +1,7 @@
 # Multi-user workspace beta — design and delivery proposal
 
 Date: 2026-09-25
-Status: role model, separate tester plan, adjustable initial allowances and create-only production seeding agreed. Implementation roadmap prepared; Viewer exports and shared costing remain open product decisions. No application or production changes have been made during planning.
+Status: role model, separate tester plan, adjustable initial allowances and create-only production seeding agreed. Catalogue and authorization foundations implemented; the shared-workspace release remains in progress. Viewer exports and shared costing remain open product decisions. Production has not been changed.
 
 ## Goal
 
@@ -25,7 +25,7 @@ Platform administration (`users.is_admin`) is separate. It grants administration
 
 Viewer export/download rights remain a product decision. Proposed default: Viewers may read all workspace data, including costs, but downloads/exports require explicit agreement before implementation. A cost-hidden production role is a separate later feature, not something the four-role model claims to provide.
 
-## Verified current state (local database only)
+## Baseline before implementation (local database only)
 
 - `philippe@soapkraft.com` is user 1, `is_admin=true`.
 - This user is already owner of workspace 1, Soapkraft, and has an Owner membership.
@@ -41,7 +41,7 @@ Viewer export/download rights remain a product decision. Proposed default: Viewe
 
 Keep Free beta as a separate hidden, invitation-only tester plan with Team-level capabilities, including Production Bench. Preserve existing testers on it when the public Free plan launches; do not assign an automatic expiry or convert testers to Free. Do not create a paid subscription or require payment details. Keep the existing distinction between plan/usage entitlements and workspace Production Bench access; reconcile their presentation and provisioning rather than rebuilding billing during team rollout.
 
-Keep public registration closed. Separate two invitations:
+Keep public registration closed during prelaunch. At public launch, open self-service registration through the WordPress marketing site and app onboarding, as described below. Retain two distinct invitation paths:
 
 1. Platform beta invitation: a platform administrator approves a new organisation and provisions its owner/workspace with the beta grant and Production Bench access.
 2. Workspace member invitation: an authorised workspace Owner/Admin invites a colleague into that existing workspace with an allowed role. Acceptance must not automatically create a personal workspace or a new commercial entitlement.
@@ -88,7 +88,7 @@ Use a dedicated catalogue seeder, not the general DatabaseSeeder. Match plans by
 
 Catalogue seeding is strictly create-only by plan slug: if the plan already exists, skip the entire plan, including its limits. Create initial limit rows only when creating a new plan. Missing keys on existing plans require a separately reviewed capability rollout and must not silently acquire development defaults. Preserve every existing limit value, including null/unlimited and zero, plus edited names/descriptions, billing identifiers, prices, active flags and default-plan choice. New future public plans start inactive and non-default; seeding must not trigger Plan::saved() to replace the current default. Seeder reruns must not overwrite values later changed in the administration interface.
 
-Existing Free beta values remain unchanged by all seed reruns. Any deliberate increase is made in the production administration interface, or through a separately requested, narrowly scoped operation with a reviewed before/after preview. Development edits are never synchronised automatically. Such an explicit operation must check expected current values and abort on drift. Do not infer that a value is uncustomised merely because it equals an old seed default. Do not move existing testers, expire entitlements, create paid subscriptions, configure provider product IDs, open registration, or enable checkout.
+Existing Free beta values remain unchanged by all seed reruns. Any deliberate increase is made in the production administration interface, or through a separately requested, narrowly scoped operation with a reviewed before/after preview. Development edits are never synchronised automatically. Such an explicit operation must check expected current values and abort on drift. Do not infer that a value is uncustomised merely because it equals an old seed default. Seeding must not move existing testers, expire entitlements, create paid subscriptions, configure provider product IDs, open registration, or enable checkout. Public registration and billing are activated separately as part of the public launch.
 
 Production Bench/team grants for existing beta workspaces are also a targeted, idempotent operation. Preview eligible workspaces; preserve explicit cancelled/restricted states unless individually approved for reactivation. Owner-based beta provisioning must select the tester plan explicitly rather than relying on whichever plan is globally default at public launch.
 
@@ -146,9 +146,9 @@ Test first-use beta onboarding and existing-owner compatibility. Run affected SQ
 
 ## Deferred scope
 
-Aggregate storage quotas are deferred. The two-week online target does not itself activate public registration or billing. The implementation roadmap is `docs/superpowers/plans/2026-09-25-multi-user-workspace-rollout.md`.
+Aggregate storage quotas are deferred. Public registration and paid checkout are intended for the public launch in approximately two weeks; their activation is an explicit launch step, never a seeder side effect. The implementation roadmap is `docs/superpowers/plans/2026-09-25-multi-user-workspace-rollout.md`.
 
-Also deferred: remaining database-index investigations; configurable permission builders; production-only cost-hidden roles; public signup; payment collection; paid seat pricing; public community/sharing; live simultaneous document editing. Ownership-transfer and workspace-deletion UIs are separate lifecycle features; the role matrix reserves their authority without requiring them for team onboarding.
+Also deferred: remaining database-index investigations; configurable permission builders; production-only cost-hidden roles; extra-seat pricing; public community/sharing; live simultaneous document editing. Ownership-transfer and workspace-deletion UIs are separate lifecycle features; the role matrix reserves their authority without requiring them for team onboarding.
 
 ## Additional implementation findings
 
@@ -168,3 +168,18 @@ Existing tests deliberately encode owner-only formula access and Editor activati
 - `docs/superpowers/plans/2026-09-05-ingredient-editor-ux-implementation.md`, section 12: Owner/Admin formula locking and the owner-private policy conflict.
 - `.ai/rules/policies-views.md`: formula-owning workspace authority and separation from platform administration.
 - `docs/specs/future-public-community-and-collaboration.md`: public publishing and external collaboration remain separate from private organisation workspaces.
+
+## Public launch clarification — WordPress and checkout
+
+The user clarified that public launch includes self-service registration. WordPress hosts the homepage and plan presentation. Free beta remains hidden for invited testers; public visitors choose Free, Maker, Studio or Team.
+
+- Free: WordPress button → app registration and email verification → owner workspace with the public Free plan. No payment provider is needed.
+- Paid: WordPress plan button → selected provider checkout → app account setup/login and workspace onboarding. The app may create a server-side checkout intent before redirecting, without forcing registration before payment. This intent binds the approved plan/price to onboarding and, when already authenticated, the authorised owner/workspace.
+- Verified provider events establish payment/subscription state. The return URL only displays progress and continues onboarding; it never grants paid access on its own. Persist unclaimed purchases so closing the browser does not lose a successful payment.
+- Securely claim the purchase through verified email/account ownership. Do not attach a subscription to an existing account or workspace solely because a browser parameter or billing email matches. Existing customers sign in; an Owner can target their existing workspace without creating another one.
+- WordPress presents plans; the app owns identity, workspace membership and entitlements. Provider price mappings are configured server-side. No WordPress user synchronisation or WooCommerce dependency is required by this design.
+- Test duplicate/delayed/out-of-order webhooks, payment before account creation, return before webhook, abandoned/failed checkout, existing account, duplicate purchase, renewal/cancellation and inability of Admin/Editor/Viewer to change the owner's subscription.
+
+Paddle is the provisional recommendation because the app already contains Paddle integration; Creem remains an option requiring an explicit integration decision. Do not implement two providers for launch. Confirm hosted-checkout availability, account approval and the exact Cashier-compatible account-linking approach in sandbox before committing the checkout-first implementation. Public checkout-first provisioning is a distinct launch workstream, not already supported merely because authenticated billing routes exist.
+
+Provider references: https://developer.paddle.com/build/subscriptions/provision-access-webhooks/ and https://docs.creem.io/skills/creem-api/WORKFLOWS .

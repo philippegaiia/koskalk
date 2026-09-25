@@ -162,9 +162,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             ->where('user_id', $this->id)
             ->value('role');
 
-        return $role instanceof WorkspaceMemberRole
+        $workspaceRole = $role instanceof WorkspaceMemberRole
             ? $role
             : ($role === null ? null : WorkspaceMemberRole::from($role));
+
+        return $workspaceRole === WorkspaceMemberRole::Owner ? null : $workspaceRole;
     }
 
     /**

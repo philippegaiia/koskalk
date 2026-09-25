@@ -43,6 +43,22 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 uses(RefreshDatabase::class);
 
+it('hides entitlement controls from editors and rejects direct cancellation', function (): void {
+    $workspace = Workspace::factory()->create();
+    $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
+    $access = app(ProductionBenchAccess::class);
+    $access->activate($workspace->owner, $workspace);
+    $this->actingAs($editor);
+
+    Livewire::test(HomeIndex::class)
+        ->assertDontSeeHtml('wire:click="cancel"')
+        ->call('cancel')
+        ->assertForbidden();
+
+    expect($access->isActive($workspace))->toBeTrue();
+});
+
 it('uses factual production bench copy', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();

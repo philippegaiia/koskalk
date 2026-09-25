@@ -215,7 +215,7 @@ it('keeps the workspace authoring matrix independent of app administrator status
     ]);
     $roles = [
         'owner' => [$owner, true],
-        'member-owner' => [User::factory()->create(), true],
+        'member-owner' => [User::factory()->create(), false],
         'admin' => [User::factory()->create(), true],
         'editor' => [User::factory()->create(), true],
         'viewer' => [User::factory()->create(), false],

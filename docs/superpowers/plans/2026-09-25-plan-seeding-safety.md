@@ -12,8 +12,8 @@
 
 Files: create `tests/Feature/PlanSeederSafetyTest.php`; existing regression `tests/Feature/EntitlementLimitsTest.php`.
 
-- [ ] Read testing-best-practices and applicable `.ai/rules` before editing. Create with `php artisan make:test --pest PlanSeederSafetyTest --no-interaction`.
-- [ ] Replace the generated test with:
+- [x] Read testing-best-practices and applicable `.ai/rules` before editing. Create with `php artisan make:test --pest PlanSeederSafetyTest --no-interaction`.
+- [x] Replace the generated test with:
 
 ```php
 <?php
@@ -58,7 +58,7 @@ it('does not replace the default when creating a missing beta plan', function ()
 });
 ```
 
-- [ ] Run `php artisan test --compact tests/Feature/PlanSeederSafetyTest.php`. Expected before implementation: both fail, due to filled missing limits and default replacement respectively. Investigate any unrelated failure first.
+- [x] Run `php artisan test --compact tests/Feature/PlanSeederSafetyTest.php`. Expected before implementation: both fail, due to filled missing limits and default replacement respectively. Investigate any unrelated failure first.
 
 ## Task 2 — transaction and whole-plan skip
 
@@ -112,11 +112,13 @@ class PlanSeeder extends Seeder
 }
 ```
 
-- [ ] Run `php artisan test --compact tests/Feature/PlanSeederSafetyTest.php tests/Feature/EntitlementLimitsTest.php`. Expected: PASS, including the unchanged fresh-install limit test. This tranche deliberately preserves those legacy defaults; future catalogue defaults must not be confused with retroactive updates.
-- [ ] Review transaction behavior on disposable PostgreSQL. Deployment commands run serially; this code does not claim to arbitrate concurrent administrator default changes. The future dedicated catalogue creates only non-default rows.
-- [ ] Run `vendor/bin/pint --dirty --format agent`, then rerun affected tests if formatting changes behavior. No Filament files change in this tranche.
-- [ ] Run `graphify update .` after application edits. Inspect generated changes and avoid bundling unrelated output.
-- [ ] Review `git diff --check` and the staged diff, then commit only the seeder and its test as `fix: preserve existing plans completely during seeding`.
+- [x] Run `php artisan test --compact tests/Feature/PlanSeederSafetyTest.php tests/Feature/EntitlementLimitsTest.php`. Expected: PASS, including the unchanged fresh-install limit test. This tranche deliberately preserves those legacy defaults; future catalogue defaults must not be confused with retroactive updates.
+- [x] Review transaction behavior on disposable PostgreSQL. Deployment commands run serially; this code does not claim to arbitrate concurrent administrator default changes. The future dedicated catalogue creates only non-default rows.
+- [x] Run `vendor/bin/pint --dirty --format agent`, then rerun affected tests if formatting changes behavior. No Filament files change in this tranche.
+- [x] Run `graphify update .` after application edits. Inspect generated changes and avoid bundling unrelated output.
+- [x] Review `git diff --check` and the staged diff, then commit only the seeder and its test as `fix: preserve existing plans completely during seeding`.
+
+Implemented and committed as `86282b56`. Preservation and rollback tests passed on SQLite and disposable PostgreSQL.
 
 ## Completion boundary
 

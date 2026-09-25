@@ -32,7 +32,7 @@ class DeleteProductionRun
             ]);
         }
 
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         DB::transaction(function () use ($actor, $production): void {
             $lockedWorkspace = Workspace::withoutGlobalScopes()
@@ -49,7 +49,7 @@ class DeleteProductionRun
                 ]);
             }
 
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             if (! in_array($lockedProduction->status, [
                 ProductionRunStatus::Draft,

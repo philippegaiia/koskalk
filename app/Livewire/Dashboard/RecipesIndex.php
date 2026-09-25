@@ -39,6 +39,7 @@ class RecipesIndex extends Component
         $currentUser = app(CurrentAppUserResolver::class)->resolve();
         $recipes = collect();
         $recipeCount = 0;
+        $canManageRecipeLocks = [];
         $searchTerm = trim($this->search);
         $selectedProductArea = trim($this->productAreaFilter);
         $selectedProductCategory = trim($this->productCategoryFilter);
@@ -109,6 +110,12 @@ class RecipesIndex extends Component
                 ->paginate(12);
 
             $recipeCount = $recipes->total();
+            $workspaceLockPermissions = [];
+            foreach ($recipes as $recipe) {
+                $canManageRecipeLocks[$recipe->id] = $recipe->workspace_id === null
+                    ? $currentUser->can('manageLock', $recipe)
+                    : ($workspaceLockPermissions[$recipe->workspace_id] ??= $currentUser->can('manageLock', $recipe));
+            }
         }
 
         return view('livewire.dashboard.recipes-index', [
@@ -122,6 +129,7 @@ class RecipesIndex extends Component
             'selectedProductCategory' => $selectedProductCategory,
             'selectedProductType' => $selectedProductType,
             'recipes' => $recipes,
+            'canManageRecipeLocks' => $canManageRecipeLocks,
             'searchTerm' => $searchTerm,
             'archivedFilter' => $this->archivedFilter,
         ]);

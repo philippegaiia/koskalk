@@ -15,11 +15,11 @@ class DeleteDepartment
 
     public function handle(User $actor, Workspace $workspace, Department $department): void
     {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         DB::transaction(function () use ($actor, $department, $workspace): void {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
             $current = Department::query()->lockForUpdate()->find($department->id);
 
             if (! $current instanceof Department || (int) $current->workspace_id !== (int) $lockedWorkspace->id) {

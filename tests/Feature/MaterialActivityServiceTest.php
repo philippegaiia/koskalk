@@ -9,8 +9,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Inventory\MaterialActivityService;
 use App\Services\ProductionBenchAccess;
-use App\Enums\WorkspaceMemberRole;
-use App\Models\WorkspaceMember;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,22 +19,12 @@ uses(RefreshDatabase::class);
 
 if (! function_exists('inventoryReadActor')) {
     /**
-     * Returns a user who is a member of the workspace, creating an owner when
-     * the workspace has no members yet. Used to satisfy the actor-first
+     * Returns the actual owner of the workspace. Used to satisfy the actor-first
      * signature of the inventory read services under test.
      */
     function inventoryReadActor(Workspace $workspace): User
     {
-        $member = $workspace->users()->first();
-
-        if ($member instanceof User) {
-            return $member;
-        }
-
-        $actor = User::factory()->create();
-        WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => WorkspaceMemberRole::Owner]);
-
-        return $actor;
+        return $workspace->owner()->firstOrFail();
     }
 }
 

@@ -1,11 +1,13 @@
 <?php
 
+use App\Enums\ProductionBenchEntitlementStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\BetaInvite;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Models\WorkspaceProductionEntitlement;
 use App\Notifications\BetaWorkspaceInvitation;
 use App\Services\BetaInviteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +29,10 @@ it('provisions a verified workspace owner from a single-use Free beta invitation
         ->create([
             'slug' => 'free-beta',
             'is_default' => true,
+            'allows_collaboration' => true,
+            'allows_production_bench' => true,
         ]);
+    Plan::factory()->create(['slug' => 'free', 'is_default' => true]);
 
     $token = app(BetaInviteService::class)->issue(
         $administrator,
@@ -77,6 +82,9 @@ it('provisions a verified workspace owner from a single-use Free beta invitation
             ->exists())->toBeTrue()
         ->and($invite->refresh()->accepted_at)->not->toBeNull();
 
+    expect(WorkspaceProductionEntitlement::query()->whereBelongsTo($workspace)->sole()->status)
+        ->toBe(ProductionBenchEntitlementStatus::Active);
+
     Auth::logout();
 
     $this->get(route('beta-invites.show', ['token' => $token]))
@@ -96,6 +104,42 @@ it('does not accept expired invitations', function () {
     $this->get(route('beta-invites.show', ['token' => $token]))
         ->assertNotFound();
 });
+
+it('accepts a beta invitation without implicitly granting undeclared production access', function (): void {
+    Notification::fake();
+    $administrator = User::factory()->create(['is_admin' => true]);
+    $plan = Plan::factory()->create(['slug' => 'free-beta', 'is_default' => false]);
+    $service = app(BetaInviteService::class);
+    $token = $service->issue($administrator, 'legacy.beta@example.com', 'Legacy Beta');
+
+    $user = $service->accept($token, ['name' => 'Tester', 'password' => 'SecureBetaPassword1!']);
+
+    expect($user->entitlements()->sole()->plan_id)->toBe($plan->id)
+        ->and(WorkspaceProductionEntitlement::query()->count())->toBe(0);
+});
+
+it('rolls back beta acceptance when the explicit beta plan is unavailable', function (bool $hasInactivePlan): void {
+    Notification::fake();
+    $administrator = User::factory()->create(['is_admin' => true]);
+    Plan::factory()->create(['slug' => 'free', 'is_default' => true]);
+    if ($hasInactivePlan) {
+        Plan::factory()->create(['slug' => 'free-beta', 'is_active' => false]);
+    }
+    $service = app(BetaInviteService::class);
+    $token = $service->issue($administrator, 'unavailable.beta@example.com', 'Unavailable Beta');
+    $userCount = User::query()->count();
+    $workspaceCount = Workspace::withoutGlobalScopes()->count();
+    $membershipCount = WorkspaceMember::withoutGlobalScopes()->count();
+
+    expect(fn () => $service->accept($token, ['name' => 'Tester', 'password' => 'SecureBetaPassword1!']))
+        ->toThrow(RuntimeException::class, 'No active Free beta plan is configured.');
+
+    expect(User::query()->count())->toBe($userCount)
+        ->and(Workspace::withoutGlobalScopes()->count())->toBe($workspaceCount)
+        ->and(WorkspaceMember::withoutGlobalScopes()->count())->toBe($membershipCount)
+        ->and(BetaInvite::query()->sole()->accepted_at)->toBeNull()
+        ->and(WorkspaceProductionEntitlement::query()->count())->toBe(0);
+})->with(['missing' => false, 'inactive' => true]);
 
 it('renders the complete password policy and every failed native rule when accepting an invitation', function () {
     $administrator = User::factory()->create(['is_admin' => true]);

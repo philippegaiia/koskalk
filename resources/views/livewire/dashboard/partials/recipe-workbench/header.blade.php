@@ -49,20 +49,22 @@
                 </button>
 
                 @if ($recipePublicId)
-                    @if ((bool) ($workbench['recipe']['is_locked'] ?? false))
-                        <form method="POST" action="{{ route('recipes.unlock', $recipePublicId) }}">
-                            @csrf
-                            <button type="submit" class="sk-btn bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)] hover:bg-[var(--color-panel)]">
-                                {{ __('workbench.header.unlock_product') }}
-                            </button>
-                        </form>
-                    @else
-                        <form method="POST" action="{{ route('recipes.lock', $recipePublicId) }}">
-                            @csrf
-                            <button type="submit" class="sk-btn sk-btn-outline">
-                                {{ __('workbench.header.lock_product') }}
-                            </button>
-                        </form>
+                    @if ($workbench['recipe']['can_manage_lock'] ?? false)
+                        @if ((bool) ($workbench['recipe']['is_locked'] ?? false))
+                            <form method="POST" action="{{ route('recipes.unlock', $recipePublicId) }}">
+                                @csrf
+                                <button type="submit" class="sk-btn bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)] hover:bg-[var(--color-panel)]">
+                                    {{ __('workbench.header.unlock_product') }}
+                                </button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('recipes.lock', $recipePublicId) }}">
+                                @csrf
+                                <button type="submit" class="sk-btn sk-btn-outline">
+                                    {{ __('workbench.header.lock_product') }}
+                                </button>
+                            </form>
+                        @endif
                     @endif
                 @else
                     <button type="button" disabled title="{{ __('workbench.header.save_before_locking') }}" class="sk-btn sk-btn-outline opacity-55">

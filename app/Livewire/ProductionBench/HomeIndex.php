@@ -35,6 +35,7 @@ class HomeIndex extends Component
 
         return view('livewire.production-bench.home-index', [
             'workspace' => $workspace,
+            'canManageEntitlement' => $access->canManageEntitlement($this->user(), $workspace),
             'isActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'quarantinedLots' => StockLot::query()

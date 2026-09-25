@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
 
@@ -17,7 +18,9 @@ class WorkspaceMemberPolicy
 
     public function view(User $user, WorkspaceMember $workspaceMember): bool
     {
-        return $this->canAccessWorkspace($user, $workspaceMember->workspace);
+        $workspace = Workspace::withoutGlobalScopes()->find($workspaceMember->workspace_id);
+
+        return $workspace instanceof Workspace && $this->canAccessWorkspace($user, $workspace);
     }
 
     public function create(User $user): bool
@@ -27,12 +30,20 @@ class WorkspaceMemberPolicy
 
     public function update(User $user, WorkspaceMember $workspaceMember): bool
     {
-        return $this->canManageWorkspace($user, $workspaceMember->workspace);
+        $workspace = Workspace::withoutGlobalScopes()->find($workspaceMember->workspace_id);
+
+        return $workspace instanceof Workspace
+            && $workspaceMember->user_id !== $workspace->owner_user_id
+            && $this->canManageWorkspace($user, $workspace);
     }
 
     public function delete(User $user, WorkspaceMember $workspaceMember): bool
     {
-        return $this->canManageWorkspace($user, $workspaceMember->workspace);
+        $workspace = Workspace::withoutGlobalScopes()->find($workspaceMember->workspace_id);
+
+        return $workspace instanceof Workspace
+            && $workspaceMember->user_id !== $workspace->owner_user_id
+            && $this->canManageWorkspace($user, $workspace);
     }
 
     public function restore(User $user, WorkspaceMember $workspaceMember): bool

@@ -159,7 +159,8 @@ it('keeps the flash planner lookup query count bounded on the initial render', f
         fn (string $sql): bool => str_contains($sql, 'from "help_topic'),
     );
 
-    expect($plannerQueries->count())->toBeLessThanOrEqual(12);
+    // Includes the fresh ownership lookup required to reject stale workspace authority.
+    expect($plannerQueries->count())->toBeLessThanOrEqual(13);
     expect($helpQueries->count())->toBeLessThanOrEqual(3);
 });
 

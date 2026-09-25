@@ -18360,6 +18360,90 @@
     },
     {
       "group": "plans",
+      "key": "features.collaboration",
+      "text": {
+        "de": "Zusammenarbeit im gemeinsamen Arbeitsbereich",
+        "es": "Colaboración en un espacio de trabajo compartido",
+        "fr": "Collaboration dans un espace de travail partagé",
+        "it": "Collaborazione in uno spazio di lavoro condiviso",
+        "nl": "Samenwerken in een gedeelde werkruimte",
+        "pt_BR": "Colaboração em um espaço de trabalho compartilhado"
+      }
+    },
+    {
+      "group": "plans",
+      "key": "features.disabled",
+      "text": {
+        "de": "Deaktiviert",
+        "es": "Desactivado",
+        "fr": "Désactivé",
+        "it": "Disattivato",
+        "nl": "Uitgeschakeld",
+        "pt_BR": "Desativado"
+      }
+    },
+    {
+      "group": "plans",
+      "key": "features.enabled",
+      "text": {
+        "de": "Aktiviert",
+        "es": "Activado",
+        "fr": "Activé",
+        "it": "Attivato",
+        "nl": "Ingeschakeld",
+        "pt_BR": "Ativado"
+      }
+    },
+    {
+      "group": "plans",
+      "key": "features.not_configured",
+      "text": {
+        "de": "Nicht konfiguriert (nicht gewährt)",
+        "es": "Sin configurar (no concedido)",
+        "fr": "Non configuré (non accordé)",
+        "it": "Non configurato (non concesso)",
+        "nl": "Niet ingesteld (niet toegekend)",
+        "pt_BR": "Não configurado (não concedido)"
+      }
+    },
+    {
+      "group": "plans",
+      "key": "features.production_bench",
+      "text": {
+        "de": "Freischaltung von Production Bench",
+        "es": "Habilitación de Production Bench",
+        "fr": "Attribution de l’accès à Production Bench",
+        "it": "Abilitazione di Production Bench",
+        "nl": "Toegang tot Production Bench verlenen",
+        "pt_BR": "Concessão de acesso ao Production Bench"
+      }
+    },
+    {
+      "group": "plans",
+      "key": "features.production_bench_help",
+      "text": {
+        "de": "Erlaubt neue Zugangsfreigaben für Production Bench. Bestehende aktive oder gekündigte Freigaben bleiben unverändert.",
+        "es": "Permite conceder nuevos accesos a Production Bench. Los accesos activos o cancelados existentes se conservan.",
+        "fr": "Permet d’attribuer de nouveaux accès à Production Bench. Les accès existants, actifs ou résiliés, sont conservés.",
+        "it": "Consente di concedere nuovi accessi a Production Bench. Gli accessi esistenti, attivi o annullati, vengono conservati.",
+        "nl": "Maakt nieuwe toegangsrechten voor Production Bench mogelijk. Bestaande actieve of geannuleerde rechten blijven behouden.",
+        "pt_BR": "Permite conceder novos acessos ao Production Bench. Os acessos existentes, ativos ou cancelados, são preservados."
+      }
+    },
+    {
+      "group": "plans",
+      "key": "features.title",
+      "text": {
+        "de": "Funktionen",
+        "es": "Funciones",
+        "fr": "Fonctionnalités",
+        "it": "Funzionalità",
+        "nl": "Functies",
+        "pt_BR": "Funcionalidades"
+      }
+    },
+    {
+      "group": "plans",
       "key": "limits.description",
       "text": {
         "de": "Lassen Sie einen Wert leer, um keine feste Begrenzung festzulegen. Kostenlose Pläne beginnen mit 30 Zutatenzeilen pro Rezeptur, kostenpflichtige Pläne mit 50. Alle Limits bleiben für Administratoren änderbar.",
@@ -18396,6 +18480,18 @@
     },
     {
       "group": "plans",
+      "key": "limits.saved_formula_history",
+      "text": {
+        "de": "Verlauf gespeicherter Rezepturen",
+        "es": "Historial de fórmulas guardadas",
+        "fr": "Historique des formules enregistrées",
+        "it": "Cronologia delle formule salvate",
+        "nl": "Geschiedenis van opgeslagen formules",
+        "pt_BR": "Histórico de fórmulas salvas"
+      }
+    },
+    {
+      "group": "plans",
       "key": "limits.value",
       "text": {
         "de": "Limit",
@@ -18404,6 +18500,18 @@
         "it": "Limite",
         "nl": "Limiet",
         "pt_BR": "Limite"
+      }
+    },
+    {
+      "group": "plans",
+      "key": "limits.workspace_members",
+      "text": {
+        "de": "Mitglieder des Arbeitsbereichs (einschließlich Eigentümer)",
+        "es": "Miembros del espacio de trabajo (incluido el propietario)",
+        "fr": "Membres de l’espace de travail (propriétaire inclus)",
+        "it": "Membri dello spazio di lavoro (proprietario incluso)",
+        "nl": "Leden van de werkruimte (inclusief eigenaar)",
+        "pt_BR": "Membros do espaço de trabalho (incluindo o proprietário)"
       }
     },
     {

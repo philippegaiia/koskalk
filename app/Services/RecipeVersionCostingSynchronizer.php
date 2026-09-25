@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -62,6 +63,10 @@ class RecipeVersionCostingSynchronizer
      */
     public function payload(?Recipe $recipe, ?User $user): array
     {
+        if ($recipe instanceof Recipe) {
+            Gate::forUser($user)->authorize('view', $recipe);
+        }
+
         $packagingCatalog = $user instanceof User
             ? $this->packagingCatalogPayload($user)
             : [];
@@ -87,7 +92,6 @@ class RecipeVersionCostingSynchronizer
         $costing = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems.packagingItem'])
             ->where('recipe_version_id', $currentVersion->id)
-            ->where('user_id', $user->id)
             ->first();
 
         if (! $costing instanceof RecipeVersionCosting) {
@@ -142,6 +146,8 @@ class RecipeVersionCostingSynchronizer
      */
     public function save(RecipeVersion $recipeVersion, User $user, array $payload): array
     {
+        Gate::forUser($user)->authorize('update', $recipeVersion);
+
         $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipeVersion->workspace_id);
 
         return DB::transaction(function () use ($payload, $recipeVersion, $user, $workspace): array {
@@ -150,6 +156,7 @@ class RecipeVersionCostingSynchronizer
             $oilWeight = $this->nullableFloat($payload['oil_weight_for_costing'] ?? null);
 
             $costing->fill([
+                'updated_by_user_id' => $user->id,
                 'oil_weight_for_costing' => $oilWeight,
                 'oil_unit_for_costing' => $oilUnit,
                 'oil_mass_grams_for_costing' => $oilWeight === null
@@ -162,7 +169,7 @@ class RecipeVersionCostingSynchronizer
 
             $this->syncFormulaItems($costing);
             $this->applyItemPrices($costing, $user, $payload['items'] ?? []);
-            $this->replacePackagingItems($costing, $payload['packaging_items'] ?? []);
+            $this->replacePackagingItems($costing, $user, $payload['packaging_items'] ?? []);
 
             return $this->payload($recipeVersion->recipe, $user);
         });
@@ -178,14 +185,17 @@ class RecipeVersionCostingSynchronizer
      */
     public function copyToVersion(?RecipeVersion $sourceVersion, RecipeVersion $targetVersion, User $user): void
     {
+        Gate::forUser($user)->authorize('update', $targetVersion);
+
         if (! $sourceVersion instanceof RecipeVersion) {
             return;
         }
 
+        Gate::forUser($user)->authorize('view', $sourceVersion);
+
         $sourceCosting = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems'])
             ->where('recipe_version_id', $sourceVersion->id)
-            ->where('user_id', $user->id)
             ->first();
 
         if (! $sourceCosting instanceof RecipeVersionCosting) {
@@ -197,10 +207,12 @@ class RecipeVersionCostingSynchronizer
         DB::transaction(function () use ($sourceCosting, $targetVersion, $user, $targetWorkspace): void {
             $targetCosting = RecipeVersionCosting::query()->firstOrNew([
                 'recipe_version_id' => $targetVersion->id,
+            ], [
                 'user_id' => $user->id,
             ]);
 
             $targetCosting->fill([
+                'updated_by_user_id' => $user->id,
                 'oil_weight_for_costing' => $sourceCosting->oil_weight_for_costing,
                 'oil_unit_for_costing' => $sourceCosting->oil_unit_for_costing,
                 'oil_mass_grams_for_costing' => $sourceCosting->oil_mass_grams_for_costing,
@@ -386,7 +398,7 @@ class RecipeVersionCostingSynchronizer
     }
 
     /**
-     * Ensure a costing record exists for this (recipe_version, user) pair.
+     * Ensure a costing record exists for this recipe version.
      *
      * Creates one if missing (defaulting oil weight and unit from the recipe version),
      * then syncs costing items against the current formula structure. Returns the
@@ -394,6 +406,8 @@ class RecipeVersionCostingSynchronizer
      */
     public function ensureCosting(RecipeVersion $recipeVersion, User $user): RecipeVersionCosting
     {
+        Gate::forUser($user)->authorize('update', $recipeVersion);
+
         $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipeVersion->workspace_id);
 
         return DB::transaction(function () use ($recipeVersion, $user, $workspace): RecipeVersionCosting {
@@ -403,9 +417,9 @@ class RecipeVersionCostingSynchronizer
             $costing = RecipeVersionCosting::query()->firstOrCreate(
                 [
                     'recipe_version_id' => $recipeVersion->id,
-                    'user_id' => $user->id,
                 ],
                 [
+                    'user_id' => $user->id,
                     'oil_weight_for_costing' => $canonicalMass === null
                         ? $recipeVersion->batch_size
                         : $this->massConverter->fromGrams($canonicalMass, $oilUnit),
@@ -428,9 +442,10 @@ class RecipeVersionCostingSynchronizer
      */
     public function reconcileExistingCosting(RecipeVersion $recipeVersion, User $user): void
     {
+        Gate::forUser($user)->authorize('update', $recipeVersion);
+
         $costing = RecipeVersionCosting::query()
             ->where('recipe_version_id', $recipeVersion->id)
-            ->where('user_id', $user->id)
             ->first();
 
         if (! $costing instanceof RecipeVersionCosting) {
@@ -446,9 +461,10 @@ class RecipeVersionCostingSynchronizer
     /** Reconcile formula rows without changing separately managed packaging costs. */
     public function reconcileExistingFormulaCosting(RecipeVersion $recipeVersion, User $user): void
     {
+        Gate::forUser($user)->authorize('update', $recipeVersion);
+
         $costing = RecipeVersionCosting::query()
             ->where('recipe_version_id', $recipeVersion->id)
-            ->where('user_id', $user->id)
             ->first();
 
         if (! $costing instanceof RecipeVersionCosting) {
@@ -682,7 +698,7 @@ class RecipeVersionCostingSynchronizer
      * Rebuild costing packaging rows from the recipe-version packaging plan.
      *
      * Packaging plan rows are recipe structure. Costing rows keep the price used
-     * for this user's economics, preserving existing overrides when the plan row
+     * for this formula, preserving existing overrides when the plan row
      * is still present.
      */
     private function syncPackagingItems(RecipeVersionCosting $costing): void
@@ -771,7 +787,7 @@ class RecipeVersionCostingSynchronizer
      * persistence logic simple. Accepts both 'components_per_unit' and 'quantity'
      * keys for backward compatibility with older frontend payloads.
      */
-    private function replacePackagingItems(RecipeVersionCosting $costing, mixed $rawItems): void
+    private function replacePackagingItems(RecipeVersionCosting $costing, User $user, mixed $rawItems): void
     {
         $workspace = Workspace::withoutGlobalScopes()->findOrFail($costing->recipeVersion->workspace_id);
         $submittedItems = collect(is_array($rawItems) ? $rawItems : [])
@@ -787,7 +803,6 @@ class RecipeVersionCostingSynchronizer
                 ->all())
             ->get()
             ->keyBy('id');
-        $user = $costing->user;
 
         $costing->packagingItems()->delete();
 

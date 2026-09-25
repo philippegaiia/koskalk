@@ -14,7 +14,7 @@ class RecipeVersionCostingPackagingItemPolicy
 
     public function view(User $user, RecipeVersionCostingPackagingItem $recipeVersionCostingPackagingItem): bool
     {
-        return $recipeVersionCostingPackagingItem->costing->user_id === $user->id;
+        return $user->can('view', $recipeVersionCostingPackagingItem->costing);
     }
 
     public function create(User $user): bool
@@ -24,12 +24,12 @@ class RecipeVersionCostingPackagingItemPolicy
 
     public function update(User $user, RecipeVersionCostingPackagingItem $recipeVersionCostingPackagingItem): bool
     {
-        return $this->view($user, $recipeVersionCostingPackagingItem);
+        return $user->can('update', $recipeVersionCostingPackagingItem->costing);
     }
 
     public function delete(User $user, RecipeVersionCostingPackagingItem $recipeVersionCostingPackagingItem): bool
     {
-        return $this->view($user, $recipeVersionCostingPackagingItem);
+        return $user->can('delete', $recipeVersionCostingPackagingItem->costing);
     }
 
     public function restore(User $user, RecipeVersionCostingPackagingItem $recipeVersionCostingPackagingItem): bool

@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\PackagingItemAuthoringService;
 use App\Services\RecipeVersionCostingSynchronizer;
 use App\Services\RecipeWorkbenchService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -1057,3 +1058,87 @@ function soapDraftPayload(
         ],
     ];
 }
+
+it('keeps one canonical costing after workspace ownership transfers and attributes the saving actor', function (): void {
+    $author = User::factory()->create();
+    $newOwner = User::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $version = app(RecipeWorkbenchService::class)->save($author, $family, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $synchronizer = app(RecipeVersionCostingSynchronizer::class);
+    $costing = $synchronizer->ensureCosting($version, $author);
+    $packaging = createPackagingItemForWorkspace(['user_id' => $author->id, 'name' => 'Jar', 'unit_cost' => 1]);
+    $packagingRow = $costing->packagingItems()->create(['packaging_item_id' => $packaging->id, 'name' => 'Jar', 'unit_cost' => 1, 'quantity' => 1]);
+    $item = $costing->items()->where('ingredient_id', $ingredient->id)->sole();
+    $recipe->workspace()->withoutGlobalScopes()->update(['owner_user_id' => $newOwner->id]);
+
+    expect($synchronizer->payload($recipe, $newOwner)['settings']['id'])->toBe($costing->id);
+    foreach ([$costing, $item, $packagingRow] as $record) {
+        foreach (['view', 'update', 'delete'] as $ability) {
+            expect($author->can($ability, $record))->toBeFalse()
+                ->and($newOwner->can($ability, $record))->toBeTrue();
+        }
+    }
+    foreach (['ensureCosting', 'reconcileExistingCosting', 'reconcileExistingFormulaCosting'] as $method) {
+        expect(fn () => $synchronizer->{$method}($version, $author))->toThrow(AuthorizationException::class);
+    }
+    expect(fn () => $synchronizer->payload($recipe, $author))->toThrow(AuthorizationException::class);
+    expect(fn () => $synchronizer->save($version, $author, []))->toThrow(AuthorizationException::class);
+
+    $synchronizer->save($version, $newOwner, [
+        'oil_weight_for_costing' => 1000,
+        'units_produced' => 10,
+        'items' => [['ingredient_id' => $ingredient->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 12.5]],
+        'packaging_items' => [['packaging_item_id' => $packaging->id, 'name' => 'Jar', 'quantity' => 1, 'unit_cost' => 2.5]],
+    ]);
+
+    expect($costing->fresh()->user_id)->toBe($author->id)
+        ->and($costing->fresh()->updatedBy->id)->toBe($newOwner->id)
+        ->and(RecipeVersionCosting::where('recipe_version_id', $version->id)->count())->toBe(1);
+    $this->assertDatabaseHas('current_material_prices', ['packaging_item_id' => $packaging->id, 'created_by_user_id' => $newOwner->id, 'source_id' => $costing->id]);
+
+    $synchronizer->reconcileExistingFormulaCosting($version, $newOwner);
+    expect($costing->fresh()->updated_by_user_id)->toBe($newOwner->id);
+
+    $author->delete();
+    expect($costing->fresh()->user_id)->toBeNull()
+        ->and($costing->fresh()->items)->not->toBeEmpty()
+        ->and($costing->fresh()->packagingItems)->toHaveCount(1);
+
+    $synchronizer->save($version, $newOwner, [
+        'packaging_items' => [['packaging_item_id' => $packaging->id, 'name' => 'Jar', 'quantity' => 1, 'unit_cost' => 3]],
+    ]);
+    expect($costing->fresh()->user_id)->toBeNull()
+        ->and($costing->fresh()->packagingItems->sole()->unit_cost)->toBe('3.0000');
+    $this->assertDatabaseHas('current_material_prices', ['packaging_item_id' => $packaging->id, 'created_by_user_id' => $newOwner->id, 'source_id' => $costing->id]);
+});
+
+it('copies canonical costing to a separate version with the actual copy actor', function (): void {
+    $author = User::factory()->create();
+    $actor = User::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $source = app(RecipeWorkbenchService::class)->save($author, $family, soapDraftPayload($ingredient));
+    $service = app(RecipeVersionCostingSynchronizer::class);
+    $costing = $service->ensureCosting($source, $author);
+    $costing->update(['units_produced' => 15]);
+    $source->recipe()->withoutGlobalScopes()->firstOrFail()->workspace()->withoutGlobalScopes()->update(['owner_user_id' => $actor->id]);
+    $target = RecipeVersion::factory()->create([
+        'recipe_id' => $source->recipe_id, 'workspace_id' => $source->workspace_id,
+        'owner_type' => $source->owner_type, 'owner_id' => $source->owner_id,
+        'is_current' => false, 'version_number' => 2,
+    ]);
+
+    $service->copyToVersion($source, $target, $actor);
+
+    $copy = RecipeVersionCosting::where('recipe_version_id', $target->id)->sole();
+    expect($copy->id)->not->toBe($costing->id)
+        ->and($copy->user_id)->toBe($actor->id)
+        ->and($copy->updated_by_user_id)->toBe($actor->id)
+        ->and($copy->units_produced)->toBe(15);
+    $copy->update(['units_produced' => 7]);
+    expect($costing->fresh()->units_produced)->toBe(15)
+        ->and($costing->fresh()->updated_by_user_id)->toBeNull();
+    expect(fn () => $service->copyToVersion($source, $target, $author))->toThrow(AuthorizationException::class);
+});

@@ -37,7 +37,6 @@ class RecipeVersionCostPreviewBuilder
         $existingCosting = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems.packagingItem'])
             ->where('recipe_version_id', $version->id)
-            ->where('user_id', $user->id)
             ->first();
 
         $costing = $this->costingSynchronizer->ensureCosting($version, $user);

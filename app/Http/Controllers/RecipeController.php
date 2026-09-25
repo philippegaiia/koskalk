@@ -754,7 +754,6 @@ class RecipeController extends Controller
         $existingCosting = RecipeVersionCosting::query()
             ->with(['items.ingredient', 'packagingItems.packagingItem'])
             ->where('recipe_version_id', $version->id)
-            ->where('user_id', $user->id)
             ->first();
 
         $unitsProduced = $requestedUnitsProduced

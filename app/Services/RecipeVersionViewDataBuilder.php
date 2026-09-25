@@ -492,7 +492,6 @@ class RecipeVersionViewDataBuilder
 
         $existingCosting = RecipeVersionCosting::query()
             ->where('recipe_version_id', $version->id)
-            ->where('user_id', $user->id)
             ->first();
 
         if (! $existingCosting instanceof RecipeVersionCosting) {

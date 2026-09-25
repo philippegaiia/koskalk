@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'recipe_version_id',
     'user_id',
+    'updated_by_user_id',
     'oil_weight_for_costing',
     'oil_unit_for_costing',
     'oil_mass_grams_for_costing',
@@ -19,7 +20,7 @@ use Illuminate\Support\Carbon;
     'currency',
 ])]
 /**
- * Holds the saved costing context for one user on one formula version.
+ * Holds the saved costing context for one formula version.
  *
  * Created lazily when the user first opens the Costing tab. Stores the batch size
  * override, units produced, and currency — everything needed to run costing math
@@ -27,7 +28,8 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $recipe_version_id
- * @property int $user_id
+ * @property int|null $user_id
+ * @property int|null $updated_by_user_id
  * @property string|null $oil_weight_for_costing
  * @property string $oil_unit_for_costing
  * @property string|null $oil_mass_grams_for_costing
@@ -38,7 +40,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, RecipeVersionCostingItem> $items
  * @property-read Collection<int, RecipeVersionCostingPackagingItem> $packagingItems
  * @property-read RecipeVersion $recipeVersion
- * @property-read User $user
+ * @property-read User|null $user
+ * @property-read User|null $updatedBy
  */
 class RecipeVersionCosting extends Model
 {
@@ -48,10 +51,16 @@ class RecipeVersionCosting extends Model
         return $this->belongsTo(RecipeVersion::class)->withoutGlobalScopes();
     }
 
-    /** The user who owns this costing. */
+    /** The original author of this costing. */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** The actor who last explicitly saved or copied this costing. */
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by_user_id');
     }
 
     /** Ingredient price rows currently saved in this costing, ordered by phase then position. */

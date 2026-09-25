@@ -1,6 +1,6 @@
 # Multi-user workspace rollout plan
 
-> **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans for each implementation tranche. The user selected Luna max for bounded implementation and Astra medium for review or difficult work. This is the delivery roadmap; the first executable tranche is linked below. Resolve the two product decisions before implementing their dependent paths.
+> **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans for each implementation tranche. The user selected Luna max for bounded implementation and Astra medium for review or difficult work. This is the delivery roadmap; the first executable tranche is linked below. The two product decisions were confirmed on 2026-09-25; implement their dependent paths with the agreed access and attribution rules.
 
 **Goal:** Launch private shared workspaces while preserving tester access, production configuration and company records.
 
@@ -10,14 +10,14 @@
 
 **Design:** `docs/superpowers/specs/2026-09-25-multi-user-workspace-beta-design.md`.
 
-## Scope and unresolved decisions
+## Scope and confirmed decisions
 
 The online target is approximately two weeks. Public launch includes self-service registration and paid checkout from the WordPress site. Deliver in independently testable stages and activate these through the launch checklist; never as seeding side effects. Aggregate storage quotas, remaining index investigations and public collaboration are deferred.
 
-Two questions have been sent to the user:
+The user confirmed both recommendations on 2026-09-25:
 
-1. Can Viewers export/download what they can view? Reading/search/filtering are agreed. This blocks the final export authorization contract only.
-2. Should saved formula costing be shared by the workspace? Recommended: one shared costing, with actor attribution. This blocks costing conversion and release of team formula editing, not catalogue safety work.
+1. Viewers may export/download data they can view, subject to the same workspace isolation and live-membership checks.
+2. Saved formula costing is shared by the workspace: one canonical costing with actor attribution, rather than a costing selected by the viewing user. Preserve conflicting historical scenarios for explicit reconciliation.
 
 Keep existing formula-lock semantics until characterised. Explicitly distinguish formulation changes, saved costing changes, current material prices and immutable production snapshots. Preserve the agreed price precedence: latest eligible receipt supplies the price; a manual costing price override wins according to the existing implementation. Do not refactor that rule into a different precedence while enabling membership.
 
@@ -29,7 +29,9 @@ Local development has received the additive migration and four absent inactive p
 
 Formula lock/unlock now uses its own Owner/Admin policy, including UI guards. General formula access is still owner-only pending the shared-data and concurrency tranche; adding the lock ability alone does not enable Admin workbench access.
 
-The broader multi-user feature is not yet available: member invitations/selection, shared formula permissions and costing, conflicting-edit protection, existing-beta capability rollout and pilot activation remain outstanding. Viewer export and shared-costing decisions still need confirmation. Payment provider selection remains open; no paid offers or public registration have been activated.
+The broader multi-user feature is not yet available: member invitations/selection, shared formula permissions, read-only previews, conflicting-edit protection, existing-beta capability rollout and pilot activation remain outstanding. Viewer export and shared-costing decisions are confirmed. Payment provider selection remains open; no paid offers or public registration have been activated.
+
+Canonical costing storage is now implemented and applied locally: one costing per version, nullable original-author attribution and a nullable last explicit editor. Parent formula authority replaces author-based access. The migration refuses duplicate costings and inconsistent ownership before altering schema. All 20 local costings, their children and current material-price records retained identical checksums; no historical editor was invented. Production remains untouched. Verification: 36 costing/migration tests passed on SQLite; 190 broader affected tests passed with 20 existing skips; PostgreSQL preservation/rollback test passed, followed by 173 affected tests with 20 existing skips. General formula access remains owner-only until the remaining safeguards are complete.
 
 Validation for this checkpoint: full suite 3,932 passed / 29 skipped (65,644 assertions); core plan/beta/admin tests on disposable PostgreSQL 89 passed; additive migration rollback/reapply verified. Pint, Filacheck and diff checks passed; Graphify refreshed. Later team concurrency work still requires its own PostgreSQL concurrency tests.
 
@@ -76,13 +78,26 @@ Tests: update owner-private expectations in `RecipePrivacyTest.php`; extend `Rec
 
 Files: `app/Services/RecipeVersionCostingSynchronizer.php`, `RecipeDraftSaver.php`, `RecipeVersionPublisher.php`, `RecipeVersionRecordService.php`, `RecipeWorkbenchService.php`, `app/Livewire/Dashboard/RecipeWorkbench.php` and corresponding workbench state/views.
 
-- [ ] After the shared-costing decision, define canonical costing identity for workspace-owned versions; retain user identity as attribution rather than selecting a different costing by the viewer's login.
+- [x] Define canonical costing identity for workspace-owned versions; retain user identity as attribution rather than selecting a different costing by the viewer's login.
 - [ ] Preview existing costing rows grouped by version in the target database. Locally no duplicates were found; that is not production evidence. Preserve conflicting historical scenarios and require explicit reconciliation instead of picking/deleting one silently.
 - [ ] Use a persisted revision token for the recipe aggregate and a common transaction row lock across save/publish/restore/lock operations. Compare expected revision under the lock, recheck authority/lock state, then write and increment revision atomically.
 - [ ] Conflict response preserves the submitted form and asks the user to reload/reconcile; never silently retry by overwriting the other person's version. Ensure media changes roll back with failed saves.
 - [ ] Keep production snapshots immutable and current material price precedence intact. Audit attribution records both workspace and actor.
 
-Tests: `RecipeVersionCostingTest.php`, `RecipeWorkbenchPersistenceTest.php`, `RecipeWorkbenchDraftLifecycleTest.php`. Two editors load revision N: first saves; second receives conflict and cannot overwrite. Owner locks between Editor load/save: Editor write is denied. Concurrent publish/restore remains coherent. All members see the same canonical costing if that option is approved. Run actual multi-connection PostgreSQL concurrency tests, not only sequential SQLite simulations.
+Tests: `RecipeVersionCostingTest.php`, `RecipeWorkbenchPersistenceTest.php`, `RecipeWorkbenchDraftLifecycleTest.php`. Two editors load revision N: first saves; second receives conflict and cannot overwrite. Owner locks between Editor load/save: Editor write is denied. Concurrent publish/restore remains coherent. All members see the same canonical costing under the confirmed shared-costing model. Run actual multi-connection PostgreSQL concurrency tests, not only sequential SQLite simulations.
+
+### Bounded costing sequence after decision confirmation
+
+1. Canonical storage first: one costing per recipe version, preserving costing IDs, children, prices and ManualCosting source references. Reject ambiguous duplicate versions before schema changes. Keep original `user_id` as nullable author attribution with null-on-delete; add nullable `updated_by_user_id` for explicit future edits, leaving historical last-editor identity unknown. Costing policies delegate to the parent formula/version, never to authorship. Keep general formula access owner-only.
+2. Make workbench costing reads and production previews read-only, including defaults when no costing exists. These paths currently create/reconcile/delete costing rows. Preserve the already read-only saved-formula, print and export paths, including their empty-costing behavior when nothing has been saved. Explicit saves initialise records instead; Viewer access must not be enabled before this change.
+3. Add recipe aggregate and costing revision protocols through server, client hydration/payload and conflict UI. Lock workspace → recipe → version → costing, recheck authorization and expected tokens under the lock, and reject stale/missing tokens without losing submitted input. Automatic receipt/manual-price propagation must also bump affected costing revisions while retaining its existing price provenance. It must not claim the previous human costing editor authored an automatic update.
+4. Only then widen workspace scopes/role permissions and enable collaboration. Verify PostgreSQL contention, not just sequential stale-object tests.
+
+Local read-only audit on 2026-09-25 found zero duplicated costing versions, zero recipe/version workspace inconsistencies and zero duplicated current versions. Repeat these checks on each target database; this is not production evidence.
+
+### Legacy production batch ownership prerequisite
+
+`production_batches` has actor `user_id` but no durable workspace identifier. Its nullable recipe/version references use `ON DELETE SET NULL`. Counting all current members' batches would misattribute personal and former-workspace history and would change when members leave. Do not implement that shortcut. Before shared batch access/quotas, introduce explicit workspace provenance for new records and a previewed, unambiguous historical backfill; retain unresolved records for explicit reconciliation. Production Bench runs already have their own workspace ownership and entitlement model and must remain distinct.
 
 ## Tranche 5 — member invitations and workspace selection
 

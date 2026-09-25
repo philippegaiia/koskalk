@@ -5,6 +5,7 @@ paths:
   - 'app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php'
   - app/Services/IngredientCatalogConsolidationService.php
   - app/Services/SoapCalculationService.php
+  - app/Services/EntitlementService.php
 ---
 
 # Services
@@ -44,3 +45,9 @@ Ingredient internal lot settings and per-period counters are separate from produ
 
 ## Workspace capabilities require an explicit owner entitlement
 Resolve feature grants from the workspace actual owner's current active entitlement, never from a member's personal plan or the default-plan fallback. Null feature flags deny; unlimited limits do not grant features. Production Bench plan eligibility creates missing grants only and must preserve existing active/cancelled states.
+
+## Saved formula costing is shared within the workspace
+Workspace-owned saved formulas have one canonical costing shared by all authorized members. User identity records authorship, not separate costing selection. Preserve conflicting historical costing rows for explicit reconciliation; do not silently choose or delete them. Keep receipt/manual-price precedence and immutable production snapshots unchanged.
+
+## Do not infer legacy batch ownership from current membership
+Legacy production_batches have actor user_id and nullable source recipe/version references, not durable workspace ownership. Do not count every current member's historical batches as workspace usage: membership changes and deleted sources make that unsafe. Introduce explicit workspace provenance and a reviewed backfill before sharing this legacy allowance; Production Bench runs use a separate workspace model.

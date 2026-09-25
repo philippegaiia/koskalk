@@ -1,7 +1,7 @@
 # Multi-user workspace beta — design and delivery proposal
 
 Date: 2026-09-25
-Status: role model, separate tester plan, adjustable initial allowances and create-only production seeding agreed. Catalogue and authorization foundations implemented; the shared-workspace release remains in progress. Viewer exports and shared costing remain open product decisions. Production has not been changed.
+Status: role model, separate tester plan, adjustable initial allowances and create-only production seeding agreed. Catalogue and authorization foundations implemented; the shared-workspace release remains in progress. Viewer exports and shared costing were confirmed on 2026-09-25. Production has not been changed.
 
 ## Goal
 
@@ -23,7 +23,7 @@ The actual workspace owner is authoritative; ownership must not be grantable by 
 
 Platform administration (`users.is_admin`) is separate. It grants administration-panel access, not an implicit workspace permission bypass. No per-workspace custom permission editor is proposed for the first release.
 
-Viewer export/download rights remain a product decision. Proposed default: Viewers may read all workspace data, including costs, but downloads/exports require explicit agreement before implementation. A cost-hidden production role is a separate later feature, not something the four-role model claims to provide.
+Confirmed on 2026-09-25: Viewers may export/download all workspace data they are allowed to view, including costs. Downloads and exports must enforce the same workspace isolation and live-membership checks as reading. A cost-hidden production role is a separate later feature, not something the four-role model claims to provide.
 
 ## Baseline before implementation (local database only)
 
@@ -110,6 +110,10 @@ Prioritise these additional safeguards for multi-user rollout:
 
 These are safeguards to scope and test, not newly implemented limits. Prefer bounded bursts and concurrent work over lifetime caps on production history. Never delete traceability records or remove members when a limit is lowered; reject the new work with a clear explanation. Do not allow ordinary workspace settings to disable platform safeguards. Proposed numeric thresholds need validation against realistic bulk operations; do not present an unmeasured threshold as established capacity.
 
+## Shared costing decision — confirmed 2026-09-25
+
+Each workspace-owned saved formula has one canonical costing shared by its members. User identity records authorship rather than selecting a personal costing. Existing conflicting historical scenarios must be preserved and explicitly reconciled. Receipt/manual-price precedence and immutable production snapshots stay unchanged.
+
 ## Account recommendation
 
 No ownership or data transfer is necessary for philippe@soapkraft.com. Keep the existing Soapkraft workspace and its records. The same login can technically be both platform administrator and workspace Owner. A separate ordinary login is useful for realistic role testing; if the owner later wants to separate platform administration from daily factory work, that should be an explicit account decision, not an automatic migration. Do not remove the only platform administrator.
@@ -154,7 +158,7 @@ Also deferred: remaining database-index investigations; configurable permission 
 
 The live local database has no `workspace_invitations` table: the historical table was removed by `2026_07_14_102240_remove_deferred_collaboration_schema.php`. Use a new migration, not an alteration that assumes the old table exists.
 
-Formula costings currently use `(recipe_version_id, user_id)` identity. Shared formula access alone will not guarantee shared costing. Recommended direction is one shared costing per workspace-owned version, retaining actor attribution. This requires product confirmation and an explicit reconciliation path for old rows. The local database currently has no versions with multiple costing rows; production has not been checked. Never discard conflicting old scenarios automatically.
+Formula costings currently use `(recipe_version_id, user_id)` identity. Shared formula access alone will not guarantee shared costing. The user confirmed one shared costing per workspace-owned version, retaining actor attribution. Implementation still requires an explicit reconciliation path for conflicting old rows. The local database currently has no versions with multiple costing rows; production has not been checked. Never discard conflicting old scenarios automatically.
 
 Formula save/publish/restore transactions do not by themselves prevent stale edits. Protect the common recipe aggregate with a revision check and transaction lock, and reject conflicting saves while preserving the user's entered work. Recheck membership and formula lock status at the write boundary. Characterise formula-content locks separately from material price updates before changing their semantics.
 

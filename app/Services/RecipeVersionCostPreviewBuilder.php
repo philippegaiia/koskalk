@@ -12,6 +12,7 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Support\NumberLocale;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 
 class RecipeVersionCostPreviewBuilder
 {
@@ -32,32 +33,23 @@ class RecipeVersionCostPreviewBuilder
      *     has_unpriced_rows: bool
      * }
      */
-    public function ensureCostingAndBuild(Recipe $recipe, RecipeVersion $version, User $user, string|int|float $batchBasisValue, ?int $unitsProduced): array
+    public function build(Recipe $recipe, RecipeVersion $version, User $user, string|int|float $batchBasisValue, ?int $unitsProduced): array
     {
+        abort_unless((int) $version->recipe_id === (int) $recipe->id, 404);
+        Gate::forUser($user)->authorize('view', $recipe);
+
         $existingCosting = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems.packagingItem'])
             ->where('recipe_version_id', $version->id)
             ->first();
 
-        $costing = $this->costingSynchronizer->ensureCosting($version, $user);
+        $costing = $this->costingSynchronizer->projectCosting($version, $existingCosting);
         $currency = $costing->currency ?: $user->defaultCurrency();
         $unit = $version->batch_unit ?: 'g';
 
-        $version = RecipeVersion::withoutGlobalScopes()
-            ->with([
-                'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
-                'phases.items' => fn ($query) => $query->withoutGlobalScopes()->with('ingredient')->orderBy('position'),
-                'packagingItems' => fn ($query) => $query->withoutGlobalScopes()->with('packagingItem')->orderBy('position'),
-            ])
-            ->findOrFail($version->id);
+        $version = $costing->recipeVersion;
 
-        $this->preserveExistingUnplannedPackagingRows($costing, $version, $existingCosting);
-
-        $costing = $costing->fresh(['items.ingredient', 'packagingItems.packagingItem']) ?? $costing->load(['items.ingredient', 'packagingItems.packagingItem']);
-        $preview = $this->buildPreview($version, $costing, $existingCosting, $batchBasisValue, $unit, $unitsProduced, $currency);
-        $this->deleteGeneratedMissingPackagingRows($version, $costing, $existingCosting);
-
-        return $preview;
+        return $this->buildPreview($version, $costing, $existingCosting, $batchBasisValue, $unit, $unitsProduced, $currency);
     }
 
     /**
@@ -344,76 +336,6 @@ class RecipeVersionCostPreviewBuilder
         }
 
         return $catalogUnitCost;
-    }
-
-    private function deleteGeneratedMissingPackagingRows(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting): void
-    {
-        $existingKeys = ($existingCosting?->packagingItems ?? collect())->map(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-            $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-            $item->name,
-        ));
-
-        $version->packagingItems
-            ->filter(fn (RecipeVersionPackagingItem $item): bool => $item->packagingItem?->unit_cost === null)
-            ->each(function (RecipeVersionPackagingItem $item) use ($costing, $existingKeys): void {
-                $key = $this->packagingKey(
-                    $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                    $item->name,
-                );
-
-                if ($existingKeys->contains($key)) {
-                    return;
-                }
-
-                $costing->packagingItems()
-                    ->where('name', $item->name)
-                    ->where('unit_cost', 0)
-                    ->when(
-                        $item->packaging_item_id === null,
-                        fn ($query) => $query->whereNull('packaging_item_id'),
-                        fn ($query) => $query->where('packaging_item_id', $item->packaging_item_id),
-                    )
-                    ->delete();
-            });
-    }
-
-    private function preserveExistingUnplannedPackagingRows(RecipeVersionCosting $costing, RecipeVersion $version, ?RecipeVersionCosting $existingCosting): void
-    {
-        if (! $existingCosting instanceof RecipeVersionCosting) {
-            return;
-        }
-
-        $plannedKeys = $version->packagingItems
-            ->toBase()
-            ->map(fn (RecipeVersionPackagingItem $item): string => $this->packagingKey(
-                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                $item->name,
-            ));
-
-        $currentKeys = $costing->packagingItems
-            ->toBase()
-            ->map(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                $item->name,
-            ));
-
-        $existingCosting->packagingItems
-            ->reject(fn (RecipeVersionCostingPackagingItem $item): bool => $plannedKeys->contains($this->packagingKey(
-                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                $item->name,
-            )))
-            ->reject(fn (RecipeVersionCostingPackagingItem $item): bool => $currentKeys->contains($this->packagingKey(
-                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                $item->name,
-            )))
-            ->each(function (RecipeVersionCostingPackagingItem $item) use ($costing): void {
-                $costing->packagingItems()->create([
-                    'packaging_item_id' => $item->packaging_item_id,
-                    'name' => $item->name,
-                    'unit_cost' => $item->unit_cost,
-                    'quantity' => $item->quantity,
-                ]);
-            });
     }
 
     private function phaseName(RecipePhase $phase): string

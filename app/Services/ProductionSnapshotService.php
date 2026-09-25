@@ -7,6 +7,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class ProductionSnapshotService
@@ -29,7 +30,7 @@ class ProductionSnapshotService
         $unitsProduced = $this->positiveInt($input['units_produced'] ?? null);
 
         return [
-            ...$this->costPreviewBuilder->ensureCostingAndBuild(
+            ...$this->costPreviewBuilder->build(
                 recipe: $recipe,
                 version: $version,
                 user: $user,
@@ -48,6 +49,8 @@ class ProductionSnapshotService
      */
     public function record(Recipe $recipe, RecipeVersion $version, User $user, array $input): ProductionBatch
     {
+        Gate::forUser($user)->authorize('update', $recipe);
+
         $ingredientLotNumbers = $input['ingredient_lot_numbers'] ?? [];
 
         return DB::transaction(function () use ($ingredientLotNumbers, $input, $recipe, $user, $version): ProductionBatch {

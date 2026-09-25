@@ -29,8 +29,12 @@ use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 uses(RefreshDatabase::class);
 
@@ -217,7 +221,9 @@ it('builds numeric production cost preview rows from live costing data', functio
         'quantity' => 1,
     ]);
 
-    $preview = app(RecipeVersionCostPreviewBuilder::class)->ensureCostingAndBuild(
+    Workspace::withoutGlobalScopes()->findOrFail($version->workspace_id)->update(['default_currency' => 'USD']);
+
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -436,7 +442,7 @@ it('costs duplicate planned packaging rows independently', function (): void {
         'quantity' => 2,
     ]);
 
-    $preview = app(RecipeVersionCostPreviewBuilder::class)->ensureCostingAndBuild(
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1124,7 +1130,7 @@ it('marks packaging plan rows without source prices as unpriced in production co
         'price_per_kg' => 8.5,
     ]);
 
-    $preview = app(RecipeVersionCostPreviewBuilder::class)->ensureCostingAndBuild(
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1170,8 +1176,11 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
         'price_per_kg' => 8.5,
     ]);
 
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
     $builder = app(RecipeVersionCostPreviewBuilder::class);
-    $builder->ensureCostingAndBuild(
+    $builder->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1179,7 +1188,7 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
         unitsProduced: 10,
     );
 
-    $secondPreview = $builder->ensureCostingAndBuild(
+    $secondPreview = $builder->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1187,6 +1196,10 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
         unitsProduced: 10,
     );
 
+    $writes = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $query): bool => preg_match('/^(insert|update|delete) /i', $query) === 1)->all();
+    DB::disableQueryLog();
+
+    expect($writes)->toBe([]);
     expect($secondPreview['packaging_total'])->toBe(0.0)
         ->and($secondPreview['has_unpriced_rows'])->toBeTrue()
         ->and($secondPreview['packaging_rows'][0]['unit_cost'])->toBeNull()
@@ -1231,7 +1244,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
     ]);
 
     $builder = app(RecipeVersionCostPreviewBuilder::class);
-    $builder->ensureCostingAndBuild(
+    $builder->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1239,7 +1252,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
         unitsProduced: 10,
     );
 
-    $secondPreview = $builder->ensureCostingAndBuild(
+    $secondPreview = $builder->build(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1557,3 +1570,53 @@ function productionSnapshotCosmeticDraftPayload(Ingredient $ingredient, ProductT
         ],
     ];
 }
+
+it('projects current prices without ambient authentication or saving costing and freezes them only in the snapshot', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    rememberIngredientPriceForWorkspace($user, $ingredient, '8.5');
+    $service = app(ProductionSnapshotService::class);
+    $input = ['batch_basis' => 1000, 'units_produced' => 10, 'manufacture_date' => '2026-09-25'];
+
+    expect(auth()->user())->toBeNull();
+    $version->setRelation('phases', new Collection);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $preview = $service->preview($recipe, $version, $user, $input);
+    $writes = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $query): bool => preg_match('/^(insert|update|delete) /i', $query) === 1)->all();
+    DB::disableQueryLog();
+
+    expect($writes)->toBe([]);
+    expect($preview['total_cost'])->toBe(8.5);
+    expect($preview['has_unpriced_rows'])->toBeFalse();
+
+    $batch = $service->record($recipe, $version, $user, $input);
+
+    expect($batch->total_cost)->toBe('8.5000');
+    expect($batch->ingredients->first()->price_per_kg)->toBe('8.5000');
+    expect(RecipeVersionCosting::query()->count())->toBe(0);
+});
+
+it('denies production preview and recording for a foreign actor without writes', function (): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
+    $foreignUser = User::factory()->create();
+    $service = app(ProductionSnapshotService::class);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    expect(fn () => $service->preview($recipe, $version, $foreignUser, []))->toThrow(AuthorizationException::class);
+    expect(fn () => $service->record($recipe, $version, $foreignUser, []))->toThrow(AuthorizationException::class);
+    $writes = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $query): bool => preg_match('/^(insert|update|delete) /i', $query) === 1)->all();
+    DB::disableQueryLog();
+
+    expect($writes)->toBe([]);
+});
+
+it('rejects a production preview for a version from a different recipe', function (): void {
+    [$user, $recipe] = productionSnapshotSoapRecipe();
+    $foreignRecipe = Recipe::factory()->create(['owner_id' => $user->id]);
+    $foreignVersion = RecipeVersion::factory()->create(['recipe_id' => $foreignRecipe->id, 'owner_id' => $user->id]);
+
+    expect(fn () => app(ProductionSnapshotService::class)->preview($recipe, $foreignVersion, $user, []))
+        ->toThrow(NotFoundHttpException::class);
+    expect(RecipeVersionCosting::query()->count())->toBe(0);
+});

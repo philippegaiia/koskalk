@@ -95,7 +95,7 @@ class RecipeVersionCostingSynchronizer
             ->first();
 
         if (! $costing instanceof RecipeVersionCosting) {
-            $costing = $this->ensureCosting($currentVersion, $user);
+            $costing = $this->projectCosting($currentVersion);
         }
 
         $workspace = Workspace::withoutGlobalScopes()->findOrFail($currentVersion->workspace_id);
@@ -397,6 +397,39 @@ class RecipeVersionCostingSynchronizer
             ->all();
     }
 
+    /** Build current costing defaults and rows without persisting them. */
+    public function projectCosting(RecipeVersion $recipeVersion, ?RecipeVersionCosting $existingCosting = null): RecipeVersionCosting
+    {
+        $recipeVersion = clone $recipeVersion;
+        $recipeVersion->load([
+            'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
+            'phases.items' => fn ($query) => $query->withoutGlobalScopes()->with('ingredient')->orderBy('position'),
+            'packagingItems.packagingItem',
+        ]);
+        $existingCosting?->loadMissing(['items', 'packagingItems.packagingItem']);
+        $unit = $this->normalizeOilUnit($recipeVersion->batch_unit);
+        $canonicalMass = $this->formulaCanonicalMass($recipeVersion, $unit);
+        $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipeVersion->workspace_id);
+        $costing = $existingCosting === null
+            ? new RecipeVersionCosting([
+                'recipe_version_id' => $recipeVersion->id,
+                'oil_weight_for_costing' => $canonicalMass === null
+                    ? $recipeVersion->batch_size
+                    : $this->massConverter->fromGrams($canonicalMass, $unit),
+                'oil_unit_for_costing' => $unit,
+                'oil_mass_grams_for_costing' => $canonicalMass,
+                'units_produced' => null,
+                'currency' => $workspace->default_currency,
+            ])
+            : clone $existingCosting;
+
+        $costing->setRelation('recipeVersion', $recipeVersion);
+        $costing->setRelation('items', $this->projectFormulaItems($recipeVersion, $existingCosting));
+        $costing->setRelation('packagingItems', $this->projectPackagingItems($recipeVersion, $existingCosting));
+
+        return $costing;
+    }
+
     /**
      * Ensure a costing record exists for this recipe version.
      *
@@ -497,6 +530,14 @@ class RecipeVersionCostingSynchronizer
             ])
             ->findOrFail($costing->recipe_version_id);
 
+        $rows = $this->projectFormulaItems($recipeVersion, (clone $costing)->load('items'));
+        $costing->items()->delete();
+        $rows->each(fn (RecipeVersionCostingItem $item) => $costing->items()->create($item->getAttributes()));
+    }
+
+    /** @return Collection<int, RecipeVersionCostingItem> */
+    private function projectFormulaItems(RecipeVersion $recipeVersion, ?RecipeVersionCosting $costing): Collection
+    {
         $desiredRows = collect($recipeVersion->phases)
             ->sortBy('sort_order')
             ->flatMap(fn (RecipePhase $phase): Collection => $phase->items
@@ -511,7 +552,7 @@ class RecipeVersionCostingSynchronizer
             ->merge($this->implicitWaterDesiredRows($recipeVersion))
             ->values();
 
-        $existingRows = $costing->items()->get()->keyBy(fn (RecipeVersionCostingItem $item): string => $this->costingKey(
+        $existingRows = ($costing?->items ?? collect())->keyBy(fn (RecipeVersionCostingItem $item): string => $this->costingKey(
             (int) $item->ingredient_id,
             $item->phase_key,
             (int) $item->position,
@@ -524,14 +565,12 @@ class RecipeVersionCostingSynchronizer
             ->get()
             ->keyBy('ingredient_id');
 
-        $costing->items()->delete();
-
-        $desiredRows->each(function (array $row) use ($costing, $defaultPricesByIngredient, $existingRows): void {
+        return $desiredRows->map(function (array $row) use ($defaultPricesByIngredient, $existingRows): RecipeVersionCostingItem {
             $rowKey = $this->costingKey($row['ingredient_id'], $row['phase_key'], $row['position']);
             $existingRow = $existingRows->get($rowKey);
             $defaultPrice = $defaultPricesByIngredient->get($row['ingredient_id']);
 
-            $costing->items()->create([
+            return new RecipeVersionCostingItem([
                 'ingredient_id' => $row['ingredient_id'],
                 'phase_key' => $row['phase_key'],
                 'position' => $row['position'],
@@ -707,14 +746,20 @@ class RecipeVersionCostingSynchronizer
             ->with(['packagingItems.packagingItem'])
             ->findOrFail($costing->recipe_version_id);
 
-        $existingRowsByKey = $this->packagingCostingRowsByKey($costing->packagingItems()->get());
+        $rows = $this->projectPackagingItems($recipeVersion, (clone $costing)->load('packagingItems'));
+        $costing->packagingItems()->delete();
+        $rows->each(fn (RecipeVersionCostingPackagingItem $item) => $costing->packagingItems()->create($item->getAttributes()));
+    }
+
+    /** @return Collection<int, RecipeVersionCostingPackagingItem> */
+    private function projectPackagingItems(RecipeVersion $recipeVersion, ?RecipeVersionCosting $costing): Collection
+    {
+        $existingRowsByKey = $this->packagingCostingRowsByKey($costing?->packagingItems ?? collect());
         $existingRowOccurrences = [];
 
-        $costing->packagingItems()->delete();
-
-        $recipeVersion->packagingItems
+        return $recipeVersion->packagingItems
             ->sortBy('position')
-            ->each(function (RecipeVersionPackagingItem $item) use ($costing, &$existingRowOccurrences, $existingRowsByKey): void {
+            ->map(function (RecipeVersionPackagingItem $item) use (&$existingRowOccurrences, $existingRowsByKey): RecipeVersionCostingPackagingItem {
                 $key = $this->packagingKey(
                     $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                     $item->name,
@@ -722,13 +767,13 @@ class RecipeVersionCostingSynchronizer
                 $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
                 $catalogItem = $item->packagingItem;
 
-                $costing->packagingItems()->create([
+                return (new RecipeVersionCostingPackagingItem([
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => $existingRow?->unit_cost ?? $catalogItem?->unit_cost ?? 0,
                     'quantity' => $item->components_per_unit,
-                ]);
-            });
+                ]))->setRelation('packagingItem', $catalogItem);
+            })->values();
     }
 
     /**

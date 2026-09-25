@@ -635,26 +635,29 @@ it('clears costing prices when the user has no remembered replacement price', fu
         ->and($costingItem->fresh()->price_per_kg)->toBeNull();
 });
 
-it('uses the formula workspace replacement price for every costing row', function (): void {
+it('uses the formula workspace replacement price regardless of costing author', function (): void {
     $formulaOwner = User::factory()->create();
-    $otherCostingOwner = User::factory()->create();
+    $otherCostingAuthor = User::factory()->create();
     $source = privateMutationIngredient($formulaOwner, IngredientCategory::Other, 'Old Additive');
     $replacement = Ingredient::factory()->create([
         'category' => IngredientCategory::Other,
         'display_name' => 'Platform Replacement',
     ]);
-    $version = privateMutationVersion($formulaOwner, privateMutationRecipe($formulaOwner, 'Shared Costed Formula'));
+    $recipe = privateMutationRecipe($formulaOwner, 'Shared Costed Formula');
+    $version = privateMutationVersion($formulaOwner, $recipe);
+    $backupVersion = privateMutationVersion($formulaOwner, $recipe, isCurrent: false, versionNumber: 2);
     $formulaOwnerCostingItem = privateMutationCostingItem($formulaOwner, $source, $version);
-    $otherOwnerCostingItem = privateMutationCostingItem($otherCostingOwner, $source, $version);
+    $otherAuthorCostingItem = privateMutationCostingItem($otherCostingAuthor, $source, $backupVersion);
     rememberIngredientPriceForWorkspace($formulaOwner, $replacement, 11.25);
+    rememberIngredientPriceForWorkspace($otherCostingAuthor, $replacement, 99.50);
 
     app(IngredientFormulaMutationService::class)
         ->replaceEverywhereAndDelete($formulaOwner, $source, $replacement);
 
     expect($formulaOwnerCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
         ->and((float) $formulaOwnerCostingItem->fresh()->price_per_kg)->toBe(11.25)
-        ->and($otherOwnerCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
-        ->and((float) $otherOwnerCostingItem->fresh()->price_per_kg)->toBe(11.25);
+        ->and($otherAuthorCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $otherAuthorCostingItem->fresh()->price_per_kg)->toBe(11.25);
 });
 
 it('rolls back every change and keeps media when the replacement is incompatible', function (): void {

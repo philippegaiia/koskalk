@@ -30,6 +30,65 @@ use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
+it('keeps saved formula outputs read only with or without saved costing', function (string $routeName, bool $hasCosting): void {
+    [$user, $recipe, $version] = createSavedRecipeVersion();
+
+    if ($hasCosting) {
+        $costing = RecipeVersionCosting::query()->create([
+            'recipe_version_id' => $version->id,
+            'user_id' => $user->id,
+            'oil_weight_for_costing' => 1000,
+            'oil_unit_for_costing' => 'g',
+            'units_produced' => 10,
+            'currency' => 'EUR',
+        ]);
+        $item = $version->items()->withoutGlobalScopes()->firstOrFail();
+        $costing->items()->create([
+            'ingredient_id' => $item->ingredient_id,
+            'phase_key' => 'saponified_oils',
+            'position' => 1,
+            'price_per_kg' => '8.5000',
+        ]);
+        $costing->packagingItems()->create([
+            'name' => 'Free insert',
+            'unit_cost' => 0,
+            'quantity' => 1,
+        ]);
+    }
+
+    $this->actingAs($user);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $response = $this->get(route($routeName, ['recipe' => $recipe]))->assertSuccessful();
+
+        if (str_contains($routeName, '.export.')) {
+            expect($response->streamedContent())->not->toBeEmpty();
+        }
+
+        $domainWrites = collect(DB::getQueryLog())->pluck('query')->filter(
+            fn (string $query): bool => preg_match('/^\s*(insert|update|delete|replace)\b/i', $query) === 1
+                && preg_match('/\b(recipes|recipe_versions|recipe_phases|recipe_items|recipe_version_packaging_items|recipe_version_costings|recipe_version_costing_items|recipe_version_costing_packaging_items|current_material_prices|production_batches|production_batch_ingredients|production_batch_packaging_items)\b/i', $query) === 1,
+        );
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($domainWrites->all())->toBe([]);
+})->with([
+    'saved formula' => 'recipes.saved',
+    'production print' => 'recipes.print.production',
+    'technical print' => 'recipes.print.technical',
+    'costing print' => 'recipes.print.costing',
+    'Excel export' => 'recipes.export.xlsx',
+    'CSV export' => 'recipes.export.csv',
+])->with([
+    'no saved costing' => false,
+    'saved costing' => true,
+]);
+
 it('renders the formula sheet around one aligned table', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 

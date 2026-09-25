@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
 /**
  * Holds the saved costing context for one formula version.
  *
- * Created lazily when the user first opens the Costing tab. Stores the batch size
+ * Saved explicitly when the user changes costing. Stores the batch size
  * override, units produced, and currency — everything needed to run costing math
  * independently from the formula settings.
  *

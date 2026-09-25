@@ -157,12 +157,15 @@ it('loads an existing costing without rebuilding its rows', function () {
     ]);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->costingPayload($recipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($draftVersion, $user);
 
     $costing = RecipeVersionCosting::query()
         ->where('recipe_version_id', $draftVersion->id)
         ->where('user_id', $user->id)
         ->firstOrFail();
+    $savedAttributes = $costing->getAttributes();
+    $savedItems = $costing->items()->get()->toArray();
+    $savedPackaging = $costing->packagingItems()->get()->toArray();
     $itemIds = $costing->items()->pluck('id')->all();
     $packagingItemIds = $costing->packagingItems()->pluck('id')->all();
 
@@ -184,7 +187,10 @@ it('loads an existing costing without rebuilding its rows', function () {
 
     expect($costing->items()->pluck('id')->all())->toBe($itemIds)
         ->and($costing->packagingItems()->pluck('id')->all())->toBe($packagingItemIds)
-        ->and($costingMutations)->toBe([]);
+        ->and($costingMutations)->toBe([])
+        ->and($costing->fresh()->getAttributes())->toBe($savedAttributes)
+        ->and($costing->items()->get()->toArray())->toBe($savedItems)
+        ->and($costing->packagingItems()->get()->toArray())->toBe($savedPackaging);
 });
 
 it('does not create costing while saving a formula that has never been costed', function () {
@@ -211,7 +217,7 @@ it('reconciles an existing costing when the formula is saved', function () {
     $service = app(RecipeWorkbenchService::class);
     $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($firstIngredient));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $service->costingPayload($recipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($draftVersion, $user);
 
     $service->save($user, $soapFamily, soapDraftPayload($secondIngredient), $recipe);
 
@@ -331,15 +337,19 @@ it('defaults new costing from canonical formula mass in the formula display unit
         'batch_mass_grams' => 1000,
     ])->save();
 
-    $payload = $service->costingPayload($recipe, $user);
-    $costing = RecipeVersionCosting::query()
-        ->where('recipe_version_id', $draftVersion->id)
-        ->where('user_id', $user->id)
-        ->firstOrFail();
+    DB::flushQueryLog();
+    DB::enableQueryLog();
 
+    $payload = $service->costingPayload($recipe, $user);
+
+    $writes = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $query): bool => preg_match('/^(insert|update|delete) /i', $query) === 1)->all();
+    DB::disableQueryLog();
+
+    expect($writes)->toBe([]);
     expect($payload['settings']['oilUnitForCosting'])->toBe('lb')
         ->and($payload['settings']['oilWeightForCosting'])->toBe(2.204622622)
-        ->and($costing->oil_mass_grams_for_costing)->toBe('1000.000000000');
+        ->and($payload['settings']['id'])->toBeNull()
+        ->and(RecipeVersionCosting::query()->count())->toBe(0);
 });
 
 it('uses the workspace currency when costing updates the remembered amount', function () {
@@ -396,6 +406,8 @@ it('reports the live workspace currency in the costing payload after the workspa
 
     $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($draftVersion, $user);
 
     expect($service->costingPayload($recipe, $user)['settings']['currency'])->toBe('EUR');
 
@@ -526,7 +538,7 @@ it('updates the saved packaging item amount from costing overrides without chang
         ],
     ]);
     $secondRecipe = Recipe::withoutGlobalScopes()->findOrFail($secondDraftVersion->recipe_id);
-    $service->costingPayload($secondRecipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($secondDraftVersion, $user);
 
     $service->saveCosting($user, $recipe, [
         'oil_weight_for_costing' => 1000,
@@ -799,19 +811,19 @@ it('propagates ingredient price memory changes to linked live costing rows', fun
 
     $firstVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient, name: 'First Recipe'));
     $firstRecipe = Recipe::withoutGlobalScopes()->findOrFail($firstVersion->recipe_id);
-    $service->costingPayload($firstRecipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($firstVersion, $user);
 
     $secondVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient, name: 'Second Recipe'));
     $secondRecipe = Recipe::withoutGlobalScopes()->findOrFail($secondVersion->recipe_id);
-    $service->costingPayload($secondRecipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($secondVersion, $user);
 
     $otherUserVersion = $service->save($otherUser, $soapFamily, soapDraftPayload($ingredient, name: 'Other User Recipe'));
     $otherUserRecipe = Recipe::withoutGlobalScopes()->findOrFail($otherUserVersion->recipe_id);
-    $service->costingPayload($otherUserRecipe, $otherUser);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($otherUserVersion, $otherUser);
 
     $otherIngredientVersion = $service->save($user, $soapFamily, soapDraftPayload($otherIngredient, name: 'Other Ingredient Recipe'));
     $otherIngredientRecipe = Recipe::withoutGlobalScopes()->findOrFail($otherIngredientVersion->recipe_id);
-    $service->costingPayload($otherIngredientRecipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($otherIngredientVersion, $user);
 
     rememberIngredientPriceForWorkspace($user, $ingredient, '17.43219');
 
@@ -863,7 +875,7 @@ it('propagates packaging catalog unit cost changes to linked live costing rows',
             ],
         ],
     ]);
-    $service->costingPayload(Recipe::withoutGlobalScopes()->findOrFail($firstVersion->recipe_id), $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($firstVersion, $user);
 
     $secondVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient, name: 'Second Recipe') + [
         'packaging_items' => [
@@ -875,7 +887,7 @@ it('propagates packaging catalog unit cost changes to linked live costing rows',
             ],
         ],
     ]);
-    $service->costingPayload(Recipe::withoutGlobalScopes()->findOrFail($secondVersion->recipe_id), $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($secondVersion, $user);
 
     $otherUserVersion = $service->save($otherUser, $soapFamily, soapDraftPayload($ingredient, name: 'Other User Recipe') + [
         'packaging_items' => [
@@ -887,7 +899,7 @@ it('propagates packaging catalog unit cost changes to linked live costing rows',
             ],
         ],
     ]);
-    $service->costingPayload(Recipe::withoutGlobalScopes()->findOrFail($otherUserVersion->recipe_id), $otherUser);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($otherUserVersion, $otherUser);
 
     app(PackagingItemAuthoringService::class)->updateUnitCost($packagingItem, $user, 1.23789);
 
@@ -944,6 +956,11 @@ it('copies pricing and packaging rows forward when a draft is published into a n
         ],
     ]);
 
+    RecipeVersionCostingItem::query()
+        ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $draftVersion->id))
+        ->where('ingredient_id', $ingredient->id)
+        ->update(['price_per_kg' => 6.2]);
+
     $newDraftVersion = $service->publish($user, $soapFamily, soapDraftPayload($ingredient, name: 'Costed Draft'), $recipe);
 
     $newDraftCosting = RecipeVersionCosting::query()
@@ -954,7 +971,7 @@ it('copies pricing and packaging rows forward when a draft is published into a n
 
     expect($newDraftCosting->units_produced)->toBe(12)
         ->and($newDraftCosting->items)->toHaveCount(2)
-        ->and((float) $newDraftCosting->items->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe(7.8)
+        ->and((float) $newDraftCosting->items->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe(6.2)
         ->and($newDraftCosting->packagingItems)->toHaveCount(1)
         ->and($newDraftCosting->packagingItems->first()->name)->toBe('Bow 100 g')
         ->and((float) $newDraftCosting->packagingItems->first()->quantity)->toBe(2.0);
@@ -983,7 +1000,7 @@ it('removes obsolete costing rows from the published version when formula ingred
 
     $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($removedIngredient));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $service->costingPayload($recipe, $user);
+    app(RecipeVersionCostingSynchronizer::class)->ensureCosting($draftVersion, $user);
 
     $newDraftVersion = $service->publish(
         $user,

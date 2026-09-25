@@ -51,3 +51,6 @@ Workspace-owned saved formulas have one canonical costing shared by all authoriz
 
 ## Do not infer legacy batch ownership from current membership
 Legacy production_batches have actor user_id and nullable source recipe/version references, not durable workspace ownership. Do not count every current member's historical batches as workspace usage: membership changes and deleted sources make that unsafe. Introduce explicit workspace provenance and a reviewed backfill before sharing this legacy allowance; Production Bench runs use a separate workspace model.
+
+## Costing reads project defaults without writes
+Loading costing or previewing production must not create, reconcile or delete costing rows. Project missing defaults in memory; explicit saves persist them. Preserve saved zero prices, duplicate packaging occurrences and saved currency. Saved formula/print/export outputs retain empty-costing behavior when no costing exists.

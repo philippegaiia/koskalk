@@ -95,6 +95,18 @@ const FOREIGN_KEY_INDEX_MANIFEST = [
             ['table' => 'production_batch_presets', 'column' => 'workspace_id', 'name' => 'production_batch_presets_workspace_id_index'],
         ],
     ],
+    'query-paths-follow-up' => [
+        'migration' => 'add_followup_query_path_foreign_key_indexes',
+        'indexes' => [
+            ['table' => 'department_employee', 'column' => 'employee_id', 'name' => 'department_employee_employee_id_index'],
+            ['table' => 'media_asset_label', 'column' => 'media_label_id', 'name' => 'media_asset_label_media_label_id_index'],
+            ['table' => 'ingredient_enrichment_batch_items', 'column' => 'ingredient_id', 'name' => 'ingredient_enrichment_batch_items_ingredient_id_index'],
+            ['table' => 'ingredient_enrichment_batch_items', 'column' => 'ingredient_intake_item_id', 'name' => 'ing_enrichment_batch_items_intake_item_id_index'],
+            ['table' => 'ingredient_intake_items', 'column' => 'existing_ingredient_id', 'name' => 'ingredient_intake_items_existing_ingredient_id_index'],
+            ['table' => 'ingredient_intake_items', 'column' => 'promoted_ingredient_id', 'name' => 'ingredient_intake_items_promoted_ingredient_id_index'],
+            ['table' => 'production_batch_ingredients', 'column' => 'ingredient_id', 'name' => 'production_batch_ingredients_ingredient_id_index'],
+        ],
+    ],
 ];
 
 it('covers explicit foreign key indexes', function (string $group): void {

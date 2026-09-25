@@ -615,6 +615,111 @@ it('restores the exact manual price snapshot when multiple lines for the same su
         ->toBe(MaterialPriceSource::ManualCosting->value);
 });
 
+it('validates repeated snapshot sources once per subject without reusing validity across reversals', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    app(CurrentMaterialPriceService::class)->rememberIngredient(
+        workspace: $workspace,
+        ingredient: $ingredient,
+        pricePerMassUnit: '0.009000000000',
+        massUnit: 'g',
+        currency: 'CHF',
+        source: MaterialPriceSource::SupplierListing,
+        sourceId: $listing->id,
+        actor: $owner,
+        recordedAt: now()->addDay(),
+    );
+
+    $createReceipt = function (string $idempotencyKey) use ($owner, $workspace, $supplier, $listing): GoodsReceipt {
+        return app(ReceiveDirectGoodsReceipt::class)->handle(
+            actor: $owner,
+            workspace: $workspace,
+            supplier: $supplier,
+            idempotencyKey: $idempotencyKey,
+            lines: [
+                [
+                    'listing' => $listing,
+                    'packs_received' => 1,
+                    'actual_quantity' => '5',
+                    'actual_unit' => 'kg',
+                    'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+                    'receipt_price_amount' => '40',
+                    'currency' => 'EUR',
+                ],
+                [
+                    'listing' => $listing,
+                    'packs_received' => 1,
+                    'actual_quantity' => '5',
+                    'actual_unit' => 'kg',
+                    'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+                    'receipt_price_amount' => '50',
+                    'currency' => 'EUR',
+                ],
+            ],
+            receivedAt: '2026-08-03',
+        );
+    };
+    $pointCurrentPriceToReceipt = function (GoodsReceipt $receipt) use ($owner, $workspace, $ingredient): void {
+        $latestLine = $receipt->lines()->orderByDesc('id')->firstOrFail();
+
+        app(CurrentMaterialPriceService::class)->rememberIngredient(
+            workspace: $workspace,
+            ingredient: $ingredient,
+            pricePerMassUnit: '0.010000000000',
+            massUnit: 'g',
+            currency: 'EUR',
+            source: MaterialPriceSource::Receipt,
+            sourceId: $latestLine->stock_lot_id,
+            actor: $owner,
+            recordedAt: now()->addDays(2),
+        );
+    };
+    $reverseAction = app(ReverseGoodsReceipt::class);
+    $reverseAndCountListingValidations = function (GoodsReceipt $receipt, string $reason) use ($owner, $reverseAction): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $reverseAction->handle($owner, $receipt, $reason);
+
+            return collect(DB::getQueryLog())
+                ->map(fn (array $query): string => strtolower(str_replace(['"', '`'], '', $query['query'])))
+                ->filter(fn (string $sql): bool => str_contains($sql, 'select exists')
+                    && str_contains($sql, 'from supplier_listings'))
+                ->count();
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+    };
+
+    $firstReceipt = $createReceipt('repeated-valid-price-snapshot-source');
+    $firstSnapshots = $firstReceipt->lines()->orderBy('id')->get()->pluck('previous_material_price_snapshot');
+    expect($firstSnapshots)->toHaveCount(2)
+        ->and($firstSnapshots->map(fn (array $snapshot): array => [
+            $snapshot['source_type'],
+            $snapshot['source_id'],
+        ])->unique()->count())->toBe(1);
+    $pointCurrentPriceToReceipt($firstReceipt);
+    expect($reverseAndCountListingValidations($firstReceipt, 'Restore the valid repeated listing snapshots'))->toBe(1);
+
+    $currentPrice = CurrentMaterialPrice::query()->where('ingredient_id', $ingredient->id)->sole();
+    expect($currentPrice->source_type)->toBe(MaterialPriceSource::SupplierListing)
+        ->and((int) $currentPrice->source_id)->toBe($listing->id)
+        ->and($currentPrice->price_per_canonical_unit)->toBe('0.009000000000');
+
+    $secondReceipt = $createReceipt('repeated-invalid-price-snapshot-source');
+    $pointCurrentPriceToReceipt($secondReceipt);
+    $listing->update(['is_active' => false]);
+
+    expect($reverseAndCountListingValidations($secondReceipt, 'Reject the now-inactive listing snapshots'))->toBe(1)
+        ->and(CurrentMaterialPrice::query()->where('ingredient_id', $ingredient->id)->exists())->toBeFalse();
+});
+
 it('restores an exact costing-backed manual price snapshot after receipt reversal', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();

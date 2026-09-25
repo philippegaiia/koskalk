@@ -117,6 +117,8 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
         array $reversedLotIds,
     ): ?array {
         $candidates = [];
+        /** @var array<string, bool> $sourceValidity */
+        $sourceValidity = [];
 
         foreach ($lines as $line) {
             if (
@@ -151,15 +153,24 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
                 || ! isset($snapshot['price_per_canonical_unit'], $snapshot['currency'])
                 || ! is_string($snapshot['price_per_canonical_unit'])
                 || ! is_string($snapshot['currency'])
-                || ! $this->snapshotSourceIsValid(
+            ) {
+                continue;
+            }
+
+            $sourceKey = $source->value.':'.($sourceId === null ? 'null' : (string) $sourceId);
+
+            if (! array_key_exists($sourceKey, $sourceValidity)) {
+                $sourceValidity[$sourceKey] = $this->snapshotSourceIsValid(
                     $source,
                     $sourceId,
                     $workspaceId,
                     $ingredientId,
                     $packagingItemId,
                     $reversedLotIds,
-                )
-            ) {
+                );
+            }
+
+            if (! $sourceValidity[$sourceKey]) {
                 continue;
             }
 

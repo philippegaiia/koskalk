@@ -486,3 +486,15 @@ The populated development database was not migrated; its missing-FK count remain
 The fallback now selects at most one candidate per source and orders equal timestamps by numeric record ID. Later manual costing edits remain protected. A legacy date-normalization regression is covered. The three affected feature files passed on both SQLite and disposable PostgreSQL: 52 tests, 249 assertions each. The user also reported the full suite passing before this follow-up refactor.
 
 The user subsequently authorized applying the four-index migration to the populated local development database. It ran successfully on `koskalk_restore_20260722_023001`; a fresh live schema comparison showed exactly four index additions, and doctor findings decreased from 69 to 65. No separately hosted production database was changed. These results supersede the earlier pending-migration status above.
+
+
+## Authorized follow-ups completed — 2026-09-25
+
+The preceding completed work was committed as `aac70b09` before beginning these follow-ups. At the user's request, Luna max implemented and Astra medium independently reviewed both changes; no implementation takeover was required.
+
+- Snapshot source validity is memoized only within one subject's snapshot-candidate calculation, keyed by source type and nullable source ID. Both true and false results are reused; price, currency, timestamp and ranking remain evaluated per snapshot. A real-reversal regression first failed with two repeated validation reads and now passes with one. Reusing the action after source deactivation verifies that validity does not persist across reversals.
+- All seven previously proposed indexes were rechecked against the live PostgreSQL schema and current application call sites, implemented in `2026_09_25_074929_add_followup_query_path_foreign_key_indexes.php`, and included in the existing explicit-index coverage and rollback/reapply tests. No other indexes or constraints were changed.
+- SQLite validation passed: 53 purchasing/costing tests with 257 assertions, plus 18 index tests with 737 assertions. The combined disposable PostgreSQL run passed 71 tests with 1,003 assertions. Pint and diff checks passed.
+- Following authorization, the seven-index migration was applied to populated local development database `koskalk_restore_20260722_023001`. Fresh live snapshots, with no fallback, showed exactly seven index additions and no other schema changes. Missing-FK-index findings decreased from 65 to 58. The historical assessment above remains the record of the earlier schema; its seven proposed additions are now implemented. The remaining 58 comprise four deferred findings and 54 requiring representative workload evidence.
+
+No separately hosted production database was migrated, and no production speedup benchmark is claimed. The full suite should be rerun for these latest follow-ups.

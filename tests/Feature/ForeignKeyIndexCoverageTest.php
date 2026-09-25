@@ -86,6 +86,15 @@ const FOREIGN_KEY_INDEX_MANIFEST = [
             ['table' => 'workspace_ingredient_guidances', 'column' => 'updated_by_user_id', 'name' => 'workspace_ingredient_guidances_updated_by_user_id_index'],
         ],
     ],
+    'query-paths' => [
+        'migration' => 'add_query_path_foreign_key_indexes',
+        'indexes' => [
+            ['table' => 'workspaces', 'column' => 'owner_user_id', 'name' => 'workspaces_owner_user_id_index'],
+            ['table' => 'ifra_certificates', 'column' => 'ingredient_id', 'name' => 'ifra_certificates_ingredient_id_index'],
+            ['table' => 'recipe_version_costing_packaging_items', 'column' => 'recipe_version_costing_id', 'name' => 'rv_costing_packaging_costing_id_index'],
+            ['table' => 'production_batch_presets', 'column' => 'workspace_id', 'name' => 'production_batch_presets_workspace_id_index'],
+        ],
+    ],
 ];
 
 it('covers explicit foreign key indexes', function (string $group): void {

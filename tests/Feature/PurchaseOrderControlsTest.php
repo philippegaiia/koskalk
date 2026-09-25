@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Inventory\AddStockLotCostAdjustment;
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Purchasing\CancelPurchaseOrder;
 use App\Actions\Purchasing\CreatePurchaseOrder;
@@ -11,11 +12,14 @@ use App\Enums\GoodsReceiptStatus;
 use App\Enums\ListingPriceBasis;
 use App\Enums\MaterialPriceSource;
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\StockLotCostAdjustmentType;
+use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockUnitKind;
 use App\Models\CurrentMaterialPrice;
 use App\Models\GoodsReceipt;
+use App\Models\GoodsReceiptLine;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
@@ -242,6 +246,259 @@ it('reverses a direct receipt without requiring a purchase order', function (): 
         ->and($positions['physical'])->toBe('0.000000000')
         ->and($positions['available'])->toBe('0.000000000')
         ->and($positions['incoming'])->toBe('0.000000000');
+});
+
+it('rebuilds adjusted receipt prices with bounded relationship reads', function (int $candidateCount): void {
+    $this->travelTo(now()->setDate(2026, 9, 25)->startOfDay());
+    Http::preventStrayRequests();
+
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create([
+        'default_currency' => 'EUR',
+    ]);
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create(['currency' => 'EUR', 'is_active' => false]);
+    $lots = [];
+    $receipts = [];
+
+    for ($position = 0; $position <= $candidateCount; $position++) {
+        $createdAt = now()->subDays($candidateCount - $position);
+        $receipt = GoodsReceipt::factory()->direct()
+            ->for($workspace)
+            ->for($supplier)
+            ->create([
+                'received_by_user_id' => $owner->id,
+                'received_at' => $createdAt->toDateString(),
+                'created_at' => $createdAt,
+            ]);
+        $lot = StockLot::factory()->for($workspace)->for($ingredient)->create([
+            'supplier_listing_id' => $listing->id,
+            'origin' => StockLotOrigin::PurchaseReceipt,
+            'historical_unit_cost' => '0.010000000',
+            'costing_unit_cost' => '0.010000000',
+            'currency' => 'EUR',
+            'costing_currency' => 'EUR',
+        ]);
+        $line = GoodsReceiptLine::factory()->direct()->create([
+            'goods_receipt_id' => $receipt->id,
+            'supplier_listing_id' => $listing->id,
+            'stock_lot_id' => $lot->id,
+            'previous_material_price_snapshot' => null,
+            'actual_quantity' => '5000',
+            'historical_total_cost' => '50',
+            'costing_total_cost' => '50',
+        ]);
+        StockMovement::factory()->create([
+            'workspace_id' => $workspace->id,
+            'stock_lot_id' => $lot->id,
+            'type' => StockMovementType::PurchaseReceipt,
+            'quantity_delta' => '5000',
+            'original_quantity' => '5',
+            'original_unit' => 'kg',
+            'source_type' => $line->getMorphClass(),
+            'source_id' => $line->id,
+        ]);
+        $lots[] = $lot;
+        $receipts[] = $receipt;
+    }
+
+    $winningLot = $lots[$candidateCount - 1];
+    $reversedLot = $lots[$candidateCount];
+    $reversedReceipt = $receipts[$candidateCount];
+    app(AddStockLotCostAdjustment::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        lot: $winningLot,
+        type: StockLotCostAdjustmentType::Shipping,
+        amount: '10',
+        currency: 'EUR',
+        reason: 'Delivery charge included in fallback costing',
+    );
+    $currentPrice = CurrentMaterialPrice::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->sole();
+    $currentPrice->update([
+        'source_type' => MaterialPriceSource::Receipt,
+        'source_id' => $reversedLot->id,
+        'price_per_canonical_unit' => '0.010000000000',
+        'recorded_at' => now(),
+    ]);
+
+    expect($currentPrice->source_type)->toBe(MaterialPriceSource::Receipt)
+        ->and((int) $currentPrice->source_id)->toBe($reversedLot->id);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    try {
+        app(ReverseGoodsReceipt::class)->handle($owner, $reversedReceipt, 'Duplicate delivery');
+        $queries = collect(DB::getQueryLog())->map(
+            fn (array $query): string => strtolower(str_replace(['"', '`'], '', $query['query'])),
+        );
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($currentPrice->refresh()->price_per_canonical_unit)->toBe('0.012000000000');
+    expect($currentPrice->source_type)->toBe(MaterialPriceSource::Receipt);
+    expect((int) $currentPrice->source_id)->toBe($winningLot->id);
+    expect($currentPrice->currency)->toBe('EUR');
+    expect($reversedReceipt->refresh()->status)->toBe(GoodsReceiptStatus::Reversed);
+    expect(bccomp((string) $reversedLot->movements()->sum('quantity_delta'), '0', 9))->toBe(0);
+
+    $receiptRelationshipReads = $queries->filter(
+        fn (string $sql): bool => preg_match(
+            '/^select .* from goods_receipt_lines where (?:goods_receipt_lines\.)?stock_lot_id\b/',
+            $sql,
+        ) === 1,
+    );
+    $adjustmentReads = $queries->filter(
+        fn (string $sql): bool => str_starts_with($sql, 'select ')
+            && str_contains($sql, ' from stock_lot_cost_adjustments '),
+    );
+    $receiptHistoryReads = $queries->filter(
+        fn (string $sql): bool => str_starts_with($sql, 'select * from goods_receipt_lines where exists '),
+    );
+    $orderHistoryReads = $queries->filter(
+        fn (string $sql): bool => str_starts_with($sql, 'select * from purchase_order_lines where '),
+    );
+    $listingHistoryReads = $queries->filter(
+        fn (string $sql): bool => str_starts_with($sql, 'select * from supplier_listings where workspace_id ='),
+    );
+    expect($receiptRelationshipReads->count())->toBeLessThanOrEqual(1);
+    expect($adjustmentReads->count())->toBeLessThanOrEqual(1);
+    expect($receiptHistoryReads)->toHaveCount(1);
+    expect(str_ends_with($receiptHistoryReads->sole(), ' limit 1'))->toBeTrue();
+    expect($orderHistoryReads)->toHaveCount(1);
+    expect(str_ends_with($orderHistoryReads->sole(), ' limit 1'))->toBeTrue();
+    expect($listingHistoryReads)->toHaveCount(1);
+    expect(str_ends_with($listingHistoryReads->sole(), ' limit 1'))->toBeTrue();
+})->with([2, 7]);
+
+it('uses numeric receipt line ids to break timestamp ties before cross-source priority', function (): void {
+    $this->travelTo(now()->setDate(2026, 9, 25)->startOfDay());
+
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create([
+        'default_currency' => 'EUR',
+    ]);
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create(['is_active' => true]);
+    $tiedAt = now()->startOfDay();
+    $lots = [];
+    $receiptLines = [];
+
+    for ($position = 0; $position < 2; $position++) {
+        $createdAt = $position === 0 ? null : $tiedAt;
+        $receipt = GoodsReceipt::factory()->direct()
+            ->for($workspace)
+            ->for($supplier)
+            ->create([
+                'received_by_user_id' => $owner->id,
+                'received_at' => $tiedAt->toDateString(),
+                'created_at' => $createdAt,
+            ]);
+        $lot = StockLot::factory()->for($workspace)->for($ingredient)->create([
+            'supplier_listing_id' => $listing->id,
+            'origin' => StockLotOrigin::PurchaseReceipt,
+            'historical_unit_cost' => '0.009000000',
+            'costing_unit_cost' => '0.009000000',
+            'currency' => 'EUR',
+            'costing_currency' => 'EUR',
+        ]);
+        $line = GoodsReceiptLine::factory()->direct()->create([
+            'id' => 9 + $position,
+            'goods_receipt_id' => $receipt->id,
+            'supplier_listing_id' => $listing->id,
+            'stock_lot_id' => $lot->id,
+            'previous_material_price_snapshot' => null,
+            'actual_quantity' => '5000',
+            'historical_total_cost' => '45',
+            'costing_total_cost' => '45',
+        ]);
+        StockMovement::factory()->create([
+            'workspace_id' => $workspace->id,
+            'stock_lot_id' => $lot->id,
+            'type' => StockMovementType::PurchaseReceipt,
+            'quantity_delta' => '5000',
+            'original_quantity' => '5',
+            'original_unit' => 'kg',
+            'source_type' => $line->getMorphClass(),
+            'source_id' => $line->id,
+        ]);
+        $lots[] = $lot;
+        $receiptLines[] = $line;
+    }
+
+    expect($receiptLines[0]->id)->toBe(9)
+        ->and($receiptLines[1]->id)->toBe(10)
+        ->and($receiptLines[0]->goodsReceipt->refresh()->created_at)->toBeNull();
+
+    $reversedReceipt = GoodsReceipt::factory()->direct()
+        ->for($workspace)
+        ->for($supplier)
+        ->create([
+            'received_by_user_id' => $owner->id,
+            'received_at' => $tiedAt->copy()->addDay()->toDateString(),
+            'created_at' => $tiedAt->copy()->addDay(),
+        ]);
+    $reversedLot = StockLot::factory()->for($workspace)->for($ingredient)->create([
+        'supplier_listing_id' => $listing->id,
+        'origin' => StockLotOrigin::PurchaseReceipt,
+        'historical_unit_cost' => '0.010000000',
+        'costing_unit_cost' => '0.010000000',
+        'currency' => 'EUR',
+        'costing_currency' => 'EUR',
+    ]);
+    $reversedLine = GoodsReceiptLine::factory()->direct()->create([
+        'goods_receipt_id' => $reversedReceipt->id,
+        'supplier_listing_id' => $listing->id,
+        'stock_lot_id' => $reversedLot->id,
+        'previous_material_price_snapshot' => null,
+        'actual_quantity' => '5000',
+        'historical_total_cost' => '50',
+        'costing_total_cost' => '50',
+    ]);
+    StockMovement::factory()->create([
+        'workspace_id' => $workspace->id,
+        'stock_lot_id' => $reversedLot->id,
+        'type' => StockMovementType::PurchaseReceipt,
+        'quantity_delta' => '5000',
+        'original_quantity' => '5',
+        'original_unit' => 'kg',
+        'source_type' => $reversedLine->getMorphClass(),
+        'source_id' => $reversedLine->id,
+    ]);
+    $listing->update([
+        'total_price' => '50',
+        'price_recorded_at' => $tiedAt,
+    ]);
+    $currentPrice = CurrentMaterialPrice::factory()->for($workspace)->for($ingredient)->create([
+        'source_type' => MaterialPriceSource::Receipt,
+        'source_id' => $reversedLot->id,
+        'price_per_canonical_unit' => '0.010000000000',
+        'recorded_at' => $tiedAt->copy()->addDay(),
+    ]);
+
+    app(ReverseGoodsReceipt::class)->handle($owner, $reversedReceipt, 'Later receipt was void');
+
+    $winningLot = $lots[1];
+    expect($currentPrice->refresh()->source_type)->toBe(MaterialPriceSource::Receipt)
+        ->and((int) $currentPrice->source_id)->toBe($winningLot->id)
+        ->and($currentPrice->price_per_canonical_unit)->toBe('0.009000000000');
 });
 
 it('restores the newest still-posted receipt price after reversing a later receipt', function (): void {

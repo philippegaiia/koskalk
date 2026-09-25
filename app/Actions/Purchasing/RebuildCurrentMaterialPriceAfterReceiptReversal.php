@@ -231,25 +231,34 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
     }
 
     /**
-     * @return array{price: string, currency: string, source: MaterialPriceSource, source_id: int, recorded_at: CarbonInterface, created_by_user_id: null, priority: int, stable_id: string}|null
+     * @return array{price: string, currency: string, source: MaterialPriceSource, source_id: int, recorded_at: CarbonInterface, created_by_user_id: null, priority: int}|null
      */
     private function newestCandidate(int $workspaceId, ?int $ingredientId, ?int $packagingItemId): ?array
     {
         $candidates = [];
         $subjectColumn = $ingredientId === null ? 'packaging_item_id' : 'ingredient_id';
         $subjectId = $ingredientId ?? $packagingItemId;
+        $receiptTimestamp = GoodsReceipt::query()
+            ->selectRaw("COALESCE(CAST(created_at AS TEXT), SUBSTR(CAST(received_at AS TEXT), 1, 10) || ' 00:00:00')")
+            ->whereColumn('goods_receipts.id', 'goods_receipt_lines.goods_receipt_id');
 
-        $receiptLines = GoodsReceiptLine::query()
+        $receiptLine = GoodsReceiptLine::query()
             ->whereHas('goodsReceipt', fn (Builder $query): Builder => $query
                 ->where('workspace_id', $workspaceId)
                 ->where('status', GoodsReceiptStatus::Posted))
             ->whereHas('stockLot', fn (Builder $query): Builder => $query
                 ->where('workspace_id', $workspaceId)
                 ->where($subjectColumn, $subjectId))
-            ->with(['goodsReceipt', 'stockLot'])
-            ->get();
+            ->with([
+                'goodsReceipt',
+                'stockLot.goodsReceiptLine',
+                'stockLot.costAdjustments',
+            ])
+            ->orderByDesc($receiptTimestamp)
+            ->orderByDesc('goods_receipt_lines.id')
+            ->first();
 
-        foreach ($receiptLines as $receiptLine) {
+        if ($receiptLine instanceof GoodsReceiptLine) {
             $candidates[] = [
                 'price' => $receiptLine->stockLot->effectiveCostingUnitCost(),
                 'currency' => $receiptLine->stockLot->costing_currency
@@ -260,11 +269,13 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
                     ?? $receiptLine->goodsReceipt->received_at->startOfDay(),
                 'created_by_user_id' => null,
                 'priority' => 3,
-                'stable_id' => 'receipt:'.$receiptLine->id,
             ];
         }
 
-        $orderLines = PurchaseOrderLine::query()
+        $orderTimestamp = PurchaseOrder::query()
+            ->select('issued_at')
+            ->whereColumn('purchase_orders.id', 'purchase_order_lines.purchase_order_id');
+        $orderLine = PurchaseOrderLine::query()
             ->where($subjectColumn, $subjectId)
             ->whereNotNull('pack_price')
             ->whereHas('purchaseOrder', fn (Builder $query): Builder => $query
@@ -272,9 +283,11 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
                 ->whereNotNull('issued_at')
                 ->whereIn('status', $this->priceBearingOrderStatuses()))
             ->with('purchaseOrder')
-            ->get();
+            ->orderByDesc($orderTimestamp)
+            ->orderByDesc('purchase_order_lines.id')
+            ->first();
 
-        foreach ($orderLines as $orderLine) {
+        if ($orderLine instanceof PurchaseOrderLine) {
             $candidates[] = [
                 'price' => bcdiv($orderLine->pack_price, $orderLine->canonical_quantity_per_pack, 12),
                 'currency' => $orderLine->currency,
@@ -283,19 +296,20 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
                 'recorded_at' => $orderLine->purchaseOrder->issued_at,
                 'created_by_user_id' => null,
                 'priority' => 2,
-                'stable_id' => 'order:'.$orderLine->id,
             ];
         }
 
-        $listings = SupplierListing::query()
+        $listing = SupplierListing::query()
             ->where('workspace_id', $workspaceId)
             ->where($subjectColumn, $subjectId)
             ->where('is_active', true)
             ->whereNotNull('total_price')
             ->whereNotNull('price_recorded_at')
-            ->get();
+            ->orderByDesc('price_recorded_at')
+            ->orderByDesc('supplier_listings.id')
+            ->first();
 
-        foreach ($listings as $listing) {
+        if ($listing instanceof SupplierListing) {
             $candidates[] = [
                 'price' => bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 12),
                 'currency' => $listing->currency,
@@ -304,13 +318,11 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
                 'recorded_at' => $listing->price_recorded_at,
                 'created_by_user_id' => null,
                 'priority' => 1,
-                'stable_id' => 'listing:'.$listing->id,
             ];
         }
 
         usort($candidates, fn (array $left, array $right): int => ($right['recorded_at']->getTimestamp() <=> $left['recorded_at']->getTimestamp())
-            ?: ($right['priority'] <=> $left['priority'])
-            ?: strcmp($right['stable_id'], $left['stable_id']));
+            ?: ($right['priority'] <=> $left['priority']));
 
         return $candidates[0] ?? null;
     }

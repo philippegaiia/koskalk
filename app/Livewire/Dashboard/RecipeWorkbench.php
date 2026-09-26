@@ -15,12 +15,15 @@ use App\Services\MediaAssetUsageService;
 use App\Services\ProductTypeIfraOptionsBuilder;
 use App\Services\RecipeContentPersistenceService;
 use App\Services\RecipeContentUpdater;
+use App\Services\RecipeEditingService;
+use App\Services\RecipeMutationGuard;
 use App\Services\RecipeSopSnapshotService;
 use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeWorkbenchContentFormSchema;
 use App\Services\RecipeWorkbenchContextResolver;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
+use Closure;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\RichEditor;
@@ -49,6 +52,18 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Locked]
     public ?int $recipeId = null;
 
+    #[Locked]
+    public ?string $editingToken = null;
+
+    #[Locked]
+    public int $expectedRecipeRevision = 0;
+
+    #[Locked]
+    public ?int $expectedVersionId = null;
+
+    #[Locked]
+    public int $expectedCostingRevision = 0;
+
     public string $productFamilySlug = 'soap';
 
     public ?string $productTypeSlug = null;
@@ -61,6 +76,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     public ?string $recipeContentMessage = null;
 
     public string $recipeContentStatus = 'idle';
+
+    /** @var array<string, mixed>|null */
+    private ?array $initialWorkbench = null;
 
     private bool $hasResolvedProductFamily = false;
 
@@ -86,7 +104,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
 
         if ($recipe instanceof Recipe) {
-            $recipe->loadMissing('mediaAssetUsages');
             $this->resolvedCurrentRecipe = $recipe;
             $this->hasResolvedCurrentRecipe = true;
             $this->resolvedProductFamily = $recipe->productFamily;
@@ -97,14 +114,211 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $this->flushResolvedContext();
         }
 
-        $this->form->fill($this->recipeContentFormState($recipe));
+        if ($recipe instanceof Recipe) {
+            app(RecipeEditingService::class)->withLockedRecipe($recipe, function (Recipe $locked): void {
+                $locked->setRelation('productFamily', $this->resolvedProductFamily);
+                $locked->setRelation('productType', $this->resolvedProductType);
+                $locked->loadMissing('mediaAssetUsages');
+                $this->resolvedCurrentRecipe = $locked;
+                $this->form->fill($this->recipeContentFormState($locked));
+                $baseline = app(RecipeEditingService::class)->revisions($locked);
+                $this->acceptEditingRevisions($baseline);
+                $this->initialWorkbench = app(RecipeWorkbenchViewDataBuilder::class)->build(
+                    $this->productFamily(), $locked, $this->currentUser(), $this->productType(),
+                );
+                $this->initialWorkbench['editing'] = [
+                    ...$baseline,
+                    'status' => 'available',
+                    'holder_name' => null,
+                    'expires_at' => null,
+                    'is_locked' => $locked->isLocked(),
+                    'can_take_over' => $this->initialWorkbench['recipe']['can_manage_lock'],
+                ];
+            });
+        } else {
+            $this->form->fill($this->recipeContentFormState($recipe));
+        }
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function beginEditing(string $token): array
+    {
+        return $this->editingAction(function (Recipe $recipe, User $user, RecipeEditingService $editing) use ($token): array {
+            $state = $editing->acquire($recipe, $user, $token);
+            if ($state['status'] === 'acquired') {
+                $this->editingToken = $token;
+            }
+
+            return $state;
+        });
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function heartbeatEditing(): array
+    {
+        return $this->editingAction(fn (Recipe $recipe, User $user, RecipeEditingService $editing): array => $editing->heartbeat($recipe, $user, $this->editingToken ?? ''));
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function editingStatus(): array
+    {
+        return $this->editingAction(fn (Recipe $recipe, User $user, RecipeEditingService $editing): array => $editing->status($recipe, $user, $this->editingToken));
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function releaseEditing(): array
+    {
+        return $this->editingAction(function (Recipe $recipe, User $user, RecipeEditingService $editing): array {
+            $editing->release($recipe, $user, $this->editingToken ?? '');
+            $this->editingToken = null;
+
+            return $editing->status($recipe, $user);
+        });
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function takeoverEditing(string $token, string $reason): array
+    {
+        return $this->editingAction(function (Recipe $recipe, User $user, RecipeEditingService $editing) use ($token, $reason): array {
+            $state = $editing->takeover($recipe, $user, $token, $reason);
+            $this->editingToken = $token;
+
+            return $state;
+        });
+    }
+
+    /** @return array<string, mixed> */
+    public function save(array $draft, RecipeWorkbenchService $service, RecipeContentUpdater $content): array
+    {
+        return $this->mutateRecipe(fn (): array => $this->performSave($draft, $service, $content));
+    }
+
+    /** @return array<string, mixed> */
+    public function publish(array $draft, RecipeWorkbenchService $service, RecipeContentUpdater $content): array
+    {
+        return $this->mutateRecipe(fn (): array => $this->performPublish($draft, $service, $content));
+    }
+
+    /** @return array<string, mixed> */
+    #[Renderless]
+    public function saveCosting(array $costing, RecipeWorkbenchService $service): array
+    {
+        return $this->mutateRecipe(fn (): array => $this->performSaveCosting($costing, $service), allowLocked: true);
+    }
+
+    /** @return array<string, mixed> */
+    public function saveRecipeContent(RecipeContentPersistenceService $service): array
+    {
+        return $this->mutateRecipe(fn (): array => $this->performSaveRecipeContent($service));
+    }
+
+    /** @return array<string, mixed> */
+    public function createManufacturedIngredient(string $name, CreateManufacturedIngredient $action): array
+    {
+        return $this->mutateRecipe(fn (): array => $this->performCreateManufacturedIngredient($name, $action));
+    }
+
+    public function deleteVersion(int $versionId, string $confirmName = ''): void
+    {
+        $result = $this->mutateRecipe(fn (): array => $this->performDeleteVersion($versionId, $confirmName));
+        if (! $result['ok']) {
+            throw ValidationException::withMessages($result['errors'] ?? ['editing_lease' => $result['message']]);
+        }
+        session()->flash('status', $result['message']);
+        if ($result['deleted_current']) {
+            $this->redirect(route('recipes.index'), navigate: true);
+
+            return;
+        }
+        $this->dispatch('version-deleted', ...$result['event']);
+        $this->dispatch('editing-updated', editing: $result['editing'] ?? null);
+    }
+
+    /** @return array<string, mixed> */
+    private function editingAction(Closure $action): array
+    {
+        $recipe = $this->currentRecipe();
+        $user = $this->currentUser();
+        abort_unless($recipe instanceof Recipe && $user instanceof User, 404);
+
+        try {
+            return ['ok' => true, 'editing' => $action($recipe, $user, app(RecipeEditingService::class))];
+        } catch (ValidationException $exception) {
+            return $this->saveErrorResponse($exception);
+        }
+    }
+
+    /** @param array<string, mixed> $state */
+    private function acceptEditingRevisions(array $state): void
+    {
+        $this->expectedRecipeRevision = $state['recipe_revision'];
+        $this->expectedVersionId = $state['current_version_id'];
+        $this->expectedCostingRevision = $state['costing_revision'];
+    }
+
+    /** @return array<string, mixed> */
+    private function mutateRecipe(Closure $action, bool $allowLocked = false): array
+    {
+        $recipe = $this->currentRecipe();
+        if (! $recipe instanceof Recipe) {
+            return $action();
+        }
+        $user = $this->currentUser();
+        abort_unless($user instanceof User, 403);
+
+        $originalData = $this->data;
+        $originalContentStatus = $this->recipeContentStatus;
+        $originalContentMessage = $this->recipeContentMessage;
+
+        try {
+            return app(RecipeEditingService::class)->withLockedRecipe($recipe, function (Recipe $locked) use ($user, $action, $allowLocked): array {
+                $result = app(RecipeMutationGuard::class)->run(
+                    $locked,
+                    $user,
+                    $this->editingToken ?? '',
+                    $this->expectedRecipeRevision,
+                    $this->expectedVersionId,
+                    function (Recipe $fresh) use ($action): array {
+                        $this->resolvedCurrentRecipe = $fresh;
+                        $this->hasResolvedCurrentRecipe = true;
+                        $result = $action();
+                        if (! ($result['ok'] ?? false)) {
+                            throw ValidationException::withMessages($result['errors'] ?? ['draft' => $result['message'] ?? 'Unable to save.']);
+                        }
+
+                        return $result;
+                    },
+                    $this->expectedCostingRevision,
+                    $allowLocked,
+                );
+                $state = app(RecipeEditingService::class)->status($locked, $user, $this->editingToken);
+                $this->acceptEditingRevisions($state);
+
+                return [...$result, 'editing' => $state];
+            });
+        } catch (ValidationException|InvalidArgumentException $exception) {
+            $this->data = $originalData;
+            $this->recipeContentStatus = $originalContentStatus;
+            $this->recipeContentMessage = $originalContentMessage;
+            $this->flushResolvedContext();
+            if ($exception instanceof ValidationException) {
+                $this->setErrorBag($exception->validator->errors());
+            }
+
+            return $this->saveErrorResponse($exception);
+        }
     }
 
     /**
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    public function save(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
+    private function performSave(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
     {
         $user = $this->currentUser();
 
@@ -166,7 +380,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    public function publish(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
+    private function performPublish(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
     {
         $user = $this->currentUser();
 
@@ -227,7 +441,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     /**
      * @return array{ok: bool, message?: string, ingredient?: array{id: int, name: string}, errors?: array<string, array<int, string>>}
      */
-    public function createManufacturedIngredient(string $name, CreateManufacturedIngredient $action): array
+    private function performCreateManufacturedIngredient(string $name, CreateManufacturedIngredient $action): array
     {
         $user = $this->currentUser();
 
@@ -373,7 +587,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @return array<string, mixed>
      */
     #[Renderless]
-    public function saveCosting(array $costing, RecipeWorkbenchService $recipeWorkbenchService): array
+    private function performSaveCosting(array $costing, RecipeWorkbenchService $recipeWorkbenchService): array
     {
         $user = $this->currentUser();
         $recipe = $this->currentRecipe();
@@ -444,10 +658,16 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         $this->authorize('view', $recipe);
 
-        return [
-            'ok' => true,
-            'costing' => $recipeWorkbenchService->costingPayload($recipe, $user),
-        ];
+        return app(RecipeEditingService::class)->withLockedRecipe($recipe, function (Recipe $locked) use ($user, $recipeWorkbenchService): array {
+            app(RecipeEditingService::class)->authorize($locked, $user, 'view');
+            $state = app(RecipeEditingService::class)->revisions($locked);
+            $costing = $recipeWorkbenchService->costingPayload($locked, $user);
+            if ($state['recipe_revision'] === $this->expectedRecipeRevision && $state['current_version_id'] === $this->expectedVersionId) {
+                $this->expectedCostingRevision = $state['costing_revision'];
+            }
+
+            return ['ok' => true, 'costing' => $costing, 'editing' => app(RecipeEditingService::class)->status($locked, $user, $this->editingToken)];
+        });
     }
 
     /**
@@ -535,7 +755,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     /**
      * @return array{ok: bool, message: string, saved_at?: string}
      */
-    public function saveRecipeContent(RecipeContentPersistenceService $recipeContentPersistenceService): array
+    private function performSaveRecipeContent(RecipeContentPersistenceService $recipeContentPersistenceService): array
     {
         $recipe = $this->currentRecipe();
 
@@ -606,7 +826,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         ];
     }
 
-    public function deleteVersion(int $versionId, string $confirmName = ''): void
+    /** @return array<string, mixed> */
+    private function performDeleteVersion(int $versionId, string $confirmName = ''): array
     {
         abort_unless($this->currentUser() instanceof User, 403);
         $recipe = $this->currentRecipe();
@@ -631,10 +852,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $deletion = app(RecipeVersionDeletionService::class)->delete($recipe, $version);
 
         if ($deletion['deleted_current']) {
-            session()->flash('status', 'Draft deleted.');
-            $this->redirect(route('recipes.index'), navigate: true);
-
-            return;
+            return ['ok' => true, 'deleted_current' => true, 'message' => 'Draft deleted.'];
         }
 
         $recipeWorkbenchService = app(RecipeWorkbenchService::class);
@@ -646,15 +864,17 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ? 'Last published version deleted. Recipe has no published versions.'
             : 'Version deleted.';
 
-        session()->flash('status', $status);
-
-        $this->dispatch(
-            'version-deleted',
-            message: $status,
-            recipe: $savedSnapshot['draft']['recipe'] ?? null,
-            versionName: $savedSnapshot['draft']['formulaName'] ?? null,
-            versionOptions: $versionOptions,
-        );
+        return [
+            'ok' => true,
+            'deleted_current' => false,
+            'message' => $status,
+            'event' => [
+                'message' => $status,
+                'recipe' => $savedSnapshot['draft']['recipe'] ?? null,
+                'versionName' => $savedSnapshot['draft']['formulaName'] ?? null,
+                'versionOptions' => $versionOptions,
+            ],
+        ];
     }
 
     public function form(Schema $schema): Schema
@@ -670,7 +890,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $recipeWorkbenchViewDataBuilder = app(RecipeWorkbenchViewDataBuilder::class);
 
         return view('livewire.dashboard.recipe-workbench', [
-            'workbench' => $recipeWorkbenchViewDataBuilder->build(
+            'workbench' => $this->initialWorkbench ?? $recipeWorkbenchViewDataBuilder->build(
                 $this->productFamily(),
                 $recipe,
                 $this->currentUser(),

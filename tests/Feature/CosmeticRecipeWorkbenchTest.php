@@ -18,6 +18,7 @@ use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchDraftPayloadMapper;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\Process\Process;
 
@@ -684,6 +685,7 @@ it('reloads weight mode cosmetic drafts without losing saved item weights', func
 
     $component = app(RecipeWorkbench::class);
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
     $result = $component->save(
         app(RecipeWorkbenchDraftPayloadMapper::class)->toSavePayload($draft),
         app(RecipeWorkbenchService::class),

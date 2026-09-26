@@ -34,7 +34,7 @@ class RecipeWorkbenchViewDataBuilder
     /**
      * @return array<string, mixed>
      */
-    public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null): array
+    public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null, ?array $editing = null): array
     {
         $ingredients = $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily);
         $savedDraft = $this->recipeWorkbenchService->currentVersionPayloadUsingCatalog($recipe, $ingredients);
@@ -53,6 +53,7 @@ class RecipeWorkbenchViewDataBuilder
         $helpTabs = array_map(fn (array $keys): array => array_values(array_intersect($keys, array_keys($helpContent))), $helpScope['index']);
 
         return [
+            'editing' => $editing,
             'contextualHelp' => ['topics' => $helpContent, 'tabs' => $helpTabs],
             'productFamily' => [
                 'id' => $productFamily->id,

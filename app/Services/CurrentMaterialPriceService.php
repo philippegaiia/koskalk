@@ -31,30 +31,33 @@ class CurrentMaterialPriceService
         ?CarbonInterface $recordedAt = null,
         ?int $exceptCostingId = null,
     ): CurrentMaterialPrice {
-        $price = $this->validatedPrice($pricePerMassUnit);
-        $gramsPerUnit = $this->massConverter->toGrams('1', $massUnit);
-        $canonicalPrice = bcdiv($price, $gramsPerUnit, 12);
+        return DB::transaction(function () use ($workspace, $ingredient, $pricePerMassUnit, $massUnit, $currency, $source, $sourceId, $actor, $recordedAt, $exceptCostingId): CurrentMaterialPrice {
+            Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $price = $this->validatedPrice($pricePerMassUnit);
+            $gramsPerUnit = $this->massConverter->toGrams('1', $massUnit);
+            $canonicalPrice = bcdiv($price, $gramsPerUnit, 12);
 
-        $currentPrice = $this->remember(
-            workspace: $workspace,
-            ingredientId: $ingredient->id,
-            packagingItemId: null,
-            canonicalPrice: $canonicalPrice,
-            currency: $currency,
-            source: $source,
-            sourceId: $sourceId,
-            actor: $actor,
-            recordedAt: $recordedAt,
-        );
+            $currentPrice = $this->remember(
+                workspace: $workspace,
+                ingredientId: $ingredient->id,
+                packagingItemId: null,
+                canonicalPrice: $canonicalPrice,
+                currency: $currency,
+                source: $source,
+                sourceId: $sourceId,
+                actor: $actor,
+                recordedAt: $recordedAt,
+            );
 
-        $this->liveCostingPricePropagationService->ingredientPriceChanged(
-            $workspace,
-            $ingredient->id,
-            bcmul($currentPrice->price_per_canonical_unit, '1000', 12),
-            $exceptCostingId,
-        );
+            $this->liveCostingPricePropagationService->ingredientPriceChanged(
+                $workspace,
+                $ingredient->id,
+                bcmul($currentPrice->price_per_canonical_unit, '1000', 12),
+                $exceptCostingId,
+            );
 
-        return $currentPrice;
+            return $currentPrice;
+        }, attempts: 5);
     }
 
     public function rememberPackaging(
@@ -68,61 +71,67 @@ class CurrentMaterialPriceService
         ?CarbonInterface $recordedAt = null,
         ?int $exceptCostingId = null,
     ): CurrentMaterialPrice {
-        if ($packagingItem->workspace_id !== $workspace->id) {
-            throw ValidationException::withMessages([
-                'packaging_item' => 'The packaging item must belong to the active workspace.',
-            ]);
-        }
+        return DB::transaction(function () use ($workspace, $packagingItem, $pricePerItem, $currency, $source, $sourceId, $actor, $recordedAt, $exceptCostingId): CurrentMaterialPrice {
+            Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            if ($packagingItem->workspace_id !== $workspace->id) {
+                throw ValidationException::withMessages([
+                    'packaging_item' => 'The packaging item must belong to the active workspace.',
+                ]);
+            }
 
-        $currentPrice = $this->remember(
-            workspace: $workspace,
-            ingredientId: null,
-            packagingItemId: $packagingItem->id,
-            canonicalPrice: $this->validatedPrice($pricePerItem),
-            currency: $currency,
-            source: $source,
-            sourceId: $sourceId,
-            actor: $actor,
-            recordedAt: $recordedAt,
-        );
+            $currentPrice = $this->remember(
+                workspace: $workspace,
+                ingredientId: null,
+                packagingItemId: $packagingItem->id,
+                canonicalPrice: $this->validatedPrice($pricePerItem),
+                currency: $currency,
+                source: $source,
+                sourceId: $sourceId,
+                actor: $actor,
+                recordedAt: $recordedAt,
+            );
 
-        $this->liveCostingPricePropagationService->packagingPriceChanged(
-            $workspace,
-            $packagingItem->id,
-            $currentPrice->price_per_canonical_unit,
-            $exceptCostingId,
-        );
+            $this->liveCostingPricePropagationService->packagingPriceChanged(
+                $workspace,
+                $packagingItem->id,
+                $currentPrice->price_per_canonical_unit,
+                $exceptCostingId,
+            );
 
-        return $currentPrice;
+            return $currentPrice;
+        }, attempts: 5);
     }
 
     public function forgetIngredient(Workspace $workspace, Ingredient $ingredient, User $actor): void
     {
-        if (! $workspace->hasMember($actor)) {
-            throw ValidationException::withMessages([
-                'workspace' => 'The active workspace is not accessible.',
-            ]);
-        }
+        DB::transaction(function () use ($workspace, $ingredient, $actor): void {
+            Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            if (! $workspace->hasMember($actor)) {
+                throw ValidationException::withMessages([
+                    'workspace' => 'The active workspace is not accessible.',
+                ]);
+            }
 
-        $forgotPrice = DB::transaction(function () use ($workspace, $ingredient): bool {
-            $currentPrice = CurrentMaterialPrice::query()
-                ->where('workspace_id', $workspace->id)
-                ->where('ingredient_id', $ingredient->id)
-                ->lockForUpdate()
-                ->first();
+            $forgotPrice = DB::transaction(function () use ($workspace, $ingredient): bool {
+                $currentPrice = CurrentMaterialPrice::query()
+                    ->where('workspace_id', $workspace->id)
+                    ->where('ingredient_id', $ingredient->id)
+                    ->lockForUpdate()
+                    ->first();
 
-            return $currentPrice?->delete() ?? false;
-        });
+                return $currentPrice?->delete() ?? false;
+            });
 
-        if (! $forgotPrice) {
-            return;
-        }
+            if (! $forgotPrice) {
+                return;
+            }
 
-        $this->liveCostingPricePropagationService->ingredientPriceChanged(
-            $workspace,
-            $ingredient->id,
-            null,
-        );
+            $this->liveCostingPricePropagationService->ingredientPriceChanged(
+                $workspace,
+                $ingredient->id,
+                null,
+            );
+        }, attempts: 5);
     }
 
     public function restoreIngredientProjection(
@@ -136,28 +145,31 @@ class CurrentMaterialPriceService
         User $actor,
         ?int $createdByUserId = null,
     ): ?CurrentMaterialPrice {
-        $currentPrice = $this->replaceProjection(
-            workspace: $workspace,
-            ingredientId: $ingredient->id,
-            packagingItemId: null,
-            canonicalPrice: $canonicalPrice,
-            currency: $currency,
-            source: $source,
-            sourceId: $sourceId,
-            recordedAt: $recordedAt,
-            actor: $actor,
-            createdByUserId: $createdByUserId,
-        );
+        return DB::transaction(function () use ($workspace, $ingredient, $canonicalPrice, $currency, $source, $sourceId, $recordedAt, $actor, $createdByUserId): ?CurrentMaterialPrice {
+            Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $currentPrice = $this->replaceProjection(
+                workspace: $workspace,
+                ingredientId: $ingredient->id,
+                packagingItemId: null,
+                canonicalPrice: $canonicalPrice,
+                currency: $currency,
+                source: $source,
+                sourceId: $sourceId,
+                recordedAt: $recordedAt,
+                actor: $actor,
+                createdByUserId: $createdByUserId,
+            );
 
-        $this->liveCostingPricePropagationService->ingredientPriceChanged(
-            $workspace,
-            $ingredient->id,
-            $currentPrice === null
-                ? null
-                : bcmul($currentPrice->price_per_canonical_unit, '1000', 12),
-        );
+            $this->liveCostingPricePropagationService->ingredientPriceChanged(
+                $workspace,
+                $ingredient->id,
+                $currentPrice === null
+                    ? null
+                    : bcmul($currentPrice->price_per_canonical_unit, '1000', 12),
+            );
 
-        return $currentPrice;
+            return $currentPrice;
+        }, attempts: 5);
     }
 
     public function restorePackagingProjection(
@@ -171,26 +183,29 @@ class CurrentMaterialPriceService
         User $actor,
         ?int $createdByUserId = null,
     ): ?CurrentMaterialPrice {
-        $currentPrice = $this->replaceProjection(
-            workspace: $workspace,
-            ingredientId: null,
-            packagingItemId: $packagingItem->id,
-            canonicalPrice: $canonicalPrice,
-            currency: $currency,
-            source: $source,
-            sourceId: $sourceId,
-            recordedAt: $recordedAt,
-            actor: $actor,
-            createdByUserId: $createdByUserId,
-        );
+        return DB::transaction(function () use ($workspace, $packagingItem, $canonicalPrice, $currency, $source, $sourceId, $recordedAt, $actor, $createdByUserId): ?CurrentMaterialPrice {
+            Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $currentPrice = $this->replaceProjection(
+                workspace: $workspace,
+                ingredientId: null,
+                packagingItemId: $packagingItem->id,
+                canonicalPrice: $canonicalPrice,
+                currency: $currency,
+                source: $source,
+                sourceId: $sourceId,
+                recordedAt: $recordedAt,
+                actor: $actor,
+                createdByUserId: $createdByUserId,
+            );
 
-        $this->liveCostingPricePropagationService->packagingPriceChanged(
-            $workspace,
-            $packagingItem->id,
-            $currentPrice?->price_per_canonical_unit ?? '0',
-        );
+            $this->liveCostingPricePropagationService->packagingPriceChanged(
+                $workspace,
+                $packagingItem->id,
+                $currentPrice?->price_per_canonical_unit ?? '0',
+            );
 
-        return $currentPrice;
+            return $currentPrice;
+        }, attempts: 5);
     }
 
     private function remember(

@@ -72,7 +72,7 @@ it('prompts for finished units on batch-dependent costing summary outputs', func
         ->assertSuccessful()
         ->assertSee('Enter finished units')
         ->assertDontSee('Set units produced')
-        ->assertDontSee('Unavailable');
+        ->assertDontSeeText('Unavailable');
 });
 
 it('shows the cosmetic batch basis', function () {

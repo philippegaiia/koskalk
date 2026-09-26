@@ -37,30 +37,32 @@
             x-model="formulaName"
             type="text"
             aria-label="{{ __('workbench.header.product_name') }}"
-            :disabled="isFormulaLocked"
+            :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)"
             :placeholder="isCosmeticFormula ? @js(__('workbench.header.untitled_cosmetic')) : @js(__('workbench.header.untitled_soap'))"
             class="sk-formula-title-control min-w-0 flex-1 bg-transparent px-0 pb-2 pt-1 text-3xl font-semibold tracking-tight text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:text-[var(--color-ink-soft)]"
         />
 
         @unless ($isPublicCalculator)
             <div class="sk-formula-actions flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
-                <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="sk-btn">
+                <button type="button" @click="publish()" :disabled="!canWriteRecipe || !canSaveRecipe || isSaving" :class="!canWriteRecipe || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="sk-btn">
                     <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
                 </button>
 
                 @if ($recipePublicId)
                     @if ($workbench['recipe']['can_manage_lock'] ?? false)
                         @if ((bool) ($workbench['recipe']['is_locked'] ?? false))
-                            <form method="POST" action="{{ route('recipes.unlock', $recipePublicId) }}">
+                            <form method="POST" action="{{ route('recipes.unlock', $recipePublicId) }}" @submit="submitRecipeControlMutation($event)">
                                 @csrf
-                                <button type="submit" class="sk-btn bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)] hover:bg-[var(--color-panel)]">
+                                <input type="hidden" name="expected_revision" :value="editingRecipeRevision" value="{{ $workbench['editing']['recipe_revision'] ?? 0 }}">
+                                <button type="submit" :disabled="!canSubmitRecipeControl" class="sk-btn bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)] hover:bg-[var(--color-panel)]">
                                     {{ __('workbench.header.unlock_product') }}
                                 </button>
                             </form>
                         @else
-                            <form method="POST" action="{{ route('recipes.lock', $recipePublicId) }}">
+                            <form method="POST" action="{{ route('recipes.lock', $recipePublicId) }}" @submit="submitRecipeControlMutation($event)">
                                 @csrf
-                                <button type="submit" class="sk-btn sk-btn-outline">
+                                <input type="hidden" name="expected_revision" :value="editingRecipeRevision" value="{{ $workbench['editing']['recipe_revision'] ?? 0 }}">
+                                <button type="submit" :disabled="!canSubmitRecipeControl" class="sk-btn sk-btn-outline">
                                     {{ __('workbench.header.lock_product') }}
                                 </button>
                             </form>

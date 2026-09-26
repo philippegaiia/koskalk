@@ -17,7 +17,7 @@
      livewireId: $wire.$id,
      uploadEventTarget: window,
      watch: (path, callback) => $wire.$watch(path, callback),
-     save: () => $wire.saveRecipeContent(),
+     save: () => saveRecipeContentWithRevision(),
  })"
  @submit.prevent="save()"
  class="space-y-6 pb-24 pt-5"

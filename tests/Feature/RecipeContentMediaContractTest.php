@@ -21,6 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -116,6 +117,7 @@ it('does not persist an inline image submitted through the live description fiel
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.description', '<p><img data-id="018fa7f2-91aa-74a5-a665-18f8f3bf42d1"></p>')
         ->call('saveRecipeContent')
         ->assertHasErrors(['description']);
@@ -285,6 +287,7 @@ it('saves featured and inline manufacturing images as reusable media usages', fu
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.description', '<p>Gentle soap.</p>')
         ->set(
             'data.manufacturing_instructions',
@@ -321,6 +324,7 @@ it('coordinates recipe content usages and the current snapshot exactly once', fu
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', '<p>One coordinated snapshot.</p>')
         ->call('saveRecipeContent')
         ->assertHasNoErrors()
@@ -361,6 +365,7 @@ it('clears a recipe usage without deleting its reusable library asset', function
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.featured_media_asset_id', null)
         ->call('saveRecipeContent')
         ->assertHasNoErrors()
@@ -382,9 +387,11 @@ it('syncs SOP usages from inline manufacturing content and keeps removed library
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', recipeMediaContractAssetHtml($asset))
         ->call('saveRecipeContent')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->call('releaseEditing');
 
     expect(app(MediaAssetUsageService::class)->idsFor(
         $recipe,
@@ -396,6 +403,7 @@ it('syncs SOP usages from inline manufacturing content and keeps removed library
         ))->toBe([$asset->id]);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe->fresh()])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', '<p>No image remains.</p>')
         ->call('saveRecipeContent')
         ->assertHasNoErrors();
@@ -417,6 +425,7 @@ it('rolls back content when a selected asset is unavailable', function () {
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.description', '<p>Should roll back.</p>')
         ->set('data.featured_media_asset_id', $processing->id)
         ->call('saveRecipeContent')
@@ -438,6 +447,7 @@ it('rejects more than eight inline manufacturing images without changing saved c
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set(
             'data.manufacturing_instructions',
             '<p>Should roll back.</p>'.$assets

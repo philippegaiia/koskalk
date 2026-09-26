@@ -32,6 +32,7 @@ import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
 import { createPresentationSection } from './sections/presentation-section';
 import { createVersionSection } from './sections/version-section';
+import { createEditingSection } from './editing';
 
 const workbenchMassUnits = typeof MASS_UNITS === 'undefined' ? ['g', 'kg', 'oz', 'lb'] : MASS_UNITS;
 const convertWorkbenchMass = typeof convertMass === 'undefined'
@@ -361,10 +362,13 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
             if (!initialSnapshot) {
                 this.scheduleCalculationPreview();
             }
+
+            void this.startEditingProtection();
         },
 
         destroy() {
             this.removeUnsavedChangesGuard();
+            this.destroyEditingProtection();
         },
 
         toggleFormulaDiagnostics() {
@@ -470,7 +474,9 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
             this.manufacturedIngredientMessage = '';
 
             try {
-                const response = await this.$wire.createManufacturedIngredient(name);
+                const response = await this.queueRevisionMutation(
+                    () => this.$wire.createManufacturedIngredient(name),
+                );
 
                 if (!response?.ok || !response.ingredient) {
                     this.manufacturedIngredientStatus = 'error';
@@ -1392,6 +1398,9 @@ function createPersistenceSection() {
         blocksNavigation() {
             return this.hasUnsavedWorkbenchChanges()
                 || this.isSaving
+                || this.isSavingCosting
+                || this.costingSaveTimer !== null
+                || this.costingSaveStatus === 'error'
                 || this.saveStatus === 'error'
                 || this.dirtyStateRegistry.blocksNavigation();
         },
@@ -1451,11 +1460,21 @@ function createPersistenceSection() {
         },
 
         async duplicateFormula() {
-            await this.persist('duplicateFormula');
+            await this.persist('duplicateFormula', {
+                allowLocked: true,
+                allowWithoutLease: true,
+            });
         },
 
-        async persist(method) {
-            await persistWorkbench(this, method);
+        async persist(method, queueOptions = {}) {
+            if (!await this.flushCostingSave()) {
+                return;
+            }
+
+            await this.queueRevisionMutation(
+                () => persistWorkbench(this, method),
+                queueOptions,
+            );
 
             if (this.saveStatus === 'success') {
                 this.removedFormulaRowUndo = null;
@@ -1477,6 +1496,7 @@ export function createRecipeWorkbench(payload, createRegistry = null) {
 
     [
         createRecipeWorkbenchState(payload, dirtyStateRegistry),
+        createEditingSection(payload),
         createCatalogSection(),
         createPersistenceSection(),
         createFormulaSection(),

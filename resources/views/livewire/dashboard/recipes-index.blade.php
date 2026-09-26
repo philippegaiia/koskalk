@@ -1,4 +1,7 @@
 <div class="mx-auto max-w-app space-y-6">
+    @error('expected_revision')
+        <p role="alert">{{ $message }}</p>
+    @enderror
     <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
     <section class="sk-card p-6" aria-label="{{ __('products.page.aria_label') }}">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -248,6 +251,7 @@
                                         @if ($isLocked)
                                             <form method="POST" action="{{ route('recipes.unlock', $recipe) }}">
                                                 @csrf
+                                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                                                 <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
                                                     {{ __('products.actions.unlock') }}
                                                 </button>
@@ -255,6 +259,7 @@
                                         @else
                                             <form method="POST" action="{{ route('recipes.lock', $recipe) }}">
                                                 @csrf
+                                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                                                 <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
                                                     {{ __('products.actions.lock') }}
                                                 </button>
@@ -269,6 +274,7 @@
                                     @elseif ($recipe->archived_at !== null)
                                         <form method="POST" action="{{ route('recipes.restore', $recipe) }}">
                                             @csrf
+                                            <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                                             <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
                                                 {{ __('products.actions.restore') }}
                                             </button>
@@ -311,6 +317,7 @@
                             <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.archiving.warning') }}</p>
                             <form method="POST" action="{{ route('recipes.archive', $recipe) }}" class="mt-4">
                                 @csrf
+                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                                 <button type="submit" class="sk-btn w-full bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">
                                     {{ __('products.actions.archive') }}
                                 </button>
@@ -338,6 +345,7 @@
                             <form method="POST" action="{{ route('recipes.destroy', $recipe) }}" class="mt-4">
                                 @method('DELETE')
                                 @csrf
+                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                                 <input type="hidden" name="confirm_name" :value="confirmText">
                                 <button type="submit" :disabled="confirmText !== productName" :class="confirmText !== productName ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]'" class="sk-btn w-full">
                                     {{ __('products.actions.delete_permanently') }}

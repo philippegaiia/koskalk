@@ -7,6 +7,7 @@ return [
         'contextual_help' => ['*'],
         'account' => ['*'],
         'dashboard' => ['*'],
+        'editing' => ['*'],
         'formula_documents' => ['*'],
         'ingredients' => ['*'],
         'lot_numbering' => ['*'],

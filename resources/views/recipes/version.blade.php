@@ -5,6 +5,9 @@
 
 @section('content')
     <div class="mx-auto max-w-app space-y-6">
+        @error('expected_revision')
+            <p role="alert">{{ $message }}</p>
+        @enderror
         @php
             /** @var array<string, string>|null $currentReplaceConfirmation */
             $currentReplaceConfirmation = session('currentReplaceConfirmation');
@@ -54,6 +57,7 @@
                     <div class="flex flex-wrap gap-2">
                         <form method="POST" action="{{ $currentReplaceConfirmation['action_url'] ?? route('recipes.saved', $recipe) }}">
                             @csrf
+                            <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                             <input type="hidden" name="confirm_replace_current" value="1" />
                             <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                                 {{ $currentReplaceConfirmation['action_label'] ?? 'Replace formula' }}
@@ -159,6 +163,7 @@
                                 @if ($canRestoreVersion)
                                     <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $savedVersion['public_id']]) }}">
                                         @csrf
+                                        <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                                         <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                                             {{ __('formula_documents.actions.use_as_current') }}
                                         </button>

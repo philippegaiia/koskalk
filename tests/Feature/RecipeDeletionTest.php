@@ -18,6 +18,7 @@ use App\Services\MediaStorage;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
@@ -40,6 +41,7 @@ it('allows an owner to delete a recipe via the delete route', function (): void 
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -57,6 +59,7 @@ it('rejects recipe deletion with the wrong confirmation name', function (): void
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => 'Wrong Name',
         ])
         ->assertForbidden();
@@ -75,7 +78,7 @@ it('archives products with production history instead of deleting them', functio
         ->create();
 
     actingAs($user)
-        ->post(route('recipes.archive', $recipe))
+        ->post(route('recipes.archive', $recipe), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.index'))
         ->assertSessionHas('status', __('products.status.archived'));
 
@@ -86,7 +89,7 @@ it('archives products with production history instead of deleting them', functio
         ->and($production->fresh()->recipe_id)->toBe($recipe->id);
 
     actingAs($user)
-        ->post(route('recipes.restore', $recipe))
+        ->post(route('recipes.restore', $recipe), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.index'))
         ->assertSessionHas('status', __('products.status.restored'));
 
@@ -105,6 +108,7 @@ it('requires archiving before a product with production history can be permanent
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -128,6 +132,7 @@ it('blocks permanent deletion while any related production snapshot is incomplet
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -152,6 +157,7 @@ it('blocks permanent deletion when the completion marker has no formula lines', 
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -177,6 +183,7 @@ it('permanently deletes a fully snapshotted archived product and keeps productio
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -194,6 +201,7 @@ it('rejects recipe deletion by an unauthorized user', function (): void {
 
     actingAs($otherUser)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertForbidden();
@@ -225,6 +233,7 @@ it('deletes recipe media files when a recipe is permanently deleted', function (
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'));
@@ -245,6 +254,7 @@ it('allows an owner to delete a published version via the delete route', functio
 
     actingAs($user)
         ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersion]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $publishedVersion->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -264,6 +274,7 @@ it('rejects published version deletion when the recipe name is provided instead 
 
     actingAs($user)
         ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersion]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $recipe->name,
         ])
         ->assertForbidden();
@@ -281,6 +292,7 @@ it('shows the standard version deleted message when other published versions rem
 
     actingAs($user)
         ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersions->first()]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $publishedVersions->first()->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -309,6 +321,7 @@ it('retains a version when a production snapshot is marked complete without form
 
     actingAs($user)
         ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersion]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $publishedVersion->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -323,6 +336,7 @@ it('rejects version deletion when the version belongs to a different recipe', fu
 
     actingAs($user)
         ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $otherPublishedVersion]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $otherPublishedVersion->name,
         ])
         ->assertNotFound();
@@ -336,6 +350,7 @@ it('deletes a workbench draft and redirects to the recipes index', function (): 
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->call('deleteVersion', $draft->id)
         ->assertRedirect(route('recipes.index'));
 
@@ -348,6 +363,7 @@ it('rejects deleting a published workbench version when confirmation does not ma
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->call('deleteVersion', $publishedVersion->id, 'Wrong Name')
         ->assertHasErrors(['confirmName']);
 
@@ -361,6 +377,7 @@ it('dispatches version-deleted after deleting a published workbench version', fu
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->call('deleteVersion', $publishedVersion->id, $publishedVersion->name)
         ->assertDispatched('version-deleted', function (string $name, array $params) use ($expectedVersionName): bool {
             return $name === 'version-deleted'

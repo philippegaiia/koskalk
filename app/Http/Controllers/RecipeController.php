@@ -12,6 +12,7 @@ use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\MediaStorage;
 use App\Services\ProductCreationCatalog;
+use App\Services\RecipeControlMutationGuard;
 use App\Services\RecipeCsvExporter;
 use App\Services\RecipeExportDataBuilder;
 use App\Services\RecipeVersionCostPreviewBuilder;
@@ -189,16 +190,26 @@ class RecipeController extends Controller
 
         $this->authorize('manageLock', $recipe);
 
-        if (! $recipe->isLocked()) {
-            $recipe->update([
-                'locked_at' => now(),
-                'locked_by' => $user->id,
-            ]);
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        return redirect()
-            ->route('recipes.edit', $recipe)
-            ->with('status', __('products.status.locked'));
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'manageLock',
+            function (Recipe $recipe) use ($user): RedirectResponse {
+
+                if (! $recipe->isLocked()) {
+                    $recipe->update([
+                        'locked_at' => now(),
+                        'locked_by' => $user->id,
+                    ]);
+                }
+
+                return redirect()
+                    ->route('recipes.edit', $recipe)
+                    ->with('status', __('products.status.locked'));
+            },
+            invalidateLease: true,
+            allowLocked: true,
+        );
     }
 
     public function unlock(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
@@ -211,16 +222,26 @@ class RecipeController extends Controller
 
         $this->authorize('manageLock', $recipe);
 
-        if ($recipe->isLocked()) {
-            $recipe->update([
-                'locked_at' => null,
-                'locked_by' => null,
-            ]);
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        return redirect()
-            ->route('recipes.edit', $recipe)
-            ->with('status', __('products.status.unlocked'));
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'manageLock',
+            function (Recipe $recipe): RedirectResponse {
+
+                if ($recipe->isLocked()) {
+                    $recipe->update([
+                        'locked_at' => null,
+                        'locked_by' => null,
+                    ]);
+                }
+
+                return redirect()
+                    ->route('recipes.edit', $recipe)
+                    ->with('status', __('products.status.unlocked'));
+            },
+            invalidateLease: true,
+            allowLocked: true,
+        );
     }
 
     public function editCurrentFormula(
@@ -236,25 +257,35 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        if (
-            $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $savedFormula->id)
-            && ! $request->boolean('confirm_replace_current')
-        ) {
-            return redirect()
-                ->route('recipes.saved', $recipe)
-                ->with('currentReplaceConfirmation', [
-                    'title' => 'Replace the current formula?',
-                    'body' => 'The current formula differs from this saved snapshot. Confirming will replace the formula with the saved snapshot data.',
-                    'action_label' => 'Replace formula',
-                    'action_url' => route('recipes.saved.edit-current', $recipe),
-                ]);
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        $recipeWorkbenchService->restoreCurrentVersion($user, $recipe, $savedFormula->id);
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            function (Recipe $recipe) use ($request, $recipeWorkbenchService, $user, $savedFormula): RedirectResponse {
 
-        return redirect()
-            ->route('recipes.edit', $recipe)
-            ->with('status', 'Formula refreshed from the saved snapshot.');
+                if (
+                    $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $savedFormula->id)
+                    && ! $request->boolean('confirm_replace_current')
+                ) {
+                    return redirect()
+                        ->route('recipes.saved', $recipe)
+                        ->with('currentReplaceConfirmation', [
+                            'title' => 'Replace the current formula?',
+                            'body' => 'The current formula differs from this saved snapshot. Confirming will replace the formula with the saved snapshot data.',
+                            'action_label' => 'Replace formula',
+                            'action_url' => route('recipes.saved.edit-current', $recipe),
+                        ]);
+                }
+
+                $recipeWorkbenchService->restoreCurrentVersion($user, $recipe, $savedFormula->id);
+
+                return redirect()
+                    ->route('recipes.edit', $recipe)
+                    ->with('status', 'Formula refreshed from the saved snapshot.');
+            },
+            invalidateLease: false,
+            allowLocked: false,
+        );
     }
 
     public function restorePublishedFormula(
@@ -270,11 +301,21 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        $recipeWorkbenchService->restorePublishedFormula($user, $recipe, $version->id);
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        return redirect()
-            ->route('recipes.saved', $recipe)
-            ->with('status', 'Formula restored from the selected saved backup.');
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            function (Recipe $recipe) use ($version, $recipeWorkbenchService, $user): RedirectResponse {
+
+                $recipeWorkbenchService->restorePublishedFormula($user, $recipe, $version->id);
+
+                return redirect()
+                    ->route('recipes.saved', $recipe)
+                    ->with('status', 'Formula restored from the selected saved backup.');
+            },
+            invalidateLease: false,
+            allowLocked: false,
+        );
     }
 
     public function version(
@@ -448,25 +489,35 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        if (
-            $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $version->id)
-            && ! $request->boolean('confirm_replace_current')
-        ) {
-            return redirect()
-                ->route('recipes.saved', $recipe)
-                ->with('currentReplaceConfirmation', [
-                    'title' => 'Replace the current formula?',
-                    'body' => 'The current formula differs from this saved backup. Confirming will replace the formula with the selected saved state.',
-                    'action_label' => 'Replace formula',
-                    'action_url' => route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $version]),
-                ]);
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        $recipeWorkbenchService->restoreCurrentVersion($user, $recipe, $version->id);
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            function (Recipe $recipe) use ($version, $request, $recipeWorkbenchService, $user): RedirectResponse {
 
-        return redirect()
-            ->route('recipes.edit', $recipe)
-            ->with('status', 'Formula replaced with the selected saved backup.');
+                if (
+                    $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $version->id)
+                    && ! $request->boolean('confirm_replace_current')
+                ) {
+                    return redirect()
+                        ->route('recipes.saved', $recipe)
+                        ->with('currentReplaceConfirmation', [
+                            'title' => 'Replace the current formula?',
+                            'body' => 'The current formula differs from this saved backup. Confirming will replace the formula with the selected saved state.',
+                            'action_label' => 'Replace formula',
+                            'action_url' => route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $version]),
+                        ]);
+                }
+
+                $recipeWorkbenchService->restoreCurrentVersion($user, $recipe, $version->id);
+
+                return redirect()
+                    ->route('recipes.edit', $recipe)
+                    ->with('status', 'Formula replaced with the selected saved backup.');
+            },
+            invalidateLease: false,
+            allowLocked: false,
+        );
     }
 
     public function destroy(
@@ -482,44 +533,56 @@ class RecipeController extends Controller
 
         $this->authorize('delete', $recipe);
 
-        abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, __('products.validation.confirmation_mismatch'));
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        if ($recipe->productionRuns()->exists()) {
-            if ($recipe->archived_at === null) {
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'delete',
+            function (Recipe $recipe) use ($request): RedirectResponse {
+
+                abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, __('products.validation.confirmation_mismatch'));
+
+                if ($recipe->productionRuns()->exists()) {
+                    if ($recipe->archived_at === null) {
+                        return redirect()
+                            ->route('recipes.index')
+                            ->with('error', __('products.status.archive_required'));
+                    }
+
+                    $hasIncompleteSnapshot = $recipe->productionRuns()
+                        ->where(function (Builder $query): void {
+                            $query
+                                ->whereNull('formula_snapshot_completed_at')
+                                ->orWhereDoesntHave('formulaLines');
+                        })
+                        ->exists();
+
+                    if ($hasIncompleteSnapshot) {
+                        return redirect()
+                            ->route('recipes.index')
+                            ->with('error', __('products.status.delete_blocked_incomplete_snapshot'));
+                    }
+                }
+
+                $mediaPaths = $recipe->mediaPaths();
+
+                DB::transaction(function () use ($recipe): void {
+                    $recipe->delete();
+                });
+
+                DB::afterCommit(function () use ($mediaPaths, $recipe): void {
+                    $mediaPaths->each(function (string $path): void {
+                        MediaStorage::deleteRecipePath($path);
+                    });
+                    MediaStorage::deleteRecipeDirectory($recipe);
+                });
+
                 return redirect()
                     ->route('recipes.index')
-                    ->with('error', __('products.status.archive_required'));
-            }
-
-            $hasIncompleteSnapshot = $recipe->productionRuns()
-                ->where(function (Builder $query): void {
-                    $query
-                        ->whereNull('formula_snapshot_completed_at')
-                        ->orWhereDoesntHave('formulaLines');
-                })
-                ->exists();
-
-            if ($hasIncompleteSnapshot) {
-                return redirect()
-                    ->route('recipes.index')
-                    ->with('error', __('products.status.delete_blocked_incomplete_snapshot'));
-            }
-        }
-
-        $mediaPaths = $recipe->mediaPaths();
-
-        DB::transaction(function () use ($recipe): void {
-            $recipe->delete();
-        });
-
-        $mediaPaths->each(function (string $path): void {
-            MediaStorage::deleteRecipePath($path);
-        });
-        MediaStorage::deleteRecipeDirectory($recipe);
-
-        return redirect()
-            ->route('recipes.index')
-            ->with('status', __('products.status.deleted'));
+                    ->with('status', __('products.status.deleted'));
+            },
+            invalidateLease: false,
+            allowLocked: true,
+        );
     }
 
     public function archive(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
@@ -532,13 +595,23 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        if ($recipe->archived_at === null) {
-            $recipe->update(['archived_at' => now()]);
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        return redirect()
-            ->route('recipes.index')
-            ->with('status', __('products.status.archived'));
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            function (Recipe $recipe): RedirectResponse {
+
+                if ($recipe->archived_at === null) {
+                    $recipe->update(['archived_at' => now()]);
+                }
+
+                return redirect()
+                    ->route('recipes.index')
+                    ->with('status', __('products.status.archived'));
+            },
+            invalidateLease: false,
+            allowLocked: true,
+        );
     }
 
     public function restore(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
@@ -551,13 +624,23 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        if ($recipe->archived_at !== null) {
-            $recipe->update(['archived_at' => null]);
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        return redirect()
-            ->route('recipes.index')
-            ->with('status', __('products.status.restored'));
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            function (Recipe $recipe): RedirectResponse {
+
+                if ($recipe->archived_at !== null) {
+                    $recipe->update(['archived_at' => null]);
+                }
+
+                return redirect()
+                    ->route('recipes.index')
+                    ->with('status', __('products.status.restored'));
+            },
+            invalidateLease: false,
+            allowLocked: true,
+        );
     }
 
     public function destroyVersion(
@@ -577,27 +660,37 @@ class RecipeController extends Controller
         abort_unless($version->recipe_id === $recipe->id, 404);
 
         $this->authorize('delete', $recipe);
-        $this->authorize('delete', $version);
 
-        if (! $version->is_current) {
-            abort_unless($request->string('confirm_name')->toString() === $version->name, 403, __('products.validation.confirmation_mismatch'));
-        }
+        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
 
-        try {
-            $deletion = $recipeVersionDeletionService->delete($recipe, $version);
-        } catch (ValidationException $exception) {
-            return redirect()
-                ->route('recipes.index')
-                ->with('error', $exception->getMessage());
-        }
+        return app(RecipeControlMutationGuard::class)->run(
+            $recipe, $user, (int) $expected['expected_revision'], 'delete',
+            function (Recipe $recipe) use ($version, $request, $recipeVersionDeletionService): RedirectResponse {
+                $this->authorize('delete', $version);
 
-        $status = $deletion['last_published_deleted']
-            ? __('products.status.last_version_deleted')
-            : __('products.status.version_deleted');
+                if (! $version->is_current) {
+                    abort_unless($request->string('confirm_name')->toString() === $version->name, 403, __('products.validation.confirmation_mismatch'));
+                }
 
-        return redirect()
-            ->route('recipes.index')
-            ->with('status', $status);
+                try {
+                    $deletion = $recipeVersionDeletionService->delete($recipe, $version);
+                } catch (ValidationException $exception) {
+                    return redirect()
+                        ->route('recipes.index')
+                        ->with('error', $exception->getMessage());
+                }
+
+                $status = $deletion['last_published_deleted']
+                    ? __('products.status.last_version_deleted')
+                    : __('products.status.version_deleted');
+
+                return redirect()
+                    ->route('recipes.index')
+                    ->with('status', $status);
+            },
+            invalidateLease: false,
+            allowLocked: false,
+        );
     }
 
     private function accessibleRecipe(string $recipePublicId, CurrentAppUserResolver $currentAppUserResolver): Recipe

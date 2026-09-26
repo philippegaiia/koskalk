@@ -1,6 +1,25 @@
 <?php
 
 return [
+    'editing' => [
+        'acquiring' => 'Checking whether this formula is available for editing…',
+        'blocked' => ':name is editing this formula in another tab or session.',
+        'available' => 'This formula is available. Choose Resume editing to continue.',
+        'preserved' => 'Your unsaved changes remain on this page. You can still read the formula.',
+        'retry' => 'Resume editing',
+        'reload' => 'Reload latest version',
+        'takeover' => 'Take over editing',
+        'takeover_help' => 'Taking over stops the other session from saving. Confirm only after checking with the other editor. The reason will be recorded.',
+        'reason' => 'Reason for taking over',
+        'confirm_takeover' => 'Confirm takeover',
+        'cancel' => 'Cancel',
+        'unavailable' => 'Editing is unavailable. Check the editing status before saving.',
+        'token_unavailable' => 'This browser could not start a secure editing session. Reload using a secure connection.',
+        'status_failed' => 'The editing session could not be checked. Your unsaved changes remain here.',
+        'lease_lost' => 'Your editing session ended or another editor took over. Resume only after checking for changes.',
+        'stale' => 'This formula or its prices changed since you loaded it. Reload the latest version before saving.',
+        'reload_confirmation' => 'Reloading will discard your unsaved changes. Copy anything you want to keep before continuing. Reload now?',
+    ],
     'headings' => ['soap_qualities' => 'Soapkraft qualities', 'fatty_acid_profile' => 'Fatty-acid profile'],
     'header' => [
         'breadcrumb' => 'Product navigation',

@@ -43,30 +43,42 @@ export async function persistWorkbench(workbench, method) {
     workbench.isSaving = true;
     workbench.saveStatus = null;
     workbench.saveMessage = '';
+    const draft = serializeDraft(workbench);
+    const submittedSignature = JSON.stringify(draft);
+    const submittedContent = JSON.stringify(workbench.$wire?.data ?? null);
+    const submittedCostingSequence = workbench.costingSaveSeq;
 
     try {
-        const response = await workbench.$wire[method](serializeDraft(workbench));
+        const response = await workbench.$wire[method](draft);
 
         if (!response?.ok) {
             workbench.saveStatus = 'error';
             workbench.saveMessage = response?.message ?? 'The formula could not be saved.';
 
-            return;
+            return response;
         }
 
         workbench.saveStatus = 'success';
         workbench.saveMessage = response.message ?? 'Formula saved.';
 
-        if (response.snapshot) {
+        const changedDuringSave = JSON.stringify(serializeDraft(workbench)) !== submittedSignature
+            || JSON.stringify(workbench.$wire?.data ?? null) !== submittedContent
+            || workbench.costingSaveSeq !== submittedCostingSequence;
+
+        if (response.snapshot && !changedDuringSave) {
             workbench.applySnapshot(response.snapshot);
         }
 
-        workbench.hasLoadedCosting = false;
+        if (changedDuringSave) {
+            workbench.dirtyBaselineSignature = submittedSignature;
+        } else {
+            workbench.hasLoadedCosting = false;
+            workbench.refreshDirtyBaseline();
+            workbench.dirtyStateRegistry.set('recipe-content', 'saved');
+        }
+        workbench.recordEditingMutation?.(response);
 
-        workbench.refreshDirtyBaseline();
-        workbench.dirtyStateRegistry.set('recipe-content', 'saved');
-
-        if (response.redirect) {
+        if (response.redirect && !changedDuringSave) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
             const target = response.redirect + hash;
 
@@ -75,14 +87,18 @@ export async function persistWorkbench(workbench, method) {
             if (window.Livewire?.navigate) {
                 window.Livewire.navigate(target);
 
-                return;
+                return response;
             }
 
             window.location.assign(target);
         }
+
+        return response;
     } catch (error) {
         workbench.saveStatus = 'error';
         workbench.saveMessage = 'The formula could not be saved.';
+
+        return { ok: false, message: workbench.saveMessage };
     } finally {
         workbench.isSaving = false;
     }
@@ -101,31 +117,27 @@ export async function persistCosting(workbench, seq) {
     try {
         const response = await workbench.$wire.saveCosting(serializeCosting(workbench));
 
-        if (seq !== workbench.costingSaveSeq) {
-            return;
-        }
-
         if (!response?.ok) {
             workbench.costingSaveStatus = 'error';
             workbench.costingSaveMessage = response?.message ?? workbench.t('costing.messages.save_failed');
 
-            return;
+            return response;
         }
 
-        workbench.applyCostingPayload(response.costing ?? null);
-        workbench.costingSaveStatus = 'success';
-        workbench.costingSaveMessage = response.message ?? workbench.t('costing.messages.saved');
+        if (seq === workbench.costingSaveSeq) {
+            workbench.applyCostingPayload(response.costing ?? null);
+            workbench.costingSaveStatus = 'success';
+            workbench.costingSaveMessage = response.message ?? workbench.t('costing.messages.saved');
+        }
+
+        return response;
     } catch (error) {
-        if (seq !== workbench.costingSaveSeq) {
-            return;
-        }
-
         workbench.costingSaveStatus = 'error';
         workbench.costingSaveMessage = workbench.t('costing.messages.save_failed');
+
+        return { ok: false, message: workbench.costingSaveMessage };
     } finally {
-        if (seq === workbench.costingSaveSeq) {
-            workbench.isSavingCosting = false;
-        }
+        workbench.isSavingCosting = false;
     }
 }
 

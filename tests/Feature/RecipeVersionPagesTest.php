@@ -205,8 +205,8 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    // Includes fresh workspace authority and dedicated lock-control policy lookups.
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(41)
+    // Includes the short snapshot transaction, parent locks and revision lookup.
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(46)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 
@@ -316,6 +316,7 @@ it('prevents read-only collaborators from restoring saved formula versions', fun
 
     $this->actingAs($viewer)
         ->post(route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $savedVersion]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_replace_current' => '1',
         ])
         ->assertNotFound();
@@ -343,6 +344,7 @@ it('prevents read-only collaborators from using legacy saved formula restore act
 
     $this->actingAs($viewer)
         ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_replace_current' => '1',
         ])
         ->assertNotFound();
@@ -351,7 +353,7 @@ it('prevents read-only collaborators from using legacy saved formula restore act
         ->post(route('recipes.saved.restore', [
             'recipe' => $recipe,
             'version' => $savedVersion,
-        ]))
+        ]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertNotFound();
 });
 
@@ -373,6 +375,7 @@ it('prevents workspace editors from using legacy saved formula restore actions d
 
     $this->actingAs($editor)
         ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_replace_current' => '1',
         ])
         ->assertNotFound();
@@ -381,7 +384,7 @@ it('prevents workspace editors from using legacy saved formula restore actions d
         ->post(route('recipes.saved.restore', [
             'recipe' => $recipe,
             'version' => $savedVersion,
-        ]))
+        ]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertNotFound();
 });
 
@@ -389,7 +392,7 @@ it('locks and unlocks a formula', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
     $this->actingAs($user)
-        ->post(route('recipes.lock', $recipe))
+        ->post(route('recipes.lock', $recipe), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.edit', $recipe))
         ->assertSessionHas('status', 'Product locked.');
 
@@ -403,7 +406,7 @@ it('locks and unlocks a formula', function () {
         ->assertSeeInOrder(['Unlock product', 'More actions']);
 
     $this->actingAs($user)
-        ->post(route('recipes.unlock', $recipe))
+        ->post(route('recipes.unlock', $recipe), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.edit', $recipe))
         ->assertSessionHas('status', 'Product unlocked.');
 
@@ -1203,7 +1206,7 @@ it('can refresh the draft from the current saved formula page', function () {
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]))
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.edit', $recipe));
 
     $draft->refresh();
@@ -1214,7 +1217,7 @@ it('can refresh the draft from the current saved formula page', function () {
 it('redirects signed-out users before refreshing the draft from the saved formula', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
-    $this->post(route('recipes.saved.edit-current', ['recipe' => $recipe]))
+    $this->post(route('recipes.saved.edit-current', ['recipe' => $recipe]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('login'));
 });
 
@@ -1231,7 +1234,7 @@ it('asks for confirmation before replacing a changed draft with the saved formul
     ]);
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]))
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.saved', $recipe))
         ->assertSessionHas('currentReplaceConfirmation');
 
@@ -1241,6 +1244,7 @@ it('asks for confirmation before replacing a changed draft with the saved formul
 
     $this->actingAs($user)
         ->post(route('recipes.saved.edit-current', ['recipe' => $recipe]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_replace_current' => '1',
         ])
         ->assertRedirect(route('recipes.edit', $recipe));
@@ -1279,7 +1283,7 @@ it('can restore an older saved snapshot as the current saved formula', function 
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $olderSavedVersion]))
+        ->post(route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $olderSavedVersion]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.saved', $recipe));
 
     $latestSavedVersion = RecipeVersion::withoutGlobalScopes()
@@ -1316,7 +1320,7 @@ it('redirects signed-out users before restoring a saved snapshot', function () {
         ->latest('version_number')
         ->firstOrFail();
 
-    $this->post(route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $savedVersion]))
+    $this->post(route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $savedVersion]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('login'));
 });
 
@@ -1335,7 +1339,7 @@ it('rejects the current draft before invoking the legacy saved backup restore se
         ->post(route('recipes.saved.restore', [
             'recipe' => $recipe,
             'version' => $draft,
-        ]))
+        ]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertNotFound();
 });
 
@@ -1377,7 +1381,7 @@ it('preserves the current draft when restoring an older saved snapshot', functio
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $olderSavedVersion]))
+        ->post(route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $olderSavedVersion]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.saved', $recipe));
 
     $currentDraft->refresh();
@@ -1431,7 +1435,7 @@ it('asks for confirmation before replacing the draft with an older recovery snap
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post(route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $olderSavedVersion]))
+        ->post(route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $olderSavedVersion]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('recipes.saved', $recipe))
         ->assertSessionHas('currentReplaceConfirmation');
 
@@ -1448,6 +1452,7 @@ it('asks for confirmation before replacing the draft with an older recovery snap
 
     $this->actingAs($user)
         ->post(route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $olderSavedVersion]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_replace_current' => '1',
         ])
         ->assertRedirect(route('recipes.edit', $recipe));
@@ -1485,7 +1490,7 @@ it('redirects signed-out users before replacing the draft with a saved version',
         ->latest('version_number')
         ->firstOrFail();
 
-    $this->post(route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $olderSavedVersion]))
+    $this->post(route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $olderSavedVersion]), ['expected_revision' => (int) $recipe->fresh()->edit_revision])
         ->assertRedirect(route('login'));
 });
 

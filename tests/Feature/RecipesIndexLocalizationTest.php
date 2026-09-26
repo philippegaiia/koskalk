@@ -158,6 +158,7 @@ it('loads the deleted product status from the database', function () {
 
     $this->actingAs($user)
         ->delete(route('recipes.destroy', $product), [
+            'expected_revision' => (int) $product->fresh()->edit_revision,
             'confirm_name' => $product->name,
         ])
         ->assertRedirect(route('recipes.index'))

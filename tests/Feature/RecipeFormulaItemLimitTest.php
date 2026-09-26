@@ -201,6 +201,7 @@ it('rejects duplicate and restore operations when their source exceeds the curre
 
 it('keeps the client count and add controls aligned with the formula line limit', function (): void {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 

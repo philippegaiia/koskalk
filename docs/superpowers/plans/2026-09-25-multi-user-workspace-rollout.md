@@ -39,6 +39,14 @@ Integrated validation after both costing steps: 3,959 passed / 29 existing skips
 
 Validation for this checkpoint: full suite 3,932 passed / 29 skipped (65,644 assertions); core plan/beta/admin tests on disposable PostgreSQL 89 passed; additive migration rollback/reapply verified. Pint, Filacheck and diff checks passed; Graphify refreshed. Later team concurrency work still requires its own PostgreSQL concurrency tests.
 
+## Editing-protection checkpoint — 2026-09-26
+
+The implemented package combines per-tab editing reservations, visible external-change warnings, and atomic revision checks. Reading a formula never acquires a reservation; entering edit mode does. One editor holds the reservation, renewed approximately every 15 seconds with a 90-second expiry. Same-user second tabs must not silently take over. Owner/Admin takeover is explicit and audited. Expiry, takeover, demotion and workspace changes preserve entered input but prevent stale writes. Polling/focus checks report changes without replacing the browser's loaded revision or reloading price history. Permanent formula approval locks remain distinct from temporary editing reservations. Background material-price propagation remains permitted and invalidates affected costing revisions without changing human authorship. Adapt Cosmood's pattern, but enforce current authority and reservation ownership under the save transaction, never through cached browser flags.
+
+Launch onboarding is one account per email and at most one owned company per account; invited membership in other companies remains supported. A second owned company under the same login is deferred. Each selected company resolves its own allowances and subscription authority. Team's target initial seat allowance is now 10 including the owner; this is a future explicit catalogue/rollout change, not permission to overwrite existing production plan values. No checkout or collaboration activation is included in this editing-protection package.
+
+The additive editing migration is applied locally. Checksums confirm all 15 existing recipes, 20 costings, 109 ingredient costing rows and 8 packaging costing rows were preserved. PostgreSQL verification used independent database sessions: seven contention cases passed, including actual publish/restore, permanent lock, takeover, automatic price propagation and competing lease acquisition. General formula permissions remain owner-only; production deployment and membership rollout are still separate. Final verification: 3,994 tests passed / 36 skipped (66,089 assertions), with the seven PostgreSQL contention cases verified separately. Build, Pint and diff checks passed; Graphify refreshed. An authenticated two-tab visual check remains for the user because the verification browser was signed out.
+
 ## Tranche 1 — protect catalogue deployment
 
 - [x] Execute `2026-09-25-plan-seeding-safety.md` first. Existing plans must be skipped entirely, including missing limit keys.
@@ -84,9 +92,9 @@ Files: `app/Services/RecipeVersionCostingSynchronizer.php`, `RecipeDraftSaver.ph
 
 - [x] Define canonical costing identity for workspace-owned versions; retain user identity as attribution rather than selecting a different costing by the viewer's login.
 - [ ] Preview existing costing rows grouped by version in the target database. Locally no duplicates were found; that is not production evidence. Preserve conflicting historical scenarios and require explicit reconciliation instead of picking/deleting one silently.
-- [ ] Use a persisted revision token for the recipe aggregate and a common transaction row lock across save/publish/restore/lock operations. Compare expected revision under the lock, recheck authority/lock state, then write and increment revision atomically.
-- [ ] Conflict response preserves the submitted form and asks the user to reload/reconcile; never silently retry by overwriting the other person's version. Ensure media changes roll back with failed saves.
-- [ ] Keep production snapshots immutable and current material price precedence intact. Audit attribution records both workspace and actor.
+- [x] Use a persisted revision token for the recipe aggregate and a common transaction row lock across save/publish/restore/lock operations. Compare expected revision under the lock, recheck authority/lock state, then write and increment revision atomically.
+- [x] Conflict response preserves the submitted form and asks the user to reload/reconcile; never silently retry by overwriting the other person's version. Ensure media changes roll back with failed saves.
+- [x] Keep production snapshots immutable and current material price precedence intact. Audit attribution records both workspace and actor.
 
 Tests: `RecipeVersionCostingTest.php`, `RecipeWorkbenchPersistenceTest.php`, `RecipeWorkbenchDraftLifecycleTest.php`. Two editors load revision N: first saves; second receives conflict and cannot overwrite. Owner locks between Editor load/save: Editor write is denied. Concurrent publish/restore remains coherent. All members see the same canonical costing under the confirmed shared-costing model. Run actual multi-connection PostgreSQL concurrency tests, not only sequential SQLite simulations.
 

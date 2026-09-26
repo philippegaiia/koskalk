@@ -23,6 +23,7 @@ use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Mockery\MockInterface;
 
@@ -89,6 +90,7 @@ it('copies the visible instructions to the published snapshot and new current ve
 
     $component = app(RecipeWorkbench::class);
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
     $component->data['manufacturing_instructions'] = '<p>Visible publish procedure.</p>';
 
     $result = $component->publish(
@@ -175,6 +177,7 @@ it('does not mutate published instructions when current instructions are saved l
 
     $component = app(RecipeWorkbench::class);
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
     $component->data['manufacturing_instructions'] = '<p>Revised procedure</p>';
     $contentResult = $component->saveRecipeContent(app(RecipeContentPersistenceService::class));
 

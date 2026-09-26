@@ -54,3 +54,6 @@ Legacy production_batches have actor user_id and nullable source recipe/version 
 
 ## Costing reads project defaults without writes
 Loading costing or previewing production must not create, reconcile or delete costing rows. Project missing defaults in memory; explicit saves persist them. Preserve saved zero prices, duplicate packaging occurrences and saved currency. Saved formula/print/export outputs retain empty-costing behavior when no costing exists.
+
+## Serialize formula writes and current-price propagation with editing revisions
+Browser formula writes must enter RecipeMutationGuard (tab lease plus expected recipe/version/costing revisions); read-page control mutations use RecipeControlMutationGuard. Lock workspace → recipe → current version → costing, recheck fresh authority, and never rebase a stale submitted draft automatically. Background current-price propagation locks the workspace and bumps affected canonical costing revisions without changing human editor attribution. Temporary edit reservations are separate from permanent formula locks.

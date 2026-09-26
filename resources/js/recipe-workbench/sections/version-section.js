@@ -1,5 +1,17 @@
 export function createVersionSection() {
     return {
+        async deleteVersionWithRevision(versionId, confirmName = '') {
+            if (!await this.flushCostingSave()) {
+                return false;
+            }
+
+            return this.queueRevisionMutation(async () => {
+                await this.$wire.deleteVersion(versionId, confirmName);
+
+                return { ok: true };
+            });
+        },
+
         get hasCurrentFormula() {
             return this.recipeId !== null;
         },

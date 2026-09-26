@@ -851,6 +851,78 @@
       }
     },
     {
+      "group": "editing",
+      "key": "changed",
+      "text": {
+        "de": "Diese Formel hat sich seit dem Öffnen geändert. Lade die Seite neu, bevor du es erneut versuchst.",
+        "es": "Esta fórmula ha cambiado desde que la abriste. Recarga antes de volver a intentarlo.",
+        "fr": "Cette formule a changé depuis son ouverture. Rechargez la page avant de réessayer.",
+        "it": "Questa formula è cambiata da quando l’hai aperta. Ricarica prima di riprovare.",
+        "nl": "Deze formule is gewijzigd sinds je deze hebt geopend. Herlaad voordat je het opnieuw probeert.",
+        "pt_BR": "Esta fórmula mudou desde que você a abriu. Recarregue antes de tentar novamente."
+      }
+    },
+    {
+      "group": "editing",
+      "key": "formula_locked",
+      "text": {
+        "de": "Entsperre diese Formel, bevor du sie änderst.",
+        "es": "Desbloquea esta fórmula antes de modificarla.",
+        "fr": "Déverrouillez cette formule avant de la modifier.",
+        "it": "Sblocca questa formula prima di modificarla.",
+        "nl": "Ontgrendel deze formule voordat je deze wijzigt.",
+        "pt_BR": "Desbloqueie esta fórmula antes de alterá-la."
+      }
+    },
+    {
+      "group": "editing",
+      "key": "reserved",
+      "text": {
+        "de": "Diese Formel wird gerade bearbeitet. Beende diese Bearbeitungssitzung, bevor du es erneut versuchst.",
+        "es": "Esta fórmula se está editando. Finaliza esa sesión de edición antes de volver a intentarlo.",
+        "fr": "Cette formule est en cours de modification. Terminez cette session de modification avant de réessayer.",
+        "it": "Questa formula è in fase di modifica. Termina la sessione di modifica prima di riprovare.",
+        "nl": "Deze formule wordt bewerkt. Beëindig die bewerkingssessie voordat je het opnieuw probeert.",
+        "pt_BR": "Esta fórmula está sendo editada. Encerre essa sessão de edição antes de tentar novamente."
+      }
+    },
+    {
+      "group": "editing",
+      "key": "validation.lease_ended",
+      "text": {
+        "de": "Deine Bearbeitungsreservierung ist abgelaufen. Deine Änderungen wurden nicht gespeichert.",
+        "es": "Tu reserva de edición ha terminado. Tus cambios no se han guardado.",
+        "fr": "Votre réservation de modification a expiré. Vos modifications n’ont pas été enregistrées.",
+        "it": "La tua prenotazione di modifica è scaduta. Le modifiche non sono state salvate.",
+        "nl": "Je bewerkingsreservering is verlopen. Je wijzigingen zijn niet opgeslagen.",
+        "pt_BR": "Sua reserva de edição terminou. Suas alterações não foram salvas."
+      }
+    },
+    {
+      "group": "editing",
+      "key": "validation.revision_changed",
+      "text": {
+        "de": "Diese Formel oder Kostenberechnung hat sich geändert. Lade die Seite vor dem Speichern neu; deine Änderungen wurden nicht gespeichert.",
+        "es": "Esta fórmula o su cálculo de costes ha cambiado. Recarga antes de guardar; tus cambios no se han guardado.",
+        "fr": "Cette formule ou son calcul de coûts a changé. Rechargez la page avant d’enregistrer ; vos modifications n’ont pas été enregistrées.",
+        "it": "Questa formula o il suo calcolo dei costi è cambiato. Ricarica prima di salvare; le modifiche non sono state salvate.",
+        "nl": "Deze formule of de kostencalculatie is gewijzigd. Herlaad voordat je opslaat; je wijzigingen zijn niet opgeslagen.",
+        "pt_BR": "Esta fórmula ou seu cálculo de custos mudou. Recarregue antes de salvar; suas alterações não foram salvas."
+      }
+    },
+    {
+      "group": "editing",
+      "key": "validation.token_required",
+      "text": {
+        "de": "Ein gültiges Token für die Bearbeitungsreservierung ist erforderlich.",
+        "es": "Se requiere un token de reserva de edición válido.",
+        "fr": "Un jeton de réservation de modification valide est requis.",
+        "it": "È necessario un token valido per la prenotazione di modifica.",
+        "nl": "Een geldig token voor de bewerkingsreservering is vereist.",
+        "pt_BR": "É necessário um token válido de reserva de edição."
+      }
+    },
+    {
       "group": "formula_documents",
       "key": "actions.back",
       "text": {
@@ -35540,6 +35612,210 @@
         "it": "Costo totale del lotto",
         "nl": "Totale batchkosten",
         "pt_BR": "Custo total do lote"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.acquiring",
+      "text": {
+        "de": "Verfügbarkeit der Formel zur Bearbeitung wird geprüft…",
+        "es": "Comprobando si esta fórmula está disponible para editar…",
+        "fr": "Vérification de la disponibilité de cette formule pour modification…",
+        "it": "Verifica della disponibilità della formula per la modifica…",
+        "nl": "Controleren of deze formule beschikbaar is om te bewerken…",
+        "pt_BR": "Verificando se esta fórmula está disponível para edição…"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.available",
+      "text": {
+        "de": "Diese Formel ist verfügbar. Wähle „Bearbeitung fortsetzen“, um weiterzumachen.",
+        "es": "Esta fórmula está disponible. Elige «Reanudar edición» para continuar.",
+        "fr": "Cette formule est disponible. Choisissez « Reprendre la modification » pour continuer.",
+        "it": "Questa formula è disponibile. Scegli «Riprendi modifica» per continuare.",
+        "nl": "Deze formule is beschikbaar. Kies ‘Bewerken hervatten’ om door te gaan.",
+        "pt_BR": "Esta fórmula está disponível. Escolha “Retomar edição” para continuar."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.blocked",
+      "text": {
+        "de": ":name bearbeitet diese Formel in einem anderen Tab oder einer anderen Sitzung.",
+        "es": ":name está editando esta fórmula en otra pestaña o sesión.",
+        "fr": ":name modifie cette formule dans un autre onglet ou une autre session.",
+        "it": ":name sta modificando questa formula in un’altra scheda o sessione.",
+        "nl": ":name bewerkt deze formule in een ander tabblad of een andere sessie.",
+        "pt_BR": ":name está editando esta fórmula em outra aba ou sessão."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.cancel",
+      "text": {
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.confirm_takeover",
+      "text": {
+        "de": "Übernahme bestätigen",
+        "es": "Confirmar toma de control",
+        "fr": "Confirmer la prise de contrôle",
+        "it": "Conferma presa di controllo",
+        "nl": "Overname bevestigen",
+        "pt_BR": "Confirmar tomada de controle"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.lease_lost",
+      "text": {
+        "de": "Deine Bearbeitungssitzung ist beendet oder wurde von einer anderen Person übernommen. Prüfe erst, ob es Änderungen gibt, bevor du fortfährst.",
+        "es": "Tu sesión de edición terminó u otra persona tomó el control. Comprueba si hay cambios antes de reanudar.",
+        "fr": "Votre session de modification a pris fin ou une autre personne a pris la main. Vérifiez les éventuels changements avant de reprendre.",
+        "it": "La sessione di modifica è terminata oppure un’altra persona ha assunto il controllo. Verifica eventuali modifiche prima di riprendere.",
+        "nl": "Je bewerkingssessie is beëindigd of een andere bewerker heeft deze overgenomen. Controleer eerst op wijzigingen voordat je verdergaat.",
+        "pt_BR": "Sua sessão de edição terminou ou outra pessoa assumiu o controle. Verifique se houve alterações antes de retomar."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.preserved",
+      "text": {
+        "de": "Deine ungespeicherten Änderungen bleiben auf dieser Seite. Du kannst die Formel weiterhin lesen.",
+        "es": "Los cambios sin guardar permanecen en esta página. Puedes seguir consultando la fórmula.",
+        "fr": "Vos modifications non enregistrées restent sur cette page. Vous pouvez toujours consulter la formule.",
+        "it": "Le modifiche non salvate restano in questa pagina. Puoi continuare a consultare la formula.",
+        "nl": "Je niet-opgeslagen wijzigingen blijven op deze pagina staan. Je kunt de formule nog steeds bekijken.",
+        "pt_BR": "Suas alterações não salvas permanecem nesta página. Você ainda pode consultar a fórmula."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.reason",
+      "text": {
+        "de": "Grund für die Übernahme",
+        "es": "Motivo de la toma de control",
+        "fr": "Motif de la prise de contrôle",
+        "it": "Motivo della presa di controllo",
+        "nl": "Reden voor overname",
+        "pt_BR": "Motivo para assumir o controle"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.reload",
+      "text": {
+        "de": "Neueste Version laden",
+        "es": "Recargar la última versión",
+        "fr": "Recharger la dernière version",
+        "it": "Ricarica l’ultima versione",
+        "nl": "Nieuwste versie herladen",
+        "pt_BR": "Recarregar a versão mais recente"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.reload_confirmation",
+      "text": {
+        "de": "Beim Neuladen gehen deine ungespeicherten Änderungen verloren. Kopiere vorher alles, was du behalten möchtest. Jetzt neu laden?",
+        "es": "Al recargar se perderán los cambios sin guardar. Copia lo que quieras conservar antes de continuar. ¿Recargar ahora?",
+        "fr": "Le rechargement supprimera vos modifications non enregistrées. Copiez ce que vous souhaitez conserver avant de continuer. Recharger maintenant ?",
+        "it": "Ricaricando perderai le modifiche non salvate. Copia ciò che vuoi conservare prima di continuare. Ricaricare ora?",
+        "nl": "Bij het herladen gaan je niet-opgeslagen wijzigingen verloren. Kopieer eerst wat je wilt bewaren. Nu herladen?",
+        "pt_BR": "Ao recarregar, suas alterações não salvas serão descartadas. Copie o que deseja manter antes de continuar. Recarregar agora?"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.retry",
+      "text": {
+        "de": "Bearbeitung fortsetzen",
+        "es": "Reanudar edición",
+        "fr": "Reprendre la modification",
+        "it": "Riprendi modifica",
+        "nl": "Bewerken hervatten",
+        "pt_BR": "Retomar edição"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.stale",
+      "text": {
+        "de": "Diese Formel oder ihre Preise haben sich seit dem Laden geändert. Lade vor dem Speichern die neueste Version.",
+        "es": "Esta fórmula o sus precios han cambiado desde que la cargaste. Recarga la última versión antes de guardar.",
+        "fr": "Cette formule ou ses prix ont changé depuis son chargement. Rechargez la dernière version avant d’enregistrer.",
+        "it": "Questa formula o i suoi prezzi sono cambiati dal caricamento. Ricarica l’ultima versione prima di salvare.",
+        "nl": "Deze formule of de prijzen zijn gewijzigd sinds je de pagina hebt geladen. Herlaad de nieuwste versie voordat je opslaat.",
+        "pt_BR": "Esta fórmula ou seus preços mudaram desde o carregamento. Recarregue a versão mais recente antes de salvar."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.status_failed",
+      "text": {
+        "de": "Die Bearbeitungssitzung konnte nicht geprüft werden. Deine ungespeicherten Änderungen bleiben hier erhalten.",
+        "es": "No se pudo comprobar la sesión de edición. Los cambios sin guardar permanecen aquí.",
+        "fr": "La session de modification n’a pas pu être vérifiée. Vos modifications non enregistrées sont conservées ici.",
+        "it": "Non è stato possibile verificare la sessione di modifica. Le modifiche non salvate restano qui.",
+        "nl": "De bewerkingssessie kon niet worden gecontroleerd. Je niet-opgeslagen wijzigingen blijven hier staan.",
+        "pt_BR": "Não foi possível verificar a sessão de edição. Suas alterações não salvas permanecem aqui."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.takeover",
+      "text": {
+        "de": "Bearbeitung übernehmen",
+        "es": "Tomar el control de la edición",
+        "fr": "Prendre la main sur la modification",
+        "it": "Assumi il controllo della modifica",
+        "nl": "Bewerking overnemen",
+        "pt_BR": "Assumir o controle da edição"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.takeover_help",
+      "text": {
+        "de": "Die Übernahme verhindert das Speichern in der anderen Sitzung. Bestätige erst nach Rücksprache mit der anderen bearbeitenden Person. Der Grund wird protokolliert.",
+        "es": "Al tomar el control, la otra sesión no podrá guardar. Confirma solo después de consultar con la otra persona que está editando. Se registrará el motivo.",
+        "fr": "La prise de contrôle empêche l’autre session d’enregistrer. Ne confirmez qu’après avoir échangé avec l’autre personne qui modifie la formule. Le motif sera consigné.",
+        "it": "Assumendo il controllo, l’altra sessione non potrà più salvare. Conferma solo dopo aver consultato l’altra persona che sta modificando. Il motivo verrà registrato.",
+        "nl": "Na overname kan de andere sessie niet meer opslaan. Bevestig pas na overleg met de andere bewerker. De reden wordt vastgelegd.",
+        "pt_BR": "Ao assumir o controle, a outra sessão não poderá salvar. Confirme somente após consultar a outra pessoa que está editando. O motivo será registrado."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.token_unavailable",
+      "text": {
+        "de": "Dieser Browser konnte keine sichere Bearbeitungssitzung starten. Lade die Seite über eine sichere Verbindung neu.",
+        "es": "Este navegador no pudo iniciar una sesión de edición segura. Recarga la página mediante una conexión segura.",
+        "fr": "Ce navigateur n’a pas pu démarrer une session de modification sécurisée. Rechargez la page avec une connexion sécurisée.",
+        "it": "Questo browser non ha potuto avviare una sessione di modifica sicura. Ricarica la pagina tramite una connessione sicura.",
+        "nl": "Deze browser kon geen veilige bewerkingssessie starten. Herlaad de pagina via een beveiligde verbinding.",
+        "pt_BR": "Este navegador não conseguiu iniciar uma sessão de edição segura. Recarregue a página usando uma conexão segura."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "editing.unavailable",
+      "text": {
+        "de": "Die Bearbeitung ist nicht verfügbar. Prüfe den Bearbeitungsstatus vor dem Speichern.",
+        "es": "La edición no está disponible. Comprueba el estado de edición antes de guardar.",
+        "fr": "La modification est indisponible. Vérifiez son état avant d’enregistrer.",
+        "it": "La modifica non è disponibile. Controlla lo stato della sessione prima di salvare.",
+        "nl": "Bewerken is niet beschikbaar. Controleer de bewerkingsstatus voordat je opslaat.",
+        "pt_BR": "A edição está indisponível. Verifique o status da edição antes de salvar."
       }
     },
     {

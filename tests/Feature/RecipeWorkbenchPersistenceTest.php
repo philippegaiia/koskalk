@@ -40,6 +40,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Symfony\Component\Process\Process;
@@ -647,6 +648,7 @@ it('keeps an existing recipe aligned with its current version after a formula sa
 
     $component = app(RecipeWorkbench::class);
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
     $component->data['manufacturing_instructions'] = '<p>Saved from the formula action.</p>';
     $result = $component->save(
         workbenchSoapDraftPayload($ingredient, name: 'Existing Formula'),
@@ -689,6 +691,7 @@ it('synchronizes inline SOP media before an immediate formula save snapshots the
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', recipeWorkbenchTipTapMediaAssets($inlineAsset))
         ->call('save', workbenchSoapDraftPayload($ingredient, name: 'Inline SOP Save'))
         ->assertReturned(fn (array $response): bool => $response['ok'] === true);
@@ -759,6 +762,7 @@ it('persists a pending procedure image before an immediate formula save', functi
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set(
             'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
             UploadedFile::fake()->image('procedure.jpg', 1200, 600),
@@ -906,6 +910,7 @@ it('persists a pending procedure image before an immediate formula publish', fun
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set(
             'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
             UploadedFile::fake()->image('published-procedure.jpg', 1200, 600),
@@ -956,6 +961,7 @@ it('clears inline SOP media before an immediate formula publish snapshots both v
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', '<p>Procedure image removed.</p>')
         ->call('publish', workbenchSoapDraftPayload($ingredient, name: 'Inline SOP Publish'))
         ->assertReturned(fn (array $response): bool => $response['ok'] === true);
@@ -1041,6 +1047,7 @@ it('copies a pending procedure image into the destination namespace on immediate
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $sourceRecipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set(
             'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
             UploadedFile::fake()->image('duplicated-procedure.jpg', 1200, 600),
@@ -1098,6 +1105,7 @@ it('copies saved and pending procedure images together without source orphans', 
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $sourceRecipe->fresh()])
+        ->call('beginEditing', (string) Str::uuid())
         ->set(
             'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
             UploadedFile::fake()->image('pending.jpg', 1200, 600),
@@ -1142,6 +1150,7 @@ it('cleans pending source media when an existing formula duplicate is rejected',
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $sourceRecipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set(
             'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
             UploadedFile::fake()->image('rejected-duplicate.jpg', 1200, 600),
@@ -1174,6 +1183,7 @@ it('rejects more than eight pending procedure images during a formula action', f
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryIds))
         ->call('save', workbenchSoapDraftPayload($ingredient))
         ->assertReturned(fn (array $response): bool => $response['ok'] === false
@@ -1200,6 +1210,7 @@ it('rejects a procedure image from another recipe during a formula action', func
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($otherPath))
         ->call('save', workbenchSoapDraftPayload($ingredient))
         ->assertReturned(fn (array $response): bool => $response['ok'] === false);
@@ -1804,6 +1815,7 @@ it('loads a saved version for comparison', function () {
     $component = app(RecipeWorkbench::class);
     $component->recipeId = $savedDraft->recipe_id;
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
 
     $result = $component->comparisonVersion(
         $publishedVersion->id,
@@ -1834,6 +1846,7 @@ it('saves recipe content through the standalone filament form', function () {
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.description', '<p>A calming creamy bar for daily cleansing.</p>')
         ->set('data.manufacturing_instructions', '<p>Blend the base gently, then pour into the mould.</p>')
         ->set('data.featured_media_asset_id', $featuredImage->id)
@@ -1873,6 +1886,7 @@ it('syncs standalone instruction saves to the current version', function () {
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.manufacturing_instructions', '<p>Updated procedure.</p>')
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
@@ -2058,6 +2072,7 @@ JS;
 
 it('composes one translated root navigation guard from formula and nested dirty state', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -2107,6 +2122,9 @@ const workbench = {
     ...section,
     formulaDirty: false,
     isSaving: false,
+    isSavingCosting: false,
+    costingSaveTimer: null,
+    costingSaveStatus: null,
     saveStatus: null,
     dirtyStateRegistry: registry,
     unsavedBeforeUnloadHandler: null,
@@ -2671,6 +2689,7 @@ JS;
 
 it('does not load costing when the packaging tab is opened', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -2764,6 +2783,7 @@ JS;
 
 it('seeds the packaging catalog from the initial workbench payload', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -3112,6 +3132,7 @@ JS;
 
 it('allows lipids to move between soap oils and additives', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -3222,6 +3243,7 @@ JS;
 
 it('prevents additive-only carrier oils from moving into saponified oils', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -3323,6 +3345,7 @@ JS;
 
 it('auto-scrolls the page near viewport edges while dragging formula rows', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -3414,6 +3437,7 @@ JS;
 
 it('still allows reordering rows within the same phase', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -3501,6 +3525,7 @@ JS;
 
 it('lists only eligible non-duplicate destinations for formula row menus', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -3635,6 +3660,7 @@ JS;
 
 it('moves cosmetic formula rows through the central row movement helpers', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -3759,6 +3785,7 @@ JS;
 
 it('enforces soap row phase eligibility and duplicate safeguards during movement', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -3885,6 +3912,7 @@ JS;
 
 it('delegates cosmetic drag and drop placement to the central row movement helper', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -4135,6 +4163,7 @@ JS;
 
 it('restores removed formula rows once and confirms cosmetic phase removals', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -4438,6 +4467,7 @@ JS;
 
 it('only schedules the soap calculation preview when reaction-core rows change', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -4526,6 +4556,7 @@ JS;
 
 it('uses the calculation response for labeling when reaction-core rows change', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -4614,6 +4645,7 @@ JS;
 
 it('coalesces overlapping calculation and labeling preview timers', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -4940,6 +4972,7 @@ it('preserves a legacy recipe featured image when saving through the media-libra
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.description', '<p>Presentation only.</p>')
         ->set('data.manufacturing_instructions', '<p>Manufacturing only.</p>')
         ->call('saveRecipeContent')
@@ -4978,6 +5011,7 @@ it('keeps a shared rich content attachment when it is moved between recipe edito
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
         ->set('data.description', $sharedHtml)
         ->set('data.manufacturing_instructions', '<p>Step 1: Warm the oils.</p>')
         ->call('saveRecipeContent')
@@ -5030,6 +5064,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
     $component = app(RecipeWorkbench::class);
     $component->recipeId = $recipe->id;
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
 
     $result = $component->comparisonVersion(
         $publishedVersion->id,
@@ -5082,6 +5117,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
     $component = app(RecipeWorkbench::class);
     $component->recipeId = $recipe->id;
     $component->mount($recipe);
+    $component->beginEditing((string) Str::uuid());
 
     $result = $component->loadVersion(
         $publishedVersion->id,
@@ -5644,6 +5680,7 @@ JS;
 
 it('keeps the viewport on the lye liquid editor when selecting a substitute liquid', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -5727,6 +5764,7 @@ JS;
 
 it('prevents a fifth dilution liquid through the shared browser add path', function () {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -6385,6 +6423,7 @@ JS;
 
 it('clears final ingredient list undo after a successful save and snapshot reload', function (): void {
     $script = <<<'JS'
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -6397,6 +6436,7 @@ const buildSnapshotStateFromSnapshot = () => ({});
 const buildDraftStateFromDraft = () => null;
 const persistWorkbench = async (workbench) => {
   workbench.saveStatus = 'success';
+  return { ok: true };
 };
 
 eval(`${source}\nglobalThis.createPersistenceSection = createPersistenceSection;`);
@@ -6423,6 +6463,8 @@ const workbench = {
   dirtyStateRegistry: { set() {} },
 };
 
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createEditingSection({})));
+workbench.flushCostingSave = async () => true;
 Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPersistenceSection()));
 
 workbench.applySnapshot({ draft: {} });

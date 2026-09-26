@@ -178,15 +178,12 @@ test('a crafted Livewire request cannot save or publish another workspace formul
         'created_by' => $owner->id,
     ]);
 
-    $this->actingAs($member);
-
-    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
-        ->call('save', [])
-        ->assertNotFound();
-
-    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
-        ->call('publish', [])
-        ->assertNotFound();
+    foreach (['save', 'publish'] as $method) {
+        $this->actingAs($owner);
+        $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+        $this->actingAs($member);
+        $component->call($method, [])->assertNotFound();
+    }
 });
 
 test('workspace members cannot discover owner formula names in listings', function (WorkspaceMemberRole $role) {
@@ -237,6 +234,7 @@ test('workspace members cannot delete an owner formula version by public id', fu
 
     $this->actingAs($member)
         ->delete(route('recipes.versions.destroy', [$recipe, $version]), [
+            'expected_revision' => (int) $recipe->fresh()->edit_revision,
             'confirm_name' => $version->name,
         ])
         ->assertForbidden();

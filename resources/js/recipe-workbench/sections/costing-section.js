@@ -27,12 +27,17 @@ const convertCostingPrice = typeof convertMassPrice === 'undefined'
  * saved price context so later default-rate changes never rewrite a formula.
  */
 export function createCostingSection(payload) {
+    const saves = { pending: false, promise: null };
+
     return {
         initializeCostingState() {
             this.applyCostingPayload(payload.costing ?? null);
         },
 
         async ensureCostingLoaded(force = false) {
+            if (saves.pending || saves.promise) {
+                return false;
+            }
             if (!this.hasCurrentFormula) {
                 return;
             }
@@ -44,19 +49,40 @@ export function createCostingSection(payload) {
             this.isLoadingCosting = true;
 
             try {
-                const response = await this.$wire.loadCosting();
+                return await this.queueEditingRead(async () => {
+                    if (saves.pending || saves.promise) {
+                        return false;
+                    }
+                    const loadingSequence = this.costingSaveSeq;
+                    const response = await this.$wire.loadCosting();
 
-                if (!response?.ok) {
-                    this.costingSaveStatus = 'error';
-                    this.costingSaveMessage = response?.message ?? this.t('costing.messages.load_failed');
+                    if (!response?.ok) {
+                        this.costingSaveStatus = 'error';
+                        this.costingSaveMessage = response?.message ?? this.t('costing.messages.load_failed');
 
-                    return;
-                }
+                        return false;
+                    }
 
-                this.applyCostingPayload(response.costing ?? null);
-                this.hasLoadedCosting = true;
-                this.costingSaveStatus = null;
-                this.costingSaveMessage = '';
+                    const editing = response.editing;
+                    const formulaChanged = editing && (Number(editing.recipe_revision) !== Number(this.editingRecipeRevision)
+                        || editing.current_version_id !== this.editingVersionId);
+                    if (formulaChanged || loadingSequence !== this.costingSaveSeq || saves.pending) {
+                        this.markEditingStale?.(this.t('editing.stale'), editing);
+
+                        return false;
+                    }
+
+                    this.costingPriceByRowId = {};
+                    this.applyCostingPayload(response.costing ?? null);
+                    if (editing) {
+                        this.editingCostingRevision = Number(editing.costing_revision);
+                    }
+                    this.hasLoadedCosting = true;
+                    this.costingSaveStatus = null;
+                    this.costingSaveMessage = '';
+
+                    return true;
+                });
             } catch (error) {
                 this.costingSaveStatus = 'error';
                 this.costingSaveMessage = this.t('costing.messages.load_failed');
@@ -537,26 +563,81 @@ export function createCostingSection(payload) {
                 return;
             }
 
+            this.costingSaveSeq++;
+            saves.pending = true;
+            this.dirtyStateRegistry?.set('recipe-costing', 'dirty');
+
             if (this.costingSaveTimer) {
                 clearTimeout(this.costingSaveTimer);
             }
 
             this.costingSaveTimer = setTimeout(() => {
-                this.persistCosting();
+                this.flushCostingSave();
             }, 350);
         },
 
         async persistCosting() {
             if (!this.hasCurrentFormula) {
-                return;
+                return false;
             }
 
+            saves.pending = true;
+
+            return this.flushCostingSave();
+        },
+
+        async flushCostingSave() {
             if (this.costingSaveTimer) {
                 clearTimeout(this.costingSaveTimer);
                 this.costingSaveTimer = null;
             }
 
-            await persistCosting(this, ++this.costingSaveSeq);
+            if (saves.promise) {
+                return saves.promise;
+            }
+
+            if (!saves.pending) {
+                return this.costingSaveStatus !== 'error';
+            }
+
+            saves.promise = (async () => {
+                while (saves.pending) {
+                    this.dirtyStateRegistry?.set('recipe-costing', 'saving');
+                    let response;
+                    try {
+                        response = await this.queueRevisionMutation(() => {
+                            if (this.costingSaveTimer) {
+                                clearTimeout(this.costingSaveTimer);
+                                this.costingSaveTimer = null;
+                            }
+                            saves.pending = false;
+
+                            return persistCosting(this, this.costingSaveSeq);
+                        }, { allowLocked: true });
+                    } catch (error) {
+                        response = { ok: false };
+                    }
+
+                    if (!response?.ok) {
+                        saves.pending = true;
+                        this.costingSaveStatus = 'error';
+                        this.costingSaveMessage = response?.message ?? this.t('costing.messages.save_failed');
+                        this.dirtyStateRegistry?.set('recipe-costing', 'failed');
+
+                        return false;
+                    }
+                }
+
+                this.dirtyStateRegistry?.set('recipe-costing', 'saved');
+
+                return true;
+            })();
+
+            try {
+                return await saves.promise;
+            } finally {
+                saves.promise = null;
+            }
         },
 
         resetPackagingCatalogForm() {

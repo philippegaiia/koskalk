@@ -2,6 +2,7 @@
 
 use App\Models\Plan;
 use App\Models\PlanLimit;
+use Database\Seeders\PlanSeeder;
 use Database\Seeders\WorkspacePlanCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -70,28 +71,12 @@ it('creates the workspace plan catalogue with the reviewed limits and capabiliti
                 'media_labels' => 200,
             ],
         ],
-        'free-beta' => [
-            'name' => 'Free beta',
-            'display_order' => 50,
-            'is_active' => true,
-            'allows_collaboration' => true,
-            'allows_production_bench' => true,
-            'limits' => [
-                'workspace_members' => 5,
-                'saved_recipes' => 1000,
-                'private_ingredients' => 1000,
-                'formula_items_per_recipe' => 200,
-                'media_assets' => 4000,
-                'media_labels' => 200,
-            ],
-        ],
     ];
 
     $this->seed(WorkspacePlanCatalogSeeder::class);
 
     expect(Plan::query()->pluck('slug')->sort()->values()->all())->toBe([
         'free',
-        'free-beta',
         'maker',
         'studio',
         'team',
@@ -144,8 +129,8 @@ it('creates the workspace plan catalogue with the reviewed limits and capabiliti
 
     $this->seed(WorkspacePlanCatalogSeeder::class);
 
-    expect(Plan::query()->count())->toBe(5)
-        ->and(PlanLimit::query()->count())->toBe(30)
+    expect(Plan::query()->count())->toBe(4)
+        ->and(PlanLimit::query()->count())->toBe(24)
         ->and(Plan::query()->orderBy('id')->get()->map(fn (Plan $plan): array => [
             'slug' => $plan->slug,
             'name' => $plan->name,
@@ -162,6 +147,42 @@ it('creates the workspace plan catalogue with the reviewed limits and capabiliti
             'updated_at' => $limit->updated_at?->format('Y-m-d H:i:s'),
         ])->all())->toBe($limitSnapshots);
 });
+
+it('preserves the beta baseline and inactive public offers in either seeder order', function (array $seeders): void {
+    foreach ($seeders as $seeder) {
+        $this->seed($seeder);
+    }
+
+    $plans = Plan::query()->with('limits')->get()->keyBy('slug');
+    $freeBeta = $plans->get('free-beta');
+    $publicPlans = $plans->only(['free', 'maker', 'studio', 'team']);
+
+    expect($plans->keys()->sort()->values()->all())->toBe([
+        'free',
+        'free-beta',
+        'maker',
+        'studio',
+        'team',
+    ])
+        ->and($freeBeta)->not->toBeNull()
+        ->and($freeBeta->is_active)->toBeTrue()
+        ->and($freeBeta->is_default)->toBeTrue()
+        ->and($freeBeta->allows_collaboration)->toBeNull()
+        ->and($freeBeta->allows_production_bench)->toBeNull()
+        ->and($freeBeta->limits->pluck('value', 'key')->sortKeys()->all())->toBe([
+            'formula_items_per_recipe' => 30,
+            'media_assets' => 100,
+            'media_labels' => 20,
+            'private_ingredients' => 20,
+            'production_batches' => 0,
+            'saved_formula_history' => 0,
+            'saved_recipes' => 15,
+        ])
+        ->and($publicPlans->every(fn (Plan $plan): bool => ! $plan->is_active && ! $plan->is_default))->toBeTrue();
+})->with([
+    'catalogue before beta baseline' => [[WorkspacePlanCatalogSeeder::class, PlanSeeder::class]],
+    'beta baseline before catalogue' => [[PlanSeeder::class, WorkspacePlanCatalogSeeder::class]],
+]);
 
 it('leaves an existing plan and every existing limit unchanged while adding absent plans', function (): void {
     $oldTimestamp = now()->subMonths(8)->startOfSecond();
@@ -231,7 +252,7 @@ it('leaves an existing plan and every existing limit unchanged while adding abse
 
     $this->seed(WorkspacePlanCatalogSeeder::class);
 
-    expect(Plan::query()->count())->toBe(5)
+    expect(Plan::query()->count())->toBe(4)
         ->and($planSnapshot($existingPlan->fresh()))->toBe($planBefore)
         ->and($limitSnapshot())->toBe($limitsBefore)
         ->and($existingPlan->limits()->pluck('key')->sort()->values()->all())->toBe([

@@ -105,6 +105,31 @@ it('shows the workspace product total on the subscriber account page', function 
         ->assertSee('2 / 3');
 });
 
+it('shows the selected company plan and shared usage to a member with a different personal plan', function (): void {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    Workspace::factory()->for($member, 'owner')->create();
+    WorkspaceMember::factory()->for($workspace)->for($member, 'user')->create(['role' => WorkspaceMemberRole::Editor]);
+    $member->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $companyPlan = Plan::factory()->hasLimit('saved_recipes', 7)->create(['name' => 'Shared company plan', 'allows_collaboration' => true]);
+    $personalPlan = Plan::factory()->hasLimit('saved_recipes', 1)->create(['name' => 'Personal plan']);
+    $owner->entitlements()->create(['plan_id' => $companyPlan->id, 'status' => 'active', 'starts_at' => now()]);
+    $member->entitlements()->create(['plan_id' => $personalPlan->id, 'status' => 'active', 'starts_at' => now()]);
+    Recipe::factory()->count(2)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+
+    $this->withoutVite()->actingAs($member)->get(route('account'))
+        ->assertOk()
+        ->assertViewHas('plan', fn (Plan $plan): bool => $plan->is($companyPlan))
+        ->assertSeeText('Shared company plan')
+        ->assertSeeText('2 / 7');
+});
+
 it('counts private ingredients against the subscriber workspace allowance for every workspace member', function () {
     $subscriber = User::factory()->create();
     $member = User::factory()->create();

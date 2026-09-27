@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\PackagingItem;
 use App\Models\Recipe;
-use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
@@ -22,6 +21,7 @@ class PackagingItemFormulaMutationService
 {
     public function __construct(
         private readonly RetriableDatabaseTransaction $transaction,
+        private readonly FormulaMaterialMutationGuard $formulaMutationGuard,
     ) {}
 
     /**
@@ -115,11 +115,7 @@ class PackagingItemFormulaMutationService
                 ->values();
 
             if ($affectedVersionIds->isNotEmpty()) {
-                RecipeVersion::withoutGlobalScopes()
-                    ->whereKey($affectedVersionIds->all())
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get(['id']);
+                $this->formulaMutationGuard->protect($user, $affectedVersionIds, 'packaging_item');
 
                 $costingItemIds = RecipeVersionCostingPackagingItem::query()
                     ->whereBelongsTo($lockedPackagingItem, 'packagingItem')

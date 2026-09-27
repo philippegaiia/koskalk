@@ -3,6 +3,7 @@
 use App\Models\Plan;
 use App\Models\PlanLimit;
 use Database\Seeders\PlanSeeder;
+use Database\Seeders\WorkspacePlanCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -33,7 +34,7 @@ it('keeps an existing default plan when creating the legacy free beta plan', fun
         ]);
 });
 
-it('leaves an existing free beta plan and its incomplete limits untouched', function (): void {
+it('leaves an existing free beta plan and its incomplete limits untouched', function (array $seeders): void {
     $oldTimestamp = now()->subMonths(6)->startOfSecond();
     $freeBeta = Plan::factory()->billable('pri_existing_beta', 'pro_existing_beta')->create([
         'slug' => 'free-beta',
@@ -88,7 +89,9 @@ it('leaves an existing free beta plan and its incomplete limits untouched', func
     $planBefore = $planSnapshot($freeBeta->fresh());
     $limitsBefore = $limitSnapshot();
 
-    $this->seed(PlanSeeder::class);
+    foreach ($seeders as $seeder) {
+        $this->seed($seeder);
+    }
 
     expect($planSnapshot($freeBeta->fresh()))->toBe($planBefore)
         ->and($limitSnapshot())->toBe($limitsBefore)
@@ -96,4 +99,7 @@ it('leaves an existing free beta plan and its incomplete limits untouched', func
             'private_ingredients',
             'saved_recipes',
         ]);
-});
+})->with([
+    'beta then catalogue' => [[PlanSeeder::class, WorkspacePlanCatalogSeeder::class]],
+    'catalogue then beta' => [[WorkspacePlanCatalogSeeder::class, PlanSeeder::class]],
+]);

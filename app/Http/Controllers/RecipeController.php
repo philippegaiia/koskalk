@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExpectedRecipeRevisionRequest;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
@@ -219,10 +220,10 @@ class RecipeController extends Controller
 
         $this->authorize('manageLock', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'manageLock',
+            $recipe, $user, $expectedRevision, 'manageLock',
             function (Recipe $recipe) use ($user): RedirectResponse {
 
                 if (! $recipe->isLocked()) {
@@ -251,10 +252,10 @@ class RecipeController extends Controller
 
         $this->authorize('manageLock', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'manageLock',
+            $recipe, $user, $expectedRevision, 'manageLock',
             function (Recipe $recipe): RedirectResponse {
 
                 if ($recipe->isLocked()) {
@@ -286,10 +287,10 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            $recipe, $user, $expectedRevision, 'update',
             function (Recipe $recipe) use ($request, $recipeWorkbenchService, $user, $savedFormula): RedirectResponse {
 
                 if (
@@ -330,10 +331,10 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            $recipe, $user, $expectedRevision, 'update',
             function (Recipe $recipe) use ($version, $recipeWorkbenchService, $user): RedirectResponse {
 
                 $recipeWorkbenchService->restorePublishedFormula($user, $recipe, $version->id);
@@ -518,10 +519,10 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            $recipe, $user, $expectedRevision, 'update',
             function (Recipe $recipe) use ($version, $request, $recipeWorkbenchService, $user): RedirectResponse {
 
                 if (
@@ -562,10 +563,10 @@ class RecipeController extends Controller
 
         $this->authorize('delete', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'delete',
+            $recipe, $user, $expectedRevision, 'delete',
             function (Recipe $recipe) use ($request): RedirectResponse {
 
                 abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, __('products.validation.confirmation_mismatch'));
@@ -624,10 +625,10 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            $recipe, $user, $expectedRevision, 'update',
             function (Recipe $recipe): RedirectResponse {
 
                 if ($recipe->archived_at === null) {
@@ -653,10 +654,10 @@ class RecipeController extends Controller
 
         $this->authorize('update', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'update',
+            $recipe, $user, $expectedRevision, 'update',
             function (Recipe $recipe): RedirectResponse {
 
                 if ($recipe->archived_at !== null) {
@@ -690,10 +691,10 @@ class RecipeController extends Controller
 
         $this->authorize('delete', $recipe);
 
-        $expected = request()->validate(['expected_revision' => ['required', 'integer', 'min:0']]);
+        $expectedRevision = $this->expectedRevision();
 
         return app(RecipeControlMutationGuard::class)->run(
-            $recipe, $user, (int) $expected['expected_revision'], 'delete',
+            $recipe, $user, $expectedRevision, 'delete',
             function (Recipe $recipe) use ($version, $request, $recipeVersionDeletionService): RedirectResponse {
                 $this->authorize('delete', $version);
 
@@ -733,6 +734,11 @@ class RecipeController extends Controller
         abort_unless($user !== null && $user->can('view', $recipe), 404);
 
         return $recipe;
+    }
+
+    private function expectedRevision(): int
+    {
+        return (int) app(ExpectedRecipeRevisionRequest::class)->validated('expected_revision');
     }
 
     /**

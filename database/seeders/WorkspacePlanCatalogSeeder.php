@@ -79,21 +79,6 @@ class WorkspacePlanCatalogSeeder extends Seeder
                 'media_labels' => 200,
             ],
         ],
-        'free-beta' => [
-            'name' => 'Free beta',
-            'display_order' => 50,
-            'is_active' => true,
-            'allows_collaboration' => true,
-            'allows_production_bench' => true,
-            'limits' => [
-                'workspace_members' => 5,
-                'saved_recipes' => 1000,
-                'private_ingredients' => 1000,
-                'formula_items_per_recipe' => 200,
-                'media_assets' => 4000,
-                'media_labels' => 200,
-            ],
-        ],
     ];
 
     /**

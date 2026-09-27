@@ -18,6 +18,7 @@ use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\FormulaMaterialMutationGuard;
 use App\Services\IngredientCompositeDependencyService;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\RetriableDatabaseTransaction;
@@ -55,6 +56,7 @@ it('uses bounded deadlock retries for both ingredient mutation transactions', fu
     $service = new IngredientFormulaMutationService(
         app(IngredientCompositeDependencyService::class),
         new RetriableDatabaseTransaction($database),
+        app(FormulaMaterialMutationGuard::class),
     );
     $service->replaceEverywhereAndDelete($user, $replacementSource, $replacement);
     $service->removeEverywhereAndDelete($user, $removalSource);

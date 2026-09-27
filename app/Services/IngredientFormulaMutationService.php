@@ -29,6 +29,7 @@ class IngredientFormulaMutationService
     public function __construct(
         private readonly IngredientCompositeDependencyService $compositeDependencyService,
         private readonly RetriableDatabaseTransaction $transaction,
+        private readonly FormulaMaterialMutationGuard $formulaMutationGuard,
     ) {}
 
     /**
@@ -220,7 +221,7 @@ class IngredientFormulaMutationService
                 ->update(['component_ingredient_id' => $lockedReplacement->id]);
 
             if ($affectedVersionIds->isNotEmpty()) {
-                $this->lockAffectedVersions($affectedVersionIds);
+                $this->formulaMutationGuard->protect($user, $affectedVersionIds, 'ingredient');
 
                 RecipeItem::withoutGlobalScopes()
                     ->whereIn('recipe_version_id', $affectedVersionIds)
@@ -261,7 +262,7 @@ class IngredientFormulaMutationService
             $affectedVersionIds = $this->affectedVersionIds($dependencyGraph['ingredient_ids']);
 
             if ($affectedVersionIds->isNotEmpty()) {
-                $this->lockAffectedVersions($affectedVersionIds);
+                $this->formulaMutationGuard->protect($user, $affectedVersionIds, 'ingredient');
                 $this->deleteCostingItems($affectedVersionIds, $lockedIngredient);
                 $this->deleteRecipeItems($affectedVersionIds, $lockedIngredient);
                 $this->invalidateGeneratedIngredientLists($affectedVersionIds);
@@ -447,16 +448,6 @@ class IngredientFormulaMutationService
                 ->unique()
                 ->values();
         } while (true);
-    }
-
-    /** @param Collection<int, int> $affectedVersionIds */
-    private function lockAffectedVersions(Collection $affectedVersionIds): void
-    {
-        RecipeVersion::withoutGlobalScopes()
-            ->whereKey($affectedVersionIds->all())
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get(['id']);
     }
 
     /** @param Collection<int, int> $affectedVersionIds */

@@ -66,3 +66,6 @@ Workspace member invitations create or reuse a verified user and add membership 
 
 ## Discover switchable workspaces independently of active selection
 WorkspaceSelectionService lists only actual-owned workspaces or genuine Admin/Editor/Viewer memberships with the actual owner's latest active collaboration entitlement; never reuse selected-workspace scopes for discovery. Its shared access predicate powers the WorkspacePolicy select ability, rechecked under user→workspace locks. Only explicit CSRF POST selection changes active_workspace_id; GET discovery/search is read-only. Selection is user-wide across tabs, uses a full dashboard reload, and must not bypass the existing original-workspace guards on mounted forms or enable workspace creation.
+
+## Bulk material changes must respect formula editing guards
+Ingredient replacement/removal and packaging removal can mutate multiple formula versions indirectly. Under the material workspace transaction, FormulaMaterialMutationGuard locks affected recipes → versions → costings, rechecks fresh access, rejects permanent locks and any active editing reservation (no browser tab token is supplied), and advances recipe/costing revisions atomically. Do not rely on RecipePolicy::update alone: it deliberately does not enforce permanent locks.

@@ -19,7 +19,7 @@ Let an organisation work in one private workspace with individual logins and cle
 | Manage members and operational workspace settings | Yes | Yes | No | No |
 | Subscription authority, ownership transfer, workspace deletion | Yes | No | No | No |
 
-The actual workspace owner is authoritative; ownership must not be grantable by assigning an ordinary membership role. Admins may manage Admin/Editor/Viewer memberships but cannot remove/demote the owner or transfer ownership. Existing transaction, posting, lifecycle and retention rules still restrict Owner/Admin operations. Operational corrections such as receipt reversal need an explicit action-by-action classification; do not implement a blanket delete restriction that accidentally forbids all valid corrections.
+The actual workspace owner is authoritative; ownership must not be grantable by assigning an ordinary membership role. The Owner alone may appoint, change or remove Admin memberships; Admins may manage Editor and Viewer memberships only. Neither role can remove/demote the actual Owner or transfer ownership. Existing transaction, posting, lifecycle and retention rules still restrict Owner/Admin operations. Operational corrections such as receipt reversal need an explicit action-by-action classification; do not implement a blanket delete restriction that accidentally forbids all valid corrections.
 
 Platform administration (`users.is_admin`) is separate. It grants administration-panel access, not an implicit workspace permission bypass. No per-workspace custom permission editor is proposed for the first release.
 
@@ -40,6 +40,8 @@ Confirmed on 2026-09-25: Viewers may export/download all workspace data they are
 ## Recommended beta policy
 
 Keep Free beta as a separate hidden, invitation-only tester plan with Team-level capabilities, including Production Bench. Preserve existing testers on it when the public Free plan launches; do not assign an automatic expiry or convert testers to Free. Do not create a paid subscription or require payment details. Keep the existing distinction between plan/usage entitlements and workspace Production Bench access; reconcile their presentation and provisioning rather than rebuilding billing during team rollout.
+
+On a fresh database, `PlanSeeder` creates the active Free beta invitation baseline and makes it the default only when no default plan exists. It retains the legacy limits and unset capability flags. `WorkspacePlanCatalogSeeder` creates only the four future public plans (Free, Maker, Studio and Team), all inactive and non-default; it is an explicit deployment step and is not called by `DatabaseSeeder`. Configure the agreed Team-level capabilities and seat allowance for beta workspaces only through the separately reviewed pilot rollout in each environment. Seed reruns must leave existing beta plans entirely unchanged.
 
 Keep public registration closed during prelaunch. At public launch, open self-service registration through the WordPress marketing site and app onboarding, as described below. Retain two distinct invitation paths:
 

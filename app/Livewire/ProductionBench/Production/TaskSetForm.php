@@ -11,6 +11,7 @@ use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ContextualHelp\ProductionHelpTopics;
+use App\Services\Production\ProductionTaskLimits;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -124,6 +125,12 @@ class TaskSetForm extends Component
 
     public function addTaskSetItem(): void
     {
+        if (count($this->taskSetItems) >= ProductionTaskLimits::MAX_ITEMS_PER_SET) {
+            $this->addError('taskSetItems', __('production_bench.production.validation.task_set_too_large', ['max' => ProductionTaskLimits::MAX_ITEMS_PER_SET]));
+
+            return;
+        }
+
         $this->taskSetItems[] = $this->emptyTaskSetItem();
     }
 
@@ -144,10 +151,10 @@ class TaskSetForm extends Component
     ): void {
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
-            'taskSetItems' => ['required', 'array', 'min:1'],
+            'taskSetItems' => ['required', 'array', 'min:1', 'max:'.ProductionTaskLimits::MAX_ITEMS_PER_SET],
             'taskSetItems.*.task_type_id' => ['required', 'integer'],
-            'taskSetItems.*.days_after_production' => ['required', 'integer'],
-            'taskSetItems.*.duration_minutes' => ['nullable', 'integer', 'min:0'],
+            'taskSetItems.*.days_after_production' => ['required', 'integer', 'between:'.(-ProductionTaskLimits::MAX_OFFSET_DAYS).','.ProductionTaskLimits::MAX_OFFSET_DAYS],
+            'taskSetItems.*.duration_minutes' => ['nullable', 'integer', 'min:0', 'max:'.ProductionTaskLimits::MAX_DURATION_MINUTES],
             'selectedRecipeIds' => ['array'],
             'selectedRecipeIds.*' => ['integer'],
             'defaultRecipeIds' => ['array'],

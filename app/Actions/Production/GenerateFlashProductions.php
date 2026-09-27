@@ -14,6 +14,7 @@ use App\Services\Production\FlashProductionSimulator;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class GenerateFlashProductions
@@ -76,6 +77,12 @@ class GenerateFlashProductions
 
                 return $prior->load(['requirements', 'tasks']);
             }
+            $rateKey = 'production:flash:workspace:'.$lockedWorkspace->id;
+            if (RateLimiter::tooManyAttempts($rateKey, max(1, (int) config('production.flash_submissions_per_minute', 5)))) {
+                throw ValidationException::withMessages(['lines' => __('production_bench.production.validation.flash_rate_limited')]);
+            }
+            RateLimiter::hit($rateKey, 60);
+
             $prior = ProductionRun::query()->where('workspace_id', $lockedWorkspace->id)
                 ->where('idempotency_key', 'like', $this->productionPrefix($idempotencyKey).'%')->get();
             $simulation = $this->simulator->simulate($lockedWorkspace, $lines);

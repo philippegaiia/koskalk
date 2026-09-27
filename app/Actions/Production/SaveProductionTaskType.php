@@ -6,13 +6,14 @@ use App\Models\Department;
 use App\Models\ProductionTaskType;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionTaskLimits;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SaveProductionTaskType
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(private readonly ProductionBenchAccess $access, private readonly ProductionTaskLimits $limits) {}
 
     public function handle(
         User $actor,
@@ -36,6 +37,8 @@ class SaveProductionTaskType
                 'default_duration_minutes' => 'Duration cannot be negative.',
             ]);
         }
+
+        $this->limits->assertDuration($defaultDurationMinutes, 'default_duration_minutes');
 
         $colour = $colour !== null ? trim($colour) : null;
 

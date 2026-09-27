@@ -26,6 +26,8 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -131,6 +133,20 @@ class FlashPlanner extends Component implements HasActions, HasForms
         $workspace = $this->workspace()->refresh();
 
         try {
+            DB::transaction(function () use ($workspace): void {
+                $lockedWorkspace = Workspace::query()->lockForUpdate()->findOrFail($workspace->id);
+                app(ProductionBenchAccess::class)->assertReadable($this->user(), $lockedWorkspace);
+                $rateKey = 'production:flash-preview:workspace:'.$lockedWorkspace->id;
+
+                if (RateLimiter::tooManyAttempts($rateKey, max(1, (int) config('production.flash_previews_per_minute', 30)))) {
+                    throw ValidationException::withMessages([
+                        'lines' => __('production_bench.production.validation.flash_preview_rate_limited'),
+                    ]);
+                }
+
+                RateLimiter::hit($rateKey, 60);
+            }, attempts: 5);
+
             $this->simulationSnapshot = [];
             $simulation = $simulator->simulate($this->workspace(), $this->lines);
             $this->datePreview = $dateProposal->propose(

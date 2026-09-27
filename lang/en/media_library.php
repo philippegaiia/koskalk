@@ -223,6 +223,8 @@ return [
         'procedure_secure_url' => 'Procedure images must use their secure Media Library URL.',
         'recipe_media_mismatch' => 'The selected recipe media does not belong to this formula.',
         'upload_store_failed' => 'The image could not be stored. Please try again.',
+        'upload_rate_limited' => 'This company has started too many uploads or retries. Try again in :seconds seconds.',
+        'pending_upload_limit' => 'This company has :max pending or failed uploads. Wait for processing to finish, or retry or remove failed uploads before adding more.',
         'retry_failed_only' => 'Only failed images can be retried.',
         'retry_source_missing' => 'The original upload is no longer available. Remove this image and upload it again.',
         'upload_extension' => 'Choose a JPEG, PNG, WebP, HEIC, or HEIF image.',

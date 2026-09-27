@@ -13,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -43,14 +44,18 @@ class MediaAssetUploadService
         $extension = strtolower($upload->getClientOriginalExtension());
         $pendingPath = 'media-assets/pending/'.$workspace->public_id.'/'.Str::uuid().'.'.$extension;
 
-        $this->storePendingUpload($disk, $pendingPath, $upload);
+        $stored = false;
 
         try {
             $asset = $this->entitlements->withinWorkspaceQuotaLock(
                 $workspace,
-                function (Workspace $lockedWorkspace) use ($disk, $pendingPath, $type, $upload, $user, $documentImage): MediaAsset {
+                function (Workspace $lockedWorkspace) use ($disk, $pendingPath, $type, $upload, $user, $documentImage, &$stored): MediaAsset {
                     $this->assertCanEditWorkspace($user, $lockedWorkspace);
+                    $this->throttleProcessing($lockedWorkspace, 'upload');
                     $this->entitlements->assertCanUploadMediaAssetInWorkspace($lockedWorkspace);
+                    $this->assertPendingCapacity($lockedWorkspace);
+                    $this->storePendingUpload($disk, $pendingPath, $upload);
+                    $stored = true;
 
                     return MediaAsset::query()->create([
                         'workspace_id' => $lockedWorkspace->id,
@@ -70,7 +75,9 @@ class MediaAssetUploadService
                 },
             );
         } catch (Throwable $exception) {
-            Storage::disk($disk)->delete($pendingPath);
+            if ($stored) {
+                Storage::disk($disk)->delete($pendingPath);
+            }
 
             throw $exception;
         }
@@ -90,6 +97,7 @@ class MediaAssetUploadService
                 $lockedAsset = MediaAsset::query()->lockForUpdate()->findOrFail($asset->id);
 
                 Gate::forUser($user)->authorize('update', $lockedAsset);
+                $this->throttleProcessing($lockedWorkspace, 'asset');
 
                 if ($lockedAsset->status !== MediaAssetStatus::Failed) {
                     throw ValidationException::withMessages([
@@ -182,6 +190,38 @@ class MediaAssetUploadService
         NormalizeMediaAssetJob::dispatch($asset->id, $asset->processing_token)
             ->onQueue('media')
             ->afterCommit();
+    }
+
+    /** Called while holding the workspace quota lock, so concurrent members share one budget. */
+    private function throttleProcessing(Workspace $workspace, string $field): void
+    {
+        $key = 'media-processing:workspace:'.$workspace->id;
+        $maximum = max(1, (int) config('media.asset_uploads.workspace_attempts_per_minute', 60));
+
+        if (RateLimiter::tooManyAttempts($key, $maximum)) {
+            throw ValidationException::withMessages([
+                $field => __('media_library.validation.upload_rate_limited', ['seconds' => RateLimiter::availableIn($key)]),
+            ]);
+        }
+
+        RateLimiter::hit($key, 60);
+    }
+
+    private function assertPendingCapacity(Workspace $workspace): void
+    {
+        $maximum = max(1, (int) config('media.asset_uploads.max_pending_assets', 100));
+        $pending = MediaAsset::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereIn('status', [MediaAssetStatus::Processing, MediaAssetStatus::Failed])
+            ->limit($maximum)
+            ->pluck('id')
+            ->count();
+
+        if ($pending >= $maximum) {
+            throw ValidationException::withMessages([
+                'upload' => __('media_library.validation.pending_upload_limit', ['max' => $maximum]),
+            ]);
+        }
     }
 
     private function storePendingUpload(string $disk, string $pendingPath, UploadedFile $upload): void

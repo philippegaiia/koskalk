@@ -27,6 +27,7 @@ use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionTaskLimits;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
 use Filament\Forms\Components\DatePicker;
@@ -318,7 +319,7 @@ class SettingsIndex extends Component implements HasForms
     {
         $this->validate([
             'taskTypeName' => ['required', 'string', 'max:120'],
-            'taskTypeDuration' => ['nullable', 'integer', 'min:0'],
+            'taskTypeDuration' => ['nullable', 'integer', 'min:0', 'max:'.ProductionTaskLimits::MAX_DURATION_MINUTES],
             'taskTypeColour' => ['nullable', 'string', 'max:16'],
             'taskTypeDepartmentId' => ['nullable', 'integer'],
         ]);
@@ -382,6 +383,12 @@ class SettingsIndex extends Component implements HasForms
 
     public function addTaskSetItem(): void
     {
+        if (count($this->taskSetItems) >= ProductionTaskLimits::MAX_ITEMS_PER_SET) {
+            $this->addError('taskSetItems', __('production_bench.production.validation.task_set_too_large', ['max' => ProductionTaskLimits::MAX_ITEMS_PER_SET]));
+
+            return;
+        }
+
         $this->taskSetItems[] = $this->emptyTaskSetItem();
     }
 
@@ -401,10 +408,10 @@ class SettingsIndex extends Component implements HasForms
     ): void {
         $this->validate([
             'taskSetName' => ['required', 'string', 'max:120'],
-            'taskSetItems' => ['required', 'array', 'min:1'],
+            'taskSetItems' => ['required', 'array', 'min:1', 'max:'.ProductionTaskLimits::MAX_ITEMS_PER_SET],
             'taskSetItems.*.task_type_id' => ['required', 'integer'],
-            'taskSetItems.*.days_after_production' => ['required', 'integer'],
-            'taskSetItems.*.duration_minutes' => ['nullable', 'integer', 'min:0'],
+            'taskSetItems.*.days_after_production' => ['required', 'integer', 'between:'.(-ProductionTaskLimits::MAX_OFFSET_DAYS).','.ProductionTaskLimits::MAX_OFFSET_DAYS],
+            'taskSetItems.*.duration_minutes' => ['nullable', 'integer', 'min:0', 'max:'.ProductionTaskLimits::MAX_DURATION_MINUTES],
             'taskSetRecipeIds' => ['array'],
             'taskSetRecipeIds.*' => ['integer'],
             'taskSetDefaultRecipeIds' => ['array'],

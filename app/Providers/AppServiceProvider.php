@@ -22,6 +22,7 @@ use App\Services\IngredientEnrichment\OpenAiIngredientIdentityNameLocalizationCl
 use App\Services\IngredientEnrichment\OpenAiIngredientResearchClient;
 use App\Services\IngredientEnrichment\SourcePublisherDomainResolver;
 use App\Services\LocalePreferenceResolver;
+use App\Services\WorkspaceAuthorization;
 use Filament\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -65,6 +66,28 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(5)->by('beta-invite-token:'.(string) $request->route('token').'|'.$request->ip()),
             ];
         });
+
+        foreach (['exports', 'prints', 'temporary_uploads'] as $resource) {
+            RateLimiter::for('workspace-'.str_replace('_', '-', $resource), function (Request $request) use ($resource): array {
+                $actor = $request->user();
+                if ($actor === null) {
+                    return [Limit::perMinute(max(1, (int) config("workspaces.resource_limits.{$resource}.guest_per_minute", 10)))
+                        ->by('guest:'.$request->ip())];
+                }
+
+                $limits = [Limit::perMinute(max(1, (int) config("workspaces.resource_limits.{$resource}.actor_per_minute")))
+                    ->by('actor:'.$actor->id)];
+                $workspace = app(WorkspaceAuthorization::class)->selectedWorkspace($actor);
+                if ($workspace !== null) {
+                    $limits[] = Limit::perMinute(max(1, (int) config("workspaces.resource_limits.{$resource}.workspace_per_minute")))
+                        ->by('workspace:'.$workspace->id);
+                }
+
+                return $limits;
+            });
+        }
+
+        config()->set('livewire.temporary_file_upload.middleware', 'throttle:workspace-temporary-uploads');
 
         if ($this->app->isProduction()
             && ! $this->app->runningInConsole()

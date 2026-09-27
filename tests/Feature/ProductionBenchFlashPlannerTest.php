@@ -244,3 +244,25 @@ it('normalizes the Filament planning date and clears accepted previews when it c
         ->call('previewDates')->assertSet('showDatePreview', false);
     expect($fixture['workspace']->productionRuns()->count())->toBe(0);
 });
+
+it('limits explicit date previews per company without throttling ordinary renders', function (): void {
+    config(['production.flash_previews_per_minute' => 1]);
+    $fixture = flashPlannerFixture();
+    $component = Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->set('lines.0.desired_units', '25')
+        ->set('lines.0.expected_units_per_batch', '100')
+        ->set('lines.0.basis_input_value', '12')
+        ->set('lines.0.basis_input_unit', 'kg')
+        ->call('previewDates')
+        ->assertSet('showDatePreview', true);
+
+    $component->call('$refresh')->assertSet('simulationError', null)
+        ->call('previewDates')
+        ->assertSet('showDatePreview', false)
+        ->assertSet('simulationError', __('production_bench.production.validation.flash_preview_rate_limited'));
+    $this->assertDatabaseCount('production_runs', 0);
+
+    $this->travel(61)->seconds();
+    $component->call('previewDates')->assertSet('showDatePreview', true)->assertSet('simulationError', null);
+});

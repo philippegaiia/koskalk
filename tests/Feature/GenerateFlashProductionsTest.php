@@ -5,8 +5,10 @@ use App\Enums\MassUnit;
 use App\Enums\OwnerType;
 use App\Enums\ProductionRunSource;
 use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
@@ -19,11 +21,14 @@ use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
 use App\Services\Production\FlashDateProposalService;
 use App\Services\Production\FlashPlanFingerprint;
 use App\Services\Production\FlashProductionSimulator;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -339,4 +344,67 @@ it('ignores stale location input on retries of submissions created with location
     $fixture['workspace']->update(['uses_production_locations' => true]);
     $retry = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-21', 1, 'disabled-location-replay');
     expect($retry->pluck('id')->all())->toBe($first->pluck('id')->all());
+});
+
+it('rejects flash task fanout before writing any production records', function (): void {
+    $fixture = generateFlashFixture();
+    $item = $fixture['taskSet']->items()->firstOrFail();
+    ProductionTaskSetItem::factory()->count(99)
+        ->sequence(fn (Sequence $sequence): array => ['position' => $sequence->index + 2])
+        ->create([
+            'production_task_set_id' => $fixture['taskSet']->id,
+            'production_task_type_id' => $item->production_task_type_id,
+        ]);
+    $lines = [[
+        'recipe_id' => $fixture['recipe']->id,
+        'desired_units' => '10100',
+        'expected_units_per_batch' => '100',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+        'task_set_id' => $fixture['taskSet']->id,
+    ]];
+
+    expect(fn () => app(GenerateFlashProductions::class)->handle(
+        $fixture['owner'], $fixture['workspace'], $lines, '2026-09-28', 1000, 'too-many-tasks',
+    ))->toThrow(ValidationException::class);
+
+    $this->assertDatabaseCount('production_runs', 0);
+    $this->assertDatabaseCount('production_tasks', 0);
+    $this->assertDatabaseCount('production_flash_submissions', 0);
+    $this->assertDatabaseCount('production_run_number_settings', 0);
+});
+
+it('shares the flash generation quota across company actors while exempting replay', function (): void {
+    config(['production.flash_submissions_per_minute' => 1]);
+    $fixture = generateFlashFixture();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->create(['user_id' => $fixture['owner']->id, 'plan_id' => $plan->id]);
+    $editor = User::factory()->create(['active_workspace_id' => $fixture['workspace']->id]);
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'user_id' => $editor->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $lines = [[
+        'recipe_id' => $fixture['recipe']->id,
+        'desired_units' => '100',
+        'expected_units_per_batch' => '100',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+        'task_set_id' => $fixture['taskSet']->id,
+    ]];
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-28', 1, 'shared-first');
+
+    expect(fn () => $action->handle($editor, $fixture['workspace'], $lines, '2026-09-28', 1, 'shared-second'))
+        ->toThrow(ValidationException::class, __('production_bench.production.validation.flash_rate_limited'));
+    $this->assertDatabaseCount('production_runs', 1);
+    $this->assertDatabaseCount('production_flash_submissions', 1);
+    expect($action->handle($fixture['owner'], $fixture['workspace'], $lines, '2026-09-28', 1, 'shared-first')->pluck('id')->all())
+        ->toBe($first->pluck('id')->all());
+
+    $this->travel(61)->seconds();
+    $action->handle($editor, $fixture['workspace'], $lines, '2026-09-28', 1, 'shared-second');
+    $this->assertDatabaseCount('production_runs', 2);
+    $this->assertDatabaseCount('production_flash_submissions', 2);
 });

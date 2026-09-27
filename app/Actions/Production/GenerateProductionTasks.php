@@ -8,6 +8,7 @@ use App\Models\ProductionTask;
 use App\Models\ProductionTaskSet;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionTaskLimits;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class GenerateProductionTasks
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly ProductionWorkingCalendar $calendar,
+        private readonly ProductionTaskLimits $limits,
     ) {}
 
     public function handle(User $actor, ProductionRun $production): ProductionRun
@@ -85,7 +87,9 @@ class GenerateProductionTasks
             return $lockedProduction->fresh(['requirements', 'tasks']);
         }
 
-        $items = $taskSet->items()->with('taskType.department')->lockForUpdate()->get();
+        $this->limits->assertUsableTaskSet($taskSet);
+        $items = $taskSet->items()->with('taskType.department')->lockForUpdate()->limit(ProductionTaskLimits::MAX_ITEMS_PER_SET + 1)->get();
+        $this->limits->assertItemCount($items->count(), 'production_task_set');
 
         if ($items->isEmpty()) {
             return $lockedProduction->fresh(['requirements', 'tasks']);

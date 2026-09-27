@@ -112,13 +112,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])
                 ->middleware('throttle:30,1')
                 ->name('production-batches.store');
-            Route::get('/{recipe}/print', 'printSavedRecipe')->name('print.recipe');
-            Route::get('/{recipe}/print/production', 'printSavedProductionSheet')->name('print.production');
-            Route::get('/{recipe}/print/details', 'printSavedDetails')->name('print.details');
-            Route::get('/{recipe}/print/technical', 'printSavedTechnicalSheet')->name('print.technical');
-            Route::get('/{recipe}/print/costing', 'printSavedCostingSheet')->name('print.costing');
-            Route::get('/{recipe}/export.xlsx', 'exportSavedWorkbook')->middleware('throttle:10,1')->name('export.xlsx');
-            Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->middleware('throttle:10,1')->name('export.csv');
+            Route::get('/{recipe}/print', 'printSavedRecipe')->middleware('throttle:workspace-prints')->name('print.recipe');
+            Route::get('/{recipe}/print/production', 'printSavedProductionSheet')->middleware('throttle:workspace-prints')->name('print.production');
+            Route::get('/{recipe}/print/details', 'printSavedDetails')->middleware('throttle:workspace-prints')->name('print.details');
+            Route::get('/{recipe}/print/technical', 'printSavedTechnicalSheet')->middleware('throttle:workspace-prints')->name('print.technical');
+            Route::get('/{recipe}/print/costing', 'printSavedCostingSheet')->middleware('throttle:workspace-prints')->name('print.costing');
+            Route::get('/{recipe}/export.xlsx', 'exportSavedWorkbook')->middleware('throttle:workspace-exports')->name('export.xlsx');
+            Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->middleware('throttle:workspace-exports')->name('export.csv');
             Route::get('/{recipe}/media/{path}', [RecipeMediaController::class, 'show'])
                 ->where('path', '.*')
                 ->middleware('throttle:120,1')
@@ -126,8 +126,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('/{recipe}/versions/{version}', 'version')->name('version');
             Route::delete('/{recipe}/versions/{version}', 'destroyVersion')->name('versions.destroy');
             Route::post('/{recipe}/versions/{version}/use-as-current', 'restoreCurrentVersion')->name('use-version-as-current');
-            Route::get('/{recipe}/versions/{version}/print', 'printRecipe')->name('legacy.print.recipe');
-            Route::get('/{recipe}/versions/{version}/print/details', 'printDetails')->name('legacy.print.details');
+            Route::get('/{recipe}/versions/{version}/print', 'printRecipe')->middleware('throttle:workspace-prints')->name('legacy.print.recipe');
+            Route::get('/{recipe}/versions/{version}/print/details', 'printDetails')->middleware('throttle:workspace-prints')->name('legacy.print.details');
             Route::get('/{recipe}', 'edit')->name('edit');
         });
 
@@ -137,7 +137,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::get('/{productionBatch}', 'show')->name('show');
             Route::patch('/{productionBatch}', 'update')->name('update');
-            Route::get('/{productionBatch}/print', 'print')->name('print');
+            Route::get('/{productionBatch}/print', 'print')->middleware('throttle:workspace-prints')->name('print');
             Route::delete('/{productionBatch}', 'destroy')->name('destroy');
         });
 
@@ -232,6 +232,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/purchasing/receipts/{goodsReceipt}', 'production-bench.purchasing.receipt-detail')->name('purchasing.receipts.show');
             Route::view('/purchasing/procurement/{purchaseOrder}', 'production-bench.purchasing.procurement-detail')->name('purchasing.procurement.show');
             Route::get('/purchasing/documents/{purchaseOrder}/print', [ProcurementDocumentController::class, 'show'])
+                ->middleware('throttle:workspace-prints')
                 ->name('purchasing.documents.print');
         });
 });

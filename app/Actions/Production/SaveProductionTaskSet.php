@@ -7,6 +7,7 @@ use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionTaskLimits;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,7 @@ class SaveProductionTaskSet
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly SyncProductionTaskSetProducts $syncProducts,
+        private readonly ProductionTaskLimits $limits,
     ) {}
 
     /**
@@ -42,6 +44,7 @@ class SaveProductionTaskSet
             throw ValidationException::withMessages(['items' => 'Add at least one task to the set.']);
         }
 
+        $this->limits->assertItemCount(count($items));
         $normalizedItems = $this->normalizeItems($items);
 
         return DB::transaction(function () use (
@@ -158,6 +161,9 @@ class SaveProductionTaskSet
                     "items.{$index}.duration_minutes" => 'Duration must be a whole number.',
                 ]);
             }
+
+            $this->limits->assertOffset((int) $days, "items.{$index}.days_after_production");
+            $this->limits->assertDuration($duration === null ? null : (int) $duration, "items.{$index}.duration_minutes");
 
             $normalized[] = [
                 'production_task_type_id' => (int) $taskTypeId,

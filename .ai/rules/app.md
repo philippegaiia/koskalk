@@ -32,3 +32,6 @@ Saved formulas stabilize formula composition only; linked platform or private in
 
 ## Keep IFRA classification optional and evidence-based
 IFRA classification is optional, non-blocking guidance. Suggest from amendment-scoped Product Type mappings, persist automatic/manual selection evidence on the Saved Formula, and never infer IFRA new/existing fragrance-creation status from a finished Product.
+
+## Keep resource safeguards separate from commercial quotas
+Expensive customer operations must share a company budget derived from fresh WorkspaceAuthorization, never a request-supplied company ID or a member's personal plan. Retained failed media sources need their own backlog bound even though they release the commercial media allowance. Production task expansion and calendar searches need bounded work at service/action entry points. Preserve historical records and admin-edited plan limits; new CSV/report features require their own output-size and workload design.

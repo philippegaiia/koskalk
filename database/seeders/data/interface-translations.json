@@ -16896,6 +16896,18 @@
     },
     {
       "group": "media_library",
+      "key": "validation.pending_upload_limit",
+      "text": {
+        "de": "Dieses Unternehmen hat :max ausstehende oder fehlgeschlagene Uploads. Warte auf den Abschluss der Verarbeitung oder wiederhole bzw. entferne fehlgeschlagene Uploads, bevor du weitere hinzufügst.",
+        "es": "Esta empresa tiene :max subidas pendientes o fallidas. Espera a que termine el procesamiento, o reintenta o elimina las subidas fallidas antes de añadir más.",
+        "fr": "Cette entreprise a :max téléversements en attente ou en échec. Attendez la fin du traitement, ou relancez ou supprimez les téléversements en échec avant d’en ajouter.",
+        "it": "Questa azienda ha :max caricamenti in attesa o non riusciti. Attendi il completamento dell’elaborazione oppure riprova o rimuovi i caricamenti non riusciti prima di aggiungerne altri.",
+        "nl": "Dit bedrijf heeft :max wachtende of mislukte uploads. Wacht tot de verwerking klaar is, of probeer mislukte uploads opnieuw of verwijder ze voordat je meer toevoegt.",
+        "pt_BR": "Esta empresa tem :max envios pendentes ou com falha. Aguarde o fim do processamento, ou tente novamente ou remova os envios com falha antes de adicionar mais."
+      }
+    },
+    {
+      "group": "media_library",
       "key": "validation.picker_ready_workspace",
       "text": {
         "de": "Wähle ein fertiges Bild aus diesem Arbeitsbereich aus.",
@@ -17048,6 +17060,18 @@
         "it": "Scegli un documento PDF valido.",
         "nl": "Kies een geldig PDF-document.",
         "pt_BR": "Escolha um documento PDF válido."
+      }
+    },
+    {
+      "group": "media_library",
+      "key": "validation.upload_rate_limited",
+      "text": {
+        "de": "Dieses Unternehmen hat zu viele Uploads oder Wiederholungsversuche gestartet. Versuche es in :seconds Sekunden erneut.",
+        "es": "Esta empresa ha iniciado demasiadas subidas o reintentos. Vuelve a intentarlo en :seconds segundos.",
+        "fr": "Cette entreprise a lancé trop de téléversements ou de nouvelles tentatives. Réessayez dans :seconds secondes.",
+        "it": "Questa azienda ha avviato troppi caricamenti o nuovi tentativi. Riprova tra :seconds secondi.",
+        "nl": "Dit bedrijf heeft te veel uploads of nieuwe pogingen gestart. Probeer het over :seconds seconden opnieuw.",
+        "pt_BR": "Esta empresa iniciou muitos envios ou novas tentativas. Tente novamente em :seconds segundos."
       }
     },
     {
@@ -27348,6 +27372,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.flash_preview_rate_limited",
+      "text": {
+        "de": "Dieses Unternehmen hat zu viele Datumsvorschauen angefordert. Warte eine Minute, bevor du es erneut versuchst.",
+        "es": "Esta empresa ha solicitado demasiadas vistas previas de fechas. Espera un minuto antes de volver a intentarlo.",
+        "fr": "Cette entreprise a demandé trop d’aperçus des dates. Attendez une minute avant de réessayer.",
+        "it": "Questa azienda ha richiesto troppe anteprime delle date. Attendi un minuto prima di riprovare.",
+        "nl": "Dit bedrijf heeft te veel datumvoorbeelden aangevraagd. Wacht een minuut voordat je het opnieuw probeert.",
+        "pt_BR": "Esta empresa solicitou muitas prévias de datas. Aguarde um minuto antes de tentar novamente."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.flash_products_required",
       "text": {
         "de": "Fügen Sie mindestens ein Produkt hinzu, bevor Sie Produktionen erstellen.",
@@ -27368,6 +27404,18 @@
         "it": "La proposta Flash non corrisponde più ai prodotti selezionati.",
         "nl": "Het flashvoorstel komt niet meer overeen met de geselecteerde producten.",
         "pt_BR": "A proposta rápida não corresponde mais aos produtos selecionados."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.flash_rate_limited",
+      "text": {
+        "de": "Dieses Unternehmen hat zu viele Schnellplanungen eingereicht. Warte eine Minute, bevor du es erneut versuchst.",
+        "es": "Esta empresa ha enviado demasiadas planificaciones rápidas. Espera un minuto antes de volver a intentarlo.",
+        "fr": "Cette entreprise a effectué trop de soumissions de production rapide. Attendez une minute avant de réessayer.",
+        "it": "Questa azienda ha inviato troppe pianificazioni rapide. Attendi un minuto prima di riprovare.",
+        "nl": "Dit bedrijf heeft te veel snelle productieplanningen ingediend. Wacht een minuut voordat je het opnieuw probeert.",
+        "pt_BR": "Esta empresa enviou muitas programações rápidas de produção. Aguarde um minuto antes de tentar novamente."
       }
     },
     {
@@ -28176,6 +28224,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.task_duration_range",
+      "text": {
+        "de": "Die Aufgabendauer muss zwischen 0 und :max Minuten liegen.",
+        "es": "La duración de la tarea debe estar entre 0 y :max minutos.",
+        "fr": "La durée d’une tâche doit être comprise entre 0 et :max minutes.",
+        "it": "La durata dell’attività deve essere compresa tra 0 e :max minuti.",
+        "nl": "De taakduur moet tussen 0 en :max minuten liggen.",
+        "pt_BR": "A duração da tarefa deve estar entre 0 e :max minutos."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.task_employee_invalid",
       "text": {
         "de": "Wählen Sie einen aktiven Mitarbeitenden aus diesem Arbeitsbereich.",
@@ -28188,6 +28248,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.task_fanout_too_large",
+      "text": {
+        "de": "Eine Schnellplanung darf höchstens :max Aufgaben erzeugen. Teile sie in kleinere Planungen auf.",
+        "es": "Una planificación rápida puede generar como máximo :max tareas. Divídela en planificaciones más pequeñas.",
+        "fr": "Une soumission de production rapide peut générer au maximum :max tâches. Divisez-la en soumissions plus petites.",
+        "it": "Una pianificazione rapida può generare al massimo :max attività. Suddividila in pianificazioni più piccole.",
+        "nl": "Een snelle productieplanning mag maximaal :max taken genereren. Verdeel deze in kleinere planningen.",
+        "pt_BR": "Uma programação rápida pode gerar no máximo :max tarefas. Divida-a em programações menores."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.task_not_completed",
       "text": {
         "de": "Diese Produktionsaufgabe ist nicht abgeschlossen.",
@@ -28196,6 +28268,18 @@
         "it": "Questa attività di produzione non è completata.",
         "nl": "Deze productietaak is niet voltooid.",
         "pt_BR": "Esta tarefa de produção não está concluída."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.task_offset_range",
+      "text": {
+        "de": "Der Zeitversatz einer Aufgabe muss zwischen -:max und :max Tagen liegen.",
+        "es": "El desplazamiento de una tarea debe estar entre -:max y :max días.",
+        "fr": "Le décalage d’une tâche doit être compris entre -:max et :max jours.",
+        "it": "Lo scostamento di un’attività deve essere compreso tra -:max e :max giorni.",
+        "nl": "De verschuiving van een taak moet tussen -:max en :max dagen liggen.",
+        "pt_BR": "O deslocamento de uma tarefa deve estar entre -:max e :max dias."
       }
     },
     {
@@ -28296,6 +28380,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.task_set_too_large",
+      "text": {
+        "de": "Ein Aufgabensatz darf höchstens :max Aufgaben enthalten. Verkleinere den Satz vor dem Speichern oder dem Erstellen von Produktionsaufgaben.",
+        "es": "Un conjunto puede contener como máximo :max tareas. Reduce el conjunto antes de guardar o generar tareas de producción.",
+        "fr": "Un ensemble peut contenir au maximum :max tâches. Réduisez-le avant d’enregistrer ou de générer des tâches de production.",
+        "it": "Un gruppo può contenere al massimo :max attività. Riducilo prima di salvare o generare le attività di produzione.",
+        "nl": "Een taakset mag maximaal :max taken bevatten. Verklein de set voordat je opslaat of productietaken genereert.",
+        "pt_BR": "Um conjunto pode conter no máximo :max tarefas. Reduza o conjunto antes de salvar ou gerar tarefas de produção."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.task_set_unavailable",
       "text": {
         "de": "Der Produktionsaufgabensatz ist in diesem Arbeitsbereich nicht mehr verfügbar.",
@@ -28388,6 +28484,18 @@
         "it": "Solo le produzioni in bozza o pianificate possono essere modificate.",
         "nl": "Alleen concept- of geplande producties kunnen worden gewijzigd.",
         "pt_BR": "Somente produções em rascunho ou planejadas podem ser atualizadas."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.working_date_unavailable",
+      "text": {
+        "de": "Innerhalb von fünf Jahren ist kein Arbeitstag verfügbar. Überprüfe den Unternehmenskalender.",
+        "es": "No hay ningún día laborable disponible en un plazo de cinco años. Revisa el calendario de la empresa.",
+        "fr": "Aucun jour ouvré n’est disponible dans les cinq ans. Vérifiez le calendrier de l’entreprise.",
+        "it": "Nessun giorno lavorativo disponibile entro cinque anni. Controlla il calendario aziendale.",
+        "nl": "Er is binnen vijf jaar geen werkdag beschikbaar. Controleer de bedrijfskalender.",
+        "pt_BR": "Não há nenhum dia útil disponível nos próximos cinco anos. Revise o calendário da empresa."
       }
     },
     {

@@ -18,6 +18,7 @@ class FlashDateProposalService
     public function __construct(
         private readonly ProductionWorkingCalendar $calendar,
         private readonly FlashProductionLimits $limits,
+        private readonly ProductionTaskLimits $taskLimits,
         private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionDailyOccupancy $occupancy,
         private readonly ProductionLocationSelection $locationSelection,
@@ -50,6 +51,7 @@ class FlashDateProposalService
             : [];
         $proposals = [];
         $totalBatches = 0;
+        $totalTasks = 0;
 
         foreach ($lines as $line) {
             $locationId = $legacy ? null : $this->locationSelection->resolve($workspace, $line['production_location_id'] ?? null);
@@ -64,6 +66,15 @@ class FlashDateProposalService
             $taskSet = is_array($line['task_items'] ?? null)
                 ? null
                 : ($line['task_set'] ?? $this->taskSet($workspace, $line['task_set_id'] ?? null));
+
+            if ($taskSet instanceof ProductionTaskSet) {
+                $this->taskLimits->assertUsableTaskSet($taskSet);
+            }
+            $taskItems = $line['task_items'] ?? null;
+            $taskCount = is_array($taskItems) ? count($taskItems) : ($taskSet?->items->count() ?? 0);
+            $this->taskLimits->assertItemCount($taskCount, 'lines');
+            $totalTasks += $taskCount * $batchTotal;
+            $this->taskLimits->assertFanout($totalTasks);
 
             for ($batch = 1; $batch <= $batchTotal; $batch++) {
                 $date = $first;
@@ -166,8 +177,12 @@ class FlashDateProposalService
         $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
             ->where('is_active', true)
-            ->with('items.taskType')
+            ->withCount('items')
             ->find($id);
+
+        if ($taskSet !== null) {
+            $this->taskLimits->assertUsableTaskSet($taskSet);
+        }
 
         return $this->taskSetsById[$id] = $taskSet;
     }
@@ -193,6 +208,11 @@ class FlashDateProposalService
     /** @param list<array<string, mixed>> $items */
     private function tasksFromItems(Workspace $workspace, CarbonImmutable $productionDate, array $items): array
     {
+        foreach ($items as $item) {
+            $this->taskLimits->assertOffset((int) ($item['days_after_production'] ?? 0), 'lines');
+            $this->taskLimits->assertDuration(isset($item['duration_minutes']) ? (int) $item['duration_minutes'] : null, 'lines');
+        }
+
         return collect($items)->map(fn (array $item): array => [
             'name' => (string) ($item['name'] ?? 'Task'),
             'scheduled_for' => $this->calendar

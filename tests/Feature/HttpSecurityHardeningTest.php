@@ -58,7 +58,7 @@ it('rate limits sensitive mutations and confidential exports', function () {
     expect(Route::getRoutes()->getByName('account.password.update')?->gatherMiddleware())
         ->toContain('throttle:5,1')
         ->and(Route::getRoutes()->getByName('recipes.export.xlsx')?->gatherMiddleware())
-        ->toContain('throttle:10,1')
+        ->toContain('throttle:workspace-exports')
         ->and(Route::getRoutes()->getByName('recipes.production-batches.store')?->gatherMiddleware())
         ->toContain('throttle:30,1');
 });

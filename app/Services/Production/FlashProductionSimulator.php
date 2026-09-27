@@ -37,6 +37,7 @@ class FlashProductionSimulator
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly FlashProductionLimits $limits,
+        private readonly ProductionTaskLimits $taskLimits,
         private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionLocationSelection $locationSelection,
     ) {}
@@ -55,6 +56,7 @@ class FlashProductionSimulator
         $requirements = collect();
         $subjects = [];
         $taskMinutes = 0;
+        $generatedTasks = 0;
         $totalWholeBatches = 0;
 
         foreach ($lines as $index => $input) {
@@ -124,6 +126,8 @@ class FlashProductionSimulator
             }
 
             $taskSet = $this->taskSet($workspace, $recipe, $line['task_set_id'], $index);
+            $generatedTasks += ($taskSet?->items->count() ?? 0) * $wholeBatches;
+            $this->taskLimits->assertFanout($generatedTasks);
             $lineTaskMinutes = $taskSet instanceof ProductionTaskSet
                 ? (int) $taskSet->items->sum(
                     fn (ProductionTaskSetItem $item): int => (int) ($item->duration_minutes ?? $item->taskType?->default_duration_minutes ?? 0),
@@ -347,10 +351,11 @@ class FlashProductionSimulator
             $taskSet = ProductionTaskSet::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
-                ->with('items.taskType')
+                ->withCount('items')
                 ->find($taskSetId);
 
             if ($taskSet instanceof ProductionTaskSet) {
+                $this->taskLimits->assertUsableTaskSet($taskSet);
                 $this->taskSetsById[$taskSetId] = $taskSet;
             } else {
                 $this->taskSetsById[$taskSetId] = null;

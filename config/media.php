@@ -15,6 +15,9 @@ return [
     'asset_pending_disk' => env('MEDIA_ASSET_PENDING_DISK', 'local'),
 
     'asset_uploads' => [
+        // Operational safeguards, independent of the plan's media-asset allowance.
+        'workspace_attempts_per_minute' => 60,
+        'max_pending_assets' => 100,
         'max_size_kb' => 10240,
         'max_pixels' => 25_000_000,
         'master_max_edge' => 1000,

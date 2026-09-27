@@ -1,15 +1,23 @@
 <?php
 
 use App\Enums\WorkspaceMemberRole;
+use App\Models\InterfaceTranslation;
 use App\Models\Plan;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 
 uses(RefreshDatabase::class);
+
+afterEach(function (): void {
+    Cache::forget(InterfaceTranslation::getCacheKey('workspaces', 'fr'));
+});
 
 beforeEach(function (): void {
     config(['workspaces.collaboration_enabled' => true]);
@@ -41,6 +49,23 @@ it('lists authorized companies without displaying foreign names or changing the 
         ->assertSee('name="workspace_public_id"', false);
     expect(ltrim($response->getContent()))->toStartWith('<!DOCTYPE html>');
     expect($user->fresh()->active_workspace_id)->toBe($current->id);
+});
+
+it('uses the current database locale override in the company picker', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+
+    $user = User::factory()->create(['locale' => 'fr']);
+    Workspace::factory()->for($user, 'owner')->create(['name' => 'Picker locale company']);
+    InterfaceTranslation::query()->create([
+        'group' => 'workspaces',
+        'key' => 'selection.page_heading',
+        'text' => ['fr' => 'Choisir une entreprise'],
+    ]);
+    $this->actingAs($user)->get(route('workspace-selection.index'))
+        ->assertOk()
+        ->assertSeeText('Choisir une entreprise')
+        ->assertDontSeeText('Choose a company');
 });
 
 it('retains company search through pagination and displays matching results only', function (): void {

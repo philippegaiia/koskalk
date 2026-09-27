@@ -111,7 +111,11 @@ it('reads only application-owned English source strings from Laravel language fi
         ->and($source->all())->toHaveKey('public.language.label')
         ->toHaveKey('formula_documents.title')
         ->toHaveKey('formula_documents.sections.lye_water')
-        ->toHaveKey('formula_documents.actions.print');
+        ->toHaveKey('formula_documents.actions.print')
+        ->toHaveKey('workspaces.selection.page_heading')
+        ->toHaveKey('workspaces.members.heading')
+        ->toHaveKey('workspaces.acceptance.page_heading')
+        ->toHaveKey('workspaces.email.subject');
 });
 
 it('keeps non-English application locale files and translation-value seeders out of the codebase', function () {
@@ -139,6 +143,8 @@ it('synchronizes missing interface keys without overwriting translations', funct
         ->and(InterfaceTranslation::query()->where('group', 'auth')->where('key', 'login.heading')->value('text'))
         ->toBe(['fr' => 'Connexion à votre espace'])
         ->and(InterfaceTranslation::query()->where('group', 'public')->where('key', 'navigation.product')->value('text'))
+        ->toBe([])
+        ->and(InterfaceTranslation::query()->where('group', 'workspaces')->where('key', 'selection.page_heading')->value('text'))
         ->toBe([])
         ->and(InterfaceTranslation::query()->whereIn('group', ['currencies', 'homepage', 'validation'])->exists())
         ->toBeFalse();

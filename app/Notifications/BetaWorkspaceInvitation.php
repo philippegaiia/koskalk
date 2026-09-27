@@ -30,12 +30,12 @@ class BetaWorkspaceInvitation extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your Soapkraft beta invitation')
-            ->greeting('Welcome to Soapkraft')
-            ->line("You have been invited to create the {$this->workspaceName} workspace.")
-            ->action('Create your workspace', route('beta-invites.show', ['token' => $this->token]))
-            ->line("This invitation expires {$this->expiresAt->diffForHumans()}.")
-            ->line('If you were not expecting this invitation, you can safely ignore this email.');
+            ->subject(__('auth.beta_invitation.email.subject'))
+            ->greeting(__('auth.beta_invitation.email.greeting'))
+            ->line(__('auth.beta_invitation.email.invitation', ['workspace' => $this->workspaceName]))
+            ->action(__('auth.beta_invitation.email.action'), route('beta-invites.show', ['token' => $this->token]))
+            ->line(__('auth.beta_invitation.email.expires', ['expiry' => $this->expiresAt->diffForHumans()]))
+            ->line(__('auth.beta_invitation.email.ignore'));
     }
 
     /**

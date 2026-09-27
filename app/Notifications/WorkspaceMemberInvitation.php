@@ -18,9 +18,9 @@ class WorkspaceMemberInvitation extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(__('Company invitation'))
-            ->line(__('You have been invited to join :company.', ['company' => $this->workspaceName]))
-            ->action(__('Accept invitation'), route('workspace-invitations.show', ['token' => $this->token]))
-            ->line(__('This invitation expires in seven days.'));
+            ->subject(__('workspaces.email.subject'))
+            ->line(__('workspaces.acceptance.invited_description', ['company' => $this->workspaceName]))
+            ->action(__('workspaces.acceptance.accept'), route('workspace-invitations.show', ['token' => $this->token]))
+            ->line(__('workspaces.email.expires'));
     }
 }

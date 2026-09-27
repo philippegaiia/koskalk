@@ -3,15 +3,19 @@
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\SettingsIndex;
 use App\Livewire\Dashboard\WorkspaceMembers;
+use App\Models\InterfaceTranslation;
 use App\Models\Plan;
 use App\Models\PlanLimit;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMember;
 use App\Notifications\WorkspaceMemberInvitation;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
@@ -19,6 +23,10 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     config(['workspaces.collaboration_enabled' => true]);
+});
+
+afterEach(function (): void {
+    Cache::forget(InterfaceTranslation::getCacheKey('workspaces', 'fr'));
 });
 
 function membersPageWorkspace(bool $collaboration = true): Workspace
@@ -43,6 +51,26 @@ it('renders the actual owner without a membership row and initializes current me
         ->assertSet('memberRoles.'.$member->id, 'viewer')
         ->assertViewHas('seatUsage', fn (array $usage): bool => $usage['members'] === 2 && $usage['limit'] === 5)
         ->assertViewHas('roleOptions', [WorkspaceMemberRole::Admin, WorkspaceMemberRole::Editor, WorkspaceMemberRole::Viewer]);
+});
+
+it('uses the current database locale override on the team members page', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+
+    $workspace = membersPageWorkspace();
+    $workspace->owner->forceFill(['locale' => 'fr'])->save();
+    InterfaceTranslation::query()->create([
+        'group' => 'workspaces',
+        'key' => 'members.heading',
+        'text' => ['fr' => 'Membres de l’équipe'],
+    ]);
+    app()->setLocale('fr');
+    $this->actingAs($workspace->owner);
+
+    Livewire::test(WorkspaceMembers::class, ['workspaceId' => $workspace->id])
+        ->assertOk()
+        ->assertSeeText('Membres de l’équipe')
+        ->assertDontSeeText('Team members');
 });
 
 it('hides admin invitation details and actions from admins and denies a forged admin invitation', function (): void {

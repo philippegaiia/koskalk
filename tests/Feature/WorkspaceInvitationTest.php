@@ -2,8 +2,10 @@
 
 use App\Enums\WorkspaceMemberRole;
 use App\Listeners\CreateDefaultCompany;
+use App\Models\InterfaceTranslation;
 use App\Models\Plan;
 use App\Models\PlanLimit;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\Workspace;
@@ -12,8 +14,10 @@ use App\Models\WorkspaceMember;
 use App\Notifications\WorkspaceMemberInvitation;
 use App\Services\WorkspaceInvitationService;
 use App\Services\WorkspaceMembershipService;
+use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Auth\Events\Registered;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
@@ -60,6 +64,27 @@ it('reserves the final seat with a normalized email and sends only after the tra
     expect($invitation->toArray())->not->toHaveKey('token_hash');
     expect(app(WorkspaceMembershipService::class)->seatUsage($workspace))->toMatchArray(['members' => 1, 'pending' => 1, 'used' => 2, 'remaining' => 0]);
     expect(fn () => app(WorkspaceInvitationService::class)->issue($workspace->owner, $workspace, 'another@example.test', WorkspaceMemberRole::Viewer))->toThrow(ValidationException::class);
+});
+
+it('localizes the member invitation page and email from database overrides', function (): void {
+    $this->withoutVite();
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    InterfaceTranslation::query()->create([
+        'group' => 'workspaces',
+        'key' => 'acceptance.invited_description',
+        'text' => ['fr' => 'Rejoignez :company.'],
+    ]);
+    $workspace = invitationWorkspace();
+    $workspace->update(['name' => 'Atelier Asanara']);
+    [$invitation, $token] = pendingWorkspaceInvitation($workspace);
+
+    $this->withSession(['locale' => 'fr'])->get(route('workspace-invitations.show', $token))
+        ->assertOk()->assertSeeText('Rejoignez Atelier Asanara.');
+
+    $mail = (new WorkspaceMemberInvitation($token, $workspace->name))
+        ->toMail(new AnonymousNotifiable);
+    expect($mail->introLines)->toContain('Rejoignez Atelier Asanara.');
 });
 
 it('creates a verified member through a token without owner provisioning or entitlements', function (): void {

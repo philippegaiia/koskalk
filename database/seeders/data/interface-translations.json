@@ -528,6 +528,186 @@
     },
     {
       "group": "auth",
+      "key": "beta_invitation.email.action",
+      "text": {
+        "de": "Arbeitsbereich erstellen",
+        "es": "Crear espacio de trabajo",
+        "fr": "Créer votre espace de travail",
+        "it": "Crea il tuo spazio di lavoro",
+        "nl": "Werkruimte aanmaken",
+        "pt_BR": "Criar espaço de trabalho"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.email.expires",
+      "text": {
+        "de": "Diese Einladung läuft :expiry ab.",
+        "es": "Esta invitación vence :expiry.",
+        "fr": "Cette invitation expire :expiry.",
+        "it": "Questo invito scade :expiry.",
+        "nl": "Deze uitnodiging verloopt :expiry.",
+        "pt_BR": "Este convite expira :expiry."
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.email.greeting",
+      "text": {
+        "de": "Willkommen bei Soapkraft",
+        "es": "Te damos la bienvenida a Soapkraft",
+        "fr": "Bienvenue chez Soapkraft",
+        "it": "Benvenuto su Soapkraft",
+        "nl": "Welkom bij Soapkraft",
+        "pt_BR": "Boas-vindas à Soapkraft"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.email.ignore",
+      "text": {
+        "de": "Wenn du diese Einladung nicht erwartet hast, kannst du diese E-Mail ignorieren.",
+        "es": "Si no esperabas esta invitación, puedes ignorar este correo.",
+        "fr": "Si vous n’attendiez pas cette invitation, vous pouvez ignorer cet e-mail.",
+        "it": "Se non aspettavi questo invito, puoi ignorare questa email.",
+        "nl": "Als je deze uitnodiging niet verwachtte, kun je deze e-mail veilig negeren.",
+        "pt_BR": "Se você não estava esperando este convite, pode ignorar este e-mail."
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.email.invitation",
+      "text": {
+        "de": "Du wurdest eingeladen, den Arbeitsbereich :workspace zu erstellen.",
+        "es": "Te han invitado a crear el espacio de trabajo :workspace.",
+        "fr": "Vous êtes invité à créer l’espace de travail :workspace.",
+        "it": "Ti è stato chiesto di creare lo spazio di lavoro :workspace.",
+        "nl": "Je bent uitgenodigd om werkruimte :workspace aan te maken.",
+        "pt_BR": "Você foi convidado a criar o espaço de trabalho :workspace."
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.email.subject",
+      "text": {
+        "de": "Deine Soapkraft-Beta-Einladung",
+        "es": "Tu invitación a la beta de Soapkraft",
+        "fr": "Votre invitation à la bêta de Soapkraft",
+        "it": "Il tuo invito alla beta di Soapkraft",
+        "nl": "Je uitnodiging voor de Soapkraft-bèta",
+        "pt_BR": "Seu convite para o beta da Soapkraft"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.expires",
+      "text": {
+        "de": "Diese Einladung läuft :expiry ab.",
+        "es": "Esta invitación vence :expiry.",
+        "fr": "Cette invitation expire :expiry.",
+        "it": "Questo invito scade :expiry.",
+        "nl": "Deze uitnodiging verloopt :expiry.",
+        "pt_BR": "Este convite expira :expiry."
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.eyebrow",
+      "text": {
+        "de": "Soapkraft-Beta",
+        "es": "Beta de Soapkraft",
+        "fr": "Bêta Soapkraft",
+        "it": "Beta di Soapkraft",
+        "nl": "Soapkraft-bèta",
+        "pt_BR": "Beta da Soapkraft"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.heading",
+      "text": {
+        "de": "Erstelle deinen Arbeitsbereich",
+        "es": "Crea tu espacio de trabajo",
+        "fr": "Créez votre espace de travail",
+        "it": "Crea il tuo spazio di lavoro",
+        "nl": "Maak je werkruimte aan",
+        "pt_BR": "Crie seu espaço de trabalho"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.introduction",
+      "text": {
+        "de": "Erstelle :workspace für :email.",
+        "es": "Crea :workspace para :email.",
+        "fr": "Créez :workspace pour :email.",
+        "it": "Crea :workspace per :email.",
+        "nl": "Maak :workspace aan voor :email.",
+        "pt_BR": "Crie :workspace para :email."
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.name",
+      "text": {
+        "de": "Name",
+        "es": "Nombre",
+        "fr": "Nom",
+        "it": "Nome",
+        "nl": "Naam",
+        "pt_BR": "Nome"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.page_title",
+      "text": {
+        "de": "Arbeitsbereich erstellen",
+        "es": "Crea tu espacio de trabajo",
+        "fr": "Créez votre espace de travail",
+        "it": "Crea il tuo spazio di lavoro",
+        "nl": "Maak je werkruimte aan",
+        "pt_BR": "Crie seu espaço de trabalho"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.password",
+      "text": {
+        "de": "Passwort erstellen",
+        "es": "Crear contraseña",
+        "fr": "Créer un mot de passe",
+        "it": "Crea una password",
+        "nl": "Wachtwoord aanmaken",
+        "pt_BR": "Criar senha"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.password_confirmation",
+      "text": {
+        "de": "Passwort bestätigen",
+        "es": "Confirmar contraseña",
+        "fr": "Confirmer le mot de passe",
+        "it": "Conferma password",
+        "nl": "Wachtwoord bevestigen",
+        "pt_BR": "Confirmar senha"
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.submit",
+      "text": {
+        "de": "Arbeitsbereich erstellen",
+        "es": "Crear espacio de trabajo",
+        "fr": "Créer votre espace de travail",
+        "it": "Crea il tuo spazio di lavoro",
+        "nl": "Werkruimte aanmaken",
+        "pt_BR": "Criar espaço de trabalho"
+      }
+    },
+    {
+      "group": "auth",
       "key": "login.email",
       "text": {
         "de": "E-Mail",
@@ -39848,6 +40028,1122 @@
         "it": "Le sostituzioni del liquido di diluizione non possono superare il 100%.",
         "nl": "Vervangende vloeistoffen voor de loogoplossing mogen samen niet meer dan 100% zijn.",
         "pt_BR": "As substituições do líquido de diluição não podem exceder 100%."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.accept",
+      "text": {
+        "de": "Einladung annehmen",
+        "es": "Aceptar invitación",
+        "fr": "Accepter l’invitation",
+        "it": "Accetta invito",
+        "nl": "Uitnodiging accepteren",
+        "pt_BR": "Aceitar convite"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.confirm_password",
+      "text": {
+        "de": "Passwort bestätigen",
+        "es": "Confirmar contraseña",
+        "fr": "Confirmer le mot de passe",
+        "it": "Conferma password",
+        "nl": "Wachtwoord bevestigen",
+        "pt_BR": "Confirmar senha"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.create_password",
+      "text": {
+        "de": "Passwort erstellen",
+        "es": "Crear contraseña",
+        "fr": "Créer un mot de passe",
+        "it": "Crea una password",
+        "nl": "Wachtwoord maken",
+        "pt_BR": "Criar senha"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.expires",
+      "text": {
+        "de": "Diese Einladung läuft :time ab.",
+        "es": "Esta invitación caduca :time.",
+        "fr": "Cette invitation expire :time.",
+        "it": "Questo invito scade :time.",
+        "nl": "Deze uitnodiging verloopt :time.",
+        "pt_BR": "Este convite expira :time."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.invited_description",
+      "text": {
+        "de": "Sie wurden eingeladen, :company beizutreten.",
+        "es": "Te han invitado a unirte a :company.",
+        "fr": "Vous avez été invité à rejoindre :company.",
+        "it": "Sei stato invitato a unirti a :company.",
+        "nl": "Je bent uitgenodigd om lid te worden van :company.",
+        "pt_BR": "Você foi convidado para participar de :company."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.invited_email",
+      "text": {
+        "de": "Eingeladene E-Mail-Adresse",
+        "es": "Correo electrónico invitado",
+        "fr": "Adresse e-mail invitée",
+        "it": "Email invitata",
+        "nl": "Uitgenodigd e-mailadres",
+        "pt_BR": "E-mail convidado"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.name",
+      "text": {
+        "de": "Name",
+        "es": "Nombre",
+        "fr": "Nom",
+        "it": "Nome",
+        "nl": "Naam",
+        "pt_BR": "Nome"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.page_heading",
+      "text": {
+        "de": "Unternehmen beitreten",
+        "es": "Unirse a la empresa",
+        "fr": "Rejoindre l’entreprise",
+        "it": "Unisciti all’azienda",
+        "nl": "Lid worden van het bedrijf",
+        "pt_BR": "Entrar na empresa"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.sign_in_description",
+      "text": {
+        "de": "Melden Sie sich mit der eingeladenen E-Mail-Adresse an, um diesem Unternehmen beizutreten.",
+        "es": "Inicia sesión con el correo invitado para unirte a esta empresa.",
+        "fr": "Connectez-vous avec l’adresse e-mail invitée pour rejoindre cette entreprise.",
+        "it": "Accedi con l’indirizzo email invitato per entrare in questa azienda.",
+        "nl": "Meld je aan met het uitgenodigde e-mailadres om lid te worden van dit bedrijf.",
+        "pt_BR": "Entre com o e-mail convidado para participar desta empresa."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.verify_email",
+      "text": {
+        "de": "E-Mail-Adresse bestätigen",
+        "es": "Verificar correo electrónico",
+        "fr": "Vérifier l’adresse e-mail",
+        "it": "Verifica indirizzo email",
+        "nl": "E-mailadres bevestigen",
+        "pt_BR": "Verificar e-mail"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.verify_email_description",
+      "text": {
+        "de": "Bestätigen Sie Ihre E-Mail-Adresse, bevor Sie diese Einladung annehmen, und kehren Sie anschließend zu diesem Link zurück.",
+        "es": "Verifica tu dirección de correo antes de aceptar esta invitación y luego vuelve a este enlace.",
+        "fr": "Vérifiez votre adresse e-mail avant d’accepter cette invitation, puis revenez à ce lien.",
+        "it": "Verifica il tuo indirizzo email prima di accettare questo invito, poi torna a questo link.",
+        "nl": "Bevestig je e-mailadres voordat je deze uitnodiging accepteert en ga daarna terug naar deze link.",
+        "pt_BR": "Verifique seu endereço de e-mail antes de aceitar este convite e depois volte a este link."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "acceptance.wrong_email_description",
+      "text": {
+        "de": "Sie sind mit einer anderen E-Mail-Adresse angemeldet. Melden Sie sich ab, öffnen Sie diese Einladung erneut und melden Sie sich mit der eingeladenen E-Mail-Adresse an.",
+        "es": "Has iniciado sesión con otra dirección de correo. Cierra la sesión, vuelve a abrir esta invitación e inicia sesión con el correo invitado.",
+        "fr": "Vous êtes connecté avec une autre adresse e-mail. Déconnectez-vous, rouvrez cette invitation et connectez-vous avec l’adresse invitée.",
+        "it": "Hai effettuato l’accesso con un altro indirizzo email. Esci, riapri questo invito e accedi con l’indirizzo email invitato.",
+        "nl": "Je bent aangemeld met een ander e-mailadres. Meld je af, open deze uitnodiging opnieuw en meld je aan met het uitgenodigde e-mailadres.",
+        "pt_BR": "Você entrou com outro endereço de e-mail. Saia, abra este convite novamente e entre com o e-mail convidado."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "confirm.remove_member",
+      "text": {
+        "de": ":name aus diesem Arbeitsbereich entfernen?",
+        "es": "¿Quitar a :name de este espacio de trabajo?",
+        "fr": "Retirer :name de cet espace de travail ?",
+        "it": "Rimuovere :name da quest’area di lavoro?",
+        "nl": ":name uit deze werkruimte verwijderen?",
+        "pt_BR": "Remover :name deste espaço de trabalho?"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "confirm.revoke_invitation",
+      "text": {
+        "de": "Die Einladung an :email widerrufen?",
+        "es": "¿Revocar la invitación a :email?",
+        "fr": "Révoquer l’invitation envoyée à :email ?",
+        "it": "Revocare l’invito inviato a :email?",
+        "nl": "De uitnodiging aan :email intrekken?",
+        "pt_BR": "Revogar o convite enviado para :email?"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "email.expires",
+      "text": {
+        "de": "Diese Einladung läuft in sieben Tagen ab.",
+        "es": "Esta invitación caduca dentro de siete días.",
+        "fr": "Cette invitation expire dans sept jours.",
+        "it": "Questo invito scade tra sette giorni.",
+        "nl": "Deze uitnodiging verloopt over zeven dagen.",
+        "pt_BR": "Este convite expira em sete dias."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "email.subject",
+      "text": {
+        "de": "Einladung zum Unternehmen",
+        "es": "Invitación de la empresa",
+        "fr": "Invitation de l’entreprise",
+        "it": "Invito dell’azienda",
+        "nl": "Uitnodiging voor het bedrijf",
+        "pt_BR": "Convite da empresa"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitation.description",
+      "text": {
+        "de": "Senden Sie eine Einladung für diesen Arbeitsbereich.",
+        "es": "Envía una invitación para unirse a este espacio de trabajo.",
+        "fr": "Envoyez une invitation pour rejoindre cet espace de travail.",
+        "it": "Invia un invito a entrare in quest’area di lavoro.",
+        "nl": "Stuur een uitnodiging om lid te worden van deze werkruimte.",
+        "pt_BR": "Envie um convite para participar deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitation.email",
+      "text": {
+        "de": "E-Mail-Adresse",
+        "es": "Dirección de correo electrónico",
+        "fr": "Adresse e-mail",
+        "it": "Indirizzo email",
+        "nl": "E-mailadres",
+        "pt_BR": "Endereço de e-mail"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitation.heading",
+      "text": {
+        "de": "Teammitglied einladen",
+        "es": "Invitar a un compañero",
+        "fr": "Inviter un membre de l’équipe",
+        "it": "Invita un collega",
+        "nl": "Een teamlid uitnodigen",
+        "pt_BR": "Convidar alguém para a equipe"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitation.role",
+      "text": {
+        "de": "Rolle im Arbeitsbereich",
+        "es": "Rol en el espacio de trabajo",
+        "fr": "Rôle dans l’espace de travail",
+        "it": "Ruolo nell’area di lavoro",
+        "nl": "Rol in de werkruimte",
+        "pt_BR": "Função no espaço de trabalho"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitation.role_guidance",
+      "text": {
+        "de": "Beschreibungen der Arbeitsbereichsrollen",
+        "es": "Descripciones de los roles del espacio de trabajo",
+        "fr": "Descriptions des rôles de l’espace de travail",
+        "it": "Descrizioni dei ruoli dell’area di lavoro",
+        "nl": "Beschrijvingen van werkruimterollen",
+        "pt_BR": "Descrições das funções do espaço de trabalho"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitation.send",
+      "text": {
+        "de": "Einladung senden",
+        "es": "Enviar invitación",
+        "fr": "Envoyer l’invitation",
+        "it": "Invia invito",
+        "nl": "Uitnodiging versturen",
+        "pt_BR": "Enviar convite"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.description",
+      "text": {
+        "de": "Ausstehende Einladungen reservieren einen Platz, bis sie angenommen, widerrufen oder abgelaufen sind. Abgelaufene Einladungen können erneut gesendet werden.",
+        "es": "Las invitaciones pendientes reservan una plaza hasta que se aceptan, revocan o caducan. Puedes volver a enviar las invitaciones caducadas.",
+        "fr": "Les invitations en attente réservent une place jusqu’à leur acceptation, leur révocation ou leur expiration. Les invitations expirées peuvent être renvoyées.",
+        "it": "Gli inviti in sospeso riservano un posto finché non vengono accettati, revocati o scadono. Gli inviti scaduti possono essere inviati di nuovo.",
+        "nl": "Openstaande uitnodigingen houden een plaats bezet totdat ze zijn geaccepteerd, ingetrokken of verlopen. Verlopen uitnodigingen kunnen opnieuw worden verstuurd.",
+        "pt_BR": "Convites pendentes reservam uma vaga até serem aceitos, revogados ou expirarem. Convites expirados podem ser reenviados."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.empty",
+      "text": {
+        "de": "Es gibt keine ausstehenden Einladungen.",
+        "es": "No hay invitaciones pendientes.",
+        "fr": "Il n’y a aucune invitation en attente.",
+        "it": "Non ci sono inviti in sospeso.",
+        "nl": "Er zijn geen openstaande uitnodigingen.",
+        "pt_BR": "Não há convites pendentes."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.expired",
+      "text": {
+        "de": "Abgelaufen",
+        "es": "Caducada",
+        "fr": "Expirée",
+        "it": "Scaduto",
+        "nl": "Verlopen",
+        "pt_BR": "Expirado"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.expires",
+      "text": {
+        "de": "Läuft ab",
+        "es": "Caduca",
+        "fr": "Expire le",
+        "it": "Scade",
+        "nl": "Verloopt",
+        "pt_BR": "Expira"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.heading",
+      "text": {
+        "de": "Einladungen",
+        "es": "Invitaciones",
+        "fr": "Invitations",
+        "it": "Inviti",
+        "nl": "Uitnodigingen",
+        "pt_BR": "Convites"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.per_page",
+      "text": {
+        "de": "Einladungen pro Seite",
+        "es": "Invitaciones por página",
+        "fr": "Invitations par page",
+        "it": "Inviti per pagina",
+        "nl": "Uitnodigingen per pagina",
+        "pt_BR": "Convites por página"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.resend",
+      "text": {
+        "de": "Erneut senden",
+        "es": "Volver a enviar",
+        "fr": "Renvoyer",
+        "it": "Invia di nuovo",
+        "nl": "Opnieuw versturen",
+        "pt_BR": "Reenviar"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.resend_for",
+      "text": {
+        "de": "Einladung an :email erneut senden",
+        "es": "Volver a enviar la invitación a :email",
+        "fr": "Renvoyer l’invitation à :email",
+        "it": "Invia di nuovo l’invito a :email",
+        "nl": "Uitnodiging opnieuw versturen naar :email",
+        "pt_BR": "Reenviar convite para :email"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.revoke",
+      "text": {
+        "de": "Widerrufen",
+        "es": "Revocar",
+        "fr": "Révoquer",
+        "it": "Revoca",
+        "nl": "Intrekken",
+        "pt_BR": "Revogar"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.revoke_for",
+      "text": {
+        "de": "Einladung an :email widerrufen",
+        "es": "Revocar la invitación a :email",
+        "fr": "Révoquer l’invitation à :email",
+        "it": "Revoca l’invito a :email",
+        "nl": "Uitnodiging aan :email intrekken",
+        "pt_BR": "Revogar o convite para :email"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "invitations.table_caption",
+      "text": {
+        "de": "Arbeitsbereichseinladungen, die noch nicht angenommen oder widerrufen wurden",
+        "es": "Invitaciones del espacio de trabajo que aún no se han aceptado ni revocado",
+        "fr": "Invitations à l’espace de travail qui n’ont pas encore été acceptées ni révoquées",
+        "it": "Inviti all’area di lavoro non ancora accettati né revocati",
+        "nl": "Uitnodigingen voor de werkruimte die nog niet zijn geaccepteerd of ingetrokken",
+        "pt_BR": "Convites para o espaço de trabalho que ainda não foram aceitos nem revogados"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.actions",
+      "text": {
+        "de": "Mitgliederaktionen",
+        "es": "Acciones para miembros",
+        "fr": "Actions sur les membres",
+        "it": "Azioni sui membri",
+        "nl": "Ledenacties",
+        "pt_BR": "Ações para membros"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.active_count",
+      "text": {
+        "de": "Mitglieder einschließlich Inhaber",
+        "es": "Miembros, incluido el propietario",
+        "fr": "Membres, propriétaire inclus",
+        "it": "Membri, titolare incluso",
+        "nl": "Leden, inclusief eigenaar",
+        "pt_BR": "Membros, incluindo o proprietário"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.change_role_for",
+      "text": {
+        "de": "Rolle für :name ändern",
+        "es": "Cambiar el rol de :name",
+        "fr": "Modifier le rôle de :name",
+        "it": "Cambia il ruolo di :name",
+        "nl": "Rol wijzigen voor :name",
+        "pt_BR": "Alterar a função de :name"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.description",
+      "text": {
+        "de": "Verwalten Sie Mitglieder, Rollen und Einladungen für diesen Arbeitsbereich.",
+        "es": "Administra los miembros, sus roles y las invitaciones del espacio de trabajo.",
+        "fr": "Gérez les membres, leurs rôles et les invitations de cet espace de travail.",
+        "it": "Gestisci i membri, i loro ruoli e gli inviti per quest’area di lavoro.",
+        "nl": "Beheer de leden, hun rollen en uitnodigingen van deze werkruimte.",
+        "pt_BR": "Gerencie os membros, suas funções e os convites deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.eyebrow",
+      "text": {
+        "de": "Workspace-Team",
+        "es": "Equipo del espacio de trabajo",
+        "fr": "Équipe de l’espace de travail",
+        "it": "Team dell’area di lavoro",
+        "nl": "Team van de werkruimte",
+        "pt_BR": "Equipe do espaço de trabalho"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.heading",
+      "text": {
+        "de": "Teammitglieder",
+        "es": "Miembros del equipo",
+        "fr": "Membres de l’équipe",
+        "it": "Membri del team",
+        "nl": "Teamleden",
+        "pt_BR": "Membros da equipe"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.list_description",
+      "text": {
+        "de": "Der Eigentümer des Arbeitsbereichs kann weder entfernt noch einer anderen Rolle zugewiesen werden.",
+        "es": "El propietario del espacio de trabajo no se puede eliminar ni asignar a otro rol.",
+        "fr": "Le propriétaire de l’espace de travail ne peut pas être supprimé ni se voir attribuer un autre rôle.",
+        "it": "Il proprietario dell’area di lavoro non può essere rimosso né assegnato a un altro ruolo.",
+        "nl": "De eigenaar van de werkruimte kan niet worden verwijderd of een andere rol krijgen.",
+        "pt_BR": "O proprietário do espaço de trabalho não pode ser removido nem receber outra função."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.list_heading",
+      "text": {
+        "de": "Aktuelle Mitglieder",
+        "es": "Miembros actuales",
+        "fr": "Membres actuels",
+        "it": "Membri attuali",
+        "nl": "Huidige leden",
+        "pt_BR": "Membros atuais"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.no_members",
+      "text": {
+        "de": "Es gibt noch keine weiteren Mitglieder.",
+        "es": "Aún no hay más miembros.",
+        "fr": "Il n’y a pas encore d’autres membres.",
+        "it": "Non ci sono ancora altri membri.",
+        "nl": "Er zijn nog geen andere leden.",
+        "pt_BR": "Ainda não há outros membros."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.no_seats_available",
+      "text": {
+        "de": "Es sind keine Plätze verfügbar. Prüfen Sie die Mitglieder und ausstehenden Einladungen oder wenden Sie sich an den Support zu Ihrem Tarif.",
+        "es": "No quedan plazas disponibles. Revisa los miembros y las invitaciones pendientes o consulta con soporte sobre tu plan.",
+        "fr": "Il ne reste aucune place disponible. Vérifiez les membres et les invitations en attente, ou contactez l’assistance au sujet de votre offre.",
+        "it": "Non ci sono posti disponibili. Controlla i membri e gli inviti in sospeso oppure contatta l’assistenza per il tuo piano.",
+        "nl": "Er zijn geen plaatsen beschikbaar. Controleer de leden en openstaande uitnodigingen of neem contact op met support over je abonnement.",
+        "pt_BR": "Não há vagas disponíveis. Confira os membros e convites pendentes ou fale com o suporte sobre seu plano."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.owner_label",
+      "text": {
+        "de": "Eigentümer des Arbeitsbereichs",
+        "es": "Propietario del espacio de trabajo",
+        "fr": "Propriétaire de l’espace de travail",
+        "it": "Proprietario dell’area di lavoro",
+        "nl": "Eigenaar van de werkruimte",
+        "pt_BR": "Proprietário do espaço de trabalho"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.pending_count",
+      "text": {
+        "de": "Ausstehende Einladungen",
+        "es": "Invitaciones pendientes",
+        "fr": "Invitations en attente",
+        "it": "Inviti in sospeso",
+        "nl": "Openstaande uitnodigingen",
+        "pt_BR": "Convites pendentes"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.per_page",
+      "text": {
+        "de": "Mitglieder pro Seite",
+        "es": "Miembros por página",
+        "fr": "Membres par page",
+        "it": "Membri per pagina",
+        "nl": "Leden per pagina",
+        "pt_BR": "Membros por página"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.person",
+      "text": {
+        "de": "Mitglied",
+        "es": "Miembro",
+        "fr": "Membre",
+        "it": "Membro",
+        "nl": "Lid",
+        "pt_BR": "Membro"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.remove",
+      "text": {
+        "de": "Entfernen",
+        "es": "Quitar",
+        "fr": "Retirer",
+        "it": "Rimuovi",
+        "nl": "Verwijderen",
+        "pt_BR": "Remover"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.remove_member",
+      "text": {
+        "de": ":name aus dem Arbeitsbereich entfernen",
+        "es": "Quitar a :name del espacio de trabajo",
+        "fr": "Retirer :name de l’espace de travail",
+        "it": "Rimuovi :name dall’area di lavoro",
+        "nl": ":name uit de werkruimte verwijderen",
+        "pt_BR": "Remover :name do espaço de trabalho"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.save_role",
+      "text": {
+        "de": "Rolle speichern",
+        "es": "Guardar rol",
+        "fr": "Enregistrer le rôle",
+        "it": "Salva ruolo",
+        "nl": "Rol opslaan",
+        "pt_BR": "Salvar função"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.save_role_for",
+      "text": {
+        "de": "Rolle für :name speichern",
+        "es": "Guardar el rol de :name",
+        "fr": "Enregistrer le rôle de :name",
+        "it": "Salva il ruolo di :name",
+        "nl": "Rol voor :name opslaan",
+        "pt_BR": "Salvar a função de :name"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.seats_used",
+      "text": {
+        "de": "Belegte Plätze",
+        "es": "Plazas utilizadas",
+        "fr": "Places utilisées",
+        "it": "Posti utilizzati",
+        "nl": "Gebruikte plaatsen",
+        "pt_BR": "Vagas utilizadas"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.table_caption",
+      "text": {
+        "de": "Mitglieder des Arbeitsbereichs und ihre Rollen",
+        "es": "Miembros del espacio de trabajo y sus roles",
+        "fr": "Membres de l’espace de travail et leurs rôles",
+        "it": "Membri dell’area di lavoro e relativi ruoli",
+        "nl": "Leden van de werkruimte en hun rollen",
+        "pt_BR": "Membros do espaço de trabalho e suas funções"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.team_needed_description",
+      "text": {
+        "de": "Der aktuelle Tarif dieses Unternehmens umfasst keine Teamarbeit. Wenden Sie sich an den Support, um einen Tarif mit Teamzugang zu besprechen.",
+        "es": "El plan actual de esta empresa no incluye colaboración en equipo. Contacta con soporte para consultar un plan con acceso de equipo.",
+        "fr": "L’offre actuelle de cette entreprise ne comprend pas la collaboration en équipe. Contactez l’assistance pour étudier une offre avec accès d’équipe.",
+        "it": "Il piano attuale di questa azienda non include la collaborazione in team. Contatta l’assistenza per valutare un piano con accesso per il team.",
+        "nl": "Het huidige abonnement van dit bedrijf bevat geen teamsamenwerking. Neem contact op met support om een abonnement met teamtoegang te bespreken.",
+        "pt_BR": "O plano atual desta empresa não inclui colaboração em equipe. Fale com o suporte para conhecer um plano com acesso para a equipe."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "members.team_needed_heading",
+      "text": {
+        "de": "Teamplätze sind nicht verfügbar",
+        "es": "No hay plazas de equipo disponibles",
+        "fr": "Aucune place d’équipe n’est disponible",
+        "it": "I posti per il team non sono disponibili",
+        "nl": "Er zijn geen teamplaatsen beschikbaar",
+        "pt_BR": "Não há vagas para a equipe"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.admin",
+      "text": {
+        "de": "Admin",
+        "es": "Administrador",
+        "fr": "Administrateur",
+        "it": "Amministratore",
+        "nl": "Beheerder",
+        "pt_BR": "Administrador"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.admin_description",
+      "text": {
+        "de": "Verwaltet den Arbeitsbereich sowie die Rollen Editor und Viewer.",
+        "es": "Gestiona las operaciones del espacio de trabajo y los roles Editor y Viewer.",
+        "fr": "Gère les opérations de l’espace de travail ainsi que les rôles Éditeur et Lecteur.",
+        "it": "Gestisce le operazioni dell’area di lavoro e i ruoli Editor e Lettore.",
+        "nl": "Beheert de werkruimte en de rollen Editor en Viewer.",
+        "pt_BR": "Gerencia as operações do espaço de trabalho e as funções de Editor e Leitor."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.editor",
+      "text": {
+        "de": "Editor",
+        "es": "Editor",
+        "fr": "Éditeur",
+        "it": "Editor",
+        "nl": "Editor",
+        "pt_BR": "Editor"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.editor_description",
+      "text": {
+        "de": "Erstellt und bearbeitet Arbeitsbereichsdaten, kann sie aber nicht löschen oder Formeln sperren bzw. entsperren.",
+        "es": "Crea y edita registros del espacio de trabajo, pero no puede eliminarlos ni bloquear o desbloquear fórmulas.",
+        "fr": "Crée et modifie les données de l’espace de travail, sans pouvoir les supprimer ni verrouiller ou déverrouiller les formules.",
+        "it": "Crea e modifica i dati dell’area di lavoro, ma non può eliminarli né bloccare o sbloccare le formule.",
+        "nl": "Maakt werkruimterecords aan en bewerkt ze, maar kan ze niet verwijderen of formules vergrendelen of ontgrendelen.",
+        "pt_BR": "Cria e edita registros do espaço de trabalho, mas não pode excluí-los nem bloquear ou desbloquear fórmulas."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.owner",
+      "text": {
+        "de": "Eigentümer",
+        "es": "Propietario",
+        "fr": "Propriétaire",
+        "it": "Proprietario",
+        "nl": "Eigenaar",
+        "pt_BR": "Proprietário"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.viewer",
+      "text": {
+        "de": "Viewer",
+        "es": "Lector",
+        "fr": "Lecteur",
+        "it": "Lettore",
+        "nl": "Viewer",
+        "pt_BR": "Leitor"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "roles.viewer_description",
+      "text": {
+        "de": "Kann Arbeitsbereichsdaten anzeigen, durchsuchen und exportieren.",
+        "es": "Puede ver, buscar y exportar los datos del espacio de trabajo.",
+        "fr": "Peut consulter, rechercher et exporter les données de l’espace de travail.",
+        "it": "Può visualizzare, cercare ed esportare i dati dell’area di lavoro.",
+        "nl": "Kan werkruimtedata bekijken, doorzoeken en exporteren.",
+        "pt_BR": "Pode visualizar, pesquisar e exportar os dados do espaço de trabalho."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.change_company",
+      "text": {
+        "de": "Unternehmen wechseln. Aktuelles Unternehmen: :company",
+        "es": "Cambiar de empresa. Empresa actual: :company",
+        "fr": "Changer d’entreprise. Entreprise actuelle : :company",
+        "it": "Cambia azienda. Azienda attuale: :company",
+        "nl": "Bedrijf wisselen. Huidig bedrijf: :company",
+        "pt_BR": "Trocar de empresa. Empresa atual: :company"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.choose_workspace",
+      "text": {
+        "de": "Arbeitsbereich auswählen",
+        "es": "Elegir espacio de trabajo",
+        "fr": "Choisir un espace de travail",
+        "it": "Scegli uno spazio di lavoro",
+        "nl": "Werkruimte kiezen",
+        "pt_BR": "Escolher espaço de trabalho"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.current_badge",
+      "text": {
+        "de": "Aktuelles Unternehmen",
+        "es": "Empresa actual",
+        "fr": "Entreprise actuelle",
+        "it": "Azienda attuale",
+        "nl": "Huidig bedrijf",
+        "pt_BR": "Empresa atual"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.current_company",
+      "text": {
+        "de": "Aktuelles Unternehmen",
+        "es": "Empresa actual",
+        "fr": "Entreprise actuelle",
+        "it": "Azienda attuale",
+        "nl": "Huidig bedrijf",
+        "pt_BR": "Empresa atual"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.empty",
+      "text": {
+        "de": "Für dieses Konto sind keine Unternehmen verfügbar.",
+        "es": "Esta cuenta no tiene empresas disponibles.",
+        "fr": "Aucune entreprise n’est disponible pour ce compte.",
+        "it": "Nessuna azienda è disponibile per questo account.",
+        "nl": "Er zijn geen bedrijven beschikbaar voor dit account.",
+        "pt_BR": "Não há empresas disponíveis para esta conta."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.next_page",
+      "text": {
+        "de": "Nächste Seite",
+        "es": "Página siguiente",
+        "fr": "Page suivante",
+        "it": "Pagina successiva",
+        "nl": "Volgende pagina",
+        "pt_BR": "Próxima página"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.no_results",
+      "text": {
+        "de": "Keine Unternehmen entsprechen Ihrer Suche.",
+        "es": "Ninguna empresa coincide con tu búsqueda.",
+        "fr": "Aucune entreprise ne correspond à votre recherche.",
+        "it": "Nessuna azienda corrisponde alla tua ricerca.",
+        "nl": "Er zijn geen bedrijven die overeenkomen met je zoekopdracht.",
+        "pt_BR": "Nenhuma empresa corresponde à sua busca."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.open_tabs_notice",
+      "text": {
+        "de": "Ihre Auswahl gilt auch für andere geöffnete Tabs. Speichern Sie dort Ihre Arbeit, bevor Sie wechseln.",
+        "es": "Tu selección también se aplica a las otras pestañas abiertas. Guarda allí tu trabajo antes de cambiar.",
+        "fr": "Votre sélection s’applique aussi aux autres onglets ouverts. Enregistrez-y votre travail avant de changer.",
+        "it": "La tua selezione si applica anche alle altre schede aperte. Salva lì il tuo lavoro prima di cambiare.",
+        "nl": "Je selectie geldt ook voor je andere geopende tabbladen. Sla daar je werk op voordat je wisselt.",
+        "pt_BR": "Sua seleção também se aplica às outras abas abertas. Salve seu trabalho nelas antes de trocar."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.page_description",
+      "text": {
+        "de": "Wählen Sie das Unternehmen aus, in dem Sie arbeiten möchten.",
+        "es": "Selecciona la empresa en la que quieres trabajar.",
+        "fr": "Sélectionnez l’entreprise dans laquelle vous souhaitez travailler.",
+        "it": "Seleziona l’azienda in cui vuoi lavorare.",
+        "nl": "Kies het bedrijf waarin je wilt werken.",
+        "pt_BR": "Selecione a empresa em que deseja trabalhar."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.page_heading",
+      "text": {
+        "de": "Unternehmen auswählen",
+        "es": "Elegir una empresa",
+        "fr": "Choisir une entreprise",
+        "it": "Scegli un’azienda",
+        "nl": "Kies een bedrijf",
+        "pt_BR": "Escolher uma empresa"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.page_status",
+      "text": {
+        "de": "Seite :page von :pages",
+        "es": "Página :page de :pages",
+        "fr": "Page :page sur :pages",
+        "it": "Pagina :page di :pages",
+        "nl": "Pagina :page van :pages",
+        "pt_BR": "Página :page de :pages"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.pagination_label",
+      "text": {
+        "de": "Unternehmensseiten",
+        "es": "Páginas de empresas",
+        "fr": "Pages des entreprises",
+        "it": "Pagine delle aziende",
+        "nl": "Bedrijfspagina’s",
+        "pt_BR": "Páginas de empresas"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.previous_page",
+      "text": {
+        "de": "Vorherige Seite",
+        "es": "Página anterior",
+        "fr": "Page précédente",
+        "it": "Pagina precedente",
+        "nl": "Vorige pagina",
+        "pt_BR": "Página anterior"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.search",
+      "text": {
+        "de": "Suchen",
+        "es": "Buscar",
+        "fr": "Rechercher",
+        "it": "Cerca",
+        "nl": "Zoeken",
+        "pt_BR": "Buscar"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.search_label",
+      "text": {
+        "de": "Unternehmen suchen",
+        "es": "Buscar empresas",
+        "fr": "Rechercher des entreprises",
+        "it": "Cerca aziende",
+        "nl": "Bedrijven zoeken",
+        "pt_BR": "Buscar empresas"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.search_placeholder",
+      "text": {
+        "de": "Nach Unternehmensnamen suchen",
+        "es": "Buscar por nombre de empresa",
+        "fr": "Rechercher par nom d’entreprise",
+        "it": "Cerca per nome dell’azienda",
+        "nl": "Zoeken op bedrijfsnaam",
+        "pt_BR": "Buscar pelo nome da empresa"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "selection.switch_to",
+      "text": {
+        "de": "Zu diesem Unternehmen wechseln",
+        "es": "Cambiar a esta empresa",
+        "fr": "Passer à cette entreprise",
+        "it": "Passa a questa azienda",
+        "nl": "Naar dit bedrijf wisselen",
+        "pt_BR": "Trocar para esta empresa"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "status.invitation_resent",
+      "text": {
+        "de": "Einladung erneut gesendet.",
+        "es": "Invitación enviada de nuevo.",
+        "fr": "Invitation renvoyée.",
+        "it": "Invito inviato di nuovo.",
+        "nl": "Uitnodiging opnieuw verzonden.",
+        "pt_BR": "Convite reenviado."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "status.invitation_revoked",
+      "text": {
+        "de": "Einladung widerrufen.",
+        "es": "Invitación revocada.",
+        "fr": "Invitation révoquée.",
+        "it": "Invito revocato.",
+        "nl": "Uitnodiging ingetrokken.",
+        "pt_BR": "Convite revogado."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "status.invitation_sent",
+      "text": {
+        "de": "Einladung gesendet.",
+        "es": "Invitación enviada.",
+        "fr": "Invitation envoyée.",
+        "it": "Invito inviato.",
+        "nl": "Uitnodiging verzonden.",
+        "pt_BR": "Convite enviado."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "status.member_removed",
+      "text": {
+        "de": "Mitglied aus dem Arbeitsbereich entfernt.",
+        "es": "Miembro eliminado del espacio de trabajo.",
+        "fr": "Membre retiré de l’espace de travail.",
+        "it": "Membro rimosso dall’area di lavoro.",
+        "nl": "Lid uit de werkruimte verwijderd.",
+        "pt_BR": "Membro removido do espaço de trabalho."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "status.member_role_updated",
+      "text": {
+        "de": "Mitgliederrolle aktualisiert.",
+        "es": "Rol del miembro actualizado.",
+        "fr": "Rôle du membre mis à jour.",
+        "it": "Ruolo del membro aggiornato.",
+        "nl": "Ledrol bijgewerkt.",
+        "pt_BR": "Função do membro atualizada."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "tabs.members",
+      "text": {
+        "de": "Team",
+        "es": "Equipo",
+        "fr": "Équipe",
+        "it": "Team",
+        "nl": "Team",
+        "pt_BR": "Equipe"
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.already_member",
+      "text": {
+        "de": "Diese Person gehört bereits zum Unternehmen.",
+        "es": "Esta persona ya pertenece a la empresa.",
+        "fr": "Cette personne fait déjà partie de l’entreprise.",
+        "it": "Questa persona fa già parte dell’azienda.",
+        "nl": "Deze persoon is al lid van het bedrijf.",
+        "pt_BR": "Esta pessoa já faz parte da empresa."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.cooldown",
+      "text": {
+        "de": "Bitte warten Sie, bevor Sie eine weitere Einladung senden.",
+        "es": "Espera antes de enviar otra invitación.",
+        "fr": "Veuillez patienter avant d’envoyer une autre invitation.",
+        "it": "Attendi prima di inviare un altro invito.",
+        "nl": "Wacht even voordat je nog een uitnodiging verstuurt.",
+        "pt_BR": "Aguarde antes de enviar outro convite."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.duplicate_invitation",
+      "text": {
+        "de": "Für diese Adresse gibt es bereits eine ausstehende Einladung.",
+        "es": "Ya existe una invitación pendiente para esta dirección.",
+        "fr": "Une invitation est déjà en attente pour cette adresse.",
+        "it": "Esiste già un invito in sospeso per questo indirizzo.",
+        "nl": "Er staat al een uitnodiging open voor dit adres.",
+        "pt_BR": "Já existe um convite pendente para este endereço."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.invitation_limit",
+      "text": {
+        "de": "Für dieses Unternehmen sind zu viele Einladungen ausstehend.",
+        "es": "Hay demasiadas invitaciones pendientes para esta empresa.",
+        "fr": "Trop d’invitations sont en attente pour cette entreprise.",
+        "it": "Ci sono troppi inviti in sospeso per questa azienda.",
+        "nl": "Er staan te veel uitnodigingen open voor dit bedrijf.",
+        "pt_BR": "Há convites pendentes demais para esta empresa."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.rate_limited",
+      "text": {
+        "de": "Zu viele Einladungsanfragen. Bitte versuchen Sie es später erneut.",
+        "es": "Hay demasiadas solicitudes de invitación. Inténtalo de nuevo más tarde.",
+        "fr": "Trop de demandes d’invitation. Veuillez réessayer plus tard.",
+        "it": "Troppe richieste di invito. Riprova più tardi.",
+        "nl": "Te veel uitnodigingsverzoeken. Probeer het later opnieuw.",
+        "pt_BR": "Há solicitações de convite demais. Tente novamente mais tarde."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.seats_full",
+      "text": {
+        "de": "Es sind keine Unternehmensplätze verfügbar.",
+        "es": "No hay plazas disponibles en la empresa.",
+        "fr": "Il n’y a plus de places disponibles pour l’entreprise.",
+        "it": "Non ci sono posti disponibili nell’azienda.",
+        "nl": "Er zijn geen bedrijfsplaatsen beschikbaar.",
+        "pt_BR": "Não há vagas disponíveis na empresa."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.sign_in",
+      "text": {
+        "de": "Melden Sie sich mit der eingeladenen E-Mail-Adresse an, um diese Einladung anzunehmen.",
+        "es": "Inicia sesión con la dirección de correo invitada para aceptar esta invitación.",
+        "fr": "Connectez-vous avec l’adresse e-mail invitée pour accepter cette invitation.",
+        "it": "Accedi con l’indirizzo email invitato per accettare questo invito.",
+        "nl": "Meld je aan met het uitgenodigde e-mailadres om deze uitnodiging te accepteren.",
+        "pt_BR": "Entre com o e-mail convidado para aceitar este convite."
+      }
+    },
+    {
+      "group": "workspaces",
+      "key": "validation.unavailable",
+      "text": {
+        "de": "Diese Einladung ist nicht mehr verfügbar.",
+        "es": "Esta invitación ya no está disponible.",
+        "fr": "Cette invitation n’est plus disponible.",
+        "it": "Questo invito non è più disponibile.",
+        "nl": "Deze uitnodiging is niet meer beschikbaar.",
+        "pt_BR": "Este convite não está mais disponível."
       }
     }
   ]

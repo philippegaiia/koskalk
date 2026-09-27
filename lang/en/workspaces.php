@@ -98,4 +98,22 @@ return [
         'rate_limited' => 'Too many invitation requests. Please try again later.',
         'sign_in' => 'Sign in with the invited email address to accept this invitation.',
     ],
+    'acceptance' => [
+        'page_heading' => 'Join company',
+        'invited_description' => 'You have been invited to join :company.',
+        'invited_email' => 'Invited email',
+        'wrong_email_description' => 'You are signed in with a different email address. Sign out, then reopen this invitation and sign in with the invited email address.',
+        'verify_email_description' => 'Verify your email address before accepting this invitation, then return to this link.',
+        'verify_email' => 'Verify email address',
+        'sign_in_description' => 'Sign in with the invited email address to join this company.',
+        'name' => 'Name',
+        'create_password' => 'Create password',
+        'confirm_password' => 'Confirm password',
+        'accept' => 'Accept invitation',
+        'expires' => 'This invitation expires :time.',
+    ],
+    'email' => [
+        'subject' => 'Company invitation',
+        'expires' => 'This invitation expires in seven days.',
+    ],
 ];

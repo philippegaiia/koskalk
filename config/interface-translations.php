@@ -23,11 +23,13 @@ return [
         'workbench' => ['*'],
         'number_formats' => ['*'],
         'public' => ['*'],
+        'workspaces' => ['*'],
         'auth' => [
             'password_requirements',
             'password_optional_reset',
             'login.*',
             'verification.*',
+            'beta_invitation.*',
         ],
     ],
 ];

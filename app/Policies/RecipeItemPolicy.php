@@ -2,14 +2,13 @@
 
 namespace App\Policies;
 
+use App\Models\Recipe;
 use App\Models\RecipeItem;
+use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Policies\Concerns\HandlesWorkspaceAuthorization;
 
 class RecipeItemPolicy
 {
-    use HandlesWorkspaceAuthorization;
-
     public function viewAny(User $user): bool
     {
         return true;
@@ -17,32 +16,22 @@ class RecipeItemPolicy
 
     public function view(User $user, RecipeItem $recipeItem): bool
     {
-        return $recipeItem->isAccessibleBy($user);
+        return $this->can($user, 'view', $recipeItem);
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('create', Recipe::class);
     }
 
     public function update(User $user, RecipeItem $recipeItem): bool
     {
-        if ($recipeItem->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipeItem->tenantWorkspaceId() !== null
-            && $this->canEditWorkspaceRecords($user, $recipeItem->tenantWorkspaceId());
+        return $this->can($user, 'update', $recipeItem);
     }
 
     public function delete(User $user, RecipeItem $recipeItem): bool
     {
-        if ($recipeItem->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipeItem->tenantWorkspaceId() !== null
-            && $this->canDeleteWorkspaceRecords($user, $recipeItem->tenantWorkspaceId());
+        return $this->can($user, 'delete', $recipeItem);
     }
 
     public function restore(User $user, RecipeItem $recipeItem): bool
@@ -53,5 +42,14 @@ class RecipeItemPolicy
     public function forceDelete(User $user, RecipeItem $recipeItem): bool
     {
         return false;
+    }
+
+    private function can(User $user, string $ability, RecipeItem $recipeItem): bool
+    {
+        $version = $recipeItem->recipeVersion()->withoutGlobalScopes()->first();
+
+        return $version instanceof RecipeVersion
+            && $version->workspace_id === $recipeItem->workspace_id
+            && $user->can($ability, $version);
     }
 }

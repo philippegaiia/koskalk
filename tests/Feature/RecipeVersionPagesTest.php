@@ -5,10 +5,13 @@ use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
+use App\Livewire\Dashboard\RecipesIndex;
+use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\InterfaceTranslation;
 use App\Models\MediaAsset;
+use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
@@ -18,6 +21,7 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\MediaAssetUsageService;
@@ -27,6 +31,7 @@ use App\Support\RichContentAttachmentPaths;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -205,8 +210,8 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    // Includes the short snapshot transaction, parent locks and revision lookup.
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(46)
+    // Includes snapshot locks/revisions and fresh update/create policy checks; render reuses the mount result.
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(56)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 
@@ -492,7 +497,7 @@ it('renders the procedure stored on the selected formula snapshot', function () 
 
 it('renders inline SOP media stored on the selected historical formula snapshot', function () {
     [$user, $recipe, $historicalVersion] = createSavedRecipeVersion();
-    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $workspace = $user->company();
     $recipe->update(['workspace_id' => $workspace->id]);
     $historicalVersion->update(['workspace_id' => $workspace->id]);
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id, 'original_filename' => 'Historic SOP.webp']);
@@ -515,7 +520,7 @@ it('renders inline SOP media stored on the selected historical formula snapshot'
 
 it('renders inline SOP media from the current version rather than the mutable recipe', function () {
     [$user, $recipe] = createSavedRecipeVersion();
-    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $workspace = $user->company();
     $recipe->update(['workspace_id' => $workspace->id]);
     $currentVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
@@ -553,7 +558,7 @@ it('renders inline SOP media from the current version rather than the mutable re
 
 it('copies SOP media from the synchronized current version to both versions created by publish', function () {
     [$user, $recipe] = createSavedRecipeVersion();
-    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $workspace = $user->company();
     $recipe->update(['workspace_id' => $workspace->id]);
     RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
     $currentVersion = RecipeVersion::withoutGlobalScopes()
@@ -592,7 +597,7 @@ it('copies SOP media from the synchronized current version to both versions crea
 
 it('copies SOP media from the restored source version rather than recipe or current media', function () {
     [$user, $recipe, $sourceVersion] = createSavedRecipeVersion();
-    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $workspace = $user->company();
     $recipe->update(['workspace_id' => $workspace->id]);
     RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
     $currentVersion = RecipeVersion::withoutGlobalScopes()
@@ -646,7 +651,7 @@ it('copies featured and SOP recipe usages when duplicating and snapshots SOP on 
 
 it('restores source-version SOP media to both the recipe and current version', function () {
     [$user, $recipe, $sourceVersion] = createSavedRecipeVersion();
-    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $workspace = $user->company();
     $recipe->update(['workspace_id' => $workspace->id]);
     RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
     $sourceVersion = RecipeVersion::withoutGlobalScopes()->findOrFail($sourceVersion->id);
@@ -1741,3 +1746,95 @@ function cosmeticSavedFormulaPayload(Ingredient $ingredient): array
         ],
     ];
 }
+
+it('renders shared formulas as read only for viewers without acquiring an editing reservation', function (): void {
+    [$owner, $recipe] = createSavedRecipeVersion();
+    $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipe->workspace_id);
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);
+
+    Livewire::actingAs($viewer)->test(RecipesIndex::class)
+        ->assertSee($recipe->name)
+        ->assertViewHas('canCreateRecipe', false)
+        ->assertViewHas('canUpdateRecipes', fn (array $abilities): bool => $abilities[$recipe->id] === false)
+        ->assertViewHas('canDeleteRecipes', fn (array $abilities): bool => $abilities[$recipe->id] === false);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->assertViewHas('canEditRecipe', false)
+        ->assertViewHas('workbench', fn (array $workbench): bool => $workbench['editing'] === null
+            && $workbench['recipe']['can_duplicate'] === false)
+        ->assertDontSee('wire:click="duplicateRecipe')
+        ->assertSet('editingToken', null);
+
+    $this->get(route('recipes.saved', $recipe))->assertSuccessful()
+        ->assertDontSee('Record production')
+        ->assertDontSeeHtml('action="'.route('recipes.duplicate', $recipe).'"');
+    $this->get(route('recipes.print.technical', $recipe))->assertSuccessful();
+});
+
+it('binds unsaved workbench writes to their original authorized workspace', function (string $action, string $change): void {
+    $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $actor = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    $membership = WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => WorkspaceMemberRole::Editor]);
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeSavedRecipeIngredient();
+    $page = Livewire::actingAs($actor)->test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->assertOk()
+        ->assertSet('creationWorkspaceId', $workspace->id);
+    $payload = $action === 'savePackagingCatalogItem'
+        ? ['name' => 'Must not move', 'unit_cost' => '1.20']
+        : soapVersionDraftPayload($ingredient, 'Must not move');
+
+    if ($change === 'selection') {
+        $otherWorkspace = Workspace::factory()->for($actor, 'owner')->create();
+        $actor->forceFill(['active_workspace_id' => $otherWorkspace->id])->save();
+    } elseif ($change === 'removal') {
+        $membership->delete();
+    } else {
+        $membership->update(['role' => WorkspaceMemberRole::Viewer]);
+    }
+
+    $page->call($action, $payload)->assertForbidden();
+
+    expect(Recipe::withoutGlobalScopes()->count())->toBe(0)
+        ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
+        ->and(PackagingItem::query()->count())->toBe(0);
+})->with(['save', 'publish', 'duplicateFormula', 'savePackagingCatalogItem'])
+    ->with(['selection', 'removal', 'demotion']);
+
+it('allows a guest calculation to be saved after signing in', function (): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeSavedRecipeIngredient();
+    $page = Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->assertOk()
+        ->assertSet('hasCreationWorkspaceContext', false);
+    $actor = User::factory()->create();
+    $workspace = Workspace::factory()->for($actor, 'owner')->create();
+    $this->actingAs($actor);
+
+    $page->call('save', soapVersionDraftPayload($ingredient, 'Signed-in calculation'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    expect(Recipe::withoutGlobalScopes()->sole()->workspace_id)->toBe($workspace->id);
+});
+
+it('does not retarget existing workbench duplication or packaging after switching workspaces', function (string $action): void {
+    [$actor, $recipe] = createSavedRecipeVersion();
+    $ingredient = Ingredient::query()->where('display_name', 'Olive Oil')->firstOrFail();
+    $payload = $action === 'savePackagingCatalogItem'
+        ? ['name' => 'Must not move', 'unit_cost' => '1.20']
+        : soapVersionDraftPayload($ingredient, 'Must not move');
+    $recipeCount = Recipe::withoutGlobalScopes()->count();
+    $versionCount = RecipeVersion::withoutGlobalScopes()->count();
+    $page = Livewire::actingAs($actor)->test(RecipeWorkbench::class, ['recipe' => $recipe])->assertOk();
+    $otherWorkspace = Workspace::factory()->for($actor, 'owner')->create();
+    $actor->forceFill(['active_workspace_id' => $otherWorkspace->id])->save();
+
+    $page->call($action, $payload)->assertNotFound();
+
+    expect(Recipe::withoutGlobalScopes()->count())->toBe($recipeCount)
+        ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe($versionCount)
+        ->and(PackagingItem::query()->count())->toBe(0);
+})->with(['duplicateFormula', 'savePackagingCatalogItem']);

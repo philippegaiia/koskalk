@@ -38,6 +38,8 @@ class RecipeController extends Controller
 
     public function start(ProductCreationCatalog $productCreationCatalog): View
     {
+        $this->authorize('create', Recipe::class);
+
         if (! config('products.quick_creation_enabled')) {
             return $this->guidedStart($productCreationCatalog);
         }
@@ -50,6 +52,8 @@ class RecipeController extends Controller
 
     public function guidedStart(ProductCreationCatalog $productCreationCatalog): View
     {
+        $this->authorize('create', Recipe::class);
+
         return view('recipes.create-start', [
             'entries' => $productCreationCatalog->entries(),
             'guided' => true,
@@ -58,6 +62,8 @@ class RecipeController extends Controller
 
     public function chooseProductType(Request $request, string $entry, ProductCreationCatalog $productCreationCatalog): View
     {
+        $this->authorize('create', Recipe::class);
+
         $entryData = $productCreationCatalog->entries()[$entry] ?? null;
         abort_if($entryData === null, 404);
 
@@ -71,6 +77,8 @@ class RecipeController extends Controller
 
     public function create(Request $request): View|RedirectResponse
     {
+        $this->authorize('create', Recipe::class);
+
         $productFamilySlug = $request->string('family')->toString() ?: 'soap';
         $productTypeSlug = $request->string('type')->toString();
         $productFamily = ProductFamily::query()
@@ -142,23 +150,43 @@ class RecipeController extends Controller
     ): View {
         $viewData = $recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query());
         $canUpdateRecipe = $user !== null && $user->can('update', $recipe);
+        $canDuplicateRecipe = $user !== null && $user->can('create', Recipe::class);
         $canRecordProduction = $canUpdateRecipe
             && $entitlementService->canCreateProductionBatch($user);
+
+        $productionBatches = collect();
+        if ($user !== null && $user->can('view', $recipe)) {
+            $productionBatches = $recipe->productionBatches()
+                ->where(function (Builder $query) use ($recipe, $user): void {
+                    if ($recipe->workspace_id !== null) {
+                        $query->where('workspace_id', $recipe->workspace_id);
+                    } else {
+                        $query->whereRaw('1 = 0');
+                    }
+
+                    $query->orWhere(function (Builder $legacyQuery) use ($user): void {
+                        $legacyQuery
+                            ->whereNull('workspace_id')
+                            ->where('user_id', $user->id);
+                    });
+                })
+                ->limit(8)
+                ->get()
+                ->filter(fn ($productionBatch): bool => $user->can('view', $productionBatch))
+                ->values();
+        }
 
         return view('recipes.version', [
             ...$viewData,
             'isHistorical' => $isHistorical,
+            'canUpdateRecipe' => $canUpdateRecipe,
             'canRestoreVersion' => $canUpdateRecipe,
+            'canDuplicateRecipe' => $canDuplicateRecipe,
             'canRecordProduction' => $canRecordProduction,
             'productionPreview' => $user !== null
                 ? $this->productionPreview($recipe, $version, $user, $viewData, $recipeVersionCostPreviewBuilder)
                 : null,
-            'productionBatches' => $canUpdateRecipe
-                ? $recipe->productionBatches()
-                    ->where('user_id', $user->id)
-                    ->limit(8)
-                    ->get()
-                : collect(),
+            'productionBatches' => $productionBatches,
         ]);
     }
 
@@ -172,6 +200,7 @@ class RecipeController extends Controller
         abort_unless($user !== null, 403);
 
         $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+        $this->authorize('create', Recipe::class);
         $duplicateDraft = $recipeWorkbenchService->duplicateRecipe($user, $recipe);
         $duplicateRecipe = Recipe::withoutGlobalScopes()->findOrFail($duplicateDraft->recipe_id);
 

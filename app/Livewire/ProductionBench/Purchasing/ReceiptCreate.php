@@ -10,6 +10,7 @@ use App\Enums\ListingPriceBasis;
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockUnitKind;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
@@ -45,6 +46,7 @@ use Livewire\Component;
 class ReceiptCreate extends Component implements HasForms
 {
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
 
     #[Url(except: '')]
@@ -726,6 +728,6 @@ class ReceiptCreate extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

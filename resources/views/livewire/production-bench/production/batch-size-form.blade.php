@@ -22,26 +22,26 @@
             <div class="grid gap-4 md:grid-cols-3">
                 <label class="text-sm md:col-span-3">
                     <span class="font-medium">{{ __('production_bench.settings.preset_name') }}</span>
-                    <input wire:model="name" class="sk-input mt-1 w-full" placeholder="SOAP 100G" @disabled(! $isBenchActive || $isReadOnly)>
+                    <input wire:model="name" class="sk-input mt-1 w-full" placeholder="SOAP 100G" @disabled(! $canConfigure)>
                     @error('name')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                 </label>
                 <label class="text-sm md:col-span-2">
                     <span class="font-medium">{{ __('production_bench.settings.batch_size') }}</span>
                     <span class="mt-1 flex gap-2">
-                        <input wire:model="basisInputValue" type="text" inputmode="decimal" class="sk-input min-w-0 flex-1" placeholder="12" @disabled(! $isBenchActive || $isReadOnly)>
-                        <select wire:model="basisInputUnit" class="sk-input w-24" @disabled(! $isBenchActive || $isReadOnly)>@foreach ($massUnits as $unit)<option value="{{ $unit->value }}">{{ $unit->value }}</option>@endforeach</select>
+                        <input wire:model="basisInputValue" type="text" inputmode="decimal" class="sk-input min-w-0 flex-1" placeholder="12" @disabled(! $canConfigure)>
+                        <select wire:model="basisInputUnit" class="sk-input w-24" @disabled(! $canConfigure)>@foreach ($massUnits as $unit)<option value="{{ $unit->value }}">{{ $unit->value }}</option>@endforeach</select>
                     </span>
                     <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.settings.batch_size_help') }}</span>
                     @error('basisInputValue')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                 </label>
                 <label class="text-sm">
                     <span class="font-medium">{{ __('production_bench.settings.expected_units') }}</span>
-                    <input wire:model="expectedUnits" type="number" min="1" step="1" inputmode="numeric" class="sk-input mt-1 w-full" placeholder="100" @disabled(! $isBenchActive || $isReadOnly)>
+                    <input wire:model="expectedUnits" type="number" min="1" step="1" inputmode="numeric" class="sk-input mt-1 w-full" placeholder="100" @disabled(! $canConfigure)>
                     @error('expectedUnits')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                 </label>
             </div>
             <label class="flex items-start gap-3 text-sm">
-                <input wire:model="isActive" type="checkbox" class="mt-0.5 size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $isBenchActive || $isReadOnly)>
+                <input wire:model="isActive" type="checkbox" class="mt-0.5 size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $canConfigure)>
                 <span><span class="font-medium text-[var(--color-ink-strong)]">{{ $isActive ? __('production_bench.common.active') : __('production_bench.common.inactive') }}</span><span class="mt-1 block text-[var(--color-ink-soft)]">{{ __('production_bench.settings.batch_size_active_help') }}</span></span>
             </label>
         </section>
@@ -66,8 +66,8 @@
                             @php($isSelected = in_array((string) $recipe->id, array_map('strval', $selectedRecipeIds), true))
                             <tr wire:key="batch-size-product-{{ $recipe->id }}">
                                 <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ $recipe->name }}</td>
-                                <td class="px-4 py-3 text-center"><input wire:model.live="selectedRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $isBenchActive || $isReadOnly) aria-label="{{ __('production_bench.settings.applicable_product', ['product' => $recipe->name]) }}"></td>
-                                <td class="px-4 py-3 text-center"><input wire:model.live="defaultRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $isBenchActive || $isReadOnly) aria-label="{{ __('production_bench.settings.default_product', ['product' => $recipe->name]) }}"></td>
+                                <td class="px-4 py-3 text-center"><input wire:model.live="selectedRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $canConfigure) aria-label="{{ __('production_bench.settings.applicable_product', ['product' => $recipe->name]) }}"></td>
+                                <td class="px-4 py-3 text-center"><input wire:model.live="defaultRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $canConfigure) aria-label="{{ __('production_bench.settings.default_product', ['product' => $recipe->name]) }}"></td>
                             </tr>
                         @empty
                             <tr><td colspan="3" class="px-4 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.no_matching_products') }}</td></tr>
@@ -81,7 +81,7 @@
 
         <div class="flex flex-wrap justify-end gap-2">
             <a href="{{ route('production-bench.production.settings.presets') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.common.cancel') }}</a>
-            <button type="submit" class="sk-btn sk-btn-primary" @disabled(! $isBenchActive || $isReadOnly)>{{ $editing ? __('production_bench.common.save_changes') : __('production_bench.settings.add_preset') }}</button>
+            @if ($canConfigure)<button type="submit" class="sk-btn sk-btn-primary" @disabled(! $canConfigure)>{{ $editing ? __('production_bench.common.save_changes') : __('production_bench.settings.add_preset') }}</button>@endif
         </div>
     </form>
 </x-production-bench.page>

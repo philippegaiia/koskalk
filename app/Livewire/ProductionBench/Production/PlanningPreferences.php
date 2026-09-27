@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\SaveProductionBenchPreferences;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
@@ -25,6 +26,7 @@ class PlanningPreferences extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
 
     /** @var array<string, mixed> */
     public array $data = [];
@@ -76,6 +78,7 @@ class PlanningPreferences extends Component implements HasActions, HasForms
         }
 
         $this->user()->forgetAccessibleWorkspaceIds();
+        $this->productionWorkspace = $workspace;
         $this->fillFromWorkspace($workspace);
         $this->showAppNotification(__('locations.saved'));
     }
@@ -86,10 +89,7 @@ class PlanningPreferences extends Component implements HasActions, HasForms
         $role = $workspace->roleFor($this->user());
         $isBenchActive = $access->isActive($workspace);
         $isReadOnly = $access->isReadOnly($workspace);
-        $canConfigure = in_array($role, [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-        ], true);
+        $canConfigure = $access->canConfigure($this->user(), $workspace);
         $accessMessage = match (true) {
             $isReadOnly => __('locations.cancelled_read_only'),
             ! $isBenchActive => __('locations.inactive_read_only'),
@@ -133,6 +133,6 @@ class PlanningPreferences extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

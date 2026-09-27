@@ -23,7 +23,7 @@ class SyncProductionBatchPresetProducts
         ProductionBatchPreset $preset,
         array $assignments,
     ): ProductionBatchPreset {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         $normalizedAssignments = collect($assignments)
             ->map(fn (array $assignment): array => [
@@ -39,7 +39,7 @@ class SyncProductionBatchPresetProducts
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             $lockedPreset = ProductionBatchPreset::query()
                 ->lockForUpdate()

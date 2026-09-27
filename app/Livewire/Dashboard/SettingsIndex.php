@@ -13,6 +13,7 @@ use App\Services\LocalePreferenceResolver;
 use App\Support\NumberLocale;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -143,35 +144,44 @@ class SettingsIndex extends Component
         /** @var User $user */
         $user = auth()->user();
 
-        if ($this->workspaceId) {
-            $workspace = Workspace::withoutGlobalScopes()->find($this->workspaceId);
+        DB::transaction(function () use ($user): void {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            abort_unless($user->company(fresh: true)?->id === $this->workspaceId, 403);
+            if ($this->workspaceId) {
+                $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($this->workspaceId);
 
-            if (! $workspace instanceof Workspace || $workspace->owner_user_id !== $user->id) {
-                abort(403);
+                if (! $workspace instanceof Workspace) {
+                    abort(403);
+                }
+
+                $this->authorize('update', $workspace);
+
+                $workspace->fill([
+                    'name' => $this->workspaceName,
+                    'default_currency' => $this->workspaceCurrency,
+                    'mass_display_system' => $this->workspaceMassDisplaySystem,
+                ]);
+                $workspace->save();
+            } else {
+                $this->authorize('create', Workspace::class);
+
+                $workspace = Workspace::withoutGlobalScopes()->create([
+                    'owner_user_id' => $user->id,
+                    'name' => $this->workspaceName,
+                    'slug' => Str::slug($this->workspaceName.'-'.Str::random(6)),
+                    'default_currency' => $this->workspaceCurrency,
+                    'mass_display_system' => $this->workspaceMassDisplaySystem,
+                ]);
+
+                $workspace->members()->create([
+                    'user_id' => $user->id,
+                    'role' => WorkspaceMemberRole::Owner->value,
+                ]);
+
+                $this->workspaceId = $workspace->id;
             }
 
-            $workspace->fill([
-                'name' => $this->workspaceName,
-                'default_currency' => $this->workspaceCurrency,
-                'mass_display_system' => $this->workspaceMassDisplaySystem,
-            ]);
-            $workspace->save();
-        } else {
-            $workspace = Workspace::withoutGlobalScopes()->create([
-                'owner_user_id' => $user->id,
-                'name' => $this->workspaceName,
-                'slug' => Str::slug($this->workspaceName.'-'.Str::random(6)),
-                'default_currency' => $this->workspaceCurrency,
-                'mass_display_system' => $this->workspaceMassDisplaySystem,
-            ]);
-
-            $workspace->members()->create([
-                'user_id' => $user->id,
-                'role' => WorkspaceMemberRole::Owner->value,
-            ]);
-
-            $this->workspaceId = $workspace->id;
-        }
+        }, attempts: 5);
 
         $this->workspaceStatus = 'success';
         $this->workspaceMessage = __('settings.status.workspace_saved');
@@ -190,6 +200,9 @@ class SettingsIndex extends Component
 
         return view('livewire.dashboard.settings-index', [
             'currencyOptions' => $currencyOptions,
+            'canManageWorkspace' => $this->workspaceId === null
+                ? auth()->user()->can('create', Workspace::class)
+                : auth()->user()->can('update', Workspace::withoutGlobalScopes()->findOrFail($this->workspaceId)),
             'contextualHelp' => $helpTopics->resolve($this->activeTab, app()->getLocale()),
         ]);
     }

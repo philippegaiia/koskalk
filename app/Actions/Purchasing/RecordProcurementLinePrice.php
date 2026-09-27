@@ -9,6 +9,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockUnitKind;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
@@ -33,7 +34,9 @@ class RecordProcurementLinePrice
         $order = $line->purchaseOrder;
         $this->access->assertWritable($actor, $order->workspace);
 
-        return DB::transaction(function () use ($actor, $line, $basis, $amount, $unit): PurchaseOrderLine {
+        return DB::transaction(function () use ($actor, $order, $line, $basis, $amount, $unit): PurchaseOrderLine {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->workspace_id);
+            $this->access->assertWritable($actor, $workspace);
             $lockedLine = PurchaseOrderLine::query()
                 ->with(['purchaseOrder.workspace', 'supplierListing', 'ingredient', 'packagingItem'])
                 ->lockForUpdate()

@@ -3,8 +3,8 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\SaveProductionLocation;
-use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionLocation;
 use App\Models\User;
 use App\Models\Workspace;
@@ -24,6 +24,7 @@ class ProductionLocationManager extends Component implements HasForms
 {
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
 
     /** @var array<string, mixed> */
     public array $data = [];
@@ -121,13 +122,7 @@ class ProductionLocationManager extends Component implements HasForms
         $workspace = $this->workspace();
         $isBenchActive = $access->isActive($workspace);
         $isReadOnly = $access->isReadOnly($workspace);
-        $isEditable = $isBenchActive
-            && ! $isReadOnly
-            && in_array($workspace->roleFor($this->user()), [
-                WorkspaceMemberRole::Owner,
-                WorkspaceMemberRole::Admin,
-                WorkspaceMemberRole::Editor,
-            ], true);
+        $isEditable = $access->canConfigure($this->user(), $workspace);
 
         return view('livewire.production-bench.production.production-location-manager', [
             'accessMessage' => match (true) {
@@ -218,6 +213,6 @@ class ProductionLocationManager extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

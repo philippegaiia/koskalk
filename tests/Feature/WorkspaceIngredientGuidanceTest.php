@@ -5,7 +5,9 @@ use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
+use App\Models\Plan;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
@@ -188,6 +190,7 @@ it('preserves the creator while auditing an editor update', function (): void {
     $owner = User::factory()->create();
     $editor = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,
     ]);
@@ -207,6 +210,7 @@ it('allows an admin to switch to platform guidance without deleting the workspac
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceMember::factory()->for($workspace)->for($admin)->create([
         'role' => WorkspaceMemberRole::Admin,
     ]);

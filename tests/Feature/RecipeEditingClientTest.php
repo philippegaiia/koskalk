@@ -232,3 +232,38 @@ JS;
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('does not submit writes or editing controls for a read-only formula visitor', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+
+const moduleUrl = pathToFileURL(`${process.cwd()}/resources/js/recipe-workbench/editing.js`).href;
+const { createEditingSection } = await import(moduleUrl);
+let writes = 0;
+const viewer = Object.assign(createEditingSection({
+    canPersist: true,
+    canEditRecipe: false,
+    recipe: { id: 41 },
+    editing: null,
+}), {
+    isFormulaLocked: false,
+    t: (key) => key,
+});
+
+assert.equal(viewer.editingRequired, false);
+assert.equal(viewer.canWriteRecipe, false);
+assert.equal(viewer.canSubmitRecipeControl, false);
+const response = await viewer.queueRevisionMutation(async () => {
+    writes += 1;
+    return { ok: true };
+});
+assert.equal(response.ok, false);
+assert.equal(writes, 0);
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

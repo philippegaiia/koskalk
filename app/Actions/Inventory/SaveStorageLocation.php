@@ -16,13 +16,13 @@ class SaveStorageLocation
 
     public function handle(User $actor, Workspace $workspace, string $name, bool $isActive = true, ?StorageLocation $location = null): StorageLocation
     {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $name = preg_replace('/\s+/', ' ', trim($name)) ?? trim($name);
         validator(['name' => $name], ['name' => ['required', 'string', 'max:50']], ['name.max' => __('production_bench.validation.location_name_max')])->validate();
 
         return DB::transaction(function () use ($actor, $workspace, $name, $isActive, $location): StorageLocation {
             $locked = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $locked);
+            $this->access->assertCanConfigure($actor, $locked);
             if (! $locked->uses_storage_locations) {
                 throw ValidationException::withMessages(['location' => __('locations.validation.disabled')]);
             }

@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
+use App\Services\WorkspaceAuthorization;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -105,24 +107,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      */
     public function accessibleWorkspaceIds(): array
     {
-        if ($this->cachedAccessibleWorkspaceIds !== null) {
-            return $this->cachedAccessibleWorkspaceIds;
-        }
+        $workspace = app(WorkspaceAuthorization::class)->selectedWorkspace($this);
 
-        $ownedWorkspaces = Workspace::withoutGlobalScopes()
-            ->selectRaw('id as workspace_id')
-            ->where('owner_user_id', $this->id);
-
-        $this->cachedAccessibleWorkspaceIds = WorkspaceMember::withoutGlobalScopes()
-            ->select('workspace_id')
-            ->where('user_id', $this->id)
-            ->union($ownedWorkspaces)
-            ->pluck('workspace_id')
-            ->unique()
-            ->values()
-            ->all();
-
-        return $this->cachedAccessibleWorkspaceIds;
+        return $workspace === null ? [] : [$workspace->id];
     }
 
     /**
@@ -172,34 +159,30 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     /**
      * Get the workspace in which the user is currently working.
      */
-    public function company(): ?Workspace
+    public function company(bool $fresh = false): ?Workspace
     {
-        if ($this->hasResolvedCompany) {
+        if (! $fresh && $this->hasResolvedCompany) {
             return $this->cachedCompany;
         }
 
-        $activeWorkspace = $this->active_workspace_id === null
-            ? null
-            : Workspace::withoutGlobalScopes()->find($this->active_workspace_id);
+        $workspace = Workspace::withoutGlobalScopes()
+            ->where(function (Builder $query): void {
+                $query->where('owner_user_id', $this->id)
+                    ->orWhereIn('id', WorkspaceMember::withoutGlobalScopes()
+                        ->where('user_id', $this->id)
+                        ->whereIn('role', [WorkspaceMemberRole::Admin, WorkspaceMemberRole::Editor, WorkspaceMemberRole::Viewer])
+                        ->select('workspace_id'));
+            })
+            ->orderByRaw('case when id = (select active_workspace_id from users where id = ?) then 0 when owner_user_id = ? then 1 else 2 end', [$this->id, $this->id])
+            ->orderBy('id')
+            ->first();
 
-        if ($activeWorkspace instanceof Workspace && $activeWorkspace->hasMember($this)) {
-            $this->cachedCompany = $activeWorkspace;
+        if (! $fresh) {
+            $this->cachedCompany = $workspace;
             $this->hasResolvedCompany = true;
-
-            return $this->cachedCompany;
         }
 
-        $this->cachedCompany = Workspace::withoutGlobalScopes()
-            ->where('owner_user_id', $this->id)
-            ->first()
-            ?? Workspace::withoutGlobalScopes()
-                ->whereIn('id', WorkspaceMember::withoutGlobalScopes()
-                    ->where('user_id', $this->id)
-                    ->select('workspace_id'))
-                ->first();
-        $this->hasResolvedCompany = true;
-
-        return $this->cachedCompany;
+        return $workspace;
     }
 
     /**

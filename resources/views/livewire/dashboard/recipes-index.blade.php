@@ -13,9 +13,11 @@
                 <p class="mt-3 max-w-4xl text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('products.page.intro') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">
-                    {{ __('products.actions.new_product') }}
-                </a>
+                @if ($canCreateRecipe)
+                    <a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">
+                        {{ __('products.actions.new_product') }}
+                    </a>
+                @endif
             </div>
         </div>
     </section>
@@ -162,7 +164,7 @@
             <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
                 {{ $hasFilters ? __('products.empty.adjust_filters') : __('products.empty.description') }}
             </p>
-            @if (! $hasFilters)
+            @if (! $hasFilters && $canCreateRecipe)
                 <div class="mt-5 flex flex-wrap justify-center gap-2">
                     <a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('products.actions.new_product') }}</a>
                 </div>
@@ -177,6 +179,8 @@
                     $thumbnailUrl = $recipe->indexImageUrl() ?? $recipe->productType?->fallbackImageUrl();
                     $isLocked = $recipe->isLocked();
                     $hasProductionHistory = $recipe->production_runs_count > 0;
+                    $canUpdateRecipe = $canUpdateRecipes[$recipe->id] ?? false;
+                    $canDeleteRecipe = $canDeleteRecipes[$recipe->id] ?? false;
                     $fallbackThumbnailClasses = match ($productFamilySlug) {
                         'soap' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
                         default => 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]',
@@ -241,12 +245,14 @@
                                             {{ __('products.actions.view_formula_production') }}
                                         </a>
                                     @endif
-                                    <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
-                                        @csrf
-                                        <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
-                                            {{ __('products.actions.duplicate') }}
-                                        </button>
-                                    </form>
+                                    @if ($canCreateRecipe)
+                                        <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
+                                            @csrf
+                                            <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                                {{ __('products.actions.duplicate') }}
+                                            </button>
+                                        </form>
+                                    @endif
                                     @if ($canManageRecipeLocks[$recipe->id] ?? false)
                                         @if ($isLocked)
                                             <form method="POST" action="{{ route('recipes.unlock', $recipe) }}">
@@ -266,23 +272,25 @@
                                             </form>
                                         @endif
                                     @endif
-                                    <hr class="my-1 border-[var(--color-line)]" />
-                                    @if ($hasProductionHistory && $recipe->archived_at === null)
-                                        <button type="button" @click="archiveOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
-                                            {{ __('products.actions.archive') }}
-                                        </button>
-                                    @elseif ($recipe->archived_at !== null)
-                                        <form method="POST" action="{{ route('recipes.restore', $recipe) }}">
-                                            @csrf
-                                            <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
-                                            <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
-                                                {{ __('products.actions.restore') }}
+                                    @if ($canUpdateRecipe || $canDeleteRecipe)
+                                        <hr class="my-1 border-[var(--color-line)]" />
+                                    @endif
+                                    @if ($canUpdateRecipe)
+                                        @if ($hasProductionHistory && $recipe->archived_at === null)
+                                            <button type="button" @click="archiveOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                                {{ __('products.actions.archive') }}
                                             </button>
-                                        </form>
-                                        <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
-                                            {{ __('products.actions.delete') }}
-                                        </button>
-                                    @else
+                                        @elseif ($recipe->archived_at !== null)
+                                            <form method="POST" action="{{ route('recipes.restore', $recipe) }}">
+                                                @csrf
+                                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
+                                                <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                                    {{ __('products.actions.restore') }}
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endif
+                                    @if ($canDeleteRecipe)
                                         <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
                                             {{ __('products.actions.delete') }}
                                         </button>
@@ -311,52 +319,56 @@
                         @endif
                     </div>
 
-                    <div x-show="archiveOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="archiveOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-archive-heading-{{ $recipe->id }}">
-                        <div class="sk-card w-full max-w-md p-6" @click.stop>
-                            <h3 id="product-archive-heading-{{ $recipe->id }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('products.archiving.heading', ['product' => $recipe->name]) }}</h3>
-                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.archiving.warning') }}</p>
-                            <form method="POST" action="{{ route('recipes.archive', $recipe) }}" class="mt-4">
-                                @csrf
-                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
-                                <button type="submit" class="sk-btn w-full bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">
-                                    {{ __('products.actions.archive') }}
+                    @if ($canUpdateRecipe)
+                        <div x-show="archiveOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="archiveOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-archive-heading-{{ $recipe->id }}">
+                            <div class="sk-card w-full max-w-md p-6" @click.stop>
+                                <h3 id="product-archive-heading-{{ $recipe->id }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('products.archiving.heading', ['product' => $recipe->name]) }}</h3>
+                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.archiving.warning') }}</p>
+                                <form method="POST" action="{{ route('recipes.archive', $recipe) }}" class="mt-4">
+                                    @csrf
+                                    <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
+                                    <button type="submit" class="sk-btn w-full bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">
+                                        {{ __('products.actions.archive') }}
+                                    </button>
+                                </form>
+                                <button type="button" @click="archiveOpen = false" class="sk-btn sk-btn-outline mt-3 w-full">
+                                    {{ __('products.actions.cancel') }}
                                 </button>
-                            </form>
-                            <button type="button" @click="archiveOpen = false" class="sk-btn sk-btn-outline mt-3 w-full">
-                                {{ __('products.actions.cancel') }}
-                            </button>
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
-                    <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="deleteOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-delete-heading-{{ $recipe->id }}">
-                        <div class="sk-card w-full max-w-md p-6" @click.stop>
-                            <h3 id="product-delete-heading-{{ $recipe->id }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('products.deletion.heading', ['product' => $recipe->name]) }}</h3>
-                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.deletion.warning') }}</p>
-                            @if ($hasProductionHistory)
-                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.deletion.history_note') }}</p>
-                            @endif
+                    @if ($canDeleteRecipe)
+                        <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="deleteOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-delete-heading-{{ $recipe->id }}">
+                            <div class="sk-card w-full max-w-md p-6" @click.stop>
+                                <h3 id="product-delete-heading-{{ $recipe->id }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('products.deletion.heading', ['product' => $recipe->name]) }}</h3>
+                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.deletion.warning') }}</p>
+                                @if ($hasProductionHistory)
+                                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.deletion.history_note') }}</p>
+                                @endif
 
-                            <button type="button" @click="confirmText = productName" class="sk-btn sk-btn-outline mt-4">
-                                {{ __('products.actions.use_name') }}
-                            </button>
-
-                            <input x-model="confirmText" type="text" placeholder="{{ __('products.deletion.confirmation_placeholder') }}" class="sk-input mt-4" />
-
-                            <form method="POST" action="{{ route('recipes.destroy', $recipe) }}" class="mt-4">
-                                @method('DELETE')
-                                @csrf
-                                <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
-                                <input type="hidden" name="confirm_name" :value="confirmText">
-                                <button type="submit" :disabled="confirmText !== productName" :class="confirmText !== productName ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]'" class="sk-btn w-full">
-                                    {{ __('products.actions.delete_permanently') }}
+                                <button type="button" @click="confirmText = productName" class="sk-btn sk-btn-outline mt-4">
+                                    {{ __('products.actions.use_name') }}
                                 </button>
-                            </form>
 
-                            <button type="button" @click="deleteOpen = false" class="sk-btn sk-btn-outline mt-3 w-full">
-                                {{ __('products.actions.cancel') }}
-                            </button>
+                                <input x-model="confirmText" type="text" placeholder="{{ __('products.deletion.confirmation_placeholder') }}" class="sk-input mt-4" />
+
+                                <form method="POST" action="{{ route('recipes.destroy', $recipe) }}" class="mt-4">
+                                    @method('DELETE')
+                                    @csrf
+                                    <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
+                                    <input type="hidden" name="confirm_name" :value="confirmText">
+                                    <button type="submit" :disabled="confirmText !== productName" :class="confirmText !== productName ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]'" class="sk-btn w-full">
+                                        {{ __('products.actions.delete_permanently') }}
+                                    </button>
+                                </form>
+
+                                <button type="button" @click="deleteOpen = false" class="sk-btn sk-btn-outline mt-3 w-full">
+                                    {{ __('products.actions.cancel') }}
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </article>
             @endforeach
         </div>

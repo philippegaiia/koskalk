@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
+    'workspace_id',
     'recipe_id',
     'recipe_version_id',
     'recipe_name',
@@ -40,6 +41,11 @@ class ProductionBatch extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
     }
 
     public function recipe(): BelongsTo

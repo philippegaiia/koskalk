@@ -859,6 +859,8 @@ it('renders media-backed index lists without query growth per record', function 
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
     $family = ProductFamily::factory()->create(['slug' => 'soap']);
     $usages = app(MediaAssetUsageService::class);
+    $this->actingAs($user);
+    $queryCounts = [];
 
     foreach (range(1, 6) as $index) {
         $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id, 'display_name' => "Ingredient {$index}"]);
@@ -867,24 +869,27 @@ it('renders media-backed index lists without query growth per record', function 
         $usages->syncSingle($user, $ingredient, MediaAssetUsageRole::IngredientMain, $asset->id);
         $usages->syncSingle($user, $packaging, MediaAssetUsageRole::PackagingMain, $asset->id);
         $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeFeatured, $asset->id);
+
+        if (! in_array($index, [1, 6], true)) {
+            continue;
+        }
+
+        foreach ([
+            IngredientsIndex::class => 'Ingredient 1',
+            PackagingItemsIndex::class => 'Packaging 1',
+            RecipesIndex::class => $recipe->name,
+        ] as $component => $visibleText) {
+            $user->forgetAccessibleWorkspaceIds();
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            Livewire::test($component)->assertSee($visibleText);
+            $queryCounts[$index][$component] = count(DB::getQueryLog());
+            DB::disableQueryLog();
+        }
     }
 
-    $this->actingAs($user);
-    $queryCounts = [];
-
-    foreach ([
-        IngredientsIndex::class => 'Ingredient 1',
-        PackagingItemsIndex::class => 'Packaging 1',
-        RecipesIndex::class => $recipe->name,
-    ] as $component => $visibleText) {
-        DB::flushQueryLog();
-        DB::enableQueryLog();
-        Livewire::test($component)->assertSee($visibleText);
-        $queryCounts[$component] = count(DB::getQueryLog());
-        DB::disableQueryLog();
+    foreach ([IngredientsIndex::class, PackagingItemsIndex::class, RecipesIndex::class] as $component) {
+        expect($queryCounts[6][$component])->toBeLessThanOrEqual(35)
+            ->and($queryCounts[6][$component])->toBeLessThanOrEqual($queryCounts[1][$component]);
     }
-
-    expect($queryCounts[IngredientsIndex::class])->toBeLessThanOrEqual(30)
-        ->and($queryCounts[PackagingItemsIndex::class])->toBeLessThanOrEqual(30)
-        ->and($queryCounts[RecipesIndex::class])->toBeLessThanOrEqual(30);
 });

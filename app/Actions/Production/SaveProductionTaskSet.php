@@ -31,7 +31,7 @@ class SaveProductionTaskSet
         bool $isActive = true,
         ?ProductionTaskSet $taskSet = null,
     ): ProductionTaskSet {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $name = trim($name);
 
         if ($name === '' || mb_strlen($name) > 120) {
@@ -55,7 +55,7 @@ class SaveProductionTaskSet
             $workspace,
         ): ProductionTaskSet {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             $lockedRecipe = null;
 

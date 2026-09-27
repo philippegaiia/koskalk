@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Enums\ProcurementStage;
 use App\Models\PurchaseOrder;
+use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 
 class ProcurementDocumentController extends Controller
 {
-    public function show(PurchaseOrder $purchaseOrder): View
+    public function show(PurchaseOrder $purchaseOrder, ProductionBenchAccess $access): View
     {
         $workspace = auth()->user()?->company() ?? abort(404);
 
         abort_unless($purchaseOrder->workspace_id === $workspace->id, 404);
+        $access->assertReadable(auth()->user(), $workspace);
 
         $isQuotation = $purchaseOrder->stage === ProcurementStage::Quotation
             || ($purchaseOrder->purchase_order_snapshot === null && $purchaseOrder->quotation_snapshot !== null);

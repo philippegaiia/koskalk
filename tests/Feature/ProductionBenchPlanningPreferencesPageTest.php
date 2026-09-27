@@ -2,6 +2,7 @@
 
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\PlanningPreferences;
+use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -87,6 +88,8 @@ it('keeps cancelled preferences read-only and refuses a save', function (): void
 
 it('keeps editors and viewers read-only while refusing their direct save', function (WorkspaceMemberRole $role): void {
     $fixture = planningPreferencesPageFixture();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $fixture['owner']->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $member = User::factory()->create();
     WorkspaceMember::factory()->for($fixture['workspace'])->for($member)->create(['role' => $role]);
 

@@ -39,7 +39,7 @@ class EntitlementService
             ),
             'private_ingredients' => $this->privateIngredientUsage($subscriber, $workspace, $limits),
             'production_batches' => $this->usageLine(
-                used: $this->productionBatchCount($user),
+                used: $this->productionBatchCount($subscriber, $workspace),
                 limit: $limits['production_batches'] ?? null,
             ),
             'media_assets' => $this->mediaAssetUsage($workspace, $limits),
@@ -487,10 +487,17 @@ class EntitlementService
         return $user->company();
     }
 
-    private function productionBatchCount(User $user): int
+    private function productionBatchCount(User $subscriber, ?Workspace $workspace): int
     {
         return ProductionBatch::query()
-            ->where('user_id', $user->id)
-            ->count();
+            ->where(function ($query) use ($subscriber, $workspace): void {
+                $query->where(function ($legacy) use ($subscriber): void {
+                    $legacy->whereNull('workspace_id')->where('user_id', $subscriber->id);
+                });
+
+                if ($workspace !== null) {
+                    $query->orWhere('workspace_id', $workspace->id);
+                }
+            })->count();
     }
 }

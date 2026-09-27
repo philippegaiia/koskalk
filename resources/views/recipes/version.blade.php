@@ -23,6 +23,8 @@
             }
 
             $canRecordProduction = (bool) ($canRecordProduction ?? false);
+            $canUpdateRecipe = (bool) ($canUpdateRecipe ?? false);
+            $canDuplicateRecipe = (bool) ($canDuplicateRecipe ?? false);
             $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
             $isHistorical = (bool) ($isHistorical ?? false);
             if ($isHistorical) {
@@ -41,7 +43,7 @@
 
         @endphp
 
-        @if (is_array($currentReplaceConfirmation))
+        @if ($canUpdateRecipe && is_array($currentReplaceConfirmation))
             <section class="rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 p-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="min-w-0">
@@ -94,12 +96,14 @@
                         <a href="{{ route('recipes.edit', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                             {{ __('formula_documents.actions.open') }}
                         </a>
-                        <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
-                            @csrf
-                            <button type="submit" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                                {{ __('products.actions.duplicate') }}
-                            </button>
-                        </form>
+                        @if ($canDuplicateRecipe)
+                            <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
+                                @csrf
+                                <button type="submit" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                    {{ __('products.actions.duplicate') }}
+                                </button>
+                            </form>
+                        @endif
                         <form method="GET" action="{{ route('recipes.print.production', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
                             @foreach (collect($printQuery)->except('recipe') as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}" />

@@ -16,6 +16,7 @@ use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\Plan;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
@@ -45,6 +46,8 @@ uses(RefreshDatabase::class);
 
 it('hides entitlement controls from editors and rejects direct cancellation', function (): void {
     $workspace = Workspace::factory()->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $workspace->owner->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
     $access = app(ProductionBenchAccess::class);
@@ -213,6 +216,8 @@ it('keeps inventory mutation controls hidden from active viewers', function (): 
     $owner = User::factory()->create();
     $viewer = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $workspace->owner->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
         'role' => WorkspaceMemberRole::Viewer,
     ]);

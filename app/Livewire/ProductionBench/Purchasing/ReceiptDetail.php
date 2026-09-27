@@ -9,6 +9,7 @@ use App\Enums\GoodsReceiptStatus;
 use App\Enums\MediaAssetType;
 use App\Enums\ProductionDocumentType;
 use App\Enums\PurchaseOrderStatus;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\GoodsReceipt;
 use App\Models\ProductionDocument;
 use App\Models\PurchaseOrderLine;
@@ -30,6 +31,7 @@ use Throwable;
 
 class ReceiptDetail extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithFileUploads;
 
     #[Locked]
@@ -268,6 +270,6 @@ class ReceiptDetail extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

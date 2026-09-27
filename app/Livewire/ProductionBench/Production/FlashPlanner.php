@@ -4,6 +4,7 @@ namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\GenerateFlashProductions;
 use App\Enums\ProductionRunStatus;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
@@ -34,6 +35,7 @@ class FlashPlanner extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
 
     /** @var list<array<string, string>> */
     public array $lines = [];
@@ -449,6 +451,6 @@ class FlashPlanner extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

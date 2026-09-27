@@ -46,7 +46,8 @@ class SaveSupplierListing
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $attributes, $listing, $subject, $supplier, $workspace): SupplierListing {
-            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertWritable($actor, $lockedWorkspace);
             $currentSubject = $this->existingSubject($subject);
             $currentSupplier = Supplier::query()
                 ->where('workspace_id', $workspace->id)

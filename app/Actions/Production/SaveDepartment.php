@@ -20,7 +20,7 @@ class SaveDepartment
         bool $isActive = true,
         ?Department $department = null,
     ): Department {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $name = $this->normalizeDisplayName($name);
 
         if ($name === '' || mb_strlen($name) > 120) {
@@ -31,7 +31,7 @@ class SaveDepartment
 
         return DB::transaction(function () use ($actor, $department, $isActive, $name, $normalizedName, $workspace): Department {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             $current = null;
 

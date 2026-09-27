@@ -19,7 +19,7 @@ class SaveProductionOutputSettings
         int|string $soapReadyDelayDays,
         int|string $cosmeticReadyDelayDays,
     ): ProductionOutputSetting {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         $soapReadyDelayDays = $this->normalizeDays($soapReadyDelayDays, 'soap_ready_delay_days');
         $cosmeticReadyDelayDays = $this->normalizeDays($cosmeticReadyDelayDays, 'cosmetic_ready_delay_days');
@@ -33,7 +33,7 @@ class SaveProductionOutputSettings
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             $setting = ProductionOutputSetting::query()
                 ->where('workspace_id', $lockedWorkspace->id)

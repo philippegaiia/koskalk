@@ -40,7 +40,7 @@ class UserMediaController extends Controller
 
         abort_unless(
             $user instanceof User
-            && $packagingItem->workspace->hasMember($user)
+            && $user->can('view', $packagingItem)
             && MediaStorage::isPackagingItemPath($packagingItem, $normalizedPath)
             && $normalizedPath === $packagingItem->featured_image_path,
             404,

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\GoodsReceipt;
 use App\Models\User;
 use App\Models\Workspace;
@@ -13,6 +14,7 @@ use Livewire\WithPagination;
 
 class ReceiptIndex extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
@@ -57,6 +59,6 @@ class ReceiptIndex extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

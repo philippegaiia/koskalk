@@ -9,6 +9,7 @@ use App\Actions\Purchasing\RecordProcurementLinePrice;
 use App\Enums\ListingPriceBasis;
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
@@ -24,6 +25,8 @@ use Livewire\Component;
 
 class ProcurementDetail extends Component
 {
+    use InteractsWithProductionWorkspace;
+
     #[Locked]
     public string $orderPublicId;
 
@@ -218,6 +221,6 @@ class ProcurementDetail extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

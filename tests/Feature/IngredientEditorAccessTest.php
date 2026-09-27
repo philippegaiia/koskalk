@@ -9,7 +9,9 @@ use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\Plan;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceIngredientGuidance;
@@ -96,6 +98,7 @@ it('loads platform reference data and guidance without repeated reads', function
 it('allows workspace editors to author ingredients through the dedicated ability', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create();
 
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
@@ -197,6 +200,7 @@ it('does not expose platform customization for a tenant-owned ingredient with a 
 it('keeps the workspace authoring matrix independent of app administrator status', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $privateIngredient = Ingredient::factory()->create([
         'owner_type' => OwnerType::Workspace,
         'owner_id' => $workspace->id,
@@ -508,10 +512,9 @@ it('keeps platform capabilities tied to the active workspace while preserving th
     Livewire::test(IngredientEditor::class, ['ingredient' => $workspaceIngredient])
         ->set('data.name', 'Edited from owning workspace')
         ->call('save')
-        ->assertHasNoErrors()
-        ->assertSeeText('Edited from owning workspace');
+        ->assertHasErrors(['data']);
 
-    expect($workspaceIngredient->refresh()->display_name)->toBe('Edited from owning workspace');
+    expect($workspaceIngredient->refresh()->display_name)->toBe('A name');
 });
 
 it('rejects stale editor, guidance, code, inline, and duplicate contexts without writing', function (): void {
@@ -632,6 +635,7 @@ it('rejects destination tampering and access changes after an editor is mounted'
 it('rejects every editor write after a member is downgraded without creating replacements', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     $membership = WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,

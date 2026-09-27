@@ -8,8 +8,10 @@ use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\Livewire\ProductionBench\Production\SettingsIndex;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Plan;
 use App\Models\ProductionRun;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
@@ -21,8 +23,9 @@ uses(RefreshDatabase::class);
 
 it('restricts eligible production record deletion to owners and admins', function (string $modelClass, string $actionClass, WorkspaceMemberRole $role): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceProductionEntitlement::factory()->for($workspace)->create();
-    $actor = $role === WorkspaceMemberRole::Owner ? $workspace->owner : User::factory()->create();
+    $actor = $role === WorkspaceMemberRole::Owner ? $workspace->owner : User::factory()->create(['active_workspace_id' => $workspace->id]);
     if ($role !== WorkspaceMemberRole::Owner) {
         WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => $role]);
     }
@@ -46,6 +49,7 @@ it('restricts eligible production record deletion to owners and admins', functio
 
 it('hides production deletion from an editor and rejects a crafted delete request', function (): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceProductionEntitlement::factory()->for($workspace)->create();
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
@@ -61,6 +65,7 @@ it('hides production deletion from an editor and rejects a crafted delete reques
 
 it('hides setup record deletion from an editor and rejects a crafted delete request', function (string $section, string $modelClass, string $method): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceProductionEntitlement::factory()->for($workspace)->create();
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);

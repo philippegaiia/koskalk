@@ -1,5 +1,5 @@
 <x-production-bench.page active="production-setup" subnavigation="presets">
-    @if (! $isBenchActive && ! $isReadOnly)
+    @if (! $canConfigure)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.inactive') }}</h1>
         </section>
@@ -14,7 +14,7 @@
                 </div>
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.presets_help') }}</p>
             </div>
-            @if ($isBenchActive && ! $isReadOnly)
+            @if ($canConfigure)
                 <a href="{{ route('production-bench.production.settings.presets.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.settings.new_batch_size') }}</a>
             @endif
 
@@ -74,7 +74,7 @@
                                 <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $preset->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $preset->is_active ? __('production_bench.common.active') : __('production_bench.common.inactive') }}</span></td>
                                 <td class="px-5 py-4 text-right">
                                     <span class="inline-flex items-center gap-1">
-                                        @if ($isBenchActive && ! $isReadOnly)
+                                        @if ($canConfigure)
                                             <x-table-row-action icon="pencil" :label="__('production_bench.common.edit')" href="{{ route('production-bench.production.settings.presets.edit', $preset) }}" wire:navigate />
                                             <x-table-row-action icon="trash" :label="__('production_bench.common.delete')" wire:click="delete({{ $preset->id }})" wire:confirm="{{ __('production_bench.settings.delete_preset_confirm') }}" />
                                         @else

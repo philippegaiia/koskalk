@@ -24,7 +24,7 @@ class SaveProductionTaskType
         ?ProductionTaskType $taskType = null,
         ?int $departmentId = null,
     ): ProductionTaskType {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $name = trim($name);
 
         if ($name === '' || mb_strlen($name) > 120) {
@@ -45,7 +45,7 @@ class SaveProductionTaskType
 
         return DB::transaction(function () use ($actor, $colour, $defaultDurationMinutes, $departmentId, $isActive, $name, $taskType, $workspace): ProductionTaskType {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             if ($departmentId !== null && ! Department::query()
                 ->where('workspace_id', $lockedWorkspace->id)

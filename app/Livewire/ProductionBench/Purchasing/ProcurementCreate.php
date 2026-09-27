@@ -6,6 +6,7 @@ use App\Actions\Purchasing\ConvertQuotationToPurchaseOrder;
 use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Enums\ProcurementStage;
 use App\Enums\PurchaseOrderStatus;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
@@ -26,6 +27,7 @@ use Livewire\Component;
 class ProcurementCreate extends Component implements HasForms
 {
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
 
     #[Locked]
@@ -208,6 +210,6 @@ class ProcurementCreate extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

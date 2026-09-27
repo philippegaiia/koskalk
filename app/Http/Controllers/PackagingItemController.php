@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PackagingItem;
 use App\Services\CurrentAppUserResolver;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Gate;
 
 class PackagingItemController extends Controller
 {
@@ -15,7 +16,9 @@ class PackagingItemController extends Controller
 
     public function create(CurrentAppUserResolver $currentAppUserResolver): View
     {
-        abort_unless($currentAppUserResolver->resolve() !== null, 404);
+        $user = $currentAppUserResolver->resolve();
+        abort_unless($user !== null, 404);
+        Gate::forUser($user)->authorize('create', PackagingItem::class);
 
         return view('packaging.editor');
     }
@@ -25,7 +28,7 @@ class PackagingItemController extends Controller
         $user = $currentAppUserResolver->resolve();
         $packagingItem = PackagingItem::query()->where('public_id', $packagingItem)->firstOrFail();
 
-        abort_unless($user !== null && $packagingItem->workspace->hasMember($user), 404);
+        abort_unless($user !== null && $user->can('view', $packagingItem), 404);
 
         return view('packaging.editor', [
             'packagingItem' => $packagingItem,

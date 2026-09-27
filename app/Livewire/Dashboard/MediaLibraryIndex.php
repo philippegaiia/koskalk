@@ -19,13 +19,13 @@ use App\Models\RecipeVersion;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceMember;
 use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetLibraryService;
 use App\Services\MediaAssetUploadService;
 use App\Services\MediaLabelService;
+use App\Services\WorkspaceAuthorization;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -82,6 +82,19 @@ class MediaLibraryIndex extends Component
 
     /** @var array<int, string> */
     public array $displayNames = [];
+
+    #[Locked]
+    public ?int $mountedWorkspaceId = null;
+
+    public function mount(): void
+    {
+        $this->mountedWorkspaceId = $this->authorizedWorkspace(auth()->user())?->id;
+    }
+
+    public function hydrate(): void
+    {
+        abort_unless($this->authorizedWorkspace(auth()->user())?->id === $this->mountedWorkspaceId, 403);
+    }
 
     public function openAssetPanel(
         int $assetId,
@@ -264,7 +277,7 @@ class MediaLibraryIndex extends Component
         MediaLabelService $labels,
     ): bool {
         $user = $resolver->resolve();
-        $workspace = $user?->company();
+        $workspace = $this->authorizedWorkspace($user);
 
         abort_unless($user instanceof User && $workspace instanceof Workspace, 403);
 
@@ -293,7 +306,7 @@ class MediaLibraryIndex extends Component
         MediaLabelService $labels,
     ): void {
         $user = $resolver->resolve();
-        $workspace = $user?->company();
+        $workspace = $this->authorizedWorkspace($user);
         abort_unless($user instanceof User && $workspace instanceof Workspace, 403);
 
         try {
@@ -452,7 +465,7 @@ class MediaLibraryIndex extends Component
         EntitlementService $entitlements,
     ): View {
         $user = $resolver->resolve();
-        $workspace = $user?->company();
+        $workspace = $this->authorizedWorkspace($user);
         $assets = $workspace instanceof Workspace
             ? $this->assets($workspace)
             : new LengthAwarePaginator([], 0, 24);
@@ -849,9 +862,30 @@ class MediaLibraryIndex extends Component
         };
     }
 
+    private bool $hasResolvedLibraryWorkspace = false;
+
+    private ?Workspace $libraryWorkspace = null;
+
+    private function authorizedWorkspace(?User $user): ?Workspace
+    {
+        if ($this->hasResolvedLibraryWorkspace) {
+            return $this->libraryWorkspace;
+        }
+
+        $workspace = $user?->company(fresh: true);
+
+        if ($workspace !== null) {
+            abort_unless(app(WorkspaceAuthorization::class)->canView($user, $workspace->id), 403);
+        }
+
+        $this->hasResolvedLibraryWorkspace = true;
+
+        return $this->libraryWorkspace = $workspace;
+    }
+
     private function workspaceAsset(int $assetId, ?User $user): ?MediaAsset
     {
-        $workspace = $user?->company();
+        $workspace = $this->authorizedWorkspace($user);
 
         if (! $workspace instanceof Workspace) {
             return null;
@@ -864,18 +898,12 @@ class MediaLibraryIndex extends Component
 
     private function mediaRole(User $user, Workspace $workspace): ?WorkspaceMemberRole
     {
-        return $workspace->owner_user_id === $user->id
-            ? WorkspaceMemberRole::Owner
-            : WorkspaceMember::withoutGlobalScopes()
-                ->where('workspace_id', $workspace->id)
-                ->where('user_id', $user->id)
-                ->first()
-                ?->role;
+        return app(WorkspaceAuthorization::class)->role($user, $workspace->id);
     }
 
     private function workspaceLabel(int $labelId, ?User $user): ?MediaLabel
     {
-        $workspace = $user?->company();
+        $workspace = $this->authorizedWorkspace($user);
 
         return $workspace instanceof Workspace
             ? MediaLabel::query()

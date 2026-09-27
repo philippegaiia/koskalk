@@ -13,11 +13,11 @@ class UpdateProductionWorkingCalendar
 
     public function handle(User $actor, Workspace $workspace, bool $worksOnWeekends): Workspace
     {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $workspace, $worksOnWeekends): Workspace {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
             $lockedWorkspace->update(['production_works_on_weekends' => $worksOnWeekends]);
 
             return $lockedWorkspace->fresh();

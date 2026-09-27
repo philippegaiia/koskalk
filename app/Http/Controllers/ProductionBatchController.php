@@ -7,11 +7,13 @@ use App\Http\Requests\UpdateProductionBatchAnnotationsRequest;
 use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\Workspace;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\ProductionSnapshotService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 
 class ProductionBatchController extends Controller
 {
@@ -68,37 +70,41 @@ class ProductionBatchController extends Controller
         $this->authorize('update', $productionBatch);
 
         $validated = $request->validated();
-        $updates = [];
+        DB::transaction(function () use ($productionBatch, $validated): void {
+            $productionBatch = $this->lockBatch($productionBatch);
+            $this->authorize('update', $productionBatch);
+            $updates = [];
 
-        foreach (['production_batch_number', 'production_notes'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $updates[$field] = $validated[$field];
-            }
-        }
-
-        if ($updates !== []) {
-            $productionBatch->update($updates);
-        }
-
-        $ingredientLotNumbers = $validated['ingredient_lot_numbers'] ?? [];
-
-        if (is_array($ingredientLotNumbers)) {
-            $productionBatch->ingredients()->get()->each(function ($ingredient) use ($ingredientLotNumbers): void {
-                $lotKey = implode(':', [
-                    $ingredient->ingredient_id,
-                    $ingredient->phase_key,
-                    $ingredient->position,
-                ]);
-
-                if (array_key_exists($lotKey, $ingredientLotNumbers)) {
-                    $lotNumber = trim((string) $ingredientLotNumbers[$lotKey]);
-
-                    $ingredient->update([
-                        'ingredient_lot_number' => $lotNumber === '' ? null : $lotNumber,
-                    ]);
+            foreach (['production_batch_number', 'production_notes'] as $field) {
+                if (array_key_exists($field, $validated)) {
+                    $updates[$field] = $validated[$field];
                 }
-            });
-        }
+            }
+
+            if ($updates !== []) {
+                $productionBatch->update($updates);
+            }
+
+            $ingredientLotNumbers = $validated['ingredient_lot_numbers'] ?? [];
+
+            if (is_array($ingredientLotNumbers)) {
+                $productionBatch->ingredients()->get()->each(function ($ingredient) use ($ingredientLotNumbers): void {
+                    $lotKey = implode(':', [
+                        $ingredient->ingredient_id,
+                        $ingredient->phase_key,
+                        $ingredient->position,
+                    ]);
+
+                    if (array_key_exists($lotKey, $ingredientLotNumbers)) {
+                        $lotNumber = trim((string) $ingredientLotNumbers[$lotKey]);
+
+                        $ingredient->update([
+                            'ingredient_lot_number' => $lotNumber === '' ? null : $lotNumber,
+                        ]);
+                    }
+                });
+            }
+        }, attempts: 5);
 
         return redirect()
             ->route('production-batches.show', $productionBatch)
@@ -123,12 +129,25 @@ class ProductionBatchController extends Controller
         $recipe = $productionBatch->recipe;
         $batchLabel = $productionBatch->production_batch_number ?: $productionBatch->recipe_name;
 
-        $productionBatch->delete();
+        DB::transaction(function () use ($productionBatch): void {
+            $productionBatch = $this->lockBatch($productionBatch);
+            $this->authorize('delete', $productionBatch);
+            $productionBatch->delete();
+        }, attempts: 5);
 
         $redirect = $recipe instanceof Recipe
             ? redirect()->route('recipes.saved', $recipe)
             : redirect()->route('recipes.index');
 
         return $redirect->with('status', "Production batch {$batchLabel} deleted.");
+    }
+
+    private function lockBatch(ProductionBatch $batch): ProductionBatch
+    {
+        if ($batch->workspace_id !== null) {
+            Workspace::withoutGlobalScopes()->whereKey($batch->workspace_id)->lockForUpdate()->firstOrFail();
+        }
+
+        return ProductionBatch::query()->lockForUpdate()->findOrFail($batch->id);
     }
 }

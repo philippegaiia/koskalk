@@ -39,6 +39,9 @@ class RecipesIndex extends Component
         $currentUser = app(CurrentAppUserResolver::class)->resolve();
         $recipes = collect();
         $recipeCount = 0;
+        $canCreateRecipe = false;
+        $canUpdateRecipes = [];
+        $canDeleteRecipes = [];
         $canManageRecipeLocks = [];
         $searchTerm = trim($this->search);
         $selectedProductArea = trim($this->productAreaFilter);
@@ -49,6 +52,7 @@ class RecipesIndex extends Component
         $productTypeOptions = collect();
 
         if ($currentUser !== null) {
+            $canCreateRecipe = $currentUser->can('create', Recipe::class);
             $recipesQuery = Recipe::query()
                 ->with([
                     'productFamily',
@@ -110,17 +114,28 @@ class RecipesIndex extends Component
                 ->paginate(12);
 
             $recipeCount = $recipes->total();
-            $workspaceLockPermissions = [];
+            $workspacePermissions = [];
             foreach ($recipes as $recipe) {
-                $canManageRecipeLocks[$recipe->id] = $recipe->workspace_id === null
-                    ? $currentUser->can('manageLock', $recipe)
-                    : ($workspaceLockPermissions[$recipe->workspace_id] ??= $currentUser->can('manageLock', $recipe));
+                $permissionKey = $recipe->workspace_id === null
+                    ? 'recipe:'.$recipe->id
+                    : 'workspace:'.$recipe->workspace_id;
+                $workspacePermissions[$permissionKey] ??= [
+                    'update' => $currentUser->can('update', $recipe),
+                    'delete' => $currentUser->can('delete', $recipe),
+                    'manageLock' => $currentUser->can('manageLock', $recipe),
+                ];
+                $canUpdateRecipes[$recipe->id] = $workspacePermissions[$permissionKey]['update'];
+                $canDeleteRecipes[$recipe->id] = $workspacePermissions[$permissionKey]['delete'];
+                $canManageRecipeLocks[$recipe->id] = $workspacePermissions[$permissionKey]['manageLock'];
             }
         }
 
         return view('livewire.dashboard.recipes-index', [
             'contextualHelp' => $helpTopics->resolve('products', app()->getLocale()),
             'currentUser' => $currentUser,
+            'canCreateRecipe' => $canCreateRecipe,
+            'canUpdateRecipes' => $canUpdateRecipes,
+            'canDeleteRecipes' => $canDeleteRecipes,
             'recipeCount' => $recipeCount,
             'productAreaOptions' => $productAreaOptions,
             'productCategoryOptions' => $productCategoryOptions,

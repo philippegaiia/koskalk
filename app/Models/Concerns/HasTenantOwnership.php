@@ -35,7 +35,8 @@ trait HasTenantOwnership
 
     public function isOwnedBy(User $user): bool
     {
-        return $this->tenantOwnerType() === OwnerType::User
+        return $this->tenantWorkspaceId() === null
+            && $this->tenantOwnerType() === OwnerType::User
             && $this->tenantOwnerId() === $user->id;
     }
 

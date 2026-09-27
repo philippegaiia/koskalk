@@ -42,15 +42,22 @@ class IngredientFormulaUsageService
             ->map(fn (Collection $rows): Collection => $rows->pluck('source_ingredient_id'));
         $allUsageIngredientIds = $sourceIngredientIdsByUsageIngredientId->keys();
 
-        $ownedWorkspaceIds = $user->ownedWorkspaces()
-            ->withoutGlobalScopes()
-            ->pluck('workspaces.id')
-            ->all();
+        $workspaceIds = $user->accessibleWorkspaceIds();
         $recipeItems = RecipeItem::withoutGlobalScopes()
             ->join('recipe_versions', 'recipe_items.recipe_version_id', '=', 'recipe_versions.id')
             ->join('recipes', 'recipe_versions.recipe_id', '=', 'recipes.id')
             ->whereIn('recipe_items.ingredient_id', $allUsageIngredientIds)
-            ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $ownedWorkspaceIds))
+            ->where(function (Builder $query): void {
+                $query->whereColumn('recipe_versions.workspace_id', 'recipes.workspace_id')
+                    ->orWhere(fn (Builder $query): Builder => $query
+                        ->whereNull('recipe_versions.workspace_id')->whereNull('recipes.workspace_id'));
+            })
+            ->where(function (Builder $query): void {
+                $query->whereColumn('recipe_items.workspace_id', 'recipe_versions.workspace_id')
+                    ->orWhere(fn (Builder $query): Builder => $query
+                        ->whereNull('recipe_items.workspace_id')->whereNull('recipe_versions.workspace_id'));
+            })
+            ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $workspaceIds))
             ->get([
                 'recipe_items.ingredient_id',
                 'recipe_items.recipe_version_id as version_id',
@@ -89,25 +96,27 @@ class IngredientFormulaUsageService
     }
 
     /**
-     * @param  array<int>  $ownedWorkspaceIds
+     * @param  array<int>  $workspaceIds
      */
-    private function whereAccessibleRecipe(Builder $query, User $user, array $ownedWorkspaceIds): Builder
+    private function whereAccessibleRecipe(Builder $query, User $user, array $workspaceIds): Builder
     {
-        return $query->where(function (Builder $accessibleQuery) use ($ownedWorkspaceIds, $user): void {
+        return $query->where(function (Builder $accessibleQuery) use ($workspaceIds, $user): void {
             $accessibleQuery->where(function (Builder $ownedQuery) use ($user): void {
                 $ownedQuery
+                    ->whereNull('recipes.workspace_id')
                     ->where('recipes.owner_type', OwnerType::User->value)
                     ->where('recipes.owner_id', $user->id);
             });
 
-            if ($ownedWorkspaceIds !== []) {
+            if ($workspaceIds !== []) {
                 $accessibleQuery
-                    ->orWhere(function (Builder $workspaceOwnedQuery) use ($ownedWorkspaceIds): void {
+                    ->orWhere(function (Builder $workspaceOwnedQuery) use ($workspaceIds): void {
                         $workspaceOwnedQuery
+                            ->whereNull('recipes.workspace_id')
                             ->where('recipes.owner_type', OwnerType::Workspace->value)
-                            ->whereIn('recipes.owner_id', $ownedWorkspaceIds);
+                            ->whereIn('recipes.owner_id', $workspaceIds);
                     })
-                    ->orWhereIn('recipes.workspace_id', $ownedWorkspaceIds);
+                    ->orWhereIn('recipes.workspace_id', $workspaceIds);
             }
         });
     }

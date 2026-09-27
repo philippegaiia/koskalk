@@ -8,11 +8,11 @@ use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
-use App\Enums\WorkspaceMemberRole;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Services\MediaStorage;
+use App\Services\WorkspaceAuthorization;
 use App\Support\InciName;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -406,11 +406,7 @@ class Ingredient extends Model
             return false;
         }
 
-        return in_array($user->workspaceRoleFor($workspaceId), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-            WorkspaceMemberRole::Editor,
-        ], true);
+        return app(WorkspaceAuthorization::class)->canEdit($user, $workspaceId);
     }
 
     public function scopeAccessibleTo(Builder $query, ?User $user): Builder
@@ -425,6 +421,7 @@ class Ingredient extends Model
 
             $accessibleQuery->orWhere(function (Builder $ownedQuery) use ($user): void {
                 $ownedQuery
+                    ->whereNull('workspace_id')
                     ->where('owner_type', OwnerType::User->value)
                     ->where('owner_id', $user->id);
             });

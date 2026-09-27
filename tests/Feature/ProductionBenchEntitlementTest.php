@@ -78,6 +78,9 @@ it('exposes an actor-aware production bench write capability', function (): void
     $outsider = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
 
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $owner->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
+
     WorkspaceMember::factory()->for($workspace)->for($admin)->create([
         'role' => WorkspaceMemberRole::Admin,
     ]);
@@ -142,6 +145,9 @@ it('does not depend on plan limits or team size', function (): void {
 it('allows every workspace role to read production bench data', function (WorkspaceMemberRole $role): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $owner->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
+
     $actor = $role === WorkspaceMemberRole::Owner ? $owner : User::factory()->create();
 
     if ($role !== WorkspaceMemberRole::Owner) {

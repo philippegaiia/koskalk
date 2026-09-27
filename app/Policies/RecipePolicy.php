@@ -3,9 +3,11 @@
 namespace App\Policies;
 
 use App\Enums\WorkspaceMemberRole;
+use App\Enums\WorkspaceModule;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
+use App\Services\WorkspaceAuthorization;
 
 class RecipePolicy
 {
@@ -18,17 +20,25 @@ class RecipePolicy
 
     public function view(User $user, Recipe $recipe): bool
     {
-        return $this->isWorkspaceOwner($user, $recipe);
+        return $recipe->workspace_id !== null
+            ? app(WorkspaceAuthorization::class)->canViewModule($user, $recipe->workspace_id, WorkspaceModule::Formulation)
+            : $recipe->isOwnedBy($user);
     }
 
     public function create(User $user): bool
     {
-        return true;
+        $workspace = $user->company();
+
+        return $workspace === null
+            ? $user->active_workspace_id === null
+            : app(WorkspaceAuthorization::class)->canEditModule($user, $workspace->id, WorkspaceModule::Formulation);
     }
 
     public function update(User $user, Recipe $recipe): bool
     {
-        return $this->isWorkspaceOwner($user, $recipe);
+        return $recipe->workspace_id !== null
+            ? app(WorkspaceAuthorization::class)->canEditModule($user, $recipe->workspace_id, WorkspaceModule::Formulation)
+            : $recipe->isOwnedBy($user);
     }
 
     public function manageLock(User $user, Recipe $recipe): bool
@@ -45,7 +55,9 @@ class RecipePolicy
 
     public function delete(User $user, Recipe $recipe): bool
     {
-        return $this->isWorkspaceOwner($user, $recipe);
+        return $recipe->workspace_id !== null
+            ? $this->canDeleteWorkspaceRecords($user, $recipe->workspace_id)
+            : $recipe->isOwnedBy($user);
     }
 
     public function restore(User $user, Recipe $recipe): bool
@@ -56,17 +68,5 @@ class RecipePolicy
     public function forceDelete(User $user, Recipe $recipe): bool
     {
         return false;
-    }
-
-    private function isWorkspaceOwner(User $user, Recipe $recipe): bool
-    {
-        if ($recipe->workspace_id !== null) {
-            return $recipe->workspace()
-                ->withoutGlobalScopes()
-                ->where('owner_user_id', $user->id)
-                ->exists();
-        }
-
-        return $recipe->isOwnedBy($user);
     }
 }

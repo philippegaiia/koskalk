@@ -37,6 +37,7 @@
             x-model="formulaName"
             type="text"
             aria-label="{{ __('workbench.header.product_name') }}"
+            @if (! $isPublicCalculator && ! ($workbench['canEditRecipe'] ?? false)) disabled @endif
             :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)"
             :placeholder="isCosmeticFormula ? @js(__('workbench.header.untitled_cosmetic')) : @js(__('workbench.header.untitled_soap'))"
             class="sk-formula-title-control min-w-0 flex-1 bg-transparent px-0 pb-2 pt-1 text-3xl font-semibold tracking-tight text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:text-[var(--color-ink-soft)]"
@@ -44,9 +45,11 @@
 
         @unless ($isPublicCalculator)
             <div class="sk-formula-actions flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
-                <button type="button" @click="publish()" :disabled="!canWriteRecipe || !canSaveRecipe || isSaving" :class="!canWriteRecipe || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="sk-btn">
-                    <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
-                </button>
+                @if ($workbench['canEditRecipe'] ?? false)
+                    <button type="button" @click="publish()" :disabled="!canWriteRecipe || !canSaveRecipe || isSaving" :class="!canWriteRecipe || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="sk-btn">
+                        <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
+                    </button>
+                @endif
 
                 @if ($recipePublicId)
                     @if ($workbench['recipe']['can_manage_lock'] ?? false)
@@ -89,9 +92,11 @@
                             </div>
                         </div>
 
-                        <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
-                            {{ __('workbench.header.duplicate_product') }}
-                        </button>
+                        @if ($workbench['recipe']['can_duplicate'] ?? false)
+                            <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
+                                {{ __('workbench.header.duplicate_product') }}
+                            </button>
+                        @endif
                     </div>
                 </details>
             </div>

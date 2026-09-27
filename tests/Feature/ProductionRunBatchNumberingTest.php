@@ -9,6 +9,7 @@ use App\Enums\ProductionRunStatus;
 use App\Enums\StockMovementType;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
+use App\Models\Plan;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberIssuance;
@@ -17,6 +18,7 @@ use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\Production\ProductionRunNumberService;
@@ -33,8 +35,9 @@ function activeProductionNumberingWorkspace(): array
 {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
 
-    (new ProductionBenchAccess)->activate($owner, $workspace);
+    (app(ProductionBenchAccess::class))->activate($owner, $workspace);
 
     return [$owner, $workspace];
 }
@@ -71,7 +74,7 @@ it('saves valid permanent batch number settings without changing temporary refer
         'next_planning_serial' => 27,
     ]);
 
-    $saved = (new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService))
+    $saved = (new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService))
         ->handle($owner, $workspace, 'SOAP-', '-FR', 5, 42);
 
     expect($saved->permanent_prefix)->toBe('SOAP-')
@@ -84,7 +87,7 @@ it('saves valid permanent batch number settings without changing temporary refer
 
 it('rejects unsafe or invalid permanent batch number settings', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
-    $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, 'SOAP ', '', 5, 1))
         ->toThrow(ValidationException::class)
@@ -98,7 +101,7 @@ it('rejects unsafe or invalid permanent batch number settings', function (): voi
 
 it('rejects terminal next permanent serial settings', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
-    $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, 'B-', '', 5, PHP_INT_MAX))
         ->toThrow(ValidationException::class);
@@ -107,7 +110,7 @@ it('rejects terminal next permanent serial settings', function (): void {
 it('rejects settings whose next rendered candidate is already a workspace identity', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     productionNumberingRun($workspace, ['planning_batch_number' => 'SOAP-00042-FR']);
-    $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, 'SOAP-', '-FR', 5, 42))
         ->toThrow(ValidationException::class);
@@ -121,13 +124,13 @@ it('restricts number settings to active owner and admin users', function (): voi
     WorkspaceMember::factory()->for($workspace)->for($admin)->create(['role' => WorkspaceMemberRole::Admin]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);
-    $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect($action->handle($admin, $workspace, 'A-', '', 5, 1)->permanent_prefix)->toBe('A-')
         ->and(fn () => $action->handle($editor, $workspace, 'B-', '', 5, 1))->toThrow(AuthorizationException::class)
         ->and(fn () => $action->handle($viewer, $workspace, 'B-', '', 5, 1))->toThrow(AuthorizationException::class);
 
-    (new ProductionBenchAccess)->cancel($owner, $workspace);
+    (app(ProductionBenchAccess::class))->cancel($owner, $workspace);
 
     expect(fn () => $action->handle($owner, $workspace, 'B-', '', 5, 1))->toThrow(ValidationException::class);
 });
@@ -136,7 +139,7 @@ it('assigns permanent numbers in planned date order rather than selected order',
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $later = productionNumberingRun($workspace, ['planned_for' => '2026-08-12']);
     $earlier = productionNumberingRun($workspace, ['planned_for' => '2026-08-11']);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     $result = $action->handle($owner, $workspace, [$later->id, $earlier->id]);
 
@@ -152,7 +155,7 @@ it('skips already-numbered runs during idempotent assignment retries', function 
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $first = productionNumberingRun($workspace);
     $second = productionNumberingRun($workspace, ['planned_for' => '2026-08-11']);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     $action->handle($owner, $workspace, [$first->id, $second->id]);
 
@@ -168,7 +171,7 @@ it('rejects empty, missing, cross-workspace, draft, and undated selections', fun
     $undated = productionNumberingRun($workspace, ['planned_for' => null]);
     $foreign = productionNumberingRun($otherWorkspace);
     ProductionRunNumberSetting::query()->create(['workspace_id' => $workspace->id]);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, []))->toThrow(ValidationException::class)
         ->and(fn () => $action->handle($owner, $workspace, [999999]))->toThrow(ValidationException::class)
@@ -181,7 +184,7 @@ it('rejects empty, missing, cross-workspace, draft, and undated selections', fun
 it('allows Flash runs to receive permanent numbers in the normal assignment workflow', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $flash = productionNumberingRun($workspace, ['source' => 'flash']);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect($action->handle($owner, $workspace, [$flash->id]))
         ->toBe(['assigned' => 1, 'already_assigned' => 0])
@@ -191,7 +194,7 @@ it('allows Flash runs to receive permanent numbers in the normal assignment work
 it('scopes locked production rows to the requested workspace', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $run = productionNumberingRun($workspace);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
     $queries = [];
 
     DB::listen(function ($query) use (&$queries): void {
@@ -274,14 +277,14 @@ it('allows owner admin and editor assignment but rejects viewers and inactive ac
     WorkspaceMember::factory()->for($workspace)->for($admin)->create(['role' => WorkspaceMemberRole::Admin]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect($action->handle($owner, $workspace, [productionNumberingRun($workspace)->id]))->toBe(['assigned' => 1, 'already_assigned' => 0])
         ->and($action->handle($admin, $workspace, [productionNumberingRun($workspace)->id]))->toBe(['assigned' => 1, 'already_assigned' => 0])
         ->and($action->handle($editor, $workspace, [productionNumberingRun($workspace)->id]))->toBe(['assigned' => 1, 'already_assigned' => 0])
         ->and(fn () => $action->handle($viewer, $workspace, [productionNumberingRun($workspace)->id]))->toThrow(AuthorizationException::class);
 
-    (new ProductionBenchAccess)->cancel($owner, $workspace);
+    (app(ProductionBenchAccess::class))->cancel($owner, $workspace);
 
     expect(fn () => $action->handle($owner, $workspace, [productionNumberingRun($workspace)->id]))->toThrow(ValidationException::class);
 
@@ -298,7 +301,7 @@ it('rolls back every assignment and the counter when any rendered candidate coll
     $first = productionNumberingRun($workspace, ['planned_for' => '2026-08-10']);
     $second = productionNumberingRun($workspace, ['planned_for' => '2026-08-11']);
     ProductionRunNumberSetting::query()->create(['workspace_id' => $workspace->id]);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, [$first->id, $second->id]))
         ->toThrow(ValidationException::class)
@@ -314,7 +317,7 @@ it('rejects a terminal permanent serial before changing runs or counters', funct
         'workspace_id' => $workspace->id,
         'next_permanent_serial' => PHP_INT_MAX,
     ]);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, [$run->id]))
         ->toThrow(ValidationException::class)
@@ -330,7 +333,7 @@ it('rejects an exhausted counter atomically for a two-run assignment', function 
         'workspace_id' => $workspace->id,
         'next_permanent_serial' => PHP_INT_MAX - 1,
     ]);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect(fn () => $action->handle($owner, $workspace, [$first->id, $second->id]))
         ->toThrow(ValidationException::class)
@@ -346,7 +349,7 @@ it('allows the highest serial that can still be incremented for one assignment',
         'workspace_id' => $workspace->id,
         'next_permanent_serial' => PHP_INT_MAX - 1,
     ]);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     expect($action->handle($owner, $workspace, [$run->id]))
         ->toBe(['assigned' => 1, 'already_assigned' => 0])
@@ -359,7 +362,7 @@ it('isolates permanent batch numbers and counters between workspaces', function 
     [$secondOwner, $secondWorkspace] = activeProductionNumberingWorkspace();
     $first = productionNumberingRun($firstWorkspace);
     $second = productionNumberingRun($secondWorkspace);
-    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $action = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     $action->handle($firstOwner, $firstWorkspace, [$first->id]);
     $action->handle($secondOwner, $secondWorkspace, [$second->id]);
@@ -373,7 +376,7 @@ it('isolates permanent batch numbers and counters between workspaces', function 
 it('retains permanent number audit metadata when a production is cancelled', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $run = productionNumberingRun($workspace);
-    $assignment = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $assignment = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     $assignment->handle($owner, $workspace, [$run->id]);
     $assigned = $run->fresh();
@@ -387,7 +390,7 @@ it('retains permanent number audit metadata when a production is cancelled', fun
         }
     });
 
-    $cancelled = (new CancelProduction(new ProductionBenchAccess))->handle($owner, $assigned, 'Customer postponed the batch.');
+    $cancelled = (new CancelProduction(app(ProductionBenchAccess::class)))->handle($owner, $assigned, 'Customer postponed the batch.');
     $workspaceQueryIndex = collect($queries)->search(fn (string $query): bool => str_contains(strtolower($query), 'workspaces'));
     $productionQueryIndex = collect($queries)->search(fn (string $query): bool => str_contains(strtolower($query), 'production_runs'));
     $productionLockQuery = collect($queries)->first(fn (string $query): bool => str_contains(strtolower($query), 'production_runs'));
@@ -404,14 +407,14 @@ it('retains permanent number audit metadata when a production is cancelled', fun
 it('rejects reissuing a permanent number after its production is deleted', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $run = productionNumberingRun($workspace);
-    $assignment = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $assignment = new AssignProductionBatchNumbers(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
     $assignment->handle($owner, $workspace, [$run->id]);
     $issuedNumber = $run->fresh()->batch_number;
 
     app(DeleteProductionRun::class)->handle($owner, $run->fresh());
 
-    expect(fn () => (new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService))
+    expect(fn () => (new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService))
         ->handle($owner, $workspace, 'B-', '', 5, 1))
         ->toThrow(ValidationException::class)
         ->and(ProductionRunNumberIssuance::query()->where('workspace_id', $workspace->id)->sole()->batch_number)
@@ -431,7 +434,7 @@ it('serializes settings initialization against a concurrent PostgreSQL workspace
 
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
-    (new ProductionBenchAccess)->activate($owner, $workspace);
+    (app(ProductionBenchAccess::class))->activate($owner, $workspace);
 
     $secondConnectionName = 'production_numbering_contention';
     $defaultConnectionName = config('database.default');
@@ -445,7 +448,7 @@ it('serializes settings initialization against a concurrent PostgreSQL workspace
     config(['database.default' => $secondConnectionName]);
 
     try {
-        $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+        $action = new SaveProductionRunNumberSettings(app(ProductionBenchAccess::class), new ProductionRunNumberService);
 
         expect(fn () => $action->handle($owner, $workspace, 'C-', '', 5, 1))
             ->toThrow(QueryException::class);

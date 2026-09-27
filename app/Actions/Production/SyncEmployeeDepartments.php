@@ -21,12 +21,12 @@ class SyncEmployeeDepartments
         Employee $employee,
         array $departmentIds,
     ): Employee {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $departmentIds = array_values(array_unique(array_map('intval', $departmentIds)));
 
         return DB::transaction(function () use ($actor, $departmentIds, $employee, $workspace): Employee {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
             $current = Employee::query()->lockForUpdate()->find($employee->id);
 
             if (! $current instanceof Employee || (int) $current->workspace_id !== (int) $lockedWorkspace->id) {

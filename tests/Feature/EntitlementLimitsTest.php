@@ -172,6 +172,7 @@ it('stores a new private ingredient in the active company workspace', function (
 
 it('stores a member private ingredient in their active subscriber workspace', function () {
     $subscriber = User::factory()->create();
+    $subscriber->entitlements()->create(['plan_id' => Plan::factory()->create(['allows_collaboration' => true])->id, 'status' => 'active', 'starts_at' => now()]);
     $member = User::factory()->create();
     $subscriberWorkspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
     $personalWorkspace = Workspace::factory()->create(['owner_user_id' => $member->id]);
@@ -235,7 +236,7 @@ it('enforces the subscriber private ingredient limit when a company member creat
 
     $plan = Plan::factory()
         ->hasLimit('private_ingredients', 1)
-        ->create(['is_default' => true]);
+        ->create(['is_default' => true, 'allows_collaboration' => true]);
 
     $subscriber->entitlements()->create([
         'plan_id' => $plan->id,

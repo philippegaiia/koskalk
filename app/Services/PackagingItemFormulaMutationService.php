@@ -9,9 +9,11 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -73,19 +75,22 @@ class PackagingItemFormulaMutationService
     public function removeEverywhereAndDelete(User $user, PackagingItem $packagingItem): void
     {
         $this->transaction->run(function () use ($user, $packagingItem): void {
+            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($packagingItem->workspace_id);
             $lockedPackagingItem = PackagingItem::query()
+                ->where('workspace_id', $packagingItem->workspace_id)
                 ->whereKey($packagingItem->getKey())
                 ->lockForUpdate()
                 ->first();
 
             if (
                 ! $lockedPackagingItem instanceof PackagingItem
-                || ! $lockedPackagingItem->workspace->hasMember($user)
             ) {
                 throw ValidationException::withMessages([
                     'packaging_item' => 'The packaging item is not available in the active workspace.',
                 ]);
             }
+
+            Gate::forUser($user)->authorize('delete', $lockedPackagingItem);
 
             $impact = $this->impact($user, $lockedPackagingItem);
 

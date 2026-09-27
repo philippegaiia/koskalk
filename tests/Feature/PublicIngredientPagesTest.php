@@ -523,6 +523,8 @@ it('removes a used ingredient everywhere and closes the dialog', function () {
 
 it('blocks automatic removal when affected formulas cannot all be edited without leaking inaccessible names', function () {
     $user = User::factory()->create();
+    $selectedWorkspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->update(['active_workspace_id' => $selectedWorkspace->id]);
     $otherUser = User::factory()->create();
     $workspaceOwner = User::factory()->create();
     $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Shared Additive');

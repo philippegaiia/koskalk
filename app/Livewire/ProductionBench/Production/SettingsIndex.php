@@ -15,8 +15,8 @@ use App\Actions\Production\SyncProductionBatchPresetProducts;
 use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Actions\Production\UpdateProductionWorkingCalendar;
 use App\Enums\MassUnit;
-use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
 use App\Models\Employee;
@@ -42,6 +42,7 @@ class SettingsIndex extends Component implements HasForms
 {
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
 
     #[Locked]
@@ -362,7 +363,7 @@ class SettingsIndex extends Component implements HasForms
     public function deleteTaskType(int $taskTypeId, ProductionBenchAccess $access): void
     {
         $workspace = $this->workspace();
-        $access->assertWritable($this->user(), $workspace);
+        $access->assertCanConfigure($this->user(), $workspace);
         $taskType = ProductionTaskType::query()
             ->where('workspace_id', $workspace->id)
             ->findOrFail($taskTypeId);
@@ -494,7 +495,7 @@ class SettingsIndex extends Component implements HasForms
     public function deleteTaskSet(int $taskSetId, ProductionBenchAccess $access): void
     {
         $workspace = $this->workspace();
-        $access->assertWritable($this->user(), $workspace);
+        $access->assertCanConfigure($this->user(), $workspace);
         $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
             ->findOrFail($taskSetId);
@@ -599,7 +600,7 @@ class SettingsIndex extends Component implements HasForms
     public function deletePreset(int $presetId, ProductionBenchAccess $access): void
     {
         $workspace = $this->workspace();
-        $access->assertWritable($this->user(), $workspace);
+        $access->assertCanConfigure($this->user(), $workspace);
         $preset = ProductionBatchPreset::query()
             ->where('workspace_id', $workspace->id)
             ->findOrFail($presetId);
@@ -673,9 +674,10 @@ class SettingsIndex extends Component implements HasForms
         return view('livewire.production-bench.production.settings-index', [
             'section' => $this->section,
             'workspace' => $workspace,
+            'canConfigure' => $access->canConfigure($this->user(), $workspace),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'canDeleteRecords' => in_array($workspace->roleFor($this->user()), [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true),
+            'canDeleteRecords' => $access->canConfigure($this->user(), $workspace),
             'employees' => Employee::query()->where('workspace_id', $workspace->id)->with('departments')->orderBy('last_name')->orderBy('first_name')->get(),
             'departments' => Department::query()->where('workspace_id', $workspace->id)->withCount(['employees', 'productionTaskTypes', 'productionTasks'])->orderByDesc('is_active')->orderBy('name')->get(),
             'taskTypes' => ProductionTaskType::query()->where('workspace_id', $workspace->id)->with('department')->orderBy('name')->get(),
@@ -754,6 +756,6 @@ class SettingsIndex extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

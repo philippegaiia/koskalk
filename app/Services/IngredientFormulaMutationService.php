@@ -13,11 +13,13 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -173,6 +175,7 @@ class IngredientFormulaMutationService
         Ingredient $replacement,
     ): void {
         $this->transaction->run(function () use ($user, $ingredient, $replacement): void {
+            $this->lockIngredientWorkspace($ingredient, $user);
             $lockedIngredients = Ingredient::query()
                 ->whereKey([$ingredient->getKey(), $replacement->getKey()])
                 ->orderBy('id')
@@ -241,6 +244,7 @@ class IngredientFormulaMutationService
     public function removeEverywhereAndDelete(User $user, Ingredient $ingredient): void
     {
         $this->transaction->run(function () use ($user, $ingredient): void {
+            $this->lockIngredientWorkspace($ingredient, $user);
             $lockedIngredient = $this->validatedOwnedIngredient(
                 Ingredient::query()
                     ->whereKey($ingredient->getKey())
@@ -337,6 +341,15 @@ class IngredientFormulaMutationService
             && $ingredient->visibility === Visibility::Private;
     }
 
+    private function lockIngredientWorkspace(Ingredient $ingredient, User $user): void
+    {
+        if ($ingredient->workspace_id !== null) {
+            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($ingredient->workspace_id);
+        } else {
+            User::query()->lockForUpdate()->findOrFail($user->id);
+        }
+    }
+
     private function validatedOwnedIngredient(?Ingredient $ingredient, User $user): Ingredient
     {
         if (! $ingredient instanceof Ingredient || ! $this->isPrivateIngredientOwnedBy($ingredient, $user)) {
@@ -344,6 +357,8 @@ class IngredientFormulaMutationService
                 'ingredient' => 'Only your own private ingredients can be replaced or removed and deleted.',
             ]);
         }
+
+        Gate::forUser($user)->authorize('delete', $ingredient);
 
         return $ingredient;
     }

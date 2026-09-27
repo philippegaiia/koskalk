@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionTaskSet;
 use App\Models\User;
 use App\Models\Workspace;
@@ -16,6 +17,7 @@ use Livewire\WithPagination;
 class TaskSetIndex extends Component
 {
     use InteractsWithAppNotifications;
+    use InteractsWithProductionWorkspace;
 
     public ?string $statusMessage = null;
 
@@ -51,7 +53,7 @@ class TaskSetIndex extends Component
     public function delete(int $taskSetId, ProductionBenchAccess $access): void
     {
         $workspace = $this->workspace();
-        $access->assertWritable($this->user(), $workspace);
+        $access->assertCanConfigure($this->user(), $workspace);
 
         ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
@@ -88,6 +90,7 @@ class TaskSetIndex extends Component
 
         return view('livewire.production-bench.production.task-set-index', [
             'contextualHelp' => $helpTopics->resolve('task_sets', app()->getLocale()),
+            'canConfigure' => $access->canConfigure($this->user(), $workspace),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'taskSets' => $taskSets,
@@ -101,6 +104,6 @@ class TaskSetIndex extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

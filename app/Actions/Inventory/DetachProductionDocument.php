@@ -18,8 +18,12 @@ class DetachProductionDocument
 
         abort_unless($workspace instanceof Workspace, 404);
 
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
-        DB::transaction(fn (): bool => (bool) $document->delete());
+        DB::transaction(function () use ($actor, $workspace, $document): void {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
+            ProductionDocument::query()->where('workspace_id', $lockedWorkspace->id)->lockForUpdate()->findOrFail($document->id)->delete();
+        }, attempts: 5);
     }
 }

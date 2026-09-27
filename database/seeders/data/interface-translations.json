@@ -33722,12 +33722,12 @@
       "group": "settings",
       "key": "workspace.owner_help",
       "text": {
-        "de": "Nur der Inhaber des Arbeitsbereichs kann diese Einstellungen ändern.",
-        "es": "Solo el propietario del espacio de trabajo puede cambiar esta configuración.",
-        "fr": "Seul le propriétaire de l’espace de travail peut modifier ces réglages.",
-        "it": "Solo il proprietario dello spazio di lavoro può modificare queste impostazioni.",
-        "nl": "Alleen de eigenaar van de werkruimte kan deze instellingen wijzigen.",
-        "pt_BR": "Somente o proprietário do espaço de trabalho pode alterar estas configurações."
+        "de": "Der Inhaber und die Administratoren des Arbeitsbereichs können diese Einstellungen ändern.",
+        "es": "El propietario y los administradores del espacio de trabajo pueden cambiar esta configuración.",
+        "fr": "Le propriétaire et les administrateurs de l’espace de travail peuvent modifier ces réglages.",
+        "it": "Il proprietario e gli amministratori dello spazio di lavoro possono modificare queste impostazioni.",
+        "nl": "De eigenaar en beheerders van de werkruimte kunnen deze instellingen wijzigen.",
+        "pt_BR": "O proprietário e os administradores do espaço de trabalho podem alterar estas configurações."
       }
     },
     {

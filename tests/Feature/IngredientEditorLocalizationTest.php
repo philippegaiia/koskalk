@@ -23,9 +23,11 @@ use App\Models\IngredientTranslation;
 use App\Models\InterfaceTranslation;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\Plan;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceIngredientGuidance;
@@ -650,6 +652,7 @@ it('filters workspace overrides and media links independently for a public non-m
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => 'viewer']);
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Public workspace blend',
@@ -798,7 +801,7 @@ it('retains public technical chemistry and IFRA limits without private source no
         ->and($component->instance()->referenceData['ifra']['limits'][0]['restriction_note'])->toBeNull();
 });
 
-it('shows an owning workspace scope while keeping its locked destination after a workspace switch', function (): void {
+it('hides the old workspace scope while keeping its locked destination after a workspace switch', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create([
         'name' => 'Owning workspace',
@@ -826,7 +829,7 @@ it('shows an owning workspace scope while keeping its locked destination after a
     $component
         ->refresh()
         ->assertSet('destinationWorkspaceId', $workspace->id)
-        ->assertSeeText('Changes are shared with everyone in Owning workspace.')
+        ->assertDontSeeText('Changes are shared with everyone in Owning workspace.')
         ->assertDontSeeText('Changes are shared with everyone in Active workspace.');
 });
 
@@ -834,6 +837,7 @@ it('shows a workspace material code as plain text to a workspace viewer', functi
     $owner = User::factory()->create();
     $viewer = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => 'viewer']);
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Viewer workspace ingredient',

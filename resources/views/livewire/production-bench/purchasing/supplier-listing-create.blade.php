@@ -21,9 +21,9 @@
         <x-workflow-action-bar data-production-bench-save-bar>
             @if ($editingListingPublicId)
                 <x-slot:leading>
-                    <button type="button" wire:click="delete" wire:confirm="{{ __('production_bench.listing.delete_confirm') }}" class="sk-btn sk-btn-danger" wire:loading.attr="disabled" wire:target="delete">
+                    @if ($canDelete)<button type="button" wire:click="delete" wire:confirm="{{ __('production_bench.listing.delete_confirm') }}" class="sk-btn sk-btn-danger" wire:loading.attr="disabled" wire:target="delete">
                         {{ __('production_bench.listing.delete') }}
-                    </button>
+                    </button>@endif
                 </x-slot:leading>
             @endif
 

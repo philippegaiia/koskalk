@@ -49,7 +49,8 @@ class CreatePurchaseOrder
         }
 
         return DB::transaction(function () use ($actor, $workspace, $supplier, $lines, $expectedAt, $notes, $currencies, $stage): PurchaseOrder {
-            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertWritable($actor, $lockedWorkspace);
             $sequence = PurchaseOrder::query()->where('workspace_id', $workspace->id)->count() + 1;
             $ingredientIds = collect($lines)
                 ->map(fn (array $line): ?int => $line['listing']->ingredient_id)

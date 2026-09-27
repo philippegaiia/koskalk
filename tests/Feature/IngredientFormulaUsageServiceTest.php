@@ -5,12 +5,14 @@ use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
+use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\IngredientFormulaUsageService;
@@ -197,10 +199,11 @@ it('keeps draft-only usage while reporting zero saved backups', function () {
         ]);
 });
 
-it('omits workspace formula usage from non-owner members', function () {
+it('shares selected workspace formula usage with entitled members', function () {
     $user = User::factory()->create();
     $workspaceOwner = User::factory()->create();
     $workspace = Workspace::factory()->for($workspaceOwner, 'owner')->create();
+    UserEntitlement::factory()->for($workspaceOwner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $ingredient = Ingredient::factory()->create();
 
     WorkspaceMember::factory()->for($workspace)->for($user)->create([
@@ -235,7 +238,7 @@ it('omits workspace formula usage from non-owner members', function () {
 
     $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
 
-    expect($usage)->not->toHaveKey($ingredient->id);
+    expect($usage[$ingredient->id][0]['recipe_id'])->toBe($recipe->id);
 });
 
 it('omits legacy workspace formula usage from non-owner members', function () {
@@ -525,3 +528,50 @@ it('returns an empty array for an empty ingredient collection', function () {
     expect(app(IngredientFormulaUsageService::class)->forIngredients($user, collect()))
         ->toBe([]);
 });
+
+it('omits formula usage after selected workspace access is revoked', function (string $change): void {
+    $actor = User::factory()->create();
+    $workspace = Workspace::factory()->create();
+    $membership = WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => WorkspaceMemberRole::Editor]);
+    $entitlement = UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $workspace->id]);
+    $version = RecipeVersion::factory()->for($recipe)->create(['workspace_id' => $workspace->id]);
+    RecipeItem::factory()->for($version, 'recipeVersion')->create(['recipe_phase_id' => null, 'ingredient_id' => $ingredient->id, 'workspace_id' => $workspace->id]);
+    $service = app(IngredientFormulaUsageService::class);
+    expect($service->forIngredients($actor, collect([$ingredient]))[$ingredient->id][0]['recipe_id'])->toBe($recipe->id);
+    $actor->company();
+
+    match ($change) {
+        'membership removal' => $membership->delete(),
+        'collaboration expiry' => $entitlement->update(['ends_at' => now()->subMinute()]),
+        'workspace selection' => User::query()->whereKey($actor->id)->update(['active_workspace_id' => Workspace::factory()->for($actor, 'owner')->create()->id]),
+    };
+
+    expect($service->forIngredients($actor, collect([$ingredient])))->toBe([]);
+})->with(['membership removal', 'collaboration expiry', 'workspace selection']);
+
+it('does not disclose another owned workspace through legacy actor ownership', function (): void {
+    $actor = User::factory()->create();
+    $selected = Workspace::factory()->for($actor, 'owner')->create();
+    $other = Workspace::factory()->for($actor, 'owner')->create();
+    $actor->update(['active_workspace_id' => $selected->id]);
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create(['workspace_id' => $other->id, 'owner_type' => OwnerType::User, 'owner_id' => $actor->id]);
+    $version = RecipeVersion::factory()->for($recipe)->create(['workspace_id' => $other->id]);
+    RecipeItem::factory()->for($version, 'recipeVersion')->create(['recipe_phase_id' => null, 'ingredient_id' => $ingredient->id, 'workspace_id' => $other->id]);
+
+    expect(app(IngredientFormulaUsageService::class)->forIngredients($actor, collect([$ingredient])))->toBe([]);
+});
+
+it('omits mismatched nested formula usage ownership', function (string $mismatch): void {
+    $actor = User::factory()->create();
+    $workspace = Workspace::factory()->for($actor, 'owner')->create();
+    $other = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $workspace->id]);
+    $version = RecipeVersion::factory()->for($recipe)->create(['workspace_id' => $mismatch === 'version' ? $other->id : $workspace->id]);
+    RecipeItem::factory()->for($version, 'recipeVersion')->create(['recipe_phase_id' => null, 'ingredient_id' => $ingredient->id, 'workspace_id' => $other->id]);
+
+    expect(app(IngredientFormulaUsageService::class)->forIngredients($actor, collect([$ingredient])))->toBe([]);
+})->with(['version', 'item']);

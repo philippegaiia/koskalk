@@ -6,6 +6,7 @@ use App\Enums\MassDisplaySystem;
 use App\Enums\MassUnit;
 use App\Enums\MaterialPriceSource;
 use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\User;
@@ -19,6 +20,7 @@ use App\Services\IngredientFormulaMutationService;
 use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
 use App\Services\PriceBasisConverter;
+use App\Services\WorkspaceAuthorization;
 use App\Support\NumberLocale;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
@@ -88,7 +90,11 @@ class IngredientsIndex extends Component
     public function mount(CurrentAppUserResolver $resolver): void
     {
         $user = $resolver->resolve();
-        $workspace = $user?->company();
+        $workspace = $user?->company(fresh: true);
+
+        if ($workspace !== null) {
+            abort_unless(app(WorkspaceAuthorization::class)->canView($user, $workspace->id), 403);
+        }
 
         if ($workspace instanceof Workspace && $workspace->owner_user_id === $user?->id) {
             $workspace->setRelation('owner', $user);
@@ -100,6 +106,17 @@ class IngredientsIndex extends Component
         $this->currentCurrency = $user?->defaultCurrency();
         $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
         $this->currentPriceUnit = $massDisplaySystem->priceUnit()->value;
+    }
+
+    public function hydrate(): void
+    {
+        $user = $this->freshAuthenticatedUser();
+        $workspace = $user?->company(fresh: true);
+        abort_unless($workspace?->id === $this->destinationWorkspaceId, 403);
+
+        if ($workspace !== null) {
+            abort_unless(app(WorkspaceAuthorization::class)->canView($user, $workspace->id), 403);
+        }
     }
 
     public function updatingSearch(): void
@@ -133,9 +150,35 @@ class IngredientsIndex extends Component
         $privateIngredientUsage = $currentUser instanceof User
             ? $entitlementService->privateIngredientUsageFor($currentUser)
             : ['used' => 0, 'limit' => null, 'remaining' => null, 'allowed' => false];
+        $workspacePermissions = [];
+        $canEditIngredients = [];
+        $canDeleteIngredients = [];
+
+        if ($currentUser instanceof User) {
+            $authorization = app(WorkspaceAuthorization::class);
+
+            foreach ($ingredients as $ingredient) {
+                $workspaceId = $ingredient->tenantWorkspaceId();
+
+                if ($workspaceId !== null) {
+                    $workspacePermissions[$workspaceId] ??= [
+                        'edit' => $authorization->canEdit($currentUser, $workspaceId),
+                        'delete' => $authorization->canManage($currentUser, $workspaceId),
+                    ];
+                    $canEditIngredients[$ingredient->id] = $workspacePermissions[$workspaceId]['edit'];
+                    $canDeleteIngredients[$ingredient->id] = $workspacePermissions[$workspaceId]['delete']
+                        && $ingredient->visibility === Visibility::Private;
+                } else {
+                    $canEditIngredients[$ingredient->id] = $ingredient->isOwnedBy($currentUser);
+                    $canDeleteIngredients[$ingredient->id] = $canEditIngredients[$ingredient->id]
+                        && $ingredient->visibility === Visibility::Private;
+                }
+            }
+        }
+
         $privateIngredients = $currentUser instanceof User
             ? $ingredients->getCollection()
-                ->filter(fn (Ingredient $ingredient): bool => $ingredient->isEditableBy($currentUser))
+                ->filter(fn (Ingredient $ingredient): bool => $canEditIngredients[$ingredient->id] ?? false)
                 ->values()
             : collect();
         $formulaUsageByIngredient = $currentUser instanceof User
@@ -158,6 +201,8 @@ class IngredientsIndex extends Component
             'canCreateIngredients' => $canCreateIngredients,
             'canDuplicateIngredients' => $canCreateIngredients,
             'canEditPrices' => $canCreateIngredients,
+            'canEditIngredients' => $canEditIngredients,
+            'canDeleteIngredients' => $canDeleteIngredients,
             'duplicateDestinationSignature' => $this->duplicateDestinationSignature(),
             'destinationWorkspaceName' => $currentUser?->company()?->name,
             'ingredients' => $ingredients,
@@ -538,7 +583,7 @@ class IngredientsIndex extends Component
             ->where(fn (Builder $query): Builder => $this->applyCompanyIngredientScope($query, $user))
             ->find($id);
 
-        return $ingredient instanceof Ingredient && $ingredient->isEditableBy($user)
+        return $ingredient instanceof Ingredient && $user->can('delete', $ingredient)
             ? $ingredient
             : null;
     }

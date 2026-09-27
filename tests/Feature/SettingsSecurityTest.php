@@ -3,8 +3,10 @@
 use App\Enums\MassDisplaySystem;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\SettingsIndex;
+use App\Models\Plan;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Database\Seeders\SupportedLocaleSeeder;
@@ -126,7 +128,7 @@ it('accepts only supported workspace mass display systems', function (): void {
     expect($workspace->refresh()->mass_display_system)->toBe(MassDisplaySystem::UsCustomary);
 });
 
-it('denies workspace settings changes to non-owner members', function () {
+it('denies workspace settings changes to members without collaboration entitlement', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create(['name' => 'Owner workspace']);
@@ -145,4 +147,29 @@ it('denies workspace settings changes to non-owner members', function () {
         ->assertForbidden();
 
     expect($workspace->refresh()->name)->toBe('Owner workspace');
+});
+
+it('allows workspace admins to edit operational company settings with collaboration enabled', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->create(['user_id' => $owner->id, 'plan_id' => $plan->id]);
+    $member = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => WorkspaceMemberRole::Admin]);
+    $this->actingAs($member);
+    Livewire::test(SettingsIndex::class)->set('workspaceName', 'Shared Studio')->call('saveWorkspace')->assertHasNoErrors();
+    expect($workspace->fresh()->name)->toBe('Shared Studio');
+});
+
+it('rejects company settings submitted after switching away from the mounted workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $other = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $this->actingAs($owner);
+    $page = Livewire::test(SettingsIndex::class)->set('workspaceName', 'Stale change');
+    $owner->forceFill(['active_workspace_id' => $other->id])->save();
+    $page->call('saveWorkspace')->assertForbidden();
+    expect($workspace->fresh()->name)->not->toBe('Stale change')
+        ->and($other->fresh()->name)->not->toBe('Stale change');
 });

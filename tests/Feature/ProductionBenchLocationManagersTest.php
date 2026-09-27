@@ -6,6 +6,7 @@ use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\PlanningPreferences;
 use App\Livewire\ProductionBench\Production\ProductionLocationManager;
 use App\Livewire\ProductionBench\Production\StorageLocationManager;
+use App\Models\Plan;
 use App\Models\ProductionLocation;
 use App\Models\StorageLocation;
 use App\Models\User;
@@ -172,14 +173,19 @@ it('scopes storage location lists and escapes stored names', function (): void {
 
 it('uses the location policies for editor and viewer mutation access', function (): void {
     $fixture = locationManagerFixture(usesStorageLocations: true);
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $fixture['workspace']->owner->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $editor = User::factory()->create();
     WorkspaceMember::factory()->for($fixture['workspace'])->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
 
     Livewire::actingAs($editor)
         ->test(StorageLocationManager::class)
+        ->assertSee(__('locations.manager_read_only'))
         ->fillForm(['name' => 'Editor shelf'])
         ->call('save')
-        ->assertHasNoFormErrors();
+        ->assertForbidden();
+
+    expect(StorageLocation::query()->where('name', 'Editor shelf')->exists())->toBeFalse();
 
     $viewer = User::factory()->create();
     WorkspaceMember::factory()->for($fixture['workspace'])->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);

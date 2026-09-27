@@ -22,3 +22,6 @@ Build public form UI with Filament's form/schema components: public Livewire edi
 
 ## Reference URLs via named routes with route()
 Generate all URLs and redirects from named routes with route('name', $params); use redirect()->route(...) for redirects and {{ route('name') }} in Blade; do not use url('/path') or action([...]).
+
+## Bind workspace forms to their original company
+Mounted company forms keep a Locked original workspace ID and reject hydration/submission after switching company or losing access. Production Bench uses InteractsWithProductionWorkspace. Read-only raw workspace queries must also authorize live collaboration access; hiding controls or filtering workspace_id alone is insufficient.

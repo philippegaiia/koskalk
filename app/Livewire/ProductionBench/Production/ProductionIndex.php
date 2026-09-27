@@ -9,6 +9,7 @@ use App\Enums\ProductionRunStatus;
 use App\Enums\StockReservationStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
@@ -38,6 +39,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
     use WithPagination;
 
@@ -569,6 +571,6 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

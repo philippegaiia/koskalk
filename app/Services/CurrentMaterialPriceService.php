@@ -9,6 +9,7 @@ use App\Models\PackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -33,6 +34,7 @@ class CurrentMaterialPriceService
     ): CurrentMaterialPrice {
         return DB::transaction(function () use ($workspace, $ingredient, $pricePerMassUnit, $massUnit, $currency, $source, $sourceId, $actor, $recordedAt, $exceptCostingId): CurrentMaterialPrice {
             Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $this->assertWritable($actor, $workspace);
             $price = $this->validatedPrice($pricePerMassUnit);
             $gramsPerUnit = $this->massConverter->toGrams('1', $massUnit);
             $canonicalPrice = bcdiv($price, $gramsPerUnit, 12);
@@ -73,6 +75,7 @@ class CurrentMaterialPriceService
     ): CurrentMaterialPrice {
         return DB::transaction(function () use ($workspace, $packagingItem, $pricePerItem, $currency, $source, $sourceId, $actor, $recordedAt, $exceptCostingId): CurrentMaterialPrice {
             Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $this->assertWritable($actor, $workspace);
             if ($packagingItem->workspace_id !== $workspace->id) {
                 throw ValidationException::withMessages([
                     'packaging_item' => 'The packaging item must belong to the active workspace.',
@@ -106,11 +109,7 @@ class CurrentMaterialPriceService
     {
         DB::transaction(function () use ($workspace, $ingredient, $actor): void {
             Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
-            if (! $workspace->hasMember($actor)) {
-                throw ValidationException::withMessages([
-                    'workspace' => 'The active workspace is not accessible.',
-                ]);
-            }
+            $this->assertWritable($actor, $workspace);
 
             $forgotPrice = DB::transaction(function () use ($workspace, $ingredient): bool {
                 $currentPrice = CurrentMaterialPrice::query()
@@ -147,6 +146,7 @@ class CurrentMaterialPriceService
     ): ?CurrentMaterialPrice {
         return DB::transaction(function () use ($workspace, $ingredient, $canonicalPrice, $currency, $source, $sourceId, $recordedAt, $actor, $createdByUserId): ?CurrentMaterialPrice {
             Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $this->assertWritable($actor, $workspace);
             $currentPrice = $this->replaceProjection(
                 workspace: $workspace,
                 ingredientId: $ingredient->id,
@@ -185,6 +185,7 @@ class CurrentMaterialPriceService
     ): ?CurrentMaterialPrice {
         return DB::transaction(function () use ($workspace, $packagingItem, $canonicalPrice, $currency, $source, $sourceId, $recordedAt, $actor, $createdByUserId): ?CurrentMaterialPrice {
             Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $this->assertWritable($actor, $workspace);
             $currentPrice = $this->replaceProjection(
                 workspace: $workspace,
                 ingredientId: null,
@@ -219,12 +220,6 @@ class CurrentMaterialPriceService
         User $actor,
         ?CarbonInterface $recordedAt,
     ): CurrentMaterialPrice {
-        if (! $workspace->hasMember($actor)) {
-            throw ValidationException::withMessages([
-                'workspace' => 'The active workspace is not accessible.',
-            ]);
-        }
-
         $currency = strtoupper(trim($currency));
 
         if (preg_match('/^[A-Z]{3}$/', $currency) !== 1) {
@@ -342,6 +337,13 @@ class CurrentMaterialPriceService
                 ],
             );
         });
+    }
+
+    private function assertWritable(User $actor, Workspace $workspace): void
+    {
+        if (! app(WorkspaceAuthorization::class)->canEdit($actor, $workspace->id)) {
+            throw new AuthorizationException;
+        }
     }
 
     private function validatedPrice(string $price): string

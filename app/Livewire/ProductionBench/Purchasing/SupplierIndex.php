@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
@@ -22,6 +23,7 @@ use Livewire\WithPagination;
 class SupplierIndex extends Component implements HasForms
 {
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use RestrictsFileUploadsToSchemaComponents;
     use WithPagination;
 
@@ -133,6 +135,6 @@ class SupplierIndex extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

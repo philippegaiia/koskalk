@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class ProductionBenchAccess
 {
+    public function __construct(private readonly WorkspaceAuthorization $authorization) {}
+
     public function activate(User $actor, Workspace $workspace): WorkspaceProductionEntitlement
     {
         return $this->writeStatus($actor, $workspace, ProductionBenchEntitlementStatus::Active);
@@ -30,7 +32,7 @@ class ProductionBenchAccess
 
     public function canManageEntitlement(User $actor, Workspace $workspace): bool
     {
-        return $workspace->roleFor($actor) === WorkspaceMemberRole::Owner;
+        return $this->authorization->role($actor, $workspace->id) === WorkspaceMemberRole::Owner;
     }
 
     public function isActive(Workspace $workspace): bool
@@ -52,6 +54,11 @@ class ProductionBenchAccess
     public function canWrite(User $actor, Workspace $workspace): bool
     {
         return $this->hasManageRole($actor, $workspace) && $this->isActive($workspace);
+    }
+
+    public function canConfigure(User $actor, Workspace $workspace): bool
+    {
+        return $this->authorization->canManage($actor, $workspace->id) && $this->isActive($workspace);
     }
 
     /** @return array{isActive: bool, isReadOnly: bool, canWrite: bool} */
@@ -84,17 +91,9 @@ class ProductionBenchAccess
         ]);
     }
 
-    /**
-     * Read authorization for Production Bench data is workspace membership.
-     *
-     * Any role that can reach the workspace may read: owner, admin, editor, and
-     * viewer all pass. A cancelled/read-only workspace keeps its members, so it
-     * remains browsable. Only a user with no membership in the workspace is
-     * rejected. Mutation gates stay owned by assertWritable()/assertCanConfigure().
-     */
     public function assertReadable(User $actor, Workspace $workspace): void
     {
-        if ($workspace->roleFor($actor) === null) {
+        if (! $this->authorization->canView($actor, $workspace->id)) {
             throw new AuthorizationException;
         }
     }
@@ -103,10 +102,7 @@ class ProductionBenchAccess
     {
         $this->assertWritable($actor, $workspace);
 
-        if (! in_array($workspace->roleFor($actor), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-        ], true)) {
+        if (! $this->authorization->canManage($actor, $workspace->id)) {
             throw new AuthorizationException;
         }
     }
@@ -169,10 +165,6 @@ class ProductionBenchAccess
 
     private function hasManageRole(User $actor, Workspace $workspace): bool
     {
-        return in_array($workspace->roleFor($actor), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-            WorkspaceMemberRole::Editor,
-        ], true);
+        return $this->authorization->canEdit($actor, $workspace->id);
     }
 }

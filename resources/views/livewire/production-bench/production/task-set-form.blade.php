@@ -22,11 +22,11 @@
             <div class="grid gap-4 md:grid-cols-3">
                 <label class="text-sm md:col-span-2">
                     <span class="font-medium">{{ __('production_bench.settings.task_set_name') }}</span>
-                    <input wire:model="name" class="sk-input mt-1 w-full" placeholder="Soap workflow" @disabled(! $isBenchActive || $isReadOnly)>
+                    <input wire:model="name" class="sk-input mt-1 w-full" placeholder="Soap workflow" @disabled(! $canConfigure)>
                     @error('name')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                 </label>
                 <label class="flex items-start gap-3 pt-6 text-sm">
-                    <input wire:model="isActive" type="checkbox" class="mt-0.5 size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $isBenchActive || $isReadOnly)>
+                    <input wire:model="isActive" type="checkbox" class="mt-0.5 size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $canConfigure)>
                     <span><span class="font-medium text-[var(--color-ink-strong)]">{{ $isActive ? __('production_bench.common.active') : __('production_bench.common.inactive') }}</span><span class="mt-1 block text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_set_active_help') }}</span></span>
                 </label>
             </div>
@@ -48,7 +48,7 @@
                     <div wire:key="task-set-item-{{ $index }}" class="grid gap-2 rounded-xl border border-[var(--color-line)] p-3 sm:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] sm:border-0 sm:p-0">
                         <label class="text-sm">
                             <span class="font-medium sm:sr-only">{{ __('production_bench.settings.task_name') }}</span>
-                            <select wire:model="taskSetItems.{{ $index }}.task_type_id" class="sk-input mt-1 w-full" @disabled(! $isBenchActive || $isReadOnly)>
+                            <select wire:model="taskSetItems.{{ $index }}.task_type_id" class="sk-input mt-1 w-full" @disabled(! $canConfigure)>
                                 <option value="">{{ __('production_bench.settings.choose_task') }}</option>
                                 @foreach ($taskTypes as $taskType)
                                     <option value="{{ $taskType->id }}">{{ $taskType->name }}{{ $taskType->is_active ? '' : ' · '.__('production_bench.common.inactive') }}</option>
@@ -57,13 +57,13 @@
                         </label>
                         <label class="text-sm">
                             <span class="font-medium sm:sr-only">{{ __('production_bench.settings.days_relative_to_production') }}</span>
-                            <input wire:model="taskSetItems.{{ $index }}.days_after_production" type="number" step="1" class="sk-input mt-1 w-full" placeholder="0" @disabled(! $isBenchActive || $isReadOnly)>
+                            <input wire:model="taskSetItems.{{ $index }}.days_after_production" type="number" step="1" class="sk-input mt-1 w-full" placeholder="0" @disabled(! $canConfigure)>
                         </label>
                         <label class="text-sm">
                             <span class="font-medium sm:sr-only">{{ __('production_bench.settings.duration_override') }}</span>
-                            <input wire:model="taskSetItems.{{ $index }}.duration_minutes" type="number" min="0" step="1" inputmode="numeric" class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.settings.default') }}" @disabled(! $isBenchActive || $isReadOnly)>
+                            <input wire:model="taskSetItems.{{ $index }}.duration_minutes" type="number" min="0" step="1" inputmode="numeric" class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.settings.default') }}" @disabled(! $canConfigure)>
                         </label>
-                        <button type="button" wire:click="removeTaskSetItem({{ $index }})" class="sk-btn sk-btn-ghost sm:mt-1" @disabled(! $isBenchActive || $isReadOnly || count($taskSetItems) <= 1) aria-label="{{ __('production_bench.settings.remove_task') }}">×</button>
+                        @if ($canConfigure)<button type="button" wire:click="removeTaskSetItem({{ $index }})" class="sk-btn sk-btn-ghost sm:mt-1" @disabled(! $canConfigure || count($taskSetItems) <= 1) aria-label="{{ __('production_bench.settings.remove_task') }}">×</button>@endif
                         @error("taskSetItems.{$index}.task_type_id")<span class="text-xs text-[var(--color-danger-strong)] sm:col-span-2">{{ $message }}</span>@enderror
                         @error("taskSetItems.{$index}.days_after_production")<span class="text-xs text-[var(--color-danger-strong)] sm:col-span-2">{{ $message }}</span>@enderror
                         @error("taskSetItems.{$index}.duration_minutes")<span class="text-xs text-[var(--color-danger-strong)] sm:col-span-2">{{ $message }}</span>@enderror
@@ -72,7 +72,7 @@
             </div>
             <p class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.settings.task_offset_help') }} {{ __('production_bench.settings.task_duration_help') }}</p>
             @error('taskSetItems')<span class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
-            <button type="button" wire:click="addTaskSetItem" class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline" @disabled(! $isBenchActive || $isReadOnly)>+ {{ __('production_bench.settings.add_task') }}</button>
+            @if ($canConfigure)<button type="button" wire:click="addTaskSetItem" class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline" @disabled(! $canConfigure)>+ {{ __('production_bench.settings.add_task') }}</button>@endif
         </section>
 
         <section class="sk-card space-y-4 p-5" aria-labelledby="applicable-products-heading">
@@ -94,8 +94,8 @@
                         @forelse ($recipes as $recipe)
                             <tr wire:key="task-set-product-{{ $recipe->id }}">
                                 <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ $recipe->name }}</td>
-                                <td class="px-4 py-3 text-center"><input wire:model.live="selectedRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $isBenchActive || $isReadOnly) aria-label="{{ __('production_bench.settings.applicable_product', ['product' => $recipe->name]) }}"></td>
-                                <td class="px-4 py-3 text-center"><input wire:model.live="defaultRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $isBenchActive || $isReadOnly) aria-label="{{ __('production_bench.settings.default_product', ['product' => $recipe->name]) }}"></td>
+                                <td class="px-4 py-3 text-center"><input wire:model.live="selectedRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $canConfigure) aria-label="{{ __('production_bench.settings.applicable_product', ['product' => $recipe->name]) }}"></td>
+                                <td class="px-4 py-3 text-center"><input wire:model.live="defaultRecipeIds" type="checkbox" value="{{ $recipe->id }}" class="size-4 rounded border-[var(--color-line-strong)]" style="accent-color: var(--color-accent);" @disabled(! $canConfigure) aria-label="{{ __('production_bench.settings.default_product', ['product' => $recipe->name]) }}"></td>
                             </tr>
                         @empty
                             <tr><td colspan="3" class="px-4 py-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.no_matching_products') }}</td></tr>
@@ -109,7 +109,7 @@
 
         <div class="flex flex-wrap justify-end gap-2">
             <a href="{{ route('production-bench.production.settings.task-sets') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.common.cancel') }}</a>
-            <button type="submit" class="sk-btn sk-btn-primary" @disabled(! $isBenchActive || $isReadOnly)>{{ $editing ? __('production_bench.common.save_changes') : __('production_bench.settings.add_task_set') }}</button>
+            @if ($canConfigure)<button type="submit" class="sk-btn sk-btn-primary" @disabled(! $canConfigure)>{{ $editing ? __('production_bench.common.save_changes') : __('production_bench.settings.add_task_set') }}</button>@endif
         </div>
     </form>
 </x-production-bench.page>

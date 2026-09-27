@@ -40,6 +40,7 @@ function leaseErrorResponse(workbench) {
 }
 
 export function createEditingSection(payload) {
+    const canEditRecipe = payload.canEditRecipe !== false;
     const editingRequired = Boolean(payload.canPersist && payload.recipe?.id && payload.editing);
     const runtime = {
         mutationQueue: Promise.resolve(),
@@ -51,6 +52,7 @@ export function createEditingSection(payload) {
     };
 
     return {
+        canEditRecipe,
         editingRequired,
         editingToken: editingRequired ? editingToken() : null,
         editingStatus: editingRequired ? 'available' : 'inactive',
@@ -70,11 +72,11 @@ export function createEditingSection(payload) {
         },
 
         get canWriteRecipe() {
-            return !this.isFormulaLocked && !this.isEditingUnavailable;
+            return this.canEditRecipe && !this.isFormulaLocked && !this.isEditingUnavailable;
         },
 
         get canSubmitRecipeControl() {
-            return !this.isEditingUnavailable;
+            return this.canEditRecipe && !this.isEditingUnavailable;
         },
 
         get editingHolderName() {
@@ -319,7 +321,7 @@ export function createEditingSection(payload) {
                     await runtime.acquisitionPromise;
                 }
 
-                if ((!allowWithoutLease && this.isEditingUnavailable) || (this.isFormulaLocked && !allowLocked)) {
+                if (!this.canEditRecipe || (!allowWithoutLease && this.isEditingUnavailable) || (this.isFormulaLocked && !allowLocked)) {
                     return leaseErrorResponse(this);
                 }
 

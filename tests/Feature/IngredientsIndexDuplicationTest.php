@@ -11,6 +11,7 @@ use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceIngredientGuidance;
@@ -928,4 +929,16 @@ it('creates a workspace-owned copy when duplicating an ingredient from that work
     expect($copy->display_name)->toBe('Private rosemary extract')
         ->and($copy->workspace_id)->toBe($workspace->id)
         ->and($response->json('redirect'))->toBe(route('ingredients.edit', $copy));
+});
+
+it('excludes company ingredients from search after collaboration is revoked', function (): void {
+    $workspace = Workspace::factory()->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->for($workspace->owner, 'user')->for($plan)->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer, 'user')->create(['role' => WorkspaceMemberRole::Viewer]);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Private collaboration ingredient', 'is_active' => true, 'workspace_id' => $workspace->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $workspace->id]);
+    $this->actingAs($viewer)->getJson(route('ingredients.search-platform', ['ingredient_id' => $ingredient->id]))->assertOk()->assertJsonFragment(['id' => $ingredient->id]);
+    $plan->update(['allows_collaboration' => false]);
+    $this->getJson(route('ingredients.search-platform', ['ingredient_id' => $ingredient->id]))->assertOk()->assertJsonMissing(['id' => $ingredient->id]);
 });

@@ -4,6 +4,7 @@ namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SyncProductionTaskSetProducts;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskType;
 use App\Models\Recipe;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 
 class TaskSetForm extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithPagination;
 
     public string|ProductionTaskSet|null $taskSet = null;
@@ -41,6 +43,8 @@ class TaskSetForm extends Component
 
     public function mount(string|ProductionTaskSet|null $taskSet = null): void
     {
+        abort_if($taskSet === null && ! app(ProductionBenchAccess::class)->canConfigure($this->user(), $this->workspace()), 403);
+
         $this->taskSetItems = [$this->emptyTaskSetItem()];
 
         if ($taskSet === null) {
@@ -255,6 +259,7 @@ class TaskSetForm extends Component
 
         return view('livewire.production-bench.production.task-set-form', [
             'contextualHelp' => $helpTopics->resolve('task_sets', app()->getLocale()),
+            'canConfigure' => $access->canConfigure($this->user(), $workspace),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'taskTypes' => $taskTypes,
@@ -279,7 +284,7 @@ class TaskSetForm extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\CurrentMaterialPriceService;
@@ -560,6 +561,7 @@ it('rejects a stale captured price destination without changing either workspace
     WorkspaceMember::factory()->for($workspaceB)->for($user)->create([
         'role' => WorkspaceMemberRole::Editor,
     ]);
+    UserEntitlement::factory()->for($workspaceB->owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Stale price ingredient',
         'category' => IngredientCategory::Lipids,
@@ -587,7 +589,7 @@ it('rejects a stale captured price destination without changing either workspace
         currency: 'EUR',
         source: MaterialPriceSource::ManualCosting,
         sourceId: null,
-        actor: $user,
+        actor: $workspaceB->owner,
     );
 
     $recipeVersionA = RecipeVersion::factory()->create([
@@ -717,4 +719,29 @@ it('renders compact price inputs with the shared field treatment', function (): 
 
     expect($ingredientsIndexSource)
         ->toContain('class="sk-input numeric py-2 text-right"');
+});
+
+it('does not offer private ingredient deletion to workspace editors', function (): void {
+    $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($editor, 'user')->create(['role' => WorkspaceMemberRole::Editor]);
+    $ingredient = Ingredient::factory()->create(['owner_type' => OwnerType::Workspace, 'owner_id' => $workspace->id, 'workspace_id' => $workspace->id]);
+    $this->actingAs($editor);
+    Livewire::test(IngredientsIndex::class)
+        ->assertDontSeeHtml('ingredient-delete-trigger-'.$ingredient->id)
+        ->call('confirmDelete', $ingredient->id)
+        ->assertSet('pendingDeleteId', null);
+});
+
+it('denies the ingredient catalogue after company collaboration is revoked', function (): void {
+    $workspace = Workspace::factory()->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->for($workspace->owner, 'user')->for($plan)->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer, 'user')->create(['role' => WorkspaceMemberRole::Viewer]);
+    $this->actingAs($viewer);
+    $page = Livewire::test(IngredientsIndex::class)->assertOk();
+    $plan->update(['allows_collaboration' => false]);
+    $page->call('$refresh')->assertForbidden();
 });

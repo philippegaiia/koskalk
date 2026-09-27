@@ -134,7 +134,7 @@
                                     $displayName = $ingredient->localizedDisplayName();
                                     $inciName = $ingredient->displayInciName();
                                     $isMine = $ingredient->owner_type !== null;
-                                    $canEdit = $ingredient->isEditableBy($currentUser);
+                                    $canEdit = $canEditIngredients[$ingredient->id] ?? false;
                                     $formulaUsage = $formulaUsageByIngredient[$ingredient->id] ?? [];
                                     $formulaUsageCount = count($formulaUsage);
                                     $currentFormulaUsageCount = count(array_filter($formulaUsage, fn (array $usage): bool => $usage['is_current']));
@@ -199,6 +199,7 @@
                                         <div class="flex items-center justify-end gap-1">
                                             @if ($canEdit)
                                                 <x-table-row-action icon="pencil" label="{{ __('ingredients.actions.edit') }}" href="{{ route('ingredients.edit', $ingredient) }}" wire:navigate aria-label="{{ __('ingredients.accessibility.edit', ['ingredient' => $displayName]) }}" />
+                                                @if ($canDeleteIngredients[$ingredient->id] ?? false)
                                                 @if ($hasFormulaUsage)
                                                     <div class="relative flex flex-col items-end">
                                                         <div class="flex items-center gap-1">
@@ -250,6 +251,7 @@
                                                         wire:loading.attr="disabled"
                                                         wire:target="confirmDelete({{ $ingredient->id }})"
                                                         aria-label="{{ __('ingredients.accessibility.delete', ['ingredient' => $displayName]) }}" />
+                                                @endif
                                                 @endif
                                             @else
                                                 <x-table-row-action icon="chevron-right" label="{{ __('ingredients.actions.view_reference') }}" href="{{ route('ingredients.edit', $ingredient) }}" wire:navigate aria-label="{{ __('ingredients.accessibility.view', ['ingredient' => $displayName]) }}" />

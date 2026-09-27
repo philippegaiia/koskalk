@@ -4,6 +4,7 @@ namespace App\Livewire\ProductionBench;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockLotStatus;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\PurchaseOrder;
 use App\Models\StockLot;
 use App\Models\User;
@@ -14,6 +15,8 @@ use Livewire\Component;
 
 class HomeIndex extends Component
 {
+    use InteractsWithProductionWorkspace;
+
     public function activate(ProductionBenchAccess $access): void
     {
         $access->activate($this->user(), $this->workspace());
@@ -56,6 +59,6 @@ class HomeIndex extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

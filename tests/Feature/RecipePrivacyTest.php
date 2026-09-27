@@ -17,7 +17,7 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-test('workspace formulas are visible only to the workspace owner during the MVP', function () {
+test('workspace formulas remain owner-only when collaboration is not granted', function () {
     $owner = User::factory()->create();
     $company = Workspace::factory()->create(['owner_user_id' => $owner->id]);
     WorkspaceMember::factory()->create([
@@ -57,7 +57,7 @@ test('workspace role lookups accept roles already cast by Eloquent', function ()
         ->and($member->workspaceRoleFor($workspace->id))->toBe(WorkspaceMemberRole::Editor);
 });
 
-test('workspace formulas can only be updated by the workspace owner during the MVP', function () {
+test('workspace formulas can only be updated by the owner without collaboration', function () {
     $owner = User::factory()->create();
     $company = Workspace::factory()->create(['owner_user_id' => $owner->id]);
     WorkspaceMember::factory()->create([
@@ -82,7 +82,7 @@ test('workspace formulas can only be updated by the workspace owner during the M
     expect($editor->can('update', $recipe))->toBeFalse();
 });
 
-test('workspace formulas can only be deleted by the workspace owner during the MVP', function () {
+test('workspace formulas can only be deleted by the owner without collaboration', function () {
     $owner = User::factory()->create();
     $company = Workspace::factory()->create(['owner_user_id' => $owner->id]);
     WorkspaceMember::factory()->create([
@@ -186,7 +186,7 @@ test('a crafted Livewire request cannot save or publish another workspace formul
     }
 });
 
-test('workspace members cannot discover owner formula names in listings', function (WorkspaceMemberRole $role) {
+test('workspace members cannot discover formula names without collaboration', function (WorkspaceMemberRole $role) {
     $owner = User::factory()->create();
     $company = Workspace::factory()->for($owner, 'owner')->create();
     $member = User::factory()->create();
@@ -246,7 +246,7 @@ test('workspace members cannot delete an owner formula version by public id', fu
     WorkspaceMemberRole::Admin,
 ]);
 
-test('formula mutation services reject non-owners without relying on the caller', function (string $operation) {
+test('formula mutation services reject members without collaboration without relying on the caller', function (string $operation) {
     $owner = User::factory()->create();
     $company = Workspace::factory()->for($owner, 'owner')->create();
     $member = User::factory()->create();

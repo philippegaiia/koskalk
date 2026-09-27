@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Enums\ProductionRunStatus;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -19,6 +20,8 @@ use Livewire\Component;
 
 class ProductionCalendar extends Component
 {
+    use InteractsWithProductionWorkspace;
+
     public bool $showProductions = true;
 
     public bool $showTasks = true;
@@ -275,6 +278,6 @@ class ProductionCalendar extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

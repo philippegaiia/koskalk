@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -16,6 +17,7 @@ use Livewire\WithPagination;
 
 class SupplierDetail extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
@@ -86,6 +88,6 @@ class SupplierDetail extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

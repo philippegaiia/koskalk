@@ -9,6 +9,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
 use App\Models\Plan;
+use App\Models\PlanLimit;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchIngredient;
@@ -22,6 +23,7 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\PackagingItemAuthoringService;
@@ -866,7 +868,7 @@ it('shows a read-only production snapshot with editable annotations', function (
         ->assertDontSee('Recalculate');
 });
 
-it('hides the production snapshot delete button from other users', function (): void {
+it('retains company owner access when the batch author is another user', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
@@ -882,7 +884,7 @@ it('hides the production snapshot delete button from other users', function (): 
 
     $this->actingAs($user)
         ->get(route('production-batches.show', $batch))
-        ->assertForbidden();
+        ->assertOk()->assertSee('Delete');
 });
 
 it('edits production annotations without recalculating frozen totals', function (): void {
@@ -991,7 +993,7 @@ it('does not allow future workspace members to store production snapshots during
             'batch_basis' => 1000,
             'units_produced' => 10,
         ])
-        ->assertForbidden();
+        ->assertNotFound();
 
     expect(ProductionBatch::query()->where('user_id', $editor->id)->count())->toBe(0);
 });
@@ -1619,4 +1621,21 @@ it('rejects a production preview for a version from a different recipe', functio
     expect(fn () => app(ProductionSnapshotService::class)->preview($recipe, $foreignVersion, $user, []))
         ->toThrow(NotFoundHttpException::class);
     expect(RecipeVersionCosting::query()->count())->toBe(0);
+});
+
+it('records shared batch provenance and enforces the company allowance inside the write service', function (): void {
+    [$owner, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($owner, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->create(['user_id' => $owner->id, 'plan_id' => $plan->id]);
+    PlanLimit::factory()->create(['plan_id' => $plan->id, 'key' => 'production_batches', 'value' => 1]);
+    $editor = User::factory()->create(['active_workspace_id' => $recipe->workspace_id]);
+    WorkspaceMember::factory()->create(['user_id' => $editor->id, 'workspace_id' => $recipe->workspace_id, 'role' => WorkspaceMemberRole::Editor]);
+    $input = ['manufacture_date' => '2026-09-27', 'batch_basis' => 1000, 'units_produced' => 10];
+    $service = app(ProductionSnapshotService::class);
+    $batch = $service->record($recipe, $version, $editor, $input);
+    expect($batch->workspace_id)->toBe($recipe->workspace_id)
+        ->and($batch->user_id)->toBe($editor->id);
+    expect(fn () => $service->record($recipe, $version, $owner, $input))->toThrow(ValidationException::class, '1 saved production batches');
+    expect(ProductionBatch::query()->where('workspace_id', $recipe->workspace_id)->count())->toBe(1);
 });

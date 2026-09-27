@@ -15,6 +15,7 @@ use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\Plan;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionJournalEntry;
@@ -24,6 +25,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\StockLot;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
@@ -393,6 +395,9 @@ it('authorizes production records by workspace role and active entitlement', fun
     $viewer = User::factory()->create();
     $outsider = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $editor->update(['active_workspace_id' => $workspace->id]);
+    $viewer->update(['active_workspace_id' => $workspace->id]);
     WorkspaceProductionEntitlement::factory()->for($workspace)->create();
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,

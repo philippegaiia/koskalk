@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -45,6 +46,17 @@ class IngredientPolicy
             : ! $user->is_admin
                 && $user->active_workspace_id === null
                 && $user->accessibleWorkspaceIds() === [];
+    }
+
+    public function delete(User $user, Ingredient $ingredient): bool
+    {
+        if ($ingredient->visibility !== Visibility::Private) {
+            return false;
+        }
+
+        return $ingredient->workspace_id === null
+            ? $ingredient->isOwnedBy($user)
+            : $this->canDeleteWorkspaceRecords($user, $ingredient->workspace_id);
     }
 
     public function editWorkspaceIngredient(User $user, Ingredient $ingredient): bool

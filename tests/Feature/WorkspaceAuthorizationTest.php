@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\WorkspaceMemberRole;
+use App\Models\Plan;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,6 +13,7 @@ uses(RefreshDatabase::class);
 
 it('does not confer owner authority through an ordinary membership', function (): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $member = User::factory()->create();
     WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => WorkspaceMemberRole::Owner]);
 
@@ -21,6 +24,7 @@ it('does not confer owner authority through an ordinary membership', function ()
 
 it('rejects workspace access after a cached membership is revoked', function (): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $member = User::factory()->create();
     $membership = WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => WorkspaceMemberRole::Viewer]);
     expect($member->accessibleWorkspaceIds())->toContain($workspace->id);
@@ -31,6 +35,7 @@ it('rejects workspace access after a cached membership is revoked', function ():
 
 it('keeps management available to actual owners and admins only', function (WorkspaceMemberRole $role, bool $canManage): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $actor = $role === WorkspaceMemberRole::Owner ? $workspace->owner : User::factory()->create();
     if ($role !== WorkspaceMemberRole::Owner) {
         WorkspaceMember::factory()->for($workspace)->for($actor)->create(['role' => $role]);
@@ -49,6 +54,7 @@ it('keeps management available to actual owners and admins only', function (Work
 
 it('protects the actual owner membership from changes even by an administrator', function (): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $ownerMembership = WorkspaceMember::factory()->for($workspace)->for($workspace->owner)->create(['role' => WorkspaceMemberRole::Owner]);
     $admin = User::factory()->create();
     WorkspaceMember::factory()->for($workspace)->for($admin)->create(['role' => WorkspaceMemberRole::Admin]);
@@ -60,8 +66,9 @@ it('protects the actual owner membership from changes even by an administrator',
 
 it('resolves active workspace ownership from storage rather than a stale workspace instance', function (): void {
     $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $previousOwner = $workspace->owner;
-    $previousOwner->update(['active_workspace_id' => $workspace->id]);
+    $previousOwner->forceFill(['active_workspace_id' => $workspace->id])->save();
     $newOwner = User::factory()->create();
     Workspace::withoutGlobalScopes()->whereKey($workspace->id)->update(['owner_user_id' => $newOwner->id]);
 

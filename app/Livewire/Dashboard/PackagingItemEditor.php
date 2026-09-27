@@ -27,8 +27,10 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -45,6 +47,9 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 
     #[Locked]
     public ?int $packagingItemId = null;
+
+    #[Locked]
+    public ?int $destinationWorkspaceId = null;
 
     #[Locked]
     public string $mediaPublicId;
@@ -74,6 +79,9 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         }
 
         $this->packagingItemId = $packagingItem?->id;
+        $this->destinationWorkspaceId = $packagingItem instanceof PackagingItem
+            ? $packagingItem->workspace_id
+            : $this->currentUser()?->company(fresh: true)?->id;
         $this->mediaPublicId = (string) ($packagingItem?->public_id ?? Str::uuid());
 
         if ($packagingItem === null && request()->query('return_to') === 'supplier_listing') {
@@ -108,21 +116,41 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
             return null;
         }
 
+        $user = User::query()->findOrFail($user->id);
+        $workspace = $user->company(fresh: true);
+        abort_unless($workspace?->id === $this->destinationWorkspaceId, 403);
+        $currentPackagingItem = $this->currentPackagingItem($user);
+        abort_if($wasEditing && ! $currentPackagingItem instanceof PackagingItem, 403);
+        Gate::forUser($user)->authorize(
+            $wasEditing ? 'update' : 'create',
+            $currentPackagingItem ?? [PackagingItem::class, $workspace],
+        );
+
         /** @var array<string, mixed> $state */
         $state = $this->form->getState();
         $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
         unset($state['featured_media_asset_id']);
         $state['public_id'] = $this->mediaPublicId;
-        $currentPackagingItem = $this->currentPackagingItem();
 
         try {
-            $packagingItem = DB::transaction(function () use ($authoringService, $currentPackagingItem, $featuredMediaAssetId, $mediaAssetUsages, $state, $user): PackagingItem {
+            $packagingItem = DB::transaction(function () use ($authoringService, $featuredMediaAssetId, $mediaAssetUsages, $state, $user): PackagingItem {
+                $freshUser = User::withoutGlobalScopes()->lockForUpdate()->findOrFail($user->id);
+
+                if ($freshUser->company(fresh: true)?->id !== $this->destinationWorkspaceId) {
+                    throw new AuthorizationException;
+                }
+
+                $currentPackagingItem = $this->currentPackagingItem($freshUser);
+                if ($this->isEditing() && ! $currentPackagingItem instanceof PackagingItem) {
+                    throw new AuthorizationException;
+                }
+
                 $packagingItem = $currentPackagingItem instanceof PackagingItem
-                    ? $authoringService->update($currentPackagingItem, $state, $user)
-                    : $authoringService->create($state, $user);
+                    ? $authoringService->update($currentPackagingItem, $state, $freshUser)
+                    : $authoringService->create($state, $freshUser);
 
                 $mediaAssetUsages->syncSingle(
-                    $user,
+                    $freshUser,
                     $packagingItem,
                     MediaAssetUsageRole::PackagingMain,
                     $featuredMediaAssetId,
@@ -223,9 +251,9 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         ]);
     }
 
-    private function currentPackagingItem(): ?PackagingItem
+    private function currentPackagingItem(?User $user = null): ?PackagingItem
     {
-        $user = $this->currentUser();
+        $user ??= $this->currentUser();
 
         if (! $user instanceof User || $this->packagingItemId === null) {
             return null;

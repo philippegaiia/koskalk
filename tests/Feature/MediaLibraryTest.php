@@ -16,6 +16,7 @@ use App\Models\ProductionDocument;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\CurrentAppUserResolver;
@@ -434,6 +435,7 @@ it('deletes the pending source when removing an unfinished library asset', funct
 
 it('hides rename controls and forbids rename actions for workspace viewers', function () {
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $viewer = User::factory()->create([
         'email_verified_at' => now(),
         'active_workspace_id' => $workspace->id,
@@ -460,6 +462,7 @@ it('hides rename controls and forbids rename actions for workspace viewers', fun
 
 it('shows update and retry controls but no remove controls to workspace editors', function () {
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create([
         'email_verified_at' => now(),
         'active_workspace_id' => $workspace->id,
@@ -517,7 +520,8 @@ it('renders a bounded number of queries for a full gallery page', function () {
 
     Livewire::actingAs($user)->test(MediaLibraryIndex::class);
 
-    expect(count(DB::getQueryLog()))->toBeLessThan(20);
+    // Includes the fresh workspace authorization lookup.
+    expect(count(DB::getQueryLog()))->toBeLessThanOrEqual(20);
 
     DB::disableQueryLog();
 });
@@ -714,6 +718,7 @@ it('lets workspace viewers open images without showing editing controls', functi
     Storage::fake('local');
     config()->set('media.asset_disk', 'local');
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $viewer = User::factory()->create([
         'email_verified_at' => now(),
         'active_workspace_id' => $workspace->id,
@@ -1145,6 +1150,7 @@ it('streams private remote media through the authorized application route', func
     );
 
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $viewer = User::factory()->create([
         'email_verified_at' => now(),
         'active_workspace_id' => $workspace->id,
@@ -1197,6 +1203,7 @@ it('reports processing status only to authorized workspace members', function ()
 
 it('exposes picker lifecycle action urls only for permitted failed assets', function () {
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create([
         'email_verified_at' => now(),
         'active_workspace_id' => $workspace->id,
@@ -1283,6 +1290,7 @@ it('enforces picker retry and remove permissions by workspace role', function ()
     Storage::fake('local');
     config()->set('media.asset_pending_disk', 'local');
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create([
         'email_verified_at' => now(),
         'active_workspace_id' => $workspace->id,
@@ -1541,6 +1549,7 @@ it('discards inspector drafts on close and does not regenerate an unchanged crop
 
 it('rejects saving inspector settings for a read only workspace member', function () {
     [$owner, $workspace] = mediaLibraryWorkspace();
+    UserEntitlement::factory()->for($owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $viewer = User::factory()->create();
     WorkspaceMember::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $viewer->id, 'role' => WorkspaceMemberRole::Viewer]);
     $viewer->update(['current_workspace_id' => $workspace->id]);
@@ -1587,4 +1596,32 @@ it('rejects inspector saves when the file is no longer ready', function () {
 
     $this->assertDatabaseHas('media_assets', ['id' => $asset->id, 'display_name' => 'Before']);
     Queue::assertNothingPushed();
+});
+
+it('rejects a media library action after switching the selected company', function (): void {
+    $owner = User::factory()->create();
+    $first = Workspace::factory()->for($owner, 'owner')->create();
+    $second = Workspace::factory()->for($owner, 'owner')->create();
+    $owner->forceFill(['active_workspace_id' => $first->id])->save();
+    $this->actingAs($owner);
+    $page = Livewire::test(MediaLibraryIndex::class)->set('newLabelName', 'Wrong company');
+    $owner->forceFill(['active_workspace_id' => $second->id])->save();
+    $page->call('createLabel')->assertForbidden();
+    expect(MediaLabel::query()->where('name', 'Wrong company')->exists())->toBeFalse();
+});
+
+it('denies media catalogue metadata after collaboration is revoked', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->create(['user_id' => $owner->id, 'plan_id' => $plan->id]);
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer, 'user')->create(['role' => WorkspaceMemberRole::Viewer]);
+    $this->actingAs($viewer);
+    $page = Livewire::test(MediaLibraryIndex::class)->assertOk();
+    $this->getJson(route('media.picker-assets'))->assertOk();
+    $plan->update(['allows_collaboration' => false]);
+    $this->getJson(route('media.picker-assets'))->assertNotFound();
+    $page->call('$refresh')->assertForbidden();
+    Livewire::test(MediaLibraryIndex::class)->assertForbidden();
 });

@@ -134,7 +134,7 @@ it('only shows recipes that belong to the current user', function () {
         ->assertDontSee('Hidden Formula');
 });
 
-it('only resolves owned workspace ids once while rendering the recipes index', function () {
+it('keeps workspace authorization query counts constant as recipe rows grow', function () {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create([
         'owner_user_id' => $user->id,
@@ -197,12 +197,22 @@ it('only resolves owned workspace ids once while rendering the recipes index', f
         ->get(route('recipes.index'))
         ->assertSuccessful();
 
-    [$lockAuthorityQueries, $discoveryQueries] = collect($workspaceQueries)->partition(
-        fn (string $sql): bool => str_contains($sql, 'select exists'),
-    );
+    $singleRecipeQueryCount = count($workspaceQueries);
+    Recipe::factory()->count(10)->create([
+        'product_family_id' => $soapFamily->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $workspaceQueries = [];
+    $user->forgetAccessibleWorkspaceIds();
 
-    expect($discoveryQueries)->toHaveCount(1)
-        ->and($lockAuthorityQueries)->toHaveCount(1);
+    $this->get(route('recipes.index'))->assertSuccessful();
+
+    expect($singleRecipeQueryCount)->toBeGreaterThan(0)
+        ->and(count($workspaceQueries))->toBe($singleRecipeQueryCount);
+
 });
 
 it('searches Products by finished-product area category and type names', function (string $searchTerm): void {

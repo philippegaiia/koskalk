@@ -11,6 +11,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\MediaAssetUsageService;
 use App\Services\ProductTypeIfraOptionsBuilder;
 use App\Services\RecipeContentPersistenceService;
@@ -34,6 +35,8 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
@@ -51,6 +54,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     #[Locked]
     public ?int $recipeId = null;
+
+    #[Locked]
+    public ?int $creationWorkspaceId = null;
+
+    #[Locked]
+    public bool $hasCreationWorkspaceContext = false;
+
+    private ?User $creationActor = null;
 
     #[Locked]
     public ?string $editingToken = null;
@@ -100,6 +111,10 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     public function mount(?Recipe $recipe = null, string $productFamilySlug = 'soap', ?string $productTypeSlug = null): void
     {
         $this->recipeId = $recipe?->id;
+        if ($recipe === null && ($user = $this->currentUser()) instanceof User) {
+            $this->creationWorkspaceId = $user->company(fresh: true)?->id;
+            $this->hasCreationWorkspaceContext = true;
+        }
         $this->productFamilySlug = $recipe?->productFamily?->slug ?? $productFamilySlug;
         $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
 
@@ -121,19 +136,29 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $locked->loadMissing('mediaAssetUsages');
                 $this->resolvedCurrentRecipe = $locked;
                 $this->form->fill($this->recipeContentFormState($locked));
-                $baseline = app(RecipeEditingService::class)->revisions($locked);
-                $this->acceptEditingRevisions($baseline);
+                $canEditRecipe = $this->canEditRecipe($locked);
+                $baseline = $canEditRecipe
+                    ? app(RecipeEditingService::class)->revisions($locked)
+                    : null;
+                if ($baseline !== null) {
+                    $this->acceptEditingRevisions($baseline);
+                }
                 $this->initialWorkbench = app(RecipeWorkbenchViewDataBuilder::class)->build(
                     $this->productFamily(), $locked, $this->currentUser(), $this->productType(),
+                    $baseline,
                 );
-                $this->initialWorkbench['editing'] = [
-                    ...$baseline,
-                    'status' => 'available',
-                    'holder_name' => null,
-                    'expires_at' => null,
-                    'is_locked' => $locked->isLocked(),
-                    'can_take_over' => $this->initialWorkbench['recipe']['can_manage_lock'],
-                ];
+                $this->initialWorkbench['canEditRecipe'] = $canEditRecipe;
+                $this->initialWorkbench['recipe']['can_duplicate'] = $this->currentUser()?->can('create', Recipe::class) ?? false;
+                $this->initialWorkbench['editing'] = $baseline === null
+                    ? null
+                    : [
+                        ...$baseline,
+                        'status' => 'available',
+                        'holder_name' => null,
+                        'expires_at' => null,
+                        'is_locked' => $locked->isLocked(),
+                        'can_take_over' => $this->initialWorkbench['recipe']['can_manage_lock'],
+                    ];
             });
         } else {
             $this->form->fill($this->recipeContentFormState($recipe));
@@ -266,7 +291,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     {
         $recipe = $this->currentRecipe();
         if (! $recipe instanceof Recipe) {
-            return $action();
+            return $this->withCreationWorkspace($action);
         }
         $user = $this->currentUser();
         abort_unless($user instanceof User, 403);
@@ -312,6 +337,44 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
             return $this->saveErrorResponse($exception);
         }
+    }
+
+    /** @param Closure(): array<string, mixed> $action */
+    private function withCreationWorkspace(Closure $action): array
+    {
+        $user = $this->currentUser();
+        if ($this->recipeId !== null) {
+            abort_unless($this->currentRecipe() instanceof Recipe, 404);
+
+            return $action();
+        }
+        if (! $user instanceof User) {
+            return $action();
+        }
+
+        return DB::transaction(function () use ($action, $user): array {
+            $actor = User::query()->lockForUpdate()->findOrFail($user->id);
+            $workspace = $actor->company(fresh: true);
+            if ($this->hasCreationWorkspaceContext) {
+                abort_unless($workspace?->id === $this->creationWorkspaceId, 403);
+            }
+            if ($workspace instanceof Workspace) {
+                Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            }
+            Gate::forUser($actor)->authorize('create', Recipe::class);
+            $this->creationWorkspaceId = $workspace?->id;
+            $this->hasCreationWorkspaceContext = true;
+            $this->creationActor = $actor;
+
+            try {
+                $result = $action();
+                $this->creationWorkspaceId = $actor->company(fresh: true)?->id;
+
+                return $result;
+            } finally {
+                $this->creationActor = null;
+            }
+        }, attempts: 1);
     }
 
     /**
@@ -499,6 +562,15 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         RecipeWorkbenchService $recipeWorkbenchService,
         ?RecipeContentUpdater $recipeContentUpdater = null,
     ): array {
+        return $this->withCreationWorkspace(fn (): array => $this->performDuplicateFormula($draft, $recipeWorkbenchService, $recipeContentUpdater));
+    }
+
+    /** @param array<string, mixed> $draft */
+    private function performDuplicateFormula(
+        array $draft,
+        RecipeWorkbenchService $recipeWorkbenchService,
+        ?RecipeContentUpdater $recipeContentUpdater,
+    ): array {
         $user = $this->currentUser();
 
         if (! $user instanceof User) {
@@ -676,6 +748,12 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      */
     #[Renderless]
     public function savePackagingCatalogItem(array $packagingItem, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        return $this->withCreationWorkspace(fn (): array => $this->performSavePackagingCatalogItem($packagingItem, $recipeWorkbenchService));
+    }
+
+    /** @param array<string, mixed> $packagingItem */
+    private function performSavePackagingCatalogItem(array $packagingItem, RecipeWorkbenchService $recipeWorkbenchService): array
     {
         $user = $this->currentUser();
 
@@ -888,14 +966,24 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     {
         $recipe = $this->currentRecipe();
         $recipeWorkbenchViewDataBuilder = app(RecipeWorkbenchViewDataBuilder::class);
+        $user = $this->currentUser();
+        $workbench = $this->initialWorkbench ?? $recipeWorkbenchViewDataBuilder->build(
+            $this->productFamily(),
+            $recipe,
+            $user,
+            $this->productType(),
+        );
+        $canEditRecipe = $this->initialWorkbench !== null
+            ? $workbench['canEditRecipe']
+            : request()->routeIs('calculator') || $this->canEditRecipe($recipe);
+        $workbench['canEditRecipe'] = $canEditRecipe;
+        if ($this->initialWorkbench === null && is_array($workbench['recipe'] ?? null)) {
+            $workbench['recipe']['can_duplicate'] = $user?->can('create', Recipe::class) ?? false;
+        }
 
         return view('livewire.dashboard.recipe-workbench', [
-            'workbench' => $this->initialWorkbench ?? $recipeWorkbenchViewDataBuilder->build(
-                $this->productFamily(),
-                $recipe,
-                $this->currentUser(),
-                $this->productType(),
-            ),
+            'canEditRecipe' => $canEditRecipe,
+            'workbench' => $workbench,
         ]);
     }
 
@@ -1117,6 +1205,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         return $this->resolvedCurrentRecipe;
     }
 
+    private function canEditRecipe(?Recipe $recipe = null): bool
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $recipe instanceof Recipe
+            ? $user->can('update', $recipe)
+            : $user->can('create', Recipe::class);
+    }
+
     private function authorizeRecipeMutationOrCreation(): void
     {
         $recipe = $this->currentRecipe();
@@ -1260,7 +1361,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     private function currentUser(): ?User
     {
-        return app(RecipeWorkbenchContextResolver::class)->currentUser();
+        return $this->creationActor ?? app(RecipeWorkbenchContextResolver::class)->currentUser();
     }
 
     private function flushResolvedContext(): void

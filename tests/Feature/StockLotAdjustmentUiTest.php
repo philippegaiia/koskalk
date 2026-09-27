@@ -5,12 +5,14 @@ use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\InventoryMaterialDetail;
 use App\Models\Ingredient;
+use App\Models\Plan;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\ProductionBenchAccess;
@@ -145,6 +147,7 @@ it('rejects a lot for another material on the material detail page', function ()
 
 it('hides adjustment actions from viewers', function (): void {
     [$actor, $workspace, $ingredient, $lot] = adjustmentUiFixture();
+    UserEntitlement::factory()->for($workspace->owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);
     $this->actingAs($viewer);

@@ -8,6 +8,7 @@ use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\MediaAssetLibraryService;
 use App\Services\MediaAssetUploadService;
+use App\Services\WorkspaceAuthorization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,7 @@ class MediaAssetPickerMutationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $workspace = $user instanceof User ? $user->company() : null;
+        $workspace = $user instanceof User ? app(WorkspaceAuthorization::class)->selectedWorkspace($user) : null;
 
         abort_unless($user instanceof User && $workspace !== null, 404);
 

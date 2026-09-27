@@ -32,8 +32,9 @@ class SaveSupplier
     ): Supplier {
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($attributes, $supplier, $workspace): Supplier {
-            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+        return DB::transaction(function () use ($actor, $attributes, $supplier, $workspace): Supplier {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertWritable($actor, $lockedWorkspace);
 
             $currentSupplier = $supplier instanceof Supplier
                 ? Supplier::query()

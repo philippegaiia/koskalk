@@ -29,7 +29,7 @@ use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
-it('limits editor cleanup to their own unreferenced pending assets', function () {
+it('reserves deletion of all media statuses for workspace owners and admins', function () {
     [$owner, $workspace] = mediaRecoveryWorkspace();
     $editor = User::factory()->create();
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
@@ -85,8 +85,8 @@ it('limits editor cleanup to their own unreferenced pending assets', function ()
         'status' => MediaAssetStatus::Processing,
     ]);
 
-    expect(Gate::forUser($editor)->allows('delete', $ownProcessing))->toBeTrue()
-        ->and(Gate::forUser($editor)->allows('delete', $ownFailed))->toBeTrue()
+    expect(Gate::forUser($editor)->allows('delete', $ownProcessing))->toBeFalse()
+        ->and(Gate::forUser($editor)->allows('delete', $ownFailed))->toBeFalse()
         ->and(Gate::forUser($editor)->allows('delete', $ownReady))->toBeFalse()
         ->and(Gate::forUser($editor)->allows('delete', $otherUpload))->toBeFalse()
         ->and(Gate::forUser($editor)->allows('delete', $usageAsset))->toBeFalse()
@@ -201,7 +201,7 @@ it('does not republish a PDF after cancellation removes it before publishing', f
         ->and(app(EntitlementService::class)->mediaAssetUsageFor($user)['used'])->toBe(0);
 });
 
-it('exposes editor removal and deletes their pending processing upload', function () {
+it('hides editor removal and preserves their pending processing upload', function () {
     Storage::fake('local');
     config()->set('media.asset_pending_disk', 'local');
 
@@ -223,16 +223,15 @@ it('exposes editor removal and deletes their pending processing upload', functio
     $this->actingAs($editor)
         ->getJson(route('media.status', $asset))
         ->assertOk()
-        ->assertJsonPath('remove_url', route('media.remove', $asset));
+        ->assertJsonPath('remove_url', null);
 
     $this->actingAs($editor)
         ->deleteJson(route('media.remove', $asset))
-        ->assertOk()
-        ->assertJsonPath('removed', true);
+        ->assertForbidden();
 
-    expect(MediaAsset::query()->find($asset->id))->toBeNull()
-        ->and(Storage::disk('local')->exists($pendingPath))->toBeFalse()
-        ->and(app(EntitlementService::class)->mediaAssetUsageFor($editor)['used'])->toBe(0);
+    expect(MediaAsset::query()->find($asset->id))->not->toBeNull()
+        ->and(Storage::disk('local')->exists($pendingPath))->toBeTrue()
+        ->and(app(EntitlementService::class)->mediaAssetUsageFor($editor)['used'])->toBe(1);
 });
 
 /**
@@ -243,17 +242,16 @@ function mediaRecoveryWorkspace(?int $limit = null): array
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
 
+    $planFactory = Plan::factory();
     if ($limit !== null) {
-        $plan = Plan::factory()
-            ->hasLimit('media_assets', $limit)
-            ->create(['is_default' => true]);
-
-        $user->entitlements()->create([
-            'plan_id' => $plan->id,
-            'status' => 'active',
-            'starts_at' => now(),
-        ]);
+        $planFactory = $planFactory->hasLimit('media_assets', $limit);
     }
+    $plan = $planFactory->create(['is_default' => true, 'allows_collaboration' => true]);
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
 
     return [$user, $workspace];
 }

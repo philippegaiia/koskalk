@@ -5,6 +5,7 @@ namespace App\Actions\Inventory;
 use App\Enums\StockLotStatus;
 use App\Models\StockLot;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +17,9 @@ class QuarantineStockLot
     {
         $this->access->assertWritable($actor, $lot->workspace);
 
-        return DB::transaction(function () use ($lot, $note): StockLot {
+        return DB::transaction(function () use ($actor, $lot, $note): StockLot {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($lot->workspace_id);
+            $this->access->assertWritable($actor, $workspace);
             $lockedLot = StockLot::query()->lockForUpdate()->findOrFail($lot->id);
             $lockedLot->update([
                 'status' => StockLotStatus::Quarantined,

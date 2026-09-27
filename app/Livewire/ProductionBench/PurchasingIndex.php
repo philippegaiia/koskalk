@@ -15,6 +15,7 @@ use App\Enums\ProductionDocumentType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockLotStatus;
 use App\Enums\StockUnitKind;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -38,6 +39,7 @@ use Throwable;
 
 class PurchasingIndex extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithFileUploads;
 
     public string $supplierName = '';
@@ -314,6 +316,6 @@ class PurchasingIndex extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

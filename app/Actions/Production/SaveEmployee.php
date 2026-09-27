@@ -24,7 +24,7 @@ class SaveEmployee
         ?string $title = null,
         array $departmentIds = [],
     ): Employee {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $firstName = trim($firstName);
         $lastName = trim($lastName);
         $title = $title !== null ? trim($title) : null;
@@ -45,7 +45,7 @@ class SaveEmployee
 
         return DB::transaction(function () use ($actor, $departmentIds, $employee, $firstName, $isActive, $lastName, $title, $workspace): Employee {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
             $current = null;
 
             if ($employee instanceof Employee) {

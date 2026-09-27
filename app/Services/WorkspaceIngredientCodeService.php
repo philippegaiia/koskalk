@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -26,7 +25,9 @@ class WorkspaceIngredientCodeService
         $normalizedCode = $this->normalize($materialCode);
 
         if ($normalizedCode === null) {
-            return DB::transaction(function () use ($ingredient, $workspace): ?WorkspaceIngredientCode {
+            return DB::transaction(function () use ($actor, $ingredient, $workspace): ?WorkspaceIngredientCode {
+                $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+                $this->assertWritable($actor, $workspace, $ingredient);
                 $existing = WorkspaceIngredientCode::query()
                     ->where('workspace_id', $workspace->id)
                     ->where('ingredient_id', $ingredient->id)
@@ -54,7 +55,10 @@ class WorkspaceIngredientCodeService
         }
 
         try {
-            return DB::transaction(function () use ($ingredient, $normalizedCode, $workspace): WorkspaceIngredientCode {
+            return DB::transaction(function () use ($actor, $ingredient, $normalizedCode, $workspace): WorkspaceIngredientCode {
+                $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+                $this->assertWritable($actor, $workspace, $ingredient);
+
                 return WorkspaceIngredientCode::query()->updateOrCreate(
                     [
                         'workspace_id' => $workspace->id,
@@ -92,11 +96,7 @@ class WorkspaceIngredientCodeService
 
     private function assertWritable(User $actor, Workspace $workspace, Ingredient $ingredient): void
     {
-        if (! in_array($workspace->roleFor($actor), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-            WorkspaceMemberRole::Editor,
-        ], true)) {
+        if (! app(WorkspaceAuthorization::class)->canEdit($actor, $workspace->id)) {
             throw new AuthorizationException;
         }
 

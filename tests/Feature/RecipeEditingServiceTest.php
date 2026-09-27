@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\WorkspaceMemberRole;
+use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\RecipeEditingService;
@@ -50,6 +52,7 @@ it('renews only a live matching lease and never resurrects an expired heartbeat'
 it('audits explicit owner or admin takeover and invalidates the previous token', function (): void {
     $workspace = Workspace::factory()->create();
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
+    UserEntitlement::factory()->for($workspace->owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $admin = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($admin)->create(['role' => WorkspaceMemberRole::Admin]);
     $editing = app(RecipeEditingService::class);
@@ -60,7 +63,7 @@ it('audits explicit owner or admin takeover and invalidates the previous token',
 
     expect(fn () => $editing->heartbeat($recipe, $workspace->owner, $token))->toThrow(ValidationException::class);
     $this->assertDatabaseHas('recipe_edit_takeovers', ['actor_user_id' => $admin->id, 'previous_user_id' => $workspace->owner_user_id, 'reason' => 'Owner disconnected']);
-    expect(fn () => $editing->acquire($recipe, $admin, (string) Str::uuid()))->toThrow(AuthorizationException::class);
+    expect($editing->acquire($recipe, $admin, (string) Str::uuid())['status'])->toBe('blocked');
 });
 
 it('checks fresh selection and privilege on every request', function (string $change): void {

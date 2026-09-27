@@ -2,10 +2,10 @@
 
 namespace App\Policies;
 
-use App\Enums\MediaAssetStatus;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
+use App\Services\WorkspaceAuthorization;
 
 class MediaAssetPolicy
 {
@@ -18,12 +18,14 @@ class MediaAssetPolicy
 
     public function view(User $user, MediaAsset $mediaAsset): bool
     {
-        return $this->canAccessWorkspace($user, $mediaAsset->workspace);
+        return app(WorkspaceAuthorization::class)->canView($user, $mediaAsset->workspace_id);
     }
 
     public function create(User $user): bool
     {
-        return true;
+        $workspace = $user->company();
+
+        return $workspace !== null && $this->canEditWorkspaceRecords($user, $workspace->id);
     }
 
     public function update(User $user, MediaAsset $mediaAsset): bool
@@ -33,19 +35,7 @@ class MediaAssetPolicy
 
     public function delete(User $user, MediaAsset $mediaAsset): bool
     {
-        if ($this->canDeleteWorkspaceRecords($user, $mediaAsset->workspace_id)) {
-            return true;
-        }
-
-        return $this->canEditWorkspaceRecords($user, $mediaAsset->workspace_id)
-            && $mediaAsset->uploaded_by_user_id === $user->id
-            && in_array($mediaAsset->status, [MediaAssetStatus::Processing, MediaAssetStatus::Failed], true)
-            && ! ($mediaAsset->relationLoaded('usages')
-                ? $mediaAsset->usages->isNotEmpty()
-                : $mediaAsset->usages()->exists())
-            && ! ($mediaAsset->relationLoaded('productionDocuments')
-                ? $mediaAsset->productionDocuments->isNotEmpty()
-                : $mediaAsset->isReferencedExternally());
+        return $this->canDeleteWorkspaceRecords($user, $mediaAsset->workspace_id);
     }
 
     public function restore(User $user, MediaAsset $mediaAsset): bool

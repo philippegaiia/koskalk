@@ -2,14 +2,13 @@
 
 namespace App\Policies;
 
+use App\Models\Recipe;
 use App\Models\RecipePhase;
+use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Policies\Concerns\HandlesWorkspaceAuthorization;
 
 class RecipePhasePolicy
 {
-    use HandlesWorkspaceAuthorization;
-
     public function viewAny(User $user): bool
     {
         return true;
@@ -17,32 +16,22 @@ class RecipePhasePolicy
 
     public function view(User $user, RecipePhase $recipePhase): bool
     {
-        return $recipePhase->isAccessibleBy($user);
+        return $this->can($user, 'view', $recipePhase);
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('create', Recipe::class);
     }
 
     public function update(User $user, RecipePhase $recipePhase): bool
     {
-        if ($recipePhase->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipePhase->tenantWorkspaceId() !== null
-            && $this->canEditWorkspaceRecords($user, $recipePhase->tenantWorkspaceId());
+        return $this->can($user, 'update', $recipePhase);
     }
 
     public function delete(User $user, RecipePhase $recipePhase): bool
     {
-        if ($recipePhase->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipePhase->tenantWorkspaceId() !== null
-            && $this->canDeleteWorkspaceRecords($user, $recipePhase->tenantWorkspaceId());
+        return $this->can($user, 'delete', $recipePhase);
     }
 
     public function restore(User $user, RecipePhase $recipePhase): bool
@@ -53,5 +42,14 @@ class RecipePhasePolicy
     public function forceDelete(User $user, RecipePhase $recipePhase): bool
     {
         return false;
+    }
+
+    private function can(User $user, string $ability, RecipePhase $recipePhase): bool
+    {
+        $version = $recipePhase->recipeVersion()->withoutGlobalScopes()->first();
+
+        return $version instanceof RecipeVersion
+            && $version->workspace_id === $recipePhase->workspace_id
+            && $user->can($ability, $version);
     }
 }

@@ -101,6 +101,7 @@
                 ])>{{ $workspaceMessage }}</p>
             @endif
 
+            <fieldset @disabled(! $canManageWorkspace)>
             <div class="grid gap-3 md:grid-cols-2">
                 <label class="sk-inset p-4">
                     <span class="sk-eyebrow">{{ __('settings.workspace.name') }}</span>
@@ -167,6 +168,7 @@
                 </fieldset>
             </div>
 
+            @if ($canManageWorkspace)
             <div class="flex justify-end">
                 <button
                     wire:click="saveWorkspace"
@@ -175,6 +177,8 @@
                     class="sk-btn sk-btn-primary"
                 >{{ __('settings.actions.save_workspace') }}</button>
             </div>
+            @endif
+            </fieldset>
         </section>
     @endif
 </div>

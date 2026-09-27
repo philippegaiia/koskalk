@@ -20,7 +20,7 @@ class RecipeVersionPolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('create', Recipe::class);
     }
 
     public function update(User $user, RecipeVersion $recipeVersion): bool
@@ -49,6 +49,8 @@ class RecipeVersionPolicy
             ->withoutGlobalScopes()
             ->first();
 
-        return $recipe instanceof Recipe && $user->can($ability, $recipe);
+        return $recipe instanceof Recipe
+            && $recipeVersion->workspace_id === $recipe->workspace_id
+            && $user->can($ability, $recipe);
     }
 }

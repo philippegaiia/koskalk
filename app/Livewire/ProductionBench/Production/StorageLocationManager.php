@@ -3,8 +3,8 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Inventory\SaveStorageLocation;
-use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\StorageLocation;
 use App\Models\User;
 use App\Models\Workspace;
@@ -24,6 +24,7 @@ class StorageLocationManager extends Component implements HasForms
 {
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
 
     /** @var array<string, mixed> */
     public array $data = [];
@@ -113,13 +114,7 @@ class StorageLocationManager extends Component implements HasForms
         $workspace = $this->workspace();
         $isBenchActive = $access->isActive($workspace);
         $isReadOnly = $access->isReadOnly($workspace);
-        $isEditable = $isBenchActive
-            && ! $isReadOnly
-            && in_array($workspace->roleFor($this->user()), [
-                WorkspaceMemberRole::Owner,
-                WorkspaceMemberRole::Admin,
-                WorkspaceMemberRole::Editor,
-            ], true);
+        $isEditable = $access->canConfigure($this->user(), $workspace);
 
         return view('livewire.production-bench.production.storage-location-manager', [
             'accessMessage' => match (true) {
@@ -208,6 +203,6 @@ class StorageLocationManager extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

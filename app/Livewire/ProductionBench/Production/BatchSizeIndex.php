@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionBatchPreset;
 use App\Models\User;
 use App\Models\Workspace;
@@ -16,6 +17,7 @@ use Livewire\WithPagination;
 class BatchSizeIndex extends Component
 {
     use InteractsWithAppNotifications;
+    use InteractsWithProductionWorkspace;
 
     public ?string $statusMessage = null;
 
@@ -51,7 +53,7 @@ class BatchSizeIndex extends Component
     public function delete(int $presetId, ProductionBenchAccess $access): void
     {
         $workspace = $this->workspace();
-        $access->assertWritable($this->user(), $workspace);
+        $access->assertCanConfigure($this->user(), $workspace);
 
         ProductionBatchPreset::query()
             ->where('workspace_id', $workspace->id)
@@ -87,6 +89,7 @@ class BatchSizeIndex extends Component
 
         return view('livewire.production-bench.production.batch-size-index', [
             'contextualHelp' => $helpTopics->resolve('presets', app()->getLocale()),
+            'canConfigure' => $access->canConfigure($this->user(), $workspace),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'presets' => $presets,
@@ -100,6 +103,6 @@ class BatchSizeIndex extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

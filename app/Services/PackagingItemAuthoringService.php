@@ -6,9 +6,12 @@ use App\Enums\MaterialPriceSource;
 use App\Enums\PackagingCategory;
 use App\Models\PackagingItem;
 use App\Models\User;
+use App\Models\Workspace;
+use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -53,85 +56,88 @@ class PackagingItemAuthoringService
 
     public function create(array $state, User $user): PackagingItem
     {
-        $workspace = $this->workspaceProvisioner->ensureCompanyWorkspace($user);
+        $workspace = $user->company(fresh: true) ?? $this->workspaceProvisioner->ensureCompanyWorkspace($user);
 
-        $packagingItem = new PackagingItem([
-            'public_id' => Arr::get($state, 'public_id'),
-            'workspace_id' => $workspace->id,
-            'created_by_user_id' => $user->id,
-        ]);
+        return DB::transaction(function () use ($state, $user, $workspace): PackagingItem {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            Gate::forUser($user)->authorize('create', [PackagingItem::class, $lockedWorkspace]);
 
-        $packagingItem = $this->persist($packagingItem, $state);
+            $packagingItem = new PackagingItem([
+                'public_id' => Arr::get($state, 'public_id'),
+                'workspace_id' => $lockedWorkspace->id,
+                'created_by_user_id' => $user->id,
+            ]);
+            $packagingItem = $this->persist($packagingItem, $state);
+            $this->rememberPrice($packagingItem, $state['unit_cost'] ?? null, $user);
 
-        $this->rememberPrice($packagingItem, $state['unit_cost'] ?? null, $user);
-
-        return $packagingItem->load('currentPrice');
+            return $packagingItem->load('currentPrice');
+        }, attempts: 5);
     }
 
     public function update(PackagingItem $packagingItem, array $state, User $user): PackagingItem
     {
-        if (! $packagingItem->workspace->hasMember($user)) {
-            throw ValidationException::withMessages([
-                'packaging_item' => 'Only your own packaging items can be edited from the public app.',
-            ]);
-        }
+        return $this->withAuthorizedItem($user, $packagingItem, 'update', function (PackagingItem $lockedItem) use ($state, $user): PackagingItem {
+            $previousFeaturedImagePath = $lockedItem->featured_image_path;
+            $lockedItem = $this->persist($lockedItem, $state);
+            $this->rememberPrice($lockedItem, $state['unit_cost'] ?? null, $user);
 
-        $previousFeaturedImagePath = $packagingItem->featured_image_path;
-        $packagingItem = $this->persist($packagingItem, $state);
+            if ($previousFeaturedImagePath !== $lockedItem->featured_image_path) {
+                DB::afterCommit(fn () => MediaStorage::deletePackagingItemPath($lockedItem, $previousFeaturedImagePath));
+            }
 
-        if ($previousFeaturedImagePath !== $packagingItem->featured_image_path) {
-            MediaStorage::deletePackagingItemPath($packagingItem, $previousFeaturedImagePath);
-        }
-
-        $this->rememberPrice($packagingItem, $state['unit_cost'] ?? null, $user);
-
-        return $packagingItem->load('currentPrice');
+            return $lockedItem->load('currentPrice');
+        });
     }
 
     public function updateUnitCost(PackagingItem $packagingItem, User $user, mixed $unitCost): PackagingItem
     {
-        if (! $packagingItem->workspace->hasMember($user)) {
-            throw ValidationException::withMessages([
-                'packaging_item' => 'Only your own packaging items can be edited from the public app.',
-            ]);
-        }
+        return $this->withAuthorizedItem($user, $packagingItem, 'update', function (PackagingItem $lockedItem) use ($user, $unitCost): PackagingItem {
+            $this->rememberPrice($lockedItem, $unitCost, $user);
 
-        if ($unitCost === null || $unitCost === '') {
-            throw ValidationException::withMessages([
-                'unit_cost' => 'The unit price field is required.',
-            ]);
-        }
-
-        $this->rememberPrice($packagingItem, $unitCost, $user);
-
-        return $packagingItem->fresh()->load('currentPrice');
+            return $lockedItem->fresh()->load('currentPrice');
+        });
     }
 
     public function delete(PackagingItem $packagingItem, User $user): bool
     {
-        if (! $packagingItem->workspace->hasMember($user)) {
-            return false;
-        }
+        return $this->withAuthorizedItem($user, $packagingItem, 'delete', function (PackagingItem $lockedItem): bool {
+            if ($lockedItem->costingItems()->exists() || $lockedItem->recipeVersionPackagingItems()->exists()) {
+                $lockedItem->update(['is_active' => false]);
 
-        if ($packagingItem->costingItems()->exists() || $packagingItem->recipeVersionPackagingItems()->exists()) {
-            $packagingItem->update(['is_active' => false]);
+                return true;
+            }
+
+            $featuredImagePath = $lockedItem->featured_image_path;
+            $lockedItem->currentPrice()->delete();
+            $lockedItem->delete();
+
+            DB::afterCommit(function () use ($lockedItem, $featuredImagePath): void {
+                MediaStorage::deletePackagingItemPath($lockedItem, $featuredImagePath);
+                MediaStorage::deletePackagingItemDirectory($lockedItem);
+            });
 
             return true;
-        }
-
-        $featuredImagePath = $packagingItem->featured_image_path;
-
-        DB::transaction(function () use ($packagingItem, $featuredImagePath): void {
-            $packagingItem->currentPrice()->delete();
-            $packagingItem->delete();
-
-            DB::afterCommit(function () use ($packagingItem, $featuredImagePath): void {
-                MediaStorage::deletePackagingItemPath($packagingItem, $featuredImagePath);
-                MediaStorage::deletePackagingItemDirectory($packagingItem);
-            });
         });
+    }
 
-        return true;
+    /**
+     * @template T
+     *
+     * @param  Closure(PackagingItem): T  $callback
+     * @return T
+     */
+    private function withAuthorizedItem(User $user, PackagingItem $packagingItem, string $ability, Closure $callback): mixed
+    {
+        return DB::transaction(function () use ($user, $packagingItem, $ability, $callback): mixed {
+            Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($packagingItem->workspace_id);
+            $lockedItem = PackagingItem::query()
+                ->where('workspace_id', $packagingItem->workspace_id)
+                ->lockForUpdate()
+                ->findOrFail($packagingItem->id);
+            Gate::forUser($user)->authorize($ability, $lockedItem);
+
+            return $callback($lockedItem);
+        }, attempts: 5);
     }
 
     private function persist(PackagingItem $packagingItem, array $state): PackagingItem

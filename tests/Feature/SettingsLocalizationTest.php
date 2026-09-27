@@ -44,7 +44,7 @@ it('uses the approved workspace settings copy', function () {
         ->set('activeTab', 'workspace')
         ->assertSee('Workspace settings')
         ->assertSee('Manage the shared defaults used for products, ingredients, packaging, and costing in this workspace.')
-        ->assertSee('Only the workspace owner can change these settings.')
+        ->assertSee('The workspace owner and admins can change these settings.')
         ->assertSee('Workspace name')
         ->assertSee('Default currency')
         ->assertSee('Used by default for costing and pricing in this workspace.')

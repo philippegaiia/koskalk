@@ -6,11 +6,13 @@ use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\Livewire\ProductionBench\Production\ProductionIndex;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
@@ -57,7 +59,8 @@ it('shows a planning reference and assigns one permanent number from the product
 
 it('hides individual assignment from viewers and read-only production benches', function (): void {
     $fixture = productionBatchAssignmentFixture();
-    $viewer = User::factory()->create();
+    UserEntitlement::factory()->for($fixture['owner'])->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $fixture['workspace']->id]);
     WorkspaceMember::factory()->for($fixture['workspace'])->for($viewer)->create([
         'role' => WorkspaceMemberRole::Viewer,
     ]);

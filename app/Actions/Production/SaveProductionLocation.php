@@ -16,14 +16,14 @@ class SaveProductionLocation
 
     public function handle(User $actor, Workspace $workspace, string $name, int|string $dailyProductionLimit, bool $isActive = true, ?ProductionLocation $location = null): ProductionLocation
     {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $name = preg_replace('/\s+/', ' ', trim($name)) ?? trim($name);
         validator(['name' => $name], ['name' => ['required', 'string', 'max:50']], ['name.max' => __('production_bench.validation.location_name_max')])->validate();
         validator(['daily_production_limit' => $dailyProductionLimit], ['daily_production_limit' => ['required', 'integer', 'min:1', 'max:1000']])->validate();
 
         return DB::transaction(function () use ($actor, $workspace, $name, $isActive, $location, $dailyProductionLimit): ProductionLocation {
             $locked = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $locked);
+            $this->access->assertCanConfigure($actor, $locked);
             if (! $locked->uses_production_locations) {
                 throw ValidationException::withMessages(['location' => __('locations.validation.disabled')]);
             }

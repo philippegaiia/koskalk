@@ -18,9 +18,9 @@
 
         <x-workflow-action-bar data-production-bench-save-bar>
             <x-slot:leading>
-                <button type="button" wire:click="delete" wire:confirm="{{ __('production_bench.supplier.delete_confirm') }}" class="sk-btn sk-btn-danger" wire:loading.attr="disabled" wire:target="delete">
+                @if ($canDelete)<button type="button" wire:click="delete" wire:confirm="{{ __('production_bench.supplier.delete_confirm') }}" class="sk-btn sk-btn-danger" wire:loading.attr="disabled" wire:target="delete">
                     {{ __('production_bench.supplier.delete') }}
-                </button>
+                </button>@endif
             </x-slot:leading>
 
             <a href="{{ route('production-bench.purchasing.supplier', $supplier) }}" wire:navigate class="sk-btn sk-btn-ghost">

@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\AssignProductionTask;
 use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\ReopenProductionTask;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
 use App\Models\Employee;
@@ -27,6 +28,7 @@ use Livewire\WithPagination;
 class TaskIndex extends Component implements HasForms
 {
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
     use WithPagination;
 
@@ -255,6 +257,6 @@ class TaskIndex extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

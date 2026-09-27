@@ -6,6 +6,7 @@ use App\Models\MediaLabel;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
+use App\Services\WorkspaceAuthorization;
 
 class MediaLabelPolicy
 {
@@ -18,7 +19,7 @@ class MediaLabelPolicy
 
     public function view(User $user, MediaLabel $mediaLabel): bool
     {
-        return $this->canAccessWorkspace($user, $mediaLabel->workspace);
+        return app(WorkspaceAuthorization::class)->canView($user, $mediaLabel->workspace_id);
     }
 
     public function create(User $user, Workspace $workspace): bool
@@ -33,6 +34,6 @@ class MediaLabelPolicy
 
     public function delete(User $user, MediaLabel $mediaLabel): bool
     {
-        return $this->canEditWorkspaceRecords($user, $mediaLabel->workspace_id);
+        return $this->canDeleteWorkspaceRecords($user, $mediaLabel->workspace_id);
     }
 }

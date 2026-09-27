@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\PrepareProductionStock;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
@@ -16,6 +17,8 @@ use Livewire\Component;
 
 class StockPreparation extends Component
 {
+    use InteractsWithProductionWorkspace;
+
     /** @var list<int> */
     public array $productionIds = [];
 
@@ -157,6 +160,6 @@ class StockPreparation extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

@@ -11,6 +11,7 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         'recipe' => [
             'public_id' => 'test-product',
             'can_manage_lock' => true,
+            'can_duplicate' => true,
             'has_saved_formula' => true,
             'saved_formula_url' => '/products/test-product',
             'is_locked' => false,

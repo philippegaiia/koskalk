@@ -2,10 +2,12 @@
 
 namespace App\Policies;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
+use App\Services\WorkspaceCapabilities;
 
 class WorkspaceMemberPolicy
 {
@@ -23,27 +25,46 @@ class WorkspaceMemberPolicy
         return $workspace instanceof Workspace && $this->canAccessWorkspace($user, $workspace);
     }
 
-    public function create(User $user): bool
+    public function create(User $user, WorkspaceMemberRole $role = WorkspaceMemberRole::Editor): bool
     {
-        return true;
-    }
-
-    public function update(User $user, WorkspaceMember $workspaceMember): bool
-    {
-        $workspace = Workspace::withoutGlobalScopes()->find($workspaceMember->workspace_id);
+        $workspace = $user->company();
 
         return $workspace instanceof Workspace
-            && $workspaceMember->user_id !== $workspace->owner_user_id
+            && $this->canAssignRole($user, $workspace, $role)
+            && app(WorkspaceCapabilities::class)->allowsCollaboration($workspace)
             && $this->canManageWorkspace($user, $workspace);
+    }
+
+    public function update(User $user, WorkspaceMember $workspaceMember, ?WorkspaceMemberRole $role = null): bool
+    {
+        $member = WorkspaceMember::withoutGlobalScopes()->find($workspaceMember->id);
+        $workspace = $member === null ? null : Workspace::withoutGlobalScopes()->find($member->workspace_id);
+
+        return $workspace instanceof Workspace
+            && ($role === null || $this->canAssignRole($user, $workspace, $role))
+            && $this->canManageMember($user, $workspaceMember);
     }
 
     public function delete(User $user, WorkspaceMember $workspaceMember): bool
     {
-        $workspace = Workspace::withoutGlobalScopes()->find($workspaceMember->workspace_id);
+        return $this->canManageMember($user, $workspaceMember);
+    }
+
+    private function canManageMember(User $user, WorkspaceMember $workspaceMember): bool
+    {
+        $member = WorkspaceMember::withoutGlobalScopes()->find($workspaceMember->id);
+        $workspace = $member === null ? null : Workspace::withoutGlobalScopes()->find($member->workspace_id);
 
         return $workspace instanceof Workspace
-            && $workspaceMember->user_id !== $workspace->owner_user_id
+            && $member->user_id !== $workspace->owner_user_id
+            && $this->canAssignRole($user, $workspace, $member->role)
             && $this->canManageWorkspace($user, $workspace);
+    }
+
+    private function canAssignRole(User $user, Workspace $workspace, WorkspaceMemberRole $role): bool
+    {
+        return in_array($role, [WorkspaceMemberRole::Editor, WorkspaceMemberRole::Viewer], true)
+            || ($role === WorkspaceMemberRole::Admin && $user->workspaceRoleFor($workspace->id) === WorkspaceMemberRole::Owner);
     }
 
     public function restore(User $user, WorkspaceMember $workspaceMember): bool

@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\SaveProductionBatchPreset;
 use App\Actions\Production\SyncProductionBatchPresetProducts;
 use App\Enums\MassUnit;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionBatchPreset;
 use App\Models\Recipe;
 use App\Models\User;
@@ -20,6 +21,7 @@ use Livewire\WithPagination;
 
 class BatchSizeForm extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithPagination;
 
     public string|ProductionBatchPreset|null $preset = null;
@@ -46,6 +48,8 @@ class BatchSizeForm extends Component
 
     public function mount(string|ProductionBatchPreset|null $preset = null): void
     {
+        abort_if($preset === null && ! app(ProductionBenchAccess::class)->canConfigure($this->user(), $this->workspace()), 403);
+
         if ($preset === null) {
             $this->basisInputUnit = $this->workspace()->mass_display_system->priceUnit()->value;
 
@@ -226,6 +230,7 @@ class BatchSizeForm extends Component
 
         return view('livewire.production-bench.production.batch-size-form', [
             'contextualHelp' => $helpTopics->resolve('presets', app()->getLocale()),
+            'canConfigure' => $access->canConfigure($this->user(), $workspace),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'massUnits' => MassUnit::cases(),
@@ -241,7 +246,7 @@ class BatchSizeForm extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 
     /**

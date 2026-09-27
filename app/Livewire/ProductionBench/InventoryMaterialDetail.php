@@ -7,6 +7,7 @@ use App\Actions\Inventory\SaveMaterialStorageLocation;
 use App\Enums\StockMovementType;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\InteractsWithStockAdjustments;
 use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\GoodsReceipt;
@@ -55,6 +56,7 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use InteractsWithStockAdjustments;
     use InteractsWithStockLotLocations;
     use WithPagination;
@@ -891,6 +893,6 @@ class InventoryMaterialDetail extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

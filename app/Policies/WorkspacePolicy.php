@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
@@ -22,7 +23,7 @@ class WorkspacePolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return false;
     }
 
     public function update(User $user, Workspace $workspace): bool
@@ -32,12 +33,14 @@ class WorkspacePolicy
 
     public function delete(User $user, Workspace $workspace): bool
     {
-        return $workspace->owner_user_id === $user->id;
+        return $user->workspaceRoleFor($workspace->id) === WorkspaceMemberRole::Owner
+            && $this->canAccessWorkspace($user, $workspace);
     }
 
     public function restore(User $user, Workspace $workspace): bool
     {
-        return $workspace->owner_user_id === $user->id;
+        return $user->workspaceRoleFor($workspace->id) === WorkspaceMemberRole::Owner
+            && $this->canAccessWorkspace($user, $workspace);
     }
 
     public function forceDelete(User $user, Workspace $workspace): bool

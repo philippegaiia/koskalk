@@ -16,7 +16,7 @@ return [
     'workspace' => [
         'heading' => 'Workspace settings',
         'description' => 'Manage the shared defaults used for products, ingredients, packaging, and costing in this workspace.',
-        'owner_help' => 'Only the workspace owner can change these settings.',
+        'owner_help' => 'The workspace owner and admins can change these settings.',
         'name' => 'Workspace name',
         'default_currency' => 'Default currency',
         'currency_search' => 'Search currencies',

@@ -25,7 +25,7 @@ class SyncProductionTaskSetProducts
         ?int $defaultRecipeId = null,
         ?array $assignments = null,
     ): ProductionTaskSet {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         $assignments ??= collect($recipeIds)
             ->map(fn (int|string $recipeId): int => (int) $recipeId)
@@ -59,7 +59,7 @@ class SyncProductionTaskSetProducts
 
         return DB::transaction(function () use ($actor, $normalizedAssignments, $recipeIds, $taskSet, $workspace): ProductionTaskSet {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             $lockedTaskSet = ProductionTaskSet::query()
                 ->lockForUpdate()

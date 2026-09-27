@@ -7,6 +7,7 @@ use App\Livewire\ProductionBench\InventoryMaterialDetail;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\Plan;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\Supplier;
@@ -883,6 +884,8 @@ it('hides buffer actions for a read-only bench', function (): void {
 
 it('hides buffer actions from an active viewer', function (): void {
     ['user' => $owner, 'workspace' => $workspace] = materialDetailWorkspace();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $workspace->owner->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $viewer = User::factory()->create();
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
         'role' => WorkspaceMemberRole::Viewer,

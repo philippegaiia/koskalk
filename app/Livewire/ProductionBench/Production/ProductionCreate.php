@@ -8,6 +8,7 @@ use App\Actions\Production\SaveProductProductionLocation;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionLocation;
 use App\Models\ProductionTaskSet;
@@ -37,6 +38,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
 
     public string $recipeId = '';
 
@@ -475,7 +477,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 
     private function displayDecimal(string $value): string

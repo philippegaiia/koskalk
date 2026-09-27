@@ -7,6 +7,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\ProcurementLineSnapshotBuilder;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,9 @@ class IssueQuotationRequest
     {
         $this->access->assertWritable($actor, $order->workspace);
 
-        return DB::transaction(function () use ($order): PurchaseOrder {
+        return DB::transaction(function () use ($actor, $order): PurchaseOrder {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->workspace_id);
+            $this->access->assertWritable($actor, $workspace);
             $lockedOrder = PurchaseOrder::query()
                 ->with(['supplier', 'lines.ingredient', 'lines.packagingItem'])
                 ->lockForUpdate()

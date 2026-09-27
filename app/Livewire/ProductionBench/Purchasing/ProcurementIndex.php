@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Purchasing;
 
 use App\Enums\ProcurementStage;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Models\Workspace;
@@ -15,6 +16,7 @@ use Livewire\WithPagination;
 
 class ProcurementIndex extends Component
 {
+    use InteractsWithProductionWorkspace;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
@@ -68,6 +70,6 @@ class ProcurementIndex extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

@@ -33,7 +33,9 @@
                         <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.catalog.description') }}</p>
                     </div>
 
-                    <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('packaging.actions.add') }}</a>
+                    @if ($canCreateItems)
+                        <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('packaging.actions.add') }}</a>
+                    @endif
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center" aria-label="{{ __('packaging.catalog.filters_label') }}">
@@ -48,9 +50,11 @@
                 <div class="p-8 text-center">
                     <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $search !== '' ? __('packaging.empty.no_matches') : __('packaging.empty.no_items') }}</h4>
                     <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('packaging.empty.description') }}</p>
-                    <div class="mt-5">
-                        <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('packaging.actions.add') }}</a>
-                    </div>
+                    @if ($canCreateItems)
+                        <div class="mt-5">
+                            <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('packaging.actions.add') }}</a>
+                        </div>
+                    @endif
                 </div>
             @else
                 <x-sticky-table-scroll>
@@ -84,7 +88,11 @@
                                     <td class="font-semibold text-[var(--color-ink-strong)]">{{ $item->name }}</td>
                                     <td class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $item->material_code ?? '—' }}</td>
                                     <td>
-                                        <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32" aria-label="{{ __('packaging.accessibility.unit_price', ['item' => $item->name]) }}" />
+                                        @if ($canUpdateItems)
+                                            <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32" aria-label="{{ __('packaging.accessibility.unit_price', ['item' => $item->name]) }}" />
+                                        @else
+                                            <span class="numeric text-sm text-[var(--color-ink-soft)]">{{ $this->formattedUnitCost($item->unit_cost) }}</span>
+                                        @endif
                                         @error($errorKey)
                                             <p role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                                         @enderror
@@ -92,8 +100,12 @@
                                     <td class="text-[var(--color-ink-soft)]">{{ $item->notes ?? '-' }}</td>
                                     <td class="text-right">
                                         <div class="inline-flex items-center gap-1">
-                                            <x-table-row-action icon="pencil" label="{{ __('packaging.actions.edit') }}" href="{{ route('packaging-items.edit', $item) }}" wire:navigate aria-label="{{ __('packaging.accessibility.edit', ['item' => $item->name]) }}" />
-                                            <x-table-row-action icon="trash" label="{{ __('packaging.actions.delete') }}" wire:click="confirmDelete({{ $item->id }})" aria-label="{{ __('packaging.accessibility.delete', ['item' => $item->name]) }}" />
+                                            @if ($canUpdateItems)
+                                                <x-table-row-action icon="pencil" label="{{ __('packaging.actions.edit') }}" href="{{ route('packaging-items.edit', $item) }}" wire:navigate aria-label="{{ __('packaging.accessibility.edit', ['item' => $item->name]) }}" />
+                                            @endif
+                                            @if ($canDeleteItems)
+                                                <x-table-row-action icon="trash" label="{{ __('packaging.actions.delete') }}" wire:click="confirmDelete({{ $item->id }})" aria-label="{{ __('packaging.accessibility.delete', ['item' => $item->name]) }}" />
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -107,6 +119,7 @@
         </section>
 
         @if ($pendingDeleteItem)
+            @if ($canDeleteItems)
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" x-data @click.self="$wire.cancelDelete()" role="dialog" aria-modal="true" aria-labelledby="packaging-delete-heading">
                 <div class="sk-card w-full max-w-md p-6" @click.stop>
                     @php($usedFormulaCount = $pendingDeleteImpact['formula_count'] ?? 0)
@@ -136,6 +149,7 @@
                     @endif
                 </div>
             </div>
+            @endif
         @endif
     @endif
 </div>

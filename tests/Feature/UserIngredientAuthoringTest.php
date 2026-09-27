@@ -17,6 +17,7 @@ use App\Models\ProductionOutputSetting;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceIngredientGuidance;
@@ -344,6 +345,7 @@ it('rejects duplicate workspace material codes and rolls back a new ingredient',
 it('lets an editor assign a platform material code in the active workspace', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,
@@ -381,6 +383,7 @@ it('lets an editor assign a platform material code in the active workspace', fun
 it('keeps an invalid platform material code visible after validation fails', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,
@@ -404,6 +407,7 @@ it('keeps an invalid platform material code visible after validation fails', fun
 it('does not let a workspace viewer save a platform material code', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
         'role' => WorkspaceMemberRole::Viewer,
@@ -430,6 +434,7 @@ it('lets an editor customize and switch between localized platform and workspace
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create([
         'active_workspace_id' => $workspace->id,
         'locale' => 'fr',

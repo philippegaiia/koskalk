@@ -12,6 +12,7 @@ use App\Enums\StockLotStatus;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\InteractsWithStockAdjustments;
 use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\Ingredient;
@@ -65,6 +66,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use InteractsWithStockAdjustments;
     use InteractsWithStockLotLocations;
     use WithPagination;
@@ -1560,6 +1562,6 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

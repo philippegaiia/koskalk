@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\OwnerType;
-use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -100,6 +99,8 @@ final class WorkspaceIngredientGuidanceService
             $normalizedHtml,
             $workspace,
         ): WorkspaceIngredientGuidance {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->assertWritable($actor, $workspace, $ingredient);
             $guidance = WorkspaceIngredientGuidance::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('ingredient_id', $ingredient->id)
@@ -131,7 +132,9 @@ final class WorkspaceIngredientGuidanceService
         $this->assertWritable($actor, $workspace, $ingredient);
         $this->assertWorkspaceOwned($workspace, $ingredient);
 
-        DB::transaction(function () use ($ingredient, $workspace): void {
+        DB::transaction(function () use ($actor, $ingredient, $workspace): void {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->assertWritable($actor, $workspace, $ingredient);
             $guidance = WorkspaceIngredientGuidance::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('ingredient_id', $ingredient->id)
@@ -151,6 +154,8 @@ final class WorkspaceIngredientGuidanceService
         $this->assertPlatform($ingredient);
 
         DB::transaction(function () use ($actor, $ingredient, $workspace): void {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->assertWritable($actor, $workspace, $ingredient);
             $guidance = WorkspaceIngredientGuidance::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('ingredient_id', $ingredient->id)
@@ -176,6 +181,8 @@ final class WorkspaceIngredientGuidanceService
         $this->assertPlatform($ingredient);
 
         return DB::transaction(function () use ($actor, $ingredient, $workspace): WorkspaceIngredientGuidance {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->assertWritable($actor, $workspace, $ingredient);
             $guidance = WorkspaceIngredientGuidance::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('ingredient_id', $ingredient->id)
@@ -201,11 +208,7 @@ final class WorkspaceIngredientGuidanceService
         Workspace $workspace,
         Ingredient $ingredient,
     ): void {
-        if (! in_array($workspace->roleFor($actor), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-            WorkspaceMemberRole::Editor,
-        ], true)) {
+        if (! app(WorkspaceAuthorization::class)->canEdit($actor, $workspace->id)) {
             throw new AuthorizationException;
         }
 

@@ -83,6 +83,7 @@ it('loads packaging editor interface copy from the database', function () {
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
 
     $user = User::factory()->create(['locale' => 'fr']);
+    Workspace::factory()->for($user, 'owner')->create();
 
     foreach ([
         'editor.create.page_title' => 'Ajouter un emballage',
@@ -130,6 +131,7 @@ it('loads the saved packaging status from the database', function () {
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
 
     $user = User::factory()->create(['locale' => 'fr']);
+    Workspace::factory()->for($user, 'owner')->create();
     $packaging = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Boîte kraft',

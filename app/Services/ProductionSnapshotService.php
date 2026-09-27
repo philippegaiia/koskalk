@@ -6,6 +6,7 @@ use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -54,6 +55,16 @@ class ProductionSnapshotService
         $ingredientLotNumbers = $input['ingredient_lot_numbers'] ?? [];
 
         return DB::transaction(function () use ($ingredientLotNumbers, $input, $recipe, $user, $version): ProductionBatch {
+            if ($recipe->workspace_id !== null) {
+                Workspace::withoutGlobalScopes()->whereKey($recipe->workspace_id)->lockForUpdate()->firstOrFail();
+            }
+
+            $recipe = Recipe::withoutGlobalScopes()->lockForUpdate()->findOrFail($recipe->id);
+            $user = User::query()->findOrFail($user->id);
+            Gate::forUser($user)->authorize('update', $recipe);
+            $version = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->lockForUpdate()->findOrFail($version->id);
+            abort_unless($version->workspace_id === $recipe->workspace_id, 403);
+            app(EntitlementService::class)->assertCanCreateProductionBatch($user);
             $preview = $this->preview($recipe, $version, $user, $input);
             $this->ensurePreviewIsPriced($preview);
 
@@ -61,6 +72,7 @@ class ProductionSnapshotService
 
             $batch = ProductionBatch::query()->create([
                 'user_id' => $user->id,
+                'workspace_id' => $recipe->workspace_id,
                 'recipe_id' => $recipe->id,
                 'recipe_version_id' => $version->id,
                 'recipe_name' => $recipe->name,
@@ -114,7 +126,7 @@ class ProductionSnapshotService
             }
 
             return $batch->fresh(['ingredients', 'packagingItems']) ?? $batch->load(['ingredients', 'packagingItems']);
-        });
+        }, attempts: 5);
     }
 
     private function batchBasisLabel(Recipe $recipe): string

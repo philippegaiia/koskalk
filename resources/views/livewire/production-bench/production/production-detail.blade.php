@@ -413,7 +413,7 @@
                                     <a href="{{ route('media.download', $document->mediaAsset) }}" class="break-all font-medium text-[var(--color-accent-strong)] hover:underline">{{ $document->mediaAsset->original_filename }}</a>
                                     @if ($document->note)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
                                 </div>
-                                @if ($canMutate)
+                                @if ($canDetachDocuments)
                                     <button type="button" wire:click="detachJournalDocument({{ $document->id }})" wire:confirm="{{ __('production_bench.production.journal_document_detach_confirm') }}" wire:loading.attr="disabled" wire:target="detachJournalDocument" class="shrink-0 self-start text-xs font-medium text-[var(--color-danger-strong)] hover:underline">{{ __('production_bench.production.journal_document_detach') }}</button>
                                 @endif
                             </li>

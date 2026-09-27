@@ -8,6 +8,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\ProcurementLineSnapshotBuilder;
 use App\Services\ProductionBenchAccess;
@@ -40,6 +41,8 @@ class PlacePurchaseOrder
         }
 
         return DB::transaction(function () use ($actor, $order, $deliveryAddress, $shippingAmount, $discountAmount, $taxAmount): PurchaseOrder {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($order->workspace_id);
+            $this->access->assertWritable($actor, $workspace);
             $lockedOrder = PurchaseOrder::query()
                 ->with(['supplier', 'lines.ingredient', 'lines.packagingItem'])
                 ->lockForUpdate()

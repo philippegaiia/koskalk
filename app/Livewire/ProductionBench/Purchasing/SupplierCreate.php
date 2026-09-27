@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Purchasing;
 
 use App\Actions\Purchasing\SaveSupplier;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
@@ -26,6 +27,7 @@ use Livewire\Component;
 class SupplierCreate extends Component implements HasForms
 {
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use RestrictsFileUploadsToSchemaComponents;
 
     private CurrencyCatalog $currencyCatalog;
@@ -174,6 +176,6 @@ class SupplierCreate extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

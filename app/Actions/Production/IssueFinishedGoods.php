@@ -10,6 +10,7 @@ use App\Enums\StockUnitKind;
 use App\Models\StockLot;
 use App\Models\StockReservation;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -52,6 +53,8 @@ class IssueFinishedGoods
         $this->access->assertWritable($actor, $outputLot->workspace);
 
         return DB::transaction(function () use ($actor, $kind, $note, $outputLot, $quantity): StockLot {
+            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($outputLot->workspace_id);
+            $this->access->assertWritable($actor, $workspace);
             $lockedLot = StockLot::query()
                 ->withoutGlobalScopes()
                 ->lockForUpdate()

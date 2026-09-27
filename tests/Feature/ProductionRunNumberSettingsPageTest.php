@@ -2,6 +2,7 @@
 
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\NumberingSettings;
+use App\Models\Plan;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -32,6 +33,8 @@ it('renders the numbering settings route, creates defaults, and keeps the setup 
 
 it('lets owners and admins save number settings and emits the standard notification', function (): void {
     $fixture = productionNumberSettingsFixture();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $fixture['owner']->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $admin = User::factory()->create();
     WorkspaceMember::factory()->for($fixture['workspace'])->for($admin)->create(['role' => WorkspaceMemberRole::Admin]);
 
@@ -81,6 +84,8 @@ it('shows a live rendered example and validation errors with accessible field de
 
 it('keeps editors and viewers read-only while enforcing owner or admin configuration on the server', function (): void {
     $fixture = productionNumberSettingsFixture();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $fixture['owner']->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $editor = User::factory()->create();
     $viewer = User::factory()->create();
     WorkspaceMember::factory()->for($fixture['workspace'])->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);

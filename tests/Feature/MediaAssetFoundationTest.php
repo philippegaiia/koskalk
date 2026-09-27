@@ -11,6 +11,7 @@ use App\Models\MediaLabel;
 use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\EntitlementService;
@@ -248,6 +249,7 @@ it('authorizes workspace members by role', function () {
     $viewer = User::factory()->create();
     $outsider = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
 
     foreach ([
@@ -298,7 +300,7 @@ it('lets workspace editors create and assign bounded labels', function () {
         'user_id' => $editor->id,
         'role' => WorkspaceMemberRole::Editor,
     ]);
-    $plan = Plan::factory()->hasLimit('media_labels', 20)->create();
+    $plan = Plan::factory()->hasLimit('media_labels', 20)->create(['allows_collaboration' => true]);
     $owner->entitlements()->create([
         'plan_id' => $plan->id,
         'status' => 'active',

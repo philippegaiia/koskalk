@@ -3,8 +3,8 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Inventory\SaveIngredientLotNumberSettings;
-use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\IngredientLotNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -30,6 +30,7 @@ class IngredientLotNumberSettings extends Component implements HasActions, HasFo
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
 
     /** @var array<string, mixed> */
     public array $data = [];
@@ -121,8 +122,7 @@ class IngredientLotNumberSettings extends Component implements HasActions, HasFo
         $workspace = $this->workspace();
         $access = app(ProductionBenchAccess::class);
 
-        return in_array($workspace->roleFor($this->user()), [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true)
-            && $access->isActive($workspace) && ! $access->isReadOnly($workspace);
+        return $access->canConfigure($this->user(), $workspace);
     }
 
     public function render(IngredientLotNumberService $numbers): View
@@ -166,6 +166,6 @@ class IngredientLotNumberSettings extends Component implements HasActions, HasFo
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

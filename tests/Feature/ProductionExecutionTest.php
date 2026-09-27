@@ -39,6 +39,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\InterfaceTranslation;
 use App\Models\MediaAsset;
 use App\Models\PackagingItem;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -1594,6 +1595,8 @@ it('rejects fractional issue quantities for finished count lots', function (): v
 
 it('disables mutation controls for viewer-role members', function (): void {
     $fixture = productionExecutionFixture();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    $fixture['owner']->entitlements()->create(['plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now()->subMinute()]);
     $production = productionExecutionRun($fixture, 'viewer-1', start: false);
     $viewer = User::factory()->create();
     WorkspaceMember::factory()->for($fixture['workspace'])->for($viewer)->create([

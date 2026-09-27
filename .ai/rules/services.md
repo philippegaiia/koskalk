@@ -49,11 +49,14 @@ Resolve feature grants from the workspace actual owner's current active entitlem
 ## Saved formula costing is shared within the workspace
 Workspace-owned saved formulas have one canonical costing shared by all authorized members. User identity records authorship, not separate costing selection. Preserve conflicting historical costing rows for explicit reconciliation; do not silently choose or delete them. Keep receipt/manual-price precedence and immutable production snapshots unchanged.
 
-## Do not infer legacy batch ownership from current membership
-Legacy production_batches have actor user_id and nullable source recipe/version references, not durable workspace ownership. Do not count every current member's historical batches as workspace usage: membership changes and deleted sources make that unsafe. Introduce explicit workspace provenance and a reviewed backfill before sharing this legacy allowance; Production Bench runs use a separate workspace model.
-
 ## Costing reads project defaults without writes
 Loading costing or previewing production must not create, reconcile or delete costing rows. Project missing defaults in memory; explicit saves persist them. Preserve saved zero prices, duplicate packaging occurrences and saved currency. Saved formula/print/export outputs retain empty-costing behavior when no costing exists.
 
 ## Serialize formula writes and current-price propagation with editing revisions
 Browser formula writes must enter RecipeMutationGuard (tab lease plus expected recipe/version/costing revisions); read-page control mutations use RecipeControlMutationGuard. Lock workspace → recipe → current version → costing, recheck fresh authority, and never rebase a stale submitted draft automatically. Background current-price propagation locks the workspace and bumps affected canonical costing revisions without changing human editor attribution. Temporary edit reservations are separate from permanent formula locks.
+
+## Shared company authorization separates role, module and subscription
+Use WorkspaceAuthorization for operational access: fresh selected workspace, live role, and actual-owner collaboration entitlement for nonowners. company() may be cached for presentation; never use that cache as authority. Native policies own fixed roles; future per-member module assignments are a separate gate, never permission overrides. Owner alone manages Admins; Admin manages Editor/Viewer. Check roles inside workspace-locked writes, including material services.
+
+## Do not infer legacy batch ownership from current membership
+Production batches now carry nullable durable workspace_id; new shared snapshots always set it and retain it after source or author deletion. Historical null-workspace rows stay actor-private; reconcile only unambiguous surviving source provenance with the preview-first production-batches:backfill-workspaces command. Never count all current members' old batches as company usage; unresolved owner batches conservatively count toward the selected company allowance. Production Bench runs retain their separate workspace/entitlement model.

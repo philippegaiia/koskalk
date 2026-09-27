@@ -5,9 +5,11 @@ use App\Livewire\ProductionBench\Production\IngredientLotNumberSettings;
 use App\Models\IngredientLotNumberCounter;
 use App\Models\IngredientLotNumberSetting;
 use App\Models\InterfaceTranslation;
+use App\Models\Plan;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
@@ -166,8 +168,9 @@ it('rejects invalid format fields without saving settings', function (string $fi
 ]);
 
 it('allows administrators to configure ingredient numbering', function (): void {
-    [, $workspace] = lotSettingsWorkspace();
-    $admin = User::factory()->create();
+    [$owner, $workspace] = lotSettingsWorkspace();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $admin = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($admin)->create(['role' => WorkspaceMemberRole::Admin]);
     Livewire::actingAs($admin)->test(IngredientLotNumberSettings::class)
         ->set('data.prefix', 'ADMIN')->call('save')->assertHasNoErrors();
@@ -175,8 +178,9 @@ it('allows administrators to configure ingredient numbering', function (): void 
 });
 
 it('prevents editors and viewers from saving ingredient numbering', function (WorkspaceMemberRole $role): void {
-    [, $workspace] = lotSettingsWorkspace();
-    $member = User::factory()->create();
+    [$owner, $workspace] = lotSettingsWorkspace();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    $member = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => $role]);
     Livewire::actingAs($member)->test(IngredientLotNumberSettings::class)
         ->set('data.prefix', 'DENIED')->call('save')->assertForbidden();

@@ -9,6 +9,7 @@ use App\Enums\ListingPriceBasis;
 use App\Enums\OrganicStatus;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\Supplier;
@@ -47,6 +48,7 @@ use Livewire\Component;
 class SupplierListingCreate extends Component implements HasForms
 {
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use RestrictsFileUploadsToSchemaComponents;
 
     private const OptionLimit = 20;
@@ -400,6 +402,7 @@ class SupplierListingCreate extends Component implements HasForms
     public function render(PurchasingHelpTopics $helpTopics): View
     {
         return view('livewire.production-bench.purchasing.supplier-listing-create', [
+            'canDelete' => app(ProductionBenchAccess::class)->canConfigure($this->user(), $this->workspace()),
             'contextualHelp' => $helpTopics->resolve('listings', app()->getLocale()),
             'lockedSupplier' => $this->lockedSupplierPublicId === null ? null : $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId),
         ]);
@@ -921,6 +924,6 @@ class SupplierListingCreate extends Component implements HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

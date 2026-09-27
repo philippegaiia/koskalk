@@ -4,9 +4,11 @@ use App\Enums\ProductionDocumentType;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\Plan;
 use App\Models\ProductionDocument;
 use App\Models\StockLot;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\MediaAssetUploadService;
@@ -25,6 +27,7 @@ function rollbackEditorFixture(): array
     config()->set('media.asset_disk', 'local');
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    UserEntitlement::factory()->for($owner)->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
     $editor = User::factory()->create(['active_workspace_id' => $workspace->id]);
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,

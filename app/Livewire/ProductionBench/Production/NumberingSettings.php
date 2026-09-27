@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\SaveProductionRunNumberSettings;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -19,6 +20,7 @@ use Livewire\Component;
 class NumberingSettings extends Component
 {
     use InteractsWithAppNotifications;
+    use InteractsWithProductionWorkspace;
 
     public string $permanentPrefix = '';
 
@@ -96,10 +98,7 @@ class NumberingSettings extends Component
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
-        $canConfigure = in_array($workspace->roleFor($this->user()), [
-            WorkspaceMemberRole::Owner,
-            WorkspaceMemberRole::Admin,
-        ], true);
+        $canConfigure = $access->canConfigure($this->user(), $workspace);
         $isBenchActive = $access->isActive($workspace);
         $isReadOnly = $access->isReadOnly($workspace);
         $accessMessage = match (true) {
@@ -166,6 +165,6 @@ class NumberingSettings extends Component
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

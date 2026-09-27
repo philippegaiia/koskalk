@@ -3,9 +3,11 @@
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,6 +70,8 @@ it('enforces workspace and recipe policies from ownership and membership', funct
     $outsider = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
 
+    UserEntitlement::factory()->for($owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+
     WorkspaceMember::factory()->for($workspace)->for($editor)->create([
         'role' => WorkspaceMemberRole::Editor,
     ]);
@@ -89,8 +93,8 @@ it('enforces workspace and recipe policies from ownership and membership', funct
     expect($owner->can('update', $workspace))->toBeTrue()
         ->and($editor->can('view', $workspace))->toBeTrue()
         ->and($viewer->can('update', $workspace))->toBeFalse()
-        ->and($editor->can('update', $recipe))->toBeFalse()
-        ->and($viewer->can('view', $recipe))->toBeFalse()
+        ->and($editor->can('update', $recipe))->toBeTrue()
+        ->and($viewer->can('view', $recipe))->toBeTrue()
         ->and($viewer->can('update', $recipe))->toBeFalse()
         ->and($outsider->can('view', $recipe))->toBeFalse();
 });

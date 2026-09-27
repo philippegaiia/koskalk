@@ -14,9 +14,11 @@ class DeleteSupplier
 
     public function handle(User $actor, Workspace $workspace, Supplier $supplier): bool
     {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
-        return DB::transaction(function () use ($supplier, $workspace): bool {
+        return DB::transaction(function () use ($actor, $supplier, $workspace): bool {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
             $lockedSupplier = Supplier::query()
                 ->where('workspace_id', $workspace->id)
                 ->lockForUpdate()

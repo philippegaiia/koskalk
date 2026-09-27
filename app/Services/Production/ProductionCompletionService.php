@@ -22,6 +22,7 @@ use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,7 +32,10 @@ class ProductionCompletionService
 {
     private const int GuardScale = 18;
 
-    public function __construct(private readonly ConsumableStockLotPolicy $lotPolicy) {}
+    public function __construct(
+        private readonly ConsumableStockLotPolicy $lotPolicy,
+        private readonly ProductionBenchAccess $access,
+    ) {}
 
     /**
      * Complete an in-production run atomically: post consumption movements,
@@ -58,6 +62,7 @@ class ProductionCompletionService
             $workspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($production->workspace_id);
+            $this->access->assertWritable($actor, $workspace);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);

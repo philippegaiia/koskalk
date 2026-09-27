@@ -5,12 +5,13 @@ namespace App\Policies\Concerns;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\WorkspaceAuthorization;
 
 trait HandlesWorkspaceAuthorization
 {
     protected function canAccessWorkspace(User $user, Workspace $workspace): bool
     {
-        return $workspace->roleFor($user) !== null;
+        return app(WorkspaceAuthorization::class)->canView($user, $workspace->id);
     }
 
     protected function canManageWorkspace(User $user, Workspace $workspace): bool
@@ -40,6 +41,6 @@ trait HandlesWorkspaceAuthorization
 
     protected function workspaceHasRole(User $user, int $workspaceId, array $allowedRoles): bool
     {
-        return in_array($user->workspaceRoleFor($workspaceId), $allowedRoles, true);
+        return in_array(app(WorkspaceAuthorization::class)->role($user, $workspaceId), $allowedRoles, true);
     }
 }

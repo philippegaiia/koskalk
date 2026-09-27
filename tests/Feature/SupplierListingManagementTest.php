@@ -449,7 +449,7 @@ it('accepts public and workspace-shared ingredients but rejects inaccessible pri
         ->and(SupplierListing::query()->count())->toBe(2);
 });
 
-it('rejects a private ingredient owned by another accessible workspace', function (): void {
+it('rejects a private ingredient owned by another unselected workspace', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $otherWorkspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -472,7 +472,7 @@ it('rejects a private ingredient owned by another accessible workspace', functio
         ),
     );
 
-    expect($foreignPrivateIngredient->isAccessibleBy($owner))->toBeTrue()
+    expect($foreignPrivateIngredient->isAccessibleBy($owner))->toBeFalse()
         ->and($exception)->toBeInstanceOf(ValidationException::class)
         ->and($exception?->errors())->toHaveKey('subject')
         ->and(SupplierListing::query()->count())->toBe(0);

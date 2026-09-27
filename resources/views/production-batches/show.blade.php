@@ -27,7 +27,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    @if ($productionBatch->recipe_id !== null)
+                    @if ($productionBatch->recipe !== null && auth()->user()->can('view', $productionBatch->recipe))
                         <a href="{{ route('recipes.saved', $productionBatch->recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                             Back to formula
                         </a>
@@ -76,6 +76,7 @@
         <form method="POST" action="{{ route('production-batches.update', $productionBatch) }}" class="space-y-6">
             @csrf
             @method('PATCH')
+            <fieldset @disabled(auth()->user()->cannot('update', $productionBatch)) class="space-y-6">
 
             <section class="sk-card p-5">
                 <p class="sk-eyebrow">Production notes</p>
@@ -177,11 +178,14 @@
                 @endif
             </section>
 
+            @can('update', $productionBatch)
             <div class="flex justify-end">
                 <button type="submit" class="rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
                     Save notes
                 </button>
             </div>
+            @endcan
+            </fieldset>
         </form>
     </div>
 @endsection

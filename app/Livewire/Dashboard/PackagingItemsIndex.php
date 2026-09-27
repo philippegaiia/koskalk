@@ -2,14 +2,17 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\CurrentMaterialPrice;
 use App\Models\PackagingItem;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\PackagingItemAuthoringService;
 use App\Services\PackagingItemFormulaMutationService;
+use App\Services\WorkspaceAuthorization;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +35,9 @@ class PackagingItemsIndex extends Component
     #[Locked]
     public string $currentNumberLocale = 'en_US';
 
+    #[Locked]
+    public ?int $destinationWorkspaceId = null;
+
     public string $search = '';
 
     public string $sortField = 'name';
@@ -46,10 +52,27 @@ class PackagingItemsIndex extends Component
 
     public function mount(CurrentAppUserResolver $resolver): void
     {
-        $user = $resolver->resolve();
+        $user = $this->freshAuthenticatedUser() ?? $resolver->resolve();
+        $workspace = $user?->company(fresh: true);
 
+        if ($workspace instanceof Workspace) {
+            abort_unless(app(WorkspaceAuthorization::class)->canView($user, $workspace->id), 403);
+        }
+
+        $this->destinationWorkspaceId = $workspace?->id;
         $this->currentCurrency = $user?->defaultCurrency();
         $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
+    }
+
+    public function hydrate(): void
+    {
+        $user = $this->freshAuthenticatedUser();
+        $workspace = $user?->company(fresh: true);
+        abort_unless($workspace?->id === $this->destinationWorkspaceId, 403);
+
+        if ($workspace instanceof Workspace) {
+            abort_unless(app(WorkspaceAuthorization::class)->canView($user, $workspace->id), 403);
+        }
     }
 
     public function updatingSearch(): void
@@ -194,6 +217,18 @@ class PackagingItemsIndex extends Component
     {
         $items = $this->items();
         $currentUser = $this->currentUser();
+        $workspaceRole = $currentUser instanceof User && $this->destinationWorkspaceId !== null
+            ? app(WorkspaceAuthorization::class)->role($currentUser, $this->destinationWorkspaceId)
+            : null;
+        $canUpdateItems = in_array($workspaceRole, [
+            WorkspaceMemberRole::Owner,
+            WorkspaceMemberRole::Admin,
+            WorkspaceMemberRole::Editor,
+        ], true);
+        $canDeleteItems = in_array($workspaceRole, [
+            WorkspaceMemberRole::Owner,
+            WorkspaceMemberRole::Admin,
+        ], true);
         $pendingDeleteItem = $currentUser instanceof User && $this->pendingDeleteId !== null
             ? $this->ownedPackagingItem($this->pendingDeleteId, $currentUser)
             : null;
@@ -201,6 +236,9 @@ class PackagingItemsIndex extends Component
         return view('livewire.dashboard.packaging-items-index', [
             'contextualHelp' => $helpTopics->resolve('packaging', app()->getLocale()),
             'currentUser' => $currentUser,
+            'canCreateItems' => $canUpdateItems,
+            'canUpdateItems' => $canUpdateItems,
+            'canDeleteItems' => $canDeleteItems,
             'items' => $items,
             'unitPriceLabel' => __('packaging.price.column', [
                 'currency' => $this->currentCurrency ?? config('currency.default', 'EUR'),
@@ -214,7 +252,7 @@ class PackagingItemsIndex extends Component
 
     public function formattedUnitCost(mixed $value): string
     {
-        return NumberLocale::formatAdaptiveDecimal($value, 2, 4, $this->currentNumberLocale);
+        return $value === null ? '' : NumberLocale::formatAdaptiveDecimal($value, 2, 4, $this->currentNumberLocale);
     }
 
     private function items(): LengthAwarePaginator
@@ -228,7 +266,7 @@ class PackagingItemsIndex extends Component
 
         return PackagingItem::query()
             ->select(['id', 'public_id', 'workspace_id', 'created_by_user_id', 'name', 'material_code', 'category', 'notes', 'is_active', 'featured_image_path', 'created_at', 'updated_at'])
-            ->where('workspace_id', $user->company()?->id)
+            ->where('workspace_id', $this->destinationWorkspaceId)
             ->withCount('costingItems')
             ->with(['currentPrice', 'mediaAssetUsages.mediaAsset'])
             ->when($this->search !== '', fn (Builder $query): Builder => $query
@@ -256,7 +294,9 @@ class PackagingItemsIndex extends Component
 
     private function ownedPackagingItem(int $id, User $user): ?PackagingItem
     {
-        return PackagingItem::query()->where('workspace_id', $user->company()?->id)->find($id);
+        return PackagingItem::query()
+            ->where('workspace_id', $this->destinationWorkspaceId)
+            ->find($id);
     }
 
     private function finishDeletion(string $message): void
@@ -269,6 +309,13 @@ class PackagingItemsIndex extends Component
 
     private function currentUser(): ?User
     {
-        return app(CurrentAppUserResolver::class)->resolve();
+        return $this->freshAuthenticatedUser() ?? app(CurrentAppUserResolver::class)->resolve();
+    }
+
+    private function freshAuthenticatedUser(): ?User
+    {
+        $userId = auth()->id();
+
+        return $userId === null ? null : User::query()->find($userId);
     }
 }

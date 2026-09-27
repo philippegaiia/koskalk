@@ -21,7 +21,7 @@ class SaveProductionHoliday
         bool $isRecurring = false,
         ?ProductionHoliday $holiday = null,
     ): ProductionHoliday {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
         $name = trim($name);
 
         if ($name === '' || mb_strlen($name) > 120) {
@@ -34,7 +34,7 @@ class SaveProductionHoliday
 
         return DB::transaction(function () use ($actor, $date, $holiday, $isRecurring, $name, $workspace): ProductionHoliday {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
             $current = null;
 
             if ($holiday instanceof ProductionHoliday) {

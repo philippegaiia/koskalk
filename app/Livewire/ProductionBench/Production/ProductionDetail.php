@@ -29,6 +29,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
 use App\Models\Employee;
@@ -64,6 +65,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
     use WithFileUploads;
 
@@ -856,6 +858,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $completionReadiness = $this->completionReadiness($production);
 
         return view('livewire.production-bench.production.production-detail', [
+            'canDetachDocuments' => $access->canConfigure($this->user(), $workspace),
             'contextualHelp' => $helpTopics->resolve('detail', app()->getLocale()),
             'workspace' => $workspace,
             'production' => $production,
@@ -1196,6 +1199,6 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
     private function workspace(): Workspace
     {
-        return $this->user()->company() ?? abort(404);
+        return $this->productionWorkspace();
     }
 }

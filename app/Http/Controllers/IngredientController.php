@@ -12,6 +12,7 @@ use App\Services\CurrentMaterialPriceService;
 use App\Services\IngredientAliasLocaleService;
 use App\Services\IngredientCatalogSearchService;
 use App\Services\UserIngredientAuthoringService;
+use App\Services\WorkspaceAuthorization;
 use App\Support\NumberLocale;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
@@ -138,7 +139,7 @@ class IngredientController extends Controller
             ? User::query()->find($authenticatedUser->id)
             : null;
         $numberLocale = $user?->number_locale;
-        $workspace = $user?->company();
+        $workspace = $user instanceof User ? app(WorkspaceAuthorization::class)->selectedWorkspace($user) : null;
         $destinationDuplicationBlocker = $user instanceof User
             ? $userIngredientAuthoringService->duplicateDestinationBlocker($user, $workspace)
             : __('ingredients.editor.validation.stale_workspace');
@@ -166,6 +167,7 @@ class IngredientController extends Controller
 
                 $sourceQuery->orWhere(function (Builder $userQuery) use ($user): void {
                     $userQuery
+                        ->whereNull('workspace_id')
                         ->where('owner_type', OwnerType::User->value)
                         ->where('owner_id', $user->id);
                 });

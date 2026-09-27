@@ -28,7 +28,7 @@ class StorageLocationPolicy
 
     public function create(User $user, Workspace $workspace): bool
     {
-        return $this->canEditWorkspaceRecords($user, $workspace->id)
+        return $this->canManageWorkspace($user, $workspace)
             && $this->productionBenchAccess->isActive($workspace);
     }
 
@@ -37,7 +37,7 @@ class StorageLocationPolicy
         $workspace = $location->workspace;
 
         return $workspace instanceof Workspace
-            && $this->canEditWorkspaceRecords($user, $workspace->id)
+            && $this->canManageWorkspace($user, $workspace)
             && $this->productionBenchAccess->isActive($workspace);
     }
 

@@ -29,7 +29,7 @@ class SaveProductionBatchPreset
         bool $isActive = true,
         ?ProductionBatchPreset $preset = null,
     ): ProductionBatchPreset {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanConfigure($actor, $workspace);
 
         $name = trim($name);
         $this->validateName($name);
@@ -52,7 +52,7 @@ class SaveProductionBatchPreset
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
             $currentPreset = null;
 

@@ -9,6 +9,7 @@ use App\Models\HelpTopicLocale;
 use App\Models\HelpTopicRevision;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ApplicationHelpTopics;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -52,4 +53,40 @@ it('updates settings help with the selected tab and hides unpublished or disable
         ->set('activeTab', 'preferences')->assertDontSee('data-help-index', false);
     config(['contextual-help.enabled' => false]);
     $page->set('activeTab', 'workspace')->assertDontSee('data-help-index', false);
+});
+
+it('maps workspace help topics to their settings, team, and company selection surfaces', function (): void {
+    $topics = app(ApplicationHelpTopics::class);
+
+    expect($topics->forSurface('workspace'))->toBe([
+        'settings.workspace', 'workspaces.overview', 'workspaces.shared_allowances',
+    ])->and($topics->forSurface('members'))->toBe([
+        'workspaces.roles', 'workspaces.invitations', 'workspaces.shared_allowances',
+    ])->and($topics->forSurface('workspace-selection'))->toBe([
+        'workspaces.overview',
+    ])->and($topics->locations('workspaces.invitations'))->toBe(['Settings · Members'])
+        ->and($topics->locations('workspaces.overview'))->toContain('Settings · Workspace', 'Company selection')
+        ->and(config('contextual-help.topics')['workspaces.overview']['domain'])->toBe('application')
+        ->and(config('contextual-help.topics')['workspaces.roles']['domain'])->toBe('application')
+        ->and(config('contextual-help.topics')['workspaces.invitations']['domain'])->toBe('application')
+        ->and(config('contextual-help.topics')['workspaces.shared_allowances']['domain'])->toBe('application');
+});
+
+it('shows the workspace membership help index on the settings members tab', function (): void {
+    config(['workspaces.collaboration_enabled' => true]);
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $this->actingAs($user);
+
+    $topics = ['workspaces.roles', 'workspaces.invitations', 'workspaces.shared_allowances'];
+    foreach ($topics as $key) {
+        $topic = HelpTopic::factory()->create(['key' => $key]);
+        $locale = HelpTopicLocale::factory()->for($topic, 'topic')->create();
+        $revision = HelpTopicRevision::factory()->for($locale, 'topicLocale')->create(['title' => $key]);
+        $locale->update(['published_revision_id' => $revision->id, 'latest_revision_id' => $revision->id]);
+    }
+
+    Livewire::test(SettingsIndex::class)->set('activeTab', 'members')->assertSee('data-help-index', false)
+        ->assertViewHas('contextualHelp', fn (array $help): bool => $help['tabs']['page'] === $topics);
 });

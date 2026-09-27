@@ -17,7 +17,11 @@ it('limits help topics to the current family and visible tabs', function () {
     expect(array_keys($guest['tabs']))->toBe(['formula', 'output'])
         ->and($guest['keys'])->toContain('soap.water_mode')->not->toContain('shared.saving_and_history', 'shared.packaging', 'cosmetic.phases');
     $cosmetic = $topics->forSurface('cosmetic', true);
-    expect($cosmetic['keys'])->toContain('cosmetic.phases', 'shared.costing')->not->toContain('soap.water_mode');
+    expect($cosmetic['keys'])->toContain('cosmetic.phases', 'shared.costing', 'shared.collaborative_editing')->not->toContain('soap.water_mode')
+        ->and($cosmetic['tabs']['formula'])->toContain('shared.collaborative_editing')
+        ->and($cosmetic['index']['formula'])->toContain('shared.collaborative_editing')
+        ->and($guest['keys'])->not->toContain('shared.collaborative_editing')
+        ->and(config('contextual-help.topics')['shared.collaborative_editing']['domain'])->toBe('shared_workbench');
 });
 
 it('renders a read only anchor for help within locked fieldsets', function () {
@@ -50,7 +54,7 @@ it('keeps the Formula index short while retaining specific topics for contextual
     $topics = app(WorkbenchHelpTopics::class);
     foreach (['soap', 'cosmetic'] as $family) {
         $scope = $topics->forSurface($family, true);
-        expect($scope['index']['formula'])->toHaveCount(7)->toContain('shared.saving_and_history')
+        expect($scope['index']['formula'])->toHaveCount(8)->toContain('shared.saving_and_history', 'shared.collaborative_editing')
             ->and(array_diff($scope['index']['formula'], $scope['keys']))->toBe([]);
         expect($topics->forSurface($family, false)['index']['formula'])->toHaveCount(6)->not->toContain('shared.saving_and_history');
     }

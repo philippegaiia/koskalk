@@ -1,0 +1,168 @@
+{
+    "format_version": 1,
+    "export_uuid": "75b355b8-7f8d-4e76-be10-3b4e36e7f03a",
+    "captured_at": "2026-09-27T00:00:00+00:00",
+    "topics": [
+        {
+            "public_id": "e61c195f-dfcb-4a26-a755-9366fcc7cead",
+            "key": "workspaces.overview",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "fe38fd55-c97c-4245-8fa1-42435eb95302",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "fe38fd55-c97c-4245-8fa1-42435eb95302",
+                            "revision_number": 1,
+                            "title": "Choose the workspace you work in",
+                            "summary": "Use one sign-in to work in the workspaces you own or have joined.",
+                            "body_markdown": "A workspace keeps a team's products, formulas, materials and operational records together. The menus call it a **company**.\n\n### Switch workspace\n\n1. Save your work in every open Koskalk tab.\n2. Select the current company name in the header to open **Choose a company**.\n3. Search if needed, then choose **Switch to this company**.\n4. Check the company name before continuing.\n\nThe selection applies to your other open tabs too. Reload an old page before editing; a form opened in the previous workspace cannot save into the new one.\n\n### One sign-in, different teams\n\nThe same email address can belong to several workspaces. Your role can differ in each: being an Owner in one does not make you an Owner in another. Switching does not move or copy records between them.\n\nThe picker lists workspaces you can currently access. Joining a team does not create another workspace for you, and the picker does not offer workspace creation. If an expected workspace is missing, ask its Owner to check your membership and team access.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-09-27T00:00:00+00:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        },
+        {
+            "public_id": "623c1352-57cd-4ce6-95c2-f1c6b4ae46b6",
+            "key": "workspaces.roles",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "47b514e0-3053-4bf9-bdfe-a54c076b9ef4",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "47b514e0-3053-4bf9-bdfe-a54c076b9ef4",
+                            "revision_number": 1,
+                            "title": "Understand workspace roles",
+                            "summary": "Your role determines what you can do in the selected workspace.",
+                            "body_markdown": "- **Owner:** manages the workspace and its team, including appointing or removing Admins. The Owner cannot be removed or changed through team management.\n- **Admin:** manages workspace operations and the Editor and Viewer roles. An Admin cannot appoint, change or remove another Admin.\n- **Editor:** creates and edits workspace records. Editors cannot delete records or lock or unlock formulas.\n- **Viewer:** views, searches and exports workspace data. Viewers cannot change records.\n\n### Managing the team\n\nOwners and Admins use **Settings → Team** when team collaboration is available. Only the Owner can invite someone as an Admin or assign that role. Owners and Admins can invite Editors and Viewers and manage those memberships.\n\nA role applies only in its own workspace. It does not unlock features outside the workspace's plan or enable inactive modules. There is no custom permission editor for individual members.\n\nA Koskalk platform administrator is a separate role. It does not automatically grant operational access to your workspace.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-09-27T00:00:00+00:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        },
+        {
+            "public_id": "085fe8d7-ea34-4f9d-a355-18539368cd7a",
+            "key": "workspaces.invitations",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "e3cd4491-b080-4a0c-a1d1-5fd66fe98d9b",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "e3cd4491-b080-4a0c-a1d1-5fd66fe98d9b",
+                            "revision_number": 1,
+                            "title": "Invite someone to your workspace",
+                            "summary": "Send team invitations from Settings, then manage their seats and access.",
+                            "body_markdown": "### Send and manage an invitation\n\n1. Open **Settings → Team** and check the available seats.\n2. Enter the teammate's email address and choose an allowed role.\n3. Choose **Send invitation**.\n\nAn invitation expires after seven days. **Resend** sends a new link with a new seven-day period; the previous link stops working. You can resend an expired invitation if a seat is available. **Revoke** cancels an unused invitation. To end an accepted membership, remove the member instead.\n\nThe Owner, all current members and valid pending invitations count toward the workspace's seats. Expired or revoked invitations no longer reserve a seat. Seat availability and the sender's permission are checked again when an invitation is accepted. If acceptance is blocked, ask the Owner or Admin to review the invitation and team access.\n\n### Accept an invitation\n\nOpen the link sent to the invited email address. If you already use Koskalk, sign in with that same address and verify it if asked. If another user is signed in, sign out and reopen the link. For a new user, enter your name and create and confirm a password on the invitation page.\n\nAccepting selects the invited workspace. It grants a membership; it does not create a separate workspace or personal plan. An old accepted link cannot restore a membership that was later removed: ask for a new invitation.\n\n### Beta invitations are different\n\nA beta invitation creates an Owner's workspace. A team invitation joins an existing workspace. Open a beta invitation while signed out; do not use it as a team invitation.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-09-27T00:00:00+00:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        },
+        {
+            "public_id": "7a91d16d-6392-4938-b07d-2312bb6986bd",
+            "key": "workspaces.shared_allowances",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "074b494e-8387-458a-b269-dd7ab89808eb",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "074b494e-8387-458a-b269-dd7ab89808eb",
+                            "revision_number": 1,
+                            "title": "Share your workspace allowances",
+                            "summary": "Members use the selected workspace’s plan and allowances together.",
+                            "body_markdown": "Your workspace's plan determines its available features and allowances. These belong to the workspace and are shared by its members; inviting another person does not give the team a separate allowance.\n\n### Seats and plan access\n\nCheck **Settings → Team** for seat usage. The Owner counts as a member, and valid pending invitations reserve seats. The number of seats depends on the workspace's plan; it is not the same for every team.\n\nJoining a workspace does not require a separate member checkout. If collaboration or more capacity is needed, ask the Owner to review the plan and contact support. A member's personal plan does not increase the selected workspace's allowances.\n\n### When an operation is limited\n\nFiles must meet upload size and format requirements, and your company shares its media allowance. Use the size and format guidance shown when selecting a file. Several teammates uploading at once share the workspace's capacity.\n\nRepeated uploads, prints, exports and Flash planning requests may ask you to wait before trying again. Coordinate large jobs with teammates rather than repeatedly retrying them.\n\nVery large task sets or Flash plans may need to be split into smaller submissions. If no working date can be found, review the workspace calendar. Follow the message shown: waiting helps a temporary request limit, while a size or plan limit requires changing the request or reviewing the allowance.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-09-27T00:00:00+00:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        },
+        {
+            "public_id": "2f06bd32-8f7a-473a-85b0-0cbb43437118",
+            "key": "shared.collaborative_editing",
+            "domain": "shared_workbench",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "98039ec6-0c71-45e4-983b-479656830ce4",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "98039ec6-0c71-45e4-983b-479656830ce4",
+                            "revision_number": 1,
+                            "title": "Edit a shared formula safely",
+                            "summary": "An editing reservation protects one tab’s changes; a formula lock is a separate protection.",
+                            "body_markdown": "### One editing tab at a time\n\nAn editing reservation belongs to a particular browser tab, even when two tabs use the same sign-in. While a tab holds the reservation, other people can still view the formula but cannot save competing edits.\n\nThe reservation is renewed while the editing session is active and expires when it is no longer renewed. Closing a tab or losing a connection can therefore leave a short wait before someone else can edit.\n\nIf your reservation ends or someone else changes the formula or costing, Koskalk rejects the stale save. Your changes have not been saved or automatically merged. Preserve any notes you need, reload the latest state, then review and reapply your changes.\n\n### Taking over an editing session\n\nAn Owner or Admin can take over a reservation when necessary and must give a reason. Coordinate with the current editor first: their tab will no longer be able to save using its old reservation. Taking over does not merge their unsaved work.\n\n### Formula locks are different\n\nA locked formula stays locked until an Owner or Admin unlocks it. Waiting for a reservation to expire, or taking it over, does not unlock the formula.\n\nRemoving or replacing an ingredient across formulas, or removing packaging across formulas, is also blocked if an affected formula is locked or being edited. This includes formulas using the ingredient through a composite ingredient. Finish the editing session or resolve the formula lock before trying again.\n\nSaved costing belongs to the shared formula, not to a private copy for each teammate. Reload after another person changes it before saving your own costing changes.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-09-27T00:00:00+00:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        }
+    ],
+    "digest": "47b7c64b4060a0cd42bf39c4a7c0ea75325b637278463a31df990cd2293709ce"
+}

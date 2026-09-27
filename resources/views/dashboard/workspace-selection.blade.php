@@ -17,7 +17,11 @@
 @endphp
 
 <div class="mx-auto w-full max-w-3xl space-y-6">
-    <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workspaces.selection.page_description') }}</p>
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <div data-contextual-help-heading class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workspaces.selection.page_description') }}</p>
+        <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
+    </div>
 
     <p role="note" class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
         {{ __('workspaces.selection.open_tabs_notice') }}

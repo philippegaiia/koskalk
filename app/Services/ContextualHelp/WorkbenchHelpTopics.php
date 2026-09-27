@@ -15,7 +15,7 @@ final class WorkbenchHelpTopics
             'soap.reaction_core', 'soap.alkali_and_purity', 'soap.water_mode', 'soap.dilution_liquids', 'soap.superfat', 'soap.post_reaction_additions', 'soap.fatty_acids', 'soap.qualities', 'soap.qualities.cure', 'soap.qualities.dos', 'soap.qualities.liquid',
         ] : ['cosmetic.formula_basis', 'cosmetic.phases', 'cosmetic.ingredient_functions', 'cosmetic.application_context', 'cosmetic.preservation_and_ph'])];
         if ($canPersist) {
-            $formula = [...$formula, 'shared.saving_and_history', 'shared.formula_lock'];
+            $formula = [...$formula, 'shared.saving_and_history', 'shared.formula_lock', 'shared.collaborative_editing'];
         }
         $tabs = ['formula' => $formula, 'output' => [$family.'.output_basis', $family.'.labeling', 'shared.compliance_guidance', 'shared.ifra_context']];
         if ($canPersist) {
@@ -34,7 +34,7 @@ final class WorkbenchHelpTopics
             ] : [
                 'cosmetic.phases', 'shared.quantities_and_units', 'cosmetic.application_context', 'cosmetic.preservation_and_ph',
             ]),
-            ...($canPersist ? ['shared.saving_and_history'] : []),
+            ...($canPersist ? ['shared.saving_and_history', 'shared.collaborative_editing'] : []),
         ];
 
         return ['keys' => array_values(array_unique(array_merge(...array_values($tabs)))), 'tabs' => $tabs, 'index' => $index];

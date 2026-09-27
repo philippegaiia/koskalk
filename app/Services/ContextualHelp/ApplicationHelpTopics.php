@@ -13,7 +13,9 @@ final class ApplicationHelpTopics
             'products' => ['products.getting_started', 'products.finding_and_archiving', 'products.versions_and_copies'],
             'media' => ['media.uploading', 'media.organizing', 'media.reuse_and_removal'],
             'preferences' => ['settings.language', 'settings.numbers'],
-            'workspace' => ['settings.workspace'],
+            'workspace' => ['settings.workspace', 'workspaces.overview', 'workspaces.shared_allowances'],
+            'members' => ['workspaces.roles', 'workspaces.invitations', 'workspaces.shared_allowances'],
+            'workspace-selection' => ['workspaces.overview'],
             default => [],
         };
     }
@@ -29,7 +31,14 @@ final class ApplicationHelpTopics
     /** @return list<string> */
     public function locations(string $key): array
     {
-        return collect(['products' => 'Products', 'media' => 'Media library', 'preferences' => 'Settings · Preferences', 'workspace' => 'Settings · Workspace'])
+        return collect([
+            'products' => 'Products',
+            'media' => 'Media library',
+            'preferences' => 'Settings · Preferences',
+            'workspace' => 'Settings · Workspace',
+            'members' => 'Settings · Members',
+            'workspace-selection' => 'Company selection',
+        ])
             ->filter(fn (string $label, string $surface): bool => in_array($key, $this->forSurface($surface), true))
             ->values()->all();
     }

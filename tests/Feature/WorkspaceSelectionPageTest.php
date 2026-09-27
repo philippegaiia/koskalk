@@ -1,6 +1,10 @@
 <?php
 
+use App\Enums\HelpTopicDomain;
 use App\Enums\WorkspaceMemberRole;
+use App\Models\HelpTopic;
+use App\Models\HelpTopicLocale;
+use App\Models\HelpTopicRevision;
 use App\Models\InterfaceTranslation;
 use App\Models\Plan;
 use App\Models\SupportedLocale;
@@ -66,6 +70,26 @@ it('uses the current database locale override in the company picker', function (
         ->assertOk()
         ->assertSeeText('Choisir une entreprise')
         ->assertDontSeeText('Choose a company');
+});
+
+it('renders published company-selection help in the shared top bar', function (): void {
+    $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create(['name' => 'Help picker company']);
+    $topic = HelpTopic::factory()->create([
+        'key' => 'workspaces.overview',
+        'domain' => HelpTopicDomain::Application,
+    ]);
+    $locale = HelpTopicLocale::factory()->for($topic, 'topic')->create();
+    $revision = HelpTopicRevision::factory()->for($locale, 'topicLocale')->create([
+        'title' => 'Choose the company you need',
+    ]);
+    $locale->update(['published_revision_id' => $revision->id, 'latest_revision_id' => $revision->id]);
+
+    $this->actingAs($user)->get(route('workspace-selection.index'))->assertOk()
+        ->assertSee('data-help-index', false)
+        ->assertSee('data-contextual-help-scope', false)
+        ->assertSee('Choose the company you need')
+        ->assertViewHas('contextualHelp', fn (array $help): bool => $help['tabs']['page'] === ['workspaces.overview']);
 });
 
 it('retains company search through pagination and displays matching results only', function (): void {

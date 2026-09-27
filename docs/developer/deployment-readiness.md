@@ -66,7 +66,7 @@ php artisan help:import database/seeders/data/contextual-help.en.json --mode=boo
 
 This installs 32 **unpublished English drafts**. Bootstrap never replaces existing revisions or owner edits. Review and publish each topic from Admin → Content → Help Topics, then request translations and accept reviewed candidates as drafts. Publishing remains a separate action. Application-interface translations for panel buttons use the ordinary interface catalogue commands above.
 
-For a replacement installation, restore a downloaded help snapshot **before bootstrap or `help:register-topics`**; `restore-empty` requires all topic, locale, revision, and translation-request tables to be empty. Follow the recovery commands in [storage-and-backups.md](./storage-and-backups.md). Never use `migrate:fresh` on a database with content to preserve.
+For a replacement installation, restore a downloaded help snapshot **before bootstrap or `help:register`**; `restore-empty` requires all topic, locale, revision, and translation-request tables to be empty. Follow the recovery commands in [storage-and-backups.md](./storage-and-backups.md). Never use `migrate:fresh` on a database with content to preserve.
 
 Help jobs share the ingredient enrichment queue (`INGREDIENT_ENRICHMENT_QUEUE`, default `enrichment`). Use the normal ingredient worker. Restart long-running workers after deployment so they load the new job classes. For the default configuration:
 
@@ -77,3 +77,25 @@ php artisan queue:work database --queue=enrichment --sleep=3 --timeout=2000 --tr
 Help jobs retain a 120-second timeout; the shared worker allows the longer ingredient jobs. `DB_QUEUE_RETRY_AFTER` must exceed the longest job timeout (keep the existing 2100-second default if other jobs require it). Translation jobs explicitly permit one attempt; uncertain provider calls are never retried automatically. The scheduler redispatches durable pending jobs every five minutes and expires stalled translation attempts after ten minutes. A new paid attempt is requested explicitly in the editor.
 
 Verify a manual snapshot in Admin → Content → Help imports & backups before release. Confirm the recorded snapshot checksum, private download, and an isolated restore. Help reads only published content and falls back to published English when a translation is missing or out of date. Editing English alone does not invalidate a live translation; publishing changed English does.
+
+## Company collaboration and its help content
+
+Code deployment does not copy development plan assignments or enable collaboration automatically. A beta owner invitation always assigns the active `free-beta` plan; a company member invitation adds membership under the existing company's owner entitlement. Neither flow opens a plan selector or creates a paid subscription.
+
+Before a production company pilot:
+
+1. Complete the multi-user migration/preflight checks in [the rollout plan](../superpowers/plans/2026-09-25-multi-user-workspace-rollout.md).
+2. Deliberately enable `WORKSPACE_COLLABORATION_ENABLED` in that environment and refresh cached configuration through the normal deployment process.
+3. Review the actual owner's plan capabilities and `workspace_members` limit. To give all beta companies Team-level access while retaining the Free beta name, explicitly enable collaboration on Free beta and choose its seat allowance in App Admin → Plans. Review Production Bench eligibility separately. This changes access for existing beta companies too, so record the intended before/after values first. Individual Team assignments are separate administrative operations; the Users page currently displays entitlements read-only.
+4. Keep public registration and billing closed during the invitation-only pilot. Do not rerun general seeders to upgrade plans: create-only catalogue seeding preserves every existing plan and cannot grant missing capabilities to it. Verify one invited owner and one member after deployment.
+
+The local Asanara Team assignment is a development-only pilot grant. It is not a migration, seed default, or production entitlement.
+
+The additional portable help package contains five English drafts for companies, roles, invitations, shared allowances and collaborative editing. Back up the target help store first, then preview and apply only this package:
+
+```shell
+php artisan help:import database/seeders/data/contextual-help.collaboration.en.json --mode=bootstrap
+php artisan help:import database/seeders/data/contextual-help.collaboration.en.json --mode=bootstrap --apply --force --no-interaction
+```
+
+Bootstrap preserves existing topic content and publications. Review and publish these five topics in Admin → Content → Help Topics; local publication does not publish them in production. Translations remain separately reviewed drafts and are not automatically generated or published. Check Help on Settings → Workspace, Settings → Team, the company picker, and the saved-product workbench. Unpublished topics are intentionally absent from end-user Help.

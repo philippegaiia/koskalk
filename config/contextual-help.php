@@ -19,6 +19,10 @@ return [
         'settings.language' => ['domain' => 'application'],
         'settings.numbers' => ['domain' => 'application'],
         'settings.workspace' => ['domain' => 'application'],
+        'workspaces.overview' => ['domain' => 'application'],
+        'workspaces.roles' => ['domain' => 'application'],
+        'workspaces.invitations' => ['domain' => 'application'],
+        'workspaces.shared_allowances' => ['domain' => 'application'],
 
         'ingredients.catalogue' => ['domain' => 'material_library'],
         'ingredients.duplicate' => ['domain' => 'material_library'],
@@ -82,6 +86,7 @@ return [
         'shared.media' => ['domain' => 'shared_workbench'],
         'shared.compliance_guidance' => ['domain' => 'shared_workbench'],
         'shared.ingredient_change_review' => ['domain' => 'shared_workbench'],
+        'shared.collaborative_editing' => ['domain' => 'shared_workbench'],
         'soap.reaction_core' => ['domain' => 'soap_workbench'],
         'soap.alkali_and_purity' => ['domain' => 'soap_workbench'],
         'soap.water_mode' => ['domain' => 'soap_workbench'],

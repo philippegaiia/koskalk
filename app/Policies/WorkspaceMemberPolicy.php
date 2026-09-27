@@ -45,6 +45,13 @@ class WorkspaceMemberPolicy
             && $this->canManageMember($user, $workspaceMember);
     }
 
+    public function acceptInvitation(User $inviter, Workspace $workspace, WorkspaceMemberRole $role): bool
+    {
+        return app(WorkspaceCapabilities::class)->allowsCollaboration($workspace)
+            && in_array($inviter->workspaceRoleFor($workspace->id), [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true)
+            && $this->canAssignRole($inviter, $workspace, $role);
+    }
+
     public function delete(User $user, WorkspaceMember $workspaceMember): bool
     {
         return $this->canManageMember($user, $workspaceMember);

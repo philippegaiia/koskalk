@@ -20,10 +20,18 @@ use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
 use App\Http\Controllers\UserMediaController;
+use App\Http\Controllers\WorkspaceInvitationAcceptanceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/language', LocalePreferenceController::class)->name('language.update');
+
+Route::get('/workspace-invitations/{token}', [WorkspaceInvitationAcceptanceController::class, 'show'])
+    ->middleware('throttle:20,1')
+    ->name('workspace-invitations.show');
+Route::post('/workspace-invitations/{token}', [WorkspaceInvitationAcceptanceController::class, 'accept'])
+    ->middleware('throttle:10,1')
+    ->name('workspace-invitations.accept');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/invite/{token}', [BetaInviteAcceptanceController::class, 'show'])

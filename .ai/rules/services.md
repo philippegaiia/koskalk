@@ -60,3 +60,6 @@ Use WorkspaceAuthorization for operational access: fresh selected workspace, liv
 
 ## Do not infer legacy batch ownership from current membership
 Production batches now carry nullable durable workspace_id; new shared snapshots always set it and retain it after source or author deletion. Historical null-workspace rows stay actor-private; reconcile only unambiguous surviving source provenance with the preview-first production-batches:backfill-workspaces command. Never count all current members' old batches as company usage; unresolved owner batches conservatively count toward the selected company allowance. Production Bench runs retain their separate workspace/entitlement model.
+
+## Keep member invitations separate from owner onboarding
+Workspace member invitations create or reuse a verified user and add membership only; never provision an owned workspace or entitlement. Serialize invitation and membership writes on the workspace row; when also updating an existing user, lock user before workspace. Count actual Owner once plus members and valid pending recipient invitations against the actual owner's configured workspace_members limit. Missing limits deny extra seats; explicit null is unlimited only with collaboration capability. Invitation acceptance rechecks inviter authority in the target company independently of their selected company.

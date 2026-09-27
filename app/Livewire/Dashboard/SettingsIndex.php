@@ -10,6 +10,7 @@ use App\Models\Workspace;
 use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\CurrencyCatalog;
 use App\Services\LocalePreferenceResolver;
+use App\Services\WorkspaceAuthorization;
 use App\Support\NumberLocale;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cookie;
@@ -198,8 +199,18 @@ class SettingsIndex extends Component
             'searchText' => "{$code} {$name}",
         ])->values()->all();
 
+        $canManageMembers = false;
+        $user = auth()->user();
+
+        if (config('workspaces.collaboration_enabled', false)
+            && $this->workspaceId !== null
+            && $user instanceof User) {
+            $canManageMembers = app(WorkspaceAuthorization::class)->canManage($user->fresh(), $this->workspaceId);
+        }
+
         return view('livewire.dashboard.settings-index', [
             'currencyOptions' => $currencyOptions,
+            'canManageMembers' => $canManageMembers,
             'canManageWorkspace' => $this->workspaceId === null
                 ? auth()->user()->can('create', Workspace::class)
                 : auth()->user()->can('update', Workspace::withoutGlobalScopes()->findOrFail($this->workspaceId)),

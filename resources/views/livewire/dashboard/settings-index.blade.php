@@ -24,6 +24,17 @@
                 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $activeTab !== 'workspace',
             ])
         >{{ __('settings.tabs.workspace') }}</button>
+        @if ($canManageMembers)
+            <button
+                type="button"
+                wire:click="$set('activeTab', 'members')"
+                @class([
+                    '-mb-px rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition',
+                    'border-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' => $activeTab === 'members',
+                    'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $activeTab !== 'members',
+                ])
+            >{{ __('workspaces.tabs.members') }}</button>
+        @endif
     </div>
 
     @if ($activeTab === 'preferences')
@@ -180,5 +191,9 @@
             @endif
             </fieldset>
         </section>
+    @endif
+
+    @if ($activeTab === 'members' && $canManageMembers)
+        <livewire:dashboard.workspace-members :workspace-id="$workspaceId" :key="'workspace-members-'.$workspaceId" />
     @endif
 </div>

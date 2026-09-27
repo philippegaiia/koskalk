@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
-it('removes deferred collaboration and ambiguous formula privacy schema', function () {
-    expect(Schema::hasTable('workspace_invitations'))->toBeFalse()
+it('supports company invitations while preserving unambiguous formula privacy schema', function () {
+    expect(Schema::hasTable('workspace_invitations'))->toBeTrue()
         ->and(Schema::hasColumn('recipes', 'is_private'))->toBeFalse()
         ->and(Schema::hasColumn('recipes', 'workspace_id'))->toBeTrue()
         ->and(Schema::hasColumn('recipes', 'created_by'))->toBeTrue();

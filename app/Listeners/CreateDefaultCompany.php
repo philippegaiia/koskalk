@@ -2,6 +2,8 @@
 
 namespace App\Listeners;
 
+use App\Models\WorkspaceInvitation;
+use App\Models\WorkspaceMember;
 use App\Services\WorkspaceProvisioner;
 use Filament\Auth\Events\Registered;
 
@@ -11,6 +13,13 @@ class CreateDefaultCompany
 
     public function handle(Registered $event): void
     {
-        $this->workspaceProvisioner->ensureOwnerWorkspace($event->user);
+        $user = $event->getUser();
+
+        if (WorkspaceMember::withoutGlobalScopes()->where('user_id', $user->id)->exists()
+            || WorkspaceInvitation::query()->where('accepted_by_user_id', $user->id)->exists()) {
+            return;
+        }
+
+        $this->workspaceProvisioner->ensureOwnerWorkspace($user);
     }
 }

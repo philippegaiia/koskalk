@@ -33,6 +33,8 @@
     <body data-user-shell class="min-h-dvh bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
         @php($appShellUser = auth()->user())
         @php($appShellAdminPanel = \Filament\Facades\Filament::getPanel('admin'))
+        @php($appShellCompanySwitcherEnabled = config('workspaces.collaboration_enabled', false) && $appShellUser instanceof \App\Models\User)
+        @php($appShellCurrentCompany = $appShellCompanySwitcherEnabled ? app(\App\Services\WorkspaceAuthorization::class)->selectedWorkspace($appShellUser) : null)
 
         <div
             data-app-shell
@@ -135,8 +137,19 @@
                             </div>
                         </div>
 
-                        <div class="ml-auto flex items-center gap-3 sm:gap-5">
+                        <div class="ml-auto flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-5">
                             <div id="contextual-help-topbar" class="flex shrink-0 items-center"></div>
+                            @if ($appShellCompanySwitcherEnabled)
+                                <a
+                                    href="{{ route('workspace-selection.index') }}"
+                                    title="{{ $appShellCurrentCompany?->name ?? __('workspaces.selection.choose_workspace') }}"
+                                    aria-label="{{ __('workspaces.selection.change_company', ['company' => $appShellCurrentCompany?->name ?? __('workspaces.selection.choose_workspace')]) }}"
+                                    class="max-w-36 shrink-0 rounded-lg px-2 py-1.5 text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)] md:max-w-52"
+                                >
+                                    <span class="block text-[10px] font-semibold uppercase tracking-wide">{{ __('workspaces.selection.current_company') }}</span>
+                                    <span class="block truncate text-xs font-medium">{{ $appShellCurrentCompany?->name ?? __('workspaces.selection.choose_workspace') }}</span>
+                                </a>
+                            @endif
                             <x-language-selector id="app" class="text-[var(--color-ink-soft)]" />
                             <a href="{{ route('dashboard') }}" wire:navigate class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">{{ __('navigation.items.overview') }}</a>
                         </div>

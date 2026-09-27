@@ -6,6 +6,8 @@ use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
+use App\Services\WorkspaceSelectionService;
+use Illuminate\Auth\Access\Response;
 
 class WorkspacePolicy
 {
@@ -19,6 +21,13 @@ class WorkspacePolicy
     public function view(User $user, Workspace $workspace): bool
     {
         return $this->canAccessWorkspace($user, $workspace);
+    }
+
+    public function select(User $user, Workspace $workspace): Response
+    {
+        return app(WorkspaceSelectionService::class)->canSelect($user, $workspace)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     public function create(User $user): bool

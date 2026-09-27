@@ -21,6 +21,7 @@ use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
 use App\Http\Controllers\UserMediaController;
 use App\Http\Controllers\WorkspaceInvitationAcceptanceController;
+use App\Http\Controllers\WorkspaceSelectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -56,6 +57,12 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/workspace-selection', [WorkspaceSelectionController::class, 'index'])
+        ->middleware('throttle:60,1')
+        ->name('workspace-selection.index');
+    Route::post('/workspace-selection', [WorkspaceSelectionController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('workspace-selection.update');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/account', [AccountController::class, 'show'])->name('account');
     Route::patch('/dashboard/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');

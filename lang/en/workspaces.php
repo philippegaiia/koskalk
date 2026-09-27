@@ -1,6 +1,25 @@
 <?php
 
 return [
+    'selection' => [
+        'current_company' => 'Current company',
+        'choose_workspace' => 'Choose workspace',
+        'change_company' => 'Change company. Current company: :company',
+        'page_heading' => 'Choose a company',
+        'page_description' => 'Select which company you want to work in.',
+        'open_tabs_notice' => 'Your selection applies to your other open tabs. Save any work there before switching.',
+        'search_label' => 'Search companies',
+        'search_placeholder' => 'Search by company name',
+        'search' => 'Search',
+        'current_badge' => 'Current company',
+        'switch_to' => 'Switch to this company',
+        'empty' => 'No companies are available to this account.',
+        'no_results' => 'No companies match your search.',
+        'pagination_label' => 'Company pages',
+        'previous_page' => 'Previous page',
+        'next_page' => 'Next page',
+        'page_status' => 'Page :page of :pages',
+    ],
     'tabs' => [
         'members' => 'Team',
     ],

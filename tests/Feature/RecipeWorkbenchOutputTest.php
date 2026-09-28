@@ -131,11 +131,11 @@ it('serves a current soap workbook with its calculated output worksheet', functi
 it('exports loaded current costing as a typed workbook from the live formula and current prices', function (): void {
     $this->travelTo(Carbon::parse('2026-09-28 12:00:00'));
     ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
-    $naoh = Ingredient::factory()->create([
-        'catalog_key' => 'CH1',
+    $koh = Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
         'category' => IngredientCategory::SoapmakingAlkalis,
-        'subcategory' => IngredientSubcategory::SodiumHydroxide,
-        'display_name' => 'Sodium hydroxide',
+        'subcategory' => IngredientSubcategory::PotassiumHydroxide,
+        'display_name' => 'Potassium hydroxide',
         'is_active' => true,
     ]);
     $water = Ingredient::factory()->create([
@@ -154,6 +154,8 @@ it('exports loaded current costing as a typed workbook from the live formula and
     $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
     $payload['kind'] = 'costing';
     $payload['format'] = 'xlsx';
+    $payload['draft']['lye_type'] = 'koh';
+    $payload['draft']['koh_purity_percentage'] = 90;
     $payload['costing'] = [
         'loaded' => true,
         'oil_weight_for_costing' => 0.5,
@@ -162,7 +164,7 @@ it('exports loaded current costing as a typed workbook from the live formula and
         'currency' => 'EUR',
         'items' => [
             ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 10],
-            ['ingredient_id' => $naoh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 20],
+            ['ingredient_id' => $koh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 20],
             ['ingredient_id' => $water->id, 'phase_key' => 'implicit_water', 'position' => 1, 'price_per_kg' => 0],
         ],
         'packaging_items' => [[
@@ -203,6 +205,8 @@ it('exports loaded current costing as a typed workbook from the live formula and
     $ingredientHeaders = collect($ingredientSheet)->first(fn (array $row): bool => in_array(__('formula_documents.exports.ingredient'), $row, true));
     $ingredientHeaderIndex = array_search(__('formula_documents.exports.ingredient'), $ingredientHeaders, true);
     $ingredientRow = collect($ingredientSheet)->first(fn (array $row): bool => ($row[$ingredientHeaderIndex] ?? null) === 'Olive Oil');
+    $kohLabel = __('workbench.costing.ingredients.koh_with_purity', ['name' => 'Potassium hydroxide', 'purity' => '90']);
+    $kohRow = collect($ingredientSheet)->first(fn (array $row): bool => ($row[$ingredientHeaderIndex] ?? null) === $kohLabel);
     $packagingSheet = $sheets[__('formula_documents.exports.costing_packaging')];
     $packagingHeaders = collect($packagingSheet)->first(fn (array $row): bool => in_array(__('formula_documents.exports.packaging'), $row, true)
         && in_array(__('formula_documents.exports.batch_cost'), $row, true));
@@ -231,6 +235,8 @@ it('exports loaded current costing as a typed workbook from the live formula and
         ->and($ingredientRow[array_search(__('formula_documents.exports.price_per_kg'), $ingredientHeaders, true)])->toBe(10)
         ->and($ingredientRow[array_search(__('formula_documents.exports.price_currency'), $ingredientHeaders, true)])->toBe('EUR')
         ->and($ingredientRow[array_search(__('formula_documents.exports.line_cost'), $ingredientHeaders, true)])->toBe(5)
+        ->and($kohRow)->not->toBeNull()
+        ->and($kohRow[array_search(__('formula_documents.exports.price_per_kg'), $ingredientHeaders, true)])->toBe(20)
         ->and($packagingRow)->not->toBeNull()
         ->and($packagingRows)->toHaveCount(1)
         ->and($packagingRow[array_search(__('formula_documents.exports.batch_cost'), $packagingHeaders, true)])->toBe(1)
@@ -243,14 +249,16 @@ it('exports loaded current costing as a typed workbook from the live formula and
 
 it('selects costing print sections by context and does not save captured prices', function (): void {
     ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
-    $naoh = Ingredient::factory()->create([
-        'catalog_key' => 'CH1',
+    $koh = Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
         'category' => IngredientCategory::SoapmakingAlkalis,
-        'subcategory' => IngredientSubcategory::SodiumHydroxide,
-        'display_name' => 'Sodium hydroxide',
+        'subcategory' => IngredientSubcategory::PotassiumHydroxide,
+        'display_name' => 'Potassium hydroxide',
         'is_active' => true,
     ]);
     $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['lye_type'] = 'koh';
+    $payload['draft']['koh_purity_percentage'] = 100;
     $payload['costing'] = [
         'loaded' => true,
         'oil_weight_for_costing' => 500,
@@ -259,7 +267,7 @@ it('selects costing print sections by context and does not save captured prices'
         'currency' => 'CHF',
         'items' => [
             ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 7],
-            ['ingredient_id' => $naoh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 0],
+            ['ingredient_id' => $koh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 0],
         ],
         'packaging_items' => [],
     ];
@@ -283,6 +291,10 @@ it('selects costing print sections by context and does not save captured prices'
             $response->assertViewHas('costingProjection', fn (array $projection): bool => $projection['currency'] === 'CHF'
                 && $projection['basis_weight'] === 500.0
                 && $projection['ingredient_rows'][0]['line_cost'] === 3.5);
+            $response->assertSee(__('workbench.costing.ingredients.koh_with_purity', [
+                'name' => 'Potassium hydroxide',
+                'purity' => '100',
+            ]));
         }
 
         expect($response->getContent())

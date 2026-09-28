@@ -271,7 +271,12 @@ class RecipeWorkbenchOutputBuilder
                 'position' => $index + 1,
                 'phase_key' => 'lye_alkali',
                 'phase_name' => __('workbench.costing.phases.alkali'),
-                'name' => $ingredient->localizedDisplayName() ?? $ingredient->display_name,
+                'name' => $type === 'koh'
+                    ? __('workbench.costing.ingredients.koh_with_purity', [
+                        'name' => $ingredient->localizedDisplayName() ?? $ingredient->display_name,
+                        'purity' => NumberLocale::formatDecimal($snapshotDraft['kohPurity'] ?? 90, 0, app()->getLocale()),
+                    ])
+                    : ($ingredient->localizedDisplayName() ?? $ingredient->display_name),
                 'percentage' => '0',
                 'weight' => $weight,
                 'is_derived' => true,

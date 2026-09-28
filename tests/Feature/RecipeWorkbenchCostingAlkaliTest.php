@@ -120,6 +120,7 @@ it('projects saved alkali and implicit water rows with weighed KOH and saved pri
     $soapFamily = makeCostingAlkaliSoapFamily();
     $payload = costingAlkaliDraftPayload($oil);
     $payload['lye_type'] = 'dual';
+    $payload['koh_purity_percentage'] = 100;
     $payload['phase_items']['lye_water'] = [[
         'ingredient_id' => $hydrosol->id,
         'percentage' => 25,
@@ -180,6 +181,10 @@ it('projects saved alkali and implicit water rows with weighed KOH and saved pri
     expect($writes)->toBe([])
         ->and($alkaliRows)->toHaveCount(2)
         ->and($alkaliRows[$naoh->id]['price_per_kg'])->toBe(20.0)
+        ->and($alkaliRows[$koh->id]['ingredient_name'])->toBe(__('workbench.costing.ingredients.koh_with_purity', [
+            'name' => 'Potassium hydroxide',
+            'purity' => '100',
+        ]))
         ->and($alkaliRows[$naoh->id]['quantity'])->toBe(round((float) data_get($snapshot, 'calculation.lye.selected.naoh_weight') / 2000, 8))
         ->and($alkaliRows[$koh->id]['quantity'])->toBe(round((float) data_get($snapshot, 'calculation.lye.selected.koh_to_weigh') / 2000, 8))
         ->and($rows['implicit_water']['ingredient_id'])->toBe($water->id)

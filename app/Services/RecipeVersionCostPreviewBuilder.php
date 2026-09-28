@@ -513,7 +513,16 @@ class RecipeVersionCostPreviewBuilder
                 'phase_key' => 'lye_alkali',
                 'phase_name' => __('workbench.costing.phases.alkali'),
                 'name' => $ingredient instanceof Ingredient
-                    ? ($ingredient->localizedDisplayName() ?? $ingredient->display_name)
+                    ? ($type === 'koh'
+                        ? __('workbench.costing.ingredients.koh_with_purity', [
+                            'name' => $ingredient->localizedDisplayName() ?? $ingredient->display_name,
+                            'purity' => NumberLocale::formatDecimal(
+                                $draft['kohPurity'] ?? $version->calculation_context['koh_purity_percentage'] ?? 90,
+                                0,
+                                app()->getLocale(),
+                            ),
+                        ])
+                        : ($ingredient->localizedDisplayName() ?? $ingredient->display_name))
                     : __('formula_documents.ingredients.'.$type),
                 'percentage' => '0',
                 'weight' => $weight,

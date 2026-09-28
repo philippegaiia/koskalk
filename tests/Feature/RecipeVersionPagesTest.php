@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
@@ -1399,6 +1400,56 @@ it('renders and exports the exact requested historical formula version', functio
     expect(recipeWorkbookXml($workbookResponse->streamedContent()))
         ->toContain('Olive Oil')
         ->not->toContain('Coconut Oil');
+});
+
+it('shows the selected KOH purity on a saved costing-only print', function (): void {
+    $user = User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
+    $family = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+        'calculation_basis' => 'initial_oils',
+    ]);
+    $oil = makeSavedRecipeIngredient();
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::PotassiumHydroxide,
+        'display_name' => 'Potassium hydroxide',
+        'is_active' => true,
+    ]);
+    $draft = soapVersionDraftPayload($oil, 'KOH costing formula');
+    $draft['lye_type'] = 'koh';
+    $draft['koh_purity_percentage'] = 100;
+    $workbench = app(RecipeWorkbenchService::class);
+    $draftVersion = $workbench->save($user, $family, $draft);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $workbench->publish($user, $family, $draft, $recipe);
+    $version = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('name', 'KOH costing formula')
+        ->where('is_current', false)
+        ->firstOrFail();
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 2,
+        'currency' => 'EUR',
+    ]);
+    $costing->items()->createMany([
+        ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => '10'],
+        ['ingredient_id' => Ingredient::query()->where('catalog_key', 'CH3')->value('id'), 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => '20'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.costing', ['recipe' => $recipe, 'version' => $version, 'sections' => ['costing']]))
+        ->assertSuccessful()
+        ->assertSee(__('workbench.costing.ingredients.koh_with_purity', [
+            'name' => 'Potassium hydroxide',
+            'purity' => '100',
+        ]));
 });
 
 it('keeps the main recipe identity while rendering selected backup content', function () {

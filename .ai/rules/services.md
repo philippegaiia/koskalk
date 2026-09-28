@@ -6,6 +6,7 @@ paths:
   - app/Services/IngredientCatalogConsolidationService.php
   - app/Services/SoapCalculationService.php
   - app/Services/EntitlementService.php
+  - 'app/Services/*Exporter.php'
 ---
 
 # Services
@@ -69,3 +70,9 @@ WorkspaceSelectionService lists only actual-owned workspaces or genuine Admin/Ed
 
 ## Bulk material changes must respect formula editing guards
 Ingredient replacement/removal and packaging removal can mutate multiple formula versions indirectly. Under the material workspace transaction, FormulaMaterialMutationGuard locks affected recipes → versions → costings, rechecks fresh access, rejects permanent locks and any active editing reservation (no browser tab token is supplied), and advances recipe/costing revisions atomically. Do not rely on RecipePolicy::update alone: it deliberately does not enforce permanent locks.
+
+## Write spreadsheet text explicitly with OpenSpout
+Use explicit StringCell for user-entered text: OpenSpout 4.32 Cell::fromValue treats leading '=' as a formula, and its reader can reconstruct even inline-string cells as FormulaCell. Verify formula-like text in the generated XLSX XML rather than trusting that reader classification. Pass six-digit RGB to styles; OpenSpout adds the ARGB alpha prefix itself.
+
+## Preserve tiny float values at decimal boundaries
+NumberLocale::normalizeDecimalString rejects scientific notation, which PHP can produce when stringifying small floats. At a calculation/output boundary, convert finite float inputs to fixed decimal strings before normalization, following LyeLiquidAllocationService::decimal(); otherwise a valid small dose can silently become zero. Keep unrounded source values through arithmetic and format only for display.

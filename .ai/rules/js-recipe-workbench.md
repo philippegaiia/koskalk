@@ -13,3 +13,6 @@ The client-side initial state for a brand-new soap formula uses waterMode lye_co
 
 ## Share one editing queue across nested Alpine scopes
 Keep the editing runtime in the per-workbench section closure, not keyed by `this`: nested Alpine scopes use different proxies. Queue recipe/content/costing writes and revision-bearing reads together; polling never adopts a newer baseline. Accept successful write revisions even when newer local input prevents applying an old response, and preserve dirty input on conflicts. Duplicating a source is authorized separately from editing that source.
+
+## Capture current outputs without persistence
+Print and export must snapshot the visible workbench at click time, including pending procedure content and loaded edited costing. Never substitute a saved version or call save, publish, flushCostingSave, rich-editor persistence, or dirty-state reset to create an output. Keep the capture immutable while its request runs; a failed request leaves edits and revision baselines intact.

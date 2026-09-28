@@ -5,6 +5,16 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <div x-data="productionPickingPrint()" class="space-y-6"
+            data-picking-url="{{ route('production-bench.production.picking.print') }}"
+            data-picking-workspace="{{ $workspace->public_id }}"
+            data-picking-runs="{{ \Illuminate\Support\Js::encode($productions->pluck('public_id')->values()) }}"
+            data-picking-popup="{{ __('production_bench.picking.popup') }}"
+            data-picking-access="{{ __('production_bench.picking.access') }}"
+            data-picking-changed="{{ __('production_bench.output.validation.workspace_changed') }}"
+            data-picking-invalid="{{ __('production_bench.picking.validation.adjust') }}"
+            data-picking-throttled="{{ __('production_bench.output.ui.errors.throttled') }}"
+            data-picking-failed="{{ __('production_bench.output.ui.errors.failed') }}">
         <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0 flex-1">
@@ -51,7 +61,7 @@
                     <div class="divide-y divide-[var(--color-line)]">
                         @foreach ($productionProposal['requirements'] as $requirementProposal)
                             @php($requirement = $requirementProposal['requirement'])
-                            <article class="space-y-4 p-5 sm:p-6">
+                            <article data-picking-requirement="{{ $requirement->id }}" data-picking-manual="{{ ($manualMode[(string) $requirement->id] ?? false) ? 'true' : 'false' }}" class="space-y-4 p-5 sm:p-6">
                                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                     <div>
                                         <h3 class="font-semibold text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</h3>
@@ -79,7 +89,7 @@
                                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('production_bench.production.automatic_lots') }}</p>
                                         <div class="mt-3 space-y-2">
                                             @foreach ($requirementProposal['allocations'] as $allocation)
-                                                <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                                                <div data-picking-auto-lot="{{ $allocation['lot']->id }}" data-picking-quantity="{{ $allocation['quantity'] }}" class="flex flex-wrap items-center justify-between gap-2 text-sm">
                                                     <span class="font-mono text-[var(--color-ink-soft)]">{{ $allocation['lot']->internal_lot_code }} @if ($workspace->uses_storage_locations) · {{ $allocation['lot']->storageLocation?->name ?? __('locations.unassigned') }} @endif · {{ $allocation['lot']->expires_at?->format('Y-m-d') ?? __('production_bench.production.no_expiry') }}</span>
                                                     <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($allocation['quantity'], 0, 3, auth()->user()?->number_locale) }}</span>
                                                 </div>
@@ -102,7 +112,7 @@
                                             @forelse ($requirementProposal['eligible_lots'] as $lotRow)
                                                 <label class="grid gap-2 sm:grid-cols-[1fr_10rem] sm:items-center">
                                                     <span class="text-sm text-[var(--color-ink-soft)]">{{ $lotRow['lot']->internal_lot_code }} @if ($workspace->uses_storage_locations) · {{ $lotRow['lot']->storageLocation?->name ?? __('locations.unassigned') }} @endif · {{ __('production_bench.production.available_quantity') }} {{ \App\Support\NumberLocale::formatAdaptiveDecimal($lotRow['available'], 0, 3, auth()->user()?->number_locale) }} · {{ $lotRow['lot']->expires_at?->format('Y-m-d') ?? __('production_bench.production.no_expiry') }}</span>
-                                                    <input type="text" inputmode="decimal" wire:model.live.debounce.300ms="manualQuantities.{{ $requirement->id }}.{{ $lotRow['lot']->id }}" class="sk-input w-full" placeholder="0">
+                                                    <input data-picking-manual-lot="{{ $lotRow['lot']->id }}" type="text" inputmode="decimal" wire:model.live.debounce.300ms="manualQuantities.{{ $requirement->id }}.{{ $lotRow['lot']->id }}" class="sk-input w-full" placeholder="0">
                                                 </label>
                                             @empty
                                                 <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_eligible_lots') }}</p>
@@ -122,7 +132,13 @@
                 <p class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.confirm_prepare_stock') }}</p>
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.confirm_prepare_stock_help') }}</p>
             </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" @click="printPicking()" :disabled="pending" wire:loading.attr="disabled" wire:target="toggleManual,confirm" class="sk-btn sk-btn-secondary">{{ __('production_bench.picking.print') }}</button>
+                <span x-cloak x-show="pending" role="status" class="text-sm">{{ __('production_bench.output.ui.pending') }}</span>
+                <p x-cloak x-show="error" x-text="error" role="alert" class="text-sm text-[var(--color-danger-strong)]"></p>
             <button type="submit" wire:loading.attr="disabled" @disabled($isReadOnly || ! $isBenchActive) class="sk-btn sk-btn-primary shrink-0">{{ __('production_bench.production.prepare_stock') }}</button>
+            </div>
         </form>
+        </div>
     @endif
 </x-production-bench.page>

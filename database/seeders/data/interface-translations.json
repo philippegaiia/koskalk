@@ -27384,6 +27384,150 @@
     },
     {
       "group": "production_bench",
+      "key": "picking.access",
+      "text": {
+        "de": "Dein Zugriff hat sich geändert. Lade die Seite neu und versuche es erneut.",
+        "es": "Tu acceso ha cambiado. Recarga la página e inténtalo de nuevo.",
+        "fr": "Vos accès ont changé. Rechargez la page et réessayez.",
+        "it": "Il tuo accesso è cambiato. Ricarica la pagina e riprova.",
+        "nl": "Je toegang is gewijzigd. Herlaad de pagina en probeer opnieuw.",
+        "pt_BR": "Seu acesso mudou. Recarregue a página e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.allocation",
+      "text": {
+        "de": "Zuordnung",
+        "es": "Asignación",
+        "fr": "Affectation",
+        "it": "Assegnazione",
+        "nl": "Toewijzing",
+        "pt_BR": "Alocação"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.help",
+      "text": {
+        "de": "Vorgeschlagene Mengen sind nicht reserviert. Drucken reserviert keinen Bestand und startet keine Produktion.",
+        "es": "Las cantidades propuestas no están reservadas. Imprimir no reserva existencias ni inicia la producción.",
+        "fr": "Les quantités proposées ne sont pas réservées. L’impression ne réserve aucun stock et ne démarre pas la production.",
+        "it": "Le quantità proposte non sono riservate. La stampa non riserva scorte né avvia la produzione.",
+        "nl": "Voorgestelde hoeveelheden zijn niet gereserveerd. Afdrukken reserveert geen voorraad en start geen productie.",
+        "pt_BR": "As quantidades propostas não estão reservadas. Imprimir não reserva estoque nem inicia a produção."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.location",
+      "text": {
+        "de": "Lagerort",
+        "es": "Ubicación de almacenamiento",
+        "fr": "Emplacement de stockage",
+        "it": "Ubicazione di stoccaggio",
+        "nl": "Opslaglocatie",
+        "pt_BR": "Local de armazenamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.popup",
+      "text": {
+        "de": "Erlaube Pop-ups, um die Entnahmeliste zu öffnen, und versuche es erneut.",
+        "es": "Permite las ventanas emergentes para abrir la lista de recogida e inténtalo de nuevo.",
+        "fr": "Autorisez les fenêtres contextuelles pour ouvrir la liste de prélèvement, puis réessayez.",
+        "it": "Consenti i popup per aprire la lista di prelievo, poi riprova.",
+        "nl": "Sta pop-ups toe om de picklijst te openen en probeer opnieuw.",
+        "pt_BR": "Permita pop-ups para abrir a lista de separação e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.print",
+      "text": {
+        "de": "Entnahmeliste drucken",
+        "es": "Imprimir lista de recogida",
+        "fr": "Imprimer la liste de prélèvement",
+        "it": "Stampa lista di prelievo",
+        "nl": "Picklijst afdrukken",
+        "pt_BR": "Imprimir lista de separação"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.proposed",
+      "text": {
+        "de": "Vorgeschlagen — nicht reserviert",
+        "es": "Propuesto — sin reservar",
+        "fr": "Proposé — non réservé",
+        "it": "Proposto — non riservato",
+        "nl": "Voorgesteld — niet gereserveerd",
+        "pt_BR": "Proposto — não reservado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.reserved",
+      "text": {
+        "de": "Reserviert",
+        "es": "Reservado",
+        "fr": "Réservé",
+        "it": "Riservato",
+        "nl": "Gereserveerd",
+        "pt_BR": "Reservado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.shortage",
+      "text": {
+        "de": "Nicht zugeordnete Fehlmenge",
+        "es": "Faltante sin asignar",
+        "fr": "Manque non affecté",
+        "it": "Quantità mancante non assegnata",
+        "nl": "Niet toegewezen tekort",
+        "pt_BR": "Falta não alocada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.title",
+      "text": {
+        "de": "Entnahmeliste",
+        "es": "Lista de recogida",
+        "fr": "Liste de prélèvement",
+        "it": "Lista di prelievo",
+        "nl": "Picklijst",
+        "pt_BR": "Lista de separação"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.validation.adjust",
+      "text": {
+        "de": "Bestand oder Zuordnungen haben sich geändert. Passe die Zuordnungen an oder lade die Seite vor dem Drucken neu.",
+        "es": "Las existencias o asignaciones han cambiado. Ajusta las asignaciones o recarga la página antes de imprimir.",
+        "fr": "Le stock ou les affectations ont changé. Ajustez les affectations ou rechargez la page avant d’imprimer.",
+        "it": "Le scorte o le assegnazioni sono cambiate. Modifica le assegnazioni o ricarica la pagina prima di stampare.",
+        "nl": "Voorraad of toewijzingen zijn gewijzigd. Pas de toewijzingen aan of herlaad de pagina voordat je afdrukt.",
+        "pt_BR": "O estoque ou as alocações mudaram. Ajuste as alocações ou recarregue a página antes de imprimir."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "picking.validation.limit",
+      "text": {
+        "de": "Drucke höchstens 100 Produktionen und 1.000 Zeilen auf einmal.",
+        "es": "Imprime como máximo 100 producciones y 1000 filas a la vez.",
+        "fr": "Imprimez au maximum 100 productions et 1 000 lignes à la fois.",
+        "it": "Stampa al massimo 100 produzioni e 1.000 righe alla volta.",
+        "nl": "Druk maximaal 100 producties en 1.000 rijen tegelijk af.",
+        "pt_BR": "Imprima no máximo 100 produções e 1.000 linhas por vez."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "procurement.choose_quotation",
       "text": {
         "de": "Eine ausgestellte Angebotsanfrage auswählen",

@@ -1,6 +1,22 @@
 <?php
 
 return [
+    'picking' => [
+        'popup' => 'Allow popups to open the picking list, then try again.',
+        'access' => 'Your access changed. Reload the page and try again.',
+        'title' => 'Picking list',
+        'print' => 'Print picking list',
+        'help' => 'Proposed quantities are unreserved. Printing does not reserve stock or start production.',
+        'proposed' => 'Proposed — unreserved',
+        'reserved' => 'Reserved',
+        'shortage' => 'Unallocated shortage',
+        'location' => 'Storage location',
+        'allocation' => 'Allocation',
+        'validation' => [
+            'adjust' => 'Stock or allocations have changed. Adjust the allocations or refresh the page before printing.',
+            'limit' => 'Print at most 100 productions and 1,000 rows at a time.',
+        ],
+    ],
     'run_print' => [
         'basis_initial_oils' => 'Initial oil mass (percentage basis)',
         'basis_total_formula' => 'Total formula mass (percentage basis)',

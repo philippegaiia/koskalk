@@ -12,6 +12,8 @@ use App\Services\RecipeWorkbenchService;
 use App\Support\NumberLocale;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 class ProductionFormulaSnapshotBuilder
 {
@@ -100,8 +102,23 @@ class ProductionFormulaSnapshotBuilder
         }
 
         return [
-            'context' => $this->context($recipe, $isSoap, $draft),
+            'context' => [...$this->context($recipe, $isSoap, $draft), ...$this->procedureSnapshot($version->manufacturing_instructions)],
             'lines' => $lines,
+        ];
+    }
+
+    /** @return array{manufacturing_procedure_html: string, manufacturing_procedure_illustrations_omitted: bool} */
+    private function procedureSnapshot(?string $html): array
+    {
+        $html ??= '';
+        $config = (new HtmlSanitizerConfig)->withMaxInputLength(strlen($html));
+        foreach (['p', 'h2', 'h3', 'h4', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'br', 'blockquote'] as $element) {
+            $config = $config->allowElement($element);
+        }
+
+        return [
+            'manufacturing_procedure_html' => (new HtmlSanitizer($config))->sanitize($html),
+            'manufacturing_procedure_illustrations_omitted' => preg_match('/<(?:img|picture|video|audio|iframe|object|embed|svg)\b|data-media-asset/i', $html) === 1,
         ];
     }
 

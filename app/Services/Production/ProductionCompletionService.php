@@ -84,11 +84,19 @@ class ProductionCompletionService
             $packagingTotal = '0';
             $workspaceDefaultCurrency = strtoupper((string) ($workspace->default_currency ?? ''));
 
+            $executionLots = [];
+
             foreach ($consumption as $row) {
                 $lot = StockLot::query()
                     ->withoutGlobalScopes()
                     ->lockForUpdate()
                     ->findOrFail($row->stock_lot_id);
+                $executionLots[(string) $row->id] = [
+                    'stock_lot_id' => $lot->id,
+                    'internal_lot_code' => $lot->internal_lot_code,
+                    'supplier_batch_number' => $lot->supplier_batch_number,
+                    'expires_at' => $lot->expires_at?->toDateString(),
+                ];
                 $this->assertEligibleConsumptionLot($lot, $manufactureDate);
 
                 $pricePerUnit = $this->pricePerUnit($lot, $row);
@@ -204,6 +212,10 @@ class ProductionCompletionService
                 : null;
 
             $lockedProduction->update([
+                'formula_context_snapshot' => [
+                    ...($lockedProduction->formula_context_snapshot ?? []),
+                    'execution_lots' => $executionLots,
+                ],
                 'status' => ProductionRunStatus::Completed,
                 'completed_at' => now(),
                 'completed_by_user_id' => $actor->id,

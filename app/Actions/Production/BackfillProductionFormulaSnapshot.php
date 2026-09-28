@@ -78,7 +78,7 @@ class BackfillProductionFormulaSnapshot
             $lockedProduction->update([
                 'recipe_name_snapshot' => $recipe->name,
                 'source_formula_version_number' => $version->version_number,
-                'formula_context_snapshot' => $snapshot['context'],
+                'formula_context_snapshot' => [...$snapshot['context'], ...($lockedProduction->formula_context_snapshot ?? [])],
                 'formula_snapshot_completed_at' => now(),
             ]);
             $lockedProduction->formulaLines()->delete();

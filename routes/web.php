@@ -19,6 +19,7 @@ use App\Http\Controllers\MediaLibraryController;
 use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProcurementDocumentController;
 use App\Http\Controllers\ProductionBatchController;
+use App\Http\Controllers\ProductionRunPrintController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
 use App\Http\Controllers\RecipeWorkbenchOutputController;
@@ -235,6 +236,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/production/flash', 'production-bench.production.flash')->name('production.flash');
             Route::view('/production/calendar', 'production-bench.production.calendar')->name('production.calendar');
             Route::view('/production/tasks', 'production-bench.production.task-index')->name('production.tasks');
+            Route::get('/production/{productionRun}/print', ProductionRunPrintController::class)->middleware('throttle:workspace-prints')->name('production.print');
             Route::view('/production/{productionRun}', 'production-bench.production.show')->name('production.show');
             Route::redirect('/purchasing', '/dashboard/production-bench/purchasing/suppliers')->name('purchasing');
             Route::view('/purchasing/suppliers', 'production-bench.purchasing.suppliers')->name('purchasing.suppliers');

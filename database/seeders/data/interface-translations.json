@@ -34236,6 +34236,390 @@
     },
     {
       "group": "production_bench",
+      "key": "run_print.aborted_at",
+      "text": {
+        "de": "Abgebrochen",
+        "es": "Abortado",
+        "fr": "Interrompu",
+        "it": "Interrotto",
+        "nl": "Afgebroken",
+        "pt_BR": "Interrompida"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.actual",
+      "text": {
+        "de": "Erfasste Istmenge",
+        "es": "Cantidad real registrada",
+        "fr": "Quantité réelle enregistrée",
+        "it": "Quantità effettiva registrata",
+        "nl": "Vastgelegde werkelijke hoeveelheid",
+        "pt_BR": "Quantidade real registrada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.basis_initial_oils",
+      "text": {
+        "de": "Anfängliche Ölmasse (Prozentbasis)",
+        "es": "Masa inicial de aceites (base porcentual)",
+        "fr": "Masse initiale des huiles (base des pourcentages)",
+        "it": "Massa iniziale degli oli (base percentuale)",
+        "nl": "Oorspronkelijke oliemassa (percentagebasis)",
+        "pt_BR": "Massa inicial dos óleos (base percentual)"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.basis_total_formula",
+      "text": {
+        "de": "Gesamtmasse der Rezeptur (Prozentbasis)",
+        "es": "Masa total de la fórmula (base porcentual)",
+        "fr": "Masse totale de la formule (base des pourcentages)",
+        "it": "Massa totale della formula (base percentuale)",
+        "nl": "Totale formulemassa (percentagebasis)",
+        "pt_BR": "Massa total da fórmula (base percentual)"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.completed_at",
+      "text": {
+        "de": "Abgeschlossen",
+        "es": "Completado",
+        "fr": "Terminé",
+        "it": "Completato",
+        "nl": "Voltooid",
+        "pt_BR": "Concluída"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.consumption",
+      "text": {
+        "de": "Erfasster Verbrauch",
+        "es": "Consumo registrado",
+        "fr": "Consommation enregistrée",
+        "it": "Consumo registrato",
+        "nl": "Vastgelegd verbruik",
+        "pt_BR": "Consumo registrado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.expiry",
+      "text": {
+        "de": "Ablauf",
+        "es": "Caducidad",
+        "fr": "Expiration",
+        "it": "Scadenza",
+        "nl": "Vervaldatum",
+        "pt_BR": "Validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.formula",
+      "text": {
+        "de": "Geplante und erfasste Rezeptur",
+        "es": "Fórmula prevista y registrada",
+        "fr": "Formule prévue et réalisée",
+        "it": "Formula prevista e registrata",
+        "nl": "Geplande en vastgelegde formule",
+        "pt_BR": "Fórmula planejada e registrada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.generated",
+      "text": {
+        "de": "Erstellt",
+        "es": "Generado",
+        "fr": "Généré",
+        "it": "Generato",
+        "nl": "Gegenereerd",
+        "pt_BR": "Gerado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.illustrations_omitted",
+      "text": {
+        "de": "Abbildungen der Anleitung sind in diesem Protokoll nicht enthalten.",
+        "es": "Las ilustraciones del procedimiento se omiten en este registro.",
+        "fr": "Les illustrations de la procédure sont omises de ce document.",
+        "it": "Le illustrazioni della procedura sono omesse da questo registro.",
+        "nl": "Illustraties bij de procedure zijn weggelaten uit dit verslag.",
+        "pt_BR": "As ilustrações do procedimento foram omitidas deste registro."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.lot",
+      "text": {
+        "de": "Internes Los",
+        "es": "Lote interno",
+        "fr": "Lot interne",
+        "it": "Lotto interno",
+        "nl": "Interne partij",
+        "pt_BR": "Lote interno"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.lot_id",
+      "text": {
+        "de": "Chargen-ID :id",
+        "es": "ID de lote :id",
+        "fr": "Identifiant du lot :id",
+        "it": "ID lotto :id",
+        "nl": "Lot-ID :id",
+        "pt_BR": "ID do lote :id"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.manufacture_date",
+      "text": {
+        "de": "Herstellungsdatum",
+        "es": "Fecha de fabricación",
+        "fr": "Date de fabrication",
+        "it": "Data di produzione",
+        "nl": "Fabricagedatum",
+        "pt_BR": "Data de fabricação"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.material",
+      "text": {
+        "de": "Material",
+        "es": "Material",
+        "fr": "Matière",
+        "it": "Materiale",
+        "nl": "Materiaal",
+        "pt_BR": "Material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.no_procedure",
+      "text": {
+        "de": "Es wurde keine Anleitung hinterlegt.",
+        "es": "No se proporcionó ningún procedimiento.",
+        "fr": "Aucune procédure n’a été fournie.",
+        "it": "Non è stata fornita alcuna procedura.",
+        "nl": "Er is geen procedure opgegeven.",
+        "pt_BR": "Nenhum procedimento foi fornecido."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.notes",
+      "text": {
+        "de": "Notizen",
+        "es": "Notas",
+        "fr": "Notes",
+        "it": "Note",
+        "nl": "Notities",
+        "pt_BR": "Notas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.output",
+      "text": {
+        "de": "Erfasste Ausbringung",
+        "es": "Producción registrada",
+        "fr": "Production enregistrée",
+        "it": "Produzione registrata",
+        "nl": "Vastgelegde opbrengst",
+        "pt_BR": "Produção registrada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.percentage",
+      "text": {
+        "de": "Basis %",
+        "es": "Base %",
+        "fr": "Base %",
+        "it": "Base %",
+        "nl": "Basis %",
+        "pt_BR": "Base %"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.phase",
+      "text": {
+        "de": "Phase",
+        "es": "Fase",
+        "fr": "Phase",
+        "it": "Fase",
+        "nl": "Fase",
+        "pt_BR": "Fase"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.planned",
+      "text": {
+        "de": "Geplant",
+        "es": "Planificado",
+        "fr": "Planifié",
+        "it": "Pianificato",
+        "nl": "Gepland",
+        "pt_BR": "Planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.planned_for",
+      "text": {
+        "de": "Geplantes Datum",
+        "es": "Fecha prevista",
+        "fr": "Date prévue",
+        "it": "Data prevista",
+        "nl": "Geplande datum",
+        "pt_BR": "Data prevista"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.print_record",
+      "text": {
+        "de": "Chargenprotokoll drucken",
+        "es": "Imprimir registro de lote",
+        "fr": "Imprimer le dossier de lot",
+        "it": "Stampa registro di lotto",
+        "nl": "Batchverslag afdrukken",
+        "pt_BR": "Imprimir registro de lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.print_sheet",
+      "text": {
+        "de": "Chargenblatt drucken",
+        "es": "Imprimir hoja de lote",
+        "fr": "Imprimer la fiche de lot",
+        "it": "Stampa scheda di lotto",
+        "nl": "Batchblad afdrukken",
+        "pt_BR": "Imprimir ficha de lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.procedure",
+      "text": {
+        "de": "Erfasste Herstellungsanweisung",
+        "es": "Procedimiento de fabricación capturado",
+        "fr": "Procédure de fabrication capturée",
+        "it": "Procedura di produzione acquisita",
+        "nl": "Vastgelegde productieprocedure",
+        "pt_BR": "Procedimento de fabricação capturado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.quantity",
+      "text": {
+        "de": "Menge",
+        "es": "Cantidad",
+        "fr": "Quantité",
+        "it": "Quantità",
+        "nl": "Hoeveelheid",
+        "pt_BR": "Quantidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.record",
+      "text": {
+        "de": "Chargenprotokoll",
+        "es": "Registro de lote",
+        "fr": "Dossier de lot",
+        "it": "Registro di lotto",
+        "nl": "Batchverslag",
+        "pt_BR": "Registro de lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.reservations",
+      "text": {
+        "de": "Aktive Chargenreservierungen",
+        "es": "Reservas de lotes activas",
+        "fr": "Réservations de lots actives",
+        "it": "Prenotazioni di lotti attive",
+        "nl": "Actieve lotreserveringen",
+        "pt_BR": "Reservas de lotes ativas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.sheet",
+      "text": {
+        "de": "Chargenblatt",
+        "es": "Hoja de lote",
+        "fr": "Fiche de lot",
+        "it": "Scheda di lotto",
+        "nl": "Batchblad",
+        "pt_BR": "Ficha de lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.started_at",
+      "text": {
+        "de": "Begonnen",
+        "es": "Iniciado",
+        "fr": "Démarré",
+        "it": "Avviato",
+        "nl": "Gestart",
+        "pt_BR": "Iniciado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.supplier_batch",
+      "text": {
+        "de": "Lieferantencharge",
+        "es": "Lote del proveedor",
+        "fr": "Lot fournisseur",
+        "it": "Lotto del fornitore",
+        "nl": "Leveranciersbatch",
+        "pt_BR": "Lote do fornecedor"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.unavailable",
+      "text": {
+        "de": "Nicht erfasst",
+        "es": "No registrado",
+        "fr": "Non renseigné",
+        "it": "Non registrato",
+        "nl": "Niet vastgelegd",
+        "pt_BR": "Não registrado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.unit",
+      "text": {
+        "de": "Einheit",
+        "es": "Unidad",
+        "fr": "Unité",
+        "it": "Unità",
+        "nl": "Eenheid",
+        "pt_BR": "Unidade"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "settings.add_department",
       "text": {
         "de": "Abteilung hinzufügen",

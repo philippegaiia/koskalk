@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Production\BackfillProductionFormulaSnapshot;
+use App\Actions\Production\CreateProductionDraft;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
@@ -12,6 +14,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionFormulaLine;
+use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -221,6 +224,8 @@ it('stores only stable formula calculation facts in the context snapshot', funct
         'superfat_percentage' => 5.0,
         'water_mode' => 'percent_of_oils',
         'water_value' => 38.0,
+        'manufacturing_procedure_html' => '',
+        'manufacturing_procedure_illustrations_omitted' => false,
     ]);
 });
 
@@ -490,3 +495,48 @@ function addSoapFormula(array $fixture): array
 
     return compact('olive', 'coconut', 'additive', 'fragrance');
 }
+
+it('captures sanitized procedure text and lists without links or expiring illustrations', function (): void {
+    $fixture = productionFormulaSnapshotFixture();
+    addSoapFormula($fixture);
+    $fixture['version']->update(['manufacturing_instructions' => '<p>Mix <strong>slowly</strong> and <em>carefully</em>.</p><ol><li>Heat</li><li>Cool</li></ol><a href="https://example.test/private?signature=secret">Guide</a><img src="https://example.test/image?signature=secret"><script>alert(1)</script>']);
+    $snapshot = buildFormulaSnapshot($fixture, '1000', 10);
+    expect($snapshot['context']['manufacturing_procedure_html'])->toContain('<strong>slowly</strong>', '<em>carefully</em>', '<ol><li>Heat</li><li>Cool</li></ol>')
+        ->not->toContain('href', 'src', 'signature', '<script', '<img')
+        ->and($snapshot['context']['manufacturing_procedure_illustrations_omitted'])->toBeTrue();
+    $run = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1000',
+        basisInputUnit: 'g',
+        expectedUnits: 10,
+        idempotencyKey: 'captured-procedure',
+    );
+    $fixture['version']->update(['manufacturing_instructions' => 'Changed']);
+    $this->actingAs($fixture['owner'])->get(route('production-bench.production.print', [
+        'productionRun' => $run,
+        'workspace' => $fixture['workspace']->public_id,
+    ]))->assertOk()->assertSee('<strong>slowly</strong>', false)->assertDontSee('Changed')->assertDontSee('signature=secret');
+    expect($run->fresh()->formula_context_snapshot['manufacturing_procedure_html'])->toBe($snapshot['context']['manufacturing_procedure_html']);
+});
+
+it('preserves execution evidence when explicitly backfilling a legacy formula snapshot', function (): void {
+    $fixture = productionFormulaSnapshotFixture();
+    addSoapFormula($fixture);
+    $run = ProductionRun::factory()->for($fixture['workspace'])->create([
+        'recipe_id' => $fixture['recipe']->id,
+        'recipe_version_id' => $fixture['version']->id,
+        'formula_context_snapshot' => ['execution_lots' => ['12' => ['stock_lot_id' => 42, 'internal_lot_code' => 'CAPTURED']]],
+    ]);
+    app(BackfillProductionFormulaSnapshot::class)->handle($run);
+    expect($run->fresh()->formula_context_snapshot['execution_lots'])->toBe(['12' => ['stock_lot_id' => 42, 'internal_lot_code' => 'CAPTURED']]);
+});
+
+it('captures every step of procedures longer than the sanitizer default limit', function (): void {
+    $fixture = productionFormulaSnapshotFixture();
+    addSoapFormula($fixture);
+    $fixture['version']->update(['manufacturing_instructions' => '<p>'.str_repeat('Mix carefully. ', 1600).'</p><p>Final cooling step.</p>']);
+    $snapshot = buildFormulaSnapshot($fixture, '1000', 10);
+    expect($snapshot['context']['manufacturing_procedure_html'])->toContain('Final cooling step.');
+});

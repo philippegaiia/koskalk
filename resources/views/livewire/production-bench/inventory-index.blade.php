@@ -22,7 +22,25 @@
         </header>
 
         @if ($mode === 'materials')
-            <section data-inventory-materials aria-labelledby="inventory-materials-heading" class="@container overflow-clip sk-card">
+            <section x-data="listOutputDownload()"
+                data-export-url="{{ route('production-bench.inventory.materials.export') }}"
+                data-print-url="{{ route('production-bench.inventory.count.print') }}"
+                data-export-parameters="{{ \Illuminate\Support\Js::encode(['workspace' => $workspace->public_id, 'materialType' => $materialType, 'stockState' => $stockState, 'demandFilter' => $demandFilter, 'categoryFilter' => $categoryFilter, 'subcategoryFilter' => $subcategoryFilter, 'sort' => $sort, 'direction' => $direction]) }}"
+                data-export-livewire-filters="{{ \Illuminate\Support\Js::encode(['materialType', 'stockState', 'demandFilter', 'categoryFilter', 'subcategoryFilter', 'sort', 'direction']) }}"
+                data-export-search-selector="input[type=search]"
+                data-export-server-search="{{ $search }}"
+                data-export-has-results="{{ $materials->total() > 0 ? 'true' : 'false' }}"
+                data-export-error-access="{{ __('production_bench.output.ui.errors.access') }}"
+                data-export-error-forbidden="{{ __('production_bench.output.ui.errors.forbidden') }}"
+                data-export-error-workspace-changed="{{ __('production_bench.output.validation.workspace_changed') }}"
+                data-export-error-invalid="{{ __('production_bench.output.ui.errors.invalid') }}"
+                data-export-error-throttled="{{ __('production_bench.output.ui.errors.throttled') }}"
+                data-export-error-failed="{{ __('production_bench.output.ui.errors.failed') }}"
+                data-export-error-popup="{{ __('production_bench.output.ui.errors.popup') }}"
+                data-export-preparing="{{ __('production_bench.output.ui.pending') }}"
+                @input="if ($event.target.matches('input[type=search]')) visibleSearch = $event.target.value"
+                @keydown.escape.window="if (outputMenuOpen) { outputMenuOpen = false; $refs.exportMenuTrigger.focus(); }"
+                data-inventory-materials aria-labelledby="inventory-materials-heading" class="@container overflow-clip sk-card">
                 {{-- The card title repeated the page <h1> word for word: this screen shows one
                      section at a time, so both read "Stock by material" ~40px apart. Kept as the
                      region's accessible name but hidden from the eye, which is how
@@ -105,6 +123,23 @@
                             :count="count(array_filter([$materialType !== 'all', $stockState !== 'all', $demandFilter !== 'all', $categoryFilter !== '', $subcategoryFilter !== '']))"
                         />
 
+                        <div class="relative sm:ml-auto" @click.outside="outputMenuOpen = false">
+                            <button x-ref="exportMenuTrigger" type="button" aria-haspopup="menu" aria-controls="materials-export-menu"
+                                :aria-expanded="outputMenuOpen.toString()" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"
+                                :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="materialType,stockState,demandFilter,categoryFilter,subcategoryFilter,sort,direction,clearMaterialFilters,toggleShortageFilter,toggleBelowBufferFilter"
+                                @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())" class="sk-btn sk-btn-outline min-h-11">
+                                {{ __('production_bench.output.ui.materials') }}
+                            </button>
+                            <div id="materials-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('production_bench.output.ui.materials') }}"
+                                @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()"
+                                class="absolute left-0 right-auto top-full z-40 mt-2 min-w-52 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg sm:left-auto sm:right-0">
+                                <button x-ref="xlsxExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="materialType,stockState,demandFilter,categoryFilter,subcategoryFilter,sort,direction,clearMaterialFilters,toggleShortageFilter,toggleBelowBufferFilter" @click="outputMenuOpen = false; $refs.exportMenuTrigger.focus(); exportList('xlsx')" @keydown.arrow-down.prevent="$refs.csvExport.focus()" @keydown.arrow-up.prevent="$refs.csvExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-panel-strong)]">{{ __('production_bench.output.ui.xlsx') }}</button>
+                                <button x-ref="csvExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="materialType,stockState,demandFilter,categoryFilter,subcategoryFilter,sort,direction,clearMaterialFilters,toggleShortageFilter,toggleBelowBufferFilter" @click="outputMenuOpen = false; $refs.exportMenuTrigger.focus(); exportList('csv')" @keydown.arrow-down.prevent="$refs.xlsxExport.focus()" @keydown.arrow-up.prevent="$refs.xlsxExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-panel-strong)]">{{ __('production_bench.output.ui.csv') }}</button>
+                            </div>
+                        </div>
+
+                        <p x-show="outputPending" x-cloak role="status" class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.output.ui.pending') }}</p>
+                        <p x-show="outputError" x-cloak role="alert" class="text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
                         @if ($materialFiltersActive)
                             <button type="button" wire:click="clearMaterialFilters" class="sk-btn sk-btn-ghost">
                                 {{ __('production_bench.inventory.clear_filters') }}
@@ -218,7 +253,26 @@
                 @endif
             </section>
         @else
-            <section data-stock-register aria-labelledby="inventory-positions-heading" class="@container overflow-clip sk-card">
+            <section x-data="listOutputDownload()"
+                data-export-material-selection="lotFilters.lotMaterialSelection"
+                data-export-url="{{ route('production-bench.inventory.stock-lots.export') }}"
+                data-print-url="{{ route('production-bench.inventory.count.print') }}"
+                data-export-parameters="{{ \Illuminate\Support\Js::encode(['workspace' => $workspace->public_id, 'lotMaterial' => $lotMaterial, 'lotMaterialType' => $lotMaterialType, 'lotScope' => $lotScope, 'lotStatus' => $lotStatus, 'lotSupplier' => $lotSupplier, 'lotOrigin' => $lotOrigin, 'lotDateBasis' => $lotDateBasis, 'lotDateFrom' => $lotDateFrom, 'lotDateUntil' => $lotDateUntil, 'lotExpiry' => $lotExpiry, 'lotStorageLocation' => $lotStorageLocation, 'lotSort' => $lotSort]) }}"
+                data-export-livewire-filters="{{ \Illuminate\Support\Js::encode(['lotMaterial', 'lotMaterialType', 'lotScope', 'lotStatus', 'lotSupplier', 'lotOrigin', 'lotDateBasis', 'lotDateFrom', 'lotDateUntil', 'lotExpiry', 'lotStorageLocation', 'lotSort']) }}"
+                data-export-search-selector="input[type=search]"
+                data-export-server-search="{{ $search }}"
+                data-export-has-results="{{ $lots->total() > 0 ? 'true' : 'false' }}"
+                data-export-error-access="{{ __('production_bench.output.ui.errors.access') }}"
+                data-export-error-forbidden="{{ __('production_bench.output.ui.errors.forbidden') }}"
+                data-export-error-workspace-changed="{{ __('production_bench.output.validation.workspace_changed') }}"
+                data-export-error-invalid="{{ __('production_bench.output.ui.errors.invalid') }}"
+                data-export-error-throttled="{{ __('production_bench.output.ui.errors.throttled') }}"
+                data-export-error-failed="{{ __('production_bench.output.ui.errors.failed') }}"
+                data-export-error-popup="{{ __('production_bench.output.ui.errors.popup') }}"
+                data-export-preparing="{{ __('production_bench.output.ui.pending') }}"
+                @input="if ($event.target.matches('input[type=search]')) visibleSearch = $event.target.value"
+                @keydown.escape.window="if (outputMenuOpen) { outputMenuOpen = false; $refs.exportMenuTrigger.focus(); }"
+                data-stock-register aria-labelledby="inventory-positions-heading" class="@container overflow-clip sk-card">
                 {{-- Same collision as the materials card: the visible <h2> echoed the <h1>.
                      Hidden, keeping the region named. --}}
                 <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -250,6 +304,23 @@
                             :count="count(array_filter([$lotMaterial !== '', $lotStatus !== 'all', $lotSupplier !== '', $lotOrigin !== '', $lotDateFrom !== '' || $lotDateUntil !== '', $lotExpiry !== 'all', $workspace->uses_storage_locations && $lotStorageLocation !== 'all']))"
                         />
 
+                        <div class="relative sm:ml-auto" @click.outside="outputMenuOpen = false">
+                            <button x-ref="exportMenuTrigger" type="button" aria-haspopup="menu" aria-controls="stock-export-menu"
+                                :aria-expanded="outputMenuOpen.toString()" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"
+                                :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial"
+                                @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())" class="sk-btn sk-btn-outline min-h-11">
+                                {{ __('production_bench.output.ui.stock') }}
+                            </button>
+                            <div id="stock-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('production_bench.output.ui.stock') }}"
+                                @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()"
+                                class="absolute left-0 right-auto top-full z-40 mt-2 min-w-52 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg sm:left-auto sm:right-0">
+                                <button x-ref="xlsxExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial" @click="outputMenuOpen = false; $refs.exportMenuTrigger.focus(); exportList('xlsx')" @keydown.arrow-down.prevent="$refs.csvExport.focus()" @keydown.arrow-up.prevent="$refs.csvExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-panel-strong)]">{{ __('production_bench.output.ui.xlsx') }}</button>
+                                <button x-ref="csvExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial" @click="outputMenuOpen = false; $refs.exportMenuTrigger.focus(); exportList('csv')" @keydown.arrow-down.prevent="$refs.xlsxExport.focus()" @keydown.arrow-up.prevent="$refs.xlsxExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-panel-strong)]">{{ __('production_bench.output.ui.csv') }}</button>
+                            </div>
+                        </div>
+                        <button type="button" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()" :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial" @click="printList()" class="sk-btn sk-btn-outline min-h-11">{{ __('production_bench.output.ui.count') }}</button>
+                        <p x-show="outputPending" x-cloak role="status" class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.output.ui.pending') }}</p>
+                        <p x-show="outputError" x-cloak role="alert" class="text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
                         {{-- Outside the disclosure on purpose: it used to appear only with a
                              material selected and cleared only that, so filtering by supplier
                              and date left nothing to undo. --}}

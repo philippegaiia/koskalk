@@ -34,12 +34,12 @@
                     @foreach ($rows as $row)
                         <tr>
                             @foreach (['material', 'lot', 'supplier_batch', 'unit'] as $key)
-                                <td class="break-words border border-slate-300 p-2">{{ $row[$key] }}</td>
+                                <td class="break-words border border-slate-300 p-2">{{ $row[$key] }}@if ($key === 'material' && filled($row['code']))<span class="mt-1 block text-[10px] text-slate-600">{{ $row['code'] }}</span>@endif</td>
                             @endforeach
                             @if ($workspace->uses_storage_locations)
                                 <td class="break-words border border-slate-300 p-2">{{ $row['location'] }}</td>
                             @endif
-                            <td class="border border-slate-300 p-2">{{ $row['physical'] }}</td>
+                            <td class="border border-slate-300 p-2">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($row['physical'], 0, 9, auth()->user()?->number_locale) }}</td>
                             <td data-counted class="h-12 border border-slate-300 p-2"></td>
                             <td data-count-notes class="h-12 border border-slate-300 p-2"></td>
                         </tr>

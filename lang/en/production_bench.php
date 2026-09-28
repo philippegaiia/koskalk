@@ -5,6 +5,18 @@ return [
         'location_name_max' => 'Use no more than 50 characters for the location name.',
     ],
     'output' => [
+        'ui' => [
+            'materials' => 'Export materials', 'stock' => 'Export stock lots', 'count' => 'Print count sheet',
+            'xlsx' => 'Excel workbook (.xlsx)', 'csv' => 'CSV file (.csv)', 'pending' => 'Preparing output…',
+            'errors' => [
+                'access' => 'Sign in again to create this output.',
+                'forbidden' => 'Your access changed. Reload inventory and try again.',
+                'invalid' => 'Review the filters and try again.',
+                'throttled' => 'Too many outputs. Wait a moment and try again.',
+                'failed' => 'The output could not be prepared. Try again.',
+                'popup' => 'Allow popups to open the count sheet, then try again.',
+            ],
+        ],
         'lots_filename' => 'Stock lots',
         'lots_sheet' => 'Stock lots',
         'lots_title' => 'Stock lots',

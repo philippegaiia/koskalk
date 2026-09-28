@@ -86,6 +86,7 @@ export function createListOutputDownload(dependencies = {}) {
         visibleSearch: '',
         serverHasResults: false,
         serverSearch: '',
+        serverParameters: {},
 
         init() {
             this.visibleSearch = this.searchInput()?.value ?? '';
@@ -95,7 +96,7 @@ export function createListOutputDownload(dependencies = {}) {
                 serverResultsObserver = new MutationObserver(() => this.syncServerResults());
                 serverResultsObserver.observe(this.$el, {
                     attributes: true,
-                    attributeFilter: ['data-export-has-results', 'data-export-server-search'],
+                    attributeFilter: ['data-export-has-results', 'data-export-server-search', 'data-export-parameters'],
                 });
             }
         },
@@ -107,13 +108,36 @@ export function createListOutputDownload(dependencies = {}) {
         syncServerResults() {
             this.serverHasResults = this.$el.dataset.exportHasResults === 'true';
             this.serverSearch = this.$el.dataset.exportServerSearch ?? '';
+            this.serverParameters = JSON.parse(this.$el.dataset.exportParameters ?? '{}');
         },
 
         searchInput() {
-            return this.$el.querySelector('[data-list-output-search]');
+            return this.$el.querySelector(this.$el.dataset.exportSearchSelector ?? '[data-list-output-search]');
+        },
+
+        captureParameters() {
+            const parameters = { ...this.serverParameters };
+            for (const key of JSON.parse(this.$el.dataset.exportLivewireFilters ?? '[]')) {
+                parameters[key] = this.$wire.$get(key);
+            }
+            if (this.$el.dataset.exportMaterialSelection) {
+                const selection = this.$wire.$get(this.$el.dataset.exportMaterialSelection) ?? '';
+                const separator = selection.indexOf(':');
+                parameters.lotMaterialType = separator < 0 ? '' : selection.slice(0, separator);
+                parameters.lotMaterial = separator < 0 ? '' : selection.slice(separator + 1);
+            }
+            parameters[this.$el.dataset.exportSearchParameter ?? 'search'] = this.searchInput()?.value ?? '';
+
+            return parameters;
         },
 
         currentResultsAreEmpty() {
+            const current = this.captureParameters();
+            for (const key of JSON.parse(this.$el.dataset.exportLivewireFilters ?? '[]')) {
+                if ((current[key] ?? '') !== (this.serverParameters[key] ?? '')) {
+                    return false;
+                }
+            }
             return isListOutputEmptyForVisibleSearch({
                 hasResults: this.serverHasResults,
                 visibleSearch: this.visibleSearch,
@@ -131,6 +155,53 @@ export function createListOutputDownload(dependencies = {}) {
             return this.outputMenuOpen;
         },
 
+        async printList() {
+            if (this.outputPending || this.currentResultsAreEmpty()) {
+                return false;
+            }
+            const popup = window.open('', '_blank');
+            this.outputError = '';
+            if (! popup) {
+                this.outputError = this.$el.dataset.exportErrorPopup;
+                return false;
+            }
+            this.outputPending = true;
+            try {
+                popup.document.title = this.$el.dataset.exportPreparing;
+                const message = popup.document.createElement('p');
+                message.textContent = this.$el.dataset.exportPreparing;
+                popup.document.body.replaceChildren(message);
+                const url = buildListOutputUrl({ endpoint: this.$el.dataset.printUrl, origin: window.location.origin, parameters: this.captureParameters() });
+                const response = await fetch(url, { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (! response.ok) {
+                    throw new Error(await responseError(response, {
+                        access: this.$el.dataset.exportErrorAccess,
+                        forbidden: this.$el.dataset.exportErrorForbidden,
+                        workspaceChanged: this.$el.dataset.exportErrorWorkspaceChanged,
+                        invalid: this.$el.dataset.exportErrorInvalid,
+                        throttled: this.$el.dataset.exportErrorThrottled,
+                        failed: this.$el.dataset.exportErrorFailed,
+                    }));
+                }
+                const html = await response.text();
+                if (! popup.closed) {
+                    popup.document.open();
+                    popup.document.write(html);
+                    popup.document.close();
+                    popup.focus();
+                }
+                return true;
+            } catch (error) {
+                if (! popup.closed) {
+                    popup.close();
+                }
+                this.outputError = error instanceof Error && error.message ? error.message : this.$el.dataset.exportErrorFailed;
+                return false;
+            } finally {
+                this.outputPending = false;
+            }
+        },
+
         async exportList(format) {
             if (this.outputPending || this.currentResultsAreEmpty()) {
                 return false;
@@ -140,9 +211,8 @@ export function createListOutputDownload(dependencies = {}) {
             this.outputError = '';
 
             try {
-                const parameters = JSON.parse(this.$el.dataset.exportParameters ?? '{}');
+                const parameters = this.captureParameters();
                 parameters.format = format;
-                parameters[this.$el.dataset.exportSearchParameter ?? 'search'] = this.searchInput()?.value ?? '';
                 const url = buildListOutputUrl({
                     endpoint: this.$el.dataset.exportUrl,
                     origin: window.location.origin,

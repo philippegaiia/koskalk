@@ -26256,6 +26256,1134 @@
     },
     {
       "group": "production_bench",
+      "key": "output.columns.available",
+      "text": {
+        "de": "Verfügbar",
+        "es": "Disponible",
+        "fr": "Disponible",
+        "it": "Disponibile",
+        "nl": "Beschikbaar",
+        "pt_BR": "Disponível"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.code",
+      "text": {
+        "de": "Code",
+        "es": "Código",
+        "fr": "Code",
+        "it": "Codice",
+        "nl": "Code",
+        "pt_BR": "Código"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.expiry",
+      "text": {
+        "de": "Verfallsdatum",
+        "es": "Fecha de caducidad",
+        "fr": "Date de péremption",
+        "it": "Data di scadenza",
+        "nl": "Vervaldatum",
+        "pt_BR": "Data de validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.forecast",
+      "text": {
+        "de": "Prognose",
+        "es": "Previsión",
+        "fr": "Prévision",
+        "it": "Previsione",
+        "nl": "Prognose",
+        "pt_BR": "Previsão"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.handling",
+      "text": {
+        "de": "Freigabestatus",
+        "es": "Estado de disponibilidad",
+        "fr": "Statut de disponibilité",
+        "it": "Stato di disponibilità",
+        "nl": "Vrijgavestatus",
+        "pt_BR": "Status de disponibilidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.incoming",
+      "text": {
+        "de": "Unterwegs",
+        "es": "En camino",
+        "fr": "En commande",
+        "it": "In arrivo",
+        "nl": "Onderweg",
+        "pt_BR": "Entradas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.location",
+      "text": {
+        "de": "Lagerort",
+        "es": "Ubicación de almacenamiento",
+        "fr": "Emplacement de stockage",
+        "it": "Ubicazione di stoccaggio",
+        "nl": "Opslaglocatie",
+        "pt_BR": "Local de armazenamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.lot",
+      "text": {
+        "de": "Chargencode",
+        "es": "Código de lote",
+        "fr": "Code du lot",
+        "it": "Codice lotto",
+        "nl": "Partijcode",
+        "pt_BR": "Código do lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.material",
+      "text": {
+        "de": "Material",
+        "es": "Material",
+        "fr": "Matière",
+        "it": "Materiale",
+        "nl": "Materiaal",
+        "pt_BR": "Material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.origin",
+      "text": {
+        "de": "Herkunft",
+        "es": "Origen",
+        "fr": "Origine",
+        "it": "Origine",
+        "nl": "Herkomst",
+        "pt_BR": "Origem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.physical",
+      "text": {
+        "de": "Physisch",
+        "es": "Físico",
+        "fr": "Physique",
+        "it": "Fisico",
+        "nl": "Fysiek",
+        "pt_BR": "Físico"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.quarantined",
+      "text": {
+        "de": "Unter Quarantäne",
+        "es": "En cuarentena",
+        "fr": "En quarantaine",
+        "it": "In quarantena",
+        "nl": "In quarantaine",
+        "pt_BR": "Em quarentena"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.received",
+      "text": {
+        "de": "Eingangsdatum",
+        "es": "Fecha de recepción",
+        "fr": "Date de réception",
+        "it": "Data di ricezione",
+        "nl": "Ontvangstdatum",
+        "pt_BR": "Data de recebimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.required",
+      "text": {
+        "de": "Erforderlich",
+        "es": "Necesario",
+        "fr": "Nécessaire",
+        "it": "Necessario",
+        "nl": "Benodigd",
+        "pt_BR": "Obrigatório"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.reserved",
+      "text": {
+        "de": "Reserviert",
+        "es": "Reservado",
+        "fr": "Réservé",
+        "it": "Riservato",
+        "nl": "Gereserveerd",
+        "pt_BR": "Reservado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.stocked",
+      "text": {
+        "de": "Eingelagerungsdatum",
+        "es": "Fecha de almacenamiento",
+        "fr": "Date de stockage",
+        "it": "Data di stoccaggio",
+        "nl": "Voorraaddatum",
+        "pt_BR": "Data de armazenamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.supplier",
+      "text": {
+        "de": "Lieferant",
+        "es": "Proveedor",
+        "fr": "Fournisseur",
+        "it": "Fornitore",
+        "nl": "Leverancier",
+        "pt_BR": "Fornecedor"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.supplier_batch",
+      "text": {
+        "de": "Lieferantencharge",
+        "es": "Lote del proveedor",
+        "fr": "Lot fournisseur",
+        "it": "Lotto del fornitore",
+        "nl": "Leveranciersbatch",
+        "pt_BR": "Lote do fornecedor"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.type",
+      "text": {
+        "de": "Typ",
+        "es": "Tipo",
+        "fr": "Type",
+        "it": "Tipo",
+        "nl": "Type",
+        "pt_BR": "Tipo"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.columns.unit",
+      "text": {
+        "de": "Einheit",
+        "es": "Unidad",
+        "fr": "Unité",
+        "it": "Unità",
+        "nl": "Eenheid",
+        "pt_BR": "Unidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.count_title",
+      "text": {
+        "de": "Bestandszählblatt",
+        "es": "Hoja de recuento de inventario",
+        "fr": "Feuille de comptage du stock",
+        "it": "Scheda di conteggio del magazzino",
+        "nl": "Voorraadtellijst",
+        "pt_BR": "Folha de contagem de estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.counted",
+      "text": {
+        "de": "Gezählt",
+        "es": "Contado",
+        "fr": "Compté",
+        "it": "Contato",
+        "nl": "Geteld",
+        "pt_BR": "Contado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.demand.planned",
+      "text": {
+        "de": "Geplant",
+        "es": "Planificado",
+        "fr": "Planifié",
+        "it": "Pianificato",
+        "nl": "Gepland",
+        "pt_BR": "Planejada"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.demand.unplanned",
+      "text": {
+        "de": "Ungeplant",
+        "es": "Sin planificar",
+        "fr": "Non planifié",
+        "it": "Non pianificato",
+        "nl": "Ongepland",
+        "pt_BR": "Não planejado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.direction.asc",
+      "text": {
+        "de": "Aufsteigend",
+        "es": "Ascendente",
+        "fr": "Croissant",
+        "it": "Crescente",
+        "nl": "Oplopend",
+        "pt_BR": "Crescente"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.direction.desc",
+      "text": {
+        "de": "Absteigend",
+        "es": "Descendente",
+        "fr": "Décroissant",
+        "it": "Decrescente",
+        "nl": "Aflopend",
+        "pt_BR": "Decrescente"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.applied",
+      "text": {
+        "de": "Angewendete Filter",
+        "es": "Filtros aplicados",
+        "fr": "Filtres appliqués",
+        "it": "Filtri applicati",
+        "nl": "Toegepaste filters",
+        "pt_BR": "Filtros aplicados"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.category",
+      "text": {
+        "de": "Kategorie",
+        "es": "Categoría",
+        "fr": "Catégorie",
+        "it": "Categoria",
+        "nl": "Categorie",
+        "pt_BR": "Categoria"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.date_basis",
+      "text": {
+        "de": "Datumsgrundlage",
+        "es": "Fecha de referencia",
+        "fr": "Date de référence",
+        "it": "Data di riferimento",
+        "nl": "Datumgrondslag",
+        "pt_BR": "Data de referência"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.date_from",
+      "text": {
+        "de": "Von",
+        "es": "Desde",
+        "fr": "Du",
+        "it": "Dal",
+        "nl": "Van",
+        "pt_BR": "De"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.date_until",
+      "text": {
+        "de": "Bis",
+        "es": "Hasta",
+        "fr": "Jusqu’au",
+        "it": "Fino al",
+        "nl": "Tot",
+        "pt_BR": "Até"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.demand",
+      "text": {
+        "de": "Bedarf",
+        "es": "Demanda",
+        "fr": "Besoins",
+        "it": "Fabbisogno",
+        "nl": "Behoefte",
+        "pt_BR": "Demanda"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.direction",
+      "text": {
+        "de": "Richtung",
+        "es": "Dirección",
+        "fr": "Sens",
+        "it": "Direzione",
+        "nl": "Richting",
+        "pt_BR": "Direção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.expiry",
+      "text": {
+        "de": "Ablauf",
+        "es": "Caducidad",
+        "fr": "Expiration",
+        "it": "Scadenza",
+        "nl": "Vervaldatum",
+        "pt_BR": "Validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.generated_at",
+      "text": {
+        "de": "Erstellt am",
+        "es": "Generado el",
+        "fr": "Généré le",
+        "it": "Generato il",
+        "nl": "Gegenereerd op",
+        "pt_BR": "Gerado em"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.handling",
+      "text": {
+        "de": "Freigabestatus",
+        "es": "Estado de disponibilidad",
+        "fr": "Statut de disponibilité",
+        "it": "Stato di disponibilità",
+        "nl": "Vrijgavestatus",
+        "pt_BR": "Status de disponibilidade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.origin",
+      "text": {
+        "de": "Herkunft",
+        "es": "Origen",
+        "fr": "Origine",
+        "it": "Origine",
+        "nl": "Herkomst",
+        "pt_BR": "Origem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.scope",
+      "text": {
+        "de": "Chargenumfang",
+        "es": "Alcance del lote",
+        "fr": "Périmètre des lots",
+        "it": "Ambito dei lotti",
+        "nl": "Lotbereik",
+        "pt_BR": "Escopo do lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.search",
+      "text": {
+        "de": "Suchen",
+        "es": "Buscar",
+        "fr": "Rechercher",
+        "it": "Cerca",
+        "nl": "Zoeken",
+        "pt_BR": "Buscar"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.sorted_by",
+      "text": {
+        "de": "Sortiert nach",
+        "es": "Ordenar por",
+        "fr": "Trié par",
+        "it": "Ordinato per",
+        "nl": "Gesorteerd op",
+        "pt_BR": "Ordenado por"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.source",
+      "text": {
+        "de": "Quellarbeitsbereich",
+        "es": "Espacio de trabajo de origen",
+        "fr": "Espace de travail source",
+        "it": "Spazio di lavoro di origine",
+        "nl": "Bronwerkruimte",
+        "pt_BR": "Espaço de trabalho de origem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.stock_state",
+      "text": {
+        "de": "Bestandsstatus",
+        "es": "Estado del stock",
+        "fr": "État du stock",
+        "it": "Stato dello stock",
+        "nl": "Voorraadstatus",
+        "pt_BR": "Estado do estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.subcategory",
+      "text": {
+        "de": "Unterkategorie",
+        "es": "Subcategoría",
+        "fr": "Sous-catégorie",
+        "it": "Sottocategoria",
+        "nl": "Subcategorie",
+        "pt_BR": "Subcategoria"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.filters.type",
+      "text": {
+        "de": "Materialtyp",
+        "es": "Tipo de material",
+        "fr": "Type de matériau",
+        "it": "Tipo di materia",
+        "nl": "Materiaalsoort",
+        "pt_BR": "Tipo de material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.active",
+      "text": {
+        "de": "Nicht abgelaufen",
+        "es": "No caducado",
+        "fr": "Non périmé",
+        "it": "Non scaduto",
+        "nl": "Niet verlopen",
+        "pt_BR": "Não vencido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.code",
+      "text": {
+        "de": "Chargencode",
+        "es": "Código de lote",
+        "fr": "Code du lot",
+        "it": "Codice lotto",
+        "nl": "Partijcode",
+        "pt_BR": "Código do lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.exhausted",
+      "text": {
+        "de": "Aufgebraucht",
+        "es": "Agotado",
+        "fr": "Épuisé",
+        "it": "Esaurito",
+        "nl": "Uitgeput",
+        "pt_BR": "Esgotado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.expired",
+      "text": {
+        "de": "Abgelaufen",
+        "es": "Caducada",
+        "fr": "Expirée",
+        "it": "Scaduto",
+        "nl": "Verlopen",
+        "pt_BR": "Expirado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.newest",
+      "text": {
+        "de": "Neueste zuerst",
+        "es": "Más recientes primero",
+        "fr": "Plus récents d’abord",
+        "it": "Più recenti prima",
+        "nl": "Nieuwste eerst",
+        "pt_BR": "Mais recentes primeiro"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.none",
+      "text": {
+        "de": "Kein Ablaufdatum",
+        "es": "Sin fecha de caducidad",
+        "fr": "Sans date d’expiration",
+        "it": "Nessuna data di scadenza",
+        "nl": "Geen vervaldatum",
+        "pt_BR": "Sem data de validade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.oldest",
+      "text": {
+        "de": "Älteste zuerst",
+        "es": "Más antiguos primero",
+        "fr": "Plus anciens d’abord",
+        "it": "Più vecchi prima",
+        "nl": "Oudste eerst",
+        "pt_BR": "Mais antigos primeiro"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.open",
+      "text": {
+        "de": "Öffnen",
+        "es": "Abrir",
+        "fr": "Ouvrir",
+        "it": "Apri",
+        "nl": "Openen",
+        "pt_BR": "Aberto"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.received",
+      "text": {
+        "de": "Eingangsdatum",
+        "es": "Fecha de recepción",
+        "fr": "Date de réception",
+        "it": "Data di ricezione",
+        "nl": "Ontvangstdatum",
+        "pt_BR": "Data de recebimento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.stocked",
+      "text": {
+        "de": "Eingelagerungsdatum",
+        "es": "Fecha de almacenamiento",
+        "fr": "Date de stockage",
+        "it": "Data di stoccaggio",
+        "nl": "Voorraaddatum",
+        "pt_BR": "Data de armazenamento"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lot_filters.unassigned",
+      "text": {
+        "de": "Nicht zugewiesen",
+        "es": "Sin asignar",
+        "fr": "Non attribué",
+        "it": "Non assegnato",
+        "nl": "Niet toegewezen",
+        "pt_BR": "Não atribuída"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lots_filename",
+      "text": {
+        "de": "Bestandslose",
+        "es": "Lotes de existencias",
+        "fr": "Lots en stock",
+        "it": "Lotti di magazzino",
+        "nl": "Voorraadpartijen",
+        "pt_BR": "Lotes em estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lots_sheet",
+      "text": {
+        "de": "Bestandslose",
+        "es": "Lotes de existencias",
+        "fr": "Lots en stock",
+        "it": "Lotti di magazzino",
+        "nl": "Voorraadpartijen",
+        "pt_BR": "Lotes em estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.lots_title",
+      "text": {
+        "de": "Bestandslose",
+        "es": "Lotes de existencias",
+        "fr": "Lots en stock",
+        "it": "Lotti di magazzino",
+        "nl": "Voorraadpartijen",
+        "pt_BR": "Lotes em estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.materials_filename",
+      "text": {
+        "de": "Bestandsmaterialien",
+        "es": "Materiales del inventario",
+        "fr": "Matières en stock",
+        "it": "Materiali in magazzino",
+        "nl": "Voorraadmaterialen",
+        "pt_BR": "Materiais em estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.materials_sheet",
+      "text": {
+        "de": "Materialien",
+        "es": "Materiales",
+        "fr": "Matières",
+        "it": "Materiali",
+        "nl": "Materialen",
+        "pt_BR": "Materiais"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.materials_title",
+      "text": {
+        "de": "Bestandsmaterialien",
+        "es": "Materiales del inventario",
+        "fr": "Matières en stock",
+        "it": "Materiali in magazzino",
+        "nl": "Voorraadmaterialen",
+        "pt_BR": "Materiais em estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.notes",
+      "text": {
+        "de": "Notizen",
+        "es": "Notas",
+        "fr": "Notes",
+        "it": "Note",
+        "nl": "Notities",
+        "pt_BR": "Notas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.print",
+      "text": {
+        "de": "Drucken / Als PDF speichern",
+        "es": "Imprimir / Guardar PDF",
+        "fr": "Imprimer / Enregistrer en PDF",
+        "it": "Stampa / Salva PDF",
+        "nl": "Afdrukken / Opslaan als PDF",
+        "pt_BR": "Imprimir / salvar PDF"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.recorded",
+      "text": {
+        "de": "Erfasster physischer Bestand",
+        "es": "Existencias físicas registradas",
+        "fr": "Stock physique enregistré",
+        "it": "Giacenza fisica registrata",
+        "nl": "Geregistreerde fysieke voorraad",
+        "pt_BR": "Estoque físico registrado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.sort.available",
+      "text": {
+        "de": "Verfügbare Menge",
+        "es": "Cantidad disponible",
+        "fr": "Quantité disponible",
+        "it": "Quantità disponibile",
+        "nl": "Beschikbare hoeveelheid",
+        "pt_BR": "Quantidade disponível"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.sort.forecast",
+      "text": {
+        "de": "Prognostizierte Menge",
+        "es": "Cantidad prevista",
+        "fr": "Quantité prévisionnelle",
+        "it": "Quantità prevista",
+        "nl": "Prognosehoeveelheid",
+        "pt_BR": "Quantidade prevista"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.sort.name",
+      "text": {
+        "de": "Materialname",
+        "es": "Nombre del material",
+        "fr": "Nom de la matière",
+        "it": "Nome del materiale",
+        "nl": "Materiaalnaam",
+        "pt_BR": "Nome do material"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.sort.physical",
+      "text": {
+        "de": "Physische Menge",
+        "es": "Cantidad física",
+        "fr": "Quantité physique",
+        "it": "Quantità fisica",
+        "nl": "Fysieke hoeveelheid",
+        "pt_BR": "Quantidade física"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.sort.priority",
+      "text": {
+        "de": "Priorität",
+        "es": "Prioridad",
+        "fr": "Priorité",
+        "it": "Priorità",
+        "nl": "Prioriteit",
+        "pt_BR": "Prioridade"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.stock_states.below_buffer",
+      "text": {
+        "de": "Unter dem Puffer",
+        "es": "Por debajo del búfer",
+        "fr": "Sous le stock tampon",
+        "it": "Sotto il buffer",
+        "nl": "Onder buffer",
+        "pt_BR": "Abaixo do buffer"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.stock_states.incoming",
+      "text": {
+        "de": "Unterwegs",
+        "es": "En camino",
+        "fr": "En commande",
+        "it": "In arrivo",
+        "nl": "Onderweg",
+        "pt_BR": "Entradas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.stock_states.negative_forecast",
+      "text": {
+        "de": "Negativer Prognosebestand",
+        "es": "Previsión negativa",
+        "fr": "Prévision négative",
+        "it": "Previsione negativa",
+        "nl": "Negatieve prognose",
+        "pt_BR": "Previsão negativa"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.stock_states.quarantined",
+      "text": {
+        "de": "Unter Quarantäne",
+        "es": "En cuarentena",
+        "fr": "En quarantaine",
+        "it": "In quarantena",
+        "nl": "In quarantaine",
+        "pt_BR": "Em quarentena"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.types.ingredient",
+      "text": {
+        "de": "Ingrediens",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.types.packaging",
+      "text": {
+        "de": "Verpackung",
+        "es": "Envasado",
+        "fr": "Conditionnement",
+        "it": "Confezionamento",
+        "nl": "Verpakking",
+        "pt_BR": "Embalagem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.count",
+      "text": {
+        "de": "Zählblatt drucken",
+        "es": "Imprimir hoja de recuento",
+        "fr": "Imprimer la feuille de comptage",
+        "it": "Stampa scheda di conteggio",
+        "nl": "Tellijst afdrukken",
+        "pt_BR": "Imprimir folha de contagem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.csv",
+      "text": {
+        "de": "CSV-Datei (.csv)",
+        "es": "Archivo CSV (.csv)",
+        "fr": "Fichier CSV (.csv)",
+        "it": "File CSV (.csv)",
+        "nl": "CSV-bestand (.csv)",
+        "pt_BR": "Arquivo CSV (.csv)"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.errors.access",
+      "text": {
+        "de": "Melden Sie sich erneut an, um diese Ausgabe zu erstellen.",
+        "es": "Vuelve a iniciar sesión para generar esta salida.",
+        "fr": "Reconnectez-vous pour générer ce document.",
+        "it": "Accedi nuovamente per generare questo documento.",
+        "nl": "Meld je opnieuw aan om dit bestand te maken.",
+        "pt_BR": "Entre novamente para gerar este documento."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.errors.failed",
+      "text": {
+        "de": "Die Ausgabe konnte nicht erstellt werden. Versuchen Sie es erneut.",
+        "es": "No se pudo preparar el documento. Inténtalo de nuevo.",
+        "fr": "Le document n’a pas pu être préparé. Réessayez.",
+        "it": "Impossibile preparare il documento. Riprova.",
+        "nl": "Het bestand kon niet worden gemaakt. Probeer het opnieuw.",
+        "pt_BR": "Não foi possível preparar o documento. Tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.errors.forbidden",
+      "text": {
+        "de": "Ihr Zugriff hat sich geändert. Laden Sie den Bestand neu und versuchen Sie es erneut.",
+        "es": "Tu acceso ha cambiado. Recarga el inventario e inténtalo de nuevo.",
+        "fr": "Votre accès a changé. Rechargez le stock et réessayez.",
+        "it": "Il tuo accesso è cambiato. Ricarica il magazzino e riprova.",
+        "nl": "Je toegang is gewijzigd. Laad de voorraad opnieuw en probeer het opnieuw.",
+        "pt_BR": "Seu acesso mudou. Recarregue o estoque e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.errors.invalid",
+      "text": {
+        "de": "Prüfen Sie die Filter und versuchen Sie es erneut.",
+        "es": "Revisa los filtros e inténtalo de nuevo.",
+        "fr": "Vérifiez les filtres et réessayez.",
+        "it": "Controlla i filtri e riprova.",
+        "nl": "Controleer de filters en probeer het opnieuw.",
+        "pt_BR": "Revise os filtros e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.errors.popup",
+      "text": {
+        "de": "Erlauben Sie Pop-ups zum Öffnen des Zählblatts und versuchen Sie es erneut.",
+        "es": "Permite las ventanas emergentes para abrir la hoja de recuento e inténtalo de nuevo.",
+        "fr": "Autorisez les fenêtres contextuelles pour ouvrir la feuille de comptage, puis réessayez.",
+        "it": "Consenti i popup per aprire la scheda di conteggio, poi riprova.",
+        "nl": "Sta pop-ups toe om de tellijst te openen en probeer het opnieuw.",
+        "pt_BR": "Permita pop-ups para abrir a folha de contagem e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.errors.throttled",
+      "text": {
+        "de": "Zu viele Ausgaben. Warten Sie kurz und versuchen Sie es erneut.",
+        "es": "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+        "fr": "Trop de demandes. Patientez un instant et réessayez.",
+        "it": "Troppe richieste. Attendi un momento e riprova.",
+        "nl": "Te veel aanvragen. Wacht even en probeer het opnieuw.",
+        "pt_BR": "Muitas solicitações. Aguarde um momento e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.materials",
+      "text": {
+        "de": "Materialien exportieren",
+        "es": "Exportar materiales",
+        "fr": "Exporter les matières",
+        "it": "Esporta materiali",
+        "nl": "Materialen exporteren",
+        "pt_BR": "Exportar materiais"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.pending",
+      "text": {
+        "de": "Ausgabe wird vorbereitet…",
+        "es": "Preparando la salida…",
+        "fr": "Préparation de la sortie…",
+        "it": "Preparazione dell’output…",
+        "nl": "Uitvoer wordt voorbereid…",
+        "pt_BR": "Preparando a saída…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.stock",
+      "text": {
+        "de": "Bestandslose exportieren",
+        "es": "Exportar lotes de existencias",
+        "fr": "Exporter les lots en stock",
+        "it": "Esporta lotti di magazzino",
+        "nl": "Voorraadpartijen exporteren",
+        "pt_BR": "Exportar lotes em estoque"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.ui.xlsx",
+      "text": {
+        "de": "Excel-Arbeitsmappe (.xlsx)",
+        "es": "Libro de Excel (.xlsx)",
+        "fr": "Classeur Excel (.xlsx)",
+        "it": "Cartella di lavoro Excel (.xlsx)",
+        "nl": "Excel-werkmap (.xlsx)",
+        "pt_BR": "Pasta de trabalho do Excel (.xlsx)"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.unavailable",
+      "text": {
+        "de": "Nicht verfügbar",
+        "es": "No disponible",
+        "fr": "Indisponible",
+        "it": "Non disponibile",
+        "nl": "Niet beschikbaar",
+        "pt_BR": "Indisponível"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.validation.changed",
+      "text": {
+        "de": "Der Bestand hat sich während der Erstellung geändert. Grenzen Sie die Filter ein und versuchen Sie es erneut.",
+        "es": "El inventario cambió mientras se preparaba el documento. Restringe los filtros e inténtalo de nuevo.",
+        "fr": "Le stock a changé pendant la préparation du document. Affinez les filtres et réessayez.",
+        "it": "Il magazzino è cambiato durante la preparazione del documento. Restringi i filtri e riprova.",
+        "nl": "De voorraad is gewijzigd tijdens het maken van het bestand. Verfijn de filters en probeer het opnieuw.",
+        "pt_BR": "O estoque mudou durante a preparação do documento. Refine os filtros e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.validation.date_range",
+      "text": {
+        "de": "Das Enddatum muss am oder nach dem Startdatum liegen.",
+        "es": "La fecha de fin debe ser igual o posterior a la fecha de inicio.",
+        "fr": "La date de fin doit être égale ou postérieure à la date de début.",
+        "it": "La data finale deve essere uguale o successiva alla data iniziale.",
+        "nl": "De einddatum moet op of na de begindatum liggen.",
+        "pt_BR": "A data final deve ser igual ou posterior à data inicial."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.validation.empty",
+      "text": {
+        "de": "Keine Bestandszeilen entsprechen diesen Filtern.",
+        "es": "Ninguna fila del inventario coincide con estos filtros.",
+        "fr": "Aucune ligne de stock ne correspond à ces filtres.",
+        "it": "Nessuna riga di magazzino corrisponde a questi filtri.",
+        "nl": "Geen voorraadregels komen overeen met deze filters.",
+        "pt_BR": "Nenhuma linha de estoque corresponde a estes filtros."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.validation.invalid_storage_location",
+      "text": {
+        "de": "Wählen Sie einen Lagerort im ausgewählten Arbeitsbereich.",
+        "es": "Elige una ubicación de almacenamiento del espacio de trabajo seleccionado.",
+        "fr": "Choisissez un emplacement de stockage dans l’espace de travail sélectionné.",
+        "it": "Scegli un’ubicazione di stoccaggio nello spazio di lavoro selezionato.",
+        "nl": "Kies een opslaglocatie in de geselecteerde werkruimte.",
+        "pt_BR": "Escolha um local de armazenamento no espaço de trabalho selecionado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.validation.too_many",
+      "text": {
+        "de": "Diese Ausgabe enthält mehr als :limit Zeilen. Grenzen Sie die Filter ein und versuchen Sie es erneut.",
+        "es": "Esta salida contiene más de :limit filas. Restringe los filtros e inténtalo de nuevo.",
+        "fr": "Ce document contient plus de :limit lignes. Affinez les filtres et réessayez.",
+        "it": "Questo documento contiene più di :limit righe. Restringi i filtri e riprova.",
+        "nl": "Dit bestand bevat meer dan :limit regels. Verfijn de filters en probeer het opnieuw.",
+        "pt_BR": "Este documento contém mais de :limit linhas. Refine os filtros e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "output.validation.workspace_changed",
+      "text": {
+        "de": "Der ausgewählte Arbeitsbereich hat sich geändert. Laden Sie den Bestand neu und versuchen Sie es erneut.",
+        "es": "El espacio de trabajo seleccionado cambió. Recarga el inventario e inténtalo de nuevo.",
+        "fr": "L’espace de travail sélectionné a changé. Rechargez le stock et réessayez.",
+        "it": "Lo spazio di lavoro selezionato è cambiato. Ricarica il magazzino e riprova.",
+        "nl": "De geselecteerde werkruimte is gewijzigd. Laad de voorraad opnieuw en probeer het opnieuw.",
+        "pt_BR": "O espaço de trabalho selecionado mudou. Recarregue o estoque e tente novamente."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "procurement.choose_quotation",
       "text": {
         "de": "Eine ausgestellte Angebotsanfrage auswählen",

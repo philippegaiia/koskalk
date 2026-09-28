@@ -5,6 +5,7 @@ use App\Enums\ProductionRunStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\StockUnitKind;
 use App\Enums\WorkspaceMemberRole;
+use App\Livewire\ProductionBench\InventoryIndex;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\Plan;
@@ -23,6 +24,7 @@ use App\Models\WorkspaceMember;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Livewire\Livewire;
 use OpenSpout\Reader\XLSX\Reader;
 
 uses(RefreshDatabase::class);
@@ -163,7 +165,7 @@ it('exports all stock lots in chosen order and prints the same filtered count sh
         ->and($rows[0][__('production_bench.output.columns.location')])->toBe('Inactive shelf')
         ->and((float) $rows[0][__('production_bench.output.columns.physical')])->toBe(1.0);
     $this->get(route('production-bench.inventory.count.print', $filters))->assertSeeInOrder(['LOT-00', 'LOT-30'])
-        ->assertSee('data-counted', false)->assertSee('data-count-notes', false)->assertDontSee('OTHER-CODE')->assertDontSee('EMPTY')
+        ->assertSee('OUR-CODE')->assertSee('data-counted', false)->assertSee('data-count-notes', false)->assertDontSee('OTHER-CODE')->assertDontSee('EMPTY')
         ->assertViewHas('rows', fn (array $rows): bool => count($rows) === 31 && ! array_key_exists('counted', $rows[0]));
     $this->assertDatabaseCount('stock_movements', 31);
 })->with(['csv', 'xlsx']);
@@ -231,4 +233,20 @@ it('validates lot identifiers dates enums and enabled storage before querying', 
 })->with([
     ['lotMaterial', 'bad-uuid'], ['lotSupplier', 'bad-uuid'], ['lotDateFrom', '2026-02-31'], ['lotDateUntil', 'bad-date'],
     ['lotOrigin', 'unknown'], ['lotScope', 'unknown'], ['lotStatus', 'unknown'], ['lotStorageLocation', 'wrong'], ['lotStorageLocation', '999999'],
+]);
+
+it('shows only the current inventory view output actions with the complete query count', function (string $mode, string $visible, string $hidden): void {
+    $actor = User::factory()->create();
+    $workspace = Workspace::factory()->for($actor, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($actor, $workspace);
+    $lot = StockLot::factory()->for($workspace)->released()->create();
+    StockMovement::factory()->for($lot, 'stockLot')->create(['quantity_delta' => '1']);
+
+    Livewire::actingAs($actor)->test(InventoryIndex::class, ['mode' => $mode])
+        ->assertSee($visible)->assertDontSee($hidden)
+        ->assertSee('data-export-has-results="true"', false)
+        ->assertSee((string) $workspace->public_id);
+})->with([
+    ['materials', 'Export materials', 'Export stock lots'],
+    ['stock', 'Export stock lots', 'Export materials'],
 ]);

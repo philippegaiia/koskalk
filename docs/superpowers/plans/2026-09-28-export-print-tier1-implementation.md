@@ -299,7 +299,7 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 ### Task 6 — Materials, stock lots and the count sheet
 
-**Progress:** Task 6a shared inventory queries and raw export iteration are in progress. No inventory output is claimed complete yet.
+**Progress:** Shared queries are committed in `ca9b46d7`; bounded CSV/XLSX endpoints and count-sheet printing in `faf72eea`. Toolbar integration and six-locale catalogue are committed in `0ae98816`; independent specification and quality reviews approve Task 6. Specification review approved after fixing the missing printed material code and the immediate material-selector capture race. Backend tests passed 21 / 126 assertions, UI/Ingredients checks 29 / 198, broader inventory/query/authorization/catalogue regressions 126 / 40,515, and the final helper suite 11 tests. Synthetic 31-lot count-sheet HTML was inspected in the browser at desktop size; native A4/Letter printing and authenticated downloads remain unverified. Final focused checks passed 29 / 198 assertions, broader regression checks 126 / 40,515; Vite, Pint, graphify and diff checks passed. Stage B implementation is complete with the manual limitations above.
 
 **Create:**
 - `app/Services/Inventory/WorkspaceStockLotQuery.php` — shared stock-lot filter/sort query and read projection.
@@ -309,20 +309,23 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 **Modify:** `app/Services/Inventory/WorkspaceMaterialInventoryQuery.php`, `app/Livewire/ProductionBench/InventoryIndex.php`, `resources/views/livewire/production-bench/inventory-index.blade.php`, `routes/web.php`, `lang/en/production_bench.php`, `database/seeders/data/interface-translations.json`.
 
-- [ ] Add failing Materials tests covering more than one page, search, type/category, stock state, demand/shortage and sort. Assert exported physical, quarantined, reserved, available, incoming, required and forecast quantities agree with independently seeded movements, reservations and receipts. Reuse the existing forecast (available + incoming − remaining demand); do not introduce a second shortage definition.
-- [ ] Add stock-lot tests covering open/exhausted scope, Released/Quarantined handling, supplier, origin, date basis/range, expiry, material selection, lot order and optional storage location. A zero-physical lot with an active reservation must not become “exhausted”.
-- [ ] Add count-sheet tests: same filtered lots and order, blank Counted cells, quantity units, no location column/filter when the workspace feature is off. Cover read-only access, wrong workspace, zero results and over-limit rejection without a partial file.
-- [ ] Run `php artisan test --compact tests/Feature/InventoryOutputTest.php`; confirm failure.
-- [ ] Add an iterable export projection to `WorkspaceMaterialInventoryQuery`, reusing its query/filter/order/hydration logic. Extract the stock-lot query from `InventoryIndex` into `WorkspaceStockLotQuery` and have both the UI and outputs call it. Do not duplicate large WHERE clauses in the controller.
-- [ ] Add named GET routes `production-bench.inventory.materials.export`, `production-bench.inventory.stock-lots.export` and `production-bench.inventory.count.print`. Resolve current workspace/read entitlement through the existing access services; apply the appropriate throttle.
-- [ ] Materials columns: type, material/code, physical, quarantined, reserved, available, incoming, required, forecast and unit, matching the existing view's definitions. Stock-lot columns: material/code, internal lot, supplier batch, supplier, origin, stored/received date as applicable, expiry, handling state, physical/reserved/available quantity and unit. Include storage location only when enabled. Do not add inventory valuation.
-- [ ] Generate XLSX/CSV with raw numeric values and separate units. Render the count sheet with `layouts.print`, repeat table headings across pages and identify the active filters. The print request performs no stock adjustment.
-- [ ] Add only the relevant toolbar controls to the active Materials or Stock lots view. Changing a filter or sort immediately changes the outgoing request, including pending debounced input. Reuse the Ingredients capture pattern and verify the last typed search is included. Keep the shared pagination and sticky-table behavior.
+- [x] Add failing Materials tests covering more than one page, search, type/category, stock state, demand/shortage and sort. Assert exported physical, quarantined, reserved, available, incoming, required and forecast quantities agree with independently seeded movements, reservations and receipts. Reuse the existing forecast (available + incoming − remaining demand); do not introduce a second shortage definition.
+- [x] Add stock-lot tests covering open/exhausted scope, Released/Quarantined handling, supplier, origin, date basis/range, expiry, material selection, lot order and optional storage location. A zero-physical lot with an active reservation must not become “exhausted”.
+- [x] Add count-sheet tests: same filtered lots and order, blank Counted cells, quantity units, no location column/filter when the workspace feature is off. Cover read-only access, wrong workspace, zero results and over-limit rejection without a partial file.
+- [x] Run `php artisan test --compact tests/Feature/InventoryOutputTest.php`; confirm failure.
+- [x] Add an iterable export projection to `WorkspaceMaterialInventoryQuery`, reusing its query/filter/order/hydration logic. Extract the stock-lot query from `InventoryIndex` into `WorkspaceStockLotQuery` and have both the UI and outputs call it. Do not duplicate large WHERE clauses in the controller.
+- [x] Add named GET routes `production-bench.inventory.materials.export`, `production-bench.inventory.stock-lots.export` and `production-bench.inventory.count.print`. Resolve current workspace/read entitlement through the existing access services; apply the appropriate throttle.
+- [x] Materials columns: type, material/code, physical, quarantined, reserved, available, incoming, required, forecast and unit, matching the existing view's definitions. Stock-lot columns: material/code, internal lot, supplier batch, supplier, origin, stored/received date as applicable, expiry, handling state, physical/reserved/available quantity and unit. Include storage location only when enabled. Do not add inventory valuation.
+- [x] Generate XLSX/CSV with raw numeric values and separate units. Render the count sheet with `layouts.print`, repeat table headings across pages and identify the active filters. The print request performs no stock adjustment.
+- [x] Add only the relevant toolbar controls to the active Materials or Stock lots view. Changing a filter or sort immediately changes the outgoing request, including pending debounced input. Reuse the Ingredients capture pattern and verify the last typed search is included. Keep the shared pagination and sticky-table behavior.
 - [ ] Run the new test plus `WorkspaceMaterialInventoryQueryTest.php`, `ProductionBenchInventoryModalTest.php`, `ProductionBenchInventoryMaterialDetailTest.php`, `ProductionWorkspaceAuthorizationTest.php` and translation tests. Check mixed mass/unit materials, A4/Letter page breaks and location on/off manually; commit Stage B.
+
 
 ## Stage C — Production Bench
 
 ### Task 7 — Batch sheet and stable completed record
+
+**Progress:** Implementation is underway after Stage B passed both independent reviews. The existing snapshot and execution paths were inspected read-only; no schema change is needed.
 
 **Create:**
 - `app/Services/Production/ProductionRunPrintDataBuilder.php` — recorded run data, not live formula calculations.

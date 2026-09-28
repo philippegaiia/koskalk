@@ -16,11 +16,14 @@ use App\Services\ProductionBenchAccess;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 
 class WorkspaceMaterialInventoryQuery
 {
     private const string Zero = '0.000000000';
+
+    private const int MaxIterationChunkSize = 500;
 
     public function __construct(private readonly ProductionBenchAccess $access) {}
 
@@ -45,6 +48,64 @@ class WorkspaceMaterialInventoryQuery
         return $page->through(
             fn (object $row): array => $this->hydrateRow($row, $workspace, $subjects) ?? [],
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function count(User $actor, Workspace $workspace, array $filters = []): int
+    {
+        $this->access->assertReadable($actor, $workspace);
+
+        return $this->query($workspace, $filters)->count();
+    }
+
+    /**
+     * Returns the ordered inventory projection in bounded chunks. Quantities
+     * remain canonical decimal strings so callers do not need display parsing.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return LazyCollection<int, array<string, mixed>>
+     */
+    public function iterateRows(
+        User $actor,
+        Workspace $workspace,
+        array $filters = [],
+        int $chunkSize = self::MaxIterationChunkSize,
+    ): LazyCollection {
+        $this->access->assertReadable($actor, $workspace);
+
+        $chunkSize = max(1, min($chunkSize, self::MaxIterationChunkSize));
+
+        return LazyCollection::make(function () use ($workspace, $filters, $chunkSize): \Generator {
+            $page = 1;
+
+            while (true) {
+                $rows = $this->query($workspace, $filters)
+                    ->forPage($page, $chunkSize)
+                    ->get();
+
+                if ($rows->isEmpty()) {
+                    return;
+                }
+
+                $subjects = $this->loadSubjects($rows, $workspace);
+
+                foreach ($rows as $row) {
+                    $hydratedRow = $this->hydrateRow($row, $workspace, $subjects);
+
+                    if ($hydratedRow !== null) {
+                        yield $hydratedRow;
+                    }
+                }
+
+                if ($rows->count() < $chunkSize) {
+                    return;
+                }
+
+                $page++;
+            }
+        });
     }
 
     /**

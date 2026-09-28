@@ -9,7 +9,6 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
-use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
@@ -18,7 +17,6 @@ use App\Livewire\Concerns\InteractsWithStockLotLocations;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
-use App\Models\StockMovement;
 use App\Models\StorageLocation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
@@ -29,6 +27,7 @@ use App\Services\CurrencyCatalog;
 use App\Services\Inventory\InventoryQuantityPresenter;
 use App\Services\Inventory\StorageLocationSelection;
 use App\Services\Inventory\WorkspaceMaterialInventoryQuery;
+use App\Services\Inventory\WorkspaceStockLotQuery;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
@@ -882,6 +881,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
         ProductionBenchAccess $access,
         StockPositionService $positions,
         WorkspaceMaterialInventoryQuery $inventoryQuery,
+        WorkspaceStockLotQuery $stockLotQuery,
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
@@ -900,7 +900,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'isReadOnly' => $access->isReadOnly($workspace),
             'canWriteInventory' => $this->canAddStock(),
             'lots' => $this->mode === 'stock'
-                ? $this->stockLots($workspace, $positions, $displayUnit)
+                ? $this->stockLots($workspace, $positions, $displayUnit, $stockLotQuery)
                 : collect(),
             'materials' => $materialPage,
             'inventorySummary' => $this->mode === 'materials'
@@ -928,155 +928,23 @@ class InventoryIndex extends Component implements HasActions, HasForms
         Workspace $workspace,
         StockPositionService $positions,
         string $displayUnit,
+        WorkspaceStockLotQuery $stockLotQuery,
     ): LengthAwarePaginator {
-        $search = trim($this->search);
-        $searchTerm = '%'.Str::lower($search).'%';
-        $translationLocales = Ingredient::translationLocaleCandidates();
-        $status = in_array($this->lotStatus, ['all', StockLotStatus::Released->value, StockLotStatus::Quarantined->value], true)
-            ? $this->lotStatus
-            : 'all';
-        $scope = in_array($this->lotScope, ['open', 'exhausted', 'all'], true) ? $this->lotScope : 'open';
-        $origin = array_key_exists($this->lotOrigin, $this->lotOriginOptions()) ? $this->lotOrigin : '';
-        $storageLocation = $workspace->uses_storage_locations
-            ? $this->normalizedLotStorageLocation($this->lotStorageLocation, $workspace)
-            : 'all';
-        $physical = '(SELECT COALESCE(SUM(movements.quantity_delta), 0) FROM stock_movements AS movements WHERE movements.stock_lot_id = stock_lots.id)';
-        $activeReserved = '(SELECT COALESCE(SUM(reservations.quantity), 0) FROM stock_reservations AS reservations WHERE reservations.stock_lot_id = stock_lots.id AND reservations.status = \'active\')';
-
-        $with = [
-            'ingredient.translations',
-            'ingredient.workspaceCodes',
-            'packagingItem',
-            'goodsReceiptLine.goodsReceipt.supplier',
-            'supplierListing.supplier',
-        ];
-
-        if ($workspace->uses_storage_locations) {
-            $with[] = 'storageLocation';
-        }
-
-        $stockLots = StockLot::query()
-            ->where('workspace_id', $workspace->id)
-            ->with($with)
-            ->withSum('movements', 'quantity_delta')
-            // Every lot is created with one immutable opening ledger entry.
-            // Later movements can be backdated, so creation order identifies it.
-            ->addSelect([
-                'initial_quantity' => StockMovement::query()
-                    ->select('quantity_delta')
-                    ->whereColumn('stock_lot_id', 'stock_lots.id')
-                    ->oldest('id')
-                    ->limit(1),
-            ])
-            ->withSum([
-                'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
-            ], 'quantity')
-            ->when($status !== 'all', fn (Builder $query): Builder => $query->where('status', $status))
-            ->when($origin !== '', fn (Builder $query): Builder => $query->where('origin', $origin))
-            ->when($storageLocation === 'unassigned', fn (Builder $query): Builder => $query->whereNull('storage_location_id'))
-            ->when(
-                $storageLocation !== 'all' && $storageLocation !== 'unassigned',
-                fn (Builder $query): Builder => $query->where('storage_location_id', (int) $storageLocation),
-            )
-            ->when($scope === 'open', fn (Builder $query): Builder => $query
-                ->whereRaw("({$physical} <> 0 OR {$activeReserved} <> 0)"))
-            ->when($scope === 'exhausted', fn (Builder $query): Builder => $query
-                ->whereRaw("{$physical} = 0")
-                ->whereRaw("{$activeReserved} = 0"))
-            ->when(
-                $this->lotDateBasis === 'stocked' && $this->lotDateFrom !== '',
-                fn (Builder $query): Builder => $query->whereDate('stocked_at', '>=', $this->lotDateFrom),
-            )
-            ->when(
-                $this->lotDateBasis === 'stocked' && $this->lotDateUntil !== '',
-                fn (Builder $query): Builder => $query->whereDate('stocked_at', '<=', $this->lotDateUntil),
-            )
-            ->when(
-                $this->lotDateBasis === 'received' && ($this->lotDateFrom !== '' || $this->lotDateUntil !== ''),
-                fn (Builder $query): Builder => $query->whereHas(
-                    'goodsReceiptLine.goodsReceipt',
-                    function (Builder $receiptQuery): void {
-                        $receiptQuery
-                            ->when($this->lotDateFrom !== '', fn (Builder $query): Builder => $query->whereDate('received_at', '>=', $this->lotDateFrom))
-                            ->when($this->lotDateUntil !== '', fn (Builder $query): Builder => $query->whereDate('received_at', '<=', $this->lotDateUntil));
-                    },
-                ),
-            )
-            ->when($this->lotExpiry === 'active', fn (Builder $query): Builder => $query->whereNotNull('expires_at')->whereDate('expires_at', '>=', today()))
-            ->when($this->lotExpiry === 'expired', fn (Builder $query): Builder => $query->whereNotNull('expires_at')->whereDate('expires_at', '<', today()))
-            ->when($this->lotExpiry === 'none', fn (Builder $query): Builder => $query->whereNull('expires_at'))
-            ->when($this->lotMaterial !== '', function (Builder $query) use ($workspace): void {
-                $query->where(function (Builder $materialQuery) use ($workspace): void {
-                    if ($this->lotMaterialType === 'ingredient') {
-                        $materialQuery->whereHas('ingredient', fn (Builder $ingredientQuery): Builder => $ingredientQuery->where('public_id', $this->lotMaterial));
-
-                        return;
-                    }
-
-                    if ($this->lotMaterialType === 'packaging') {
-                        $materialQuery->whereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
-                            ->where('workspace_id', $workspace->id)
-                            ->where('public_id', $this->lotMaterial));
-
-                        return;
-                    }
-
-                    $materialQuery
-                        ->whereHas('ingredient', fn (Builder $ingredientQuery): Builder => $ingredientQuery->where('public_id', $this->lotMaterial))
-                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
-                            ->where('workspace_id', $workspace->id)
-                            ->where('public_id', $this->lotMaterial));
-                });
-            })
-            ->when($this->lotSupplier !== '', function (Builder $query): void {
-                $query->where(function (Builder $supplierQuery): void {
-                    $supplierQuery
-                        ->whereHas('supplierListing.supplier', fn (Builder $listingSupplierQuery): Builder => $listingSupplierQuery->where('public_id', $this->lotSupplier))
-                        ->orWhereHas('goodsReceiptLine.goodsReceipt.supplier', fn (Builder $receiptSupplierQuery): Builder => $receiptSupplierQuery->where('public_id', $this->lotSupplier));
-                });
-            })
-            ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales, $workspace): void {
-                $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales, $workspace): void {
-                    $searchQuery
-                        ->whereRaw('LOWER(internal_lot_code) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(supplier_batch_number) LIKE ?', [$searchTerm])
-                        ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
-                            $ingredientQuery->where(function (Builder $ingredientNameQuery) use ($searchTerm, $translationLocales): void {
-                                $ingredientNameQuery
-                                    ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm])
-                                    ->orWhereRaw('LOWER(COALESCE(inci_name, \'\')) LIKE ?', [$searchTerm])
-                                    ->orWhereRaw('LOWER(COALESCE(soap_inci_naoh_name, \'\')) LIKE ?', [$searchTerm])
-                                    ->orWhereRaw('LOWER(COALESCE(soap_inci_koh_name, \'\')) LIKE ?', [$searchTerm])
-                                    ->orWhereRaw('LOWER(COALESCE(saponification_name, \'\')) LIKE ?', [$searchTerm]);
-
-                                if ($translationLocales !== []) {
-                                    $ingredientNameQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
-                                        $translationQuery
-                                            ->whereIn('locale', $translationLocales)
-                                            ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
-                                    });
-                                }
-                            });
-                        })
-                        ->orWhereHas('ingredient.workspaceCodes', fn (Builder $codeQuery): Builder => $codeQuery
-                            ->where('workspace_id', $workspace->id)
-                            ->whereRaw('LOWER(material_code) LIKE ?', [$searchTerm]))
-                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery
-                            ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                            ->orWhereRaw('LOWER(material_code) LIKE ?', [$searchTerm]))
-                        ->orWhereHas('supplierListing', function (Builder $listingQuery) use ($searchTerm): void {
-                            $listingQuery
-                                ->whereRaw('LOWER(COALESCE(supplier_sku, \'\')) LIKE ?', [$searchTerm])
-                                ->orWhereRaw('LOWER(COALESCE(supplier_item_name, \'\')) LIKE ?', [$searchTerm])
-                                ->orWhereHas('supplier', fn (Builder $supplierQuery): Builder => $supplierQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
-                        })
-                        ->orWhereHas('goodsReceiptLine.goodsReceipt.supplier', fn (Builder $supplierQuery): Builder => $supplierQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
-                });
-            })
-            ->when($this->lotSort === 'oldest', fn (Builder $query): Builder => $query->orderBy('stocked_at')->orderBy('id'))
-            ->when($this->lotSort === 'code', fn (Builder $query): Builder => $query->orderBy('internal_lot_code')->orderBy('id'))
-            ->when($this->lotSort === 'newest', fn (Builder $query): Builder => $query->latest('stocked_at')->latest('id'))
-            ->paginate($this->normalizedPerPage(), ['*'], 'stock-lots');
+        $stockLots = $stockLotQuery->query($this->user(), $workspace, [
+            'search' => $this->search,
+            'lotMaterial' => $this->lotMaterial,
+            'lotMaterialType' => $this->lotMaterialType,
+            'lotScope' => $this->lotScope,
+            'lotStatus' => $this->lotStatus,
+            'lotSupplier' => $this->lotSupplier,
+            'lotOrigin' => $this->lotOrigin,
+            'lotDateBasis' => $this->lotDateBasis,
+            'lotDateFrom' => $this->lotDateFrom,
+            'lotDateUntil' => $this->lotDateUntil,
+            'lotExpiry' => $this->lotExpiry,
+            'lotStorageLocation' => $this->lotStorageLocation,
+            'lotSort' => $this->lotSort,
+        ])->paginate($this->normalizedPerPage(), ['*'], 'stock-lots');
 
         return $stockLots->through(function (StockLot $lot) use ($positions, $displayUnit): array {
             $stock = $positions->forLotWithLoadedMovementSum($lot);

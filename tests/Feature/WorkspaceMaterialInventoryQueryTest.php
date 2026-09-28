@@ -199,6 +199,50 @@ it('sorts deterministically and paginates on the database query', function (): v
         ->and($descending->pluck('name')->all())->toBe(['C material', 'B material', 'A material']);
 });
 
+it('counts and iterates every material in order with raw signed decimal quantities', function (): void {
+    $workspace = Workspace::factory()->create();
+    $actor = inventoryReadActor($workspace);
+    $materials = [];
+
+    foreach ([
+        'A negative stock' => '-0.123456789',
+        'B shortage' => '1.000000001',
+        'C positive stock' => '3.250000000',
+        'D positive stock' => '4.500000000',
+        'E positive stock' => '5.750000000',
+    ] as $name => $quantity) {
+        $ingredient = Ingredient::factory()->create(['display_name' => $name]);
+        $lot = StockLot::factory()->for($workspace)->for($ingredient)->released()->create();
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $workspace->id,
+            'type' => StockMovementType::OpeningBalance,
+            'quantity_delta' => $quantity,
+        ]);
+        $materials[$name] = $ingredient;
+    }
+
+    $production = ProductionRun::factory()->for($workspace)->create([
+        'status' => ProductionRunStatus::Scheduled,
+    ]);
+    ProductionRequirement::factory()
+        ->for($production, 'productionRun')
+        ->for($materials['B shortage'])
+        ->create(['required_mass_grams' => '2.250000003']);
+
+    $query = app(WorkspaceMaterialInventoryQuery::class);
+    $filters = ['sort' => 'name', 'direction' => 'asc'];
+    $rows = $query->iterateRows($actor, $workspace, $filters, chunkSize: 2)->all();
+    $rowsByName = collect($rows)->keyBy('name');
+
+    expect($query->count($actor, $workspace, $filters))->toBe(5)
+        ->and(collect($rows)->pluck('name')->all())->toBe(array_keys($materials))
+        ->and($rowsByName['A negative stock']['physical'])->toBe('-0.123456789')
+        ->and($rowsByName['A negative stock']['forecast'])->toBe('-0.123456789')
+        ->and($rowsByName['B shortage']['physical'])->toBe('1.000000001')
+        ->and($rowsByName['B shortage']['required'])->toBe('2.250000003')
+        ->and($rowsByName['B shortage']['forecast'])->toBe('-1.250000002');
+});
+
 it('pages more than 25 materials with a bounded query count', function (): void {
     $workspace = Workspace::factory()->create();
 

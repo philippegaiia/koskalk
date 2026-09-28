@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -61,6 +62,31 @@ it('uses the exact user-side button colors for Filament primary actions', functi
         ->toContain('color: var(--color-on-accent) !important;')
         ->toContain('[data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined):hover')
         ->toContain('background: var(--color-accent-hover) !important;');
+});
+
+it('filters and orders stock register lots from the selected material state', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Selected oil']);
+    $otherIngredient = Ingredient::factory()->create(['display_name' => 'Other oil']);
+
+    StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'internal_lot_code' => 'LOT-Z',
+    ]);
+    StockLot::factory()->for($workspace)->for($ingredient)->released()->create([
+        'internal_lot_code' => 'LOT-A',
+    ]);
+    StockLot::factory()->for($workspace)->for($otherIngredient)->released()->create([
+        'internal_lot_code' => 'LOT-B',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
+        ->set('lotMaterial', $ingredient->public_id)
+        ->set('lotMaterialType', 'ingredient')
+        ->set('lotScope', 'all')
+        ->set('lotSort', 'code')
+        ->assertViewHas('lots', fn (LengthAwarePaginator $lots): bool => $lots->getCollection()->pluck('lot.internal_lot_code')->all() === ['LOT-A', 'LOT-Z']);
 });
 
 it('opens an enhanced stock-entry modal with workspace defaults', function (): void {

@@ -109,17 +109,18 @@
                                     aria-haspopup="menu"
                                     aria-controls="ingredient-export-menu"
                                     :aria-expanded="outputMenuOpen.toString()"
-                                    :disabled="outputPending || currentResultsAreEmpty()"
+                                    :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"
+                                    :disabled="currentResultsAreEmpty()"
                                     wire:loading.attr="disabled"
                                     wire:target="setOwnershipFilter,sortBy"
-                                    @click="outputMenuOpen = ! outputMenuOpen; if (outputMenuOpen) $nextTick(() => $refs.xlsxExport.focus())"
+                                    @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())"
                                     class="sk-btn sk-btn-outline min-h-11 justify-center"
                                 >
                                     {{ __('ingredients.exports.ui.label') }}
                                     <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
                                 </button>
 
-                                <div id="ingredient-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('ingredients.exports.ui.menu_label') }}" @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()" class="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg">
+                                <div id="ingredient-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('ingredients.exports.ui.menu_label') }}" @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()" class="absolute left-0 right-auto top-full z-30 mt-2 min-w-52 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg sm:left-auto sm:right-0">
                                     <button x-ref="xlsxExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="setOwnershipFilter,sortBy" @click="outputMenuOpen = false; $nextTick(() => $refs.exportMenuTrigger.focus()); exportList('xlsx')" @keydown.arrow-down.prevent="$refs.csvExport.focus()" @keydown.arrow-up.prevent="$refs.csvExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.exports.ui.xlsx') }}</button>
                                     <button x-ref="csvExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="setOwnershipFilter,sortBy" @click="outputMenuOpen = false; $nextTick(() => $refs.exportMenuTrigger.focus()); exportList('csv')" @keydown.arrow-down.prevent="$refs.xlsxExport.focus()" @keydown.arrow-up.prevent="$refs.xlsxExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.exports.ui.csv') }}</button>
                                 </div>

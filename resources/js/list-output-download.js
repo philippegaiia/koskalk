@@ -121,6 +121,16 @@ export function createListOutputDownload(dependencies = {}) {
             });
         },
 
+        toggleMenu() {
+            if (this.outputPending || this.currentResultsAreEmpty()) {
+                return false;
+            }
+
+            this.outputMenuOpen = ! this.outputMenuOpen;
+
+            return this.outputMenuOpen;
+        },
+
         async exportList(format) {
             if (this.outputPending || this.currentResultsAreEmpty()) {
                 return false;

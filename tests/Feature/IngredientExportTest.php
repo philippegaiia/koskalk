@@ -113,6 +113,8 @@ it('shows the Excel-first export menu beside the ingredient search and current c
         ->assertSee('Excel workbook (.xlsx)')
         ->assertSee('CSV file (.csv)')
         ->assertSeeHtml('aria-haspopup="menu"')
+        ->assertSeeHtml(':aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"')
+        ->assertSeeHtml(':disabled="currentResultsAreEmpty()"')
         ->assertSeeHtml('role="menu"')
         ->assertSee(route('ingredients.export'), false)
         ->assertSee($workspace->public_id, false);

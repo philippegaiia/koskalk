@@ -133,6 +133,23 @@ test('empty-state eligibility follows live search input and server result morphs
     assert.equal(observer.disconnected, true);
 });
 
+test('keeps a pending export menu closed without relying on a native disabled trigger', () => {
+    const fixture = outputRoot();
+    const helper = createListOutputDownload();
+    helper.$el = fixture.root;
+    helper.init();
+
+    assert.equal(helper.toggleMenu(), true);
+    helper.outputMenuOpen = false;
+    helper.outputPending = true;
+    assert.equal(helper.toggleMenu(), false);
+    assert.equal(helper.outputMenuOpen, false);
+
+    helper.outputPending = false;
+    assert.equal(helper.toggleMenu(), true);
+    assert.equal(helper.outputMenuOpen, true);
+});
+
 test('shows the server validation detail for a 422 response', async () => {
     const fixture = outputRoot();
     const helper = createListOutputDownload({

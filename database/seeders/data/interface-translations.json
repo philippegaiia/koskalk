@@ -2004,6 +2004,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.inci_kinds.declaration_alias",
+      "text": {
+        "de": "Deklarationsalias",
+        "es": "Alias de declaración",
+        "fr": "Alias de déclaration",
+        "it": "Alias di dichiarazione",
+        "nl": "Declaratiealias",
+        "pt_BR": "Alias de declaração"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "composition.inci_kinds.ingredient",
       "text": {
         "de": "Inhaltsstoff",
@@ -2012,6 +2024,18 @@
         "it": "Ingrediente",
         "nl": "Ingrediënt",
         "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.lye",
+      "text": {
+        "de": "Lauge",
+        "es": "Álcali",
+        "fr": "Alcali",
+        "it": "Liscivia",
+        "nl": "Loog",
+        "pt_BR": "Álcali"
       }
     },
     {
@@ -2060,6 +2084,18 @@
         "it": "Sovragrassaggio teorico",
         "nl": "Theoretische overvetting",
         "pt_BR": "Sobreengorduramento teórico"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.water",
+      "text": {
+        "de": "Wasser",
+        "es": "Agua",
+        "fr": "Eau",
+        "it": "Acqua",
+        "nl": "Water",
+        "pt_BR": "Água"
       }
     },
     {

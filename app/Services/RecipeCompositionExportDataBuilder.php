@@ -79,6 +79,14 @@ class RecipeCompositionExportDataBuilder
 
         $warnings = array_values(array_unique($warnings));
         $generatedLabel = (string) ($incorporatedVariant['final_label_text'] ?? '');
+        $defaultVariantKey = $labeling['default_variant_key'] ?? null;
+        $defaultVariant = collect($labeling['list_variants'] ?? [])
+            ->firstWhere('key', $defaultVariantKey);
+        $defaultVariantLabel = match ($defaultVariantKey) {
+            'saponified_with_superfat' => __('workbench.output.lists.saponified'),
+            'incorporated_ingredients' => __('workbench.output.lists.as_added'),
+            default => (string) ($defaultVariant['label'] ?? ''),
+        };
         $authoredLabel = (string) data_get(
             $labeling,
             'final_ingredient_list.final_text',
@@ -110,7 +118,8 @@ class RecipeCompositionExportDataBuilder
                 : null,
             'settings' => is_array($document['settings'] ?? null) ? $document['settings'] : [],
             'label_context' => [
-                'default_variant_key' => $labeling['default_variant_key'] ?? null,
+                'default_variant_key' => $defaultVariantKey,
+                'default_variant_label' => $defaultVariantLabel,
                 'incorporated_variant_key' => 'incorporated_ingredients',
                 'generated_inci_text' => $generatedLabel,
                 'authored_label_text' => $authoredLabel,

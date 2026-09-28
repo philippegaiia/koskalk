@@ -212,7 +212,7 @@ class RecipeWorkbookExporter
             ['label' => __('formula_documents.composition.accounted_inci_weight'), 'value' => $incorporated['accounted_inci_weight'] ?? null, 'type' => 'number'],
             ['label' => __('formula_documents.composition.accounted_inci_percentage'), 'value' => $incorporated['accounted_inci_percentage'] ?? null, 'type' => 'number'],
             ['label' => __('formula_documents.exports.unit'), 'value' => (string) ($composition['unit'] ?? 'g'), 'type' => 'string'],
-            ['label' => __('formula_documents.composition.selected_label_context'), 'value' => (string) data_get($composition, 'label_context.default_variant_key', ''), 'type' => 'string'],
+            ['label' => __('formula_documents.composition.selected_label_context'), 'value' => (string) data_get($composition, 'label_context.default_variant_label', ''), 'type' => 'string'],
             ['label' => __('formula_documents.composition.generated_inci'), 'value' => (string) data_get($composition, 'label_context.generated_inci_text', ''), 'type' => 'string'],
             ['label' => __('formula_documents.composition.authored_label'), 'value' => (string) data_get($composition, 'label_context.authored_label_text', ''), 'type' => 'string'],
             ['label' => __('formula_documents.composition.settings'), 'value' => collect($composition['settings'] ?? [])->map(fn (array $setting): string => $setting['label'].': '.$setting['value'])->implode(' | '), 'type' => 'string'],

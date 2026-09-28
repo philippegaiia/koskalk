@@ -145,11 +145,108 @@ it('projects soap raw inputs on fresh-mixture mass and uses the incorporated INC
         ->and(abs($composition['incorporated']['accounted_inci_percentage'] - (300 / 1455 * 100)))->toBeLessThan(0.0000001)
         ->and($composition['label_context']['generated_inci_text'])->toBe('Calculated incorporated INCI')
         ->and($composition['label_context']['authored_label_text'])->toBe('Authored label text')
+        ->and($composition['label_context']['default_variant_key'])->toBe('saponified_with_superfat')
+        ->and($composition['label_context']['default_variant_label'])->toBe(__('workbench.output.lists.saponified'))
         ->and($composition['calculated_output'])->toBe($soapOutput)
         ->and($composition['review_note'])->toBe('Calculation support for independent review. The assessor must verify inputs and recalculate.')
         ->and($composition['assumption_note'])->toContain('11% of cured mass')
         ->and($composition['assumption_note'])->toContain('not measured water content')
         ->and(abs($inciRows->first()['percentage'] - (200 / 1455 * 100)))->toBeLessThan(0.0000001);
+});
+
+it('renders localized incorporated INCI kinds and selected label variant in print and XLSX', function (): void {
+    $snapshot = [
+        'draft' => [
+            'oilUnit' => 'g',
+            'oilWeight' => 100,
+            'phaseItems' => [
+                'saponified_oils' => [[
+                    'id' => 1,
+                    'name' => 'Base oil',
+                    'inci_name' => 'Base Oil INCI',
+                    'weight' => 100,
+                    'percentage' => 100,
+                ]],
+            ],
+        ],
+        'calculation' => ['lye' => ['selected' => ['naoh_weight' => 0, 'koh_to_weigh' => 0], 'water' => ['weight' => 0]]],
+        'labeling' => [
+            'default_variant_key' => 'saponified_with_superfat',
+            'list_variants' => [
+                [
+                    'key' => 'saponified_with_superfat',
+                    'final_label_text' => 'Selected label list',
+                    'ingredient_rows' => [],
+                ],
+                [
+                    'key' => 'incorporated_ingredients',
+                    'final_label_text' => 'Calculated incorporated INCI',
+                    'ingredient_rows' => collect([
+                        ['name' => 'Water component', 'kind' => 'water'],
+                        ['name' => 'Lye component', 'kind' => 'lye'],
+                        ['name' => 'Alias component', 'kind' => 'declaration_alias'],
+                        ['name' => 'Liquid component', 'kind' => 'lye_liquid'],
+                    ])->map(fn (array $row): array => [
+                        'label' => $row['name'],
+                        'weight' => 1,
+                        'percent_of_formula' => 1,
+                        'kind' => $row['kind'],
+                        'source_ingredients' => ['Base oil'],
+                    ])->all(),
+                ],
+            ],
+        ],
+    ];
+    $document = [
+        'family' => 'soap',
+        'unit' => 'g',
+        'basis_weight' => 100,
+        'percentage_basis' => 'oils',
+        'identity' => ['name' => 'Localized labels test', 'state' => 'saved_version'],
+        'metadata' => [],
+        'soap_output' => null,
+        'label_text' => '',
+    ];
+    $composition = app(RecipeCompositionExportDataBuilder::class)->build($snapshot, $document);
+    $printHtml = view('components.formula-document.composition', [
+        'composition' => $composition,
+        'numberLocale' => NumberLocale::resolve('en_US'),
+    ])->render();
+
+    $workbookPath = tempnam(sys_get_temp_dir(), 'koskalk-composition-labels-test-');
+    file_put_contents($workbookPath, app(RecipeWorkbookExporter::class)->exportComposition($composition));
+
+    try {
+        $reader = new Reader;
+        $reader->open($workbookPath);
+        $workbookRows = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $workbookRows = collect($sheet->getRowIterator())
+                ->flatMap(fn ($row): array => $row->toArray())
+                ->all();
+        }
+
+        $reader->close();
+    } finally {
+        @unlink($workbookPath);
+    }
+
+    $expectedLabels = [
+        __('formula_documents.composition.inci_kinds.water'),
+        __('formula_documents.composition.inci_kinds.lye'),
+        __('formula_documents.composition.inci_kinds.declaration_alias'),
+        __('formula_documents.composition.inci_kinds.lye_liquid'),
+        __('workbench.output.lists.saponified'),
+    ];
+
+    expect($printHtml)
+        ->toContain(...$expectedLabels)
+        ->not->toContain('saponified_with_superfat')
+        ->and($workbookRows)
+        ->toContain(...$expectedLabels)
+        ->not->toContain('saponified_with_superfat')
+        ->not->toContain('formula_documents.composition.inci_kinds.water');
 });
 
 it('preserves dual-lye quantities, available canonical identity, and a visible KOH purity remainder', function (): void {

@@ -92,11 +92,14 @@ return [
             'superfat' => 'Superfat',
         ],
         'inci_kinds' => [
+            'declaration_alias' => 'Declaration alias',
             'ingredient' => 'Ingredient',
+            'lye' => 'Lye',
             'lye_liquid' => 'Dilution liquid',
             'parfum' => 'Fragrance',
             'saponified_oil' => 'Saponified oil',
             'theoretical_superfat' => 'Theoretical superfat',
+            'water' => 'Water',
         ],
         'warnings' => [
             'composition_derived_identity_unavailable' => 'A derived raw material identity is unavailable; its known calculated quantity is shown without inventing ingredient details.',

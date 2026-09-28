@@ -139,8 +139,8 @@
     @if (filled(data_get($composition, 'label_context.generated_inci_text')) || filled(data_get($composition, 'label_context.authored_label_text')))
         <div class="space-y-1 text-xs leading-5">
             <h3 class="font-semibold">{{ __('formula_documents.composition.selected_label_context') }}</h3>
-            @if (filled(data_get($composition, 'label_context.default_variant_key')))
-                <p>{{ __('formula_documents.composition.default_label_variant') }}: {{ data_get($composition, 'label_context.default_variant_key') }}</p>
+            @if (filled(data_get($composition, 'label_context.default_variant_label')))
+                <p>{{ __('formula_documents.composition.default_label_variant') }}: {{ data_get($composition, 'label_context.default_variant_label') }}</p>
             @endif
             @if (filled(data_get($composition, 'label_context.generated_inci_text')))
                 <p><span class="font-semibold">{{ __('formula_documents.composition.generated_inci') }}:</span> {{ data_get($composition, 'label_context.generated_inci_text') }}</p>

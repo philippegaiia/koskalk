@@ -278,7 +278,7 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 ### Task 5 — Export the ingredient price book from Ingredients
 
-**Progress:** Luna implementation started after Stage A reviews passed; no Stage B output is claimed complete yet.
+**Progress:** Task 5a shared query extraction is committed in `3bea6bcd` (28 query/price/localization tests passed). Task 5b CSV/XLSX endpoint is committed in `064a4b32`; 82 focused tests including catalogue coverage, Pint and diff checks passed. It uses fresh workspace authorization, all filtered rows in stable order, private temporary files, shared 50,000-row limits and source/filter/date metadata. Task 5c toolbar is committed in `8112b763`, with accessibility/mobile fixes in `bd8eb492`; independent specification and quality reviews pass. Review corrected stored price currencies, reactive empty-result state after Livewire morphs, and pending-download focus. The combined ingredient/query/catalogue run passed 83 tests / 38,943 assertions; final client-wrapper/export checks passed 6 / 62. Independent quality review passed 7 / 66. Build, Pint, graphify and diff checks passed. Browser checks on the actual rendered toolbar using synthetic in-memory data passed desktop/390px layout, Enter/arrow/Escape navigation, mobile menu alignment and focus returning to the trigger during a deliberately pending download. The browser automation would not activate the aria-disabled pending trigger; its activation guard is covered by the Node harness. Temporary public files/tabs were removed and viewport reset. Authenticated real downloads remain unverified. Task 5 implementation is complete; Stage B is not complete.
 
 **Create:**
 - `app/Services/IngredientCatalogQuery.php` — the dashboard ingredient query shared by display and export.
@@ -287,17 +287,19 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 **Modify:** `app/Livewire/Dashboard/IngredientsIndex.php`, `resources/views/livewire/dashboard/ingredients-index.blade.php`, `routes/web.php`, `lang/en/ingredients.php`, `database/seeders/data/interface-translations.json`.
 
-- [ ] Write a test with more rows than the current list page. Apply a search, ownership filter and descending order; assert exported IDs/names match the entire filtered query in that order. Use another workspace's private ingredient to prove exclusion.
-- [ ] Test current workspace prices, alternate price units, missing price versus zero, localized display names, Viewer access, revoked membership and stale originating workspace. The export must not use the Filament administrator exporter.
-- [ ] Run `php artisan test --compact tests/Feature/IngredientExportTest.php`; confirm failure.
-- [ ] Extract the current ingredient-list query into `IngredientCatalogQuery` without changing filter or sort behavior. Both the component and controller use it, with an explicit actor/workspace context. Keep pagination exclusively in the component.
-- [ ] Add an authenticated, export-throttled GET route named `ingredients.export` with a validated `xlsx|csv` format. Export ingredient display name, recorded INCI, optional workspace material code, category/subcategory, current price, price unit and currency. Use the same current-price selection and mass conversion as Ingredients; do not parse formatted UI strings.
-- [ ] Enforce the shared list-row bound and generate through `TabularFileExporter`. Add source/date and applied-filter context. Blank optional identifiers remain blank.
-- [ ] Add **Export ingredients** beside search/filter controls, passing the active normalized search/filter/sort values and originating workspace. Disable with explanatory empty-state text only when there are no matching rows.
-- [ ] Capture the visible filter state at click, including pending debounced search text; a server-rendered URL alone can lag behind the input. Add a focused client behavior check for typing a search and immediately exporting. Keep the file transfer as an ordinary HTTP download.
-- [ ] Run the new test plus `IngredientsIndexPriceTest.php`, `IngredientsIndexLocalizationTest.php` and `InterfaceTranslationCatalogueTest.php`. Verify a real Excel and CSV download from a filtered second page, then commit.
+- [x] Write a test with more rows than the current list page. Apply a search, ownership filter and descending order; assert exported IDs/names match the entire filtered query in that order. Use another workspace's private ingredient to prove exclusion.
+- [x] Test current workspace prices, alternate price units, missing price versus zero, localized display names, Viewer access, revoked membership and stale originating workspace. The export must not use the Filament administrator exporter.
+- [ ] Run `php artisan test --compact tests/Feature/IngredientExportTest.php`; confirm failure. (Original missing-endpoint red-run evidence not retained here.)
+- [x] Extract the current ingredient-list query into `IngredientCatalogQuery` without changing filter or sort behavior. Both the component and controller use it, with an explicit actor/workspace context. Keep pagination exclusively in the component.
+- [x] Add an authenticated, export-throttled GET route named `ingredients.export` with a validated `xlsx|csv` format. Export ingredient display name, recorded INCI, optional workspace material code, category/subcategory, current price, price unit and currency. Use the same current-price selection and mass conversion as Ingredients; preserve each price record’s own currency, since changing the workspace default does not convert existing prices. Use a currency-neutral amount header and do not parse formatted UI strings.
+- [x] Enforce the shared list-row bound and generate through `TabularFileExporter`. Add source/date and applied-filter context. Blank optional identifiers remain blank.
+- [x] Add **Export ingredients** beside search/filter controls, passing the active normalized search/filter/sort values and originating workspace. Disable with explanatory empty-state text only when there are no matching rows.
+- [x] Capture the visible filter state at click, including pending debounced search text; a server-rendered URL alone can lag behind the input. Add a focused client behavior check for typing a search and immediately exporting. Keep the file transfer as an ordinary HTTP download.
+- [x] Run the new test plus `IngredientsIndexPriceTest.php`, `IngredientsIndexLocalizationTest.php` and `InterfaceTranslationCatalogueTest.php`. Actual file content is covered by HTTP tests; authenticated browser downloads from page two remain unverified. Commit completed.
 
 ### Task 6 — Materials, stock lots and the count sheet
+
+**Progress:** Task 6a shared inventory queries and raw export iteration are in progress. No inventory output is claimed complete yet.
 
 **Create:**
 - `app/Services/Inventory/WorkspaceStockLotQuery.php` — shared stock-lot filter/sort query and read projection.

@@ -24,6 +24,7 @@ use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\FormulaDocumentOptions;
 use App\Services\MediaAssetUsageService;
 use App\Services\RecipeSopSnapshotService;
 use App\Services\RecipeWorkbenchService;
@@ -434,25 +435,37 @@ it('recalculates the saved formula view when a different oil quantity is request
 
 it('prints one working formula sheet with optional soap analysis', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
-    $recipe->update(['manufacturing_instructions' => '<p>Mix to emulsion, pour, and cure.</p>']);
-    $publishedVersion->update(['manufacturing_instructions' => '<p>Mix to emulsion, pour, and cure.</p>']);
+    $procedure = collect(range(1, 40))
+        ->map(fn (int $step): string => '<p>Step '.$step.': Mix to emulsion, pour, and cure.</p>')
+        ->implode('');
+    $recipe->update(['manufacturing_instructions' => $procedure]);
+    $publishedVersion->update(['manufacturing_instructions' => $procedure]);
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Working Formula Sheet')
         ->assertSeeInOrder(['Saponified oils', 'Lye and water', 'Formula additions'])
-        ->assertSee('Trial / batch no.')
-        ->assertSee('Made by')
+        ->assertSee('Reference')
+        ->assertSee('Date')
+        ->assertSee('Prepared by')
         ->assertSee('Checked by')
+        ->assertDontSee('Trial / batch no.')
+        ->assertDontSee('Made by')
         ->assertSee('Observations')
         ->assertSee('Result')
         ->assertSee('Manufacturing procedure')
+        ->assertSee('Step 40: Mix to emulsion, pour, and cure.')
+        ->assertSee('[data-formula-document-table] thead {', false)
+        ->assertSee('display: table-header-group;', false)
+        ->assertSee('body.formula-sheet-document main {', false)
+        ->assertSee('[data-formula-procedure-content] {', false)
+        ->assertSee('break-inside: auto;', false)
         ->assertDontSee('Cost summary')
         ->assertDontSee('Declaration details')
         ->assertDontSee('Packaging costs');
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.print.production', [
             'recipe' => $recipe,
             'include_analysis' => 1,
@@ -461,6 +474,172 @@ it('prints one working formula sheet with optional soap analysis', function () {
         ->assertSee('Soap analysis')
         ->assertSee('Soap qualities')
         ->assertSee('Fatty-acid profile');
+});
+
+it('shows available formula sections with the working-copy defaults', function () {
+    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+    $recipe->update(['description' => '<p>Our family formula.</p>']);
+    $publishedVersion->update(['manufacturing_instructions' => '<p>Mix gently and pour.</p>']);
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertSee('Working Formula Sheet')
+        ->assertSee('Source')
+        ->assertSee('<dt class="font-semibold text-slate-600">Version</dt>', false)
+        ->assertSee((string) $publishedVersion->version_number)
+        ->assertSee('Oil basis quantity')
+        ->assertSee('Generated')
+        ->assertSee('Our family formula.')
+        ->assertSee('Formula settings')
+        ->assertSee('Calculated results')
+        ->assertSee('Mix gently and pour.')
+        ->assertSee('Label text')
+        ->assertSeeInOrder([
+            'data-formula-section-toggle="formula"',
+            'data-formula-section-toggle="procedure"',
+            'data-formula-section-toggle="label"',
+            'data-formula-section-toggle="analysis"',
+            'data-formula-section-toggle="notes"',
+        ], false)
+        ->assertSee('data-formula-section="formula"', false)
+        ->assertSee('data-formula-section="procedure"', false)
+        ->assertSee('data-formula-section="label"', false)
+        ->assertSee('data-formula-section="notes"', false)
+        ->assertDontSee('name="sections[]" value="composition"', false)
+        ->assertDontSee('name="sections[]" value="costing"', false)
+        ->assertDontSee('name="sections[]" value="analysis" checked', false);
+
+    expect($response->getContent())
+        ->toMatch('/<input(?=[^>]*data-formula-section-toggle="formula")(?=[^>]*\bchecked\b)[^>]*>/s')
+        ->toMatch('/<input(?=[^>]*data-formula-section-toggle="procedure")(?=[^>]*\bchecked\b)[^>]*>/s')
+        ->toMatch('/<input(?=[^>]*data-formula-section-toggle="label")(?=[^>]*\bchecked\b)[^>]*>/s')
+        ->toMatch('/<input(?=[^>]*data-formula-section-toggle="notes")(?=[^>]*\bchecked\b)[^>]*>/s')
+        ->not->toMatch('/<input(?=[^>]*data-formula-section-toggle="analysis")(?=[^>]*\bchecked\b)[^>]*>/s');
+});
+
+it('uses formula and procedure as the instruction context defaults', function (): void {
+    $options = app(FormulaDocumentOptions::class);
+    $availableSections = $options->availableSections([
+        'procedure' => true,
+        'label' => true,
+        'analysis' => true,
+    ]);
+
+    expect($options->defaultSections($availableSections, 'instructions'))
+        ->toBe(['formula', 'procedure'])
+        ->and($availableSections)
+        ->not->toContain('composition')
+        ->not->toContain('costing');
+});
+
+it('prints only the selected formula sections', function () {
+    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+    $publishedVersion->update(['manufacturing_instructions' => '<p>Selected procedure.</p>']);
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.print.production', [
+            'recipe' => $recipe,
+            'sections' => ['procedure'],
+        ]))
+        ->assertSuccessful();
+
+    expect($response->getContent())
+        ->toMatch('/<input(?=[^>]*value="procedure")(?=[^>]*\bchecked\b)[^>]*>/s')
+        ->and($response->getContent())
+        ->toMatch('/data-formula-section="formula"[^>]*\bhidden\b/')
+        ->toMatch('/data-formula-section="label"[^>]*\bhidden\b/')
+        ->toMatch('/data-formula-section="notes"[^>]*\bhidden\b/')
+        ->not->toMatch('/data-formula-section="procedure"[^>]*\bhidden\b/');
+});
+
+it('rejects an empty formula print selection', function (): void {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $returnUrl = route('recipes.saved', ['recipe' => $recipe]);
+
+    $response = $this->from($returnUrl)
+        ->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe]).'?sections%5B%5D=')
+        ->assertRedirect($returnUrl)
+        ->assertSessionHasErrors(['sections']);
+
+    expect($response->getSession()->get('errors')->getBag('default')->first('sections'))
+        ->toBe(__('formula_documents.validation.sections_required'));
+});
+
+it('rejects an unknown formula print section', function (): void {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $returnUrl = route('recipes.saved', ['recipe' => $recipe]);
+
+    $response = $this->from($returnUrl)
+        ->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe]).'?sections%5B%5D=not-a-section')
+        ->assertRedirect($returnUrl)
+        ->assertSessionHasErrors(['sections']);
+
+    expect($response->getSession()->get('errors')->getBag('default')->first('sections'))
+        ->toBe(__('formula_documents.validation.sections_unknown'));
+});
+
+it('rejects a formula print section with no content', function (): void {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $returnUrl = route('recipes.saved', ['recipe' => $recipe]);
+
+    $response = $this->from($returnUrl)
+        ->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe]).'?sections%5B%5D=costing')
+        ->assertRedirect($returnUrl)
+        ->assertSessionHasErrors(['sections']);
+
+    expect($response->getSession()->get('errors')->getBag('default')->first('sections'))
+        ->toBe(__('formula_documents.validation.sections_unavailable'));
+});
+
+it('does not offer soap analysis for a cosmetic formula', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Glycerin',
+        'inci_name' => 'GLYCERIN',
+        'is_active' => true,
+    ]);
+    $version = app(RecipeWorkbenchService::class)->save(
+        $user,
+        $cosmeticFamily,
+        cosmeticSavedFormulaPayload($ingredient),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    app(RecipeWorkbenchService::class)->saveAsNewVersion(
+        $user,
+        $cosmeticFamily,
+        cosmeticSavedFormulaPayload($ingredient),
+        $recipe,
+    );
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertSee('Formula')
+        ->assertSee('Formula basis quantity')
+        ->assertDontSee('data-formula-section-toggle="analysis"', false)
+        ->assertDontSee('Soap analysis');
+});
+
+it('keeps nonzero small formula quantities readable on the print sheet', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', [
+            'recipe' => $recipe,
+            'oil_weight' => '0.001',
+        ]))
+        ->assertSuccessful()
+        ->assertSee('>0.001</td>', false);
 });
 
 it('renders the procedure stored on the selected formula snapshot', function () {
@@ -489,6 +668,15 @@ it('renders the procedure stored on the selected formula snapshot', function () 
     }
 
     $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe, 'version' => $historicalVersion]))
+        ->assertSuccessful()
+        ->assertSee('Source')
+        ->assertSee(__('formula_documents.states.saved'))
+        ->assertSee((string) $historicalVersion->version_number)
+        ->assertSee('Original procedure')
+        ->assertDontSee('Revised procedure');
+
+    $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Revised procedure')
@@ -503,7 +691,7 @@ it('renders inline SOP media stored on the selected historical formula snapshot'
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id, 'original_filename' => 'Historic SOP.webp']);
     $historicalVersion->update([
         'manufacturing_instructions' => sprintf(
-            '<p>Historic procedure</p><img data-id="%s" src="https://attacker.invalid/tampered.webp">',
+            '<img data-id="%s" src="https://attacker.invalid/tampered.webp">',
             RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
         ),
     ]);
@@ -516,6 +704,15 @@ it('renders inline SOP media stored on the selected historical formula snapshot'
         ->assertSee(route('media.show', [$asset, 'master']))
         ->assertDontSee('attacker.invalid')
         ->assertDontSee('Historic SOP.webp');
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe, 'version' => $historicalVersion]))
+        ->assertSuccessful();
+
+    $response->assertSee('data-formula-section-toggle="procedure"', false)
+        ->assertSee('data-formula-procedure-content', false)
+        ->assertSee(route('media.show', [$asset, 'master']))
+        ->assertDontSee('attacker.invalid');
 });
 
 it('renders inline SOP media from the current version rather than the mutable recipe', function () {
@@ -747,8 +944,7 @@ it('passes batch context from the saved page to print sheets', function () {
         ]))
         ->assertSuccessful()
         ->assertSee('Working Formula Sheet')
-        ->assertSee('Trial / batch no.')
-        ->assertSee('1,500.00 g');
+        ->assertSee('1500.00 g');
 });
 
 it('prefills production units and priced packaging cost on the saved formula page', function () {

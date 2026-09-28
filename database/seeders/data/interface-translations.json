@@ -1932,6 +1932,42 @@
     },
     {
       "group": "formula_documents",
+      "key": "print.formula_basis_quantity",
+      "text": {
+        "de": "Formelmenge",
+        "es": "Cantidad base de fórmula",
+        "fr": "Quantité de base de la formule",
+        "it": "Quantità base della formula",
+        "nl": "Formulehoeveelheid",
+        "pt_BR": "Quantidade à base da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "print.generated_at",
+      "text": {
+        "de": "Erstellt",
+        "es": "Generado",
+        "fr": "Généré",
+        "it": "Generato",
+        "nl": "Gegenereerd",
+        "pt_BR": "Gerado"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "print.include",
+      "text": {
+        "de": "Enthalten",
+        "es": "Incluir",
+        "fr": "Inclure",
+        "it": "Includi",
+        "nl": "Opnemen",
+        "pt_BR": "Incluir"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "print.include_analysis",
       "text": {
         "de": "Seifenanalyse einbeziehen",
@@ -1968,6 +2004,54 @@
     },
     {
       "group": "formula_documents",
+      "key": "print.oil_basis_quantity",
+      "text": {
+        "de": "Menge auf Ölbasis",
+        "es": "Cantidad base de aceites",
+        "fr": "Quantité de base des huiles",
+        "it": "Quantità base degli oli",
+        "nl": "Hoeveelheid op basis van oliën",
+        "pt_BR": "Quantidade à base de óleos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "print.prepared_by",
+      "text": {
+        "de": "Vorbereitet von",
+        "es": "Preparado por",
+        "fr": "Préparé par",
+        "it": "Preparato da",
+        "nl": "Voorbereid door",
+        "pt_BR": "Preparado por"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "print.print_save_pdf",
+      "text": {
+        "de": "Drucken / als PDF speichern",
+        "es": "Imprimir / guardar como PDF",
+        "fr": "Imprimer / enregistrer en PDF",
+        "it": "Stampa / salva in PDF",
+        "nl": "Afdrukken / opslaan als pdf",
+        "pt_BR": "Imprimir / salvar como PDF"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "print.reference",
+      "text": {
+        "de": "Referenz",
+        "es": "Referencia",
+        "fr": "Référence",
+        "it": "Riferimento",
+        "nl": "Referentie",
+        "pt_BR": "Referência"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "print.result",
       "text": {
         "de": "Ergebnis",
@@ -1980,6 +2064,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "print.source",
+      "text": {
+        "de": "Quelle",
+        "es": "Origen",
+        "fr": "Source",
+        "it": "Fonte",
+        "nl": "Bron",
+        "pt_BR": "Origem"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "print.title",
       "text": {
         "de": "Herstellungsblatt",
@@ -1988,6 +2084,18 @@
         "it": "Scheda di lavorazione",
         "nl": "Bereidingsblad",
         "pt_BR": "Ficha de fórmula de trabalho"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "print.version",
+      "text": {
+        "de": "Version",
+        "es": "Versión",
+        "fr": "Version",
+        "it": "Versione",
+        "nl": "Versie",
+        "pt_BR": "Versão"
       }
     },
     {
@@ -2100,6 +2208,90 @@
     },
     {
       "group": "formula_documents",
+      "key": "section_options.analysis",
+      "text": {
+        "de": "Seifenanalyse",
+        "es": "Análisis del jabón",
+        "fr": "Analyse du savon",
+        "it": "Analisi del sapone",
+        "nl": "Zeepanalyse",
+        "pt_BR": "Análise do sabonete"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "section_options.composition",
+      "text": {
+        "de": "Zusammensetzung",
+        "es": "Composición",
+        "fr": "Composition",
+        "it": "Composizione",
+        "nl": "Samenstelling",
+        "pt_BR": "Composição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "section_options.costing",
+      "text": {
+        "de": "Kalkulation",
+        "es": "Costes",
+        "fr": "Coûts",
+        "it": "Costi",
+        "nl": "Kosten",
+        "pt_BR": "Custos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "section_options.formula",
+      "text": {
+        "de": "Formel",
+        "es": "Fórmula",
+        "fr": "Formule",
+        "it": "Formula",
+        "nl": "Formule",
+        "pt_BR": "Fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "section_options.label",
+      "text": {
+        "de": "Etikettentext",
+        "es": "Texto de la etiqueta",
+        "fr": "Texte de l’étiquette",
+        "it": "Testo dell’etichetta",
+        "nl": "Etikettekst",
+        "pt_BR": "Texto do rótulo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "section_options.notes",
+      "text": {
+        "de": "Versuchsnotizen",
+        "es": "Notas de prueba",
+        "fr": "Notes d’essai",
+        "it": "Note della prova",
+        "nl": "Proefnotities",
+        "pt_BR": "Notas do teste"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "section_options.procedure",
+      "text": {
+        "de": "Verfahren",
+        "es": "Procedimiento",
+        "fr": "Procédure",
+        "it": "Procedura",
+        "nl": "Procedure",
+        "pt_BR": "Procedimento"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "sections.description",
       "text": {
         "de": "Beschreibung",
@@ -2192,6 +2384,18 @@
         "it": "Impostazioni della formula",
         "nl": "Formule-instellingen",
         "pt_BR": "Configurações da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "sections.trial_notes",
+      "text": {
+        "de": "Versuchsnotizen",
+        "es": "Notas de prueba",
+        "fr": "Notes d’essai",
+        "it": "Note della prova",
+        "nl": "Proefnotities",
+        "pt_BR": "Notas do teste"
       }
     },
     {
@@ -2396,6 +2600,54 @@
         "it": "Scheda formula",
         "nl": "Formuleblad",
         "pt_BR": "Ficha da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.sections_array",
+      "text": {
+        "de": "Wählen Sie einen oder mehrere verfügbare Druckabschnitte aus.",
+        "es": "Elige una o varias secciones de impresión disponibles.",
+        "fr": "Sélectionnez une ou plusieurs sections imprimables disponibles.",
+        "it": "Seleziona una o più sezioni di stampa disponibili.",
+        "nl": "Selecteer een of meer beschikbare afdruksecties.",
+        "pt_BR": "Selecione uma ou mais seções de impressão disponíveis."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.sections_required",
+      "text": {
+        "de": "Wählen Sie mindestens einen Druckabschnitt aus.",
+        "es": "Selecciona al menos una sección para imprimir.",
+        "fr": "Sélectionnez au moins une section à imprimer.",
+        "it": "Seleziona almeno una sezione da stampare.",
+        "nl": "Selecteer minstens één afdruksectie.",
+        "pt_BR": "Selecione pelo menos uma seção para imprimir."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.sections_unavailable",
+      "text": {
+        "de": "Der ausgewählte Abschnitt enthält keine druckbaren Inhalte.",
+        "es": "La sección seleccionada no tiene contenido imprimible.",
+        "fr": "La section sélectionnée ne contient aucun contenu imprimable.",
+        "it": "La sezione selezionata non contiene contenuti stampabili.",
+        "nl": "De geselecteerde sectie bevat geen afdrukbare inhoud.",
+        "pt_BR": "A seção selecionada não tem conteúdo para imprimir."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.sections_unknown",
+      "text": {
+        "de": "Die Druckauswahl enthält einen unbekannten Abschnitt.",
+        "es": "La selección de impresión contiene una sección desconocida.",
+        "fr": "La sélection d’impression contient une section inconnue.",
+        "it": "La selezione di stampa contiene una sezione sconosciuta.",
+        "nl": "De afdrukselectie bevat een onbekende sectie.",
+        "pt_BR": "A seleção de impressão contém uma seção desconhecida."
       }
     },
     {

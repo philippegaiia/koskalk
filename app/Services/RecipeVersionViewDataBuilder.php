@@ -65,6 +65,10 @@ class RecipeVersionViewDataBuilder
             'description' => $recipe->description,
             'manufacturing_procedure' => $this->renderManufacturingInstructions($recipe, $version),
         ]);
+        $formulaDocument['metadata'] = [
+            'version_number' => (int) $version->version_number,
+            'generated_at' => now()->format('Y-m-d H:i'),
+        ];
 
         return [
             'recipe' => $recipe,

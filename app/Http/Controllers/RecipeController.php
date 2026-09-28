@@ -11,6 +11,7 @@ use App\Models\RecipeVersionCosting;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
+use App\Services\FormulaDocumentOptions;
 use App\Services\MediaStorage;
 use App\Services\ProductCreationCatalog;
 use App\Services\RecipeControlMutationGuard;
@@ -21,6 +22,7 @@ use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbookExporter;
+use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -377,8 +379,15 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
-        return $this->printSavedProductionSheet($recipe, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+        return $this->printSavedProductionSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
+        );
     }
 
     public function printSavedProductionSheet(
@@ -386,12 +395,14 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
         return $this->printSheet(
             $recipe,
             $request,
             $currentAppUserResolver,
             $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
             'production',
         );
     }
@@ -402,12 +413,14 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
         return $this->printSheet(
             $recipe,
             $request,
             $currentAppUserResolver,
             $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
             'production',
             $version,
         );
@@ -418,8 +431,15 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
-        return $this->printSavedTechnicalSheet($recipe, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+        return $this->printSavedTechnicalSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
+        );
     }
 
     public function printSavedTechnicalSheet(
@@ -427,12 +447,14 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
         return $this->printSheet(
             $recipe,
             $request,
             $currentAppUserResolver,
             $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
             'technical',
         );
     }
@@ -442,12 +464,14 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
         return $this->printSheet(
             $recipe,
             $request,
             $currentAppUserResolver,
             $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
             'costing',
         );
     }
@@ -494,12 +518,14 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
     ): View {
         return $this->printSheet(
             $recipe,
             $request,
             $currentAppUserResolver,
             $recipeVersionViewDataBuilder,
+            $formulaDocumentOptions,
             'technical',
             $version,
         );
@@ -818,6 +844,7 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        FormulaDocumentOptions $formulaDocumentOptions,
         string $printMode,
         ?string $explicitVersionPublicId = null,
     ): View {
@@ -828,11 +855,47 @@ class RecipeController extends Controller
             $explicitVersionPublicId,
         );
 
+        $viewData = $recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query());
+        $formulaDocument = $viewData['formulaDocument'];
+        $analysis = $formulaDocument['soap_analysis'] ?? null;
+        $availableSections = $formulaDocumentOptions->availableSections([
+            'procedure' => $this->hasPrintableContent($formulaDocument['identity']['manufacturing_procedure'] ?? ''),
+            'label' => filled($formulaDocument['label_text'] ?? null),
+            'analysis' => is_array($analysis)
+                && (filled($analysis['qualities'] ?? []) || filled($analysis['fatty_acids'] ?? [])),
+        ]);
+        $query = $request->query();
+        $hasExplicitSectionSelection = array_key_exists('sections', $query);
+        $selectedSections = $hasExplicitSectionSelection
+            ? $formulaDocumentOptions->resolveSelection($query['sections'], $availableSections)
+            : $formulaDocumentOptions->defaultSections($availableSections);
+
+        if (! $hasExplicitSectionSelection && $request->boolean('include_analysis') && in_array('analysis', $availableSections, true)) {
+            $selectedSections = $formulaDocumentOptions->resolveSelection(
+                [...$selectedSections, 'analysis'],
+                $availableSections,
+            );
+        }
+
         return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query()),
-            'includeAnalysis' => $request->boolean('include_analysis'),
+            ...$viewData,
+            'availableSections' => $availableSections,
+            'selectedSections' => $selectedSections,
+            'numberLocale' => NumberLocale::resolve($currentAppUserResolver->resolve()?->number_locale),
+            'returnUrl' => $explicitVersionPublicId !== null || $request->has('version')
+                ? route('recipes.version', ['recipe' => $recipe, 'version' => $version])
+                : route('recipes.saved', ['recipe' => $recipe]),
             'isVersionSelected' => $explicitVersionPublicId !== null || $request->has('version'),
         ]);
+    }
+
+    private function hasPrintableContent(mixed $content): bool
+    {
+        $html = (string) $content;
+        $plainText = html_entity_decode(strip_tags($html));
+
+        return filled(preg_replace('/\s+/u', '', $plainText))
+            || preg_match('/<img\b/i', $html) === 1;
     }
 
     /**

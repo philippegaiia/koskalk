@@ -1,4 +1,4 @@
-@props(['document'])
+@props(['document', 'numberLocale' => null])
 
 @php
     $percentageHeading = $document['percentage_basis'] === 'formula'
@@ -29,7 +29,7 @@
                             {{ $row['name'] }} <x-ingredient-source-marker :is-user-owned="$row['is_user_owned']" />
                         </td>
                         <td class="numeric px-4 py-2.5 text-right">{{ number_format($row['percentage'], 2) }}%</td>
-                        <td class="numeric px-4 py-2.5 text-right">{{ number_format($row['weight'], 2) }}</td>
+                        <td class="numeric px-4 py-2.5 text-right">{{ $numberLocale === null ? number_format($row['weight'], 2) : \App\Support\NumberLocale::formatAdaptiveDecimal($row['weight'], 2, 4, $numberLocale) }}</td>
                         <td class="px-4 py-2.5 text-[var(--color-ink-soft)]">{{ $row['note'] ?: '—' }}</td>
                     </tr>
                 @endforeach

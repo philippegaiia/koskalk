@@ -448,3 +448,151 @@ JS], base_path());
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('cleans up fallback output when the workbench is destroyed', function (): void {
+    $process = new Process(['node', '--input-type=module', '--eval', <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+global.window = {
+    location: { hash: '' },
+    localStorage: { getItem: () => null, setItem: () => {} },
+    addEventListener() {},
+    removeEventListener() {},
+    open() { return null; },
+};
+global.document = {
+    addEventListener() {},
+    removeEventListener() {},
+    querySelector() { return { content: 'csrf-token' }; },
+};
+Object.defineProperty(global, 'navigator', {
+    value: { languages: ['en-US'], language: 'en-US', maxTouchPoints: 0 },
+    configurable: true,
+});
+global.setTimeout = () => 1;
+global.setInterval = () => 1;
+global.clearInterval = () => {};
+
+const createdUrls = [];
+const revokedUrls = [];
+global.URL = {
+    createObjectURL() {
+        const url = 'blob:formula-output-' + (createdUrls.length + 1);
+        createdUrls.push(url);
+
+        return url;
+    },
+    revokeObjectURL(url) { revokedUrls.push(url); },
+};
+global.Blob = class FakeBlob {};
+global.fetch = async () => ({
+    ok: true,
+    async text() { return '<main>Formula sheet</main>'; },
+});
+
+const messages = {
+    browserBlocked: 'The browser blocked the tab.',
+    fallbackLink: 'Open the prepared sheet',
+    printFailed: 'Print failed.',
+    preparingTitle: 'Preparing',
+    preparingSheet: 'Preparing sheet…',
+};
+const { createRecipeWorkbench } = await import('./resources/js/recipe-workbench/component.js');
+function createWorkbench() {
+    return createRecipeWorkbench({
+        productFamily: { slug: 'soap' },
+        numberLocaleOptions: { en_US: '1,234.56' },
+        output: { printUrl: '/print', exportUrl: '/export', messages },
+    });
+}
+
+const completed = createWorkbench();
+assert.equal(await completed.printCurrentFormula(), true);
+const fallbackUrl = completed.outputFallbackUrl;
+assert.equal(fallbackUrl, 'blob:formula-output-1');
+completed.destroy();
+assert.deepEqual(revokedUrls, [fallbackUrl]);
+assert.equal(completed.outputFallbackUrl, null);
+assert.equal(completed.outputFallbackLabel, '');
+
+let resolveBlockedResponse;
+let reportFetchStarted;
+const blockedFetchStarted = new Promise((resolve) => { reportFetchStarted = resolve; });
+global.fetch = () => new Promise((resolve) => {
+    resolveBlockedResponse = resolve;
+    reportFetchStarted();
+});
+const blocked = createWorkbench();
+const blockedPrint = blocked.printCurrentFormula();
+await blockedFetchStarted;
+const createdBeforeLateResponse = createdUrls.length;
+blocked.destroy();
+resolveBlockedResponse({ ok: true, async text() { return '<main>Late sheet</main>'; } });
+assert.equal(await blockedPrint, true);
+assert.equal(createdUrls.length, createdBeforeLateResponse);
+assert.equal(blocked.outputFallbackUrl, null);
+assert.equal(blocked.outputFallbackLabel, '');
+assert.equal(blocked.outputError, '');
+assert.equal(blocked.outputPending, false);
+
+let openedPopup = null;
+global.window.open = () => {
+    openedPopup = {
+        closed: false,
+        focused: false,
+        close() { this.closed = true; },
+        focus() { this.focused = true; },
+        document: {
+            body: { replaceChildren() {} },
+            createElement() { return { textContent: '' }; },
+            open() {},
+            write(html) { this.printedHtml = html; },
+            close() {},
+        },
+    };
+
+    return openedPopup;
+};
+let resolveOpenResponse;
+let reportOpenFetchStarted;
+const openFetchStarted = new Promise((resolve) => { reportOpenFetchStarted = resolve; });
+global.fetch = () => new Promise((resolve) => {
+    resolveOpenResponse = resolve;
+    reportOpenFetchStarted();
+});
+const openTabWorkbench = createWorkbench();
+const openTabPrint = openTabWorkbench.printCurrentFormula();
+await openFetchStarted;
+const createdBeforeOpenResponse = createdUrls.length;
+openTabWorkbench.destroy();
+resolveOpenResponse({ ok: true, async text() { return '<main>Open tab sheet</main>'; } });
+assert.equal(await openTabPrint, true);
+assert.equal(createdUrls.length, createdBeforeOpenResponse);
+assert.equal(openedPopup.closed, false);
+assert.equal(openedPopup.focused, true);
+assert.equal(openedPopup.document.printedHtml, '<main>Open tab sheet</main>');
+JS], base_path());
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

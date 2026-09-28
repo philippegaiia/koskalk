@@ -164,6 +164,12 @@ export function createRecipeWorkbenchOutputSection(config) {
         outputError: '',
         outputFallbackUrl: null,
         outputFallbackLabel: '',
+        outputDestroyed: false,
+
+        destroyOutputSection() {
+            this.outputDestroyed = true;
+            clearFallback(this);
+        },
 
         async captureOutput(options = {}) {
             if (!this.outputConfig) {
@@ -212,7 +218,7 @@ export function createRecipeWorkbenchOutputSection(config) {
                     popup.document.write(html);
                     popup.document.close();
                     popup.focus();
-                } else {
+                } else if (! this.outputDestroyed) {
                     fallbackPage(this, html, this.outputConfig.messages);
                     this.outputError = outputMessage(this.outputConfig.messages, 'browserBlocked');
                 }

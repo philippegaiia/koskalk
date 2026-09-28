@@ -370,6 +370,10 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         destroy() {
             this.removeUnsavedChangesGuard();
             this.destroyEditingProtection();
+
+            if (typeof this.destroyOutputSection === 'function') {
+                this.destroyOutputSection();
+            }
         },
 
         toggleFormulaDiagnostics() {

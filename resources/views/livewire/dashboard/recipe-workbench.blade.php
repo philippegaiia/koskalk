@@ -1,8 +1,29 @@
 @php
     $isCosmeticWorkbench = ($workbench['productFamily']['slug'] ?? 'soap') === 'cosmetic';
     $isPublicCalculator = request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false);
+    $isCalculatorRoute = request()->routeIs('calculator');
     $contextualHelp = $workbench['contextualHelp'] ?? ['topics' => [], 'tabs' => []];
     unset($workbench['contextualHelp']);
+    if (is_array($workbench['output'] ?? null)) {
+        $workbench['output']['messages'] = [
+            'accessRequired' => __('formula_documents.output.access_required'),
+            'forbidden' => __('formula_documents.output.forbidden'),
+            'notFound' => __('formula_documents.output.not_found'),
+            'workspaceChanged' => __('formula_documents.output.workspace_changed'),
+            'invalidFormula' => __('formula_documents.output.invalid_formula'),
+            'throttled' => __('formula_documents.output.throttled'),
+            'failed' => __('formula_documents.output.failed'),
+            'preparingTitle' => __('formula_documents.output.preparing_title'),
+            'preparingSheet' => __('formula_documents.output.preparing_sheet'),
+            'browserBlocked' => __('formula_documents.output.browser_blocked'),
+            'fallbackLink' => __('formula_documents.output.fallback_link'),
+            'printFailed' => __('formula_documents.output.print_failed'),
+            'exportFailed' => __('formula_documents.output.export_failed'),
+            'defaultFilenameXlsx' => __('formula_documents.output.default_filename_xlsx'),
+            'defaultFilenameCsv' => __('formula_documents.output.default_filename_csv'),
+            'pending' => __('formula_documents.output.pending'),
+        ];
+    }
 @endphp
 
 <div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
@@ -36,6 +57,7 @@
      </form>
  </section>
  @include('livewire.dashboard.partials.recipe-workbench.navigation')
+ @includeWhen(! $isCalculatorRoute, 'livewire.dashboard.partials.recipe-workbench.output-actions')
  </div>
  <fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="space-y-6 transition">
  @include('livewire.dashboard.partials.recipe-workbench.formula-tab')

@@ -15,6 +15,33 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+it('places formula output actions after the tabs and outside the edit lock', function (): void {
+    $workbenchView = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
+    $actions = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-actions.blade.php'));
+
+    $navigationPosition = strpos($workbenchView, "@include('livewire.dashboard.partials.recipe-workbench.navigation')");
+    $actionsPosition = strpos($workbenchView, '@includeWhen(! $isCalculatorRoute, \'livewire.dashboard.partials.recipe-workbench.output-actions\')');
+    $fieldsetPosition = strpos($workbenchView, '<fieldset');
+
+    expect($navigationPosition)->toBeInt()
+        ->and($actionsPosition)->toBeInt()
+        ->and($fieldsetPosition)->toBeInt()
+        ->and($actionsPosition)->toBeGreaterThan($navigationPosition)
+        ->and($actionsPosition)->toBeLessThan($fieldsetPosition)
+        ->and($workbenchView)->toContain('$isCalculatorRoute = request()->routeIs(\'calculator\');')
+        ->and($actions)->toContain("activeWorkbenchTab === 'formula'")
+        ->and($actions)->toContain("activeWorkbenchTab === 'instructions'")
+        ->and($actions)->toContain("printCurrentFormula({ printContext: 'formula' })")
+        ->and($actions)->toContain("printCurrentFormula({ printContext: 'instructions' })")
+        ->and($actions)->toContain("exportCurrentFormula('xlsx')")
+        ->and($actions)->toContain("exportCurrentFormula('csv')")
+        ->and($actions)->toContain('@keydown.escape.stop.prevent')
+        ->and($actions)->toContain('$refs.exportMenuTrigger.focus()')
+        ->and($actions)->toContain(':disabled="outputPending"')
+        ->and($actions)->not->toContain('canWriteRecipe')
+        ->and($actions)->not->toContain('production');
+});
+
 it('rejects unsupported KOH purity when saving a soap formula', function (): void {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

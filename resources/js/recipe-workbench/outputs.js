@@ -76,7 +76,11 @@ function requestHeaders() {
     };
 }
 
-async function responseError(response) {
+function outputMessage(messages, key) {
+    return messages?.[key] ?? '';
+}
+
+async function responseError(response, messages) {
     let body = null;
 
     try {
@@ -88,20 +92,24 @@ async function responseError(response) {
     const firstValidationMessage = Object.values(body?.errors ?? {})
         .flat()
         .find((message) => typeof message === 'string' && message !== '');
-    const message = firstValidationMessage ?? body?.message;
 
-    if (message) {
-        return message;
+    if (firstValidationMessage) {
+        return firstValidationMessage;
     }
 
-    return ({
-        403: 'You no longer have access to this formula or one of its referenced records.',
-        404: 'The current formula or one of its referenced records could not be found.',
-        409: 'The active workspace changed. Reload the workbench and try again.',
-        422: 'This formula cannot be printed or exported yet. Review the current formula details.',
-        429: 'Too many output requests. Wait a moment and try again.',
-    })[response.status] ?? 'The formula output could not be created. Try again.';
+    const statusMessage = ({
+        401: 'accessRequired',
+        403: 'forbidden',
+        404: 'notFound',
+        409: 'workspaceChanged',
+        422: 'invalidFormula',
+        429: 'throttled',
+    })[response.status];
+
+    return outputMessage(messages, statusMessage ?? 'failed') || body?.message || outputMessage(messages, 'failed');
 }
+
+class OutputRequestError extends Error {}
 
 function clearFallback(state) {
     if (state.outputFallbackUrl && state.outputFallbackUrl.startsWith('blob:')) {
@@ -109,39 +117,78 @@ function clearFallback(state) {
     }
 
     state.outputFallbackUrl = null;
+    state.outputFallbackLabel = '';
 }
 
-function fallbackPage(state, html) {
+function fallbackPage(state, html, messages) {
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
     state.outputFallbackUrl = url;
-    state.outputFallbackLabel = 'Open the prepared formula sheet';
+    state.outputFallbackLabel = outputMessage(messages, 'fallbackLink');
+}
+
+function showPreparingPage(popup, messages) {
+    popup.document.title = outputMessage(messages, 'preparingTitle');
+
+    const message = popup.document.createElement('p');
+    message.textContent = outputMessage(messages, 'preparingSheet');
+    popup.document.body.replaceChildren(message);
+}
+
+function outputErrorMessage(error, messages, fallbackKey) {
+    return error instanceof OutputRequestError
+        ? error.message
+        : outputMessage(messages, fallbackKey);
+}
+
+function appendDownload(blob, filename) {
+    const objectUrl = URL.createObjectURL(blob);
+    let anchor = null;
+
+    try {
+        anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = filename;
+        anchor.hidden = true;
+        document.body.append(anchor);
+        anchor.click();
+    } finally {
+        anchor?.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    }
 }
 
 export function createRecipeWorkbenchOutputSection(config) {
     return {
         outputConfig: config ?? null,
+        outputPending: false,
         outputError: '',
         outputFallbackUrl: null,
         outputFallbackLabel: '',
 
         async captureOutput(options = {}) {
             if (!this.outputConfig) {
-                throw new Error('Current formula output is available only from an authenticated workspace workbench.');
+                throw new OutputRequestError(outputMessage(this.outputConfig?.messages, 'failed'));
             }
 
             return captureRecipeWorkbenchOutput(this, this.outputConfig, options);
         },
 
         async printCurrentFormula(options = {}) {
-            const popup = typeof window !== 'undefined' ? window.open('', '_blank') : null;
-            this.outputError = '';
-            clearFallback(this);
-
-            if (popup) {
-                popup.document.write('<!doctype html><title>Preparing formula sheet…</title><p>Preparing formula sheet…</p>');
+            if (this.outputPending) {
+                return false;
             }
 
+            const popup = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+            this.outputPending = true;
+            this.outputError = '';
+
             try {
+                clearFallback(this);
+
+                if (popup) {
+                    showPreparingPage(popup, this.outputConfig?.messages);
+                }
+
                 const payload = await this.captureOutput({
                     format: 'xlsx',
                     printContext: options.printContext ?? 'formula',
@@ -155,7 +202,7 @@ export function createRecipeWorkbenchOutputSection(config) {
                 });
 
                 if (! response.ok) {
-                    throw new Error(await responseError(response));
+                    throw new OutputRequestError(await responseError(response, this.outputConfig.messages));
                 }
 
                 const html = await response.text();
@@ -166,8 +213,8 @@ export function createRecipeWorkbenchOutputSection(config) {
                     popup.document.close();
                     popup.focus();
                 } else {
-                    fallbackPage(this, html);
-                    this.outputError = 'Your browser blocked the print tab. Use the prepared formula sheet link to open it.';
+                    fallbackPage(this, html, this.outputConfig.messages);
+                    this.outputError = outputMessage(this.outputConfig.messages, 'browserBlocked');
                 }
 
                 return true;
@@ -176,17 +223,25 @@ export function createRecipeWorkbenchOutputSection(config) {
                     popup.close();
                 }
 
-                this.outputError = error instanceof Error ? error.message : 'The formula sheet could not be prepared.';
+                this.outputError = outputErrorMessage(error, this.outputConfig?.messages, 'printFailed');
 
                 return false;
+            } finally {
+                this.outputPending = false;
             }
         },
 
         async exportCurrentFormula(format = 'xlsx') {
+            if (this.outputPending) {
+                return false;
+            }
+
+            this.outputPending = true;
             this.outputError = '';
-            clearFallback(this);
 
             try {
+                clearFallback(this);
+
                 const payload = await this.captureOutput({ format });
                 const response = await fetch(this.outputConfig.exportUrl, {
                     method: 'POST',
@@ -196,31 +251,29 @@ export function createRecipeWorkbenchOutputSection(config) {
                 });
 
                 if (! response.ok) {
-                    throw new Error(await responseError(response));
+                    throw new OutputRequestError(await responseError(response, this.outputConfig.messages));
                 }
 
-                const filename = downloadFilename(response.headers.get('Content-Disposition'));
-                const objectUrl = URL.createObjectURL(await response.blob());
-                const anchor = document.createElement('a');
-                anchor.href = objectUrl;
-                anchor.download = filename;
-                anchor.hidden = true;
-                document.body.append(anchor);
-                anchor.click();
-                anchor.remove();
-                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                const fallbackFilename = outputMessage(
+                    this.outputConfig.messages,
+                    format === 'csv' ? 'defaultFilenameCsv' : 'defaultFilenameXlsx',
+                );
+                const filename = downloadFilename(response.headers.get('Content-Disposition'), fallbackFilename);
+                appendDownload(await response.blob(), filename);
 
                 return true;
             } catch (error) {
-                this.outputError = error instanceof Error ? error.message : 'The formula export could not be created.';
+                this.outputError = outputErrorMessage(error, this.outputConfig?.messages, 'exportFailed');
 
                 return false;
+            } finally {
+                this.outputPending = false;
             }
         },
     };
 }
 
-export function downloadFilename(contentDisposition) {
+export function downloadFilename(contentDisposition, fallbackFilename = '') {
     const header = typeof contentDisposition === 'string' ? contentDisposition : '';
     const encoded = header.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)?.[1];
 
@@ -234,5 +287,5 @@ export function downloadFilename(contentDisposition) {
 
     return header.match(/filename\s*=\s*(?:"([^"]+)"|([^;]+))/i)?.[1]?.trim()
         ?? header.match(/filename\s*=\s*(?:"([^"]+)"|([^;]+))/i)?.[2]?.trim()
-        ?? 'current-formula.xlsx';
+        ?? fallbackFilename;
 }

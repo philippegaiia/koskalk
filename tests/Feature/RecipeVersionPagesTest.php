@@ -118,8 +118,13 @@ it('renders the formula sheet around one aligned table', function () {
         ->assertDontSee('Batch production sheet')
         ->assertDontSee('Technical recipe sheet')
         ->assertDontSee('Costing sheet')
-        ->assertSee('Export Excel')
-        ->assertSee('Export CSV')
+        ->assertSee('Print sheet')
+        ->assertSee('Export formula')
+        ->assertSee('Excel (.xlsx)')
+        ->assertSee('CSV')
+        ->assertDontSee('Export Excel')
+        ->assertDontSee('Export CSV')
+        ->assertDontSee('name="include_analysis"', false)
         ->assertDontSee('How this recipe was calculated')
         ->assertSee('Olive Oil')
         ->assertSee('Weight (g)')
@@ -128,6 +133,55 @@ it('renders the formula sheet around one aligned table', function () {
     expect(substr_count($response->getContent(), 'data-formula-document-table'))->toBe(1)
         ->and(strpos($response->getContent(), 'Lye and water'))
         ->toBeLessThan(strpos($response->getContent(), 'Calculated results'));
+});
+
+it('keeps historical version and scale parameters in saved sheet actions', function (): void {
+    [$user, $recipe, $historicalVersion] = createSavedRecipeVersion();
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.version', [
+            'recipe' => $recipe,
+            'version' => $historicalVersion,
+            'oil_weight' => 750,
+            'batch_number' => 'TRIAL-14',
+            'batch_basis' => 750,
+            'units_produced' => 4,
+        ]))
+        ->assertSuccessful();
+
+    $html = $response->getContent();
+    $exportQuery = function (string $format) use ($html, $recipe): array {
+        preg_match_all('/href="([^"]+)"/', $html, $matches);
+        $routePath = parse_url(route('recipes.export.'.$format, ['recipe' => $recipe]), PHP_URL_PATH);
+        $href = collect($matches[1])
+            ->map(fn (string $value): string => html_entity_decode($value, ENT_QUOTES | ENT_HTML5))
+            ->first(fn (string $value): bool => parse_url($value, PHP_URL_PATH) === $routePath);
+
+        expect($href)->toBeString();
+        parse_str((string) parse_url($href, PHP_URL_QUERY), $query);
+
+        return $query;
+    };
+
+    expect($html)
+        ->toContain('action="'.route('recipes.print.recipe', ['recipe' => $recipe]).'"')
+        ->toContain('name="oil_weight" value="750"')
+        ->toContain('name="version" value="'.$historicalVersion->public_id.'"')
+        ->toContain('name="batch_number" value="TRIAL-14"')
+        ->and($exportQuery('xlsx'))->toMatchArray([
+            'oil_weight' => '750',
+            'batch_number' => 'TRIAL-14',
+            'batch_basis' => '750',
+            'units_produced' => '4',
+            'version' => $historicalVersion->public_id,
+        ])
+        ->and($exportQuery('csv'))->toMatchArray([
+            'oil_weight' => '750',
+            'batch_number' => 'TRIAL-14',
+            'batch_basis' => '750',
+            'units_produced' => '4',
+            'version' => $historicalVersion->public_id,
+        ]);
 });
 
 it('localizes the formula sheet title and recalculation action from the interface database', function () {
@@ -212,7 +266,7 @@ it('renders an existing formula workbench within its initial query budget', func
     DB::disableQueryLog();
 
     // Includes snapshot locks/revisions and fresh update/create policy checks; render reuses the mount result.
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(56)
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(57)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 
@@ -1207,7 +1261,7 @@ it('keeps the displayed historical version in every sheet action', function () {
     }
 
     $response
-        ->assertSee('action="'.route('recipes.print.production', ['recipe' => $recipe]).'"', false)
+        ->assertSee('action="'.route('recipes.print.recipe', ['recipe' => $recipe]).'"', false)
         ->assertSee('name="version" value="'.$formulaA->public_id.'"', false);
 
     $activeResponse = $this->actingAs($user)

@@ -1140,6 +1140,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "actions.export_csv_option",
+      "text": {
+        "de": "CSV",
+        "es": "CSV",
+        "fr": "CSV",
+        "it": "CSV",
+        "nl": "CSV",
+        "pt_BR": "CSV"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "actions.export_excel",
       "text": {
         "de": "Nach Excel exportieren",
@@ -1148,6 +1160,30 @@
         "it": "Esporta in Excel",
         "nl": "Naar Excel exporteren",
         "pt_BR": "Exportar Excel"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "actions.export_formula",
+      "text": {
+        "de": "Rezeptur exportieren",
+        "es": "Exportar fórmula",
+        "fr": "Exporter la formule",
+        "it": "Esporta formula",
+        "nl": "Formule exporteren",
+        "pt_BR": "Exportar fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "actions.export_xlsx_option",
+      "text": {
+        "de": "Excel (.xlsx)",
+        "es": "Excel (.xlsx)",
+        "fr": "Excel (.xlsx)",
+        "it": "Excel (.xlsx)",
+        "nl": "Excel (.xlsx)",
+        "pt_BR": "Excel (.xlsx)"
       }
     },
     {
@@ -1172,6 +1208,18 @@
         "it": "Stampa formula",
         "nl": "Formule afdrukken",
         "pt_BR": "Imprimir fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "actions.print_sheet",
+      "text": {
+        "de": "Blatt drucken",
+        "es": "Imprimir hoja",
+        "fr": "Imprimer la fiche",
+        "it": "Stampa scheda",
+        "nl": "Blad afdrukken",
+        "pt_BR": "Imprimir ficha"
       }
     },
     {
@@ -1892,6 +1940,198 @@
         "it": "Controlla la formula, adatta la quantità, stampa una scheda di lavorazione o esporta i dati degli ingredienti.",
         "nl": "Controleer de formule, pas de hoeveelheid aan, druk een bereidingsblad af of exporteer de ingrediëntgegevens.",
         "pt_BR": "Revise a fórmula, ajuste a quantidade, imprima uma cópia para a bancada ou exporte os dados dos ingredientes."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.access_required",
+      "text": {
+        "de": "Melde dich an, um diese Rezeptur zu drucken oder zu exportieren.",
+        "es": "Inicia sesión para imprimir o exportar esta fórmula.",
+        "fr": "Connectez-vous pour imprimer ou exporter cette formule.",
+        "it": "Accedi per stampare o esportare questa formula.",
+        "nl": "Meld je aan om deze formule af te drukken of te exporteren.",
+        "pt_BR": "Entre para imprimir ou exportar esta fórmula."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.browser_blocked",
+      "text": {
+        "de": "Dein Browser hat den Druck-Tab blockiert. Öffne das vorbereitete Formelblatt über den Link.",
+        "es": "El navegador bloqueó la pestaña de impresión. Abre la hoja preparada con el enlace.",
+        "fr": "Votre navigateur a bloqué l’onglet d’impression. Ouvrez la fiche préparée avec le lien.",
+        "it": "Il browser ha bloccato la scheda di stampa. Apri la scheda preparata usando il link.",
+        "nl": "Je browser heeft het afdruktabblad geblokkeerd. Open het voorbereide formuleblad via de link.",
+        "pt_BR": "O navegador bloqueou a aba de impressão. Abra a ficha preparada pelo link."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.default_filename_csv",
+      "text": {
+        "de": "aktuelle-rezeptur.csv",
+        "es": "formula-actual.csv",
+        "fr": "formule-actuelle.csv",
+        "it": "formula-attuale.csv",
+        "nl": "huidige-formule.csv",
+        "pt_BR": "formula-atual.csv"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.default_filename_xlsx",
+      "text": {
+        "de": "aktuelle-rezeptur.xlsx",
+        "es": "formula-actual.xlsx",
+        "fr": "formule-actuelle.xlsx",
+        "it": "formula-attuale.xlsx",
+        "nl": "huidige-formule.xlsx",
+        "pt_BR": "formula-atual.xlsx"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.export_failed",
+      "text": {
+        "de": "Der Formel-Export konnte nicht erstellt werden.",
+        "es": "No se pudo crear la exportación de la fórmula.",
+        "fr": "L’export de la formule n’a pas pu être créé.",
+        "it": "Non è stato possibile creare l’esportazione della formula.",
+        "nl": "De formule-export kon niet worden gemaakt.",
+        "pt_BR": "Não foi possível criar a exportação da fórmula."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.failed",
+      "text": {
+        "de": "Die Formelausgabe konnte nicht erstellt werden. Versuche es erneut.",
+        "es": "No se pudo crear la salida de la fórmula. Inténtalo de nuevo.",
+        "fr": "La sortie de la formule n’a pas pu être créée. Réessayez.",
+        "it": "Non è stato possibile creare l’output della formula. Riprova.",
+        "nl": "De formule-uitvoer kon niet worden gemaakt. Probeer het opnieuw.",
+        "pt_BR": "Não foi possível criar a saída da fórmula. Tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.fallback_link",
+      "text": {
+        "de": "Vorbereitetes Formelblatt öffnen",
+        "es": "Abrir la hoja de fórmula preparada",
+        "fr": "Ouvrir la fiche formule préparée",
+        "it": "Apri la scheda formula preparata",
+        "nl": "Voorbereid formuleblad openen",
+        "pt_BR": "Abrir a ficha da fórmula preparada"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.forbidden",
+      "text": {
+        "de": "Du hast keinen Zugriff mehr auf diese Rezeptur oder einen ihrer referenzierten Datensätze.",
+        "es": "Ya no tienes acceso a esta fórmula o a uno de sus registros relacionados.",
+        "fr": "Vous n’avez plus accès à cette formule ou à l’un de ses éléments référencés.",
+        "it": "Non hai più accesso a questa formula o a uno dei record a cui fa riferimento.",
+        "nl": "Je hebt geen toegang meer tot deze formule of een van de bijbehorende gegevens.",
+        "pt_BR": "Você não tem mais acesso a esta fórmula ou a um dos registros relacionados."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.invalid_formula",
+      "text": {
+        "de": "Diese Rezeptur kann noch nicht gedruckt oder exportiert werden. Prüfe die aktuellen Rezepturdaten.",
+        "es": "Aún no se puede imprimir ni exportar esta fórmula. Revisa sus datos actuales.",
+        "fr": "Cette formule ne peut pas encore être imprimée ou exportée. Vérifiez ses détails.",
+        "it": "Questa formula non può ancora essere stampata o esportata. Controlla i dettagli.",
+        "nl": "Deze formule kan nog niet worden afgedrukt of geëxporteerd. Controleer de huidige gegevens.",
+        "pt_BR": "Esta fórmula ainda não pode ser impressa nem exportada. Revise os dados atuais."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.not_found",
+      "text": {
+        "de": "Die aktuelle Rezeptur oder einer ihrer referenzierten Datensätze wurde nicht gefunden.",
+        "es": "No se encontró la fórmula actual o uno de sus registros relacionados.",
+        "fr": "La formule actuelle ou l’un de ses éléments référencés est introuvable.",
+        "it": "Non è stata trovata la formula attuale o uno dei record a cui fa riferimento.",
+        "nl": "De huidige formule of een van de bijbehorende gegevens is niet gevonden.",
+        "pt_BR": "A fórmula atual ou um dos registros relacionados não foi encontrado."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.pending",
+      "text": {
+        "de": "Ausgabe wird vorbereitet…",
+        "es": "Preparando la salida…",
+        "fr": "Préparation de la sortie…",
+        "it": "Preparazione dell’output…",
+        "nl": "Uitvoer wordt voorbereid…",
+        "pt_BR": "Preparando a saída…"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.preparing_sheet",
+      "text": {
+        "de": "Formelblatt wird vorbereitet…",
+        "es": "Preparando la hoja de fórmula…",
+        "fr": "Préparation de la fiche formule…",
+        "it": "Preparazione della scheda formula…",
+        "nl": "Formuleblad voorbereiden…",
+        "pt_BR": "Preparando a ficha da fórmula…"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.preparing_title",
+      "text": {
+        "de": "Formelblatt wird vorbereitet…",
+        "es": "Preparando la hoja de fórmula…",
+        "fr": "Préparation de la fiche formule…",
+        "it": "Preparazione della scheda formula…",
+        "nl": "Formuleblad voorbereiden…",
+        "pt_BR": "Preparando a ficha da fórmula…"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.print_failed",
+      "text": {
+        "de": "Das Formelblatt konnte nicht vorbereitet werden.",
+        "es": "No se pudo preparar la hoja de fórmula.",
+        "fr": "La fiche formule n’a pas pu être préparée.",
+        "it": "Non è stato possibile preparare la scheda formula.",
+        "nl": "Het formuleblad kon niet worden voorbereid.",
+        "pt_BR": "Não foi possível preparar a ficha da fórmula."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.throttled",
+      "text": {
+        "de": "Zu viele Ausgabeanfragen. Warte kurz und versuche es erneut.",
+        "es": "Hay demasiadas solicitudes de salida. Espera un momento e inténtalo de nuevo.",
+        "fr": "Trop de demandes de génération. Patientez un instant puis réessayez.",
+        "it": "Troppe richieste di output. Attendi un momento e riprova.",
+        "nl": "Er zijn te veel uitvoeraanvragen. Wacht even en probeer het opnieuw.",
+        "pt_BR": "Há muitas solicitações de saída. Aguarde um instante e tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "output.workspace_changed",
+      "text": {
+        "de": "Der aktive Arbeitsbereich wurde geändert. Lade den Workbench neu und versuche es erneut.",
+        "es": "El espacio de trabajo activo cambió. Recarga el espacio de trabajo e inténtalo de nuevo.",
+        "fr": "L’espace de travail actif a changé. Rechargez l’atelier puis réessayez.",
+        "it": "Lo spazio di lavoro attivo è cambiato. Ricarica il workbench e riprova.",
+        "nl": "De actieve werkruimte is gewijzigd. Laad de werkbank opnieuw en probeer het nog eens.",
+        "pt_BR": "O espaço de trabalho ativo mudou. Recarregue a bancada e tente novamente."
       }
     },
     {

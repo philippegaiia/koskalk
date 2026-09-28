@@ -104,26 +104,24 @@
                                 </button>
                             </form>
                         @endif
-                        <form method="GET" action="{{ route('recipes.print.production', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
+                        <form method="GET" action="{{ route('recipes.print.recipe', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
                             @foreach (collect($printQuery)->except('recipe') as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
                             @endforeach
-                            @if (($formulaDocument['family'] ?? null) === 'soap')
-                                <label class="inline-flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
-                                    <input type="checkbox" name="include_analysis" value="1" class="rounded border-[var(--color-line)]" />
-                                    {{ __('formula_documents.print.include_analysis') }}
-                                </label>
-                            @endif
-                            <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                                {{ __('formula_documents.actions.print') }}
+                            <button type="submit" class="sk-btn sk-btn-primary min-h-11">
+                                {{ __('formula_documents.actions.print_sheet') }}
                             </button>
                         </form>
-                        <a href="{{ route('recipes.export.xlsx', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            {{ __('formula_documents.actions.export_excel') }}
-                        </a>
-                        <a href="{{ route('recipes.export.csv', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            {{ __('formula_documents.actions.export_csv') }}
-                        </a>
+                        <div x-data="{ savedExportMenuOpen: false }" @click.outside="savedExportMenuOpen = false" class="relative">
+                            <button x-ref="savedExportMenuTrigger" type="button" aria-haspopup="menu" :aria-expanded="savedExportMenuOpen" @click="savedExportMenuOpen = !savedExportMenuOpen; if (savedExportMenuOpen) $nextTick(() => $refs.savedExcelExport.focus())" class="sk-btn sk-btn-ghost min-h-11">
+                                {{ __('formula_documents.actions.export_formula') }}
+                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <div x-show="savedExportMenuOpen" x-cloak role="menu" @keydown.escape.stop.prevent="savedExportMenuOpen = false; $refs.savedExportMenuTrigger.focus()" class="absolute right-0 top-full z-20 mt-2 min-w-48 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg">
+                                <a x-ref="savedExcelExport" role="menuitem" href="{{ route('recipes.export.xlsx', $printQuery) }}" @keydown.arrow-down.prevent="$refs.savedCsvExport.focus()" @keydown.arrow-up.prevent="$refs.savedCsvExport.focus()" class="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('formula_documents.actions.export_xlsx_option') }}</a>
+                                <a x-ref="savedCsvExport" role="menuitem" href="{{ route('recipes.export.csv', $printQuery) }}" @keydown.arrow-down.prevent="$refs.savedExcelExport.focus()" @keydown.arrow-up.prevent="$refs.savedExcelExport.focus()" class="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('formula_documents.actions.export_csv_option') }}</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

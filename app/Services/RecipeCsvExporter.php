@@ -4,34 +4,36 @@ namespace App\Services;
 
 class RecipeCsvExporter
 {
+    public function __construct(
+        private readonly TabularFileExporter $tabularFileExporter,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $exportData
      */
     public function export(array $exportData): string
     {
-        $stream = fopen('php://temp', 'r+');
-
-        abort_if($stream === false, 500, 'Unable to create CSV export.');
-
-        fputcsv($stream, ['Section', 'Ingredient', 'Percentage basis', 'Percentage', 'Scaled weight', 'Unit', 'Note']);
-
-        foreach ($exportData['ingredientRows'] ?? [] as $row) {
-            fputcsv($stream, [
-                $row['section'] ?? '',
-                $row['ingredient'] ?? '',
-                $row['percentage_basis'] ?? '',
-                $row['percentage'] ?? '',
-                $row['weight'] ?? '',
-                $row['unit'] ?? '',
-                $row['note'] ?? '',
-            ]);
-        }
-
-        rewind($stream);
-
-        $contents = stream_get_contents($stream);
-        fclose($stream);
-
-        return $contents === false ? '' : $contents;
+        return $this->tabularFileExporter->exportCsv([
+            'columns' => [
+                ['key' => 'section', 'label' => 'Section', 'type' => 'string'],
+                ['key' => 'ingredient', 'label' => 'Ingredient', 'type' => 'string'],
+                ['key' => 'percentage_basis', 'label' => 'Percentage basis', 'type' => 'string'],
+                ['key' => 'percentage', 'label' => 'Percentage', 'type' => 'number'],
+                ['key' => 'weight', 'label' => 'Scaled weight', 'type' => 'number'],
+                ['key' => 'unit', 'label' => 'Unit', 'type' => 'string'],
+                ['key' => 'note', 'label' => 'Note', 'type' => 'string'],
+            ],
+            'rows' => collect($exportData['ingredientRows'] ?? [])
+                ->map(fn (array $row): array => [
+                    'section' => $row['section'] ?? '',
+                    'ingredient' => $row['ingredient'] ?? '',
+                    'percentage_basis' => $row['percentage_basis'] ?? '',
+                    'percentage' => $row['percentage'] ?? null,
+                    'weight' => $row['weight'] ?? null,
+                    'unit' => $row['unit'] ?? '',
+                    'note' => $row['note'] ?? '',
+                ])
+                ->all(),
+        ]);
     }
 }

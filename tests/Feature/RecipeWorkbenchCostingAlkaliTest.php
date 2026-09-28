@@ -4,13 +4,17 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\LyeLiquidAllocationService;
 use App\Services\RecipeVersionCostingSynchronizer;
+use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -97,6 +101,146 @@ it('creates one alkali costing row per lye type in stable dual-lye order', funct
         ->and($alkaliRows[0]['position'])->toBe(1)
         ->and($alkaliRows[1]['ingredient_id'])->toBe($koh->id)
         ->and($alkaliRows[1]['position'])->toBe(2);
+});
+
+it('projects saved alkali and implicit water rows with weighed KOH and saved prices without writes', function (): void {
+    $user = User::factory()->create();
+    $naoh = makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Sodium hydroxide');
+    $koh = makeCostingAlkaliIngredient(IngredientSubcategory::PotassiumHydroxide, 'Potassium hydroxide');
+    $water = makeCostingAlkaliWaterIngredient();
+    $hydrosol = Ingredient::factory()->create([
+        'display_name' => 'Lavender hydrosol',
+        'is_active' => true,
+    ]);
+    $oil = makeCostingAlkaliOilIngredient();
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+    $soapFamily = makeCostingAlkaliSoapFamily();
+    $payload = costingAlkaliDraftPayload($oil);
+    $payload['lye_type'] = 'dual';
+    $payload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $hydrosol->id,
+        'percentage' => 25,
+        'weight' => 95,
+        'note' => null,
+    ]];
+
+    $workbench = app(RecipeWorkbenchService::class);
+    $version = $workbench->save($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $costing = app(RecipeVersionCostingSynchronizer::class)->ensureCosting($version, $user);
+    $costing->fill([
+        'oil_weight_for_costing' => '0.5',
+        'oil_unit_for_costing' => 'kg',
+        'oil_mass_grams_for_costing' => '500',
+        'units_produced' => 2,
+        'currency' => 'EUR',
+    ])->save();
+    $costing->items()->get()->each(function ($item) use ($naoh, $koh, $water, $hydrosol, $oil): void {
+        $item->price_per_kg = match ((int) $item->ingredient_id) {
+            $oil->id => '10',
+            $hydrosol->id => '6',
+            $naoh->id, $koh->id => '20',
+            $water->id => '0',
+            default => $item->price_per_kg,
+        };
+        $item->save();
+    });
+    $costing = $costing->fresh(['items', 'packagingItems']);
+    $snapshot = $workbench->versionSnapshot($recipe, (int) $version->id);
+    expect($snapshot['calculation'])->toBeArray();
+    $allocation = app(LyeLiquidAllocationService::class)->allocateFresh(
+        data_get($snapshot, 'calculation.lye.water.weight'),
+        [['percentage' => 25]],
+    );
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromCosting(
+        recipe: $recipe,
+        version: $version->fresh(),
+        costing: $costing,
+        batchBasisValue: '0.5',
+        unitsProduced: 2,
+        includeDerivedRows: true,
+        requireCompletePackagingTotal: true,
+        batchBasisUnit: 'kg',
+    );
+    $writes = collect(DB::getQueryLog())->pluck('query')
+        ->filter(fn (string $query): bool => preg_match('/^(insert|update|delete) /i', $query) === 1)
+        ->all();
+    DB::disableQueryLog();
+
+    $ingredientRows = collect($preview['ingredient_rows']);
+    $alkaliRows = $ingredientRows->where('phase_key', 'lye_alkali')->keyBy('ingredient_id');
+    $rows = $ingredientRows->keyBy('phase_key');
+
+    expect($writes)->toBe([])
+        ->and($alkaliRows)->toHaveCount(2)
+        ->and($alkaliRows[$naoh->id]['price_per_kg'])->toBe(20.0)
+        ->and($alkaliRows[$naoh->id]['quantity'])->toBe(round((float) data_get($snapshot, 'calculation.lye.selected.naoh_weight') / 2000, 8))
+        ->and($alkaliRows[$koh->id]['quantity'])->toBe(round((float) data_get($snapshot, 'calculation.lye.selected.koh_to_weigh') / 2000, 8))
+        ->and($rows['implicit_water']['ingredient_id'])->toBe($water->id)
+        ->and($rows['implicit_water']['quantity'])->toBe(round((float) $allocation['water_weight'] / 2000, 8))
+        ->and($rows['implicit_water']['price_per_kg'])->toBe(0.0)
+        ->and($rows['lye_water']['quantity'])->toBe(0.0475)
+        ->and($rows['lye_water']['percentage_basis'])->toBe('oils')
+        ->and($rows['lye_water']['unit'])->toBe('kg')
+        ->and($preview['currency'])->toBe('EUR');
+});
+
+it('keeps the implicit plain-water remainder visible when its saved price row is absent', function (): void {
+    $user = User::factory()->create();
+    $naoh = makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Sodium hydroxide');
+    $water = makeCostingAlkaliWaterIngredient();
+    $oil = makeCostingAlkaliOilIngredient();
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+    $version = app(RecipeWorkbenchService::class)->save(
+        $user,
+        makeCostingAlkaliSoapFamily(),
+        costingAlkaliDraftPayload($oil),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $costing = app(RecipeVersionCostingSynchronizer::class)->ensureCosting($version, $user);
+    $costing->items()->where('phase_key', 'implicit_water')->delete();
+    $costing = $costing->fresh(['items.ingredient', 'packagingItems.packagingItem']);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromCosting(
+            recipe: $recipe,
+            version: $version->fresh(),
+            costing: $costing,
+            batchBasisValue: '1000',
+            unitsProduced: 2,
+            includeDerivedRows: true,
+            requireCompletePackagingTotal: true,
+            batchBasisUnit: 'g',
+        );
+        $writes = collect(DB::getQueryLog())->pluck('query')
+            ->filter(fn (string $query): bool => preg_match('/^\s*(insert|update|delete|replace)\b/i', $query) === 1)
+            ->all();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    $waterRow = collect($preview['ingredient_rows'])->firstWhere('phase_key', 'implicit_water');
+    $alkaliRow = collect($preview['ingredient_rows'])->firstWhere('phase_key', 'lye_alkali');
+
+    expect($writes)->toBe([])
+        ->and($waterRow['ingredient_id'])->toBe($water->id)
+        ->and($waterRow['quantity'])->toBeGreaterThan(0)
+        ->and($waterRow['price_per_kg'])->toBeNull()
+        ->and($waterRow['is_unpriced'])->toBeTrue()
+        ->and($alkaliRow['ingredient_id'])->toBe($naoh->id);
 });
 
 it('round-trips an alkali price through save and reconcile', function () {

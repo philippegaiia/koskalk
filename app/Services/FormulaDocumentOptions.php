@@ -40,6 +40,7 @@ class FormulaDocumentOptions
     {
         $defaults = match ($context) {
             'instructions' => ['formula', 'procedure'],
+            'costing' => ['costing'],
             default => ['formula', 'procedure', 'label', 'notes'],
         };
 

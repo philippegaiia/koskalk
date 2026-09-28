@@ -861,6 +861,7 @@ class RecipeController extends Controller
         $availableSections = $formulaDocumentOptions->availableSections([
             'procedure' => $this->hasPrintableContent($formulaDocument['identity']['manufacturing_procedure'] ?? ''),
             'label' => filled($formulaDocument['label_text'] ?? null),
+            'costing' => (bool) ($viewData['hasCostingData'] ?? false),
             'analysis' => is_array($analysis)
                 && (filled($analysis['qualities'] ?? []) || filled($analysis['fatty_acids'] ?? [])),
         ]);
@@ -965,6 +966,7 @@ class RecipeController extends Controller
                     costing: $existingCosting,
                     batchBasisValue: $basisValue,
                     unitsProduced: $unitsProduced,
+                    batchBasisUnit: $basisUnit,
                 ),
                 ...$batchBasis,
             ];

@@ -95,6 +95,14 @@
             />
         @endif
 
+        @if (is_array($costingProjection ?? null) && in_array('costing', $availableSections, true))
+            <x-formula-document.costing
+                :projection="$costingProjection"
+                :number-locale="$numberLocale"
+                :is-selected="in_array('costing', $selectedSections, true)"
+            />
+        @endif
+
         @if ($hasAnalysis)
             <x-formula-document.soap-analysis
                 :analysis="$analysis"

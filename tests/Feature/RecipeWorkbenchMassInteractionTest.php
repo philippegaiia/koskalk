@@ -271,6 +271,11 @@ assertClose(state.costingOilWeight, 1, 1e-9);
 assert.equal(state.costingPriceUnit, 'kg');
 assert.equal(state.costingPriceForRow(state.costingFormulaRows[0]), 10);
 assert.equal(state.totalBatchCost, initialCost);
+
+state.costingUnitsProduced = null;
+assert.equal(state.packagingCostTotal, 0);
+assert.equal(state.totalBatchCost, state.ingredientCostTotal);
+assert.equal(state.costPerUnit, 0);
 JS;
 
     $process = Process::fromShellCommandline(

@@ -105,7 +105,7 @@ export function createCostingSection(payload) {
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
                 material_code: row.material_code ?? null,
-                unit_cost: row.unit_cost ?? 0,
+                unit_cost: Object.hasOwn(row, 'unit_cost') ? row.unit_cost : 0,
                 quantity: row.components_per_unit ?? row.quantity ?? 1,
             }));
             this.packagingCatalog = costingPayload?.packaging_catalog ?? this.packagingCatalog ?? [];
@@ -128,11 +128,10 @@ export function createCostingSection(payload) {
                     return;
                 }
 
-                const persistedPrice = persistedPricesBySignature.get(
-                    this.costingSignature(row.ingredient_id, row.phaseKey, row.position),
-                );
-
-                const canonicalPrice = persistedPrice ?? row.defaultPricePerKg ?? null;
+                const signature = this.costingSignature(row.ingredient_id, row.phaseKey, row.position);
+                const canonicalPrice = persistedPricesBySignature.has(signature)
+                    ? persistedPricesBySignature.get(signature)
+                    : (row.defaultPricePerKg ?? null);
 
                 nextPricesByRowId[row.rowId] = canonicalPrice === null
                     ? null
@@ -386,8 +385,9 @@ export function createCostingSection(payload) {
         },
 
         costingPriceForRow(row) {
-            return this.costingPriceByRowId[row.rowId]
-                ?? (row.defaultPricePerKg === null
+            return Object.hasOwn(this.costingPriceByRowId, row.rowId)
+                ? this.costingPriceByRowId[row.rowId]
+                : (row.defaultPricePerKg === null
                     ? null
                     : this.displayPriceFromPerKg(row.defaultPricePerKg));
         },
@@ -478,6 +478,10 @@ export function createCostingSection(payload) {
         },
 
         get packagingCostTotal() {
+            if (this.displayedPackagingCostRows.length === 0) {
+                return 0;
+            }
+
             if (this.costingUnitsProducedValue <= 0) {
                 return null;
             }
@@ -523,9 +527,9 @@ export function createCostingSection(payload) {
         },
 
         get costingUnitsProducedValue() {
-            const unitsProduced = Number.parseInt(this.costingUnitsProduced, 10);
+            const unitsProduced = parseDecimalInput(this.costingUnitsProduced);
 
-            return Number.isInteger(unitsProduced) && unitsProduced > 0 ? unitsProduced : 0;
+            return Number.isFinite(unitsProduced) && unitsProduced > 0 ? unitsProduced : 0;
         },
 
         get costPerUnit() {

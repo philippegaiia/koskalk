@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
@@ -58,9 +59,29 @@ it('exports the submitted current formula without creating saved records', funct
     $response->assertSuccessful()
         ->assertDownload('working-soap-formula-current-formula-2026-09-28.csv');
 
-    expect($response->streamedContent())
+    $csvRows = collect(explode("\n", trim($response->streamedContent())))
+        ->map(fn (string $line): array => str_getcsv($line));
+    $headers = $csvRows->first();
+    $formulaIndex = array_search(__('formula_documents.exports.formula'), $headers, true);
+    $basisIndex = array_search(__('formula_documents.exports.basis'), $headers, true);
+    $basisUnitIndex = array_search(__('formula_documents.exports.formula_basis_unit'), $headers, true);
+    $rowUnitIndex = array_search(__('formula_documents.exports.unit'), $headers, true);
+    $basisLabelIndex = array_search(__('formula_documents.exports.percentage_basis'), $headers, true);
+    $oilRow = $csvRows->first(fn (array $row): bool => ($row[array_search(__('formula_documents.exports.ingredient'), $headers, true)] ?? null) === 'Olive Oil');
+
+    expect($csvRows->flatten())
         ->toContain('Olive Oil')
         ->toContain('750')
+        ->and($headers)->toContain(
+            __('formula_documents.exports.source'),
+            __('formula_documents.exports.generated_at'),
+            __('formula_documents.exports.percentage_oils'),
+        )
+        ->and($headers[$basisUnitIndex])->not->toBe($headers[$rowUnitIndex])
+        ->and($oilRow[$formulaIndex])->toBe('Working Soap Formula')
+        ->and($oilRow[$basisIndex])->toBe('750')
+        ->and($oilRow[$basisUnitIndex])->toBe('g')
+        ->and($oilRow[$basisLabelIndex])->toBe(__('formula_documents.exports.basis_oils'))
         ->and(Recipe::withoutGlobalScopes()->count())->toBe(0)
         ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
         ->and(RecipeVersionCosting::withoutGlobalScopes()->count())->toBe(0);
@@ -107,6 +128,213 @@ it('serves a current soap workbook with its calculated output worksheet', functi
         ->toContain('Final INCI');
 });
 
+it('exports loaded current costing as a typed workbook from the live formula and current prices', function (): void {
+    $this->travelTo(Carbon::parse('2026-09-28 12:00:00'));
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $naoh = Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::SodiumHydroxide,
+        'display_name' => 'Sodium hydroxide',
+        'is_active' => true,
+    ]);
+    $water = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'display_name' => 'Water',
+        'inci_name' => 'AQUA',
+        'is_active' => true,
+    ]);
+    $packaging = createPackagingItemForWorkspace([
+        'workspace_id' => $workspace->id,
+        'name' => 'Catalog jar',
+        'unit_cost' => 0.9,
+        'currency' => 'EUR',
+    ]);
+    $packaging->update(['name' => 'Renamed catalog jar']);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['kind'] = 'costing';
+    $payload['format'] = 'xlsx';
+    $payload['costing'] = [
+        'loaded' => true,
+        'oil_weight_for_costing' => 0.5,
+        'oil_unit_for_costing' => 'kg',
+        'units_produced' => 2,
+        'currency' => 'EUR',
+        'items' => [
+            ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 10],
+            ['ingredient_id' => $naoh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 20],
+            ['ingredient_id' => $water->id, 'phase_key' => 'implicit_water', 'position' => 1, 'price_per_kg' => 0],
+        ],
+        'packaging_items' => [[
+            'packaging_item_id' => $packaging->id,
+            'name' => 'Original jar',
+            'unit_cost' => 0.5,
+            'components_per_unit' => 1,
+        ]],
+    ];
+    $payload['draft']['packaging_items'] = [[
+        'packaging_item_id' => $packaging->id,
+        'name' => 'Original jar',
+        'components_per_unit' => 1,
+    ]];
+
+    $response = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload);
+    $response->assertSuccessful()->assertDownload('working-soap-formula-current-costing-2026-09-28.xlsx');
+
+    $path = $response->baseResponse->getFile()->getPathname();
+
+    try {
+        $reader = new Reader;
+        $reader->open($path);
+        $sheets = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $sheets[$sheet->getName()] = collect($sheet->getRowIterator())
+                ->map(fn ($row): array => $row->toArray())
+                ->all();
+        }
+
+        $reader->close();
+    } finally {
+        @unlink($path);
+    }
+
+    $ingredientSheet = $sheets[__('formula_documents.exports.costing_ingredients')];
+    $ingredientHeaders = collect($ingredientSheet)->first(fn (array $row): bool => in_array(__('formula_documents.exports.ingredient'), $row, true));
+    $ingredientHeaderIndex = array_search(__('formula_documents.exports.ingredient'), $ingredientHeaders, true);
+    $ingredientRow = collect($ingredientSheet)->first(fn (array $row): bool => ($row[$ingredientHeaderIndex] ?? null) === 'Olive Oil');
+    $packagingSheet = $sheets[__('formula_documents.exports.costing_packaging')];
+    $packagingHeaders = collect($packagingSheet)->first(fn (array $row): bool => in_array(__('formula_documents.exports.packaging'), $row, true)
+        && in_array(__('formula_documents.exports.batch_cost'), $row, true));
+    $packagingNameIndex = array_search(__('formula_documents.exports.packaging'), $packagingHeaders, true);
+    $packagingRows = collect($packagingSheet)->filter(fn (array $row): bool => ($row[$packagingNameIndex] ?? null) === 'Original jar');
+    $packagingRow = $packagingRows->first();
+    $summarySheet = $sheets[__('formula_documents.exports.costing_summary')];
+    $summaryHeaders = collect($summarySheet)->first(fn (array $row): bool => in_array(__('formula_documents.exports.cost_item'), $row, true));
+    $summaryItemIndex = array_search(__('formula_documents.exports.cost_item'), $summaryHeaders, true);
+    $summaryAmountIndex = array_search(__('formula_documents.exports.amount'), $summaryHeaders, true);
+    $summaryRows = collect($summarySheet)->filter(fn (array $row): bool => in_array($row[$summaryItemIndex] ?? null, [
+        __('formula_documents.exports.ingredient_total'),
+        __('formula_documents.exports.packaging_total'),
+        __('formula_documents.exports.total_cost'),
+        __('formula_documents.exports.cost_per_unit'),
+    ], true))->keyBy($summaryItemIndex);
+
+    expect(array_keys($sheets))->toBe([
+        __('formula_documents.exports.costing_ingredients'),
+        __('formula_documents.exports.costing_packaging'),
+        __('formula_documents.exports.costing_summary'),
+    ])
+        ->and($ingredientRow)->not->toBeNull()
+        ->and($ingredientRow[array_search(__('formula_documents.exports.quantity'), $ingredientHeaders, true)])->toBe(0.5)
+        ->and($ingredientRow[array_search(__('formula_documents.exports.unit'), $ingredientHeaders, true)])->toBe('kg')
+        ->and($ingredientRow[array_search(__('formula_documents.exports.price_per_kg'), $ingredientHeaders, true)])->toBe(10)
+        ->and($ingredientRow[array_search(__('formula_documents.exports.price_currency'), $ingredientHeaders, true)])->toBe('EUR')
+        ->and($ingredientRow[array_search(__('formula_documents.exports.line_cost'), $ingredientHeaders, true)])->toBe(5)
+        ->and($packagingRow)->not->toBeNull()
+        ->and($packagingRows)->toHaveCount(1)
+        ->and($packagingRow[array_search(__('formula_documents.exports.batch_cost'), $packagingHeaders, true)])->toBe(1)
+        ->and($summaryRows->get(__('formula_documents.exports.packaging_total'))[$summaryAmountIndex])->toBe(1)
+        ->and($summaryRows->get(__('formula_documents.exports.total_cost'))[$summaryAmountIndex])->toBeGreaterThan(6)
+        ->and(Recipe::withoutGlobalScopes()->count())->toBe(0)
+        ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
+        ->and(RecipeVersionCosting::withoutGlobalScopes()->count())->toBe(0);
+});
+
+it('selects costing print sections by context and does not save captured prices', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $naoh = Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::SodiumHydroxide,
+        'display_name' => 'Sodium hydroxide',
+        'is_active' => true,
+    ]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['costing'] = [
+        'loaded' => true,
+        'oil_weight_for_costing' => 500,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 2,
+        'currency' => 'CHF',
+        'items' => [
+            ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 7],
+            ['ingredient_id' => $naoh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 0],
+        ],
+        'packaging_items' => [],
+    ];
+    $payload['manufacturing_instructions'] = '<p>Blend and pour.</p>';
+    $domainCounts = [
+        Recipe::withoutGlobalScopes()->count(),
+        RecipeVersion::withoutGlobalScopes()->count(),
+        RecipeVersionCosting::withoutGlobalScopes()->count(),
+    ];
+
+    foreach ([
+        'formula' => ['formula', 'procedure', 'label', 'notes'],
+        'instructions' => ['formula', 'procedure'],
+        'costing' => ['costing'],
+    ] as $context => $expectedSections) {
+        $contextPayload = [...$payload, 'print_context' => $context];
+        $response = $this->actingAs($user)->postJson(route('recipes.workbench.print'), $contextPayload)->assertSuccessful();
+        $response->assertViewHas('selectedSections', $expectedSections);
+
+        if ($context === 'costing') {
+            $response->assertViewHas('costingProjection', fn (array $projection): bool => $projection['currency'] === 'CHF'
+                && $projection['basis_weight'] === 500.0
+                && $projection['ingredient_rows'][0]['line_cost'] === 3.5);
+        }
+
+        expect($response->getContent())
+            ->toMatch($context === 'costing'
+                ? '/data-formula-section="costing"(?:(?!\bhidden\b)[^>])*>/s'
+                : '/data-formula-section="costing"[^>]*\bhidden\b/s');
+    }
+
+    expect([
+        Recipe::withoutGlobalScopes()->count(),
+        RecipeVersion::withoutGlobalScopes()->count(),
+        RecipeVersionCosting::withoutGlobalScopes()->count(),
+    ])->toBe($domainCounts);
+});
+
+it('converts the current formula fallback basis into its captured costing unit', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $naoh = Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::SodiumHydroxide,
+        'display_name' => 'Sodium hydroxide',
+        'is_active' => true,
+    ]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['oil_weight'] = 1000;
+    $payload['costing'] = [
+        'loaded' => true,
+        'oil_weight_for_costing' => null,
+        'oil_unit_for_costing' => 'kg',
+        'units_produced' => null,
+        'currency' => 'EUR',
+        'items' => [
+            ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 10],
+            ['ingredient_id' => $naoh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 0],
+        ],
+        'packaging_items' => [],
+    ];
+
+    $this->actingAs($user)
+        ->postJson(route('recipes.workbench.print'), [...$payload, 'print_context' => 'costing'])
+        ->assertSuccessful()
+        ->assertViewHas('costingProjection', fn (array $projection): bool => $projection['basis_weight'] === 1.0
+            && $projection['basis_unit'] === 'kg'
+            && $projection['ingredient_rows'][0]['quantity'] === 1.0
+            && $projection['ingredient_rows'][0]['line_cost'] === 10.0
+            && $projection['packaging_rows'] === []
+            && $projection['packaging_total'] === 0.0
+            && $projection['total_cost'] === 10.0
+            && $projection['cost_per_unit'] === null);
+});
+
 it('uses the submitted weight when weight editing mode is authoritative', function (): void {
     ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
     $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
@@ -119,11 +347,11 @@ it('uses the submitted weight when weight editing mode is authoritative', functi
 
     $ingredientRow = collect(explode("\n", trim($response->streamedContent())))
         ->map(fn (string $line): array => str_getcsv($line))
-        ->first(fn (array $row): bool => ($row[1] ?? null) === 'Olive Oil');
+        ->first(fn (array $row): bool => ($row[10] ?? null) === 'Olive Oil');
 
     expect($ingredientRow)->not->toBeNull()
-        ->and((float) $ingredientRow[3])->toBe(66.6667)
-        ->and((float) $ingredientRow[4])->toBe(500.0);
+        ->and((float) $ingredientRow[11])->toBe(66.6667)
+        ->and((float) $ingredientRow[12])->toBe(500.0);
 });
 
 it('accepts context-valid negative KOH superfat and rejects invalid lye concentration', function (): void {
@@ -199,7 +427,12 @@ it('bounds combined output rows and the raw request size', function (): void {
     $unsupportedPayload['kind'] = 'costing';
     $this->postJson(route('recipes.workbench.export'), $unsupportedPayload)
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('kind');
+        ->assertJsonValidationErrors('costing');
+
+    $unsupportedPayload['costing']['loaded'] = true;
+    $this->postJson(route('recipes.workbench.export'), $unsupportedPayload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('format');
 });
 
 it('checks foreign ingredient identities in zero rows, dilution rows, costing rows, and output settings', function (): void {
@@ -283,11 +516,11 @@ it('preserves private dilution material occurrences after allocation skips zero 
 
     $dilutionRow = collect(explode("\n", trim($response->streamedContent())))
         ->map(fn (string $line): array => str_getcsv($line))
-        ->first(fn (array $row): bool => ($row[1] ?? null) === 'Workspace dilution liquid');
+        ->first(fn (array $row): bool => ($row[10] ?? null) === 'Workspace dilution liquid');
 
     expect($dilutionRow)->not->toBeNull()
-        ->and((float) $dilutionRow[4])->toBe(71.25)
-        ->and($dilutionRow[6])->toBe('Current dilution occurrence')
+        ->and((float) $dilutionRow[12])->toBe(71.25)
+        ->and($dilutionRow[14])->toBe('Current dilution occurrence')
         ->and($response->streamedContent())->not->toContain('Zero occurrence');
 });
 

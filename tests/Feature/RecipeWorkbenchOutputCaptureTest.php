@@ -88,6 +88,7 @@ assert.equal(captured.manufacturing_instructions.content[0].content[0].text, 'La
 assert.equal(captured.costing.oil_weight_for_costing, 750);
 assert.equal(captured.costing.oil_unit_for_costing, 'g');
 assert.equal(captured.costing.units_produced, 3);
+assert.equal(captured.costing.loaded, true);
 assert.equal(captured.costing.currency, 'EUR');
 assert.equal(captured.costing.items[0].id, 88);
 assert.equal(captured.costing.items[0].ingredient_id, 12);
@@ -99,6 +100,20 @@ assert.equal(captured.costing.packaging_items[0].unit_cost, null);
 assert.equal(state.editingRecipeRevision, 9);
 assert.equal(saveCalls, 0);
 assert.equal(flushCalls, 0);
+
+const localeCapture = await entry.namespace.captureRecipeWorkbenchOutput({
+    ...state,
+    costingOilWeight: '1 000',
+    costingOilUnit: 'kg',
+    costingUnitsProduced: '1,5',
+}, {
+    workspace: 'workspace-public-id',
+    recipe: 'recipe-public-id',
+    productFamily: 'soap',
+}, { format: 'xlsx', kind: 'costing', printContext: 'costing' });
+assert.equal(localeCapture.kind, 'costing');
+assert.equal(localeCapture.costing.oil_weight_for_costing, 1000);
+assert.equal(localeCapture.costing.units_produced, 1.5);
 
 state.phaseItems.saponified_oils[0].percentage = 1;
 state.$wire.data.manufacturing_instructions.content[0].content[0].text = 'changed after capture';
@@ -130,6 +145,60 @@ const unloadedCosting = await entry.namespace.captureRecipeWorkbenchOutput({ ...
     workspace: 'workspace-public-id', productFamily: 'soap', printUrl: '/print', exportUrl: '/export',
 }, { format: 'csv' });
 assert.equal(unloadedCosting.costing, null);
+JS], base_path());
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('preserves explicit null prices and locale-parsed fractional costing units in the costing section', function (): void {
+    $process = new Process(['node', '--experimental-vm-modules', '--input-type=module', '--eval', <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+
+const modules = new Map();
+function loadModule(filename) {
+    filename = path.resolve(filename);
+    if (!modules.has(filename)) {
+        modules.set(filename, new vm.SourceTextModule(fs.readFileSync(filename, 'utf8'), { identifier: filename }));
+    }
+    return modules.get(filename);
+}
+
+const entry = loadModule('resources/js/recipe-workbench/sections/costing-section.js');
+await entry.link((specifier, referencing) => {
+    const filename = path.resolve(path.dirname(referencing.identifier), specifier);
+    return loadModule(path.extname(filename) ? filename : `${filename}.js`);
+});
+await entry.evaluate();
+
+const section = entry.namespace.createCostingSection({});
+const row = { rowId: 'oil:phase:1', ingredient_id: 1, phaseKey: 'saponified_oils', position: 1, defaultPricePerKg: 12 };
+const priceState = {
+    persistedCostingItemPrices: [{ ingredient_id: 1, phase_key: 'saponified_oils', position: 1, price_per_kg: null }],
+    costingPriceByRowId: {},
+    costingFormulaRows: [row],
+    costingSignature: section.costingSignature,
+    displayPriceFromPerKg: (value) => value,
+};
+section.reconcileCostingPrices.call(priceState);
+assert.equal(priceState.costingPriceByRowId[row.rowId], null);
+assert.equal(section.costingPriceForRow.call({ costingPriceByRowId: { [row.rowId]: null } }, row), null);
+
+const packageState = {
+    makeLocalPackagingRowId: () => 'local-row',
+    defaultCurrency: 'EUR',
+    reconcileCostingPrices() {},
+};
+section.applyCostingPayload.call(packageState, { packaging_items: [{ name: 'Jar', unit_cost: null, components_per_unit: 1 }] });
+assert.equal(packageState.packagingCostRows[0].unit_cost, null);
+
+const unitsGetter = Object.getOwnPropertyDescriptor(section, 'costingUnitsProducedValue').get;
+assert.equal(unitsGetter.call({ costingUnitsProduced: '1,5' }), 1.5);
+assert.equal(unitsGetter.call({ costingUnitsProduced: '1 000' }), 1000);
 JS], base_path());
 
     $process->run();

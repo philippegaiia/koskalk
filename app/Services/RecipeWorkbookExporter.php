@@ -6,6 +6,7 @@ class RecipeWorkbookExporter
 {
     public function __construct(
         private readonly TabularFileExporter $tabularFileExporter,
+        private readonly RecipeCostingExportDataBuilder $costingExportDataBuilder,
     ) {}
 
     /**
@@ -23,6 +24,18 @@ class RecipeWorkbookExporter
         return $this->tabularFileExporter->exportXlsx($sheets);
     }
 
+    /** @param array<string, mixed> $exportData */
+    public function exportCosting(array $exportData): string
+    {
+        return $this->tabularFileExporter->exportXlsx($this->costingExportDataBuilder->workbookSheets($exportData));
+    }
+
+    /** @param array<string, mixed> $exportData */
+    public function writeTemporaryCosting(array $exportData): string
+    {
+        return $this->tabularFileExporter->writeTemporaryXlsx($this->costingExportDataBuilder->workbookSheets($exportData));
+    }
+
     /** @param array<string, mixed> $exportData
      * @return array<string, mixed>
      */
@@ -34,19 +47,24 @@ class RecipeWorkbookExporter
             'name' => __('formula_documents.exports.ingredient_batch'),
             'title' => (string) data_get($document, 'identity.name', 'Formula'),
             'context' => [
-                ['label' => 'Product family', 'value' => data_get($document, 'identity.product_family', ''), 'type' => 'string'],
-                ['label' => 'Product type', 'value' => data_get($document, 'identity.product_type', ''), 'type' => 'string'],
-                ['label' => 'Basis', 'value' => $document['basis_weight'], 'type' => 'number'],
-                ['label' => 'Unit', 'value' => $document['unit'], 'type' => 'string'],
+                ['label' => __('formula_documents.exports.formula'), 'value' => data_get($document, 'identity.name', ''), 'type' => 'string'],
+                ['label' => __('formula_documents.exports.product_family'), 'value' => data_get($document, 'identity.product_family', ''), 'type' => 'string'],
+                ['label' => __('formula_documents.exports.product_type'), 'value' => data_get($document, 'identity.product_type', ''), 'type' => 'string'],
+                ['label' => __('formula_documents.exports.source'), 'value' => __('formula_documents.states.'.data_get($document, 'identity.state', 'current')), 'type' => 'string'],
+                ['label' => __('formula_documents.exports.version'), 'value' => data_get($document, 'metadata.version_number'), 'type' => data_get($document, 'metadata.version_number') === null ? 'string' : 'number'],
+                ['label' => __('formula_documents.exports.generated_at'), 'value' => data_get($document, 'metadata.generated_at', ''), 'type' => 'string'],
+                ['label' => __('formula_documents.exports.basis'), 'value' => $document['basis_weight'], 'type' => 'number'],
+                ['label' => __('formula_documents.exports.unit'), 'value' => $document['unit'], 'type' => 'string'],
+                ['label' => __('formula_documents.exports.percentage_basis'), 'value' => __('formula_documents.exports.basis_'.$document['percentage_basis']), 'type' => 'string'],
             ],
             'columns' => [
-                ['key' => 'section', 'label' => 'Section', 'type' => 'string', 'width' => 24],
-                ['key' => 'ingredient', 'label' => 'Ingredient', 'type' => 'string', 'width' => 34],
-                ['key' => 'percentage_basis', 'label' => 'Percentage basis', 'type' => 'string', 'width' => 20],
-                ['key' => 'percentage', 'label' => 'Percentage', 'type' => 'number', 'format' => '0.################', 'width' => 16],
-                ['key' => 'weight', 'label' => 'Scaled weight', 'type' => 'number', 'format' => '0.################', 'width' => 18],
-                ['key' => 'unit', 'label' => 'Unit', 'type' => 'string', 'width' => 10],
-                ['key' => 'note', 'label' => 'Note', 'type' => 'string', 'width' => 40],
+                ['key' => 'section', 'label' => __('formula_documents.exports.section'), 'type' => 'string', 'width' => 24],
+                ['key' => 'ingredient', 'label' => __('formula_documents.exports.ingredient'), 'type' => 'string', 'width' => 34],
+                ['key' => 'percentage_basis', 'label' => __('formula_documents.exports.percentage_basis'), 'type' => 'string', 'width' => 20],
+                ['key' => 'percentage', 'label' => __('formula_documents.exports.percentage_'.$document['percentage_basis']), 'type' => 'number', 'format' => '0.################', 'width' => 24],
+                ['key' => 'weight', 'label' => __('formula_documents.exports.weight'), 'type' => 'number', 'format' => '0.################', 'width' => 18],
+                ['key' => 'unit', 'label' => __('formula_documents.exports.unit'), 'type' => 'string', 'width' => 10],
+                ['key' => 'note', 'label' => __('formula_documents.exports.note'), 'type' => 'string', 'width' => 40],
             ],
             'rows' => $exportData['ingredientRows'],
         ];

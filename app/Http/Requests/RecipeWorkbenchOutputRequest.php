@@ -99,6 +99,7 @@ class RecipeWorkbenchOutputRequest extends FormRequest
                 },
             ],
             'costing' => ['sometimes', 'nullable', 'array'],
+            'costing.loaded' => ['sometimes', 'boolean'],
             'costing.oil_weight_for_costing' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
             'costing.oil_unit_for_costing' => ['nullable', Rule::in(['g', 'kg', 'oz', 'lb'])],
             'costing.units_produced' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
@@ -132,8 +133,27 @@ class RecipeWorkbenchOutputRequest extends FormRequest
                 $validator->errors()->add('payload', __('formula_documents.validation.output_payload_too_large'));
             }
 
-            if (in_array($this->input('kind'), ['costing', 'composition'], true)) {
+            if ($this->input('kind') === 'composition') {
                 $validator->errors()->add('kind', __('formula_documents.validation.output_kind_unavailable'));
+            }
+
+            $costing = $this->input('costing');
+            $costingIsLoaded = is_array($costing) && ($costing['loaded'] ?? false) === true;
+
+            if ($this->input('kind') === 'costing') {
+                if ($this->input('format') !== 'xlsx') {
+                    $validator->errors()->add('format', __('formula_documents.validation.output_costing_xlsx_only'));
+                }
+
+                if (! $costingIsLoaded) {
+                    $validator->errors()->add('costing', __('formula_documents.validation.output_costing_unavailable'));
+                }
+            }
+
+            if ($this->routeIs('recipes.workbench.print')
+                && $this->input('print_context') === 'costing'
+                && ! $costingIsLoaded) {
+                $validator->errors()->add('costing', __('formula_documents.validation.output_costing_unavailable'));
             }
 
             $draft = $this->input('draft', []);

@@ -696,6 +696,77 @@ it('keeps nonzero small formula quantities readable on the print sheet', functio
         ->assertSee('>0.001</td>', false);
 });
 
+it('uses the requested saved-sheet batch basis and units for its optional costing projection', function (): void {
+    [$user, $recipe, $version] = createSavedRecipeVersion();
+    $ingredient = $version->items()->withoutGlobalScopes()->firstOrFail()->ingredient;
+    $packagingItem = createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Requested-batch jar',
+        'unit_cost' => 0.25,
+        'currency' => 'EUR',
+    ]);
+    $version->packagingItems()->create([
+        'packaging_item_id' => $packagingItem->id,
+        'name' => 'Requested-batch jar',
+        'components_per_unit' => 2,
+        'position' => 1,
+    ]);
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+    $costing->items()->create([
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $response = $this->actingAs($user)
+            ->get(route('recipes.print.production', [
+                'recipe' => $recipe,
+                'version' => $version,
+                'oil_weight' => 500,
+                'batch_basis' => 500,
+                'units_produced' => 4,
+                'sections' => ['costing'],
+            ]))
+            ->assertSuccessful()
+            ->assertViewHas('selectedSections', ['costing'])
+            ->assertViewHas('costingProjection', function (array $projection) use ($ingredient): bool {
+                $oilRow = collect($projection['ingredient_rows'])->firstWhere('ingredient_id', $ingredient->id);
+
+                return $projection['basis_weight'] === 500.0
+                    && $projection['basis_unit'] === 'g'
+                    && $projection['units_produced'] === 4.0
+                    && $oilRow['quantity'] === 500.0
+                    && $oilRow['line_cost'] === 4.25
+                    && $projection['packaging_rows'][0]['line_cost'] === 2.0
+                    && $projection['total_cost'] === 6.25
+                    && $projection['cost_per_unit'] === 1.5625;
+            });
+
+        $domainWrites = collect(DB::getQueryLog())->pluck('query')->filter(
+            fn (string $query): bool => preg_match('/^\s*(insert|update|delete|replace)\b/i', $query) === 1
+                && preg_match('/\b(recipes|recipe_versions|recipe_phases|recipe_items|recipe_version_packaging_items|recipe_version_costings|recipe_version_costing_items|recipe_version_costing_packaging_items|current_material_prices|production_batches|production_batch_ingredients|production_batch_packaging_items)\b/i', $query) === 1,
+        );
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($domainWrites->all())->toBe([])
+        ->and($response->getContent())->toContain('6.25 EUR');
+});
+
 it('renders the procedure stored on the selected formula snapshot', function () {
     [$user, $recipe, $historicalVersion] = createSavedRecipeVersion();
     $currentVersion = RecipeVersion::withoutGlobalScopes()
@@ -1083,7 +1154,7 @@ it('labels cosmetic formula sheet quantity as total batch quantity', function ()
         ->assertDontSee('Oil quantity');
 });
 
-it('downloads the saved formula as a simple csv', function () {
+it('downloads the saved formula csv with source and basis metadata repeated on each row', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
     $response = $this->actingAs($user)
@@ -1091,11 +1162,29 @@ it('downloads the saved formula as a simple csv', function () {
         ->assertSuccessful()
         ->assertDownload('published-formula.csv');
 
-    expect($response->streamedContent())
-        ->toContain('Section,Ingredient,"Percentage basis",Percentage,"Scaled weight",Unit,Note')
-        ->toContain('"Saponified oils","Olive Oil",oils,100,1000,g,')
-        ->toContain('"Lye and water",NaOH,oils,')
-        ->toContain('"Lye and water",Water,oils,')
+    $rows = collect(explode("\n", trim($response->streamedContent())))
+        ->map(fn (string $line): array => str_getcsv($line));
+    $headers = $rows->first();
+    $ingredientIndex = array_search(__('formula_documents.exports.ingredient'), $headers, true);
+    $oilRow = $rows->first(fn (array $row): bool => ($row[$ingredientIndex] ?? null) === 'Olive Oil');
+
+    expect($headers)->toContain(
+        __('formula_documents.exports.formula'),
+        __('formula_documents.exports.source'),
+        __('formula_documents.exports.version'),
+        __('formula_documents.exports.generated_at'),
+        __('formula_documents.exports.basis'),
+        __('formula_documents.exports.formula_basis_unit'),
+        __('formula_documents.exports.percentage_basis'),
+    )
+        ->and($headers[array_search(__('formula_documents.exports.formula_basis_unit'), $headers, true)])
+        ->not->toBe($headers[array_search(__('formula_documents.exports.unit'), $headers, true)])
+        ->and($oilRow[$ingredientIndex])->toBe('Olive Oil')
+        ->and($oilRow[array_search(__('formula_documents.exports.formula'), $headers, true)])->toBe('Published Formula')
+        ->and($oilRow[array_search(__('formula_documents.exports.basis'), $headers, true)])->toBe('1000')
+        ->and($oilRow[array_search(__('formula_documents.exports.formula_basis_unit'), $headers, true)])->toBe('g')
+        ->and($oilRow[array_search(__('formula_documents.exports.percentage_basis'), $headers, true)])->toBe(__('formula_documents.exports.basis_oils'))
+        ->and($oilRow[array_search(__('formula_documents.exports.percentage_oils'), $headers, true)])->toBe('100')
         ->not->toContain('Platform')
         ->not->toContain('User')
         ->not->toContain('INCI name');

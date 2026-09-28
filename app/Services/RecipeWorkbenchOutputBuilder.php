@@ -30,6 +30,10 @@ class RecipeWorkbenchOutputBuilder
         private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
         private readonly FormulaDocumentOptions $formulaDocumentOptions,
         private readonly RecipeExportDataBuilder $recipeExportDataBuilder,
+        private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
+        private readonly RecipeCostingExportDataBuilder $costingExportDataBuilder,
+        private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
+        private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly RecipeRichContentAttachmentProvider $attachmentProvider,
         private readonly MassConverter $massConverter,
     ) {}
@@ -123,9 +127,21 @@ class RecipeWorkbenchOutputBuilder
             'generated_at' => now()->format('Y-m-d H:i'),
         ];
 
+        $costingProjection = null;
+        $costingExportData = null;
+        $costingIsLoaded = is_array($payload['costing'] ?? null) && ($payload['costing']['loaded'] ?? false) === true;
+
+        if ($costingIsLoaded) {
+            $currentFormula = $this->currentCostingFormula($snapshotDraft, $formulaDocument, $calculation, $ingredients, $payload['costing']);
+            $currentCosting = $this->currentCostingPayload($payload['costing'], $snapshotDraft);
+            $costingProjection = $this->costPreviewBuilder->buildFromTransientRows($currentFormula, $currentCosting);
+            $costingExportData = $this->costingExportDataBuilder->build($formulaDocument, $costingProjection);
+        }
+
         $availableSections = $this->formulaDocumentOptions->availableSections([
             'procedure' => $this->hasPrintableContent($renderedInstructions),
             'label' => filled($formulaDocument['label_text'] ?? null),
+            'costing' => $costingIsLoaded,
             'analysis' => is_array($formulaDocument['soap_analysis'] ?? null)
                 && (filled($formulaDocument['soap_analysis']['qualities'] ?? [])
                     || filled($formulaDocument['soap_analysis']['fatty_acids'] ?? [])),
@@ -147,6 +163,172 @@ class RecipeWorkbenchOutputBuilder
             'returnUrl' => $recipe instanceof Recipe ? route('recipes.saved', ['recipe' => $recipe]) : null,
             'filename' => $filenameSlug.'-current-formula-'.now()->format('Y-m-d'),
             'capturedCosting' => $payload['costing'] ?? null,
+            'costingProjection' => $costingProjection,
+            'costingExportData' => $costingExportData,
+            'hasLoadedCosting' => $costingIsLoaded,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshotDraft
+     * @param  array<string, mixed>  $formulaDocument
+     * @param  array<string, mixed>|null  $calculation
+     * @param  Collection<int, Ingredient>  $ingredients
+     * @param  array<string, mixed>  $costing
+     * @return array<string, mixed>
+     */
+    private function currentCostingFormula(
+        array $snapshotDraft,
+        array $formulaDocument,
+        ?array $calculation,
+        Collection $ingredients,
+        array $costing,
+    ): array {
+        $basisWeight = (string) ($snapshotDraft['oilWeight'] ?? 0);
+        $basisUnit = (string) ($snapshotDraft['oilUnit'] ?? 'g');
+        $isSoap = data_get($formulaDocument, 'identity.calculation_basis') !== 'total_formula';
+        $phasesByKey = collect($snapshotDraft['phases'] ?? [])->keyBy('key');
+        $phases = [];
+
+        foreach (($snapshotDraft['phaseItems'] ?? []) as $phaseKey => $rows) {
+            if (! is_string($phaseKey) || ! is_array($rows)) {
+                continue;
+            }
+
+            $phases[$phaseKey] = [
+                'label' => (string) ($phasesByKey->get($phaseKey)['name'] ?? $phaseKey),
+                'rows' => collect($rows)->values()->map(fn (array $row, int $index): array => [
+                    'ingredient_id' => (int) ($row['ingredient_id'] ?? 0),
+                    'position' => $index + 1,
+                    'name' => (string) ($row['name'] ?? ''),
+                    'percentage' => (string) ($row['percentage'] ?? 0),
+                    'weight' => (string) ($row['weight'] ?? 0),
+                ])->all(),
+            ];
+        }
+
+        $syntheticRows = $isSoap
+            ? $this->currentSyntheticCostingRows($snapshotDraft, $calculation, $ingredients, $costing)
+            : [];
+
+        return [
+            'family' => $isSoap ? 'soap' : 'cosmetic',
+            'basis_weight' => $basisWeight,
+            'basis_unit' => $basisUnit,
+            'phases' => $phases,
+            'packaging_items' => collect($snapshotDraft['packagingItems'] ?? [])
+                ->values()
+                ->map(fn (array $row, int $index): array => [
+                    'packaging_item_id' => isset($row['packaging_item_id']) ? (int) $row['packaging_item_id'] : null,
+                    'position' => $index + 1,
+                    'name' => (string) ($row['name'] ?? ''),
+                    'material_code' => $row['material_code'] ?? null,
+                    'components_per_unit' => (string) ($row['components_per_unit'] ?? 0),
+                ])
+                ->all(),
+            'synthetic_rows' => $syntheticRows,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshotDraft
+     * @param  array<string, mixed>|null  $calculation
+     * @param  Collection<int, Ingredient>  $ingredients
+     * @param  array<string, mixed>  $costing
+     * @return list<array<string, mixed>>
+     */
+    private function currentSyntheticCostingRows(
+        array $snapshotDraft,
+        ?array $calculation,
+        Collection $ingredients,
+        array $costing,
+    ): array {
+        if (! is_array($calculation)) {
+            return [];
+        }
+
+        $selected = data_get($calculation, 'lye.selected', []);
+        $lyeTypes = match ((string) ($snapshotDraft['lyeType'] ?? 'naoh')) {
+            'dual' => ['naoh', 'koh'],
+            'koh' => ['koh'],
+            default => ['naoh'],
+        };
+        $rows = [];
+        $alkalis = $this->alkaliResolver->resolveMany($lyeTypes);
+
+        foreach ($lyeTypes as $index => $type) {
+            $ingredient = $alkalis->get($type);
+            $weight = $this->decimal($type === 'koh'
+                ? data_get($selected, 'koh_to_weigh', 0)
+                : data_get($selected, 'naoh_weight', 0), 'costing');
+
+            if (! $ingredient instanceof Ingredient || bccomp($weight, '0', 18) <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'ingredient_id' => (int) $ingredient->id,
+                'position' => $index + 1,
+                'phase_key' => 'lye_alkali',
+                'phase_name' => __('workbench.costing.phases.alkali'),
+                'name' => $ingredient->localizedDisplayName() ?? $ingredient->display_name,
+                'percentage' => '0',
+                'weight' => $weight,
+                'is_derived' => true,
+            ];
+        }
+
+        $substitutions = collect($snapshotDraft['phaseItems']['lye_water'] ?? [])
+            ->map(fn (array $row): array => ['percentage' => (string) ($row['percentage'] ?? 0)])
+            ->all();
+        $allocation = $this->lyeLiquidAllocationService->allocateFresh(data_get($calculation, 'lye.water.weight', 0), $substitutions);
+        $waterWeight = $this->decimal($allocation['water_weight'] ?? 0, 'costing');
+        $waterPriceRow = collect($costing['items'] ?? [])
+            ->first(fn (mixed $row): bool => is_array($row) && ($row['phase_key'] ?? null) === 'implicit_water');
+        $waterIngredient = is_array($waterPriceRow) ? $ingredients->get((int) ($waterPriceRow['ingredient_id'] ?? 0)) : null;
+
+        if ($waterIngredient instanceof Ingredient && bccomp($waterWeight, '0', 18) > 0) {
+            $rows[] = [
+                'ingredient_id' => (int) $waterIngredient->id,
+                'position' => 1,
+                'phase_key' => 'implicit_water',
+                'phase_name' => __('workbench.costing.phases.implicit_water'),
+                'name' => $waterIngredient->localizedDisplayName() ?? $waterIngredient->display_name,
+                'percentage' => '0',
+                'weight' => $waterWeight,
+                'is_derived' => true,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** @param array<string, mixed> $costing
+     * @param  array<string, mixed>  $snapshotDraft
+     * @return array<string, mixed>
+     */
+    private function currentCostingPayload(array $costing, array $snapshotDraft): array
+    {
+        $basisWeight = $costing['oil_weight_for_costing'] ?? null;
+        $basisUnit = is_string($costing['oil_unit_for_costing'] ?? null) && $costing['oil_unit_for_costing'] !== ''
+            ? MassUnit::fromInput($costing['oil_unit_for_costing'])
+            : MassUnit::fromInput((string) ($snapshotDraft['oilUnit'] ?? 'g'));
+        $hasPositiveOverride = is_numeric($basisWeight) && (float) $basisWeight > 0;
+        $effectiveWeight = $hasPositiveOverride
+            ? (string) $basisWeight
+            : $this->massConverter->convert(
+                (string) ($snapshotDraft['oilWeight'] ?? 0),
+                (string) ($snapshotDraft['oilUnit'] ?? 'g'),
+                $basisUnit,
+            );
+
+        return [
+            'oil_weight_for_costing' => $effectiveWeight,
+            'oil_unit_for_costing' => $basisUnit->value,
+            'units_produced' => array_key_exists('units_produced', $costing) ? $costing['units_produced'] : null,
+            'currency' => (string) ($costing['currency'] ?? 'EUR'),
+            'items' => collect($costing['items'] ?? [])->filter(fn (mixed $row): bool => is_array($row))->values()->all(),
+            'packaging_items' => collect($costing['packaging_items'] ?? [])->filter(fn (mixed $row): bool => is_array($row))->values()->all(),
         ];
     }
 
@@ -604,10 +786,12 @@ class RecipeWorkbenchOutputBuilder
                 ->filter(fn (mixed $row): bool => is_array($row))
                 ->map(function (array $row) use ($packagingItems): array {
                     $item = isset($row['packaging_item_id']) ? $packagingItems->get((int) $row['packaging_item_id']) : null;
+                    $capturedName = trim((string) ($row['name'] ?? ''));
 
                     return [
                         'packaging_item_id' => $item?->id,
-                        'name' => $item?->name ?? '',
+                        'name' => $capturedName !== '' ? $capturedName : ($item?->name ?? ''),
+                        'material_code' => $item?->material_code,
                         'components_per_unit' => (float) ($row['components_per_unit'] ?? 0),
                         'notes' => $row['notes'] ?? null,
                     ];

@@ -15,6 +15,7 @@ class RecipeVersionViewDataBuilder
     public function __construct(
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
+        private readonly RecipeCostingExportDataBuilder $costingExportDataBuilder,
         private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
         private readonly RecipeRichContentAttachmentProvider $recipeRichContentAttachmentProvider,
     ) {}
@@ -69,6 +70,9 @@ class RecipeVersionViewDataBuilder
             'version_number' => (int) $version->version_number,
             'generated_at' => now()->format('Y-m-d H:i'),
         ];
+        $costingExportData = is_array($costingData['projection'])
+            ? $this->costingExportDataBuilder->build($formulaDocument, $costingData['projection'])
+            : null;
 
         return [
             'recipe' => $recipe,
@@ -87,6 +91,8 @@ class RecipeVersionViewDataBuilder
             'costingCurrency' => $costingData['currency'],
             'hasCostingData' => $costingData['hasCostingData'],
             'hasUnpricedRows' => $costingData['hasUnpricedRows'],
+            'costingProjection' => $costingData['projection'],
+            'costingExportData' => $costingExportData,
             'batchContext' => $normalizedBatchContext,
             'selectedOilWeight' => $selectedOilWeight,
         ];
@@ -491,6 +497,7 @@ class RecipeVersionViewDataBuilder
                 'currency' => 'EUR',
                 'hasCostingData' => false,
                 'hasUnpricedRows' => false,
+                'projection' => null,
             ];
         }
 
@@ -506,16 +513,21 @@ class RecipeVersionViewDataBuilder
                 'currency' => $user->defaultCurrency(),
                 'hasCostingData' => false,
                 'hasUnpricedRows' => false,
+                'projection' => null,
             ];
         }
 
-        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null) ?? $existingCosting?->units_produced;
+        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null)
+            ?? $existingCosting->units_produced;
         $preview = $this->costPreviewBuilder->buildFromCosting(
             recipe: $recipe,
             version: $version,
             costing: $existingCosting,
             batchBasisValue: $this->positiveFloat($batchContext['batch_basis'] ?? null) ?? $selectedOilWeight,
             unitsProduced: $unitsProduced,
+            includeDerivedRows: true,
+            requireCompletePackagingTotal: true,
+            batchBasisUnit: $version->batch_unit ?: 'g',
         );
 
         $ingredientRows = collect($preview['ingredient_rows'])
@@ -538,20 +550,22 @@ class RecipeVersionViewDataBuilder
             ->values()
             ->all();
 
-        $packagingTotal = $unitsProduced !== null && $unitsProduced > 0 ? $preview['packaging_total'] : null;
+        $packagingTotal = $preview['packaging_total'];
+        $summaryCost = $preview['total_cost'];
 
         return [
             'summary' => [
-                ['label' => 'Ingredient total', 'value' => $this->money($preview['ingredient_total'], $preview['currency'])],
-                ['label' => 'Packaging total', 'value' => $packagingTotal !== null ? $this->money($packagingTotal, $preview['currency']) : 'Set units produced'],
-                ['label' => 'Total batch cost', 'value' => $this->money($preview['total_cost'], $preview['currency'])],
-                ['label' => 'Cost per unit', 'value' => $preview['cost_per_unit'] !== null ? $this->money($preview['cost_per_unit'], $preview['currency']) : 'Not set'],
+                ['label' => __('formula_documents.exports.ingredient_total'), 'value' => $this->money($preview['ingredient_total'], $preview['currency'])],
+                ['label' => __('formula_documents.exports.packaging_total'), 'value' => $packagingTotal !== null ? $this->money($packagingTotal, $preview['currency']) : __('formula_documents.exports.units_required')],
+                ['label' => __('formula_documents.exports.total_cost'), 'value' => $summaryCost !== null ? $this->money($summaryCost, $preview['currency']) : __('formula_documents.exports.packaging_total_incomplete')],
+                ['label' => __('formula_documents.exports.cost_per_unit'), 'value' => $preview['cost_per_unit'] !== null ? $this->money($preview['cost_per_unit'], $preview['currency']) : __('formula_documents.exports.units_required')],
             ],
             'ingredientRows' => $ingredientRows,
             'packagingRows' => $packagingRows,
             'currency' => $preview['currency'],
             'hasCostingData' => $ingredientRows !== [] || $packagingRows !== [],
             'hasUnpricedRows' => $preview['has_unpriced_rows'],
+            'projection' => $preview,
         ];
     }
 

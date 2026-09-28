@@ -7,6 +7,7 @@ use App\Services\RecipeCsvExporter;
 use App\Services\RecipeWorkbenchOutputBuilder;
 use App\Services\RecipeWorkbookExporter;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RecipeWorkbenchOutputController extends Controller
@@ -25,10 +26,23 @@ class RecipeWorkbenchOutputController extends Controller
         RecipeWorkbenchOutputBuilder $builder,
         RecipeWorkbookExporter $workbookExporter,
         RecipeCsvExporter $csvExporter,
-    ): StreamedResponse {
+    ): StreamedResponse|BinaryFileResponse {
         $data = $builder->build($request->user(), $request->validated());
+        $kind = $request->validated('kind');
         $extension = $request->validated('format');
-        $filename = $data['filename'].'.'.$extension;
+        $filename = $kind === 'costing'
+            ? preg_replace('/-current-formula-/', '-current-costing-', $data['filename']).'.xlsx'
+            : $data['filename'].'.'.$extension;
+
+        if ($kind === 'costing') {
+            $path = $workbookExporter->writeTemporaryCosting($data['costingExportData']);
+
+            return response()->download(
+                $path,
+                $filename,
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            )->deleteFileAfterSend(true);
+        }
 
         if ($extension === 'csv') {
             return response()->streamDownload(

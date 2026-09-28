@@ -1,4 +1,5 @@
 import { serializeDraft } from './payload';
+import { parseDecimalInput } from './number-format';
 
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -9,7 +10,7 @@ function nullableNumber(value) {
         return null;
     }
 
-    const number = Number(value);
+    const number = parseDecimalInput(value);
 
     return Number.isFinite(number) ? number : null;
 }
@@ -46,11 +47,11 @@ export async function captureRecipeWorkbenchOutput(state, config, options = {}) 
         workspace: config?.workspace ?? null,
         recipe: config?.recipe ?? null,
         product_family: config?.productFamily ?? state.productFamilySlug ?? null,
-        kind: 'formula',
+        kind: options.kind ?? 'formula',
         format: options.format ?? 'xlsx',
         draft,
         manufacturing_instructions: state.$wire?.data?.manufacturing_instructions ?? null,
-        costing: state.hasLoadedCosting ? serializeOutputCosting(state) : null,
+        costing: state.hasLoadedCosting ? { ...serializeOutputCosting(state), loaded: true } : null,
     };
 
     if (options.printContext) {
@@ -237,7 +238,7 @@ export function createRecipeWorkbenchOutputSection(config) {
             }
         },
 
-        async exportCurrentFormula(format = 'xlsx') {
+        async exportCurrentFormula(format = 'xlsx', kind = 'formula') {
             if (this.outputPending) {
                 return false;
             }
@@ -248,7 +249,7 @@ export function createRecipeWorkbenchOutputSection(config) {
             try {
                 clearFallback(this);
 
-                const payload = await this.captureOutput({ format });
+                const payload = await this.captureOutput({ format, kind });
                 const response = await fetch(this.outputConfig.exportUrl, {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -275,6 +276,14 @@ export function createRecipeWorkbenchOutputSection(config) {
             } finally {
                 this.outputPending = false;
             }
+        },
+
+        async exportCurrentCosting() {
+            if (! this.hasLoadedCosting) {
+                return false;
+            }
+
+            return this.exportCurrentFormula('xlsx', 'costing');
         },
     };
 }

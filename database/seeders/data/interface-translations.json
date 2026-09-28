@@ -1128,6 +1128,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "actions.export_costing_excel",
+      "text": {
+        "de": "Kosten in Excel exportieren",
+        "es": "Exportar costes a Excel",
+        "fr": "Exporter les coûts vers Excel",
+        "it": "Esporta i costi in Excel",
+        "nl": "Kosten exporteren naar Excel",
+        "pt_BR": "Exportar custos para Excel"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "actions.export_csv",
       "text": {
         "de": "Als CSV exportieren",
@@ -1824,6 +1836,246 @@
     },
     {
       "group": "formula_documents",
+      "key": "exports.amount",
+      "text": {
+        "de": "Betrag",
+        "es": "Importe",
+        "fr": "Montant",
+        "it": "Importo",
+        "nl": "Bedrag",
+        "pt_BR": "Valor"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.basis",
+      "text": {
+        "de": "Formelbasis",
+        "es": "Base de la fórmula",
+        "fr": "Base de la formule",
+        "it": "Base della formula",
+        "nl": "Formulebasis",
+        "pt_BR": "Base da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.basis_formula",
+      "text": {
+        "de": "Formel",
+        "es": "Fórmula",
+        "fr": "Formule",
+        "it": "Formula",
+        "nl": "Formule",
+        "pt_BR": "Fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.basis_oils",
+      "text": {
+        "de": "Öle",
+        "es": "Aceites",
+        "fr": "Huiles",
+        "it": "Oli",
+        "nl": "Oliën",
+        "pt_BR": "Óleos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.batch_cost",
+      "text": {
+        "de": "Chargenkosten",
+        "es": "Coste del lote",
+        "fr": "Coût du lot",
+        "it": "Costo del lotto",
+        "nl": "Batchkosten",
+        "pt_BR": "Custo do lote"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.complete",
+      "text": {
+        "de": "Vollständig",
+        "es": "Completo",
+        "fr": "Complet",
+        "it": "Completo",
+        "nl": "Volledig",
+        "pt_BR": "Completo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.components_per_unit",
+      "text": {
+        "de": "Komponenten pro fertiger Einheit",
+        "es": "Componentes por unidad terminada",
+        "fr": "Composants par unité finie",
+        "it": "Componenti per unità finita",
+        "nl": "Onderdelen per eindproduct",
+        "pt_BR": "Componentes por unidade final"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.cost_item",
+      "text": {
+        "de": "Kostenposition",
+        "es": "Concepto de coste",
+        "fr": "Poste de coût",
+        "it": "Voce di costo",
+        "nl": "Kostenpost",
+        "pt_BR": "Item de custo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.cost_per_finished_unit",
+      "text": {
+        "de": "Kosten pro fertiger Einheit",
+        "es": "Coste por unidad terminada",
+        "fr": "Coût par unité finie",
+        "it": "Costo per unità finita",
+        "nl": "Kosten per eindproduct",
+        "pt_BR": "Custo por unidade final"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.cost_per_unit",
+      "text": {
+        "de": "Kosten pro fertiger Einheit",
+        "es": "Coste por unidad terminada",
+        "fr": "Coût par unité finie",
+        "it": "Costo per unità finita",
+        "nl": "Kosten per eindproduct",
+        "pt_BR": "Custo por unidade final"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.costing_basis",
+      "text": {
+        "de": "Kalkulationsmenge",
+        "es": "Cantidad para el cálculo de costes",
+        "fr": "Quantité de calcul des coûts",
+        "it": "Quantità per il calcolo dei costi",
+        "nl": "Kostprijsberekeningshoeveelheid",
+        "pt_BR": "Quantidade para cálculo de custos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.costing_ingredients",
+      "text": {
+        "de": "Zutaten",
+        "es": "Ingredientes",
+        "fr": "Ingrédients",
+        "it": "Ingredienti",
+        "nl": "Ingrediënten",
+        "pt_BR": "Ingredientes"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.costing_packaging",
+      "text": {
+        "de": "Verpackung",
+        "es": "Envases",
+        "fr": "Emballages",
+        "it": "Confezioni",
+        "nl": "Verpakking",
+        "pt_BR": "Embalagens"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.costing_summary",
+      "text": {
+        "de": "Zusammenfassung",
+        "es": "Resumen",
+        "fr": "Récapitulatif",
+        "it": "Riepilogo",
+        "nl": "Samenvatting",
+        "pt_BR": "Resumo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.currency",
+      "text": {
+        "de": "Währung",
+        "es": "Moneda",
+        "fr": "Devise",
+        "it": "Valuta",
+        "nl": "Valuta",
+        "pt_BR": "Moeda"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.formula",
+      "text": {
+        "de": "Formel",
+        "es": "Fórmula",
+        "fr": "Formule",
+        "it": "Formula",
+        "nl": "Formule",
+        "pt_BR": "Fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.formula_basis_unit",
+      "text": {
+        "de": "Einheit der Formelbasis",
+        "es": "Unidad de la base de la fórmula",
+        "fr": "Unité de la base de la formule",
+        "it": "Unità della base della formula",
+        "nl": "Eenheid van de formulebasis",
+        "pt_BR": "Unidade da base da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.generated_at",
+      "text": {
+        "de": "Erstellt am",
+        "es": "Generado",
+        "fr": "Généré le",
+        "it": "Generato il",
+        "nl": "Gegenereerd op",
+        "pt_BR": "Gerado em"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.includes_unpriced_rows",
+      "text": {
+        "de": "Zeilen ohne Preis werden ausgeschlossen",
+        "es": "Se excluyen las filas sin precio",
+        "fr": "Les lignes sans prix sont exclues",
+        "it": "Le righe senza prezzo sono escluse",
+        "nl": "Regels zonder prijs zijn uitgesloten",
+        "pt_BR": "Linhas sem preço são excluídas"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.ingredient",
+      "text": {
+        "de": "Zutat",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "exports.ingredient_batch",
       "text": {
         "de": "Zutatenansatz",
@@ -1836,6 +2088,246 @@
     },
     {
       "group": "formula_documents",
+      "key": "exports.ingredient_total",
+      "text": {
+        "de": "Zutatenkosten",
+        "es": "Coste de ingredientes",
+        "fr": "Coût des ingrédients",
+        "it": "Costo degli ingredienti",
+        "nl": "Ingrediëntkosten",
+        "pt_BR": "Custo dos ingredientes"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.line_cost",
+      "text": {
+        "de": "Positionskosten",
+        "es": "Coste de línea",
+        "fr": "Coût de la ligne",
+        "it": "Costo della riga",
+        "nl": "Regelkosten",
+        "pt_BR": "Custo da linha"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.line_currency",
+      "text": {
+        "de": "Währung der Position",
+        "es": "Moneda de la línea",
+        "fr": "Devise de la ligne",
+        "it": "Valuta della riga",
+        "nl": "Valuta van de regel",
+        "pt_BR": "Moeda da linha"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.material_code",
+      "text": {
+        "de": "Materialcode",
+        "es": "Código de material",
+        "fr": "Code matériau",
+        "it": "Codice materiale",
+        "nl": "Materiaalcode",
+        "pt_BR": "Código do material"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.note",
+      "text": {
+        "de": "Notiz",
+        "es": "Nota",
+        "fr": "Note",
+        "it": "Nota",
+        "nl": "Opmerking",
+        "pt_BR": "Observação"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.packaging",
+      "text": {
+        "de": "Verpackung",
+        "es": "Envase",
+        "fr": "Emballage",
+        "it": "Confezione",
+        "nl": "Verpakking",
+        "pt_BR": "Embalagem"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.packaging_total",
+      "text": {
+        "de": "Verpackungskosten",
+        "es": "Coste de envases",
+        "fr": "Coût des emballages",
+        "it": "Costo delle confezioni",
+        "nl": "Verpakkingskosten",
+        "pt_BR": "Custo das embalagens"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.packaging_total_incomplete",
+      "text": {
+        "de": "Verpackungsgesamtbetrag unvollständig",
+        "es": "Coste total de envases incompleto",
+        "fr": "Coût total des emballages incomplet",
+        "it": "Costo totale delle confezioni incompleto",
+        "nl": "Totale verpakkingskosten onvolledig",
+        "pt_BR": "Custo total das embalagens incompleto"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.percentage_basis",
+      "text": {
+        "de": "Prozentbasis",
+        "es": "Base del porcentaje",
+        "fr": "Base du pourcentage",
+        "it": "Base percentuale",
+        "nl": "Percentagebasis",
+        "pt_BR": "Base percentual"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.percentage_formula",
+      "text": {
+        "de": "Prozent (% der Formel, 0–100)",
+        "es": "Porcentaje (% de la fórmula, 0–100)",
+        "fr": "Pourcentage (% de la formule, 0–100)",
+        "it": "Percentuale (% della formula, 0–100)",
+        "nl": "Percentage (% van de formule, 0–100)",
+        "pt_BR": "Percentual (% da fórmula, 0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.percentage_formula_generic",
+      "text": {
+        "de": "Prozent (0–100)",
+        "es": "Porcentaje (0–100)",
+        "fr": "Pourcentage (0–100)",
+        "it": "Percentuale (0–100)",
+        "nl": "Percentage (0–100)",
+        "pt_BR": "Percentual (0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.percentage_oils",
+      "text": {
+        "de": "Prozent (% der Öle, 0–100)",
+        "es": "Porcentaje (% de aceites, 0–100)",
+        "fr": "Pourcentage (% des huiles, 0–100)",
+        "it": "Percentuale (% degli oli, 0–100)",
+        "nl": "Percentage (% van oliën, 0–100)",
+        "pt_BR": "Percentual (% dos óleos, 0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.phase",
+      "text": {
+        "de": "Phase",
+        "es": "Fase",
+        "fr": "Phase",
+        "it": "Fase",
+        "nl": "Fase",
+        "pt_BR": "Fase"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.price_currency",
+      "text": {
+        "de": "Währung des Preises",
+        "es": "Moneda del precio",
+        "fr": "Devise du prix",
+        "it": "Valuta del prezzo",
+        "nl": "Valuta van de prijs",
+        "pt_BR": "Moeda do preço"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.price_per_kg",
+      "text": {
+        "de": "Preis pro kg",
+        "es": "Precio por kg",
+        "fr": "Prix au kg",
+        "it": "Prezzo al kg",
+        "nl": "Prijs per kg",
+        "pt_BR": "Preço por kg"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.priced",
+      "text": {
+        "de": "Bepreist",
+        "es": "Con precio",
+        "fr": "Tarif renseigné",
+        "it": "Con prezzo",
+        "nl": "Geprijsd",
+        "pt_BR": "Com preço"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.product_family",
+      "text": {
+        "de": "Produktfamilie",
+        "es": "Familia de productos",
+        "fr": "Famille de produits",
+        "it": "Famiglia di prodotti",
+        "nl": "Productfamilie",
+        "pt_BR": "Família de produtos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.product_type",
+      "text": {
+        "de": "Produkttyp",
+        "es": "Tipo de producto",
+        "fr": "Type de produit",
+        "it": "Tipo di prodotto",
+        "nl": "Producttype",
+        "pt_BR": "Tipo de produto"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.quantity",
+      "text": {
+        "de": "Menge",
+        "es": "Cantidad",
+        "fr": "Quantité",
+        "it": "Quantità",
+        "nl": "Hoeveelheid",
+        "pt_BR": "Quantidade"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.section",
+      "text": {
+        "de": "Abschnitt",
+        "es": "Sección",
+        "fr": "Section",
+        "it": "Sezione",
+        "nl": "Onderdeel",
+        "pt_BR": "Seção"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "exports.soap_output",
       "text": {
         "de": "Seifenergebnis",
@@ -1844,6 +2336,126 @@
         "it": "Risultato del sapone",
         "nl": "Zeepresultaat",
         "pt_BR": "Resultado do sabonete"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.source",
+      "text": {
+        "de": "Quelle",
+        "es": "Origen",
+        "fr": "Source",
+        "it": "Origine",
+        "nl": "Bron",
+        "pt_BR": "Origem"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.status",
+      "text": {
+        "de": "Status",
+        "es": "Estado",
+        "fr": "État",
+        "it": "Stato",
+        "nl": "Status",
+        "pt_BR": "Status"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.total_cost",
+      "text": {
+        "de": "Gesamtkosten des Batches",
+        "es": "Coste total del lote",
+        "fr": "Coût total du lot",
+        "it": "Costo totale del lotto",
+        "nl": "Totale batchkosten",
+        "pt_BR": "Custo total do lote"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.unit",
+      "text": {
+        "de": "Einheit",
+        "es": "Unidad",
+        "fr": "Unité",
+        "it": "Unità",
+        "nl": "Eenheid",
+        "pt_BR": "Unidade"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.unit_cost",
+      "text": {
+        "de": "Stückkosten",
+        "es": "Coste unitario",
+        "fr": "Coût unitaire",
+        "it": "Costo unitario",
+        "nl": "Stukprijs",
+        "pt_BR": "Custo unitário"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.units_produced",
+      "text": {
+        "de": "Erwartete fertige Einheiten",
+        "es": "Unidades terminadas previstas",
+        "fr": "Unités finies prévues",
+        "it": "Unità finite previste",
+        "nl": "Verwacht aantal eindproducten",
+        "pt_BR": "Unidades finais esperadas"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.units_required",
+      "text": {
+        "de": "Anzahl fertiger Einheiten erforderlich",
+        "es": "Se necesita indicar el número de unidades terminadas",
+        "fr": "Le nombre d’unités finies est requis",
+        "it": "È necessario indicare il numero di unità finite",
+        "nl": "Aantal eindproducten vereist",
+        "pt_BR": "É necessário informar o número de unidades finais"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.unpriced",
+      "text": {
+        "de": "Preis fehlt",
+        "es": "Falta el precio",
+        "fr": "Prix manquant",
+        "it": "Prezzo mancante",
+        "nl": "Prijs ontbreekt",
+        "pt_BR": "Preço ausente"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.version",
+      "text": {
+        "de": "Gespeicherte Version",
+        "es": "Versión guardada",
+        "fr": "Version enregistrée",
+        "it": "Versione salvata",
+        "nl": "Opgeslagen versie",
+        "pt_BR": "Versão salva"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.weight",
+      "text": {
+        "de": "Skaliertes Gewicht",
+        "es": "Peso escalado",
+        "fr": "Poids ajusté",
+        "it": "Peso scalato",
+        "nl": "Geschaald gewicht",
+        "pt_BR": "Peso escalado"
       }
     },
     {
@@ -2852,6 +3464,30 @@
         "it": "Scheda formula",
         "nl": "Formuleblad",
         "pt_BR": "Ficha da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_costing_unavailable",
+      "text": {
+        "de": "Laden Sie die Kostenangaben, bevor Sie Kosten drucken oder exportieren.",
+        "es": "Carga los datos de costes antes de imprimirlos o exportarlos.",
+        "fr": "Chargez les données de coût avant de les imprimer ou de les exporter.",
+        "it": "Carica i dati dei costi prima di stamparli o esportarli.",
+        "nl": "Laad de kostengegevens voordat je ze afdrukt of exporteert.",
+        "pt_BR": "Carregue os dados de custos antes de imprimi-los ou exportá-los."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_costing_xlsx_only",
+      "text": {
+        "de": "Kosten können nur als Excel-Arbeitsmappe exportiert werden.",
+        "es": "Los costes solo se pueden exportar como libro de Excel.",
+        "fr": "Les coûts ne peuvent être exportés que dans un classeur Excel.",
+        "it": "I costi possono essere esportati solo come cartella di lavoro Excel.",
+        "nl": "Kosten kunnen alleen als Excel-werkmap worden geëxporteerd.",
+        "pt_BR": "Os custos só podem ser exportados como pasta de trabalho do Excel."
       }
     },
     {

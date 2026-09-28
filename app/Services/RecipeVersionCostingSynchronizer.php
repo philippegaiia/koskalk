@@ -424,7 +424,18 @@ class RecipeVersionCostingSynchronizer
             : clone $existingCosting;
 
         $costing->setRelation('recipeVersion', $recipeVersion);
-        $costing->setRelation('items', $this->projectFormulaItems($recipeVersion, $existingCosting));
+        $projectedItems = $this->projectFormulaItems($recipeVersion, $existingCosting);
+        $desiredKeys = $projectedItems->mapWithKeys(fn (RecipeVersionCostingItem $item): array => [
+            $this->costingKey((int) $item->ingredient_id, $item->phase_key, (int) $item->position) => true,
+        ]);
+        $savedOnlyItems = ($existingCosting?->items ?? collect())
+            ->reject(fn (RecipeVersionCostingItem $item): bool => $desiredKeys->has($this->costingKey(
+                (int) $item->ingredient_id,
+                $item->phase_key,
+                (int) $item->position,
+            )))
+            ->map(fn (RecipeVersionCostingItem $item): RecipeVersionCostingItem => clone $item);
+        $costing->setRelation('items', $projectedItems->concat($savedOnlyItems)->values());
         $costing->setRelation('packagingItems', $this->projectPackagingItems($recipeVersion, $existingCosting));
 
         return $costing;
@@ -574,8 +585,9 @@ class RecipeVersionCostingSynchronizer
                 'ingredient_id' => $row['ingredient_id'],
                 'phase_key' => $row['phase_key'],
                 'position' => $row['position'],
-                'price_per_kg' => $existingRow?->price_per_kg
-                    ?? ($defaultPrice?->price_per_canonical_unit === null
+                'price_per_kg' => $existingRow instanceof RecipeVersionCostingItem
+                    ? $existingRow->price_per_kg
+                    : ($defaultPrice?->price_per_canonical_unit === null
                         ? null
                         : bcmul($defaultPrice->price_per_canonical_unit, '1000', 12)),
             ]);
@@ -667,11 +679,12 @@ class RecipeVersionCostingSynchronizer
     private function soapWaterIngredient(): ?Ingredient
     {
         return Ingredient::query()
-            ->withoutGlobalScopes()
             ->where('is_active', true)
             ->where('category', IngredientCategory::WaterSolventsCarriers->value)
             ->where('subcategory', IngredientSubcategory::Water->value)
-            ->orderByRaw('CASE WHEN owner_type IS NULL THEN 0 ELSE 1 END')
+            ->whereNull('owner_type')
+            ->whereNull('owner_id')
+            ->whereNull('workspace_id')
             ->orderBy('id')
             ->first();
     }
@@ -748,7 +761,10 @@ class RecipeVersionCostingSynchronizer
 
         $rows = $this->projectPackagingItems($recipeVersion, (clone $costing)->load('packagingItems'));
         $costing->packagingItems()->delete();
-        $rows->each(fn (RecipeVersionCostingPackagingItem $item) => $costing->packagingItems()->create($item->getAttributes()));
+        $rows->each(fn (RecipeVersionCostingPackagingItem $item) => $costing->packagingItems()->create([
+            ...$item->getAttributes(),
+            'unit_cost' => $item->unit_cost ?? 0,
+        ]));
     }
 
     /** @return Collection<int, RecipeVersionCostingPackagingItem> */
@@ -770,7 +786,9 @@ class RecipeVersionCostingSynchronizer
                 return (new RecipeVersionCostingPackagingItem([
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
-                    'unit_cost' => $existingRow?->unit_cost ?? $catalogItem?->unit_cost ?? 0,
+                    'unit_cost' => $existingRow instanceof RecipeVersionCostingPackagingItem
+                        ? $existingRow->unit_cost
+                        : $catalogItem?->unit_cost,
                     'quantity' => $item->components_per_unit,
                 ]))->setRelation('packagingItem', $catalogItem);
             })->values();

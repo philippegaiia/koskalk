@@ -843,7 +843,7 @@ it('centers costing table row contents beside price inputs', function () {
         ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned"')
         ->toContain('x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"')
         ->toContain('flex items-center bg-white px-3 py-3')
-        ->toContain('x-text="format(lineCostForRow(row), 2)"')
+        ->toContain('x-text="lineCostForRow(row) === null ? \'\' : format(lineCostForRow(row), 2)"')
         ->not->toContain('numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
 });
 

@@ -357,6 +357,7 @@ return [
             'cost_per_unit' => 'Cost per unit',
             'enter_finished_units' => 'Enter finished units',
             'prices_required' => 'Add a price for each packaging item',
+            'partial_totals' => 'Partial totals; add missing prices to complete costing.',
         ],
         'accessibility' => [
             'price_for' => 'Price per :unit for :item',

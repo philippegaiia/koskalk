@@ -269,8 +269,12 @@ const state = {
     costingOilUnit: 'g',
     costingUnitsProduced: 2,
     costingCurrency: 'EUR',
-    costingFormulaRows: [],
-    costingPriceByRowId: {},
+    costingFormulaRows: [
+        { rowId: 'priced-ingredient', ingredient_id: 11, phaseKey: 'ingredients', position: 1, weight: 0.5, weightUnit: 'kg', defaultPricePerKg: 10 },
+        { rowId: 'missing-ingredient', ingredient_id: 12, phaseKey: 'ingredients', position: 2, weight: 0.5, weightUnit: 'kg', defaultPricePerKg: null },
+        { rowId: 'zero-ingredient', ingredient_id: 13, phaseKey: 'ingredients', position: 3, weight: 1, weightUnit: 'kg', defaultPricePerKg: 0 },
+    ],
+    costingPriceByRowId: { 'priced-ingredient': 10, 'missing-ingredient': null, 'zero-ingredient': 0 },
     persistedCostingItemPrices: [],
     costingSignature: () => '',
     displayPriceFromPerKg: (value) => value,
@@ -282,6 +286,14 @@ const state = {
     scheduleCostingSave() { saveRequests++; },
 };
 Object.defineProperties(state, Object.getOwnPropertyDescriptors(section));
+Object.defineProperty(state, 'costingFormulaRows', {
+    configurable: true,
+    value: [
+        { rowId: 'priced-ingredient', ingredient_id: 11, phaseKey: 'ingredients', position: 1, weight: 0.5, weightUnit: 'kg', defaultPricePerKg: 10 },
+        { rowId: 'missing-ingredient', ingredient_id: 12, phaseKey: 'ingredients', position: 2, weight: 0.5, weightUnit: 'kg', defaultPricePerKg: null },
+        { rowId: 'zero-ingredient', ingredient_id: 13, phaseKey: 'ingredients', position: 3, weight: 1, weightUnit: 'kg', defaultPricePerKg: 0 },
+    ],
+});
 state.scheduleCostingSave = () => { saveRequests++; };
 
 section.applyCostingPayload.call(state, {
@@ -295,9 +307,14 @@ assert.equal(row.unit_cost, null);
 assert.equal(saveRequests, 1);
 assert.equal(section.packagingCostPerFinishedUnitForRow.call(state, row), null);
 assert.equal(section.packagingBatchCostForRow.call(state, row), null);
-assert.equal(state.packagingCostTotal, null);
-assert.equal(state.totalBatchCost, null);
-assert.equal(state.costPerUnit, null);
+assert.equal(section.lineCostForRow.call(state, state.costingFormulaRows[0]), 5);
+assert.equal(section.lineCostForRow.call(state, state.costingFormulaRows[1]), null);
+assert.equal(section.lineCostForRow.call(state, state.costingFormulaRows[2]), 0);
+assert.equal(state.ingredientCostTotal, 5);
+assert.equal(state.packagingCostTotal, 0);
+assert.equal(state.totalBatchCost, 5);
+assert.equal(state.costPerUnit, 2.5);
+assert.equal(state.hasUnpricedCostingRows, true);
 
 const captured = await outputs.namespace.captureRecipeWorkbenchOutput(state, { productFamily: 'soap' }, {
     kind: 'costing',
@@ -307,14 +324,29 @@ const captured = await outputs.namespace.captureRecipeWorkbenchOutput(state, { p
 assert.equal(captured.costing.packaging_items[0].unit_cost, null);
 assert.equal(payload.namespace.serializeCosting(state).packaging_items[0].unit_cost, 0);
 
+state.packagingCostRows.push({ id: 'known-packaging', packaging_item_id: 8, name: 'Cap', unit_cost: 0.25, quantity: 2 });
+assert.equal(state.packagingCostTotal, 1);
+assert.equal(state.totalBatchCost, 6);
+assert.equal(state.costPerUnit, 3);
+assert.equal(section.packagingBatchCostForRow.call(state, state.packagingCostRows[1]), 1);
+
 section.updatePackagingUnitCost.call(state, row, '0');
 assert.equal(row.unit_cost, 0);
 assert.equal(section.packagingCostPerFinishedUnitForRow.call(state, row), 0);
 assert.equal(section.packagingBatchCostForRow.call(state, row), 0);
-assert.equal(state.packagingCostTotal, 0);
-assert.equal(state.totalBatchCost, 0);
-assert.equal(state.costPerUnit, 0);
+assert.equal(state.packagingCostTotal, 1);
+assert.equal(state.totalBatchCost, 6);
+assert.equal(state.costPerUnit, 3);
+assert.equal(state.hasUnpricedPackagingRows, false);
+assert.equal(state.hasUnpricedCostingRows, true);
 assert.equal(payload.namespace.serializeCosting(state).packaging_items[0].unit_cost, 0);
+
+state.costingPriceByRowId['missing-ingredient'] = 10;
+assert.equal(section.lineCostForRow.call(state, state.costingFormulaRows[1]), 5);
+assert.equal(state.ingredientCostTotal, 10);
+assert.equal(state.totalBatchCost, 11);
+assert.equal(state.costPerUnit, 5.5);
+assert.equal(state.hasUnpricedCostingRows, false);
 JS], base_path());
 
     $process->run();
@@ -325,7 +357,10 @@ JS], base_path());
 
     expect($costingTab)
         ->toContain('packagingCostPerFinishedUnitForRow(row) === null ? \'\' : format(packagingCostPerFinishedUnitForRow(row), 2)')
-        ->toContain('t(\'costing.summary.prices_required\')');
+        ->toContain('t(\'costing.summary.prices_required\')')
+        ->toContain('lineCostForRow(row) === null ? \'\' : format(lineCostForRow(row), 2)')
+        ->toContain('x-show="hasUnpricedCostingRows"')
+        ->toContain('t(\'costing.summary.partial_totals\')');
 });
 
 it('keeps output transport read only and gives translated feedback for failures and downloads', function (): void {

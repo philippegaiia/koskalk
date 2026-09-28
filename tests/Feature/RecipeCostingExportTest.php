@@ -105,6 +105,57 @@ it('preserves zero and missing prices and distinguishes duplicate packaging occu
         ->and($preview['has_unpriced_rows'])->toBeTrue();
 });
 
+it('keeps known costing subtotals when ingredient and packaging prices are missing', function (): void {
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromTransientRows(
+        formula: [
+            'family' => 'cosmetic',
+            'basis_weight' => '1',
+            'basis_unit' => 'kg',
+            'phases' => [
+                'ingredients' => [
+                    'label' => 'Formula',
+                    'rows' => [
+                        ['ingredient_id' => 11, 'position' => 1, 'name' => 'Oil', 'percentage' => '50', 'weight' => '0.5'],
+                        ['ingredient_id' => 12, 'position' => 2, 'name' => 'Extract', 'percentage' => '50', 'weight' => '0.5'],
+                        ['ingredient_id' => 13, 'position' => 3, 'name' => 'Water', 'percentage' => '100', 'weight' => '1'],
+                    ],
+                ],
+            ],
+            'packaging_items' => [
+                ['packaging_item_id' => 21, 'position' => 1, 'name' => 'Jar', 'components_per_unit' => '1'],
+                ['packaging_item_id' => 21, 'position' => 2, 'name' => 'Cap', 'components_per_unit' => '2'],
+            ],
+            'synthetic_rows' => [],
+        ],
+        costing: [
+            'oil_weight_for_costing' => '1',
+            'oil_unit_for_costing' => 'kg',
+            'units_produced' => '2',
+            'currency' => 'EUR',
+            'items' => [
+                ['ingredient_id' => 11, 'phase_key' => 'ingredients', 'position' => 1, 'price_per_kg' => '10'],
+                ['ingredient_id' => 12, 'phase_key' => 'ingredients', 'position' => 2, 'price_per_kg' => null],
+                ['ingredient_id' => 13, 'phase_key' => 'ingredients', 'position' => 3, 'price_per_kg' => '0'],
+            ],
+            'packaging_items' => [
+                ['packaging_item_id' => 21, 'position' => 1, 'name' => 'Jar', 'unit_cost' => null, 'components_per_unit' => '1'],
+                ['packaging_item_id' => 21, 'position' => 2, 'name' => 'Cap', 'unit_cost' => '0.25', 'components_per_unit' => '2'],
+            ],
+        ],
+    );
+
+    expect($preview['ingredient_rows'][0]['line_cost'])->toBe(5.0)
+        ->and($preview['ingredient_rows'][1]['line_cost'])->toBeNull()
+        ->and($preview['ingredient_rows'][2]['line_cost'])->toBe(0.0)
+        ->and($preview['ingredient_total'])->toBe(5.0)
+        ->and($preview['packaging_rows'][0]['line_cost'])->toBeNull()
+        ->and($preview['packaging_rows'][1]['line_cost'])->toBe(1.0)
+        ->and($preview['packaging_total'])->toBe(1.0)
+        ->and($preview['total_cost'])->toBe(6.0)
+        ->and($preview['cost_per_unit'])->toBe(3.0)
+        ->and($preview['has_unpriced_rows'])->toBeTrue();
+});
+
 it('scales costing quantities across display units and marks packaging totals incomplete without a unit count', function (): void {
     $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromTransientRows(
         formula: [

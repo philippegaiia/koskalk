@@ -109,7 +109,7 @@
  class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(lineCostForRow(row))" x-text="format(lineCostForRow(row), 2)"></span></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(lineCostForRow(row))" x-text="lineCostForRow(row) === null ? '' : format(lineCostForRow(row), 2)"></span></div>
  </div>
  </template>
 
@@ -219,6 +219,7 @@
  <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? (costPerUnit !== null ? `${costingCurrency} ${format(costPerUnit, 2)}` : t('costing.summary.prices_required')) : t('costing.summary.enter_finished_units')"></span>
  </div>
  </div>
+ <p x-show="hasUnpricedCostingRows" role="status" class="mt-3 text-sm text-[var(--color-ink-soft)]" x-text="t('costing.summary.partial_totals')"></p>
  </section>
 
  <template x-if="!hasSavedRecipe">

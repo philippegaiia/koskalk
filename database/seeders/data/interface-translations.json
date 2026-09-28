@@ -37176,6 +37176,18 @@
     },
     {
       "group": "workbench",
+      "key": "costing.summary.partial_totals",
+      "text": {
+        "de": "Teilsummen; ergänze fehlende Preise, um die Kalkulation zu vervollständigen.",
+        "es": "Totales parciales; añade los precios que faltan para completar el cálculo.",
+        "fr": "Totaux partiels ; ajoutez les prix manquants pour compléter le calcul.",
+        "it": "Totali parziali; aggiungi i prezzi mancanti per completare il calcolo.",
+        "nl": "Gedeeltelijke totalen; vul ontbrekende prijzen aan om de berekening te voltooien.",
+        "pt_BR": "Totais parciais; informe os preços ausentes para concluir o cálculo."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.summary.prices_required",
       "text": {
         "de": "Gib für jedes Verpackungsteil einen Preis ein",

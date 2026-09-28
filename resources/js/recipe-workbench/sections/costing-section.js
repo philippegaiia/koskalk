@@ -458,7 +458,13 @@ export function createCostingSection(payload) {
         },
 
         lineCostForRow(row) {
-            const displayedPrice = number(this.costingPriceForRow(row));
+            const price = this.costingPriceForRow(row);
+
+            if (!this.hasKnownCostingPrice(price)) {
+                return null;
+            }
+
+            const displayedPrice = number(price);
 
             if (displayedPrice <= 0) {
                 return 0;
@@ -474,7 +480,11 @@ export function createCostingSection(payload) {
         },
 
         get ingredientCostTotal() {
-            return this.costingFormulaRows.reduce((total, row) => total + this.lineCostForRow(row), 0);
+            return this.costingFormulaRows.reduce((total, row) => {
+                const lineCost = this.lineCostForRow(row);
+
+                return lineCost === null ? total : total + lineCost;
+            }, 0);
         },
 
         get packagingCostTotal() {
@@ -488,17 +498,23 @@ export function createCostingSection(payload) {
                 return null;
             }
 
-            if (rows.some((row) => !this.hasKnownPackagingUnitCost(row))) {
-                return null;
-            }
-
             return rows.reduce((total, row) => {
-                return total + this.packagingBatchCostForRow(row);
+                const batchCost = this.packagingBatchCostForRow(row);
+
+                return batchCost === null ? total : total + batchCost;
             }, 0);
+        },
+
+        get hasUnpricedIngredientRows() {
+            return this.costingFormulaRows.some((row) => !this.hasKnownCostingPrice(this.costingPriceForRow(row)));
         },
 
         get hasUnpricedPackagingRows() {
             return this.displayedPackagingCostRows.some((row) => !this.hasKnownPackagingUnitCost(row));
+        },
+
+        get hasUnpricedCostingRows() {
+            return this.hasUnpricedIngredientRows || this.hasUnpricedPackagingRows;
         },
 
         /**
@@ -564,9 +580,11 @@ export function createCostingSection(payload) {
             return row !== null
                 && typeof row === 'object'
                 && Object.hasOwn(row, 'unit_cost')
-                && row.unit_cost !== null
-                && row.unit_cost !== ''
-                && row.unit_cost !== undefined;
+                && this.hasKnownCostingPrice(row.unit_cost);
+        },
+
+        hasKnownCostingPrice(price) {
+            return price !== null && price !== '' && price !== undefined;
         },
 
         /** Packaging counts default to whole units; decimals appear only when present. */

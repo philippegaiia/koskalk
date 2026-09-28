@@ -34,14 +34,15 @@ return [
         'weight' => 'Weight (:unit)',
     ],
     'composition' => [
+        'actual_incorporated_mass' => 'Actual incorporated mass',
         'authored_formula_basis' => 'Authored formula',
         'fresh_mixture_basis' => 'Actual fresh mixture',
-        'koh_to_weigh' => 'Potassium hydroxide to weigh (:purity% purity)',
+        'koh_to_weigh' => ':name to weigh (:purity% purity)',
         'phase_additives' => 'Additives',
         'phase_fragrance' => 'Fragrance and aromatics',
         'phase_lye_alkali' => 'Lye alkali',
         'phase_lye_liquid' => 'Lye liquid',
-        'retained_liquid_assumption' => 'The calculated retained dilution liquid is 11% of cured mass and is shared among plain water and substitutions; it is not measured water content.',
+        'retained_liquid_assumption' => 'The calculated retained dilution liquid is :percentage% of cured mass and is shared among plain water and substitutions; it is not measured water content.',
         'review_note' => 'Calculation support for independent review. The assessor must verify inputs and recalculate.',
         'warnings' => [
             'composition_koh_purity_remainder_unrepresented' => 'The KOH purity remainder is not represented in the calculated composition.',

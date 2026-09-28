@@ -127,6 +127,7 @@ it('projects soap raw inputs on fresh-mixture mass and uses the incorporated INC
         ->and($rowsByName['Olive Oil']['recorded_inci'])->toBe('Olea Europaea Fruit Oil')
         ->and($rowsByName['Olive Oil']['note'])->toBe('cold pressed')
         ->and($rowsByName['NaOH']['quantity'])->toBe(135.0)
+        ->and($rowsByName['NaOH']['ingredient_id'])->toBeNull()
         ->and($rowsByName['Water']['quantity'])->toBe(225.0)
         ->and($rowsByName['Hydrosol']['quantity'])->toBe(75.0)
         ->and($rowsByName['Hydrosol']['ingredient_id'])->toBe(703)
@@ -168,7 +169,10 @@ it('preserves dual-lye quantities, available canonical identity, and a visible K
         'calculation' => [
             'lye' => [
                 'selected' => ['naoh_weight' => 15, 'koh_to_weigh' => 44.444],
-                'identities' => ['naoh' => ['ingredient_id' => 810, 'name' => 'Canonical sodium hydroxide', 'inci_name' => 'Sodium Hydroxide']],
+                'identities' => [
+                    'naoh' => ['ingredient_id' => 810, 'name' => 'Canonical sodium hydroxide', 'inci_name' => 'Sodium Hydroxide'],
+                    'koh' => ['ingredient_id' => 811, 'name' => 'Canonical potassium hydroxide', 'inci_name' => 'Potassium Hydroxide'],
+                ],
                 'water' => ['weight' => 0],
             ],
         ],
@@ -177,18 +181,27 @@ it('preserves dual-lye quantities, available canonical identity, and a visible K
     $document = ['family' => 'soap', 'unit' => 'g', 'basis_weight' => 1000, 'percentage_basis' => 'oils', 'soap_output' => null];
 
     $composition = app(RecipeCompositionExportDataBuilder::class)->build($snapshot, $document);
-    $rawRows = collect($composition['incorporated']['raw_material_rows'])->keyBy('role');
     $alkaliRows = collect($composition['incorporated']['raw_material_rows'])->where('role', 'alkali')->values();
 
     expect($composition['incorporated']['basis_weight'])->toBe(1059.444)
         ->and($alkaliRows)->toHaveCount(2)
         ->and($alkaliRows[0]['ingredient_id'])->toBe(810)
         ->and($alkaliRows[0]['name'])->toBe('Canonical sodium hydroxide')
-        ->and($alkaliRows[1]['ingredient_id'])->toBeNull()
+        ->and($alkaliRows[1]['ingredient_id'])->toBe(811)
         ->and($alkaliRows[1]['quantity'])->toBe(44.444)
+        ->and($alkaliRows[1]['name'])->toContain('Canonical potassium hydroxide')
         ->and($alkaliRows[1]['name'])->toContain('90% purity')
-        ->and($composition['warnings'])->toContain('composition_koh_purity_remainder_unrepresented')
-        ->and($rawRows)->not->toBeEmpty();
+        ->and($composition['warnings'])->toContain('composition_koh_purity_remainder_unrepresented');
+
+    $snapshot['draft']['kohPurity'] = 100;
+    $compositionAtFullPurity = app(RecipeCompositionExportDataBuilder::class)->build($snapshot, $document);
+    $alkaliRowsAtFullPurity = collect($compositionAtFullPurity['incorporated']['raw_material_rows'])
+        ->where('role', 'alkali')
+        ->values();
+
+    expect($alkaliRowsAtFullPurity[1]['name'])->toContain('Canonical potassium hydroxide')
+        ->and($alkaliRowsAtFullPurity[1]['name'])->toContain('100% purity')
+        ->and($compositionAtFullPurity['warnings'])->not->toContain('composition_koh_purity_remainder_unrepresented');
 });
 
 it('keeps cosmetic authored totals and percentages incomplete without a duplicate INCI breakdown', function (): void {
@@ -212,14 +225,44 @@ it('keeps cosmetic authored totals and percentages incomplete without a duplicat
                 'phase_b' => [[
                     'id' => 2,
                     'ingredient_id' => 102,
-                    'name' => 'Unlisted botanical',
+                    'name' => 'Botanical blend',
                     'inci_name' => null,
                     'weight' => 180,
                     'percentage' => 18,
                 ]],
             ],
         ],
-        'labeling' => ['print_ingredient_list_text' => 'Authored cosmetic label'],
+        'labeling' => [
+            'print_ingredient_list_text' => 'Authored cosmetic label',
+            'default_variant_key' => 'incorporated_ingredients',
+            'list_variants' => [[
+                'key' => 'incorporated_ingredients',
+                'final_label_text' => 'Calculated expanded cosmetic label',
+                'ingredient_rows' => [
+                    [
+                        'label' => 'Glycerin',
+                        'weight' => 620,
+                        'percent_of_formula' => 62,
+                        'kind' => 'ingredient',
+                        'source_ingredients' => ['Glycerin'],
+                    ],
+                    [
+                        'label' => 'Botanical extract component',
+                        'weight' => 100,
+                        'percent_of_formula' => 10,
+                        'kind' => 'ingredient',
+                        'source_ingredients' => ['Botanical blend'],
+                    ],
+                    [
+                        'label' => 'Carrier component',
+                        'weight' => 50,
+                        'percent_of_formula' => 5,
+                        'kind' => 'ingredient',
+                        'source_ingredients' => ['Botanical blend'],
+                    ],
+                ],
+            ]],
+        ],
     ];
     $document = [
         'family' => 'cosmetic',
@@ -233,12 +276,37 @@ it('keeps cosmetic authored totals and percentages incomplete without a duplicat
     $rawRows = collect($composition['incorporated']['raw_material_rows']);
 
     expect($composition['family'])->toBe('cosmetic')
-        ->and($composition['incorporated']['basis_weight'])->toBe(800.0)
+        ->and($composition['incorporated']['basis_weight'])->toBe(1000.0)
+        ->and($composition['incorporated']['percentage_basis_weight'])->toBe(1000.0)
+        ->and($composition['incorporated']['actual_mass'])->toBe(800.0)
         ->and($rawRows->pluck('percentage')->all())->toBe([62.0, 18.0])
         ->and($rawRows->sum('percentage'))->toBe(80.0)
-        ->and($composition['incorporated']['inci_rows'])->toBe([])
+        ->and(collect($composition['incorporated']['inci_rows'])->pluck('percentage')->all())->toBe([62.0, 10.0, 5.0])
+        ->and($composition['incorporated']['accounted_inci_weight'])->toBe(770.0)
+        ->and($composition['incorporated']['accounted_inci_percentage'])->toBe(77.0)
         ->and($composition['calculated_output'])->toBeNull()
         ->and($composition['label_context']['authored_label_text'])->toBe('Authored cosmetic label')
         ->and($composition['warnings'])->toContain('composition_recorded_inci_missing')
-        ->and($rawRows[1]['recorded_inci'])->toBe('');
+        ->and($rawRows[1]['recorded_inci'])->toBe('')
+        ->and($rawRows[1]['recorded_inci_missing'])->toBeTrue();
+
+    $redundantSnapshot = $snapshot;
+    $redundantSnapshot['draft']['phaseItems']['phase_b'][0]['inci_name'] = 'Botanical blend INCI';
+    $redundantSnapshot['labeling']['list_variants'][0]['ingredient_rows'] = [
+        [
+            'label' => 'Glycerin',
+            'weight' => 620,
+            'kind' => 'ingredient',
+            'source_ingredients' => ['Glycerin'],
+        ],
+        [
+            'label' => 'Botanical blend INCI',
+            'weight' => 180,
+            'kind' => 'ingredient',
+            'source_ingredients' => ['Botanical blend'],
+        ],
+    ];
+    $redundantComposition = app(RecipeCompositionExportDataBuilder::class)->build($redundantSnapshot, $document);
+
+    expect($redundantComposition['incorporated']['inci_rows'])->toBe([]);
 });

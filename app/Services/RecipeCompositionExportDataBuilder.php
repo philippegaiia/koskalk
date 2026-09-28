@@ -31,12 +31,18 @@ class RecipeCompositionExportDataBuilder
             : $this->cosmeticRawMaterialRows($draft, $phaseNames, $unit);
         $rawBasisWeight = $this->totalWeight($rawRows);
         $rawRows = $this->withFreshMixturePercentages($rawRows, $rawBasisWeight, $isSoap);
-        $incorporatedVariant = $isSoap ? $this->incorporatedVariant($labeling) : null;
+        $basisWeight = $isSoap
+            ? $rawBasisWeight
+            : $this->decimal(data_get($draft, 'oilWeight', $document['basis_weight'] ?? 0));
+        $candidateVariant = $this->incorporatedVariant($labeling);
+        $incorporatedVariant = $isSoap || $this->hasDistinctInciBreakdown($candidateVariant, $rawRows)
+            ? $candidateVariant
+            : null;
         $inciRows = $this->inciRows($incorporatedVariant);
-        $inciRows = $this->withAccountedInciPercentages($inciRows, $rawBasisWeight);
+        $inciRows = $this->withAccountedInciPercentages($inciRows, $basisWeight);
         $accountedInciWeight = $this->totalNamedWeight($inciRows);
-        $accountedInciPercentage = bccomp($rawBasisWeight, '0', 18) > 0
-            ? bcmul(bcdiv($accountedInciWeight, $rawBasisWeight, 18), '100', 18)
+        $accountedInciPercentage = bccomp($basisWeight, '0', 18) > 0
+            ? bcmul(bcdiv($accountedInciWeight, $basisWeight, 18), '100', 18)
             : '0';
         $warnings = array_values(array_filter(
             is_array($labeling['warnings'] ?? null) ? $labeling['warnings'] : [],
@@ -71,10 +77,13 @@ class RecipeCompositionExportDataBuilder
             'formula_basis_weight' => $document['basis_weight'] ?? data_get($draft, 'oilWeight', 0),
             'formula_percentage_basis' => (string) ($document['percentage_basis'] ?? 'formula'),
             'incorporated' => [
-                'basis_weight' => (float) $rawBasisWeight,
+                'basis_weight' => (float) $basisWeight,
+                'percentage_basis_weight' => (float) $basisWeight,
                 'basis_label' => $isSoap
                     ? __('formula_documents.composition.fresh_mixture_basis')
                     : __('formula_documents.composition.authored_formula_basis'),
+                'actual_mass' => (float) $rawBasisWeight,
+                'actual_mass_label' => __('formula_documents.composition.actual_incorporated_mass'),
                 'raw_material_rows' => $rawRows,
                 'inci_rows' => $inciRows,
                 'accounted_inci_weight' => (float) $accountedInciWeight,
@@ -94,7 +103,9 @@ class RecipeCompositionExportDataBuilder
             ],
             'warnings' => $warnings,
             'assumption_note' => $isSoap
-                ? __('formula_documents.composition.retained_liquid_assumption')
+                ? __('formula_documents.composition.retained_liquid_assumption', [
+                    'percentage' => LyeLiquidAllocationService::CURED_RESIDUAL_PERCENTAGE,
+                ])
                 : null,
             'review_note' => __('formula_documents.composition.review_note'),
         ];
@@ -141,17 +152,23 @@ class RecipeCompositionExportDataBuilder
 
         if (bccomp($kohWeight, '0', 18) > 0) {
             $purity = (string) data_get($draft, 'kohPurity', 100);
+            $kohIdentity = is_array(data_get($snapshot, 'calculation.lye.identities.koh'))
+                ? data_get($snapshot, 'calculation.lye.identities.koh')
+                : [];
+            $kohName = trim((string) ($kohIdentity['name'] ?? ''));
+            $kohIdentity['name'] = null;
             $rows[] = $this->derivedRow(
-                __('formula_documents.composition.koh_to_weigh', ['purity' => $purity]),
+                __('formula_documents.composition.koh_to_weigh', [
+                    'name' => $kohName !== '' ? $kohName : __('formula_documents.ingredients.koh'),
+                    'purity' => $purity,
+                ]),
                 null,
                 $kohWeight,
                 $unit,
                 'lye_alkali',
                 __('formula_documents.composition.phase_lye_alkali'),
                 'alkali',
-                is_array(data_get($snapshot, 'calculation.lye.identities.koh'))
-                    ? data_get($snapshot, 'calculation.lye.identities.koh')
-                    : [],
+                $kohIdentity,
                 null,
             );
         }
@@ -288,7 +305,7 @@ class RecipeCompositionExportDataBuilder
             'ingredient_id' => $ingredientId,
             'name' => $ingredientName !== '' ? $ingredientName : $name,
             'recorded_inci' => $recordedInci,
-            'recorded_inci_missing' => false,
+            'recorded_inci_missing' => $recordedInci === '',
             'role' => $role,
             'quantity' => (float) $weight,
             'percentage' => 0.0,
@@ -345,6 +362,72 @@ class RecipeCompositionExportDataBuilder
         }
 
         return null;
+    }
+
+    /** @param list<array<string, mixed>> $rawRows */
+    private function hasDistinctInciBreakdown(?array $variant, array $rawRows): bool
+    {
+        $ingredientRows = is_array($variant['ingredient_rows'] ?? null) ? $variant['ingredient_rows'] : [];
+
+        if ($ingredientRows === []) {
+            return false;
+        }
+
+        $rawBreakdown = [];
+
+        foreach ($rawRows as $row) {
+            $name = $this->normalizedName((string) ($row['recorded_inci'] ?? ''));
+
+            if ($name === '') {
+                return true;
+            }
+
+            $rawBreakdown[$name] = bcadd(
+                $rawBreakdown[$name] ?? '0',
+                $this->decimal($row['quantity'] ?? 0),
+                18,
+            );
+        }
+
+        $inciBreakdown = [];
+
+        foreach ($ingredientRows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $name = $this->normalizedName((string) ($row['label'] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            $inciBreakdown[$name] = bcadd(
+                $inciBreakdown[$name] ?? '0',
+                $this->decimal($row['weight'] ?? 0),
+                18,
+            );
+        }
+
+        ksort($rawBreakdown);
+        ksort($inciBreakdown);
+
+        if (array_keys($rawBreakdown) !== array_keys($inciBreakdown)) {
+            return true;
+        }
+
+        foreach ($rawBreakdown as $name => $weight) {
+            if (bccomp($weight, $inciBreakdown[$name], 18) !== 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizedName(string $name): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/', ' ', $name)));
     }
 
     /** @param array<string, mixed> $draft

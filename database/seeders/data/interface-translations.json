@@ -1836,6 +1836,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.actual_incorporated_mass",
+      "text": {
+        "de": "Tatsächlich eingearbeitete Masse",
+        "es": "Masa realmente incorporada",
+        "fr": "Masse réellement incorporée",
+        "it": "Massa effettivamente incorporata",
+        "nl": "Werkelijk opgenomen massa",
+        "pt_BR": "Massa efetivamente incorporada"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "composition.authored_formula_basis",
       "text": {
         "de": "Formulierte Rezeptur",
@@ -1862,12 +1874,12 @@
       "group": "formula_documents",
       "key": "composition.koh_to_weigh",
       "text": {
-        "de": "Zu wiegendes Kaliumhydroxid (:purity% Reinheit)",
-        "es": "Hidróxido de potasio a pesar (:purity% de pureza)",
-        "fr": "Hydroxyde de potassium à peser (:purity% de pureté)",
-        "it": "Idrossido di potassio da pesare (:purity% di purezza)",
-        "nl": "Te wegen kaliumhydroxide (:purity% zuiverheid)",
-        "pt_BR": "Hidróxido de potássio a pesar (:purity% de pureza)"
+        "de": ":name zum Wiegen (:purity% Reinheit)",
+        "es": ":name a pesar (:purity% de pureza)",
+        "fr": ":name à peser (:purity% de pureté)",
+        "it": ":name da pesare (:purity% di purezza)",
+        "nl": ":name om te wegen (:purity% zuiverheid)",
+        "pt_BR": ":name a pesar (:purity% de pureza)"
       }
     },
     {
@@ -1922,12 +1934,12 @@
       "group": "formula_documents",
       "key": "composition.retained_liquid_assumption",
       "text": {
-        "de": "Die berechnete verbleibende Verdünnungsflüssigkeit beträgt 11% der ausgehärteten Masse und verteilt sich auf Wasser und Ersatzflüssigkeiten; sie ist kein gemessener Wassergehalt.",
-        "es": "El líquido de dilución retenido calculado equivale al 11% de la masa curada y se reparte entre el agua y sus sustitutos; no representa el contenido de agua medido.",
-        "fr": "Le liquide de dilution retenu calculé représente 11% de la masse après cure et est réparti entre l’eau et ses substituts ; il ne s’agit pas d’une teneur en eau mesurée.",
-        "it": "Il liquido di diluizione trattenuto calcolato è pari all’11% della massa dopo la stagionatura ed è suddiviso tra acqua e sostituti; non rappresenta il contenuto d’acqua misurato.",
-        "nl": "De berekende resterende verdunningsvloeistof is 11% van de uitgeharde massa en wordt verdeeld over water en vervangingen; dit is geen gemeten watergehalte.",
-        "pt_BR": "O líquido de diluição retido calculado corresponde a 11% da massa curada e é dividido entre água e substituições; não representa o teor de água medido."
+        "de": "Die berechnete verbleibende Verdünnungsflüssigkeit beträgt :percentage% der ausgehärteten Masse und verteilt sich auf Wasser und Ersatzflüssigkeiten; sie ist kein gemessener Wassergehalt.",
+        "es": "El líquido de dilución retenido calculado equivale al :percentage% de la masa curada y se reparte entre el agua y sus sustitutos; no representa el contenido de agua medido.",
+        "fr": "Le liquide de dilution retenu calculé représente :percentage% de la masse après cure et est réparti entre l’eau et ses substituts ; il ne s’agit pas d’une teneur en eau mesurée.",
+        "it": "Il liquido di diluizione trattenuto calcolato è pari al :percentage% della massa dopo la stagionatura ed è suddiviso tra acqua e sostituti; non rappresenta il contenuto d’acqua misurato.",
+        "nl": "De berekende resterende verdunningsvloeistof is :percentage% van de uitgeharde massa en wordt verdeeld over water en vervangingen; dit is geen gemeten watergehalte.",
+        "pt_BR": "O líquido de diluição retido calculado corresponde a :percentage% da massa curada e é dividido entre água e substituições; não representa o teor de água medido."
       }
     },
     {

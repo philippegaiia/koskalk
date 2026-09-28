@@ -1836,6 +1836,138 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.authored_formula_basis",
+      "text": {
+        "de": "Formulierte Rezeptur",
+        "es": "Fórmula redactada",
+        "fr": "Formule rédigée",
+        "it": "Formula dichiarata",
+        "nl": "Opgegeven formule",
+        "pt_BR": "Fórmula informada"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.fresh_mixture_basis",
+      "text": {
+        "de": "Tatsächliche frische Mischung",
+        "es": "Mezcla fresca real",
+        "fr": "Mélange frais réel",
+        "it": "Miscela fresca effettiva",
+        "nl": "Werkelijk vers mengsel",
+        "pt_BR": "Mistura fresca real"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.koh_to_weigh",
+      "text": {
+        "de": "Zu wiegendes Kaliumhydroxid (:purity% Reinheit)",
+        "es": "Hidróxido de potasio a pesar (:purity% de pureza)",
+        "fr": "Hydroxyde de potassium à peser (:purity% de pureté)",
+        "it": "Idrossido di potassio da pesare (:purity% di purezza)",
+        "nl": "Te wegen kaliumhydroxide (:purity% zuiverheid)",
+        "pt_BR": "Hidróxido de potássio a pesar (:purity% de pureza)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.phase_additives",
+      "text": {
+        "de": "Zusatzstoffe",
+        "es": "Aditivos",
+        "fr": "Additifs",
+        "it": "Additivi",
+        "nl": "Toevoegingen",
+        "pt_BR": "Aditivos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.phase_fragrance",
+      "text": {
+        "de": "Duftstoffe und Aromastoffe",
+        "es": "Fragancias y aromáticos",
+        "fr": "Parfums et aromatiques",
+        "it": "Fragranze e aromi",
+        "nl": "Geurstoffen en aromatische stoffen",
+        "pt_BR": "Fragrâncias e aromáticos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.phase_lye_alkali",
+      "text": {
+        "de": "Laugenalkali",
+        "es": "Álcali de la lejía",
+        "fr": "Alcali de lessive",
+        "it": "Alcali della liscivia",
+        "nl": "Loogalkali",
+        "pt_BR": "Álcali da lixívia"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.phase_lye_liquid",
+      "text": {
+        "de": "Laugenflüssigkeit",
+        "es": "Líquido de lejía",
+        "fr": "Liquide de lessive",
+        "it": "Liquido della liscivia",
+        "nl": "Loogvloeistof",
+        "pt_BR": "Líquido da lixívia"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.retained_liquid_assumption",
+      "text": {
+        "de": "Die berechnete verbleibende Verdünnungsflüssigkeit beträgt 11% der ausgehärteten Masse und verteilt sich auf Wasser und Ersatzflüssigkeiten; sie ist kein gemessener Wassergehalt.",
+        "es": "El líquido de dilución retenido calculado equivale al 11% de la masa curada y se reparte entre el agua y sus sustitutos; no representa el contenido de agua medido.",
+        "fr": "Le liquide de dilution retenu calculé représente 11% de la masse après cure et est réparti entre l’eau et ses substituts ; il ne s’agit pas d’une teneur en eau mesurée.",
+        "it": "Il liquido di diluizione trattenuto calcolato è pari all’11% della massa dopo la stagionatura ed è suddiviso tra acqua e sostituti; non rappresenta il contenuto d’acqua misurato.",
+        "nl": "De berekende resterende verdunningsvloeistof is 11% van de uitgeharde massa en wordt verdeeld over water en vervangingen; dit is geen gemeten watergehalte.",
+        "pt_BR": "O líquido de diluição retido calculado corresponde a 11% da massa curada e é dividido entre água e substituições; não representa o teor de água medido."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.review_note",
+      "text": {
+        "de": "Berechnungsunterstützung zur unabhängigen Prüfung. Die prüfende Person muss die Eingaben verifizieren und neu berechnen.",
+        "es": "Apoyo de cálculo para una revisión independiente. El evaluador debe verificar los datos y volver a calcular.",
+        "fr": "Aide au calcul pour un examen indépendant. L’évaluateur doit vérifier les données et refaire les calculs.",
+        "it": "Supporto al calcolo per una verifica indipendente. Il valutatore deve verificare i dati e ricalcolare.",
+        "nl": "Rekenondersteuning voor onafhankelijke beoordeling. De beoordelaar moet de invoer controleren en opnieuw berekenen.",
+        "pt_BR": "Suporte de cálculo para análise independente. O avaliador deve verificar os dados e recalcular."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.warnings.composition_koh_purity_remainder_unrepresented",
+      "text": {
+        "de": "Der KOH-Reinheitsrest ist in der berechneten Zusammensetzung nicht enthalten.",
+        "es": "El resto de pureza del KOH no está representado en la composición calculada.",
+        "fr": "Le résidu de pureté du KOH n’est pas représenté dans la composition calculée.",
+        "it": "Il residuo di purezza del KOH non è rappresentato nella composizione calcolata.",
+        "nl": "Het KOH-zuiverheidsrestant is niet opgenomen in de berekende samenstelling.",
+        "pt_BR": "O restante da pureza do KOH não está representado na composição calculada."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.warnings.composition_recorded_inci_missing",
+      "text": {
+        "de": "Für mindestens einen Rohstoff fehlt die aufgezeichnete INCI-Angabe; es wurde kein Ersatz aus dem Zutatenamen verwendet.",
+        "es": "Falta el INCI registrado de una o más materias primas; no se sustituyó por el nombre del ingrediente.",
+        "fr": "L’INCI enregistré manque pour une ou plusieurs matières premières ; aucun nom d’ingrédient ne l’a remplacé.",
+        "it": "Manca l’INCI registrato per una o più materie prime; non è stato sostituito con il nome dell’ingrediente.",
+        "nl": "De geregistreerde INCI ontbreekt voor een of meer grondstoffen; de ingrediëntnaam is niet als vervanging gebruikt.",
+        "pt_BR": "Falta o INCI registrado de uma ou mais matérias-primas; o nome do ingrediente não foi usado como substituto."
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "exports.amount",
       "text": {
         "de": "Betrag",

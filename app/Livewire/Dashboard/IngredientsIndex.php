@@ -15,7 +15,7 @@ use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\EntitlementService;
-use App\Services\IngredientCatalogSearchService;
+use App\Services\IngredientCatalogQuery;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
@@ -77,14 +77,14 @@ class IngredientsIndex extends Component
 
     private PriceBasisConverter $priceBasisConverter;
 
-    private IngredientCatalogSearchService $catalogSearch;
+    private IngredientCatalogQuery $ingredientCatalogQuery;
 
     public function boot(
         PriceBasisConverter $priceBasisConverter,
-        IngredientCatalogSearchService $catalogSearch,
+        IngredientCatalogQuery $ingredientCatalogQuery,
     ): void {
         $this->priceBasisConverter = $priceBasisConverter;
-        $this->catalogSearch = $catalogSearch;
+        $this->ingredientCatalogQuery = $ingredientCatalogQuery;
     }
 
     public function mount(CurrentAppUserResolver $resolver): void
@@ -532,43 +532,17 @@ class IngredientsIndex extends Component
         }
 
         return $this->ingredientQuery($user)
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->orderBy('id', $this->sortDirection)
             ->paginate($perPage);
     }
 
     private function ingredientQuery(User $user): Builder
     {
-        $search = mb_strtolower(trim($this->search));
-        $translationLocales = Ingredient::translationLocaleCandidates();
-
-        return Ingredient::query()
-            ->withCount(['costingItems', 'recipeItems'])
-            ->with([
-                'mediaAssetUsages.mediaAsset',
-                'currentPrices' => fn ($query) => $query->where('workspace_id', $user->company()?->id),
-                'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
-            ])
-            ->where(function (Builder $query) use ($user): void {
-                $query->where(fn (Builder $ownedQuery): Builder => $this->applyCompanyIngredientScope($ownedQuery, $user))
-                    ->orWhere(fn (Builder $platformQuery): Builder => $platformQuery
-                        ->whereNull('owner_type')
-                        ->where('is_active', true));
-            })
-            ->when($this->ownershipFilter === 'mine', fn (Builder $query): Builder => $query
-                ->where(fn (Builder $ownedQuery): Builder => $this->applyCompanyIngredientScope($ownedQuery, $user)))
-            ->when($this->ownershipFilter === 'platform', fn (Builder $query): Builder => $query
-                ->whereNull('owner_type')
-                ->where('is_active', true))
-            ->when($this->ownershipFilter === 'priced', fn (Builder $query): Builder => $query
-                ->whereNull('owner_type')
-                ->where('is_active', true)
-                ->whereHas('currentPrices', fn (Builder $priceQuery): Builder => $priceQuery->where('workspace_id', $user->company()?->id)))
-            ->when($search !== '', fn (Builder $query): Builder => $this->catalogSearch->apply(
-                $query,
-                $search,
-                $translationLocales,
-            ));
+        return $this->ingredientCatalogQuery->query($user, $user->company(), [
+            'ownershipFilter' => $this->ownershipFilter,
+            'search' => $this->search,
+            'sortField' => $this->sortField,
+            'sortDirection' => $this->sortDirection,
+        ]);
     }
 
     private function accessibleIngredient(int $id, User $user): ?Ingredient

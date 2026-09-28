@@ -491,6 +491,16 @@ class RecipeCompositionExportDataBuilder
 
     private function decimal(mixed $value): string
     {
+        if (is_float($value)) {
+            if (! is_finite($value)) {
+                return '0';
+            }
+
+            $normalized = rtrim(rtrim(sprintf('%.18F', $value), '0'), '.');
+
+            return $normalized !== '' ? $normalized : '0';
+        }
+
         return NumberLocale::normalizeDecimalString($value) ?? '0';
     }
 }

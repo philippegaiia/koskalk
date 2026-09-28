@@ -310,3 +310,74 @@ it('keeps cosmetic authored totals and percentages incomplete without a duplicat
 
     expect($redundantComposition['incorporated']['inci_rows'])->toBe([]);
 });
+
+it('preserves tiny kilogram raw and INCI masses from float and decimal-string inputs', function (): void {
+    $snapshot = [
+        'draft' => [
+            'oilUnit' => 'kg',
+            'oilWeight' => '0.00102',
+            'phases' => [['key' => 'phase_a', 'name' => 'Formula']],
+            'phaseItems' => [
+                'phase_a' => [
+                    [
+                        'id' => 1,
+                        'ingredient_id' => 101,
+                        'name' => 'Base',
+                        'inci_name' => 'Base INCI',
+                        'weight' => '0.001',
+                        'percentage' => '98.0392156863',
+                    ],
+                    [
+                        'id' => 2,
+                        'ingredient_id' => 102,
+                        'name' => 'Trace blend',
+                        'inci_name' => 'Trace blend INCI',
+                        'weight' => null,
+                        'percentage' => '1.9607843137',
+                    ],
+                ],
+            ],
+        ],
+        'labeling' => [
+            'list_variants' => [[
+                'key' => 'incorporated_ingredients',
+                'ingredient_rows' => [
+                    [
+                        'label' => 'Trace constituent A',
+                        'weight' => 0.00001,
+                        'kind' => 'ingredient',
+                        'source_ingredients' => ['Trace blend'],
+                    ],
+                    [
+                        'label' => 'Trace constituent B',
+                        'weight' => '0.00001',
+                        'kind' => 'ingredient',
+                        'source_ingredients' => ['Trace blend'],
+                    ],
+                ],
+            ]],
+        ],
+    ];
+    $document = [
+        'family' => 'cosmetic',
+        'unit' => 'kg',
+        'basis_weight' => 0.001,
+        'percentage_basis' => 'formula',
+        'soap_output' => null,
+    ];
+
+    foreach ([0.00002, '0.00002'] as $tinyRawMass) {
+        $snapshot['draft']['phaseItems']['phase_a'][1]['weight'] = $tinyRawMass;
+        $composition = app(RecipeCompositionExportDataBuilder::class)->build($snapshot, $document);
+        $rawRows = collect($composition['incorporated']['raw_material_rows'])->keyBy('name');
+        $inciRows = collect($composition['incorporated']['inci_rows']);
+
+        expect($rawRows['Trace blend']['quantity'])->toBe(0.00002)
+            ->and($composition['incorporated']['actual_mass'])->toBe(0.00102)
+            ->and($composition['incorporated']['basis_weight'])->toBe(0.00102)
+            ->and($inciRows->pluck('quantity')->all())->toBe([0.00001, 0.00001])
+            ->and($composition['incorporated']['accounted_inci_weight'])->toBe(0.00002)
+            ->and(abs($composition['incorporated']['accounted_inci_percentage'] - (0.00002 / 0.00102 * 100)))
+            ->toBeLessThan(0.0000001);
+    }
+});

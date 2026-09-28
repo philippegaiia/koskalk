@@ -12,7 +12,7 @@
 
 ## Status and delivery order
 
-This is the authoritative implementation plan following the user's review on 28 September 2026, including the clarification to reuse and improve the existing Formula Sheet and permission to make it more modular. Preserve its useful capabilities while allowing better grouping and optional sections. It replaces the earlier per-view design and comparison where they disagree. Implementation is in progress on `codex/formula-outputs` in the managed `formula-outputs` worktree. Baseline: 116 tests and 580 assertions passed. Task 1 is split into the saved-sheet modular sections and the current-input transport; both remain part of Stage A.
+This is the authoritative implementation plan following the user's review on 28 September 2026, including the clarification to reuse and improve the existing Formula Sheet and permission to make it more modular. Preserve its useful capabilities while allowing better grouping and optional sections. It replaces the earlier per-view design and comparison where they disagree. Implementation is complete on `codex/formula-outputs` in the managed `formula-outputs` worktree. Baseline: 116 tests and 580 assertions passed. Task 1 is split into the saved-sheet modular sections and the current-input transport; both remain part of Stage A.
 
 Deliver three independently usable stages, in this order:
 
@@ -325,7 +325,7 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 ### Task 7 — Batch sheet and stable completed record
 
-**Progress:** Implementation is underway after Stage B passed both independent reviews. The existing snapshot and execution paths were inspected read-only; no schema change is needed.
+**Progress:** Implemented and committed in `be5ac5e4`; independent specification and quality reviews approve. Final affected suite passed 144 tests / 41,021 assertions; Pint, Vite and graphify passed. Reviews corrected the terminal lot-ID fallback, percentage-basis label and sanitizer default that silently truncated long procedures. The existing persisted water-actual semantics are retained; printing adds no fallback or new provenance workflow. Actual synthetic soap/cosmetic batch HTML was inspected in the browser with the correct basis, procedure and blank absent actuals. Real completion/abort tests verify later source/name/price/lot changes do not change recorded facts. Native PDF pagination remains unverified.
 
 **Create:**
 - `app/Services/Production/ProductionRunPrintDataBuilder.php` — recorded run data, not live formula calculations.
@@ -335,21 +335,21 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 **Modify:** `app/Services/Production/ProductionFormulaSnapshotBuilder.php`, `app/Services/Production/ProductionCompletionService.php`, `app/Actions/Production/AbortProduction.php`, `app/Actions/Production/BackfillProductionFormulaSnapshot.php`, `app/Livewire/ProductionBench/Production/ProductionDetail.php`, `resources/views/livewire/production-bench/production/production-detail.blade.php`, `routes/web.php`, `lang/en/production_bench.php`, `database/seeders/data/interface-translations.json`, `tests/Feature/ProductionFormulaSnapshotTest.php`.
 
-- [ ] Add planned/in-progress document tests using frozen formula lines, calculated alkali/water lines, requirement material-code snapshots and active lot reservations. Actual quantity cells remain blank where no actual was recorded; the procedure is present when captured.
-- [ ] Add completed-record tests for actual consumption, lot identifiers, actual output and manufacture/completion dates. Change the source formula, current ingredient display name, opening-lot identifiers and ingredient price after completion; compare the printed manufacturing data before/after, excluding the generated-at timestamp. No recorded amount/name/cost may be regenerated from those current sources.
-- [ ] Add tests for authorized Viewers, wrong workspace, deleted/unavailable recipe, legacy runs without complete formula snapshots, aborted runs and cancelled runs.
-- [ ] Extend `ProductionFormulaSnapshotTest`: new snapshots include the selected version's procedure, preserving text, numbered steps and basic formatting. Changing the current recipe procedure afterwards does not change that captured content.
-- [ ] Run:
+- [x] Add planned/in-progress document tests using frozen formula lines, calculated alkali/water lines, requirement material-code snapshots and active lot reservations. Actual quantity cells remain blank where no actual was recorded; the procedure is present when captured.
+- [x] Add completed-record tests for actual consumption, lot identifiers, actual output and manufacture/completion dates. Change the source formula, current ingredient display name, opening-lot identifiers and ingredient price after completion; compare the printed manufacturing data before/after, excluding the generated-at timestamp. No recorded amount/name/cost may be regenerated from those current sources.
+- [x] Add tests for authorized Viewers, wrong workspace, deleted/unavailable recipe, legacy runs without complete formula snapshots, aborted runs and cancelled runs.
+- [x] Extend `ProductionFormulaSnapshotTest`: new snapshots include the selected version's procedure, preserving text, numbered steps and basic formatting. Changing the current recipe procedure afterwards does not change that captured content.
+- [x] Run:
   ```sh
   php artisan test --compact tests/Feature/ProductionRunPrintTest.php tests/Feature/ProductionFormulaSnapshotTest.php
   ```
   Confirm the new assertions fail before implementation.
-- [ ] Add `manufacturing_procedure_html` to the existing `formula_context_snapshot` at snapshot creation. Render/sanitize from the selected version and retain text/basic formatting without embedding expiring URLs or copying media. Keep a small note when a referenced illustration is not included. No schema migration or print-time backfill is needed.
-- [ ] Capture `execution_lots` in the existing run context when completion/abort records each consumption, keyed by consumption ID and containing its lot ID, internal code, supplier batch and expiry. Merge rather than replace formula context, and preserve execution metadata in the existing explicit formula-backfill action. Legacy records lacking those facts identify them as not recorded; do not backfill them during print.
-- [ ] Build the print from `ProductionRun` snapshots, `ProductionFormulaLine`, `ProductionRequirement`, `ProductionConsumption`, captured lot identifiers and recorded output. Follow the presenter's existing legacy requirement-snapshot fallback. When a historic value was never captured, identify it as unavailable instead of fetching today's recipe or inventing an actual quantity.
-- [ ] Keep the record limited to manufacturing: formula, planned versus recorded quantities, consumed lots, recorded production notes/observations, output and dates. Do not include live task completion, current lot balances, current locations, current ingredient prices or a new signature workflow. A procedure-less legacy run stays printable with the gap identified.
-- [ ] Add the authenticated, print-throttled GET route `production-bench.production.print`. Resolve the run inside the fresh selected workspace and assert readable access before loading print data.
-- [ ] Use this status contract in both the endpoint and the one visible action:
+- [x] Add `manufacturing_procedure_html` to the existing `formula_context_snapshot` at snapshot creation. Render/sanitize from the selected version and retain text/basic formatting without embedding expiring URLs or copying media. Keep a small note when a referenced illustration is not included. No schema migration or print-time backfill is needed.
+- [x] Capture `execution_lots` in the existing run context when completion/abort records each consumption, keyed by consumption ID and containing its lot ID, internal code, supplier batch and expiry. Merge rather than replace formula context, and preserve execution metadata in the existing explicit formula-backfill action. Legacy records lacking those facts identify them as not recorded; do not backfill them during print.
+- [x] Build the print from `ProductionRun` snapshots, `ProductionFormulaLine`, `ProductionRequirement`, `ProductionConsumption`, captured lot identifiers and recorded output. Follow the presenter's existing legacy requirement-snapshot fallback. When a historic value was never captured, identify it as unavailable instead of fetching today's recipe or inventing an actual quantity.
+- [x] Keep the record limited to manufacturing: formula, planned versus recorded quantities, consumed lots, recorded production notes/observations, output and dates. Do not include live task completion, current lot balances, current locations, current ingredient prices or a new signature workflow. A procedure-less legacy run stays printable with the gap identified.
+- [x] Add the authenticated, print-throttled GET route `production-bench.production.print`. Resolve the run inside the fresh selected workspace and assert readable access before loading print data.
+- [x] Use this status contract in both the endpoint and the one visible action:
   ```text
   Draft / Scheduled / Reserved / InProduction -> Print batch sheet
   Completed                                  -> Print batch record
@@ -357,9 +357,11 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
   Cancelled                                  -> No manufacture print action; direct request rejected
   ```
   Use one template with planned/recorded sections. Do not combine legacy ProductionBatch routes with ProductionRun routes.
-- [ ] Run the new test, `ProductionFormulaSnapshotTest.php`, `ProductionDetailPresenterTest.php`, `ProductionExecutionTest.php` and `ProductionWorkspaceAuthorizationTest.php`. Print one soap and one cosmetic run, then reprint after changing source data. Commit.
+- [x] Run the new test, `ProductionFormulaSnapshotTest.php`, `ProductionDetailPresenterTest.php`, `ProductionExecutionTest.php` and `ProductionWorkspaceAuthorizationTest.php`. Print one soap and one cosmetic run, then reprint after changing source data. Commit.
 
 ### Task 8 — Picking list from stock preparation
+
+**Progress:** Committed in `d266fc7b`; independent specification and final quality reviews approve. The bounded read-only POST captures displayed automatic/manual allocations, preserves pending manual input, validates total lot availability across runs and prints reserved/proposed/shortage rows separately. Focused checks passed 92 tests / 40,841 assertions; final picking checks passed 24 / 54 and Node 8 / 8. Generated time and per-run print breaks are included. Pint and graph refresh passed. Authenticated manual multi-run browser execution remains unverified; HTTP and Node coverage exercises those behaviors.
 
 **Create:**
 - `app/Http/Requests/ProductionPickingPrintRequest.php`.
@@ -370,20 +372,24 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
 
 **Modify:** `app/Livewire/ProductionBench/Production/StockPreparation.php`, `resources/views/livewire/production-bench/production/stock-preparation.blade.php`, `routes/web.php`, `lang/en/production_bench.php`, `database/seeders/data/interface-translations.json`.
 
-- [ ] Write failing tests for one run, several runs, manual lot choices, partial reservations, a shortage and locations disabled. Use different lots for the automatic proposal and manual selection so a stale/default print is detectable.
-- [ ] Assert that printing changes no reservations, stock movements, run status or idempotency key. Reject foreign run/requirement/lot IDs and selections above the run/row limits. If stock changed and a displayed selection is no longer eligible, return a refresh message rather than silently switching lots.
-- [ ] Run `php artisan test --compact tests/Feature/ProductionPickingPrintTest.php`; confirm failure.
-- [ ] Capture the allocations actually displayed at the click: automatic proposed lot IDs/quantities plus current manual overrides. Submit those choices through the authenticated, print-throttled POST route `production-bench.production.picking.print`. Resolve existing reservations afresh from the server.
-- [ ] Validate every requirement belongs to a selected run and every lot belongs to the same workspace/material and is eligible. Reuse `StockReservationProposalService`'s read logic. Aggregate captured quantities across the entire document per lot as well as per requirement; independently generated proposals can share the same available stock. Capture debounced manual quantities directly from the current browser input, so the last keystroke is included. Do not call `PrepareProductionStock`, use its idempotency key, or confirm anything as a side effect.
-- [ ] Render one section per run with material/code, lot identifiers, quantity/unit and optional location. Clearly label proposed rows as unreserved and existing reservations as reserved; show unallocated shortages. Printing does not claim stock has physically been picked.
-- [ ] Put **Print picking list** in the stock-preparation action area next to its existing preparation action. Preserve entered manual choices, and surface request errors there. No separate picking-report dashboard or required confirmation modal.
-- [ ] Run the new test plus `ProductionStockPreparationTest.php`, `ProductionBenchStockPreparationTest.php` and workspace authorization tests. Manually check a mixed automatic/manual multi-run preparation and its printout. Commit Stage C.
+- [x] Write failing tests for one run, several runs, manual lot choices, partial reservations, a shortage and locations disabled. Use different lots for the automatic proposal and manual selection so a stale/default print is detectable.
+- [x] Assert that printing changes no reservations, stock movements, run status or idempotency key. Reject foreign run/requirement/lot IDs and selections above the run/row limits. If stock changed and a displayed selection is no longer eligible, return a refresh message rather than silently switching lots.
+- [x] Run `php artisan test --compact tests/Feature/ProductionPickingPrintTest.php`; confirm failure.
+- [x] Capture the allocations actually displayed at the click: automatic proposed lot IDs/quantities plus current manual overrides. Submit those choices through the authenticated, print-throttled POST route `production-bench.production.picking.print`. Resolve existing reservations afresh from the server.
+- [x] Validate every requirement belongs to a selected run and every lot belongs to the same workspace/material and is eligible. Reuse `StockReservationProposalService`'s read logic. Aggregate captured quantities across the entire document per lot as well as per requirement; independently generated proposals can share the same available stock. Capture debounced manual quantities directly from the current browser input, so the last keystroke is included. Do not call `PrepareProductionStock`, use its idempotency key, or confirm anything as a side effect.
+- [x] Render one section per run with material/code, lot identifiers, quantity/unit and optional location. Clearly label proposed rows as unreserved and existing reservations as reserved; show unallocated shortages. Printing does not claim stock has physically been picked.
+- [x] Put **Print picking list** in the stock-preparation action area next to its existing preparation action. Preserve entered manual choices, and surface request errors there. No separate picking-report dashboard or required confirmation modal.
+- [x] Run the new test plus `ProductionStockPreparationTest.php`, `ProductionBenchStockPreparationTest.php` and workspace authorization tests. Manually check a mixed automatic/manual multi-run preparation and its printout. Commit Stage C.
 
 ## Task 9 — Final acceptance and implementation handoff
 
+**Result:** All feature stages are implemented and independently reviewed. Final combined verification passed **590 tests / 44,912 assertions** across 31 affected test files, using SQLite in memory, after the final code change. The real worktree `npm run build` passed. Final cross-feature review through `d266fc7b` found no actionable P1/P2 issues. No dependency or schema changes, and no Filament admin files changed. The managed worktree and local branch are retained for review.
+
+**Manual validation limits:** Synthetic rendered Formula Sheet, costing/composition, ingredient toolbar, inventory count sheet and soap/cosmetic batch-sheet previews were inspected with the browser; selected menu/390px checks and pending-focus checks are recorded above. HTTP tests inspect real CSV/XLSX values and Node tests cover immediate input capture and popup failures. The original Herd site serves the main checkout and requires login; no user records or authentication state were fabricated. Authenticated full journeys, opening workbooks in a native spreadsheet viewer, and native A4/Letter PDF pagination remain unverified. Temporary public preview files and browser tabs were removed. These manual checks remain explicitly open below.
+
 **Test/update only where a failure requires a change:** the test files introduced above; existing print layout/components; domain language files and translation catalogue.
 
-- [ ] Run each stage's affected tests once after its final change. Cover response contents and domain side effects, not just 200 responses or button labels. Use the existing Pest-driven Node harness for capture behavior; add no browser-test dependency.
+- [x] Run each stage's affected tests once after its final change. Cover response contents and domain side effects, not just 200 responses or button labels. Use the existing Pest-driven Node harness for capture behavior; add no browser-test dependency.
 - [ ] Perform these end-to-end scenarios on the running Herd app:
   1. Formulator without Production Bench: create an unsaved soap and cosmetic formula, print/export them, edit a quantity immediately before export, and send composition data without saving a product.
   2. Portfolio user: use the existing Formula Sheet to review an older saved formula, change its display scale and print/export that exact version. Verify procedure, label text, calculated output and optional analysis remain available in their respective existing outputs.
@@ -392,10 +398,10 @@ Deliver this UI incrementally as the underlying outputs become ready: Formula an
   5. Maker: print manual picking choices, print a planned batch sheet, complete a run and print its record.
   6. Shared-workspace Viewer: use authorized outputs; switch workspace in another tab and verify the original tab cannot download stale workspace data.
 - [ ] Open actual XLSX files in a spreadsheet viewer and inspect numeric cells, units, row order, missing data and the two soap composition bases. Open CSV with a normal CSV reader. Print long ingredients/procedures to A4 and Letter, checking repeated headings and unclipped columns.
-- [ ] Keep UI strings in existing groups; run `php artisan test --compact tests/Feature/InterfaceTranslationCatalogueTest.php`. Run `npm run build` after JS/Blade changes. Run `vendor/bin/pint --dirty --format agent` after PHP changes.
-- [ ] No Filament admin files are planned. If implementation changes any, run `vendor/bin/filacheck --fix` and resolve remaining issues, as required by this repository.
-- [ ] Inspect the final diff for persistence in output paths, duplicated formulas, changed compatibility URLs, new dependencies and unrelated changes. Run `graphify update .` after code changes, using the repository's generated-file conventions.
-- [ ] Report affected tests and manual checks actually performed, then ask the user to run the complete `php artisan test --compact` suite as required by the repository. Do not describe a partial stage as the completed feature.
+- [x] Keep UI strings in existing groups; run `php artisan test --compact tests/Feature/InterfaceTranslationCatalogueTest.php`. Run `npm run build` after JS/Blade changes. Run `vendor/bin/pint --dirty --format agent` after PHP changes.
+- [x] No Filament admin files are planned. If implementation changes any, run `vendor/bin/filacheck --fix` and resolve remaining issues, as required by this repository.
+- [x] Inspect the final diff for persistence in output paths, duplicated formulas, changed compatibility URLs, new dependencies and unrelated changes. Run `graphify update .` after code changes, using the repository's generated-file conventions.
+- [x] Report affected tests and manual checks actually performed, then ask the user to run the complete `php artisan test --compact` suite as required by the repository. Do not describe a partial stage as the completed feature.
 
 ## Explicitly outside this plan
 

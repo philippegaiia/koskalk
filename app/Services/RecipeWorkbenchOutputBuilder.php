@@ -630,7 +630,9 @@ class RecipeWorkbenchOutputBuilder
         }
 
         $contextRecipe = $recipe ?? new Recipe(['workspace_id' => $workspace->id]);
-        $identities = RichContentAttachmentPaths::extractImageIdentities($content);
+        $renderer = RichContentRenderer::make($content);
+        $identityContent = is_string($content) ? $renderer->toArray() : $content;
+        $identities = RichContentAttachmentPaths::extractImageIdentities($identityContent);
 
         foreach ($identities as $identity) {
             if (str_starts_with($identity, RichContentAttachmentPaths::MEDIA_ASSET_IDENTITY_PREFIX)) {
@@ -666,7 +668,7 @@ class RecipeWorkbenchOutputBuilder
             }
         }
 
-        return RichContentRenderer::make($content)
+        return $renderer
             ->fileAttachmentProvider(
                 $this->attachmentProvider->attribute(
                     RichContentAttribute::make($contextRecipe, 'manufacturing_instructions'),

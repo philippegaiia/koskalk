@@ -429,13 +429,36 @@ it('authorizes pending procedure images and rejects malformed, foreign, or legac
             ],
         ]],
     ];
+    $tipTapInstructions = $payload['manufacturing_instructions'];
 
     $this->actingAs($user)->postJson(route('recipes.workbench.print'), $payload)->assertSuccessful();
     expect(MediaAssetUsage::query()->count())->toBe(0);
 
+    $payload['manufacturing_instructions'] = sprintf(
+        "<img data-id='%s' src='/pending-image-source'>",
+        RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
+    );
+    $this->postJson(route('recipes.workbench.print'), $payload)->assertSuccessful();
+
     $foreignOwner = User::factory()->create();
     $foreignWorkspace = Workspace::factory()->for($foreignOwner, 'owner')->create();
     $foreignAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $foreignWorkspace->id]);
+    $payload['manufacturing_instructions'] = sprintf(
+        "<img data-id='%s' src='/pending-image-source'>",
+        RichContentAttachmentPaths::mediaAssetIdentity($foreignAsset->public_id),
+    );
+    $this->postJson(route('recipes.workbench.print'), $payload)->assertForbidden();
+
+    foreach ([
+        "<img data-id='media-asset:not-a-uuid' src='/pending-image-source'>",
+        '<img data-id=media-asset:not-a-uuid src="/pending-image-source">',
+    ] as $malformedImage) {
+        $payload['manufacturing_instructions'] = $malformedImage;
+        $this->postJson(route('recipes.workbench.print'), $payload)->assertUnprocessable()
+            ->assertJsonValidationErrors('manufacturing_instructions');
+    }
+
+    $payload['manufacturing_instructions'] = $tipTapInstructions;
     $payload['manufacturing_instructions']['content'][0]['attrs']['id'] = RichContentAttachmentPaths::mediaAssetIdentity($foreignAsset->public_id);
     $this->postJson(route('recipes.workbench.print'), $payload)->assertForbidden();
 

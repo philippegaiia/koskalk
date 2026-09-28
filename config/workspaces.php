@@ -15,6 +15,7 @@ return [
     ],
     'list_output_limits' => [
         'max_rows' => 50_000,
+        'max_print_rows' => 1_000,
         'chunk_size' => 500,
     ],
 ];

@@ -9,6 +9,7 @@ use App\Http\Controllers\HelpContentExportDownloadController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\IngredientExportController;
+use App\Http\Controllers\InventoryOutputController;
 use App\Http\Controllers\LocalePreferenceController;
 use App\Http\Controllers\MediaAssetController;
 use App\Http\Controllers\MediaAssetDownloadController;
@@ -190,6 +191,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
             Route::view('/inventory/stock', 'production-bench.inventory-stock')->name('inventory.stock');
+            Route::get('/inventory/materials/export', [InventoryOutputController::class, 'exportMaterials'])
+                ->middleware('throttle:workspace-exports')
+                ->name('inventory.materials.export');
+            Route::get('/inventory/stock-lots/export', [InventoryOutputController::class, 'exportStockLots'])
+                ->middleware('throttle:workspace-exports')
+                ->name('inventory.stock-lots.export');
+            Route::get('/inventory/count/print', [InventoryOutputController::class, 'printCount'])
+                ->middleware('throttle:workspace-prints')
+                ->name('inventory.count.print');
             Route::view('/inventory/materials/ingredients/{ingredient}', 'production-bench.inventory-material-detail', ['subjectType' => 'ingredient'])->name('inventory.material.ingredient');
             Route::view('/inventory/materials/packaging/{packagingItem}', 'production-bench.inventory-material-detail', ['subjectType' => 'packaging'])->name('inventory.material.packaging');
             // Materials now covers both demanded and listed-only materials, so

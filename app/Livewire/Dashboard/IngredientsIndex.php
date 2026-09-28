@@ -67,6 +67,9 @@ class IngredientsIndex extends Component
     #[Locked]
     public ?int $destinationWorkspaceId = null;
 
+    #[Locked]
+    public ?string $destinationWorkspacePublicId = null;
+
     public ?int $replacementIngredientId = null;
 
     public ?string $statusMessage = null;
@@ -103,6 +106,7 @@ class IngredientsIndex extends Component
         $massDisplaySystem = $workspace?->mass_display_system ?? MassDisplaySystem::Metric;
 
         $this->destinationWorkspaceId = $workspace?->id;
+        $this->destinationWorkspacePublicId = $workspace?->public_id;
         $this->currentCurrency = $user?->defaultCurrency();
         $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
         $this->currentPriceUnit = $massDisplaySystem->priceUnit()->value;
@@ -113,6 +117,7 @@ class IngredientsIndex extends Component
         $user = $this->freshAuthenticatedUser();
         $workspace = $user?->company(fresh: true);
         abort_unless($workspace?->id === $this->destinationWorkspaceId, 403);
+        abort_unless($workspace?->public_id === $this->destinationWorkspacePublicId, 403);
 
         if ($workspace !== null) {
             abort_unless(app(WorkspaceAuthorization::class)->canView($user, $workspace->id), 403);

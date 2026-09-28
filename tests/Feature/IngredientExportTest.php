@@ -102,6 +102,22 @@ it('exports every matching public ingredient in sorted order as CSV', function (
         ->toBe(['Filtered Personal Oil', 'Filtered Workspace Oil']);
 });
 
+it('shows the Excel-first export menu beside the ingredient search and current catalog controls', function (): void {
+    $actor = User::factory()->create();
+    $workspace = Workspace::factory()->for($actor, 'owner')->create();
+
+    $this->actingAs($actor)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee('Export ingredients')
+        ->assertSee('Excel workbook (.xlsx)')
+        ->assertSee('CSV file (.csv)')
+        ->assertSeeHtml('aria-haspopup="menu"')
+        ->assertSeeHtml('role="menu"')
+        ->assertSee(route('ingredients.export'), false)
+        ->assertSee($workspace->public_id, false);
+});
+
 it('exports localized names, workspace prices, codes, null and zero distinctly in CSV and typed XLSX', function (): void {
     SupportedLocale::factory()->create(['code' => 'fr']);
     $actor = User::factory()->create(['locale' => 'fr']);
@@ -146,7 +162,7 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
         'workspace_id' => $workspace->id,
         'ingredient_id' => $priced->id,
         'price_per_canonical_unit' => '0.005000000000',
-        'currency' => 'GBP',
+        'currency' => 'EUR',
         'recorded_at' => '2026-03-04 00:00:00',
     ]);
     CurrentMaterialPrice::factory()->create([
@@ -174,7 +190,7 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
     $csvRows = collect(explode("\n", trim($csvResponse->streamedContent())))
         ->map(fn (string $line): array => str_getcsv($line));
     $headers = $csvRows->first();
-    $priceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'lb', 'currency' => 'GBP']), $headers, true);
+    $priceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'lb']), $headers, true);
     $unitIndex = array_search(__('ingredients.exports.columns.price_unit'), $headers, true);
     $currencyIndex = array_search(__('ingredients.exports.columns.currency'), $headers, true);
     $dateIndex = array_search(__('ingredients.exports.columns.recorded_at'), $headers, true);
@@ -198,7 +214,7 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
         ->and($pricedRow[$subcategoryIndex])->toBe((string) IngredientSubcategory::VegetableOils->localizedLabel())
         ->and($pricedRow[$priceIndex])->toBe(app(PriceBasisConverter::class)->fromPerKilogram('5', 'lb'))
         ->and($pricedRow[$unitIndex])->toBe('lb')
-        ->and($pricedRow[$currencyIndex])->toBe('GBP')
+        ->and($pricedRow[$currencyIndex])->toBe('EUR')
         ->and($pricedRow[$dateIndex])->toBe('2026-03-04')
         ->and($pricedRow[$workspaceIndex])->toBe($workspace->name)
         ->and($pricedRow[$generatedAtIndex])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/')
@@ -226,7 +242,8 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
 
     $headerIndex = $sheetRows->search(fn ($row): bool => ($row->toArray()[0] ?? null) === __('ingredients.exports.columns.name'));
     $xlsxHeaders = $sheetRows[$headerIndex]->toArray();
-    $xlsxPriceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'lb', 'currency' => 'GBP']), $xlsxHeaders, true);
+    $xlsxPriceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'lb']), $xlsxHeaders, true);
+    $xlsxCurrencyIndex = array_search(__('ingredients.exports.columns.currency'), $xlsxHeaders, true);
     $xlsxZeroRow = $sheetRows->skip($headerIndex + 1)->first(fn ($row): bool => ($row->toArray()[0] ?? null) === 'Zero Oil');
     $xlsxPricedRow = $sheetRows->skip($headerIndex + 1)->first(fn ($row): bool => ($row->toArray()[0] ?? null) === 'Huile d’olive');
 
@@ -235,6 +252,7 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
         ->and((float) $xlsxZeroRow->toArray()[$xlsxPriceIndex])->toBe(0.0)
         ->and($xlsxPricedRow->getCells()[$xlsxPriceIndex])->toBeInstanceOf(NumericCell::class)
         ->and((float) $xlsxPricedRow->toArray()[$xlsxPriceIndex])->toBe((float) app(PriceBasisConverter::class)->fromPerKilogram('5', 'lb'))
+        ->and($xlsxPricedRow->toArray()[$xlsxCurrencyIndex])->toBe('EUR')
         ->and(CurrentMaterialPrice::query()->count())->toBe(3);
 });
 

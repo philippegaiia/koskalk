@@ -12086,12 +12086,12 @@
       "group": "ingredients",
       "key": "exports.columns.price",
       "text": {
-        "de": "Aktueller Preis (:currency / :unit)",
-        "es": "Precio actual (:currency / :unit)",
-        "fr": "Prix actuel (:currency / :unit)",
-        "it": "Prezzo attuale (:currency / :unit)",
-        "nl": "Huidige prijs (:currency / :unit)",
-        "pt_BR": "Preço atual (:currency / :unit)"
+        "de": "Aktueller Preis / :unit",
+        "es": "Precio actual / :unit",
+        "fr": "Prix actuel / :unit",
+        "it": "Prezzo attuale / :unit",
+        "nl": "Huidige prijs / :unit",
+        "pt_BR": "Preço atual / :unit"
       }
     },
     {
@@ -12332,6 +12332,138 @@
         "it": "Listino prezzi ingredienti",
         "nl": "Ingrediëntenprijslijst",
         "pt_BR": "Tabela de preços de ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.csv",
+      "text": {
+        "de": "CSV-Datei (.csv)",
+        "es": "Archivo CSV (.csv)",
+        "fr": "Fichier CSV (.csv)",
+        "it": "File CSV (.csv)",
+        "nl": "CSV-bestand (.csv)",
+        "pt_BR": "Arquivo CSV (.csv)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.errors.access",
+      "text": {
+        "de": "Melden Sie sich an, um Zutaten zu exportieren.",
+        "es": "Inicia sesión para exportar ingredientes.",
+        "fr": "Connectez-vous pour exporter des ingrédients.",
+        "it": "Accedi per esportare gli ingredienti.",
+        "nl": "Meld je aan om ingrediënten te exporteren.",
+        "pt_BR": "Entre para exportar ingredientes."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.errors.failed",
+      "text": {
+        "de": "Zutaten konnten nicht exportiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "es": "No se pudieron exportar los ingredientes. Actualiza la página e inténtalo de nuevo.",
+        "fr": "Impossible d’exporter les ingrédients. Actualisez la page, puis réessayez.",
+        "it": "Impossibile esportare gli ingredienti. Aggiorna la pagina e riprova.",
+        "nl": "Ingrediënten exporteren is mislukt. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Não foi possível exportar os ingredientes. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.errors.forbidden",
+      "text": {
+        "de": "Der Zugriff auf den Zutatenexport hat sich geändert. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "es": "El acceso a la exportación de ingredientes cambió. Actualiza la página e inténtalo de nuevo.",
+        "fr": "Votre accès à l’export des ingrédients a changé. Actualisez la page, puis réessayez.",
+        "it": "L’accesso all’esportazione degli ingredienti è cambiato. Aggiorna la pagina e riprova.",
+        "nl": "Je toegang tot het exporteren van ingrediënten is gewijzigd. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Seu acesso à exportação de ingredientes mudou. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.errors.invalid",
+      "text": {
+        "de": "Keine Zutaten passen oder die Exportgrenze ist überschritten. Grenzen Sie Suche oder Filter ein und versuchen Sie es erneut.",
+        "es": "Ningún ingrediente coincide o se superó el límite de exportación. Restringe la búsqueda o los filtros e inténtalo de nuevo.",
+        "fr": "Aucun ingrédient ne correspond ou la limite d’export est dépassée. Affinez la recherche ou les filtres, puis réessayez.",
+        "it": "Nessun ingrediente corrisponde o è stato superato il limite di esportazione. Restringi la ricerca o i filtri e riprova.",
+        "nl": "Geen ingrediënten komen overeen of de exportlimiet is overschreden. Verfijn de zoekopdracht of filters en probeer het opnieuw.",
+        "pt_BR": "Nenhum ingrediente corresponde ou o limite de exportação foi excedido. Refine a busca ou os filtros e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.errors.throttled",
+      "text": {
+        "de": "Zu viele Exportanfragen. Warten Sie kurz und versuchen Sie es erneut.",
+        "es": "Hay demasiadas solicitudes de exportación. Espera un momento e inténtalo de nuevo.",
+        "fr": "Trop de demandes d’export. Patientez un instant, puis réessayez.",
+        "it": "Troppe richieste di esportazione. Attendi un momento e riprova.",
+        "nl": "Te veel exportverzoeken. Wacht even en probeer het opnieuw.",
+        "pt_BR": "Há muitas solicitações de exportação. Aguarde um momento e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.errors.workspace_changed",
+      "text": {
+        "de": "Der Arbeitsbereich hat sich geändert. Laden Sie die Zutatenliste neu und versuchen Sie es erneut.",
+        "es": "El espacio de trabajo cambió. Vuelve a cargar la lista de ingredientes e inténtalo de nuevo.",
+        "fr": "Votre espace de travail a changé. Rechargez la liste des ingrédients, puis réessayez.",
+        "it": "L’area di lavoro è cambiata. Ricarica l’elenco degli ingredienti e riprova.",
+        "nl": "Je werkruimte is gewijzigd. Laad de ingrediëntenlijst opnieuw en probeer het weer.",
+        "pt_BR": "O espaço de trabalho mudou. Recarregue a lista de ingredientes e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.label",
+      "text": {
+        "de": "Zutaten exportieren",
+        "es": "Exportar ingredientes",
+        "fr": "Exporter les ingrédients",
+        "it": "Esporta ingredienti",
+        "nl": "Ingrediënten exporteren",
+        "pt_BR": "Exportar ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.menu_label",
+      "text": {
+        "de": "Exportformat für Zutaten",
+        "es": "Formato de exportación de ingredientes",
+        "fr": "Formats d’export des ingrédients",
+        "it": "Formati di esportazione degli ingredienti",
+        "nl": "Exportindeling voor ingrediënten",
+        "pt_BR": "Formatos de exportação de ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.pending",
+      "text": {
+        "de": "Zutatenexport wird vorbereitet…",
+        "es": "Preparando la exportación de ingredientes…",
+        "fr": "Préparation de l’export des ingrédients…",
+        "it": "Preparazione dell’esportazione degli ingredienti…",
+        "nl": "Ingrediëntenexport voorbereiden…",
+        "pt_BR": "Preparando a exportação de ingredientes…"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.xlsx",
+      "text": {
+        "de": "Excel-Arbeitsmappe (.xlsx)",
+        "es": "Libro de Excel (.xlsx)",
+        "fr": "Classeur Excel (.xlsx)",
+        "it": "Cartella di lavoro Excel (.xlsx)",
+        "nl": "Excel-werkmap (.xlsx)",
+        "pt_BR": "Pasta de trabalho do Excel (.xlsx)"
       }
     },
     {

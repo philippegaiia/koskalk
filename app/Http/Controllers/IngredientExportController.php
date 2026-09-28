@@ -83,7 +83,6 @@ final class IngredientExportController extends Controller
 
         $massDisplaySystem = $workspace->mass_display_system;
         $priceUnit = $massDisplaySystem->priceUnit();
-        $currency = $actor->defaultCurrency();
         $generatedAt = now()->toIso8601String();
         $filterValues = [
             'search_filter' => $search,
@@ -99,10 +98,9 @@ final class IngredientExportController extends Controller
             (int) config('workspaces.list_output_limits.chunk_size', 500),
             $priceBasisConverter,
             $priceUnit,
-            $currency,
             $filterValues,
         );
-        $columns = $this->columns($priceUnit, $currency);
+        $columns = $this->columns($priceUnit);
         $format = $filters['format'];
         $filename = (Str::slug(__('ingredients.exports.filename')) ?: 'ingredient-price-book')
             .'-'.now()->toDateString().'.'.$format;
@@ -151,7 +149,6 @@ final class IngredientExportController extends Controller
         int $chunkSize,
         PriceBasisConverter $priceBasisConverter,
         MassUnit $priceUnit,
-        string $currency,
         array $filters,
     ): Generator {
         $rowCount = 0;
@@ -167,11 +164,12 @@ final class IngredientExportController extends Controller
                 ]);
             }
 
+            $priceRecord = $ingredient->currentPrices->first();
             $pricePerKilogram = $ingredient->user_price_per_kg;
             $currentPrice = $pricePerKilogram === null
                 ? null
                 : $priceBasisConverter->fromPerKilogram($pricePerKilogram, $priceUnit);
-            $recordedAt = $ingredient->currentPrices->first()?->recorded_at;
+            $recordedAt = $priceRecord?->recorded_at;
 
             yield [
                 'name' => $ingredient->localizedDisplayName() ?? $ingredient->display_name,
@@ -183,7 +181,7 @@ final class IngredientExportController extends Controller
                     : (string) $ingredient->subcategory->localizedLabel(),
                 'price' => $currentPrice,
                 'price_unit' => $priceUnit->value,
-                'currency' => $currency,
+                'currency' => $pricePerKilogram === null ? null : $priceRecord?->currency,
                 'recorded_at' => $recordedAt?->toDateString(),
                 ...$filters,
             ];
@@ -193,7 +191,7 @@ final class IngredientExportController extends Controller
     /**
      * @return list<array{key: string, label: string, type: 'string'|'number'}>
      */
-    private function columns(MassUnit $priceUnit, string $currency): array
+    private function columns(MassUnit $priceUnit): array
     {
         return [
             ['key' => 'name', 'label' => __('ingredients.exports.columns.name'), 'type' => 'string'],
@@ -201,10 +199,7 @@ final class IngredientExportController extends Controller
             ['key' => 'material_code', 'label' => __('ingredients.exports.columns.material_code'), 'type' => 'string'],
             ['key' => 'category', 'label' => __('ingredients.exports.columns.category'), 'type' => 'string'],
             ['key' => 'subcategory', 'label' => __('ingredients.exports.columns.subcategory'), 'type' => 'string'],
-            ['key' => 'price', 'label' => __('ingredients.exports.columns.price', [
-                'unit' => $priceUnit->value,
-                'currency' => $currency,
-            ]), 'type' => 'number'],
+            ['key' => 'price', 'label' => __('ingredients.exports.columns.price', ['unit' => $priceUnit->value]), 'type' => 'number'],
             ['key' => 'price_unit', 'label' => __('ingredients.exports.columns.price_unit'), 'type' => 'string'],
             ['key' => 'currency', 'label' => __('ingredients.exports.columns.currency'), 'type' => 'string'],
             ['key' => 'recorded_at', 'label' => __('ingredients.exports.columns.recorded_at'), 'type' => 'string'],

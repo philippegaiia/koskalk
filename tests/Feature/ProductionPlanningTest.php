@@ -687,6 +687,8 @@ it('persists the complete formula snapshot atomically when planning', function (
             'superfat_percentage' => 5,
             'water_mode' => 'percent_of_oils',
             'water_value' => 38,
+            'manufacturing_procedure_html' => '',
+            'manufacturing_procedure_illustrations_omitted' => false,
         ])
         ->and($production->formulaLines()->count())->toBe(4)
         ->and($production->formulaLines()->where('component', 'ingredient')->pluck('planned_mass_grams')->all())

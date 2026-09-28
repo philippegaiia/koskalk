@@ -21,6 +21,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\MediaStorage;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
@@ -349,7 +350,7 @@ it('returns to the first catalog page after deleting the only item on page two',
         ->call('deleteIngredient')
         ->assertSet('paginators.page', 1)
         ->assertSee('Catalog Ingredient 01')
-        ->assertDontSee('No ingredients match');
+        ->assertViewHas('ingredients', fn (LengthAwarePaginator $ingredients): bool => $ingredients->count() === 25);
 
     expect($lastIngredient->fresh())->toBeNull();
 });

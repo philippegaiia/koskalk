@@ -5,6 +5,9 @@
     $rawRows = $incorporated['raw_material_rows'] ?? [];
     $inciRows = $incorporated['inci_rows'] ?? [];
     $calculatedOutput = $composition['calculated_output'] ?? null;
+    $rawPercentageLabel = ($composition['family'] ?? null) === 'cosmetic'
+        ? __('formula_documents.composition.percentage_authored')
+        : __('formula_documents.composition.percentage_fresh');
     $formatNumber = fn (mixed $value): string => \App\Support\NumberLocale::formatAdaptiveDecimal((float) $value, 2, 8, $numberLocale);
 @endphp
 
@@ -27,7 +30,7 @@
                         <th class="px-1.5 py-1">{{ __('formula_documents.exports.ingredient') }}</th>
                         <th class="px-1.5 py-1">{{ __('formula_documents.composition.recorded_inci') }}</th>
                         <th class="px-1.5 py-1 text-right">{{ __('formula_documents.exports.quantity') }} ({{ $composition['unit'] ?? 'g' }})</th>
-                        <th class="px-1.5 py-1 text-right">{{ __('formula_documents.composition.percentage_basis') }}</th>
+                        <th class="px-1.5 py-1 text-right">{{ $rawPercentageLabel }}</th>
                         <th class="px-1.5 py-1">{{ __('formula_documents.exports.role') }}</th>
                         <th class="px-1.5 py-1">{{ __('formula_documents.exports.note') }}</th>
                     </tr>
@@ -155,7 +158,11 @@
     @if (($composition['warnings'] ?? []) !== [])
         <ul class="list-disc space-y-1 pl-5 text-xs text-amber-900">
             @foreach ($composition['warnings'] as $warning)
-                <li>{{ __('formula_documents.composition.warnings.'.$warning) }}</li>
+                @php
+                    $warningKey = 'formula_documents.composition.warnings.'.$warning;
+                    $warningMessage = __($warningKey);
+                @endphp
+                <li>{{ $warningMessage === $warningKey ? $warning : $warningMessage }}</li>
             @endforeach
         </ul>
     @endif

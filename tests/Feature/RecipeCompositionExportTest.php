@@ -2,6 +2,7 @@
 
 use App\Services\RecipeCompositionExportDataBuilder;
 use App\Services\RecipeWorkbookExporter;
+use App\Support\NumberLocale;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use OpenSpout\Reader\XLSX\Reader;
 
@@ -335,6 +336,22 @@ it('keeps cosmetic authored totals and percentages incomplete without a duplicat
             'Carrier component',
         )
         ->not->toContain(__('formula_documents.exports.calculated_output'));
+
+    $upstreamWarning = 'Supplier INCI data requires <review>.';
+    $compositionForPrint = $composition;
+    $compositionForPrint['warnings'][] = $upstreamWarning;
+    $printHtml = view('components.formula-document.composition', [
+        'composition' => $compositionForPrint,
+        'numberLocale' => NumberLocale::resolve('en_US'),
+    ])->render();
+
+    expect($printHtml)
+        ->toContain(__('formula_documents.composition.percentage_authored'))
+        ->not->toContain(__('formula_documents.composition.percentage_fresh'))
+        ->and($printHtml)
+        ->toContain(__('formula_documents.composition.warnings.composition_recorded_inci_missing'))
+        ->toContain('Supplier INCI data requires &lt;review&gt;.')
+        ->not->toContain('formula_documents.composition.warnings.'.$upstreamWarning);
 
     $redundantSnapshot = $snapshot;
     $redundantSnapshot['draft']['phaseItems']['phase_b'][0]['inci_name'] = 'Botanical blend INCI';

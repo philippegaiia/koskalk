@@ -111,6 +111,7 @@ return [
         'output_formula_unusable' => 'Add at least one valid formula ingredient before printing or exporting.',
         'output_ingredient_required' => 'Choose an ingredient for each formula row with a quantity.',
         'output_ingredient_unavailable' => 'A formula ingredient is unavailable. Reload the workbench and try again.',
+        'output_instructions_invalid' => 'The procedure content is invalid. Reload it in the workbench and try again.',
         'output_kind_unavailable' => 'Costing and composition output are not available yet.',
         'output_media_unavailable' => 'A procedure image is unavailable. Choose an image from this workspace library.',
         'output_packaging_unavailable' => 'A packaging item is unavailable. Reload the workbench and try again.',

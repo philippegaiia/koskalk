@@ -471,6 +471,45 @@ it('authorizes pending procedure images and rejects malformed, foreign, or legac
     expect(MediaAssetUsage::query()->count())->toBe(0);
 });
 
+it('rejects malformed structured procedure documents and reports the procedure size limit accurately', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+
+    foreach ([
+        ['unexpected' => 'value'],
+        [
+            'type' => 'doc',
+            'content' => [[
+                'type' => 'paragraph',
+                'content' => 'not-a-node-list',
+            ]],
+        ],
+    ] as $malformedDocument) {
+        $payload['manufacturing_instructions'] = $malformedDocument;
+
+        $this->actingAs($user)->postJson(route('recipes.workbench.print'), $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('manufacturing_instructions');
+    }
+
+    $payload['manufacturing_instructions'] = str_repeat('x', 512_001);
+    $response = $this->postJson(route('recipes.workbench.print'), $payload)->assertUnprocessable();
+
+    expect($response->json('errors.manufacturing_instructions.0'))
+        ->toBe(__('formula_documents.validation.output_payload_too_large'))
+        ->not->toContain('512 characters');
+});
+
+it('preserves the legacy IFRA category selection mode in the output snapshot', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['ifra_category_selection_mode'] = 'legacy';
+
+    $this->actingAs($user)->postJson(route('recipes.workbench.print'), $payload)
+        ->assertSuccessful()
+        ->assertViewHas('snapshot', fn (array $snapshot): bool => $snapshot['draft']['ifraCategorySelectionMode'] === 'legacy');
+});
+
 /**
  * @return array<string, mixed>
  */

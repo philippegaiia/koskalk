@@ -2,9 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\IfraCategorySelectionMode;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Throwable;
 
 class RecipeWorkbenchOutputRequest extends FormRequest
 {
@@ -39,7 +42,7 @@ class RecipeWorkbenchOutputRequest extends FormRequest
             'draft.water_mode' => ['required', Rule::in(['percent_of_oils', 'lye_ratio', 'lye_concentration'])],
             'draft.water_value' => ['required', 'numeric', 'min:0', 'max:500'],
             'draft.superfat' => ['required', 'numeric', 'between:-25,99.999999'],
-            'draft.ifra_category_selection_mode' => ['nullable', Rule::in(['automatic', 'manual'])],
+            'draft.ifra_category_selection_mode' => ['nullable', Rule::enum(IfraCategorySelectionMode::class)],
             'draft.ifra_product_category_id' => ['nullable', 'integer', 'min:1'],
             'draft.final_ingredient_list' => ['nullable', 'string', 'max:10000'],
             'draft.final_ingredient_list_basis_hash' => ['nullable', 'string', 'max:160'],
@@ -81,7 +84,17 @@ class RecipeWorkbenchOutputRequest extends FormRequest
                     $encoded = is_string($value) ? $value : json_encode($value);
 
                     if (! is_string($encoded) || strlen($encoded) > 512_000) {
-                        $fail(__('validation.max.string', ['attribute' => $attribute, 'max' => 512]));
+                        $fail(__('formula_documents.validation.output_payload_too_large'));
+
+                        return;
+                    }
+
+                    if (is_array($value)) {
+                        try {
+                            RichContentRenderer::make($value)->getEditor()->getHTML();
+                        } catch (Throwable) {
+                            $fail(__('formula_documents.validation.output_instructions_invalid'));
+                        }
                     }
                 },
             ],

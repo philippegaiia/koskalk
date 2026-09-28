@@ -133,8 +133,8 @@ class RecipeWorkbenchOutputRequest extends FormRequest
                 $validator->errors()->add('payload', __('formula_documents.validation.output_payload_too_large'));
             }
 
-            if ($this->input('kind') === 'composition') {
-                $validator->errors()->add('kind', __('formula_documents.validation.output_kind_unavailable'));
+            if ($this->input('kind') === 'composition' && $this->input('format') !== 'xlsx') {
+                $validator->errors()->add('format', __('formula_documents.validation.output_composition_xlsx_only'));
             }
 
             $costing = $this->input('costing');

@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('/{recipe}/print/costing', 'printSavedCostingSheet')->middleware('throttle:workspace-prints')->name('print.costing');
             Route::get('/{recipe}/export.xlsx', 'exportSavedWorkbook')->middleware('throttle:workspace-exports')->name('export.xlsx');
             Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->middleware('throttle:workspace-exports')->name('export.csv');
+            Route::get('/{recipe}/export.composition', 'exportSavedComposition')->middleware('throttle:workspace-exports')->name('export.composition');
             Route::get('/{recipe}/media/{path}', [RecipeMediaController::class, 'show'])
                 ->where('path', '.*')
                 ->middleware('throttle:120,1')

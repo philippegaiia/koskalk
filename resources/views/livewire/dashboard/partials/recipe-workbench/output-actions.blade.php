@@ -1,5 +1,5 @@
-@if (is_array($workbench['output'] ?? null))
-    <div x-show="['formula', 'instructions', 'costing'].includes(activeWorkbenchTab)" x-cloak :aria-busy="outputPending" class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-line)] py-3">
+@if (is_array($workbench['output'] ?? null) && ! ($isPublicCalculator ?? false))
+    <div x-show="['formula', 'instructions', 'costing', 'output'].includes(activeWorkbenchTab)" x-cloak :aria-busy="outputPending" class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-line)] py-3">
         <div class="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
             <p x-show="outputPending" x-cloak class="text-sm text-[var(--color-ink-soft)]" x-text="outputConfig?.messages?.pending"></p>
             <p x-show="outputError" x-cloak role="alert" class="text-sm text-[var(--color-danger-strong)]" x-text="outputError"></p>
@@ -29,6 +29,11 @@
         <div x-show="activeWorkbenchTab === 'costing' && hasLoadedCosting" x-cloak class="ml-auto flex flex-wrap items-center justify-end gap-2">
             <button type="button" @click="printCurrentFormula({ printContext: 'costing' })" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11">{{ __('formula_documents.actions.print_sheet') }}</button>
             <button type="button" @click="exportCurrentCosting()" :disabled="outputPending" class="sk-btn sk-btn-ghost min-h-11">{{ __('formula_documents.actions.export_costing_excel') }}</button>
+        </div>
+
+        <div x-show="activeWorkbenchTab === 'output'" x-cloak class="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <button type="button" @click="printCurrentFormula({ printContext: 'output' })" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11">{{ __('formula_documents.actions.print_sheet') }}</button>
+            <button type="button" @click="exportCurrentFormula('xlsx', 'composition')" :disabled="outputPending" class="sk-btn sk-btn-ghost min-h-11">{{ __('formula_documents.actions.export_composition') }}</button>
         </div>
     </div>
 @endif

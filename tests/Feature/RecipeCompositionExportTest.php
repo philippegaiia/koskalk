@@ -1,7 +1,9 @@
 <?php
 
 use App\Services\RecipeCompositionExportDataBuilder;
+use App\Services\RecipeWorkbookExporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use OpenSpout\Reader\XLSX\Reader;
 
 uses(RefreshDatabase::class);
 
@@ -289,6 +291,50 @@ it('keeps cosmetic authored totals and percentages incomplete without a duplicat
         ->and($composition['warnings'])->toContain('composition_recorded_inci_missing')
         ->and($rawRows[1]['recorded_inci'])->toBe('')
         ->and($rawRows[1]['recorded_inci_missing'])->toBeTrue();
+
+    $workbookPath = tempnam(sys_get_temp_dir(), 'koskalk-cosmetic-composition-test-');
+    file_put_contents($workbookPath, app(RecipeWorkbookExporter::class)->exportComposition($composition));
+
+    try {
+        $reader = new Reader;
+        $reader->open($workbookPath);
+        $sheets = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $sheets[$sheet->getName()] = collect($sheet->getRowIterator())
+                ->map(fn ($row): array => $row->toArray())
+                ->all();
+        }
+
+        $reader->close();
+    } finally {
+        @unlink($workbookPath);
+    }
+
+    $cosmeticRows = collect($sheets[__('formula_documents.composition.sheet')]);
+    $rawHeaderIndex = $cosmeticRows->search(fn (array $row): bool => in_array(
+        __('formula_documents.composition.percentage_authored'),
+        $row,
+        true,
+    ));
+    $rawHeader = $cosmeticRows->get($rawHeaderIndex);
+    $percentageIndex = array_search(__('formula_documents.composition.percentage_authored'), $rawHeader, true);
+    $ingredientIndex = array_search(__('formula_documents.exports.ingredient'), $rawHeader, true);
+    $exportedRawPercentages = $cosmeticRows
+        ->filter(fn (array $row): bool => in_array($row[$ingredientIndex] ?? null, ['Glycerin', 'Botanical blend'], true))
+        ->map(fn (array $row): float => (float) $row[$percentageIndex])
+        ->values()
+        ->all();
+
+    expect(array_keys($sheets))->toBe([__('formula_documents.composition.sheet')])
+        ->and($exportedRawPercentages)->toBe([62.0, 18.0])
+        ->and(array_sum($exportedRawPercentages))->toBe(80.0)
+        ->and(collect($sheets)->flatten())->toContain(
+            __('formula_documents.composition.incorporated_inci_breakdown'),
+            'Botanical extract component',
+            'Carrier component',
+        )
+        ->not->toContain(__('formula_documents.exports.calculated_output'));
 
     $redundantSnapshot = $snapshot;
     $redundantSnapshot['draft']['phaseItems']['phase_b'][0]['inci_name'] = 'Botanical blend INCI';

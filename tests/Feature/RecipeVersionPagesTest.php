@@ -33,7 +33,9 @@ use App\Support\RichContentAttachmentPaths;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
+use OpenSpout\Reader\XLSX\Reader;
 
 uses(RefreshDatabase::class);
 
@@ -91,6 +93,7 @@ it('keeps saved formula outputs read only with or without saved costing', functi
     'costing print' => 'recipes.print.costing',
     'Excel export' => 'recipes.export.xlsx',
     'CSV export' => 'recipes.export.csv',
+    'Composition export' => 'recipes.export.composition',
 ])->with([
     'no saved costing' => false,
     'saved costing' => true,
@@ -177,6 +180,13 @@ it('keeps historical version and scale parameters in saved sheet actions', funct
             'version' => $historicalVersion->public_id,
         ])
         ->and($exportQuery('csv'))->toMatchArray([
+            'oil_weight' => '750',
+            'batch_number' => 'TRIAL-14',
+            'batch_basis' => '750',
+            'units_produced' => '4',
+            'version' => $historicalVersion->public_id,
+        ])
+        ->and($exportQuery('composition'))->toMatchArray([
             'oil_weight' => '750',
             'batch_number' => 'TRIAL-14',
             'batch_basis' => '750',
@@ -1242,7 +1252,7 @@ it('downloads the saved formula as an excel workbook', function () {
 
     expect($workbookXml)
         ->toContain('Ingredient batch')
-        ->toContain('Soap output')
+        ->toContain('Calculated output')
         ->not->toContain('Summary')
         ->not->toContain('Packaging')
         ->not->toContain('Costing')
@@ -1253,11 +1263,82 @@ it('downloads the saved formula as an excel workbook', function () {
         ->toContain('Olive Oil')
         ->toContain('NaOH')
         ->toContain('SODIUM OLIVATE')
-        ->toContain('Final INCI')
+        ->toContain(__('formula_documents.composition.calculated_inci'))
         ->not->toContain('Soap qualities')
         ->not->toContain('Fatty-acid profile')
         ->toContain('customWidth="true"')
         ->toContain('<autoFilter');
+});
+
+it('exports the selected saved composition at the requested scale without writing formula records', function (): void {
+    [$user, $recipe, $historicalVersion] = createRecipeWithTwoDistinctSavedVersions();
+    $naoh = Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::SodiumHydroxide,
+        'display_name' => 'Sodium hydroxide',
+        'inci_name' => 'SODIUM HYDROXIDE',
+        'is_active' => true,
+    ]);
+    $water = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::Water,
+        'display_name' => 'Water',
+        'inci_name' => 'AQUA',
+        'is_active' => true,
+    ]);
+    $before = [
+        Recipe::withoutGlobalScopes()->count(),
+        RecipeVersion::withoutGlobalScopes()->count(),
+        RecipeVersionCosting::withoutGlobalScopes()->count(),
+    ];
+
+    $response = $this->actingAs($user)->get(route('recipes.export.composition', [
+        'recipe' => $recipe,
+        'version' => $historicalVersion->public_id,
+        'oil_weight' => 750,
+        'batch_number' => 'TRIAL-14',
+    ]));
+
+    $response->assertSuccessful()
+        ->assertDownload(Str::slug($recipe->name).'-composition.xlsx');
+    $sheets = readRecipeCompositionWorkbook($response->streamedContent());
+    $compositionRows = collect($sheets[__('formula_documents.composition.sheet')]);
+    $headers = $compositionRows->first(fn (array $row): bool => in_array(__('formula_documents.composition.ingredient_id'), $row, true));
+    $idIndex = array_search(__('formula_documents.composition.ingredient_id'), $headers, true);
+    $nameIndex = array_search(__('formula_documents.exports.ingredient'), $headers, true);
+    $inciIndex = array_search(__('formula_documents.composition.recorded_inci'), $headers, true);
+    $quantityIndex = array_search(__('formula_documents.exports.quantity'), $headers, true);
+    $oilRow = $compositionRows->first(fn (array $row): bool => ($row[$nameIndex] ?? null) === 'Olive Oil');
+    $naohRow = $compositionRows->first(fn (array $row): bool => ($row[$idIndex] ?? null) === $naoh->id);
+    $waterRow = $compositionRows->first(fn (array $row): bool => ($row[$idIndex] ?? null) === $water->id);
+    $currentSheet = $this->actingAs($user)->get(route('recipes.saved', $recipe))->assertSuccessful()->getContent();
+    $compositionUrl = route('recipes.export.composition', [
+        'recipe' => $recipe,
+        'version' => $historicalVersion->public_id,
+        'oil_weight' => 750,
+    ]);
+
+    expect(array_keys($sheets))->toBe([
+        __('formula_documents.composition.sheet'),
+        __('formula_documents.exports.calculated_output'),
+    ])
+        ->and($oilRow[$quantityIndex])->toBe(750)
+        ->and($oilRow[$inciIndex])->toBe('OLEA EUROPAEA FRUIT OIL')
+        ->and($naohRow[$inciIndex])->toBe('Sodium hydroxide')
+        ->and($waterRow[$inciIndex])->toBe('Aqua')
+        ->and(collect($sheets)->flatten())->toContain(
+            $recipe->name,
+            __('formula_documents.states.saved'),
+            (int) $historicalVersion->version_number,
+        )
+        ->not->toContain('Coconut Oil', __('formula_documents.exports.price_per_kg'))
+        ->and($currentSheet)->toContain('Export composition')
+        ->and([
+            Recipe::withoutGlobalScopes()->count(),
+            RecipeVersion::withoutGlobalScopes()->count(),
+            RecipeVersionCosting::withoutGlobalScopes()->count(),
+        ])->toBe($before);
 });
 
 it('does not expose exports to other users', function () {
@@ -1270,6 +1351,10 @@ it('does not expose exports to other users', function () {
 
     $this->actingAs($otherUser)
         ->get(route('recipes.export.xlsx', ['recipe' => $recipe]))
+        ->assertNotFound();
+
+    $this->actingAs($otherUser)
+        ->get(route('recipes.export.composition', ['recipe' => $recipe]))
         ->assertNotFound();
 });
 
@@ -1342,7 +1427,7 @@ it('keeps the displayed historical version in every sheet action', function () {
         ->get(route('recipes.version', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful();
 
-    foreach (['recipes.export.xlsx', 'recipes.export.csv'] as $routeName) {
+    foreach (['recipes.export.xlsx', 'recipes.export.csv', 'recipes.export.composition'] as $routeName) {
         $routePath = parse_url(route($routeName, ['recipe' => $recipe]), PHP_URL_PATH);
         $html = html_entity_decode($response->getContent());
 
@@ -2012,6 +2097,31 @@ function recipeWorkbookXml(string $content): string
     unlink($path);
 
     return $xml;
+}
+
+/** @return array<string, list<array<int, mixed>>> */
+function readRecipeCompositionWorkbook(string $content): array
+{
+    $path = tempnam(sys_get_temp_dir(), 'koskalk-composition-export-test-');
+    file_put_contents($path, $content);
+
+    try {
+        $reader = new Reader;
+        $reader->open($path);
+        $sheets = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $sheets[$sheet->getName()] = collect($sheet->getRowIterator())
+                ->map(fn ($row): array => $row->toArray())
+                ->all();
+        }
+
+        $reader->close();
+
+        return $sheets;
+    } finally {
+        unlink($path);
+    }
 }
 
 function makeSavedRecipeIngredient(): Ingredient

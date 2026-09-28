@@ -95,6 +95,14 @@
             />
         @endif
 
+        @if (is_array($compositionExportData ?? null) && in_array('composition', $availableSections, true))
+            <x-formula-document.composition
+                :composition="$compositionExportData"
+                :number-locale="$numberLocale"
+                :is-selected="in_array('composition', $selectedSections, true)"
+            />
+        @endif
+
         @if (is_array($costingProjection ?? null) && in_array('costing', $availableSections, true))
             <x-formula-document.costing
                 :projection="$costingProjection"

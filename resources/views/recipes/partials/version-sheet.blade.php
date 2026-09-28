@@ -30,10 +30,17 @@
         </section>
     @endif
 
-    @if (filled($formulaDocument['label_text']))
-        <section>
+    <section class="flex flex-col gap-3 border-t border-[var(--color-line)] pt-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0 flex-1">
             <h2 class="text-sm font-semibold">{{ __('formula_documents.sections.label') }}</h2>
+            @if (filled($formulaDocument['label_text']))
             <p class="mt-2 text-sm leading-6 text-[var(--color-ink-strong)]">{{ $formulaDocument['label_text'] }}</p>
-        </section>
-    @endif
+            @else
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('formula_documents.composition.no_authored_label') }}</p>
+            @endif
+        </div>
+        <a href="{{ $compositionExportUrl }}" class="sk-btn sk-btn-ghost min-h-11 shrink-0">
+            {{ __('formula_documents.actions.export_composition') }}
+        </a>
+    </section>
 </div>

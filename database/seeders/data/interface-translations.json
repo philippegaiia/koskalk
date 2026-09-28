@@ -1128,6 +1128,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "actions.export_composition",
+      "text": {
+        "de": "Zusammensetzung exportieren",
+        "es": "Exportar composición",
+        "fr": "Exporter la composition",
+        "it": "Esporta la composizione",
+        "nl": "Samenstelling exporteren",
+        "pt_BR": "Exportar composição"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "actions.export_costing_excel",
       "text": {
         "de": "Kosten in Excel exportieren",
@@ -1836,6 +1848,30 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.accounted_inci_percentage",
+      "text": {
+        "de": "Anteil am erfassten INCI (%)",
+        "es": "Porcentaje contabilizado en el INCI (%)",
+        "fr": "Part comptabilisée dans l’INCI (%)",
+        "it": "Quota conteggiata nell’INCI (%)",
+        "nl": "Aandeel opgenomen in INCI (%)",
+        "pt_BR": "Parcela contabilizada no INCI (%)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.accounted_inci_weight",
+      "text": {
+        "de": "Im INCI erfasstes Gewicht",
+        "es": "Peso contabilizado en el INCI",
+        "fr": "Poids comptabilisé dans l’INCI",
+        "it": "Peso conteggiato nell’INCI",
+        "nl": "Gewicht opgenomen in INCI",
+        "pt_BR": "Peso contabilizado no INCI"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "composition.actual_incorporated_mass",
       "text": {
         "de": "Tatsächlich eingearbeitete Masse",
@@ -1844,6 +1880,18 @@
         "it": "Massa effettivamente incorporata",
         "nl": "Werkelijk opgenomen massa",
         "pt_BR": "Massa efetivamente incorporada"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.assumption",
+      "text": {
+        "de": "Berechnungsannahme",
+        "es": "Supuesto del cálculo",
+        "fr": "Hypothèse de calcul",
+        "it": "Ipotesi di calcolo",
+        "nl": "Rekenaanname",
+        "pt_BR": "Premissa do cálculo"
       }
     },
     {
@@ -1860,6 +1908,66 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.authored_label",
+      "text": {
+        "de": "Verfasster Etikettentext",
+        "es": "Texto de etiqueta redactado",
+        "fr": "Texte d’étiquette rédigé",
+        "it": "Testo etichetta redatto",
+        "nl": "Zelf geschreven etikettekst",
+        "pt_BR": "Texto de rótulo escrito"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.calculated_inci",
+      "text": {
+        "de": "Berechnetes INCI",
+        "es": "INCI calculado",
+        "fr": "INCI calculé",
+        "it": "INCI calcolato",
+        "nl": "Berekende INCI",
+        "pt_BR": "INCI calculado"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.component",
+      "text": {
+        "de": "Bestandteil",
+        "es": "Componente",
+        "fr": "Composant",
+        "it": "Componente",
+        "nl": "Bestanddeel",
+        "pt_BR": "Componente"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.cured_basis",
+      "text": {
+        "de": "Berechnete Basis der ausgehärteten Masse",
+        "es": "Base de masa curada calculada",
+        "fr": "Base de masse après cure calculée",
+        "it": "Base della massa stagionata calcolata",
+        "nl": "Berekende basis van uitgeharde massa",
+        "pt_BR": "Base de massa curada calculada"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.default_label_variant",
+      "text": {
+        "de": "Ausgewählte Etikettenvariante",
+        "es": "Variante de etiqueta seleccionada",
+        "fr": "Variante d’étiquette sélectionnée",
+        "it": "Variante etichetta selezionata",
+        "nl": "Geselecteerde etiketvariant",
+        "pt_BR": "Variante de rótulo selecionada"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "composition.fresh_mixture_basis",
       "text": {
         "de": "Tatsächliche frische Mischung",
@@ -1868,6 +1976,126 @@
         "it": "Miscela fresca effettiva",
         "nl": "Werkelijk vers mengsel",
         "pt_BR": "Mistura fresca real"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.generated_inci",
+      "text": {
+        "de": "Erzeugtes INCI der enthaltenen Bestandteile",
+        "es": "INCI generado de los ingredientes incorporados",
+        "fr": "INCI généré des ingrédients incorporés",
+        "it": "INCI generato degli ingredienti incorporati",
+        "nl": "Gegenereerde INCI van opgenomen ingrediënten",
+        "pt_BR": "INCI gerado dos ingredientes incorporados"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_ingredient",
+      "text": {
+        "de": "INCI-Bestandteil",
+        "es": "Componente INCI",
+        "fr": "Composant INCI",
+        "it": "Componente INCI",
+        "nl": "INCI-bestanddeel",
+        "pt_BR": "Componente INCI"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.ingredient",
+      "text": {
+        "de": "Inhaltsstoff",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.lye_liquid",
+      "text": {
+        "de": "Verdünnungsflüssigkeit",
+        "es": "Líquido de dilución",
+        "fr": "Liquide de dilution",
+        "it": "Liquido di diluizione",
+        "nl": "Verdunningsvloeistof",
+        "pt_BR": "Líquido de diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.parfum",
+      "text": {
+        "de": "Duftstoff",
+        "es": "Fragancia",
+        "fr": "Parfum",
+        "it": "Fragranza",
+        "nl": "Geurstof",
+        "pt_BR": "Fragrância"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.saponified_oil",
+      "text": {
+        "de": "Verseiftes Öl",
+        "es": "Aceite saponificado",
+        "fr": "Huile saponifiée",
+        "it": "Olio saponificato",
+        "nl": "Verzeepte olie",
+        "pt_BR": "Óleo saponificado"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.inci_kinds.theoretical_superfat",
+      "text": {
+        "de": "Theoretische Überfettung",
+        "es": "Sobreengrasado teórico",
+        "fr": "Surgraissage théorique",
+        "it": "Sovragrassaggio teorico",
+        "nl": "Theoretische overvetting",
+        "pt_BR": "Sobreengorduramento teórico"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.incorporated_inci_breakdown",
+      "text": {
+        "de": "INCI-Aufschlüsselung der enthaltenen Bestandteile",
+        "es": "Desglose del INCI incorporado",
+        "fr": "Détail de l’INCI incorporé",
+        "it": "Dettaglio dell’INCI incorporato",
+        "nl": "INCI-specificatie van opgenomen bestanddelen",
+        "pt_BR": "Detalhamento do INCI incorporado"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.ingredient_id",
+      "text": {
+        "de": "Zutaten-ID",
+        "es": "ID del ingrediente",
+        "fr": "ID de l’ingrédient",
+        "it": "ID ingrediente",
+        "nl": "Ingrediënt-ID",
+        "pt_BR": "ID do ingrediente"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.kind",
+      "text": {
+        "de": "Bestandteiltyp",
+        "es": "Tipo de componente",
+        "fr": "Type de composant",
+        "it": "Tipo di componente",
+        "nl": "Type bestanddeel",
+        "pt_BR": "Tipo de componente"
       }
     },
     {
@@ -1884,6 +2112,90 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.no_authored_label",
+      "text": {
+        "de": "Kein verfasster Etikettentext verfügbar.",
+        "es": "No hay texto de etiqueta redactado.",
+        "fr": "Aucun texte d’étiquette rédigé n’est disponible.",
+        "it": "Nessun testo etichetta redatto disponibile.",
+        "nl": "Er is geen zelf geschreven etikettekst beschikbaar.",
+        "pt_BR": "Não há texto de rótulo escrito disponível."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.no_raw_rows",
+      "text": {
+        "de": "Keine Rohstoffzeilen verfügbar.",
+        "es": "No hay filas de materias primas disponibles.",
+        "fr": "Aucune ligne de matières premières disponible.",
+        "it": "Nessuna riga di materie prime disponibile.",
+        "nl": "Geen grondstofregels beschikbaar.",
+        "pt_BR": "Nenhuma linha de matéria-prima disponível."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.percentage_accounted",
+      "text": {
+        "de": "Anteil am erfassten INCI (0–100)",
+        "es": "Porcentaje contabilizado en el INCI (0–100)",
+        "fr": "Part comptabilisée dans l’INCI (0–100)",
+        "it": "Quota conteggiata nell’INCI (0–100)",
+        "nl": "Aandeel opgenomen in INCI (0–100)",
+        "pt_BR": "Parcela contabilizada no INCI (0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.percentage_authored",
+      "text": {
+        "de": "Verfasster Rezepturanteil (0–100)",
+        "es": "Porcentaje de fórmula redactado (0–100)",
+        "fr": "Pourcentage de formule rédigé (0–100)",
+        "it": "Percentuale formula redatta (0–100)",
+        "nl": "Zelf geschreven formulepercentage (0–100)",
+        "pt_BR": "Percentual de fórmula escrito (0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.percentage_basis",
+      "text": {
+        "de": "Anteil an der frischen Mischung (0–100)",
+        "es": "Porcentaje de la mezcla fresca (0–100)",
+        "fr": "Part du mélange frais (0–100)",
+        "it": "Percentuale della miscela fresca (0–100)",
+        "nl": "Aandeel van het verse mengsel (0–100)",
+        "pt_BR": "Percentual da mistura fresca (0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.percentage_cured",
+      "text": {
+        "de": "Anteil an der berechneten ausgehärteten Masse (0–100)",
+        "es": "Porcentaje de la masa curada calculada (0–100)",
+        "fr": "Part de la masse après cure calculée (0–100)",
+        "it": "Percentuale della massa stagionata calcolata (0–100)",
+        "nl": "Aandeel van berekende uitgeharde massa (0–100)",
+        "pt_BR": "Percentual da massa curada calculada (0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.percentage_fresh",
+      "text": {
+        "de": "Anteil an der frischen Mischung (0–100)",
+        "es": "Porcentaje de la mezcla fresca (0–100)",
+        "fr": "Part du mélange frais (0–100)",
+        "it": "Percentuale della miscela fresca (0–100)",
+        "nl": "Aandeel van het verse mengsel (0–100)",
+        "pt_BR": "Percentual da mistura fresca (0–100)"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "composition.phase_additives",
       "text": {
         "de": "Zusatzstoffe",
@@ -1892,6 +2204,18 @@
         "it": "Additivi",
         "nl": "Toevoegingen",
         "pt_BR": "Aditivos"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.phase_dilution_liquid",
+      "text": {
+        "de": "Verdünnungsflüssigkeit",
+        "es": "Líquido de dilución",
+        "fr": "Liquide de dilution",
+        "it": "Liquido di diluizione",
+        "nl": "Verdunningsvloeistof",
+        "pt_BR": "Líquido de diluição"
       }
     },
     {
@@ -1922,12 +2246,48 @@
       "group": "formula_documents",
       "key": "composition.phase_lye_liquid",
       "text": {
-        "de": "Laugenflüssigkeit",
-        "es": "Líquido de lejía",
-        "fr": "Liquide de lessive",
-        "it": "Liquido della liscivia",
-        "nl": "Loogvloeistof",
-        "pt_BR": "Líquido da lixívia"
+        "de": "Verdünnungsflüssigkeit",
+        "es": "Líquido de dilución",
+        "fr": "Liquide de dilution",
+        "it": "Liquido di diluizione",
+        "nl": "Verdunningsvloeistof",
+        "pt_BR": "Líquido de diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.raw_material_inputs",
+      "text": {
+        "de": "Rohstoffzugaben",
+        "es": "Materias primas añadidas",
+        "fr": "Matières premières incorporées",
+        "it": "Materie prime aggiunte",
+        "nl": "Toegevoegde grondstoffen",
+        "pt_BR": "Matérias-primas adicionadas"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.recorded_inci",
+      "text": {
+        "de": "Erfasstes INCI",
+        "es": "INCI registrado",
+        "fr": "INCI enregistré",
+        "it": "INCI registrato",
+        "nl": "Vastgelegde INCI",
+        "pt_BR": "INCI registrado"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.retained_dilution_liquid",
+      "text": {
+        "de": "Zurückgehaltene Verdünnungsflüssigkeit (% der ausgehärteten Masse)",
+        "es": "Líquido de dilución retenido (% de la masa curada)",
+        "fr": "Liquide de dilution retenu (% de la masse après cure)",
+        "it": "Liquido di diluizione trattenuto (% della massa stagionata)",
+        "nl": "Vastgehouden verdunningsvloeistof (% van uitgeharde massa)",
+        "pt_BR": "Líquido de diluição retido (% da massa curada)"
       }
     },
     {
@@ -1952,6 +2312,258 @@
         "it": "Supporto al calcolo per una verifica indipendente. Il valutatore deve verificare i dati e ricalcolare.",
         "nl": "Rekenondersteuning voor onafhankelijke beoordeling. De beoordelaar moet de invoer controleren en opnieuw berekenen.",
         "pt_BR": "Suporte de cálculo para análise independente. O avaliador deve verificar os dados e recalcular."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.additive",
+      "text": {
+        "de": "Zusatzstoff",
+        "es": "Aditivo",
+        "fr": "Additif",
+        "it": "Additivo",
+        "nl": "Toevoeging",
+        "pt_BR": "Aditivo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.alkali",
+      "text": {
+        "de": "Alkali",
+        "es": "Álcali",
+        "fr": "Alcali",
+        "it": "Alcali",
+        "nl": "Alkali",
+        "pt_BR": "Álcali"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.aromatic_blend",
+      "text": {
+        "de": "Duftstoffmischung",
+        "es": "Mezcla aromática",
+        "fr": "Mélange parfumant",
+        "it": "Miscela aromatica",
+        "nl": "Geurmengsel",
+        "pt_BR": "Mistura aromática"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.dilution_liquid",
+      "text": {
+        "de": "Verdünnungsflüssigkeit",
+        "es": "Líquido de dilución",
+        "fr": "Liquide de dilution",
+        "it": "Liquido di diluizione",
+        "nl": "Verdunningsvloeistof",
+        "pt_BR": "Líquido de diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.dilution_substitution",
+      "text": {
+        "de": "Ersatz für Verdünnungsflüssigkeit",
+        "es": "Sustituto del líquido de dilución",
+        "fr": "Substitut du liquide de dilution",
+        "it": "Sostituto del liquido di diluizione",
+        "nl": "Vervanging voor verdunningsvloeistof",
+        "pt_BR": "Substituição do líquido de diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.fragrance",
+      "text": {
+        "de": "Duftstoff",
+        "es": "Fragancia",
+        "fr": "Parfum",
+        "it": "Fragranza",
+        "nl": "Geurstof",
+        "pt_BR": "Fragrância"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.ingredient",
+      "text": {
+        "de": "Inhaltsstoff",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.oil",
+      "text": {
+        "de": "Öl",
+        "es": "Aceite",
+        "fr": "Huile",
+        "it": "Olio",
+        "nl": "Olie",
+        "pt_BR": "Óleo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.reaction_by_product",
+      "text": {
+        "de": "Reaktionsnebenprodukt",
+        "es": "Subproducto de reacción",
+        "fr": "Sous-produit de réaction",
+        "it": "Sottoprodotto di reazione",
+        "nl": "Reactiebijproduct",
+        "pt_BR": "Subproduto da reação"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.residual_lye_liquid",
+      "text": {
+        "de": "Zurückgehaltener Ersatz für Verdünnungsflüssigkeit",
+        "es": "Sustituto retenido del líquido de dilución",
+        "fr": "Substitut retenu du liquide de dilution",
+        "it": "Sostituto trattenuto del liquido di diluizione",
+        "nl": "Vastgehouden vervanging van verdunningsvloeistof",
+        "pt_BR": "Substituição retida do líquido de diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.residual_water",
+      "text": {
+        "de": "Zurückgehaltenes Wasser",
+        "es": "Agua retenida",
+        "fr": "Eau retenue",
+        "it": "Acqua trattenuta",
+        "nl": "Vastgehouden water",
+        "pt_BR": "Água retida"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.saponified_oil",
+      "text": {
+        "de": "Verseiftes Öl",
+        "es": "Aceite saponificado",
+        "fr": "Huile saponifiée",
+        "it": "Olio saponificato",
+        "nl": "Verzeepte olie",
+        "pt_BR": "Óleo saponificado"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.soap_and_superfat",
+      "text": {
+        "de": "Seife und Überfettung",
+        "es": "Jabón y sobreengrasado",
+        "fr": "Savon et surgraissage",
+        "it": "Sapone e sovragrassaggio",
+        "nl": "Zeep en overvetting",
+        "pt_BR": "Sabão e sobreengorduramento"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.roles.superfat",
+      "text": {
+        "de": "Überfettung",
+        "es": "Sobreengrasado",
+        "fr": "Surgraissage",
+        "it": "Sovragrassaggio",
+        "nl": "Overvetting",
+        "pt_BR": "Sobreengorduramento"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.section",
+      "text": {
+        "de": "Zusammensetzung",
+        "es": "Composición",
+        "fr": "Composition",
+        "it": "Composizione",
+        "nl": "Samenstelling",
+        "pt_BR": "Composição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.selected_label_context",
+      "text": {
+        "de": "Etikettenkontext",
+        "es": "Contexto de etiqueta",
+        "fr": "Contexte de l’étiquette",
+        "it": "Contesto etichetta",
+        "nl": "Etiketcontext",
+        "pt_BR": "Contexto do rótulo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.settings",
+      "text": {
+        "de": "Berechnungseinstellungen",
+        "es": "Ajustes del cálculo",
+        "fr": "Paramètres de calcul",
+        "it": "Impostazioni di calcolo",
+        "nl": "Rekeninstellingen",
+        "pt_BR": "Configurações do cálculo"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.sheet",
+      "text": {
+        "de": "Zusammensetzung",
+        "es": "Composición",
+        "fr": "Composition",
+        "it": "Composizione",
+        "nl": "Samenstelling",
+        "pt_BR": "Composição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.sources",
+      "text": {
+        "de": "Quellen",
+        "es": "Fuentes",
+        "fr": "Sources",
+        "it": "Fonti",
+        "nl": "Bronnen",
+        "pt_BR": "Fontes"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.warning",
+      "text": {
+        "de": "Hinweis zur Prüfung",
+        "es": "Aviso de revisión",
+        "fr": "Note de vérification",
+        "it": "Nota di verifica",
+        "nl": "Controlewaarschuwing",
+        "pt_BR": "Aviso de revisão"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "composition.warnings.composition_derived_identity_unavailable",
+      "text": {
+        "de": "Eine abgeleitete Rohstoffidentität ist nicht verfügbar; die bekannte berechnete Menge wird ohne erfundene Inhaltsstoffdetails angezeigt.",
+        "es": "No está disponible la identidad de una materia prima derivada; se muestra la cantidad calculada conocida sin inventar detalles del ingrediente.",
+        "fr": "L’identité d’une matière première dérivée est indisponible ; sa quantité calculée connue est affichée sans inventer de détails sur l’ingrédient.",
+        "it": "L’identità di una materia prima derivata non è disponibile; la quantità calcolata nota viene mostrata senza inventare dettagli sull’ingrediente.",
+        "nl": "De identiteit van een afgeleide grondstof is niet beschikbaar; de bekende berekende hoeveelheid wordt getoond zonder ingrediëntgegevens te verzinnen.",
+        "pt_BR": "A identidade de uma matéria-prima derivada não está disponível; a quantidade calculada conhecida é exibida sem inventar detalhes do ingrediente."
       }
     },
     {
@@ -2036,6 +2648,18 @@
         "it": "Costo del lotto",
         "nl": "Batchkosten",
         "pt_BR": "Custo do lote"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.calculated_output",
+      "text": {
+        "de": "Berechnetes Ergebnis",
+        "es": "Resultado calculado",
+        "fr": "Résultat calculé",
+        "it": "Risultato calcolato",
+        "nl": "Berekende uitvoer",
+        "pt_BR": "Resultado calculado"
       }
     },
     {
@@ -2456,6 +3080,18 @@
         "it": "Quantità",
         "nl": "Hoeveelheid",
         "pt_BR": "Quantidade"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "exports.role",
+      "text": {
+        "de": "Rolle",
+        "es": "Función",
+        "fr": "Rôle",
+        "it": "Ruolo",
+        "nl": "Rol",
+        "pt_BR": "Função"
       }
     },
     {
@@ -3612,6 +4248,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "validation.output_composition_xlsx_only",
+      "text": {
+        "de": "Die Zusammensetzung kann nur als Excel-Arbeitsmappe exportiert werden.",
+        "es": "La composición solo se puede exportar como libro de Excel.",
+        "fr": "La composition ne peut être exportée que dans un classeur Excel.",
+        "it": "La composizione può essere esportata solo come cartella di lavoro Excel.",
+        "nl": "Samenstelling kan alleen als Excel-werkmap worden geëxporteerd.",
+        "pt_BR": "A composição só pode ser exportada como pasta de trabalho do Excel."
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "validation.output_costing_unavailable",
       "text": {
         "de": "Laden Sie die Kostenangaben, bevor Sie Kosten drucken oder exportieren.",
@@ -3698,12 +4346,12 @@
       "group": "formula_documents",
       "key": "validation.output_kind_unavailable",
       "text": {
-        "de": "Kosten- und Zusammensetzungsausgaben sind noch nicht verfügbar.",
-        "es": "La salida de costes y composición todavía no está disponible.",
-        "fr": "Les sorties de coût et de composition ne sont pas encore disponibles.",
-        "it": "Le esportazioni di costi e composizione non sono ancora disponibili.",
-        "nl": "Kosten- en samenstellingsuitvoer is nog niet beschikbaar.",
-        "pt_BR": "As saídas de custos e composição ainda não estão disponíveis."
+        "de": "Kostenexport ist noch nicht verfügbar.",
+        "es": "La exportación de costes aún no está disponible.",
+        "fr": "L’export des coûts n’est pas encore disponible.",
+        "it": "L’esportazione dei costi non è ancora disponibile.",
+        "nl": "Kostenexport is nog niet beschikbaar.",
+        "pt_BR": "A exportação de custos ainda não está disponível."
       }
     },
     {

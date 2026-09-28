@@ -120,12 +120,72 @@ it('serves a current soap workbook with its calculated output worksheet', functi
 
     expect($sheetNames)->toBe([
         __('formula_documents.exports.ingredient_batch'),
-        __('formula_documents.exports.soap_output'),
+        __('formula_documents.exports.calculated_output'),
     ])
         ->and(collect($sheetRows[__('formula_documents.exports.ingredient_batch')])->flatten())
         ->toContain('Olive Oil')
-        ->and(collect($sheetRows[__('formula_documents.exports.soap_output')])->flatten())
-        ->toContain('Final INCI');
+        ->and(collect($sheetRows[__('formula_documents.exports.calculated_output')])->flatten())
+        ->toContain(__('formula_documents.composition.calculated_inci'));
+});
+
+it('exports current composition from the captured draft and shares the formula workbook output projection', function (): void {
+    $this->travelTo(Carbon::parse('2026-09-28 12:00:00'));
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $naoh = Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::SodiumHydroxide,
+        'display_name' => 'Sodium hydroxide',
+        'inci_name' => 'SODIUM HYDROXIDE',
+        'is_active' => true,
+    ]);
+    $water = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::Water,
+        'display_name' => 'Water',
+        'inci_name' => 'AQUA',
+        'is_active' => true,
+    ]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['kind'] = 'composition';
+    $payload['format'] = 'xlsx';
+    $before = [
+        Recipe::withoutGlobalScopes()->count(),
+        RecipeVersion::withoutGlobalScopes()->count(),
+        RecipeVersionCosting::withoutGlobalScopes()->count(),
+    ];
+    $compositionResponse = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload);
+    $compositionResponse->assertSuccessful()
+        ->assertDownload('working-soap-formula-current-composition-2026-09-28.xlsx');
+    $compositionWorkbook = readWorkbenchOutputWorkbookSheets($compositionResponse->streamedContent());
+
+    $formulaPayload = [...$payload, 'kind' => 'formula'];
+    $formulaResponse = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $formulaPayload);
+    $formulaResponse->assertSuccessful();
+    $formulaWorkbook = readWorkbenchOutputWorkbookSheets($formulaResponse->streamedContent());
+    $rawSheet = $compositionWorkbook[__('formula_documents.composition.sheet')];
+    $rawCells = collect($rawSheet)->flatten();
+    $rawHeaders = collect($rawSheet)->first(fn (array $row): bool => in_array(__('formula_documents.composition.ingredient_id'), $row, true));
+    $idIndex = array_search(__('formula_documents.composition.ingredient_id'), $rawHeaders, true);
+    $naohRow = collect($rawSheet)->first(fn (array $row): bool => ($row[$idIndex] ?? null) === $naoh->id);
+    $waterRow = collect($rawSheet)->first(fn (array $row): bool => ($row[$idIndex] ?? null) === $water->id);
+
+    expect(array_keys($compositionWorkbook))->toBe([
+        __('formula_documents.composition.sheet'),
+        __('formula_documents.exports.calculated_output'),
+    ])
+        ->and($rawCells)
+        ->toContain('Olive Oil', $oil->displayInciName(), 'Recorded INCI', 'Actual fresh mixture')
+        ->not->toContain(__('formula_documents.exports.price_per_kg'), __('formula_documents.exports.currency'))
+        ->and($naohRow)->not->toBeNull()
+        ->and($waterRow)->not->toBeNull()
+        ->and($compositionWorkbook[__('formula_documents.exports.calculated_output')])
+        ->toBe($formulaWorkbook[__('formula_documents.exports.calculated_output')])
+        ->and([
+            Recipe::withoutGlobalScopes()->count(),
+            RecipeVersion::withoutGlobalScopes()->count(),
+            RecipeVersionCosting::withoutGlobalScopes()->count(),
+        ])->toBe($before);
 });
 
 it('exports loaded current costing as a typed workbook from the live formula and current prices', function (): void {
@@ -282,6 +342,7 @@ it('selects costing print sections by context and does not save captured prices'
         'formula' => ['formula', 'procedure', 'label', 'notes'],
         'instructions' => ['formula', 'procedure'],
         'costing' => ['costing'],
+        'output' => ['label', 'composition'],
     ] as $context => $expectedSections) {
         $contextPayload = [...$payload, 'print_context' => $context];
         $response = $this->actingAs($user)->postJson(route('recipes.workbench.print'), $contextPayload)->assertSuccessful();
@@ -295,6 +356,11 @@ it('selects costing print sections by context and does not save captured prices'
                 'name' => 'Potassium hydroxide',
                 'purity' => '100',
             ]));
+        }
+
+        if ($context === 'output') {
+            $response->assertViewHas('compositionExportData', fn (array $composition): bool => $composition['family'] === 'soap')
+                ->assertSee(__('formula_documents.composition.review_note'));
         }
 
         expect($response->getContent())
@@ -445,6 +511,33 @@ it('bounds combined output rows and the raw request size', function (): void {
     $this->postJson(route('recipes.workbench.export'), $unsupportedPayload)
         ->assertUnprocessable()
         ->assertJsonValidationErrors('format');
+
+    $compositionCsv = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $compositionCsv['kind'] = 'composition';
+    $this->postJson(route('recipes.workbench.export'), $compositionCsv)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('format');
+});
+
+it('preserves tiny float values through the real current output boundary', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['oil_unit'] = 'kg';
+    $payload['draft']['oil_weight'] = 0.00001;
+    $payload['draft']['phase_items']['saponified_oils'][0]['percentage'] = 100;
+    $payload['draft']['phase_items']['saponified_oils'][0]['weight'] = 0.00001;
+
+    $this->actingAs($user)
+        ->postJson(route('recipes.workbench.print'), $payload)
+        ->assertSuccessful()
+        ->assertViewHas('compositionExportData', function (array $composition): bool {
+            $oilRow = collect($composition['incorporated']['raw_material_rows'])
+                ->firstWhere('name', 'Olive Oil');
+
+            return $oilRow['quantity'] === 0.00001
+                && $composition['incorporated']['actual_mass'] > 0;
+        })
+        ->assertViewHas('snapshot', fn (array $snapshot): bool => $snapshot['draft']['phaseItems']['saponified_oils'][0]['weight'] === 0.00001);
 });
 
 it('checks foreign ingredient identities in zero rows, dilution rows, costing rows, and output settings', function (): void {
@@ -851,4 +944,30 @@ function createWorkbenchOutputFixture(string $familySlug = 'soap', string $calcu
     ]);
 
     return compact('user', 'workspace', 'family', 'oil');
+}
+
+/** @return array<string, list<array<int, mixed>>> */
+function readWorkbenchOutputWorkbookSheets(string $contents): array
+{
+    $path = tempnam(sys_get_temp_dir(), 'workbench-output-test-');
+    expect($path)->not->toBeFalse();
+
+    try {
+        file_put_contents($path, $contents);
+        $reader = new Reader;
+        $reader->open($path);
+        $sheets = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $sheets[$sheet->getName()] = collect($sheet->getRowIterator())
+                ->map(fn ($row): array => $row->toArray())
+                ->all();
+        }
+
+        $reader->close();
+
+        return $sheets;
+    } finally {
+        @unlink($path);
+    }
 }

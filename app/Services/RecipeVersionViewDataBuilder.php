@@ -17,6 +17,7 @@ class RecipeVersionViewDataBuilder
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
         private readonly RecipeCostingExportDataBuilder $costingExportDataBuilder,
         private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
+        private readonly RecipeCompositionExportDataBuilder $compositionExportDataBuilder,
         private readonly RecipeRichContentAttachmentProvider $recipeRichContentAttachmentProvider,
     ) {}
 
@@ -70,6 +71,7 @@ class RecipeVersionViewDataBuilder
             'version_number' => (int) $version->version_number,
             'generated_at' => now()->format('Y-m-d H:i'),
         ];
+        $compositionExportData = $this->compositionExportDataBuilder->build($snapshot, $formulaDocument);
         $costingExportData = is_array($costingData['projection'])
             ? $this->costingExportDataBuilder->build($formulaDocument, $costingData['projection'])
             : null;
@@ -79,6 +81,7 @@ class RecipeVersionViewDataBuilder
             'version' => $version,
             'snapshot' => $snapshot,
             'formulaDocument' => $formulaDocument,
+            'compositionExportData' => $compositionExportData,
             'phaseSections' => $phaseSections,
             'summaryCards' => $this->summaryCards($snapshot['draft'], $snapshot['calculation'], $isCosmetic),
             'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version, $isCosmetic),

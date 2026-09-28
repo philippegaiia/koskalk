@@ -236,3 +236,39 @@ it('preserves tiny nonzero dose costs through decimal-string aggregation', funct
         ->and($preview['ingredient_total'])->toBe(0.00002)
         ->and($preview['total_cost'])->toBe(0.00002);
 });
+
+it('preserves a tiny float quantity at the costing preview boundary', function (): void {
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromTransientRows(
+        formula: [
+            'family' => 'cosmetic',
+            'basis_weight' => '1',
+            'basis_unit' => 'kg',
+            'phases' => [
+                'ingredients' => [
+                    'label' => 'Formula',
+                    'rows' => [[
+                        'ingredient_id' => 11,
+                        'position' => 1,
+                        'name' => 'Trace component',
+                        'percentage' => 0.001,
+                        'weight' => 0.00001,
+                    ]],
+                ],
+            ],
+            'packaging_items' => [],
+            'synthetic_rows' => [],
+        ],
+        costing: [
+            'oil_weight_for_costing' => '1',
+            'oil_unit_for_costing' => 'kg',
+            'units_produced' => null,
+            'currency' => 'EUR',
+            'items' => [['ingredient_id' => 11, 'phase_key' => 'ingredients', 'position' => 1, 'price_per_kg' => '100']],
+            'packaging_items' => [],
+        ],
+    );
+
+    expect($preview['ingredient_rows'][0]['quantity'])->toBe(0.00001)
+        ->and($preview['ingredient_rows'][0]['line_cost'])->toBe(0.001)
+        ->and($preview['ingredient_total'])->toBe(0.001);
+});

@@ -8,6 +8,7 @@ class RecipeCompositionExportDataBuilder
 {
     public function __construct(
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
+        private readonly RecipeCompositionIngredientIdentityResolver $ingredientIdentityResolver,
     ) {}
 
     /**
@@ -24,10 +25,20 @@ class RecipeCompositionExportDataBuilder
         $labeling = is_array($snapshot['labeling'] ?? null) ? $snapshot['labeling'] : [];
         $family = (string) ($document['family'] ?? 'soap');
         $isSoap = $family === 'soap';
+
+        if ($isSoap) {
+            $snapshot = $this->ingredientIdentityResolver->withAvailableIdentities($snapshot);
+        }
+
         $unit = (string) ($document['unit'] ?? $draft['oilUnit'] ?? 'g');
         $phaseNames = $this->phaseNames($draft);
         $rawRows = $isSoap
-            ? $this->soapRawMaterialRows($snapshot, $phaseNames, $unit)
+            ? $this->soapRawMaterialRows(
+                $snapshot,
+                $phaseNames,
+                $unit,
+                ($document['identity']['state'] ?? null) === 'current_working_copy',
+            )
             : $this->cosmeticRawMaterialRows($draft, $phaseNames, $unit);
         $rawBasisWeight = $this->totalWeight($rawRows);
         $rawRows = $this->withFreshMixturePercentages($rawRows, $rawBasisWeight, $isSoap);
@@ -51,6 +62,11 @@ class RecipeCompositionExportDataBuilder
 
         if (collect($rawRows)->contains(fn (array $row): bool => $row['recorded_inci_missing'])) {
             $warnings[] = 'composition_recorded_inci_missing';
+        }
+
+        if (collect($rawRows)->contains(fn (array $row): bool => ($row['is_derived'] ?? false)
+            && ! is_numeric($row['ingredient_id'] ?? null))) {
+            $warnings[] = 'composition_derived_identity_unavailable';
         }
 
         if (
@@ -116,7 +132,7 @@ class RecipeCompositionExportDataBuilder
      * @param  array<string, string>  $phaseNames
      * @return list<array<string, mixed>>
      */
-    private function soapRawMaterialRows(array $snapshot, array $phaseNames, string $unit): array
+    private function soapRawMaterialRows(array $snapshot, array $phaseNames, string $unit, bool $useExplicitRowWeights): array
     {
         $draft = $snapshot['draft'] ?? [];
         $phaseItems = is_array($draft['phaseItems'] ?? null) ? $draft['phaseItems'] : [];
@@ -124,8 +140,24 @@ class RecipeCompositionExportDataBuilder
 
         foreach (['saponified_oils' => 'oil', 'additives' => 'additive', 'fragrance' => 'fragrance'] as $phaseKey => $role) {
             foreach (($phaseItems[$phaseKey] ?? []) as $row) {
-                if (is_array($row) && bccomp($this->decimal($row['weight'] ?? 0), '0', 18) > 0) {
-                    $rows[] = $this->phaseRow($row, $phaseKey, $phaseNames[$phaseKey] ?? $phaseKey, $role, $unit);
+                if (is_array($row)) {
+                    $weight = $useExplicitRowWeights
+                        ? $this->decimal($row['weight'] ?? 0)
+                        : bcmul(
+                            $this->decimal($draft['oilWeight'] ?? 0),
+                            bcdiv($this->decimal($row['percentage'] ?? 0), '100', 18),
+                            18,
+                        );
+
+                    if (bccomp($weight, '0', 18) > 0) {
+                        $rows[] = $this->phaseRow(
+                            [...$row, 'weight' => $weight],
+                            $phaseKey,
+                            $phaseNames[$phaseKey] ?? $phaseKey,
+                            $role,
+                            $unit,
+                        );
+                    }
                 }
             }
         }
@@ -186,15 +218,18 @@ class RecipeCompositionExportDataBuilder
         $plainWaterWeight = $this->decimal($allocation['water_weight'] ?? 0);
 
         if (bccomp($plainWaterWeight, '0', 18) > 0) {
+            $waterIdentity = is_array(data_get($snapshot, 'calculation.lye.identities.water'))
+                ? data_get($snapshot, 'calculation.lye.identities.water')
+                : [];
             $rows[] = $this->derivedRow(
                 __('formula_documents.ingredients.water'),
                 null,
                 $plainWaterWeight,
                 $unit,
                 'lye_water',
-                __('formula_documents.composition.phase_lye_liquid'),
-                'lye_liquid',
-                [],
+                __('formula_documents.composition.phase_dilution_liquid'),
+                'dilution_liquid',
+                $waterIdentity,
                 null,
             );
         }
@@ -213,8 +248,8 @@ class RecipeCompositionExportDataBuilder
                     'weight' => $weight,
                 ],
                 'lye_water',
-                $phaseNames['lye_water'] ?? __('formula_documents.composition.phase_lye_liquid'),
-                'lye_liquid_substitution',
+                __('formula_documents.composition.phase_dilution_liquid'),
+                'dilution_substitution',
                 $unit,
             );
         }
@@ -446,7 +481,7 @@ class RecipeCompositionExportDataBuilder
         $names['saponified_oils'] ??= __('formula_documents.sections.saponified_oils');
         $names['additives'] ??= __('formula_documents.composition.phase_additives');
         $names['fragrance'] ??= __('formula_documents.composition.phase_fragrance');
-        $names['lye_water'] ??= __('formula_documents.composition.phase_lye_liquid');
+        $names['lye_water'] = __('formula_documents.composition.phase_dilution_liquid');
 
         return $names;
     }

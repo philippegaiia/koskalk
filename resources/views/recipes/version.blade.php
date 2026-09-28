@@ -180,6 +180,7 @@
 
         @include('recipes.partials.version-sheet', [
             'formulaDocument' => $formulaDocument,
+            'compositionExportUrl' => route('recipes.export.composition', $printQuery),
         ])
 
         <section class="grid gap-4 lg:grid-cols-2">

@@ -37,19 +37,10 @@ final class CanonicalSoapAlkaliResolver
             ->mapWithKeys(fn (string $lyeType): array => [
                 $lyeType => $this->catalogKeyFor($lyeType),
             ]);
+        $ingredients = $this->resolveAvailableMany($lyeTypes);
 
-        $ingredients = Ingredient::query()
-            ->withoutGlobalScopes()
-            ->where('is_active', true)
-            ->whereNull('owner_type')
-            ->whereNull('owner_id')
-            ->whereNull('workspace_id')
-            ->whereIn('catalog_key', $catalogKeys->values()->all())
-            ->get()
-            ->keyBy('catalog_key');
-
-        return $catalogKeys->map(function (string $catalogKey) use ($ingredients): Ingredient {
-            $ingredient = $ingredients->get($catalogKey);
+        return $catalogKeys->map(function (string $catalogKey, string $lyeType) use ($ingredients): Ingredient {
+            $ingredient = $ingredients->get($lyeType);
 
             if (! $ingredient instanceof Ingredient) {
                 throw ValidationException::withMessages([
@@ -61,6 +52,35 @@ final class CanonicalSoapAlkaliResolver
 
             return $ingredient;
         });
+    }
+
+    /**
+     * Resolve whatever active platform alkalis are available without making an
+     * optional output section fail when a reference row is absent.
+     *
+     * @param  list<string>  $lyeTypes
+     * @return Collection<string, Ingredient>
+     */
+    public function resolveAvailableMany(array $lyeTypes): Collection
+    {
+        $catalogKeys = collect($lyeTypes)
+            ->mapWithKeys(fn (string $lyeType): array => [
+                $lyeType => $this->catalogKeyFor($lyeType),
+            ]);
+        $ingredients = Ingredient::query()
+            ->withoutGlobalScopes()
+            ->where('is_active', true)
+            ->whereNull('owner_type')
+            ->whereNull('owner_id')
+            ->whereNull('workspace_id')
+            ->whereIn('catalog_key', $catalogKeys->values()->all())
+            ->get()
+            ->keyBy('catalog_key');
+
+        return $catalogKeys
+            ->mapWithKeys(fn (string $catalogKey, string $lyeType): array => $ingredients->has($catalogKey)
+                ? [$lyeType => $ingredients->get($catalogKey)]
+                : []);
     }
 
     private function catalogKeyFor(string $lyeType): string

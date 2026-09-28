@@ -30,6 +30,7 @@ class RecipeWorkbenchOutputBuilder
         private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
         private readonly FormulaDocumentOptions $formulaDocumentOptions,
         private readonly RecipeExportDataBuilder $recipeExportDataBuilder,
+        private readonly RecipeCompositionExportDataBuilder $compositionExportDataBuilder,
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
         private readonly RecipeCostingExportDataBuilder $costingExportDataBuilder,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
@@ -126,6 +127,7 @@ class RecipeWorkbenchOutputBuilder
             'version_number' => null,
             'generated_at' => now()->format('Y-m-d H:i'),
         ];
+        $compositionExportData = $this->compositionExportDataBuilder->build($snapshot, $formulaDocument);
 
         $costingProjection = null;
         $costingExportData = null;
@@ -141,6 +143,7 @@ class RecipeWorkbenchOutputBuilder
         $availableSections = $this->formulaDocumentOptions->availableSections([
             'procedure' => $this->hasPrintableContent($renderedInstructions),
             'label' => filled($formulaDocument['label_text'] ?? null),
+            'composition' => true,
             'costing' => $costingIsLoaded,
             'analysis' => is_array($formulaDocument['soap_analysis'] ?? null)
                 && (filled($formulaDocument['soap_analysis']['qualities'] ?? [])
@@ -157,6 +160,7 @@ class RecipeWorkbenchOutputBuilder
             'snapshot' => $snapshot,
             'formulaDocument' => $formulaDocument,
             'exportData' => $this->recipeExportDataBuilder->fromDocument($formulaDocument),
+            'compositionExportData' => $compositionExportData,
             'availableSections' => $availableSections,
             'selectedSections' => $selectedSections,
             'numberLocale' => NumberLocale::resolve($user->number_locale),
@@ -885,6 +889,16 @@ class RecipeWorkbenchOutputBuilder
 
     private function decimal(mixed $value, string $field): string
     {
+        if (is_float($value)) {
+            if (! is_finite($value)) {
+                throw ValidationException::withMessages([
+                    $field => __('validation.numeric', ['attribute' => $field]),
+                ]);
+            }
+
+            $value = rtrim(rtrim(sprintf('%.18F', $value), '0'), '.') ?: '0';
+        }
+
         $normalized = NumberLocale::normalizeDecimalString($value);
 
         if ($normalized === null || ! is_finite((float) $normalized) || abs((float) $normalized) > 1_000_000) {

@@ -512,6 +512,29 @@ class RecipeController extends Controller
         );
     }
 
+    public function exportSavedComposition(
+        string $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        RecipeWorkbookExporter $recipeWorkbookExporter,
+    ): StreamedResponse {
+        [$recipe, $version] = $this->accessibleSheetVersion($recipe, $request, $currentAppUserResolver);
+        $viewData = $recipeVersionViewDataBuilder->build(
+            $recipe,
+            $version,
+            $request->query('oil_weight'),
+            $request->query(),
+        );
+        $filename = (Str::slug($recipe->name) ?: 'recipe').'-composition.xlsx';
+
+        return response()->streamDownload(
+            fn (): int => print $recipeWorkbookExporter->exportComposition($viewData['compositionExportData']),
+            $filename,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        );
+    }
+
     public function printDetails(
         string $recipe,
         string $version,
@@ -861,6 +884,7 @@ class RecipeController extends Controller
         $availableSections = $formulaDocumentOptions->availableSections([
             'procedure' => $this->hasPrintableContent($formulaDocument['identity']['manufacturing_procedure'] ?? ''),
             'label' => filled($formulaDocument['label_text'] ?? null),
+            'composition' => is_array($viewData['compositionExportData'] ?? null),
             'costing' => (bool) ($viewData['hasCostingData'] ?? false),
             'analysis' => is_array($analysis)
                 && (filled($analysis['qualities'] ?? []) || filled($analysis['fatty_acids'] ?? [])),

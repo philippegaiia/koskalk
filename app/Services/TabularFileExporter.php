@@ -28,7 +28,8 @@ class TabularFileExporter
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
      *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
-     *     rows: iterable<array<string, scalar|null>>
+     *     rows: iterable<array<string, scalar|null>>,
+     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
      * }>  $sheets
      */
     public function exportXlsx(array $sheets): string
@@ -54,7 +55,8 @@ class TabularFileExporter
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
      *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
-     *     rows: iterable<array<string, scalar|null>>
+     *     rows: iterable<array<string, scalar|null>>,
+     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
      * }>  $sheets
      */
     public function writeTemporaryXlsx(array $sheets, ?string $directory = null): string
@@ -88,7 +90,8 @@ class TabularFileExporter
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
      *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
-     *     rows: iterable<array<string, scalar|null>>
+     *     rows: iterable<array<string, scalar|null>>,
+     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
      * }>  $sheets
      */
     public function writeXlsxToFile(string $path, array $sheets): void
@@ -259,22 +262,25 @@ class TabularFileExporter
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
      *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
-     *     rows: iterable<array<string, scalar|null>>
+     *     rows: iterable<array<string, scalar|null>>,
+     *     tables?: list<array{
+     *         title?: string,
+     *         columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
+     *         rows: iterable<array<string, scalar|null>>
+     *     }>
      * }  $definition
      */
     private function writeSheet(Writer $writer, Sheet $sheet, array $definition): void
     {
-        $columns = $definition['columns'] ?? [];
+        $tables = is_array($definition['tables'] ?? null)
+            ? $definition['tables']
+            : [['columns' => $definition['columns'] ?? [], 'rows' => $definition['rows'] ?? []]];
 
-        if ($columns === []) {
+        if ($tables === []) {
             throw new InvalidArgumentException('A worksheet must define at least one column.');
         }
 
         $sheet->setName($this->sheetName((string) ($definition['name'] ?? 'Sheet')));
-
-        foreach ($columns as $index => $column) {
-            $sheet->setColumnWidth(max(8, min(60, (float) ($column['width'] ?? 18))), $index + 1);
-        }
 
         $writer->addRow(new Row([new StringCell((string) ($definition['title'] ?? $definition['name']), $this->titleStyle())]));
         $writer->addRow(Row::fromValues([]));
@@ -287,26 +293,60 @@ class TabularFileExporter
         }
 
         $writer->addRow(Row::fromValues([]));
-        $headerRowNumber = 4 + count($definition['context'] ?? []);
-        $writer->addRow(new Row(collect($columns)
-            ->map(fn (array $column): StringCell => new StringCell((string) $column['label'], $this->headerStyle()))
-            ->all()));
+        $currentRowNumber = 4 + count($definition['context'] ?? []);
+        $firstTable = true;
 
-        $dataRowCount = 0;
+        foreach ($tables as $tableIndex => $table) {
+            $columns = $table['columns'] ?? [];
 
-        foreach ($definition['rows'] as $row) {
-            $cells = [];
-
-            foreach ($columns as $column) {
-                $cells[] = $this->cell($row[$column['key']] ?? null, $column['type'], $column['format'] ?? null);
+            if ($columns === []) {
+                throw new InvalidArgumentException('A worksheet table must define at least one column.');
             }
 
-            $writer->addRow(new Row($cells));
-            $dataRowCount++;
-        }
+            if (filled($table['title'] ?? null)) {
+                $writer->addRow(new Row([new StringCell((string) $table['title'], $this->sectionStyle())]));
+                $currentRowNumber++;
+            }
 
-        $sheet->setSheetView((new SheetView)->setFreezeRow($headerRowNumber + 1));
-        $sheet->setAutoFilter(new AutoFilter(0, $headerRowNumber, count($columns) - 1, max($headerRowNumber, $headerRowNumber + $dataRowCount)));
+            foreach ($columns as $index => $column) {
+                $sheet->setColumnWidth(max(8, min(60, (float) ($column['width'] ?? 18))), $index + 1);
+            }
+
+            $headerRowNumber = $currentRowNumber;
+            $writer->addRow(new Row(collect($columns)
+                ->map(fn (array $column): StringCell => new StringCell((string) $column['label'], $this->headerStyle()))
+                ->all()));
+            $currentRowNumber++;
+            $dataRowCount = 0;
+
+            foreach ($table['rows'] as $row) {
+                $cells = [];
+
+                foreach ($columns as $column) {
+                    $cells[] = $this->cell($row[$column['key']] ?? null, $column['type'], $column['format'] ?? null);
+                }
+
+                $writer->addRow(new Row($cells));
+                $dataRowCount++;
+                $currentRowNumber++;
+            }
+
+            if ($firstTable) {
+                $sheet->setSheetView((new SheetView)->setFreezeRow($headerRowNumber + 1));
+                $sheet->setAutoFilter(new AutoFilter(
+                    0,
+                    $headerRowNumber,
+                    count($columns) - 1,
+                    max($headerRowNumber, $headerRowNumber + $dataRowCount),
+                ));
+                $firstTable = false;
+            }
+
+            if ($tableIndex < array_key_last($tables)) {
+                $writer->addRow(Row::fromValues([]));
+                $currentRowNumber++;
+            }
+        }
     }
 
     private function cell(mixed $value, string $type, ?string $format = null): Cell
@@ -410,6 +450,13 @@ class TabularFileExporter
             ->setFontBold()
             ->setFontColor('52645D')
             ->setShouldWrapText();
+    }
+
+    private function sectionStyle(): Style
+    {
+        return (new Style)
+            ->setFontBold()
+            ->setFontColor('24352F');
     }
 
     private function textStyle(): Style

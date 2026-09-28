@@ -32,7 +32,17 @@ class RecipeWorkbenchOutputController extends Controller
         $extension = $request->validated('format');
         $filename = $kind === 'costing'
             ? preg_replace('/-current-formula-/', '-current-costing-', $data['filename']).'.xlsx'
-            : $data['filename'].'.'.$extension;
+            : ($kind === 'composition'
+                ? preg_replace('/-current-formula-/', '-current-composition-', $data['filename']).'.xlsx'
+                : $data['filename'].'.'.$extension);
+
+        if ($kind === 'composition') {
+            return response()->streamDownload(
+                fn (): int => print $workbookExporter->exportComposition($data['compositionExportData']),
+                $filename,
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            );
+        }
 
         if ($kind === 'costing') {
             $path = $workbookExporter->writeTemporaryCosting($data['costingExportData']);

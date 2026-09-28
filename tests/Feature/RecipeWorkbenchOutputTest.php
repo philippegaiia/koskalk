@@ -1,0 +1,547 @@
+<?php
+
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
+use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
+use App\Models\MediaAsset;
+use App\Models\MediaAssetUsage;
+use App\Models\PackagingItem;
+use App\Models\Plan;
+use App\Models\ProductFamily;
+use App\Models\Recipe;
+use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\User;
+use App\Models\UserEntitlement;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\Support\RichContentAttachmentPaths;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use OpenSpout\Reader\XLSX\Reader;
+
+uses(RefreshDatabase::class);
+
+it('exports the submitted current formula without creating saved records', function (): void {
+    $this->travelTo(Carbon::parse('2026-09-28 12:00:00'));
+
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $family = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+        'calculation_basis' => 'initial_oils',
+        'is_active' => true,
+    ]);
+    $oil = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'Olea Europaea (Olive) Fruit Oil',
+        'is_soap_saponification_trusted' => true,
+        'requires_admin_review' => false,
+    ]);
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $response = $this->actingAs($user)->postJson(route('recipes.workbench.export'), recipeWorkbenchOutputPayload(
+        $workspace,
+        $family,
+        $oil,
+    ));
+
+    $response->assertSuccessful()
+        ->assertDownload('working-soap-formula-current-formula-2026-09-28.csv');
+
+    expect($response->streamedContent())
+        ->toContain('Olive Oil')
+        ->toContain('750')
+        ->and(Recipe::withoutGlobalScopes()->count())->toBe(0)
+        ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
+        ->and(RecipeVersionCosting::withoutGlobalScopes()->count())->toBe(0);
+});
+
+it('serves a current soap workbook with its calculated output worksheet', function (): void {
+    $this->travelTo(Carbon::parse('2026-09-28 12:00:00'));
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['format'] = 'xlsx';
+
+    $response = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload);
+    $response->assertSuccessful()->assertDownload('working-soap-formula-current-formula-2026-09-28.xlsx');
+
+    $path = tempnam(sys_get_temp_dir(), 'formula-output-test-');
+    expect($path)->not->toBeFalse();
+
+    try {
+        file_put_contents($path, $response->streamedContent());
+        $reader = new Reader;
+        $reader->open($path);
+        $sheetNames = [];
+        $sheetRows = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $sheetNames[] = $sheet->getName();
+            $sheetRows[$sheet->getName()] = collect($sheet->getRowIterator())
+                ->map(fn ($row): array => $row->toArray())
+                ->all();
+        }
+
+        $reader->close();
+    } finally {
+        @unlink($path);
+    }
+
+    expect($sheetNames)->toBe([
+        __('formula_documents.exports.ingredient_batch'),
+        __('formula_documents.exports.soap_output'),
+    ])
+        ->and(collect($sheetRows[__('formula_documents.exports.ingredient_batch')])->flatten())
+        ->toContain('Olive Oil')
+        ->and(collect($sheetRows[__('formula_documents.exports.soap_output')])->flatten())
+        ->toContain('Final INCI');
+});
+
+it('uses the submitted weight when weight editing mode is authoritative', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['editing_mode'] = 'weight';
+    $payload['draft']['phase_items']['saponified_oils'][0]['percentage'] = 100;
+    $payload['draft']['phase_items']['saponified_oils'][0]['weight'] = 500;
+
+    $response = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload);
+    $response->assertSuccessful();
+
+    $ingredientRow = collect(explode("\n", trim($response->streamedContent())))
+        ->map(fn (string $line): array => str_getcsv($line))
+        ->first(fn (array $row): bool => ($row[1] ?? null) === 'Olive Oil');
+
+    expect($ingredientRow)->not->toBeNull()
+        ->and((float) $ingredientRow[3])->toBe(66.6667)
+        ->and((float) $ingredientRow[4])->toBe(500.0);
+});
+
+it('accepts context-valid negative KOH superfat and rejects invalid lye concentration', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['lye_type'] = 'koh';
+    $payload['draft']['superfat'] = -5;
+
+    $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload)->assertSuccessful();
+
+    $payload['draft']['lye_type'] = 'dual';
+    $payload['draft']['superfat'] = 5;
+    $dualLyeResponse = $this->postJson(route('recipes.workbench.export'), $payload);
+    $dualLyeResponse->assertSuccessful();
+    expect($dualLyeResponse->streamedContent())
+        ->toContain(__('formula_documents.ingredients.naoh'))
+        ->toContain(__('formula_documents.ingredients.koh'));
+
+    $payload['draft']['lye_type'] = 'naoh';
+    $payload['draft']['water_mode'] = 'lye_concentration';
+    $payload['draft']['water_value'] = 100;
+
+    $this->postJson(route('recipes.workbench.export'), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('draft');
+});
+
+it('rejects a nonzero formula row without a resolvable ingredient identity', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    unset($payload['draft']['phase_items']['saponified_oils'][0]['ingredient_id']);
+
+    $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('draft.phase_items.saponified_oils');
+});
+
+it('bounds combined output rows and the raw request size', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['packaging_items'][] = [
+        'packaging_item_id' => null,
+        'name' => 'Unselected container',
+        'components_per_unit' => 1,
+        'notes' => null,
+    ];
+    $payload['costing']['items'][] = [
+        'ingredient_id' => null,
+        'phase_key' => 'saponified_oils',
+        'position' => 2,
+        'price_per_kg' => null,
+    ];
+    $payload['costing']['packaging_items'][] = [
+        'packaging_item_id' => null,
+        'name' => 'Unselected costing container',
+        'unit_cost' => null,
+        'components_per_unit' => 1,
+    ];
+    config()->set('workspaces.formula_output_limits.formula_rows', 3);
+
+    $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('draft');
+
+    config()->set('workspaces.formula_output_limits.formula_rows', 1000);
+    config()->set('workspaces.formula_output_limits.payload_bytes', 128);
+    $this->postJson(route('recipes.workbench.export'), recipeWorkbenchOutputPayload($workspace, $family, $oil))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('payload');
+
+    config()->set('workspaces.formula_output_limits.payload_bytes', 2 * 1024 * 1024);
+    $unsupportedPayload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $unsupportedPayload['kind'] = 'costing';
+    $this->postJson(route('recipes.workbench.export'), $unsupportedPayload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('kind');
+});
+
+it('checks foreign ingredient identities in zero rows, dilution rows, costing rows, and output settings', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $foreignOwner = User::factory()->create();
+    $foreignWorkspace = Workspace::factory()->for($foreignOwner, 'owner')->create();
+    $foreignIngredient = Ingredient::factory()->create([
+        'display_name' => 'Foreign material',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $foreignWorkspace->id,
+        'workspace_id' => $foreignWorkspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+    $foreignPackaging = PackagingItem::factory()->for($foreignWorkspace)->create();
+    $mutators = [
+        fn (array &$payload) => $payload['draft']['phase_items']['additives'][] = [
+            'id' => 'foreign-zero-row',
+            'ingredient_id' => $foreignIngredient->id,
+            'percentage' => 0,
+            'weight' => 0,
+        ],
+        fn (array &$payload) => $payload['draft']['phase_items']['lye_water'][] = [
+            'id' => 'foreign-dilution-row',
+            'ingredient_id' => $foreignIngredient->id,
+            'percentage' => 0,
+            'weight' => 0,
+        ],
+        fn (array &$payload) => $payload['costing']['items'][] = [
+            'ingredient_id' => $foreignIngredient->id,
+            'phase_key' => 'additives',
+            'position' => 9,
+            'price_per_kg' => null,
+        ],
+        fn (array &$payload) => $payload['draft']['output_ingredient_id'] = $foreignIngredient->id,
+        fn (array &$payload) => $payload['draft']['packaging_items'][] = [
+            'packaging_item_id' => $foreignPackaging->id,
+            'name' => 'Untrusted packaging label',
+            'components_per_unit' => 1,
+        ],
+    ];
+
+    foreach ($mutators as $mutate) {
+        $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+        $mutate($payload);
+
+        $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload)->assertForbidden();
+    }
+});
+
+it('preserves private dilution material occurrences after allocation skips zero rows', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $dilutionMaterial = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'display_name' => 'Workspace dilution liquid',
+        'inci_name' => 'Dilutionis Liquidus',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['phase_items']['lye_water'] = [
+        [
+            'id' => 'zero-occurrence',
+            'ingredient_id' => $dilutionMaterial->id,
+            'percentage' => 0,
+            'weight' => 0,
+            'note' => 'Zero occurrence',
+        ],
+        [
+            'id' => 'positive-occurrence',
+            'ingredient_id' => $dilutionMaterial->id,
+            'percentage' => 25,
+            'weight' => 11,
+            'note' => 'Current dilution occurrence',
+        ],
+    ];
+
+    $response = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload);
+    $response->assertSuccessful();
+
+    $dilutionRow = collect(explode("\n", trim($response->streamedContent())))
+        ->map(fn (string $line): array => str_getcsv($line))
+        ->first(fn (array $row): bool => ($row[1] ?? null) === 'Workspace dilution liquid');
+
+    expect($dilutionRow)->not->toBeNull()
+        ->and((float) $dilutionRow[4])->toBe(71.25)
+        ->and($dilutionRow[6])->toBe('Current dilution occurrence')
+        ->and($response->streamedContent())->not->toContain('Zero occurrence');
+});
+
+it('exports incomplete cosmetic formulas and derives missing named phases once', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'oil' => $oil] = createWorkbenchOutputFixture('cosmetic', 'total_formula');
+    $family = ProductFamily::query()->where('slug', 'cosmetic')->firstOrFail();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['manufacturing_mode'] = 'blend_only';
+    $payload['draft']['phases'] = [];
+    $payload['draft']['phase_items'] = [
+        'custom_blend' => [[
+            'id' => 'cosmetic-row',
+            'ingredient_id' => $oil->id,
+            'percentage' => 20,
+            'weight' => 150,
+            'note' => 'Still being formulated',
+        ]],
+    ];
+
+    $response = $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload);
+    $response->assertSuccessful();
+
+    expect($response->streamedContent())
+        ->toContain('Olive Oil')
+        ->toContain('150')
+        ->toContain('Still being formulated');
+
+    $payload['draft']['manufacturing_mode'] = 'saponify_in_formula';
+    $this->postJson(route('recipes.workbench.export'), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('draft.manufacturing_mode');
+
+    $payload['draft']['manufacturing_mode'] = 'blend_only';
+    $payload['draft']['phases'] = [
+        ['key' => 'custom_blend', 'name' => 'Blend'],
+        ['key' => 'custom_blend', 'name' => 'Duplicate Blend'],
+    ];
+    $this->postJson(route('recipes.workbench.export'), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('draft.phases');
+});
+
+it('allows a viewer to print the current working copy of a locked saved recipe without changing it', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->for($owner)->for($plan)->create();
+    $viewer = User::factory()->create(['email_verified_at' => now(), 'active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);
+    $family = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+        'calculation_basis' => 'initial_oils',
+        'is_active' => true,
+    ]);
+    $oil = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'Olea Europaea (Olive) Fruit Oil',
+        'is_soap_saponification_trusted' => true,
+        'requires_admin_review' => false,
+    ]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $oil->id, 'koh_sap_value' => 0.188]);
+    $recipe = Recipe::factory()->for($family, 'productFamily')->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'name' => 'Saved Soap Formula',
+        'locked_at' => now(),
+    ]);
+    $savedVersion = RecipeVersion::factory()->for($recipe)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'batch_size' => 1000,
+        'batch_mass_grams' => '1000.000000000',
+        'name' => 'Saved Soap Formula',
+    ]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['recipe'] = $recipe->public_id;
+    $payload['draft']['name'] = 'Current Working Soap';
+    $payload['draft']['oil_weight'] = 750;
+    $payload['manufacturing_instructions'] = '<p>Current draft procedure</p>';
+    $originalRecipe = $recipe->fresh();
+
+    $response = $this->actingAs($viewer)->postJson(route('recipes.workbench.print'), $payload);
+    $response->assertSuccessful()
+        ->assertSee('Current formula — working copy')
+        ->assertSee('Current Working Soap')
+        ->assertSee('Current draft procedure')
+        ->assertSee('750')
+        ->assertViewHas('formulaDocument', fn (array $document): bool => $document['identity']['state'] === 'current_working_copy'
+            && $document['metadata']['version_number'] === null
+            && $document['basis_weight'] === 750.0)
+        ->assertViewHas('returnUrl', route('recipes.saved', ['recipe' => $recipe]));
+
+    expect($recipe->fresh()->edit_revision)->toBe($originalRecipe->edit_revision)
+        ->and($recipe->fresh()->updated_at)->toEqual($originalRecipe->updated_at)
+        ->and((float) $savedVersion->fresh()->batch_size)->toBe(1000.0)
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->count())->toBe(1)
+        ->and(RecipeVersionCosting::withoutGlobalScopes()->count())->toBe(0);
+});
+
+it('rejects output when the active workspace has switched or membership was revoked', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $otherWorkspace = Workspace::factory()->for($user, 'owner')->create();
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+
+    $user->forceFill(['active_workspace_id' => $otherWorkspace->id])->save();
+    $this->actingAs($user)->postJson(route('recipes.workbench.export'), $payload)
+        ->assertStatus(409);
+
+    $owner = User::factory()->create();
+    $sharedWorkspace = Workspace::factory()->for($owner, 'owner')->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->for($owner)->for($plan)->create();
+    $member = User::factory()->create(['email_verified_at' => now(), 'active_workspace_id' => $sharedWorkspace->id]);
+    $membership = WorkspaceMember::factory()->for($sharedWorkspace)->for($member)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $sharedPayload = recipeWorkbenchOutputPayload($sharedWorkspace, $family, $oil);
+    $membership->delete();
+
+    $this->actingAs($member)->postJson(route('recipes.workbench.export'), $sharedPayload)->assertForbidden();
+});
+
+it('authorizes pending procedure images and rejects malformed, foreign, or legacy file identities', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['manufacturing_instructions'] = [
+        'type' => 'doc',
+        'content' => [[
+            'type' => 'image',
+            'attrs' => [
+                'id' => RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
+                'src' => '/pending-image-source',
+            ],
+        ]],
+    ];
+
+    $this->actingAs($user)->postJson(route('recipes.workbench.print'), $payload)->assertSuccessful();
+    expect(MediaAssetUsage::query()->count())->toBe(0);
+
+    $foreignOwner = User::factory()->create();
+    $foreignWorkspace = Workspace::factory()->for($foreignOwner, 'owner')->create();
+    $foreignAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $foreignWorkspace->id]);
+    $payload['manufacturing_instructions']['content'][0]['attrs']['id'] = RichContentAttachmentPaths::mediaAssetIdentity($foreignAsset->public_id);
+    $this->postJson(route('recipes.workbench.print'), $payload)->assertForbidden();
+
+    $payload['manufacturing_instructions']['content'][0]['attrs']['id'] = 'media-asset:not-a-uuid';
+    $this->postJson(route('recipes.workbench.print'), $payload)->assertUnprocessable()
+        ->assertJsonValidationErrors('manufacturing_instructions');
+
+    $payload['manufacturing_instructions']['content'][0]['attrs'] = ['src' => 'https://private.example.test/procedure.jpg'];
+    $this->postJson(route('recipes.workbench.print'), $payload)->assertForbidden();
+    expect(MediaAssetUsage::query()->count())->toBe(0);
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function recipeWorkbenchOutputPayload(Workspace $workspace, ProductFamily $family, Ingredient $oil): array
+{
+    return [
+        'workspace' => $workspace->public_id,
+        'product_family' => $family->slug,
+        'kind' => 'formula',
+        'format' => 'csv',
+        'draft' => [
+            'name' => 'Working Soap Formula',
+            'oil_unit' => 'g',
+            'oil_weight' => 750,
+            'manufacturing_mode' => 'saponify_in_formula',
+            'exposure_mode' => 'rinse_off',
+            'regulatory_regime' => 'eu',
+            'product_type_id' => null,
+            'editing_mode' => 'percentage',
+            'lye_type' => 'naoh',
+            'koh_purity_percentage' => 90,
+            'dual_lye_koh_percentage' => 40,
+            'water_mode' => 'percent_of_oils',
+            'water_value' => 38,
+            'superfat' => 5,
+            'ifra_category_selection_mode' => 'automatic',
+            'ifra_product_category_id' => null,
+            'final_ingredient_list' => null,
+            'final_ingredient_list_basis_hash' => null,
+            'final_plain_ingredient_list' => null,
+            'final_plain_ingredient_list_basis_hash' => null,
+            'phases' => [
+                ['key' => 'saponified_oils', 'name' => 'Saponified Oils'],
+                ['key' => 'additives', 'name' => 'Additives'],
+                ['key' => 'fragrance', 'name' => 'Fragrance'],
+            ],
+            'phase_items' => [
+                'saponified_oils' => [[
+                    'id' => 'oil-row',
+                    'ingredient_id' => $oil->id,
+                    'percentage' => 100,
+                    'weight' => 750,
+                    'note' => 'Current working note',
+                ]],
+                'additives' => [],
+                'fragrance' => [],
+                'lye_water' => [],
+            ],
+            'packaging_items' => [],
+            'production_output_type' => 'finished_product',
+            'output_ingredient_id' => null,
+            'ready_delay_days' => null,
+            'product_reference' => null,
+            'nominal_content_value' => null,
+            'nominal_content_unit' => null,
+        ],
+        'manufacturing_instructions' => '',
+        'costing' => [
+            'oil_weight_for_costing' => null,
+            'oil_unit_for_costing' => 'g',
+            'units_produced' => null,
+            'currency' => 'EUR',
+            'items' => [],
+            'packaging_items' => [],
+        ],
+        'print_context' => 'formula',
+    ];
+}
+
+/**
+ * @return array{user: User, workspace: Workspace, family: ProductFamily, oil: Ingredient}
+ */
+function createWorkbenchOutputFixture(string $familySlug = 'soap', string $calculationBasis = 'initial_oils'): array
+{
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+    $family = ProductFamily::factory()->create([
+        'slug' => $familySlug,
+        'name' => ucfirst($familySlug),
+        'calculation_basis' => $calculationBasis,
+        'is_active' => true,
+    ]);
+    $oil = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'Olea Europaea (Olive) Fruit Oil',
+        'is_soap_saponification_trusted' => true,
+        'requires_admin_review' => false,
+    ]);
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    return compact('user', 'workspace', 'family', 'oil');
+}

@@ -9,4 +9,8 @@ return [
         'prints' => ['actor_per_minute' => 60, 'workspace_per_minute' => 120],
         'temporary_uploads' => ['actor_per_minute' => 60, 'workspace_per_minute' => 120, 'guest_per_minute' => 10],
     ],
+    'formula_output_limits' => [
+        'formula_rows' => 1_000,
+        'payload_bytes' => 2 * 1024 * 1024,
+    ],
 ];

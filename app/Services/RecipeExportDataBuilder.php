@@ -17,7 +17,16 @@ class RecipeExportDataBuilder
     public function build(Recipe $recipe, RecipeVersion $version, mixed $requestedOilWeight = null, array $batchContext = []): array
     {
         $viewData = $this->recipeVersionViewDataBuilder->build($recipe, $version, $requestedOilWeight, $batchContext);
-        $document = $viewData['formulaDocument'];
+
+        return $this->fromDocument($viewData['formulaDocument']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $document
+     * @return array<string, mixed>
+     */
+    public function fromDocument(array $document): array
+    {
 
         return [
             'document' => $document,

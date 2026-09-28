@@ -19,6 +19,7 @@ class FormulaDocumentBuilder
     public function build(array $snapshot, array $identity = []): array
     {
         $isCosmetic = ($identity['calculation_basis'] ?? null) === 'total_formula';
+        $useExplicitRowWeights = ($identity['state'] ?? null) === 'current_working_copy';
         $basisWeight = round((float) data_get($snapshot, 'draft.oilWeight', 0), 4);
         $labeling = is_array($snapshot['labeling'] ?? null) ? $snapshot['labeling'] : [];
 
@@ -29,7 +30,7 @@ class FormulaDocumentBuilder
             'unit' => (string) data_get($snapshot, 'draft.oilUnit', 'g'),
             'basis_weight' => $basisWeight,
             'settings' => $this->settings($snapshot, $isCosmetic),
-            'sections' => $this->sections($snapshot, $isCosmetic, $basisWeight),
+            'sections' => $this->sections($snapshot, $isCosmetic, $basisWeight, $useExplicitRowWeights),
             'results' => $this->results($snapshot, $isCosmetic, $basisWeight),
             'soap_output' => $isCosmetic ? null : $this->soapCuredOutputBuilder->build(
                 $labeling,
@@ -88,21 +89,21 @@ class FormulaDocumentBuilder
     }
 
     /** @return array<int, array{key: string, label: string, rows: array<int, array<string, mixed>>}> */
-    private function sections(array $snapshot, bool $isCosmetic, float $basisWeight): array
+    private function sections(array $snapshot, bool $isCosmetic, float $basisWeight, bool $useExplicitRowWeights): array
     {
         return $isCosmetic
-            ? $this->cosmeticSections($snapshot, $basisWeight)
-            : $this->soapSections($snapshot, $basisWeight);
+            ? $this->cosmeticSections($snapshot, $basisWeight, $useExplicitRowWeights)
+            : $this->soapSections($snapshot, $basisWeight, $useExplicitRowWeights);
     }
 
     /** @return array<int, array{key: string, label: string, rows: array<int, array<string, mixed>>}> */
-    private function soapSections(array $snapshot, float $basisWeight): array
+    private function soapSections(array $snapshot, float $basisWeight, bool $useExplicitRowWeights): array
     {
         $sections = [
             $this->section(
                 'saponified_oils',
                 __('formula_documents.sections.saponified_oils'),
-                $this->ingredientRows(data_get($snapshot, 'draft.phaseItems.saponified_oils', []), $basisWeight),
+                $this->ingredientRows(data_get($snapshot, 'draft.phaseItems.saponified_oils', []), $basisWeight, $useExplicitRowWeights),
             ),
             $this->section(
                 'lye_water',
@@ -113,8 +114,8 @@ class FormulaDocumentBuilder
                 'formula_additions',
                 __('formula_documents.sections.formula_additions'),
                 [
-                    ...$this->ingredientRows(data_get($snapshot, 'draft.phaseItems.additives', []), $basisWeight),
-                    ...$this->ingredientRows(data_get($snapshot, 'draft.phaseItems.fragrance', []), $basisWeight),
+                    ...$this->ingredientRows(data_get($snapshot, 'draft.phaseItems.additives', []), $basisWeight, $useExplicitRowWeights),
+                    ...$this->ingredientRows(data_get($snapshot, 'draft.phaseItems.fragrance', []), $basisWeight, $useExplicitRowWeights),
                 ],
             ),
         ];
@@ -126,7 +127,7 @@ class FormulaDocumentBuilder
     }
 
     /** @return array<int, array{key: string, label: string, rows: array<int, array<string, mixed>>}> */
-    private function cosmeticSections(array $snapshot, float $basisWeight): array
+    private function cosmeticSections(array $snapshot, float $basisWeight, bool $useExplicitRowWeights): array
     {
         $phaseItems = data_get($snapshot, 'draft.phaseItems', []);
 
@@ -136,13 +137,13 @@ class FormulaDocumentBuilder
 
         return collect(data_get($snapshot, 'draft.phases', []))
             ->filter(fn (mixed $phase): bool => is_array($phase) && filled($phase['key'] ?? null))
-            ->map(function (array $phase) use ($phaseItems, $basisWeight): array {
+            ->map(function (array $phase) use ($phaseItems, $basisWeight, $useExplicitRowWeights): array {
                 $key = (string) $phase['key'];
 
                 return $this->section(
                     $key,
                     (string) ($phase['name'] ?? str($key)->headline()),
-                    $this->ingredientRows($phaseItems[$key] ?? [], $basisWeight),
+                    $this->ingredientRows($phaseItems[$key] ?? [], $basisWeight, $useExplicitRowWeights),
                 );
             })
             ->filter(fn (array $section): bool => $section['rows'] !== [])
@@ -157,7 +158,7 @@ class FormulaDocumentBuilder
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function ingredientRows(mixed $rows, float $basisWeight): array
+    private function ingredientRows(mixed $rows, float $basisWeight, bool $useExplicitWeight): array
     {
         if (! is_array($rows)) {
             return [];
@@ -165,13 +166,16 @@ class FormulaDocumentBuilder
 
         return collect($rows)
             ->filter(fn (mixed $row): bool => is_array($row) && (float) ($row['percentage'] ?? 0) > 0)
-            ->map(function (array $row) use ($basisWeight): array {
+            ->map(function (array $row) use ($basisWeight, $useExplicitWeight): array {
                 $percentage = round((float) ($row['percentage'] ?? 0), 4);
+                $weight = $useExplicitWeight && is_numeric($row['weight'] ?? null)
+                    ? round((float) $row['weight'], 4)
+                    : round($basisWeight * ($percentage / 100), 4);
 
                 return [
                     'name' => (string) ($row['name'] ?? __('formula_documents.ingredients.unnamed')),
                     'percentage' => $percentage,
-                    'weight' => round($basisWeight * ($percentage / 100), 4),
+                    'weight' => $weight,
                     'note' => filled($row['note'] ?? null) ? (string) $row['note'] : null,
                     'is_user_owned' => (bool) ($row['is_user_owned'] ?? false),
                 ];
@@ -211,7 +215,9 @@ class FormulaDocumentBuilder
                 'is_user_owned' => false,
             ]);
 
-        $draftRows = collect(Arr::wrap(data_get($snapshot, 'draft.phaseItems.lye_water', [])))->values();
+        $draftRows = collect(Arr::wrap(data_get($snapshot, 'draft.phaseItems.lye_water', [])))
+            ->filter(fn (mixed $row): bool => is_array($row) && (float) ($row['percentage'] ?? 0) > 0)
+            ->values();
         $substitutionRows = collect(Arr::wrap(data_get($snapshot, 'calculation.lye.liquid_composition.substitutions', [])))
             ->map(function (mixed $substitution, int $index) use ($normalizedBasisWeight, $draftRows): ?array {
                 $weight = is_array($substitution) ? $this->decimal($substitution['weight'] ?? 0) : '0';
@@ -220,10 +226,7 @@ class FormulaDocumentBuilder
                     return null;
                 }
 
-                $draftRow = $draftRows->first(fn (mixed $row): bool => is_array($row)
-                    && isset($row['ingredient_id'], $substitution['ingredient_id'])
-                    && (int) $row['ingredient_id'] === (int) $substitution['ingredient_id']);
-                $draftRow = is_array($draftRow) ? $draftRow : $draftRows->get($index, []);
+                $draftRow = $draftRows->get($index, []);
 
                 return [
                     'name' => (string) ($draftRow['name'] ?? __('formula_documents.ingredients.unnamed')),

@@ -33,6 +33,7 @@ import { createCostingSection } from './sections/costing-section';
 import { createPresentationSection } from './sections/presentation-section';
 import { createVersionSection } from './sections/version-section';
 import { createEditingSection } from './editing';
+import { createRecipeWorkbenchOutputSection } from './outputs';
 
 const workbenchMassUnits = typeof MASS_UNITS === 'undefined' ? ['g', 'kg', 'oz', 'lb'] : MASS_UNITS;
 const convertWorkbenchMass = typeof convertMass === 'undefined'
@@ -1505,6 +1506,10 @@ export function createRecipeWorkbench(payload, createRegistry = null) {
         createVersionSection(payload),
         createPresentationSection(),
     ].forEach((section) => defineSection(component, section));
+
+    if (typeof createRecipeWorkbenchOutputSection === 'function') {
+        defineSection(component, createRecipeWorkbenchOutputSection(payload.output ?? null));
+    }
 
     return component;
 }

@@ -2568,6 +2568,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "states.current_working_copy",
+      "text": {
+        "de": "Aktuelle Rezeptur — Arbeitskopie",
+        "es": "Fórmula actual — copia de trabajo",
+        "fr": "Formule actuelle — copie de travail",
+        "it": "Formula attuale — copia di lavoro",
+        "nl": "Huidige formule — werkkopie",
+        "pt_BR": "Fórmula atual — cópia de trabalho"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "states.history",
       "text": {
         "de": "Speicherverlauf",
@@ -2600,6 +2612,150 @@
         "it": "Scheda formula",
         "nl": "Formuleblad",
         "pt_BR": "Ficha da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_family_mismatch",
+      "text": {
+        "de": "Die ausgewählte Formelfamilie stimmt nicht mehr mit dieser gespeicherten Formel überein.",
+        "es": "La familia seleccionada ya no coincide con esta fórmula guardada.",
+        "fr": "La famille choisie ne correspond plus à cette formule enregistrée.",
+        "it": "La famiglia selezionata non corrisponde più a questa formula salvata.",
+        "nl": "De gekozen formulefamilie komt niet meer overeen met deze opgeslagen formule.",
+        "pt_BR": "A família selecionada não corresponde mais a esta fórmula salva."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_formula_unusable",
+      "text": {
+        "de": "Füge mindestens einen gültigen Formelbestandteil hinzu, bevor du druckst oder exportierst.",
+        "es": "Añade al menos un ingrediente válido antes de imprimir o exportar.",
+        "fr": "Ajoutez au moins un ingrédient valide avant d’imprimer ou d’exporter.",
+        "it": "Aggiungi almeno un ingrediente valido prima di stampare o esportare.",
+        "nl": "Voeg ten minste één geldig formulebestanddeel toe voordat je afdrukt of exporteert.",
+        "pt_BR": "Adicione pelo menos um ingrediente válido antes de imprimir ou exportar."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_ingredient_required",
+      "text": {
+        "de": "Wähle für jede Formelzeile mit einer Menge einen Inhaltsstoff aus.",
+        "es": "Elige un ingrediente para cada fila de fórmula que tenga una cantidad.",
+        "fr": "Choisissez un ingrédient pour chaque ligne de formule ayant une quantité.",
+        "it": "Scegli un ingrediente per ogni riga della formula con una quantità.",
+        "nl": "Kies een ingrediënt voor elke formule-regel met een hoeveelheid.",
+        "pt_BR": "Escolha um ingrediente para cada linha da fórmula que tenha uma quantidade."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_ingredient_unavailable",
+      "text": {
+        "de": "Ein Formelinhaltsstoff ist nicht verfügbar. Lade den Workbench neu und versuche es erneut.",
+        "es": "Un ingrediente de la fórmula no está disponible. Recarga el área de trabajo e inténtalo de nuevo.",
+        "fr": "Un ingrédient de la formule est indisponible. Rechargez l’atelier puis réessayez.",
+        "it": "Un ingrediente della formula non è disponibile. Ricarica il banco di lavoro e riprova.",
+        "nl": "Een formule-ingrediënt is niet beschikbaar. Laad de werkbank opnieuw en probeer het nog eens.",
+        "pt_BR": "Um ingrediente da fórmula está indisponível. Recarregue a bancada e tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_kind_unavailable",
+      "text": {
+        "de": "Kosten- und Zusammensetzungsausgaben sind noch nicht verfügbar.",
+        "es": "La salida de costes y composición todavía no está disponible.",
+        "fr": "Les sorties de coût et de composition ne sont pas encore disponibles.",
+        "it": "Le esportazioni di costi e composizione non sono ancora disponibili.",
+        "nl": "Kosten- en samenstellingsuitvoer is nog niet beschikbaar.",
+        "pt_BR": "As saídas de custos e composição ainda não estão disponíveis."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_media_unavailable",
+      "text": {
+        "de": "Ein Verfahrensbild ist nicht verfügbar. Wähle ein Bild aus der Mediathek dieses Arbeitsbereichs.",
+        "es": "Una imagen del procedimiento no está disponible. Elige una imagen de la biblioteca de este espacio.",
+        "fr": "Une image de procédure est indisponible. Choisissez une image dans la médiathèque de cet espace.",
+        "it": "Un’immagine della procedura non è disponibile. Scegli un’immagine dalla libreria di questo spazio.",
+        "nl": "Een procedureafbeelding is niet beschikbaar. Kies een afbeelding uit de mediabibliotheek van deze werkruimte.",
+        "pt_BR": "Uma imagem do procedimento está indisponível. Escolha uma imagem na biblioteca deste espaço."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_packaging_unavailable",
+      "text": {
+        "de": "Ein Verpackungsartikel ist nicht verfügbar. Lade den Workbench neu und versuche es erneut.",
+        "es": "Un artículo de embalaje no está disponible. Recarga el área de trabajo e inténtalo de nuevo.",
+        "fr": "Un article d’emballage est indisponible. Rechargez l’atelier puis réessayez.",
+        "it": "Un articolo di imballaggio non è disponibile. Ricarica il banco di lavoro e riprova.",
+        "nl": "Een verpakkingsartikel is niet beschikbaar. Laad de werkbank opnieuw en probeer het nog eens.",
+        "pt_BR": "Um item de embalagem está indisponível. Recarregue a bancada e tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_payload_too_large",
+      "text": {
+        "de": "Diese Ausgabeanfrage ist zu groß. Reduziere die Formel oder Verfahrensbeschreibung und versuche es erneut.",
+        "es": "Esta solicitud de salida es demasiado grande. Reduce la fórmula o el procedimiento e inténtalo de nuevo.",
+        "fr": "Cette demande de sortie est trop volumineuse. Réduisez la formule ou la procédure puis réessayez.",
+        "it": "La richiesta di output è troppo grande. Riduci la formula o la procedura e riprova.",
+        "nl": "Dit uitvoerverzoek is te groot. Verklein de formule of proceduretekst en probeer het opnieuw.",
+        "pt_BR": "Esta solicitação de saída é muito grande. Reduza a fórmula ou o procedimento e tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_phases_invalid",
+      "text": {
+        "de": "Die Phasenliste der Formel ist inkonsistent. Lade den Workbench neu und versuche es erneut.",
+        "es": "La lista de fases de la fórmula es incoherente. Recarga el área de trabajo e inténtalo de nuevo.",
+        "fr": "La liste des phases de la formule est incohérente. Rechargez l’atelier puis réessayez.",
+        "it": "L’elenco delle fasi della formula non è coerente. Ricarica il banco di lavoro e riprova.",
+        "nl": "De fasenlijst van de formule klopt niet. Laad de werkbank opnieuw en probeer het nog eens.",
+        "pt_BR": "A lista de fases da fórmula está inconsistente. Recarregue a bancada e tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_product_type_unavailable",
+      "text": {
+        "de": "Der ausgewählte Produkttyp ist für diese Formelfamilie nicht verfügbar.",
+        "es": "El tipo de producto seleccionado no está disponible para esta familia de fórmulas.",
+        "fr": "Le type de produit choisi n’est pas disponible pour cette famille de formules.",
+        "it": "Il tipo di prodotto selezionato non è disponibile per questa famiglia di formule.",
+        "nl": "Het gekozen producttype is niet beschikbaar voor deze formulefamilie.",
+        "pt_BR": "O tipo de produto selecionado não está disponível para esta família de fórmulas."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_rows_exceeded",
+      "text": {
+        "de": "Diese Ausgabe enthält zu viele Formel- und Kostenzeilen.",
+        "es": "Esta salida contiene demasiadas filas de fórmula y costes.",
+        "fr": "Cette sortie contient trop de lignes de formule et de coût.",
+        "it": "Questa uscita contiene troppe righe di formula e costo.",
+        "nl": "Deze uitvoer bevat te veel formule- en kostenregels.",
+        "pt_BR": "Esta saída contém muitas linhas de fórmula e custos."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "validation.output_workspace_changed",
+      "text": {
+        "de": "Der aktive Arbeitsbereich wurde geändert. Lade den Workbench neu, bevor du druckst oder exportierst.",
+        "es": "El espacio activo ha cambiado. Recarga el área de trabajo antes de imprimir o exportar.",
+        "fr": "L’espace actif a changé. Rechargez l’atelier avant d’imprimer ou d’exporter.",
+        "it": "Lo spazio attivo è cambiato. Ricarica il banco di lavoro prima di stampare o esportare.",
+        "nl": "De actieve werkruimte is gewijzigd. Laad de werkbank opnieuw voordat je afdrukt of exporteert.",
+        "pt_BR": "O espaço ativo mudou. Recarregue a bancada antes de imprimir ou exportar."
       }
     },
     {

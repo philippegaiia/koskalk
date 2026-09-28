@@ -46,14 +46,23 @@ class RecipeWorkbenchViewDataBuilder
             : null;
         $ifraOptions = $this->productTypeIfraOptionsBuilder->build($productType, $selectedIfraCategory);
         $defaultMassGrams = $productFamily->calculation_basis === 'total_formula' ? '100' : '1000';
-        $massDisplaySystem = $user?->company()?->mass_display_system ?? MassDisplaySystem::Metric;
+        $outputWorkspace = $user?->company();
+        $massDisplaySystem = $outputWorkspace?->mass_display_system ?? MassDisplaySystem::Metric;
 
         $helpScope = $this->helpTopics->forSurface($productFamily->slug, $user instanceof User);
         $helpContent = $this->helpResolver->resolve($helpScope['keys'], app()->getLocale());
         $helpTabs = array_map(fn (array $keys): array => array_values(array_intersect($keys, array_keys($helpContent))), $helpScope['index']);
+        $output = $outputWorkspace === null ? null : [
+            'workspace' => $outputWorkspace->public_id,
+            'recipe' => $recipe?->public_id,
+            'productFamily' => $productFamily->slug,
+            'printUrl' => route('recipes.workbench.print'),
+            'exportUrl' => route('recipes.workbench.export'),
+        ];
 
         return [
             'editing' => $editing,
+            'output' => $output,
             'contextualHelp' => ['topics' => $helpContent, 'tabs' => $helpTabs],
             'productFamily' => [
                 'id' => $productFamily->id,

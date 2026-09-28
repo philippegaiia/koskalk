@@ -19,6 +19,7 @@ use App\Http\Controllers\ProcurementDocumentController;
 use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
+use App\Http\Controllers\RecipeWorkbenchOutputController;
 use App\Http\Controllers\UserMediaController;
 use App\Http\Controllers\WorkspaceInvitationAcceptanceController;
 use App\Http\Controllers\WorkspaceSelectionController;
@@ -63,6 +64,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/workspace-selection', [WorkspaceSelectionController::class, 'update'])
         ->middleware('throttle:30,1')
         ->name('workspace-selection.update');
+    Route::post('/dashboard/formula-outputs/print', [RecipeWorkbenchOutputController::class, 'print'])
+        ->middleware('throttle:workspace-prints')
+        ->name('recipes.workbench.print');
+    Route::post('/dashboard/formula-outputs/export', [RecipeWorkbenchOutputController::class, 'export'])
+        ->middleware('throttle:workspace-exports')
+        ->name('recipes.workbench.export');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/account', [AccountController::class, 'show'])->name('account');
     Route::patch('/dashboard/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');

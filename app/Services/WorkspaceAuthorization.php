@@ -27,6 +27,11 @@ class WorkspaceAuthorization
         return $workspace !== null && $this->workspaceRole($user, $workspace) !== null ? $workspace : null;
     }
 
+    public function canAccessWorkspace(User $user, Workspace $workspace): bool
+    {
+        return $this->workspaceRole($user, $workspace) !== null;
+    }
+
     private function workspaceRole(User $user, Workspace $workspace): ?WorkspaceMemberRole
     {
         if ($workspace->owner_user_id === $user->id) {

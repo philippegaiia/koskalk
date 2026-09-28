@@ -206,6 +206,128 @@ JS], base_path());
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
+it('keeps blank packaging prices incomplete through editing and output capture until persistence', function (): void {
+    $process = new Process(['node', '--experimental-vm-modules', '--input-type=module', '--eval', <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+
+const modules = new Map();
+function loadModule(filename) {
+    filename = path.resolve(filename);
+    if (!modules.has(filename)) {
+        modules.set(filename, new vm.SourceTextModule(fs.readFileSync(filename, 'utf8'), { identifier: filename }));
+    }
+    return modules.get(filename);
+}
+async function evaluate(filename) {
+    const entry = loadModule(filename);
+    if (entry.status === 'unlinked') {
+        await entry.link((specifier, referencing) => {
+            const target = path.resolve(path.dirname(referencing.identifier), specifier);
+            return loadModule(path.extname(target) ? target : `${target}.js`);
+        });
+    }
+    if (entry.status === 'linked') {
+        await entry.evaluate();
+    }
+    return entry;
+}
+
+const costing = await evaluate('resources/js/recipe-workbench/sections/costing-section.js');
+const outputs = await evaluate('resources/js/recipe-workbench/outputs.js');
+const payload = loadModule('resources/js/recipe-workbench/payload.js');
+const section = costing.namespace.createCostingSection({});
+let saveRequests = 0;
+const state = {
+    formulaName: 'Test soap',
+    oilUnit: 'g',
+    oilWeight: 1000,
+    manufacturingMode: 'blend_only',
+    exposureMode: 'leave_on',
+    regulatoryRegime: 'eu',
+    editMode: 'percentage',
+    lyeType: 'naoh',
+    kohPurity: 90,
+    dualKohPercentage: 40,
+    waterMode: 'percent_of_oils',
+    waterValue: 0,
+    superfat: 0,
+    ifraCategorySelectionMode: 'automatic',
+    selectedIfraProductCategoryId: '',
+    finalIngredientList: '',
+    finalIngredientListBasisHash: '',
+    finalPlainIngredientList: '',
+    finalPlainIngredientListBasisHash: '',
+    phaseOrder: [],
+    phaseItems: {},
+    packagingPlanRows: [{ packaging_item_id: 7, name: 'Jar', components_per_unit: 1 }],
+    productionOutputType: 'finished_product',
+    outputIngredientId: '',
+    costingOilWeight: 1000,
+    costingOilUnit: 'g',
+    costingUnitsProduced: 2,
+    costingCurrency: 'EUR',
+    costingFormulaRows: [],
+    costingPriceByRowId: {},
+    persistedCostingItemPrices: [],
+    costingSignature: () => '',
+    displayPriceFromPerKg: (value) => value,
+    packagingCostRows: [],
+    hasLoadedCosting: true,
+    defaultCurrency: 'EUR',
+    makeLocalPackagingRowId: () => 'local-package',
+    canonicalPricePerKg: () => null,
+    scheduleCostingSave() { saveRequests++; },
+};
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(section));
+state.scheduleCostingSave = () => { saveRequests++; };
+
+section.applyCostingPayload.call(state, {
+    packaging_items: [{ packaging_item_id: 7, name: 'Jar', unit_cost: null, components_per_unit: 1 }],
+});
+const row = state.packagingCostRows[0];
+assert.equal(row.unit_cost, null);
+
+section.updatePackagingUnitCost.call(state, row, '');
+assert.equal(row.unit_cost, null);
+assert.equal(saveRequests, 1);
+assert.equal(section.packagingCostPerFinishedUnitForRow.call(state, row), null);
+assert.equal(section.packagingBatchCostForRow.call(state, row), null);
+assert.equal(state.packagingCostTotal, null);
+assert.equal(state.totalBatchCost, null);
+assert.equal(state.costPerUnit, null);
+
+const captured = await outputs.namespace.captureRecipeWorkbenchOutput(state, { productFamily: 'soap' }, {
+    kind: 'costing',
+    format: 'xlsx',
+    printContext: 'costing',
+});
+assert.equal(captured.costing.packaging_items[0].unit_cost, null);
+assert.equal(payload.namespace.serializeCosting(state).packaging_items[0].unit_cost, 0);
+
+section.updatePackagingUnitCost.call(state, row, '0');
+assert.equal(row.unit_cost, 0);
+assert.equal(section.packagingCostPerFinishedUnitForRow.call(state, row), 0);
+assert.equal(section.packagingBatchCostForRow.call(state, row), 0);
+assert.equal(state.packagingCostTotal, 0);
+assert.equal(state.totalBatchCost, 0);
+assert.equal(state.costPerUnit, 0);
+assert.equal(payload.namespace.serializeCosting(state).packaging_items[0].unit_cost, 0);
+JS], base_path());
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+
+    $costingTab = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
+
+    expect($costingTab)
+        ->toContain('packagingCostPerFinishedUnitForRow(row) === null ? \'\' : format(packagingCostPerFinishedUnitForRow(row), 2)')
+        ->toContain('t(\'costing.summary.prices_required\')');
+});
+
 it('keeps output transport read only and gives translated feedback for failures and downloads', function (): void {
     $process = new Process(['node', '--experimental-vm-modules', '--input-type=module', '--eval', <<<'JS'
 import assert from 'node:assert/strict';

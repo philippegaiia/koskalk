@@ -853,7 +853,7 @@ it('keeps currency in the packaging headers and out of the packaging cells', fun
     expect($costingTab)
         ->toContain('x-text="t(\'costing.packaging.cost_per_unit\', { currency: costingCurrency })"')
         ->toContain('x-text="t(\'costing.packaging.batch_cost\', { currency: costingCurrency })"')
-        ->toContain('x-text="format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>')
+        ->toContain('x-text="packagingCostPerFinishedUnitForRow(row) === null ? \'\' : format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>')
         ->not->toContain('<span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))"')
         ->not->toContain('<span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingBatchCostForRow(row))"');
 });

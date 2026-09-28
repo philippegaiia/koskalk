@@ -37176,6 +37176,18 @@
     },
     {
       "group": "workbench",
+      "key": "costing.summary.prices_required",
+      "text": {
+        "de": "Gib für jedes Verpackungsteil einen Preis ein",
+        "es": "Introduce un precio para cada artículo de embalaje",
+        "fr": "Ajoutez un prix pour chaque élément de conditionnement",
+        "it": "Inserisci un prezzo per ogni articolo di confezionamento",
+        "nl": "Voer een prijs in voor elk verpakkingsonderdeel",
+        "pt_BR": "Informe um preço para cada item de embalagem"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.summary.title",
       "text": {
         "de": "Kostenübersicht",

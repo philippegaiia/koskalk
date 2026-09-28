@@ -356,6 +356,7 @@ return [
             'total_batch_cost' => 'Total batch cost',
             'cost_per_unit' => 'Cost per unit',
             'enter_finished_units' => 'Enter finished units',
+            'prices_required' => 'Add a price for each packaging item',
         ],
         'accessibility' => [
             'price_for' => 'Price per :unit for :item',

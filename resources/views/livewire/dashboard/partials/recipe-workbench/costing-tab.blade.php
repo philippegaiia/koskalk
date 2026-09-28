@@ -181,10 +181,11 @@
  class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))" x-text="format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))" x-text="packagingCostPerFinishedUnitForRow(row) === null ? '' : format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>
  <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]">
-     <template x-if="costingUnitsProducedValue > 0"><span class="sk-decimal-aligned inline-flex" :style="decimalAlignmentStyle(packagingBatchCostForRow(row))" x-text="format(packagingBatchCostForRow(row), 2)"></span></template>
+     <template x-if="costingUnitsProducedValue > 0 && packagingBatchCostForRow(row) !== null"><span class="sk-decimal-aligned inline-flex" :style="decimalAlignmentStyle(packagingBatchCostForRow(row))" x-text="format(packagingBatchCostForRow(row), 2)"></span></template>
      <template x-if="costingUnitsProducedValue <= 0"><span x-text="t('costing.summary.enter_finished_units')"></span></template>
+     <template x-if="costingUnitsProducedValue > 0 && packagingBatchCostForRow(row) === null"><span x-text="t('costing.summary.prices_required')"></span></template>
  </div>
  </div>
  </template>
@@ -207,15 +208,15 @@
  </div>
  <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">{{ __('workbench.costing.summary.packaging') }}</span>
- <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="packagingCostTotal !== null ? `${costingCurrency} ${format(packagingCostTotal, 2)}` : t('costing.summary.enter_finished_units')"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="packagingCostTotal !== null ? `${costingCurrency} ${format(packagingCostTotal, 2)}` : (costingUnitsProducedValue > 0 && hasUnpricedPackagingRows ? t('costing.summary.prices_required') : t('costing.summary.enter_finished_units'))"></span>
  </div>
  <div class="flex items-center justify-between rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-panel-strong)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-strong)]">{{ __('workbench.costing.summary.total_batch_cost') }}</span>
- <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="totalBatchCost !== null ? `${costingCurrency} ${format(totalBatchCost, 2)}` : t('costing.summary.enter_finished_units')"></span>
+ <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="totalBatchCost !== null ? `${costingCurrency} ${format(totalBatchCost, 2)}` : (costingUnitsProducedValue > 0 && hasUnpricedPackagingRows ? t('costing.summary.prices_required') : t('costing.summary.enter_finished_units'))"></span>
  </div>
  <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">{{ __('workbench.costing.summary.cost_per_unit') }}</span>
- <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(costPerUnit, 2)}` : t('costing.summary.enter_finished_units')"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? (costPerUnit !== null ? `${costingCurrency} ${format(costPerUnit, 2)}` : t('costing.summary.prices_required')) : t('costing.summary.enter_finished_units')"></span>
  </div>
  </div>
  </section>

@@ -447,7 +447,7 @@ export function createCostingSection(payload) {
 
         updatePackagingUnitCost(row, value) {
             row.unit_cost = `${value}`.trim() === ''
-                ? 0
+                ? null
                 : roundTo(parseDecimalInput(value), 4);
 
             this.scheduleCostingSave();
@@ -478,7 +478,9 @@ export function createCostingSection(payload) {
         },
 
         get packagingCostTotal() {
-            if (this.displayedPackagingCostRows.length === 0) {
+            const rows = this.displayedPackagingCostRows;
+
+            if (rows.length === 0) {
                 return 0;
             }
 
@@ -486,14 +488,22 @@ export function createCostingSection(payload) {
                 return null;
             }
 
-            return this.displayedPackagingCostRows.reduce((total, row) => {
+            if (rows.some((row) => !this.hasKnownPackagingUnitCost(row))) {
+                return null;
+            }
+
+            return rows.reduce((total, row) => {
                 return total + this.packagingBatchCostForRow(row);
             }, 0);
         },
 
+        get hasUnpricedPackagingRows() {
+            return this.displayedPackagingCostRows.some((row) => !this.hasKnownPackagingUnitCost(row));
+        },
+
         /**
          * Before the first save no costing payload exists, so the live packaging
-         * plan stands in for the saved costing rows; prices start at zero and
+         * plan stands in for the saved costing rows; prices start unpriced and
          * persistence stays blocked by the existing "save product first" guard.
          */
         get displayedPackagingCostRows() {
@@ -506,7 +516,7 @@ export function createCostingSection(payload) {
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
                 material_code: row.material_code ?? null,
-                unit_cost: 0,
+                unit_cost: null,
                 quantity: nonNegativeNumber(row.components_per_unit),
                 isUnsavedPlanRow: true,
             }));
@@ -533,13 +543,30 @@ export function createCostingSection(payload) {
         },
 
         get costPerUnit() {
-            return this.costingUnitsProducedValue > 0
-                ? this.totalBatchCost / this.costingUnitsProducedValue
-                : 0;
+            if (this.costingUnitsProducedValue <= 0) {
+                return 0;
+            }
+
+            return this.totalBatchCost === null
+                ? null
+                : this.totalBatchCost / this.costingUnitsProducedValue;
         },
 
         packagingCostPerFinishedUnitForRow(row) {
+            if (!this.hasKnownPackagingUnitCost(row)) {
+                return null;
+            }
+
             return nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity);
+        },
+
+        hasKnownPackagingUnitCost(row) {
+            return row !== null
+                && typeof row === 'object'
+                && Object.hasOwn(row, 'unit_cost')
+                && row.unit_cost !== null
+                && row.unit_cost !== ''
+                && row.unit_cost !== undefined;
         },
 
         /** Packaging counts default to whole units; decimals appear only when present. */
@@ -556,7 +583,11 @@ export function createCostingSection(payload) {
         },
 
         packagingBatchCostForRow(row) {
-            return this.packagingCostPerFinishedUnitForRow(row) * this.costingUnitsProducedValue;
+            const costPerUnit = this.packagingCostPerFinishedUnitForRow(row);
+
+            return costPerUnit === null
+                ? null
+                : costPerUnit * this.costingUnitsProducedValue;
         },
 
         scheduleCostingSave() {

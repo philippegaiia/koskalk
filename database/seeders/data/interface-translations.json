@@ -2664,6 +2664,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "validation.output_instructions_invalid",
+      "text": {
+        "de": "Der Verfahrensinhalt ist ungültig. Lade den Workbench neu und versuche es erneut.",
+        "es": "El contenido del procedimiento no es válido. Recarga el área de trabajo e inténtalo de nuevo.",
+        "fr": "Le contenu de la procédure est invalide. Rechargez l’atelier puis réessayez.",
+        "it": "Il contenuto della procedura non è valido. Ricarica il banco di lavoro e riprova.",
+        "nl": "De procedure-inhoud is ongeldig. Laad de werkbank opnieuw en probeer het nog eens.",
+        "pt_BR": "O conteúdo do procedimento é inválido. Recarregue a bancada e tente novamente."
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "validation.output_kind_unavailable",
       "text": {
         "de": "Kosten- und Zusammensetzungsausgaben sind noch nicht verfügbar.",

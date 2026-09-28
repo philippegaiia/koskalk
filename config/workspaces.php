@@ -13,4 +13,8 @@ return [
         'formula_rows' => 1_000,
         'payload_bytes' => 2 * 1024 * 1024,
     ],
+    'list_output_limits' => [
+        'max_rows' => 50_000,
+        'chunk_size' => 500,
+    ],
 ];

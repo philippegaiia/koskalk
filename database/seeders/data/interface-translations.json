@@ -12000,6 +12000,390 @@
     },
     {
       "group": "ingredients",
+      "key": "exports.columns.category",
+      "text": {
+        "de": "Kategorie",
+        "es": "Categoría",
+        "fr": "Catégorie",
+        "it": "Categoria",
+        "nl": "Categorie",
+        "pt_BR": "Categoria"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.currency",
+      "text": {
+        "de": "Währung",
+        "es": "Moneda",
+        "fr": "Devise",
+        "it": "Valuta",
+        "nl": "Valuta",
+        "pt_BR": "Moeda"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.generated_at",
+      "text": {
+        "de": "Export erstellt",
+        "es": "Exportación generada",
+        "fr": "Export généré",
+        "it": "Esportazione generata",
+        "nl": "Export gegenereerd",
+        "pt_BR": "Exportação gerada"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.inci_name",
+      "text": {
+        "de": "Erfasste INCI",
+        "es": "INCI registrado",
+        "fr": "INCI enregistré",
+        "it": "INCI registrato",
+        "nl": "Geregistreerde INCI",
+        "pt_BR": "INCI registrado"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.material_code",
+      "text": {
+        "de": "Materialcode",
+        "es": "Código de material",
+        "fr": "Code matière",
+        "it": "Codice materiale",
+        "nl": "Materiaalcode",
+        "pt_BR": "Código do material"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.name",
+      "text": {
+        "de": "Zutat",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.ownership_filter",
+      "text": {
+        "de": "Eigentumsfilter",
+        "es": "Filtro de propiedad",
+        "fr": "Filtre de propriété",
+        "it": "Filtro di proprietà",
+        "nl": "Eigenaarschapsfilter",
+        "pt_BR": "Filtro de propriedade"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.price",
+      "text": {
+        "de": "Aktueller Preis (:currency / :unit)",
+        "es": "Precio actual (:currency / :unit)",
+        "fr": "Prix actuel (:currency / :unit)",
+        "it": "Prezzo attuale (:currency / :unit)",
+        "nl": "Huidige prijs (:currency / :unit)",
+        "pt_BR": "Preço atual (:currency / :unit)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.price_unit",
+      "text": {
+        "de": "Preiseinheit",
+        "es": "Unidad de precio",
+        "fr": "Unité de prix",
+        "it": "Unità di prezzo",
+        "nl": "Prijseenheid",
+        "pt_BR": "Unidade de preço"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.recorded_at",
+      "text": {
+        "de": "Preis erfasst am",
+        "es": "Precio registrado el",
+        "fr": "Prix enregistré le",
+        "it": "Prezzo registrato il",
+        "nl": "Prijs geregistreerd op",
+        "pt_BR": "Preço registrado em"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.search_filter",
+      "text": {
+        "de": "Suchfilter",
+        "es": "Filtro de búsqueda",
+        "fr": "Filtre de recherche",
+        "it": "Filtro di ricerca",
+        "nl": "Zoekfilter",
+        "pt_BR": "Filtro de busca"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.sort_direction",
+      "text": {
+        "de": "Sortierrichtung",
+        "es": "Dirección del orden",
+        "fr": "Sens du tri",
+        "it": "Direzione ordinamento",
+        "nl": "Sorteerrichting",
+        "pt_BR": "Direção da ordenação"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.sort_field",
+      "text": {
+        "de": "Sortiert nach",
+        "es": "Ordenar por",
+        "fr": "Trié par",
+        "it": "Ordinato per",
+        "nl": "Gesorteerd op",
+        "pt_BR": "Ordenado por"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.source_workspace",
+      "text": {
+        "de": "Arbeitsbereich",
+        "es": "Espacio de trabajo",
+        "fr": "Espace de travail",
+        "it": "Area di lavoro",
+        "nl": "Werkruimte",
+        "pt_BR": "Espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.columns.subcategory",
+      "text": {
+        "de": "Unterkategorie",
+        "es": "Subcategoría",
+        "fr": "Sous-catégorie",
+        "it": "Sottocategoria",
+        "nl": "Subcategorie",
+        "pt_BR": "Subcategoria"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filename",
+      "text": {
+        "de": "zutaten-preisliste",
+        "es": "lista-precios-ingredientes",
+        "fr": "tarifs-ingredients",
+        "it": "listino-prezzi-ingredienti",
+        "nl": "ingredienten-prijslijst",
+        "pt_BR": "tabela-precos-ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.asc",
+      "text": {
+        "de": "Aufsteigend",
+        "es": "Ascendente",
+        "fr": "Croissant",
+        "it": "Crescente",
+        "nl": "Oplopend",
+        "pt_BR": "Crescente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.category",
+      "text": {
+        "de": "Kategorie",
+        "es": "Categoría",
+        "fr": "Catégorie",
+        "it": "Categoria",
+        "nl": "Categorie",
+        "pt_BR": "Categoria"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.desc",
+      "text": {
+        "de": "Absteigend",
+        "es": "Descendente",
+        "fr": "Décroissant",
+        "it": "Decrescente",
+        "nl": "Aflopend",
+        "pt_BR": "Decrescente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.direction",
+      "text": {
+        "de": "Sortierrichtung",
+        "es": "Dirección del orden",
+        "fr": "Sens du tri",
+        "it": "Direzione ordinamento",
+        "nl": "Sorteerrichting",
+        "pt_BR": "Direção da ordenação"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.display_name",
+      "text": {
+        "de": "Zutatenname",
+        "es": "Nombre del ingrediente",
+        "fr": "Nom de l’ingrédient",
+        "it": "Nome ingrediente",
+        "nl": "Ingrediëntnaam",
+        "pt_BR": "Nome do ingrediente"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.generated_at",
+      "text": {
+        "de": "Export erstellt",
+        "es": "Exportación generada",
+        "fr": "Export généré",
+        "it": "Esportazione generata",
+        "nl": "Export gegenereerd",
+        "pt_BR": "Exportação gerada"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.ownership",
+      "text": {
+        "de": "Eigentum",
+        "es": "Propiedad",
+        "fr": "Propriété",
+        "it": "Proprietà",
+        "nl": "Eigendom",
+        "pt_BR": "Propriedade"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.search",
+      "text": {
+        "de": "Suche",
+        "es": "Búsqueda",
+        "fr": "Recherche",
+        "it": "Ricerca",
+        "nl": "Zoeken",
+        "pt_BR": "Busca"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.sorted_by",
+      "text": {
+        "de": "Sortiert nach",
+        "es": "Ordenar por",
+        "fr": "Trié par",
+        "it": "Ordinato per",
+        "nl": "Gesorteerd op",
+        "pt_BR": "Ordenado por"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.filters.source",
+      "text": {
+        "de": "Arbeitsbereich",
+        "es": "Espacio de trabajo",
+        "fr": "Espace de travail",
+        "it": "Area di lavoro",
+        "nl": "Werkruimte",
+        "pt_BR": "Espaço de trabalho"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.sheet_name",
+      "text": {
+        "de": "Zutaten",
+        "es": "Ingredientes",
+        "fr": "Ingrédients",
+        "it": "Ingredienti",
+        "nl": "Ingrediënten",
+        "pt_BR": "Ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.title",
+      "text": {
+        "de": "Zutatenpreisliste",
+        "es": "Lista de precios de ingredientes",
+        "fr": "Tarifs des ingrédients",
+        "it": "Listino prezzi ingredienti",
+        "nl": "Ingrediëntenprijslijst",
+        "pt_BR": "Tabela de preços de ingredientes"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.validation.changed",
+      "text": {
+        "de": "Die Zutatenliste hat sich während des Exports geändert. Grenzen Sie die Filter ein und versuchen Sie es erneut.",
+        "es": "La lista de ingredientes cambió durante la exportación. Restrinja los filtros e inténtelo de nuevo.",
+        "fr": "La liste des ingrédients a changé pendant l’export. Affinez les filtres, puis réessayez.",
+        "it": "L’elenco degli ingredienti è cambiato durante l’esportazione. Restringi i filtri e riprova.",
+        "nl": "De ingrediëntenlijst is tijdens het exporteren gewijzigd. Verfijn de filters en probeer het opnieuw.",
+        "pt_BR": "A lista de ingredientes mudou durante a exportação. Refine os filtros e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.validation.empty",
+      "text": {
+        "de": "Keine Zutaten entsprechen diesen Filtern. Ändern Sie die Suche oder den Filter und versuchen Sie es erneut.",
+        "es": "Ningún ingrediente coincide con estos filtros. Cambie la búsqueda o el filtro e inténtelo de nuevo.",
+        "fr": "Aucun ingrédient ne correspond à ces filtres. Modifiez la recherche ou le filtre, puis réessayez.",
+        "it": "Nessun ingrediente corrisponde a questi filtri. Modifica la ricerca o il filtro e riprova.",
+        "nl": "Geen ingrediënten voldoen aan deze filters. Pas de zoekopdracht of het filter aan en probeer het opnieuw.",
+        "pt_BR": "Nenhum ingrediente corresponde a estes filtros. Altere a busca ou o filtro e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.validation.too_many",
+      "text": {
+        "de": "Dieser Export überschreitet das Zutatenlimit von :limit. Grenzen Sie die Suche oder Filter ein und versuchen Sie es erneut.",
+        "es": "Esta exportación supera el límite de :limit ingredientes. Restrinja la búsqueda o los filtros e inténtelo de nuevo.",
+        "fr": "Cet export dépasse la limite de :limit ingrédients. Affinez la recherche ou les filtres, puis réessayez.",
+        "it": "Questa esportazione supera il limite di :limit ingredienti. Restringi la ricerca o i filtri e riprova.",
+        "nl": "Deze export overschrijdt de limiet van :limit ingrediënten. Verfijn de zoekopdracht of filters en probeer het opnieuw.",
+        "pt_BR": "Esta exportação excede o limite de :limit ingredientes. Refine a busca ou os filtros e tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.validation.workspace_changed",
+      "text": {
+        "de": "Der aktive Arbeitsbereich hat sich geändert. Laden Sie die Zutatenliste vor dem Export neu.",
+        "es": "El espacio de trabajo activo cambió. Vuelva a cargar la lista de ingredientes antes de exportar.",
+        "fr": "L’espace de travail actif a changé. Rechargez la liste des ingrédients avant l’export.",
+        "it": "L’area di lavoro attiva è cambiata. Ricarica l’elenco degli ingredienti prima di esportare.",
+        "nl": "De actieve werkruimte is gewijzigd. Laad de ingrediëntenlijst opnieuw voordat u exporteert.",
+        "pt_BR": "O espaço de trabalho ativo mudou. Recarregue a lista de ingredientes antes de exportar."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "filters.all",
       "text": {
         "de": "Alle",

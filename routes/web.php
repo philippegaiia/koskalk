@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HelpContentExportDownloadController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\IngredientExportController;
 use App\Http\Controllers\LocalePreferenceController;
 use App\Http\Controllers\MediaAssetController;
 use App\Http\Controllers\MediaAssetDownloadController;
@@ -154,6 +155,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('ingredients.')
         ->group(function (): void {
             Route::get('/', 'index')->name('index');
+            Route::get('/export', IngredientExportController::class)
+                ->middleware('throttle:workspace-exports')
+                ->name('export');
             Route::get('/new', 'create')->name('create');
             Route::post('/update-price', 'updatePrice')->name('update-price');
             Route::get('/search-platform', 'searchPlatform')->name('search-platform');

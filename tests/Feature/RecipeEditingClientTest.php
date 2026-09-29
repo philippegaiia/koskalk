@@ -267,3 +267,54 @@ JS;
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('uses secure random bytes for editing on browsers without randomUUID', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+Object.defineProperty(globalThis, 'crypto', { configurable: true, value: {
+    getRandomValues: webcrypto.getRandomValues.bind(webcrypto),
+} });
+const payload = { canPersist: true, recipe: { id: 1 }, editing: {} };
+const first = createEditingSection(payload);
+const second = createEditingSection(payload);
+assert.match(first.editingToken, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+assert.notEqual(first.editingToken, second.editingToken);
+let sentToken;
+Object.assign(first, { t: key => key, $wire: { async beginEditing(token) {
+    sentToken = token;
+    return { ok: true, editing: { status: 'acquired' } };
+} } });
+await first.retryEditing();
+assert.equal(sentToken, first.editingToken);
+assert.equal(first.editingStatus, 'acquired');
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('never sends missing tokens on retry or takeover when browser crypto is unavailable', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+Object.defineProperty(globalThis, 'crypto', { configurable: true, value: undefined });
+let calls = 0;
+const workbench = Object.assign(createEditingSection({ canPersist: true, recipe: { id: 1 }, editing: { can_take_over: true } }), {
+    t: key => key,
+    $wire: { async beginEditing() { calls++; }, async takeoverEditing() { calls++; } },
+});
+await workbench.retryEditing();
+assert.equal(calls, 0);
+assert.equal(workbench.editingMessage, 'editing.token_unavailable');
+workbench.editingStatus = 'blocked';
+workbench.editingTakeoverReason = 'Recover editing';
+await workbench.confirmEditingTakeover();
+assert.equal(calls, 0);
+assert.equal(workbench.canTakeOverEditing, false);
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

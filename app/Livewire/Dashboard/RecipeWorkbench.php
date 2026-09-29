@@ -167,10 +167,10 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     /** @return array<string, mixed> */
     #[Renderless]
-    public function beginEditing(string $token): array
+    public function beginEditing(?string $token): array
     {
         return $this->editingAction(function (Recipe $recipe, User $user, RecipeEditingService $editing) use ($token): array {
-            $state = $editing->acquire($recipe, $user, $token);
+            $state = $editing->acquire($recipe, $user, $token ?? '');
             if ($state['status'] === 'acquired') {
                 $this->editingToken = $token;
             }
@@ -207,10 +207,10 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     /** @return array<string, mixed> */
     #[Renderless]
-    public function takeoverEditing(string $token, string $reason): array
+    public function takeoverEditing(?string $token, string $reason): array
     {
         return $this->editingAction(function (Recipe $recipe, User $user, RecipeEditingService $editing) use ($token, $reason): array {
-            $state = $editing->takeover($recipe, $user, $token, $reason);
+            $state = $editing->takeover($recipe, $user, $token ?? '', $reason);
             $this->editingToken = $token;
 
             return $state;

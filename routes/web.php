@@ -34,14 +34,14 @@ Route::post('/workspace-invitations/{token}', [WorkspaceInvitationAcceptanceCont
     ->middleware('throttle:10,1')
     ->name('workspace-invitations.accept');
 
-Route::middleware('guest')->group(function (): void {
-    Route::get('/invite/{token}', [BetaInviteAcceptanceController::class, 'show'])
-        ->middleware('throttle:20,1')
-        ->name('beta-invites.show');
-    Route::post('/invite/{token}', [BetaInviteAcceptanceController::class, 'accept'])
-        ->middleware('throttle:beta-invite-accept')
-        ->name('beta-invites.accept');
+Route::get('/invite/{token}', [BetaInviteAcceptanceController::class, 'show'])
+    ->middleware('throttle:20,1')
+    ->name('beta-invites.show');
+Route::post('/invite/{token}', [BetaInviteAcceptanceController::class, 'accept'])
+    ->middleware('throttle:beta-invite-accept')
+    ->name('beta-invites.accept');
 
+Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:5,1');

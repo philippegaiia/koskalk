@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BetaInvite;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Notifications\BetaWorkspaceInvitation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -45,14 +46,19 @@ class BetaInviteService
         $expiresAt = now()->addDays(self::EXPIRY_DAYS);
 
         $invite = DB::transaction(function () use ($administrator, $email, $expiresAt, $token, $workspaceName): BetaInvite {
+            $recipient = User::query()->whereRaw('LOWER(email) = ?', [$email])->lockForUpdate()->first();
+            if ($recipient !== null) {
+                $this->assertDoesNotOwnCompany($recipient);
+            }
+
             $invite = BetaInvite::query()
                 ->where('email', $email)
                 ->lockForUpdate()
                 ->first();
 
-            if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists() || $invite?->accepted_at !== null) {
+            if ($invite?->accepted_at !== null) {
                 throw ValidationException::withMessages([
-                    'email' => 'This email address already has an account.',
+                    'email' => __('auth.beta_invitation.validation.already_accepted'),
                 ]);
             }
 
@@ -92,15 +98,16 @@ class BetaInviteService
     }
 
     /**
-     * @param  array{name: string, password: string}  $attributes
+     * @param  array{name?: string, password?: string}  $attributes
      */
-    public function accept(string $token, array $attributes): ?User
+    public function accept(string $token, array $attributes, ?User $user = null): ?User
     {
         if (! ctype_xdigit($token) || strlen($token) !== 64) {
             return null;
         }
 
-        return DB::transaction(function () use ($attributes, $token): ?User {
+        return DB::transaction(function () use ($attributes, $token, $user): ?User {
+            $user = $user === null ? null : User::query()->lockForUpdate()->findOrFail($user->id);
             $invite = BetaInvite::query()
                 ->where('token_hash', hash('sha256', $token))
                 ->lockForUpdate()
@@ -110,26 +117,39 @@ class BetaInviteService
                 return null;
             }
 
-            if (User::query()->whereRaw('LOWER(email) = ?', [$invite->email])->exists()) {
-                throw ValidationException::withMessages([
-                    'email' => 'This email address already has an account.',
-                ]);
-            }
+            if ($user !== null) {
+                abort_unless($user->hasVerifiedEmail() && Str::lower(trim($user->email)) === $invite->email, 403);
+                $this->assertDoesNotOwnCompany($user);
+            } else {
+                if (User::query()->whereRaw('LOWER(email) = ?', [$invite->email])->exists()) {
+                    throw ValidationException::withMessages(['email' => __('workspaces.validation.sign_in')]);
+                }
 
-            $user = User::query()->create([
-                'name' => $attributes['name'],
-                'email' => $invite->email,
-                'password' => $attributes['password'],
-            ]);
-            $user->forceFill(['email_verified_at' => now()])->save();
+                $user = User::query()->create([
+                    'name' => $attributes['name'],
+                    'email' => $invite->email,
+                    'password' => $attributes['password'],
+                ]);
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
 
             $workspace = $this->workspaceProvisioner->ensureOwnerWorkspace($user, $invite->workspace_name);
             $this->entitlementService->assignBetaPlan($user);
             $this->workspaceCapabilities->provisionProductionBench($workspace);
+            $this->workspaceProvisioner->activateWorkspace($user, $workspace);
 
             $invite->forceFill(['accepted_at' => now()])->save();
 
             return $user;
         });
+    }
+
+    private function assertDoesNotOwnCompany(User $user): void
+    {
+        if (Workspace::withoutGlobalScopes()->where('owner_user_id', $user->id)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => __('auth.beta_invitation.validation.already_owner'),
+            ]);
+        }
     }
 }

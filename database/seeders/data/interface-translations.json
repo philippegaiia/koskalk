@@ -708,6 +708,30 @@
     },
     {
       "group": "auth",
+      "key": "beta_invitation.validation.already_accepted",
+      "text": {
+        "de": "Diese Beta-Einladung wurde bereits angenommen.",
+        "es": "Esta invitación beta ya ha sido aceptada.",
+        "fr": "Cette invitation bêta a déjà été acceptée.",
+        "it": "Questo invito beta è già stato accettato.",
+        "nl": "Deze bèta-uitnodiging is al geaccepteerd.",
+        "pt_BR": "Este convite beta já foi aceito."
+      }
+    },
+    {
+      "group": "auth",
+      "key": "beta_invitation.validation.already_owner",
+      "text": {
+        "de": "Dieses Konto besitzt bereits ein Unternehmen. Ein zweites eigenes Unternehmen ist noch nicht verfügbar.",
+        "es": "Esta cuenta ya tiene una empresa propia. Todavía no se puede tener una segunda empresa propia.",
+        "fr": "Ce compte possède déjà une entreprise. La création d’une deuxième entreprise n’est pas encore disponible.",
+        "it": "Questo account possiede già un’azienda. Una seconda azienda di proprietà non è ancora disponibile.",
+        "nl": "Dit account heeft al een eigen bedrijf. Een tweede eigen bedrijf is nog niet beschikbaar.",
+        "pt_BR": "Esta conta já possui uma empresa. Ainda não é possível ter uma segunda empresa própria."
+      }
+    },
+    {
+      "group": "auth",
       "key": "login.email",
       "text": {
         "de": "E-Mail",

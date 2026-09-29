@@ -186,15 +186,16 @@ it('rate limits invalid invitation acceptance attempts by IP address', function 
     ])->assertTooManyRequests();
 });
 
-it('does not issue beta invitations to an existing account', function () {
+it('does not issue beta invitations to an existing company owner', function () {
     $administrator = User::factory()->create(['is_admin' => true]);
-    User::factory()->create(['email' => 'existing@example.com']);
+    $owner = User::factory()->create(['email' => 'existing@example.com']);
+    Workspace::factory()->for($owner, 'owner')->create();
 
     expect(fn () => app(BetaInviteService::class)->issue(
         $administrator,
         'existing@example.com',
         'Existing Studio',
-    ))->toThrow(ValidationException::class, 'already has an account');
+    ))->toThrow(ValidationException::class, 'already owns a company');
 });
 
 it('renders the beta invitation page from localized database copy and escapes placeholders', function () {
@@ -255,4 +256,95 @@ it('renders beta invitation email copy from localized database overrides', funct
         ->and($html)->toContain('Créer mon espace de travail')
         ->and($html)->toContain('Cette invitation expire')
         ->and($html)->toContain('Ignorez ce message si vous ne l’attendiez pas.');
+});
+
+it('creates the first owned company for an existing member without changing their identity or membership', function (): void {
+    Notification::fake();
+    $administrator = User::factory()->admin()->create();
+    $company = Workspace::factory()->for($administrator, 'owner')->create();
+    $member = User::factory()->create(['active_workspace_id' => $company->id]);
+    WorkspaceMember::factory()->create(['workspace_id' => $company->id, 'user_id' => $member->id, 'role' => WorkspaceMemberRole::Editor]);
+    $originalPassword = $member->password;
+    $plan = Plan::factory()->create(['slug' => 'free-beta', 'allows_production_bench' => true]);
+    $token = app(BetaInviteService::class)->issue($administrator, $member->email, 'Independent company');
+    $this->actingAs($member);
+
+    $this->get(route('beta-invites.show', $token))->assertOk()->assertDontSee('name="password"', false);
+    $this->post(route('beta-invites.accept', $token), ['name' => 'Overwrite attempt', 'password' => 'Overwrite attempt'])
+        ->assertRedirect(route('dashboard'));
+
+    $owned = Workspace::withoutGlobalScopes()->where('owner_user_id', $member->id)->sole();
+    expect($owned->name)->toBe('Independent company')
+        ->and($member->fresh()->password)->toBe($originalPassword)
+        ->and($member->fresh()->name)->toBe($member->name)
+        ->and($member->fresh()->active_workspace_id)->toBe($owned->id)
+        ->and($member->entitlements()->sole()->plan_id)->toBe($plan->id);
+    $this->assertDatabaseHas('workspace_members', ['workspace_id' => $company->id, 'user_id' => $member->id, 'role' => 'editor']);
+    expect(BetaInvite::query()->sole()->accepted_at)->not->toBeNull();
+    $this->post(route('beta-invites.accept', $token))->assertNotFound();
+    expect(Workspace::withoutGlobalScopes()->where('owner_user_id', $member->id)->count())->toBe(1);
+});
+
+it('requires the existing invited account to sign in instead of creating another password', function (): void {
+    Notification::fake();
+    $token = app(BetaInviteService::class)->issue(User::factory()->admin()->create(), 'member@example.com', 'New company');
+    $member = User::factory()->create(['email' => 'member@example.com']);
+    $password = $member->password;
+
+    $this->get(route('beta-invites.show', $token))->assertSeeText(__('auth.login.submit'))
+        ->assertDontSee('name="password"', false)
+        ->assertSessionHas('url.intended', route('beta-invites.show', $token));
+    $this->from(route('beta-invites.show', $token))->post(route('beta-invites.accept', $token), [])
+        ->assertSessionHasErrors('email');
+
+    expect($member->fresh()->password)->toBe($password)
+        ->and(BetaInvite::query()->sole()->accepted_at)->toBeNull();
+    $this->assertDatabaseCount('workspaces', 0);
+});
+
+it('rejects an authenticated wrong or unverified identity at beta acceptance', function (bool $matchingEmail): void {
+    Notification::fake();
+    $token = app(BetaInviteService::class)->issue(User::factory()->admin()->create(), 'target@example.com', 'Target company');
+    $actor = User::factory()->create(['email' => $matchingEmail ? 'target@example.com' : 'other@example.com', 'email_verified_at' => $matchingEmail ? null : now()]);
+    $this->actingAs($actor);
+
+    $this->get(route('beta-invites.show', $token))->assertOk()->assertDontSee('name="password"', false);
+    $this->post(route('beta-invites.accept', $token))->assertForbidden();
+
+    $this->assertDatabaseCount('workspaces', 0);
+    expect(BetaInvite::query()->sole()->accepted_at)->toBeNull();
+})->with([true, false]);
+
+it('rechecks company ownership when an existing member accepts a pending beta invitation', function (): void {
+    Notification::fake();
+    $member = User::factory()->create();
+    $token = app(BetaInviteService::class)->issue(User::factory()->admin()->create(), $member->email, 'Pending company');
+    $owned = Workspace::factory()->for($member, 'owner')->create();
+    $this->actingAs($member);
+
+    $this->from(route('beta-invites.show', $token))->post(route('beta-invites.accept', $token))->assertSessionHasErrors('email');
+
+    expect(Workspace::withoutGlobalScopes()->where('owner_user_id', $member->id)->sole()->id)->toBe($owned->id)
+        ->and(BetaInvite::query()->sole()->accepted_at)->toBeNull();
+    $this->assertDatabaseCount('user_entitlements', 0);
+});
+
+it('preserves an existing members account and selection when beta provisioning fails', function (): void {
+    Notification::fake();
+    $administrator = User::factory()->admin()->create();
+    $company = Workspace::factory()->for($administrator, 'owner')->create();
+    $member = User::factory()->create(['active_workspace_id' => $company->id]);
+    WorkspaceMember::factory()->create(['workspace_id' => $company->id, 'user_id' => $member->id, 'role' => WorkspaceMemberRole::Editor]);
+    $token = app(BetaInviteService::class)->issue($administrator, $member->email, 'Unavailable beta');
+    $password = $member->password;
+
+    expect(fn () => app(BetaInviteService::class)->accept($token, [], $member))
+        ->toThrow(RuntimeException::class, 'No active Free beta plan is configured.');
+
+    expect($member->fresh()->active_workspace_id)->toBe($company->id)
+        ->and($member->fresh()->password)->toBe($password)
+        ->and(BetaInvite::query()->sole()->accepted_at)->toBeNull();
+    $this->assertDatabaseCount('workspaces', 1);
+    $this->assertDatabaseCount('workspace_members', 1);
+    $this->assertDatabaseCount('user_entitlements', 0);
 });

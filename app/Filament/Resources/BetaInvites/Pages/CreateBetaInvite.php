@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CreateBetaInvite extends CreateRecord
 {
@@ -24,11 +25,17 @@ class CreateBetaInvite extends CreateRecord
 
         abort_unless($administrator instanceof User, 403);
 
-        app(BetaInviteService::class)->issue(
-            $administrator,
-            (string) $data['email'],
-            (string) $data['workspace_name'],
-        );
+        try {
+            app(BetaInviteService::class)->issue(
+                $administrator,
+                (string) $data['email'],
+                (string) $data['workspace_name'],
+            );
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(collect($exception->errors())
+                ->mapWithKeys(fn (array $messages, string $field): array => ["data.{$field}" => $messages])
+                ->all());
+        }
 
         return BetaInvite::query()
             ->where('email', Str::lower(trim((string) $data['email'])))

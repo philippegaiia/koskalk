@@ -69,3 +69,6 @@ WorkspaceSelectionService lists only actual-owned workspaces or genuine Admin/Ed
 
 ## Bulk material changes must respect formula editing guards
 Ingredient replacement/removal and packaging removal can mutate multiple formula versions indirectly. Under the material workspace transaction, FormulaMaterialMutationGuard locks affected recipes → versions → costings, rechecks fresh access, rejects permanent locks and any active editing reservation (no browser tab token is supplied), and advances recipe/costing revisions atomically. Do not rely on RecipePolicy::update alone: it deliberately does not enforce permanent locks.
+
+## Allow member accounts to become first-time company owners
+Beta owner invitations may target an existing member account that owns no company. Require the matching verified login to accept; preserve its password, identity and other memberships. Recheck ownership while locking user before invitation; at most one owned company remains the launch policy. A member invitation must still never provision ownership or an entitlement.

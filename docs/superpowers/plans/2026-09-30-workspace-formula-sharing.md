@@ -282,14 +282,14 @@ Security acceptance: insert sentinel secrets into every excluded field/relation 
 
 ### Task 5 — Resolve local ingredients without writes
 
-**Create:** `app/Services/IngredientShareResolver.php`, `app/Services/FormulaSharePreview.php`, `tests/Feature/IngredientShareResolutionTest.php`.
+**Create:** `app/Services/IngredientShareResolver.php`, `app/Services/FormulaSharePreview.php`, `app/Services/FormulaShareReferences.php`, `tests/Feature/IngredientShareResolutionTest.php`.
 
-- [ ] Cover exact repeat import, A → B → C then A → C, B → A, two modified branches, stale/deleted mappings, multiple exact candidates, same-name unrelated ingredients, previously confirmed substitutes, changes only in nested children, substituting a parent blend whose child is shared with another imported blend, substituting a dilution-liquid ingredient, and substituting into a saponification-required role.
-- [ ] Implement `IngredientShareResolver::resolve(Workspace $destination, array $graph, array $decisions): array`. Each decision references a snapshot-local key and contains only `mode` (`import`, `reuse`, `substitute`) plus an optional destination ingredient public UUID. Reject unknown keys, duplicate decisions and out-of-workspace candidates.
-- [ ] Match exact mappings, then same-lineage exact candidates. Resolve substitutes explicitly. Recompute active dependency closure after parent substitution and count only missing private nodes for quota preview.
-- [ ] Implement `FormulaSharePreview::build(User $actor, FormulaShare $share, array $decisions): array` returning display rows, technical differences, warnings, remaining decisions and an expected hash. Bind the hash to the share snapshot, recipient workspace, chosen local technical states, the technical state of the platform ingredients and reference rows actually used by this share (including their dependencies), and decisions — an unrelated catalogue edit must not invalidate a preview. Keep trust/lineage fields server-side.
-- [ ] Ensure preview performs no writes, never updates existing local material data, never reveals unrelated candidates and never probes another workspace through lineage IDs.
-- [ ] Run `php artisan test --compact tests/Feature/IngredientShareResolutionTest.php`, Pint and commit.
+- [x] Cover exact repeat import, A → B → C then A → C, B → A, two modified branches, stale/deleted mappings, multiple exact candidates, same-name unrelated ingredients, previously confirmed substitutes, changes only in nested children, substituting a parent blend whose child is shared with another imported blend, substituting a dilution-liquid ingredient, and substituting into a saponification-required role.
+- [x] Implement `IngredientShareResolver::resolve(Workspace $destination, array $graph, array $decisions): array`. Each decision references a snapshot-local key and contains only `mode` (`import`, `reuse`, `substitute`) plus an optional destination ingredient public UUID. Reject unknown keys, duplicate decisions and out-of-workspace candidates.
+- [x] Match exact mappings, then same-lineage exact candidates. Resolve substitutes explicitly. Recompute active dependency closure after parent substitution and count only missing private nodes for quota preview.
+- [x] Implement `FormulaSharePreview::build(User $actor, FormulaShare $share, array $decisions): array` returning display rows, technical differences, warnings, remaining decisions and an expected hash. Bind the hash to the share snapshot, recipient workspace, chosen local technical states, the technical state of the platform ingredients and reference rows actually used by this share (including their dependencies), and decisions — an unrelated catalogue edit must not invalidate a preview. Keep trust/lineage fields server-side.
+- [x] Ensure preview performs no writes, never updates existing local material data, never reveals unrelated candidates and never probes another workspace through lineage IDs.
+- [x] Run `php artisan test --compact tests/Feature/IngredientShareResolutionTest.php`, Pint and commit.
 
 ### Task 6 — Import private technical material faithfully
 

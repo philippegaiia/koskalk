@@ -25,6 +25,15 @@ class IngredientShareGraph
         if (! $freshActor instanceof User || ! $this->authorization->canManage($freshActor, $source->id)) {
             throw new AuthorizationException;
         }
+
+        return $this->current($source, $rootIds);
+    }
+
+    /** Server-only technical graph; callers authorize the workspace before projecting any display data.
+     * @param  list<int>  $rootIds  @return array{nodes: array<string, array<string, mixed>>, root_keys: list<string>, source_keys: array<int, string>}
+     */
+    public function current(Workspace $source, array $rootIds): array
+    {
         $nodes = [];
         $sourceKeys = [];
         $stack = [];

@@ -21,5 +21,8 @@ return [
         'request_reused' => 'This request was already used for another offer. Preview again to send a new offer.',
         'changed' => 'The source Formula, Ingredients or recipient changed. Review a fresh preview before sending.',
         'pending_limit' => 'This Workspace has too many pending offers. Close an existing offer before sending another.',
+        'decisions' => 'Choose a valid local Ingredient or create an independent copy for each material requiring review.',
+        'unavailable' => 'This offer is no longer available for acceptance. Return to your Workspace inbox.',
+        'saponification' => 'The selected Ingredient must already be eligible for saponification under its own chemistry baseline.',
     ],
 ];

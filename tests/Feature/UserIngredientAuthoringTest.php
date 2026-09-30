@@ -2121,11 +2121,14 @@ it('shows trusted KOH validation errors in the customer ingredient form without 
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
         ->set('data.name', 'Should not persist')
         ->set('data.sap_profile.koh_sap_value', '0.195')
+        ->set('data.is_soap_saponification_trusted', false)
+        ->set('data.source_data.user_authoring.trusted_koh_sap_value', '0.195')
         ->call('save')
         ->assertHasErrors(['data.sap_profile.koh_sap_value'])
         ->assertSee('Allowed KOH SAP range: 0.182360–0.193640 g KOH/g oil');
 
-    expect($copy->fresh()->display_name)->toBe('Platform olive oil');
+    expect($copy->fresh()->display_name)->toBe('Platform olive oil')
+        ->and($copy->fresh()->is_soap_saponification_trusted)->toBeTrue();
 });
 
 it('creates missing composite components as private ingredients before they are referenced', function () {

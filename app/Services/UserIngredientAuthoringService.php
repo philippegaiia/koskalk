@@ -22,8 +22,6 @@ use Illuminate\Validation\ValidationException;
 
 class UserIngredientAuthoringService
 {
-    private const TRUSTED_KOH_SAP_TOLERANCE = 0.03;
-
     private const TRUSTED_FATTY_ACID_MIN_TOTAL = 80.0;
 
     private const TRUSTED_FATTY_ACID_MAX_TOTAL = 100.0;
@@ -32,6 +30,7 @@ class UserIngredientAuthoringService
     private ?array $duplicationFattyAcidNameCache = null;
 
     public function __construct(
+        protected IngredientSoapTrustValidator $soapTrustValidator,
         protected IngredientDataEntryService $ingredientDataEntryService,
         protected EntitlementService $entitlementService,
         protected IngredientFunctionAssignmentService $functionAssignments,
@@ -997,26 +996,10 @@ class UserIngredientAuthoringService
             return;
         }
 
-        $trustedKohSapValue = (float) Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
-        $kohSapValue = Arr::get($state, 'sap_profile.koh_sap_value');
-
-        if ($kohSapValue === null || $kohSapValue === '' || ! is_numeric($kohSapValue)) {
-            throw ValidationException::withMessages([
-                'sap_profile.koh_sap_value' => __('ingredients.editor.validation.soap_koh_required'),
-            ]);
-        }
-
-        $normalizedKohSapValue = SoapSap::normalizeKohSapInput((float) $kohSapValue);
-        $minimumValue = $trustedKohSapValue * (1 - self::TRUSTED_KOH_SAP_TOLERANCE);
-        $maximumValue = $trustedKohSapValue * (1 + self::TRUSTED_KOH_SAP_TOLERANCE);
-
-        if ($normalizedKohSapValue < $minimumValue || $normalizedKohSapValue > $maximumValue) {
-            throw ValidationException::withMessages([
-                'sap_profile.koh_sap_value' => __('ingredients.editor.validation.soap_koh_tolerance', [
-                    'tolerance' => self::TRUSTED_KOH_SAP_TOLERANCE * 100,
-                ]),
-            ]);
-        }
+        $this->soapTrustValidator->validateKohSapValue(
+            $this->soapTrustValidator->storedBaseline($ingredient),
+            $state,
+        );
     }
 
     /**
@@ -1028,49 +1011,14 @@ class UserIngredientAuthoringService
             return;
         }
 
-        $trustedProfile = collect(Arr::get(
-            $ingredient->source_data,
-            'user_authoring.trusted_fatty_acid_profile',
-            [],
-        ))->mapWithKeys(fn (mixed $value, mixed $key): array => [(int) $key => (float) $value]);
-
-        $currentProfile = collect(Arr::get($state, 'fatty_acid_entries', []))
+        $currentFattyAcidIds = collect(Arr::get($state, 'fatty_acid_entries', []))
             ->filter(fn (mixed $row): bool => is_array($row) && filled($row['fatty_acid_id'] ?? null))
-            ->mapWithKeys(fn (array $row): array => [
-                (int) $row['fatty_acid_id'] => (float) ($row['percentage'] ?? 0),
-            ]);
-
-        if ($trustedProfile->isEmpty() && $currentProfile->isEmpty()) {
-            return;
-        }
-
-        $this->validateTrustedFattyAcidIds(
-            $ingredient,
-            $currentProfile->keys()->map(fn (mixed $fattyAcidId): int => (int) $fattyAcidId)->all(),
+            ->pluck('fatty_acid_id')->map(fn (mixed $id): int => (int) $id)->all();
+        $this->validateTrustedFattyAcidIds($ingredient, $currentFattyAcidIds);
+        $this->soapTrustValidator->validateFattyAcidProfile(
+            $this->soapTrustValidator->storedBaseline($ingredient),
+            $state,
         );
-
-        $total = $currentProfile->sum();
-
-        if ($total < self::TRUSTED_FATTY_ACID_MIN_TOTAL || $total > self::TRUSTED_FATTY_ACID_MAX_TOTAL) {
-            throw ValidationException::withMessages([
-                'fatty_acid_entries' => __('ingredients.editor.validation.fatty_acid_total'),
-            ]);
-        }
-
-        foreach ($trustedProfile->keys()->merge($currentProfile->keys())->unique() as $fattyAcidId) {
-            $trustedValue = (float) $trustedProfile->get($fattyAcidId, 0);
-            $currentValue = (float) $currentProfile->get($fattyAcidId, 0);
-            [$minimum, $maximum] = $this->fattyAcidRange($trustedValue);
-
-            if ($currentValue < $minimum || $currentValue > $maximum) {
-                throw ValidationException::withMessages([
-                    'fatty_acid_entries' => __('ingredients.editor.validation.fatty_acid_range', [
-                        'minimum' => $this->formatRangeValue($minimum),
-                        'maximum' => $this->formatRangeValue($maximum),
-                    ]),
-                ]);
-            }
-        }
     }
 
     /**
@@ -1112,7 +1060,7 @@ class UserIngredientAuthoringService
 
         $original = (float) Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
 
-        return $this->kohSapRange($original);
+        return $this->soapTrustValidator->kohSapRange($original);
     }
 
     /**
@@ -1139,7 +1087,7 @@ class UserIngredientAuthoringService
             return null;
         }
 
-        $kohSapRange = $this->kohSapRange((float) $kohSapValue);
+        $kohSapRange = $this->soapTrustValidator->kohSapRange((float) $kohSapValue);
         $trustedFattyAcidProfile = collect($usesStoredTrustedProfile
             ? Arr::get($ingredient->source_data, 'user_authoring.trusted_fatty_acid_profile', [])
             : [])
@@ -1201,7 +1149,7 @@ class UserIngredientAuthoringService
                 }
 
                 $original = (float) $original;
-                [$minimum, $maximum] = $this->fattyAcidRange($original);
+                [$minimum, $maximum] = $this->soapTrustValidator->fattyAcidRange($original);
 
                 return [
                     'id' => $fattyAcidId,
@@ -1245,36 +1193,9 @@ class UserIngredientAuthoringService
             'user_authoring.trusted_fatty_acid_profile.'.(int) $fattyAcidId,
             0,
         );
-        [$minimum, $maximum] = $this->fattyAcidRange($original);
+        [$minimum, $maximum] = $this->soapTrustValidator->fattyAcidRange($original);
 
         return compact('minimum', 'maximum', 'original');
-    }
-
-    /** @return array{float, float} */
-    private function fattyAcidRange(float $original): array
-    {
-        if ($original < 5) {
-            return [0.0, 5.0];
-        }
-
-        return [max(0, $original * 0.8), min(100, $original * 1.2)];
-    }
-
-    /**
-     * @return array{minimum: float, maximum: float, original: float}
-     */
-    private function kohSapRange(float $original): array
-    {
-        return [
-            'minimum' => $original * (1 - self::TRUSTED_KOH_SAP_TOLERANCE),
-            'maximum' => $original * (1 + self::TRUSTED_KOH_SAP_TOLERANCE),
-            'original' => $original,
-        ];
-    }
-
-    private function formatRangeValue(float $value): string
-    {
-        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 
     /**

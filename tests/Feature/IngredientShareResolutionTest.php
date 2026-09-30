@@ -207,7 +207,7 @@ it('binds used regulatory child rows and current platform child chemistry but ig
 it('validates substitutions against the union of actual formula roles and permits dilution substitutes', function (): void {
     extract(shareResolutionContext());
     $substitute = Ingredient::factory()->create(['workspace_id' => $destination->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $destination->id]);
-    $phases = [['key' => 'p1', 'phase_type' => 'lye_water', 'items' => [['ingredient_key' => 'n1', 'percentage' => '100.0000']]]];
+    $phases = [['key' => 'p1', 'slug' => 'lye_water', 'phase_type' => 'reaction_medium', 'items' => [['ingredient_key' => 'n1', 'percentage' => '100.0000']]]];
     $share = FormulaShare::factory()->create(['source_workspace_id' => $source->id, 'recipient_workspace_id' => $destination->id, 'snapshot' => ['schema_version' => 1, 'product' => ['name' => 'Product'], 'formula' => ['phases' => $phases, 'manufacturing_mode' => 'saponify_in_formula'], 'ingredients' => $graph]]);
     $decisions = [['key' => 'n1', 'mode' => 'substitute', 'ingredient_public_id' => $substitute->public_id]];
     $preview = app(FormulaSharePreview::class);
@@ -216,7 +216,7 @@ it('validates substitutions against the union of actual formula roles and permit
     expect(fn () => $preview->build($destination->owner, $share, $decisions))->toThrow(ValidationException::class);
     $substitute->forceFill(['category' => IngredientCategory::Other])->save();
     $snapshot = $share->snapshot;
-    $snapshot['formula']['phases'][] = ['key' => 'p2', 'phase_type' => 'saponified_oils', 'items' => [['ingredient_key' => 'n1']]];
+    $snapshot['formula']['phases'][] = ['key' => 'p2', 'slug' => 'saponified_oils', 'phase_type' => 'reaction_core', 'items' => [['ingredient_key' => 'n1']]];
     $share->forceFill(['snapshot' => $snapshot])->save();
     expect(fn () => $preview->build($destination->owner, $share, $decisions))->toThrow(ValidationException::class);
     $substitute->forceFill(['is_soap_saponification_trusted' => true, 'source_data' => ['user_authoring' => ['trusted_koh_sap_value' => '0.188', 'trusted_fatty_acid_profile' => []]]])->save();

@@ -22,6 +22,7 @@ class FormulaSharePreview
         private readonly FormulaShareReferences $references,
         private readonly EntitlementService $entitlements,
         private readonly LyeLiquidIngredientValidator $dilutionLiquids,
+        private readonly FormulaSharePhaseValidator $phases,
     ) {}
 
     /** Browser-safe projection only.
@@ -81,10 +82,11 @@ class FormulaSharePreview
             throw ValidationException::withMessages(['sharing' => __('sharing.validation.unavailable')]);
         }
         $snapshot = $share->snapshot;
+        $this->phases->validate($snapshot['formula']['phases'], data_get($snapshot, 'product.family.calculation_basis') === 'total_formula');
         $resolution = $this->resolver->resolve($destination, $snapshot['ingredients'], $decisions);
         if (data_get($snapshot, 'formula.manufacturing_mode') === 'saponify_in_formula') {
             foreach ($snapshot['formula']['phases'] as $phase) {
-                if ($phase['phase_type'] === 'lye_water') {
+                if ($phase['slug'] === 'lye_water') {
                     $this->dilutionLiquids->assertMaximumRows($phase['items']);
                     $localRows = [];
                     foreach ($phase['items'] as $item) {
@@ -97,7 +99,7 @@ class FormulaSharePreview
                     }
                     $this->dilutionLiquids->validate($localRows, $actor);
                 }
-                if ($phase['phase_type'] !== 'saponified_oils') {
+                if ($phase['slug'] !== 'saponified_oils') {
                     continue;
                 }
                 foreach ($phase['items'] as $item) {

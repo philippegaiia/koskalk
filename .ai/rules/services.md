@@ -81,3 +81,6 @@ Nested PostgreSQL formula-sharing calls may run only inside REPEATABLE READ or S
 
 ## Validate received roles and effective IFRA selection before acceptance
 Formula sharing preview must validate the union of persisted formula roles, including dilution liquids through LyeLiquidIngredientValidator. Bind the preview to the normalizer’s actual live IFRA selection and only its effective reference/control dependencies; unrelated Product-type mappings and manual-mode default switches must not invalidate it. Ingredient resolution memoizes current facts only within one resolve attempt and counts distinct local dependency IDs, while valid explicit/remembered choices precede unselected candidate enumeration.
+
+## Validate shared phase roles by stable slug and classification
+Persisted soap phase_type is reaction_core/reaction_medium/post_reaction, not its slug. Validate slug/classification consistency at capture and review, derive oil/dilution roles from the stable slug, and preserve every supported phase row through normal publication. Cosmetic custom phase slugs remain supported under cosmetic_phase.

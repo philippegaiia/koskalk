@@ -51,7 +51,7 @@ function formulaShareIssueContext(): array
         'calculation_context' => ['editing_mode' => 'percentage', 'lye_type' => 'dual', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'superfat' => 5, 'oil_weight' => 1000, 'oil_unit' => 'g', 'mass_grams' => '1000.000000000', 'secret' => 'SECRET_CALCULATION'],
     ]);
     $ingredient = Ingredient::factory()->create(['owner_type' => null, 'owner_id' => null, 'workspace_id' => null]);
-    $phase = RecipePhase::factory()->for($saved, 'recipeVersion')->create(['workspace_id' => $source->id, 'slug' => 'saponified_oils', 'name' => 'Saponified oils', 'phase_type' => 'saponified_oils', 'sort_order' => 1]);
+    $phase = RecipePhase::factory()->for($saved, 'recipeVersion')->create(['workspace_id' => $source->id, 'slug' => 'saponified_oils', 'name' => 'Saponified oils', 'phase_type' => 'reaction_core', 'sort_order' => 1]);
     RecipeItem::factory()->for($saved, 'recipeVersion')->for($phase, 'recipePhase')->create(['workspace_id' => $source->id, 'ingredient_id' => $ingredient->id, 'percentage' => '100.0000', 'weight' => '1000.0000', 'note' => 'Saved note']);
 
     return compact('owner', 'source', 'recipient', 'recipe', 'saved', 'ingredient');

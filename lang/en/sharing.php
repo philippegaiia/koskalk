@@ -23,6 +23,8 @@ return [
         'pending_limit' => 'This Workspace has too many pending offers. Close an existing offer before sending another.',
         'decisions' => 'Choose a valid local Ingredient or create an independent copy for each material requiring review.',
         'unavailable' => 'This offer is no longer available for acceptance. Return to your Workspace inbox.',
+        'accepted_deleted' => 'This offer was already accepted and its Product was deleted. It cannot be accepted again.',
+        'preview_changed' => 'The selected Ingredients or current catalogue guidance changed. Review a fresh preview before accepting.',
         'saponification' => 'The selected Ingredient must already be eligible for saponification under its own chemistry baseline.',
     ],
 ];

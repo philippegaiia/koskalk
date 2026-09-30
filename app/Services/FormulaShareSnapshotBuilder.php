@@ -33,6 +33,7 @@ class FormulaShareSnapshotBuilder
         private readonly IngredientShareGraph $graph,
         private readonly IngredientShareFingerprint $fingerprint,
         private readonly CanonicalSoapAlkaliResolver $alkalis,
+        private readonly FormulaSharePhaseValidator $phases,
     ) {}
 
     /** @param array<string, mixed> $options @return array<string, mixed> */
@@ -152,6 +153,7 @@ class FormulaShareSnapshotBuilder
                 ])->all(),
             ];
         }
+        $this->phases->validate($formula['phases'], $family->calculation_basis === 'total_formula');
         $formula['manufacturing_instructions'] = $options['include_procedure'] ? $this->sanitizer->plainText($saved->manufacturing_instructions) : null;
         unset($graph['source_keys']);
         $snapshot = [

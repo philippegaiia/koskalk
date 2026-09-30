@@ -13,3 +13,6 @@ Inside the soap Oils card, render the Lye & water heading directly above the com
 
 ## Keep workbench header actions secondary
 Keep saving and save status in each tab's bottom action bar. The shared workbench header contains direct secondary Lock/Unlock and Duplicate controls, with existing saved-product and workspace permission guards; do not restore a second header Save or a metadata-only overflow menu.
+
+## Keep locked formula settings readable
+Formula settings must remain expandable in read-only states, including locked formulas. Keep the disclosure outside disabled fieldsets; protect the settings fields and formula editing controls with canWriteRecipe. Show nested compliance details automatically when controls are read-only so their disabled disclosure does not conceal saved settings.

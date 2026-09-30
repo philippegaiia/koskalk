@@ -37,8 +37,8 @@
  </section>
  @include('livewire.dashboard.partials.recipe-workbench.navigation')
  </div>
- <fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="space-y-6 transition">
  @include('livewire.dashboard.partials.recipe-workbench.formula-tab')
+ <fieldset x-show="activeWorkbenchTab !== 'formula'" @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="space-y-6 transition">
  @if ($isPublicCalculator)
  @include('livewire.dashboard.partials.recipe-workbench.output-tab')
  @else

@@ -138,6 +138,7 @@ return [
         'title' => 'Formula settings',
         'hide' => 'Hide settings',
         'edit' => 'Edit settings',
+        'view' => 'View settings',
         'total_oil_weight' => 'Total oil weight',
         'entry_mode' => 'Enter amounts as',
         'cosmetic_percentage_entry_help' => 'Set formula shares; quantities follow the total batch.',

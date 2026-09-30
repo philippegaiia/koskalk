@@ -14,6 +14,42 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+it('allows inspecting locked formula settings while protecting their controls', function (string $familySlug): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => $familySlug, 'calculation_basis' => $familySlug === 'soap' ? 'initial_oils' : 'total_formula']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id, 'locked_at' => now()]);
+    RecipeVersion::factory()->create(['recipe_id' => $recipe->id, 'workspace_id' => $workspace->id, 'is_current' => true]);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $disclosure = $xpath->query('//button[@aria-controls="formula-settings-panel"]')->item(0);
+
+    expect($disclosure)->not->toBeNull();
+    expect($xpath->query('ancestor::fieldset', $disclosure)->length)->toBe(0);
+    expect($disclosure->hasAttribute('disabled'))->toBeFalse();
+    expect($disclosure->getAttribute(':aria-expanded'))->toBe('isFormulaSettingsOpen.toString()');
+    expect($xpath->query('span', $disclosure)->item(0)->getAttribute('x-text'))->toContain("t('settings.view')");
+
+    $compliancePanel = $xpath->query('//*[@data-formula-compliance-settings]')->item(0);
+    expect($compliancePanel)->not->toBeNull();
+    expect($compliancePanel->getAttribute(':class'))->toBe("isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'");
+
+    $setting = $xpath->query('//*[@id="formula-settings-panel"]//input[@inputmode="decimal"]')->item(0);
+    expect($setting)->not->toBeNull();
+    $protection = $xpath->query('ancestor::fieldset', $setting);
+    expect($protection->length)->toBe(1);
+    expect($protection->item(0)->getAttribute(':disabled'))->toBe('!canWriteRecipe || (isSaving && !hasSavedRecipe)');
+
+    $entryMode = $xpath->query('//div[@aria-labelledby="formula-entry-mode-heading"]/button')->item(0);
+    expect($entryMode)->not->toBeNull();
+    expect($xpath->query('ancestor::fieldset', $entryMode)->length)->toBe(1);
+    expect($xpath->query('ancestor::fieldset', $entryMode)->item(0)->getAttribute(':disabled'))->toBe('!canWriteRecipe || (isSaving && !hasSavedRecipe)');
+    expect((int) $recipe->fresh()->edit_revision)->toBe(0);
+})->with(['soap', 'cosmetic']);
+
 it('loads locked costing without writes and rejects saving a simulation', function (string $familySlug): void {
     $workspace = Workspace::factory()->create();
     $family = ProductFamily::factory()->create(['slug' => $familySlug, 'calculation_basis' => $familySlug === 'soap' ? 'initial_oils' : 'total_formula']);

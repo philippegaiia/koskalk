@@ -39624,6 +39624,18 @@
     },
     {
       "group": "workbench",
+      "key": "settings.view",
+      "text": {
+        "de": "Einstellungen ansehen",
+        "es": "Ver ajustes",
+        "fr": "Voir les paramètres",
+        "it": "Visualizza impostazioni",
+        "nl": "Instellingen bekijken",
+        "pt_BR": "Ver configurações"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.water",
       "text": {
         "de": "Wasser",

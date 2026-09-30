@@ -7,8 +7,8 @@
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.costing.settings.help') }}</p>
  </div>
  <div class="rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
- <p class="font-medium text-[var(--color-ink-strong)]" x-text="costingSaveStatus === 'error' ? t('costing.settings.could_not_save') : (costingSaveStatus === 'warning' ? t('costing.settings.save_product_first') : t('costing.settings.saved_automatically'))"></p>
- <p class="mt-1 text-[var(--color-ink-soft)]" x-text="costingSaveMessage || t('costing.settings.automatic_help')"></p>
+ <p class="font-medium text-[var(--color-ink-strong)]" x-text="isCostingSimulation ? t('costing.settings.simulation') : (costingSaveStatus === 'error' ? t('costing.settings.could_not_save') : (costingSaveStatus === 'warning' ? t('costing.settings.save_product_first') : t('costing.settings.saved_automatically')))"></p>
+ <p class="mt-1 text-[var(--color-ink-soft)]" x-text="isCostingSimulation ? t('costing.settings.simulation_help') : (costingSaveMessage || t('costing.settings.automatic_help'))"></p>
  </div>
  </div>
 
@@ -228,9 +228,10 @@
 
     <x-workflow-action-bar max-width="max-w-app" data-costing-save-bar>
  <x-slot:leading>
- <p class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="costingSaveMessage || t('costing.settings.saved_automatically')"></p>
+ <p class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="isCostingSimulation ? t('costing.settings.simulation') : (costingSaveMessage || t('costing.settings.saved_automatically'))"></p>
  </x-slot:leading>
- <button type="button" @click="persistCosting()" :disabled="!hasCurrentFormula || isSavingCosting" class="sk-btn sk-btn-primary">
+ <button type="button" x-show="isCostingSimulation" x-cloak @click="resetCostingSimulation()" :disabled="!hasLoadedCosting" class="sk-btn sk-btn-outline">{{ __('workbench.costing.settings.reset_simulation') }}</button>
+ <button type="button" x-show="!isCostingSimulation" @click="persistCosting()" :disabled="!hasCurrentFormula || isSavingCosting" class="sk-btn sk-btn-primary">
  <span x-text="isSavingCosting ? t('header.saving') : t('header.save')"></span>
  </button>
  </x-workflow-action-bar>

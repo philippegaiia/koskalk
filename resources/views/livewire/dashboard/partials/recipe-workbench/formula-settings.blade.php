@@ -20,7 +20,7 @@
 			<div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="! isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 				<div class="overflow-hidden">
 					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs" data-formula-settings-primary role="group" aria-label="Primary formulation settings">
-						<template x-for="card in formulaSetupSummaryCards.filter(card => ! card.context)" :key="`setup-primary-${card.id}`">
+						<template x-for="card in formulaSetupSummaryCards.filter(card => ! card.context && card.id !== 'formula-entry')" :key="`setup-primary-${card.id}`">
 							<span
 								:class="{
 									'sk-tone-chemistry': card.tone === 'chemistry',
@@ -32,14 +32,6 @@
 							>
 								<span class="min-w-0 break-words whitespace-normal" x-text="card.label"></span>
 								<span class="numeric min-w-0 max-w-full break-words whitespace-normal font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></span>
-							</span>
-						</template>
-					</div>
-					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[var(--color-line)] pt-1.5 text-xs text-[var(--color-ink-soft)] sm:border-s sm:border-t-0 sm:ps-3 sm:pt-0" data-formula-settings-context role="group" aria-label="Secondary formula context">
-						<template x-for="card in formulaSetupSummaryCards.filter(card => card.context)" :key="`setup-context-${card.id}`">
-							<span class="inline-flex min-w-0 max-w-full items-center gap-1.5">
-								<span class="min-w-0 break-words whitespace-normal" x-text="card.label"></span>
-								<span class="min-w-0 break-words whitespace-normal font-medium text-[var(--color-ink-strong)]" x-text="card.value"></span>
 							</span>
 						</template>
 					</div>

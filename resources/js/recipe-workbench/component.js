@@ -251,6 +251,11 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         draggedRowPhaseKey: null,
         dropTargetPhaseKey: null,
         dropTargetRowId: null,
+        rowDragScrollFrame: null,
+        rowDragScrollGeneration: 0,
+        rowDragScrollClientY: null,
+        rowDragScrollTimestamp: null,
+        rowDropTargetElement: null,
         removedFormulaRowUndo: null,
         phaseOrder,
         pendingCosmeticPhaseRemoval: null,
@@ -367,6 +372,8 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         },
 
         destroy() {
+            this.cancelDroppedRowSettling();
+            this.endRowDrag();
             this.removeUnsavedChangesGuard();
             this.destroyEditingProtection();
         },
@@ -549,6 +556,9 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
  * phase assignment rules used when a user adds or removes ingredients.
  */
 function createCatalogSection() {
+    let dropSettlingGeneration = 0;
+    let dropSettlingAnimation = null;
+
     return {
         get categoryOptions() {
             return buildCategoryOptions(this.ingredients, this.t('categories.all'));
@@ -950,51 +960,156 @@ function createCatalogSection() {
                 && this.formulaItemCount() >= this.formulaItemLimit;
         },
 
+        clearRowDropTarget() {
+            this.dropTargetPhaseKey = null;
+            this.dropTargetRowId = null;
+        },
+
+        cancelDroppedRowSettling() {
+            dropSettlingGeneration += 1;
+            dropSettlingAnimation?.cancel();
+            dropSettlingAnimation = null;
+        },
+
+        settleDroppedRow(rowId, root) {
+            if (!root || typeof this.$nextTick !== 'function'
+                || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
+            const generation = dropSettlingGeneration;
+            this.$nextTick(() => {
+                if (generation !== dropSettlingGeneration || this.draggedRowId
+                    || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                    return;
+                }
+                const row = Array.from(root.querySelectorAll('[data-workbench-row-id]'))
+                    .find(element => element.dataset.workbenchRowId === rowId);
+                if (typeof row?.animate !== 'function') {
+                    return;
+                }
+                const animation = row.animate([
+                    { transform: 'translateY(-4px)', opacity: 0.75 },
+                    { transform: 'translateY(0)', opacity: 1 },
+                ], { duration: 260, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
+                dropSettlingAnimation = animation;
+                animation.onfinish = () => {
+                    if (dropSettlingAnimation === animation) {
+                        dropSettlingAnimation = null;
+                    }
+                };
+            });
+        },
+
         beginRowDrag(phaseKey, rowId, event) {
+            this.cancelDroppedRowSettling();
+            this.endRowDrag();
             this.draggedRowPhaseKey = phaseKey;
             this.draggedRowId = rowId;
-            this.dropTargetPhaseKey = phaseKey;
-            this.dropTargetRowId = rowId;
 
             if (event?.dataTransfer) {
                 event.dataTransfer.effectAllowed = 'move';
                 event.dataTransfer.setData('text/plain', `${phaseKey}:${rowId}`);
+                const row = event.currentTarget?.closest?.('[data-workbench-row-id]');
+                const rect = row?.getBoundingClientRect?.();
+
+                if (rect && typeof event.dataTransfer.setDragImage === 'function') {
+                    const offsetX = Number.isFinite(event.clientX) ? event.clientX - rect.left : rect.width / 2;
+                    const offsetY = Number.isFinite(event.clientY) ? event.clientY - rect.top : rect.height / 2;
+                    event.dataTransfer.setDragImage(row,
+                        Math.max(0, Math.min(rect.width, offsetX)),
+                        Math.max(0, Math.min(rect.height, offsetY)));
+                }
             }
         },
 
+        stopRowDragScroll() {
+            this.rowDragScrollGeneration += 1;
+            if (this.rowDragScrollFrame !== null && typeof window !== 'undefined') {
+                window.cancelAnimationFrame?.(this.rowDragScrollFrame);
+            }
+            this.rowDragScrollFrame = null;
+            this.rowDragScrollClientY = null;
+            this.rowDragScrollTimestamp = null;
+        },
+
         endRowDrag() {
+            this.stopRowDragScroll();
             this.draggedRowPhaseKey = null;
             this.draggedRowId = null;
-            this.dropTargetPhaseKey = null;
-            this.dropTargetRowId = null;
+            this.rowDropTargetElement = null;
+            this.clearRowDropTarget();
+        },
+
+        leaveRowDropTarget(event) {
+            if (event.currentTarget?.contains?.(event.relatedTarget)) {
+                return;
+            }
+            if (this.rowDropTargetElement === event.currentTarget) {
+                this.rowDropTargetElement = null;
+                this.clearRowDropTarget();
+            }
+        },
+
+        leaveRowDragDocument(event) {
+            const outsideViewport = Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+                && (event.clientX <= 0 || event.clientY <= 0
+                    || event.clientX >= window.innerWidth || event.clientY >= window.innerHeight);
+            if (event.relatedTarget === null && outsideViewport) {
+                this.endRowDrag();
+            }
+        },
+
+        rowDragScrollVelocity() {
+            const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+            const clientY = this.rowDragScrollClientY;
+            if (!viewportHeight || !Number.isFinite(clientY)) {
+                return 0;
+            }
+            const edgeSize = Math.min(120, Math.max(72, viewportHeight * 0.16));
+            if (clientY < edgeSize) {
+                return -600 * Math.min(1, Math.max(0, (edgeSize - clientY) / edgeSize));
+            }
+            if (clientY > viewportHeight - edgeSize) {
+                return 600 * Math.min(1, Math.max(0, (clientY - viewportHeight + edgeSize) / edgeSize));
+            }
+            return 0;
         },
 
         autoScrollDuringRowDrag(event) {
             if (!this.draggedRowPhaseKey || !this.draggedRowId || typeof window === 'undefined') {
                 return;
             }
-
-            const viewportHeight = window.innerHeight
-                || document.documentElement?.clientHeight
-                || 0;
-
-            if (!viewportHeight || typeof event?.clientY !== 'number') {
+            if (this.rowDropTargetElement && !this.rowDropTargetElement.contains?.(event.target)) {
+                this.rowDropTargetElement = null;
+                this.clearRowDropTarget();
+            }
+            this.rowDragScrollClientY = event?.clientY;
+            if (!this.rowDragScrollVelocity()) {
+                this.stopRowDragScroll();
                 return;
             }
-
-            const edgeSize = Math.min(120, Math.max(72, viewportHeight * 0.16));
-            const maxStep = 28;
-            let scrollStep = 0;
-
-            if (event.clientY < edgeSize) {
-                scrollStep = -Math.ceil(((edgeSize - event.clientY) / edgeSize) * maxStep);
-            } else if (event.clientY > viewportHeight - edgeSize) {
-                scrollStep = Math.ceil(((event.clientY - (viewportHeight - edgeSize)) / edgeSize) * maxStep);
+            if (this.rowDragScrollFrame !== null || typeof window.requestAnimationFrame !== 'function') {
+                return;
             }
-
-            if (scrollStep !== 0 && typeof window.scrollBy === 'function') {
-                window.scrollBy({ top: scrollStep, behavior: 'auto' });
-            }
+            const generation = this.rowDragScrollGeneration;
+            const tick = (timestamp) => {
+                if (generation !== this.rowDragScrollGeneration || !this.draggedRowId) {
+                    return;
+                }
+                this.rowDragScrollFrame = null;
+                const velocity = this.rowDragScrollVelocity();
+                if (!velocity) {
+                    this.stopRowDragScroll();
+                    return;
+                }
+                const elapsed = this.rowDragScrollTimestamp === null ? 0 : Math.min(32, Math.max(0, timestamp - this.rowDragScrollTimestamp));
+                this.rowDragScrollTimestamp = timestamp;
+                if (elapsed > 0) {
+                    window.scrollBy?.({ top: velocity * elapsed / 1000, behavior: 'auto' });
+                }
+                this.rowDragScrollFrame = window.requestAnimationFrame(tick);
+            };
+            this.rowDragScrollFrame = window.requestAnimationFrame(tick);
         },
 
         isDraggedRow(phaseKey, rowId) {
@@ -1002,17 +1117,7 @@ function createCatalogSection() {
         },
 
         isDropTarget(phaseKey, rowId = null) {
-            if (this.dropTargetPhaseKey !== phaseKey) {
-                return false;
-            }
-
-            if (this.dropTargetRowId === rowId) {
-                return true;
-            }
-
-            return rowId !== null
-                && this.dropTargetRowId === null
-                && this.rowIsLastDropTarget(phaseKey, rowId);
+            return this.dropTargetPhaseKey === phaseKey && this.dropTargetRowId === rowId;
         },
 
         rowIsLastDropTarget(phaseKey, rowId) {
@@ -1022,18 +1127,17 @@ function createCatalogSection() {
         },
 
         resolvedDropTargetRowId(phaseKey, event, targetRowId = null) {
-            if (targetRowId === null || !this.rowIsLastDropTarget(phaseKey, targetRowId)) {
-                return targetRowId;
+            if (targetRowId === null) {
+                return null;
             }
-
+            const rows = this.phaseItems[phaseKey] ?? [];
+            const index = rows.findIndex((row) => row.id === targetRowId);
             const rect = event?.currentTarget?.getBoundingClientRect?.();
-
-            if (!rect) {
+            if (index < 0 || !rect || !Number.isFinite(event?.clientY)) {
                 return targetRowId;
             }
-
-            return event.clientY >= rect.top + (rect.height / 2)
-                ? null
+            return event.clientY >= rect.top + rect.height / 2
+                ? rows[index + 1]?.id ?? null
                 : targetRowId;
         },
 
@@ -1197,9 +1301,12 @@ function createCatalogSection() {
         },
 
         allowPhaseDrop(phaseKey, event, targetRowId = null) {
-            this.autoScrollDuringRowDrag(event);
-
             if (!this.canDropRowInPhase(phaseKey)) {
+                this.rowDropTargetElement = null;
+                this.clearRowDropTarget();
+                if (event?.dataTransfer) {
+                    event.dataTransfer.dropEffect = 'none';
+                }
                 return;
             }
 
@@ -1209,6 +1316,7 @@ function createCatalogSection() {
                 event.dataTransfer.dropEffect = 'move';
             }
 
+            this.rowDropTargetElement = event.currentTarget;
             this.dropTargetPhaseKey = phaseKey;
             this.dropTargetRowId = this.resolvedDropTargetRowId(phaseKey, event, targetRowId);
         },
@@ -1253,7 +1361,10 @@ function createCatalogSection() {
                     targetIndex = rowsAfterRemoval.length;
                 }
 
-                this.moveFormulaRow(sourcePhaseKey, rowId, phaseKey, targetIndex);
+                const moved = this.moveFormulaRow(sourcePhaseKey, rowId, phaseKey, targetIndex);
+                if (moved) {
+                    this.settleDroppedRow(rowId, this.$el?.closest?.('.sk-workbench'));
+                }
             } finally {
                 this.endRowDrag();
             }

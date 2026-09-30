@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Dashboard\RecipeWorkbench;
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -12,6 +13,40 @@ use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('loads locked costing without writes and rejects saving a simulation', function (string $familySlug): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => $familySlug, 'calculation_basis' => $familySlug === 'soap' ? 'initial_oils' : 'total_formula']);
+    if ($familySlug === 'soap') {
+        Ingredient::factory()->create(['catalog_key' => 'CH1', 'owner_type' => null, 'owner_id' => null, 'workspace_id' => null]);
+        Ingredient::factory()->create(['catalog_key' => 'CH3', 'owner_type' => null, 'owner_id' => null, 'workspace_id' => null]);
+    }
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id, 'locked_at' => now()]);
+    $version = RecipeVersion::factory()->create(['recipe_id' => $recipe->id, 'workspace_id' => $workspace->id, 'is_current' => true]);
+    $costing = RecipeVersionCosting::query()->create(['recipe_version_id' => $version->id, 'user_id' => $workspace->owner_user_id, 'currency' => 'EUR', 'oil_weight_for_costing' => 1000, 'oil_unit_for_costing' => 'g']);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid());
+
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $costingPanel = $xpath->query('//*[@data-costing-controls]//*[@id="panel-costing"]')->item(0);
+    expect($costingPanel)->not->toBeNull();
+    expect($xpath->query('ancestor::fieldset', $costingPanel)->length)->toBe(1);
+    expect($costingPanel->parentNode->getAttribute(':disabled'))->toBe('!canAdjustCosting || (isSaving && !hasSavedRecipe)');
+
+    $component->call('loadCosting')
+        ->assertHasNoErrors()
+        ->assertReturned(fn (array $response): bool => $response['ok'])
+        ->call('saveCosting', ['oil_weight_for_costing' => 2000, 'oil_unit_for_costing' => 'g', 'units_produced' => 20, 'currency' => 'EUR', 'items' => [], 'packaging_items' => []])
+        ->assertReturned(fn (array $response): bool => ! $response['ok'] && $response['message'] === __('editing.formula_locked'));
+
+    expect((float) $costing->fresh()->oil_weight_for_costing)->toBe(1000.0);
+    expect((int) $costing->fresh()->edit_revision)->toBe(0);
+    expect((int) $recipe->fresh()->edit_revision)->toBe(0);
+    $this->assertDatabaseCount('recipe_version_costings', 1);
+})->with(['soap', 'cosmetic']);
 
 it('does not announce a deletion rolled back after the editing reservation expires', function (bool $current): void {
     $this->freezeTime();

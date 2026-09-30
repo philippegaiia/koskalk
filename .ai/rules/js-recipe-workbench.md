@@ -13,3 +13,15 @@ The client-side initial state for a brand-new soap formula uses waterMode lye_co
 
 ## Share one editing queue across nested Alpine scopes
 Keep the editing runtime in the per-workbench section closure, not keyed by `this`: nested Alpine scopes use different proxies. Queue recipe/content/costing writes and revision-bearing reads together; polling never adopts a newer baseline. Accept successful write revisions even when newer local input prevents applying an old response, and preserve dirty input on conflicts. Duplicating a source is authorized separately from editing that source.
+
+## Native row drag document exit
+Native document dragleave can have relatedTarget === null while crossing interior body or HTML gaps. End a row drag only when finite pointer coordinates establish a viewport exit; do not cancel on a body/html target alone. Keep a regression test for interior gap traversal so cosmetic phase transfers remain possible.
+
+## Separate native drop settling from ingredient addition feedback
+A successful native row move may settle for 260 ms with a 4px translate and opacity .75→1, without a background highlight. Keep manual ingredient-addition feedback and menu moves unchanged. Skip drop motion for reduced motion, rejected/no-op drops; a new drag or component destroy cancels queued/running settling, while normal dragend/drop cleanup preserves accepted feedback.
+
+## Pause row scrolling without cancelling drag on window blur
+Bind workbench window blur to stopRowDragScroll(), retaining source identity so a subsequent row drop can succeed. Window drop and dragend cleanup must use bubbling listeners, never capture, because row placement needs the source before cleanup. Keep the behavioral blur/drop regression and markup binding contract.
+
+## Keep locked costing simulations temporary
+Locked workbench costing permits local batch, yield and price scenarios, with a reset to the last loaded saved costing. Never schedule autosave or mark simulation changes as persistent dirty input. Preserve normal unlocked costing autosave and editing revision/lease protection; the Livewire saveCosting endpoint must reject permanent locks.

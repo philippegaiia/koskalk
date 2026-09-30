@@ -52,15 +52,27 @@ it('offers manual stock entry only from the Stock page', function (): void {
         ->assertActionExists('addStock');
 });
 
-it('uses the exact user-side button colors for Filament primary actions', function (): void {
+it('uses the same darker default and lighter hover for shared and Filament primary buttons', function (): void {
+    $tokens = file_get_contents(resource_path('css/shared/soapkraft.css'));
+    $appStyles = file_get_contents(resource_path('css/app.css'));
     $styles = file_get_contents(resource_path('css/shared/filament-soapkraft.css'));
+
+    expect($tokens)
+        ->toContain(":root,\n    [data-user-shell]")
+        ->toContain('--color-button-primary: var(--color-accent-hover);')
+        ->toContain('--color-button-primary-hover: var(--color-accent);');
+
+    expect($appStyles)
+        ->toContain(".sk-btn-primary {\n        background: var(--color-button-primary);\n        color: var(--color-on-accent);")
+        ->toContain(".sk-btn-primary:hover {\n        background: var(--color-button-primary-hover);");
 
     expect($styles)
         ->toContain('[data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined)')
-        ->toContain('background: var(--color-accent) !important;')
+        ->toContain('--color-500: var(--color-button-primary);')
+        ->toContain('background: var(--color-button-primary) !important;')
         ->toContain('color: var(--color-on-accent) !important;')
         ->toContain('[data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined):hover')
-        ->toContain('background: var(--color-accent-hover) !important;');
+        ->toContain('background: var(--color-button-primary-hover) !important;');
 });
 
 it('opens an enhanced stock-entry modal with workspace defaults', function (): void {

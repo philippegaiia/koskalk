@@ -3245,6 +3245,7 @@ it('prevents additive-only carrier oils from moving into saponified oils', funct
     $script = <<<'JS'
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 
 const source = fs
   .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
@@ -3312,6 +3313,14 @@ const event = {
 
 workbench.beginRowDrag('additives', additiveRow.id, event);
 
+workbench.allowPhaseDrop('additives', event, additiveRow.id);
+assert.equal(workbench.dropTargetPhaseKey, 'additives');
+const unchanged = JSON.stringify(workbench.phaseItems);
+workbench.allowPhaseDrop('saponified_oils', event);
+assert.equal(event.dataTransfer.dropEffect, 'none');
+assert.equal(workbench.dropTargetPhaseKey, null);
+assert.equal(workbench.dropTargetRowId, null);
+assert.equal(JSON.stringify(workbench.phaseItems), unchanged);
 const canDropIntoSaponifiedOils = workbench.canDropRowInPhase('saponified_oils');
 
 workbench.dropDraggedRow('saponified_oils', event);
@@ -3347,6 +3356,7 @@ it('auto-scrolls the page near viewport edges while dragging formula rows', func
     $script = <<<'JS'
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 
 const source = fs
   .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
@@ -3380,11 +3390,17 @@ const createVersionSection = () => ({});
 `;
 
 const scrollCalls = [];
+const frames = new Map();
+let nextFrame = 0;
+const advance = (time) => { const [id, callback] = frames.entries().next().value; frames.delete(id); callback(time); };
 
 globalThis.document = { documentElement: { clientHeight: 600 } };
 globalThis.window = {
   innerHeight: 600,
+  innerWidth: 900,
   location: { hash: '' },
+  requestAnimationFrame(callback) { frames.set(++nextFrame, callback); return nextFrame; },
+  cancelAnimationFrame(id) { frames.delete(id); },
   scrollBy(options) {
     scrollCalls.push(options);
   },
@@ -3407,10 +3423,77 @@ workbench.beginRowDrag('saponified_oils', 'oil-1', {
 });
 
 workbench.autoScrollDuringRowDrag({ clientY: 590 });
-workbench.autoScrollDuringRowDrag({ clientY: 10 });
-workbench.autoScrollDuringRowDrag({ clientY: 300 });
-workbench.endRowDrag();
 workbench.autoScrollDuringRowDrag({ clientY: 590 });
+assert.equal(frames.size, 1);
+advance(100);
+assert.equal(scrollCalls.length, 0);
+advance(116);
+assert.ok(scrollCalls[0].top > 0 && scrollCalls[0].top <= 9.6);
+workbench.autoScrollDuringRowDrag({ clientY: 10 });
+advance(132);
+assert.ok(scrollCalls[1].top < 0);
+const staleMiddleCallback = frames.values().next().value;
+workbench.autoScrollDuringRowDrag({ clientY: 300 });
+assert.equal(frames.size, 0);
+staleMiddleCallback(148);
+assert.equal(frames.size, 0);
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+staleMiddleCallback(150);
+assert.equal(frames.size, 1);
+const staleEndedCallback = frames.values().next().value;
+workbench.endRowDrag();
+staleEndedCallback(164);
+assert.equal(frames.size, 0);
+assert.equal(scrollCalls.length, 2);
+workbench.beginRowDrag('saponified_oils', 'oil-1', {});
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+const staleExitCallback = frames.values().next().value;
+workbench.leaveRowDragDocument({ relatedTarget: {}, target: {}, clientX: 400, clientY: 300 });
+assert.equal(workbench.draggedRowId, 'oil-1');
+document.body = {};
+workbench.leaveRowDragDocument({ relatedTarget: null, target: document.body, clientX: 400, clientY: 300 });
+assert.equal(workbench.draggedRowId, 'oil-1');
+workbench.leaveRowDragDocument({ relatedTarget: null, target: document.documentElement, clientX: 400, clientY: 300 });
+assert.equal(workbench.draggedRowId, 'oil-1');
+workbench.leaveRowDragDocument({ relatedTarget: null, target: {}, clientX: 400, clientY: -1 });
+assert.equal(workbench.draggedRowId, null);
+staleExitCallback(180);
+assert.equal(frames.size, 0);
+assert.equal(scrollCalls.length, 2);
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+
+workbench.phaseItems.saponified_oils = [
+  { id: 'oil-1', ingredient_id: 1, percentage: 70, weight: 700 },
+  { id: 'oil-2', ingredient_id: 2, percentage: 30, weight: 300 },
+];
+const beforeBlurRows = JSON.stringify(workbench.phaseItems);
+const dropEvent = {
+  clientY: 210,
+  currentTarget: { getBoundingClientRect: () => ({ top: 200, height: 40 }) },
+  preventDefault() {},
+};
+workbench.beginRowDrag('saponified_oils', 'oil-2', {});
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+workbench.allowPhaseDrop('saponified_oils', dropEvent, 'oil-1');
+const staleBlurCallback = frames.values().next().value;
+const workbenchView = fs.readFileSync('resources/views/livewire/dashboard/recipe-workbench.blade.php', 'utf8');
+const blurHandler = workbenchView.match(/@blur\.window="([A-Za-z]+)\(\)"/)?.[1];
+assert.ok(blurHandler, 'The window blur binding must invoke a workbench handler');
+workbench[blurHandler]();
+assert.equal(frames.size, 0);
+assert.equal(workbench.draggedRowPhaseKey, 'saponified_oils');
+assert.equal(workbench.draggedRowId, 'oil-2');
+assert.equal(JSON.stringify(workbench.phaseItems), beforeBlurRows);
+staleBlurCallback(196);
+assert.equal(frames.size, 0);
+assert.equal(scrollCalls.length, 2);
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+assert.equal(frames.size, 1);
+workbench.dropDraggedRow('saponified_oils', dropEvent, 'oil-1');
+assert.deepEqual(workbench.phaseItems.saponified_oils.map(row => row.id), ['oil-2', 'oil-1']);
+assert.deepEqual(workbench.phaseItems.saponified_oils.map(row => [row.percentage, row.weight]), [[30, 300], [70, 700]]);
+assert.equal(workbench.draggedRowId, null);
+assert.equal(frames.size, 0);
 
 console.log(JSON.stringify({
   calls: scrollCalls,
@@ -4085,6 +4168,28 @@ const eventFor = (clientY, targetRow) => ({
   targetRow,
 });
 
+const previewRow = { getBoundingClientRect: () => ({ left: 20, top: 200, width: 500, height: 40 }) };
+let preview;
+let transferPayload;
+const previewEvent = eventFor(500);
+previewEvent.clientX = -10;
+previewEvent.currentTarget.closest = selector => { assert.equal(selector, '[data-workbench-row-id]'); return previewRow; };
+previewEvent.dataTransfer.setDragImage = (...args) => { preview = args; };
+previewEvent.dataTransfer.setData = (...args) => { transferPayload = args; };
+workbench.beginRowDrag('phase_a', 'phase-a-oil', previewEvent);
+assert.deepEqual(preview, [previewRow, 0, 40]);
+assert.deepEqual(transferPayload, ['text/plain', 'phase_a:phase-a-oil']);
+assert.equal(previewEvent.dataTransfer.effectAllowed, 'move');
+workbench.endRowDrag();
+
+const existingTargetRows = workbench.phaseItems.phase_b;
+workbench.phaseItems.phase_b = [{ id: 'b1' }, { id: 'b2' }, { id: 'b3' }];
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(210), 'b1'), 'b1');
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(230), 'b1'), 'b2');
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(230), 'b2'), 'b3');
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(230), 'b3'), null);
+workbench.phaseItems.phase_b = existingTargetRows;
+
 const beforeTargetEvent = eventFor(210, 'phase-b-preservative');
 workbench.beginRowDrag('phase_a', 'phase-a-oil', beforeTargetEvent);
 workbench.allowPhaseDrop('phase_b', beforeTargetEvent, 'phase-b-preservative');
@@ -4117,6 +4222,107 @@ assert.strictEqual(workbench.draggedRowPhaseKey, null);
 assert.strictEqual(workbench.draggedRowId, null);
 assert.strictEqual(workbench.dropTargetPhaseKey, null);
 assert.strictEqual(workbench.dropTargetRowId, null);
+
+const preservedOil = { ...workbench.phaseItems.phase_b.find(row => row.id === 'phase-a-oil') };
+const drop = (rowId, targetRowId, y = 210) => {
+  const event = eventFor(y);
+  workbench.beginRowDrag('phase_b', rowId, event);
+  assert.equal(workbench.dropTargetPhaseKey, null);
+  workbench.dropDraggedRow('phase_b', event, targetRowId);
+};
+drop('phase-a-glycerin', 'phase-b-vitamin-e');
+assert.deepEqual(rowIds('phase_b'), ['phase-a-glycerin', 'phase-b-vitamin-e', 'phase-a-oil', 'phase-b-preservative']);
+drop('phase-a-glycerin', 'phase-a-oil', 230);
+assert.deepEqual(rowIds('phase_b'), ['phase-b-vitamin-e', 'phase-a-oil', 'phase-a-glycerin', 'phase-b-preservative']);
+const unchanged = JSON.stringify(workbench.phaseItems);
+drop('phase-a-oil', 'phase-a-oil');
+drop('phase-a-oil', 'phase-a-glycerin');
+assert.equal(JSON.stringify(workbench.phaseItems), unchanged);
+assert.deepEqual(workbench.phaseItems.phase_b.find(row => row.id === 'phase-a-oil'), preservedOil);
+workbench.phaseItems.phase_a.push({ ...preservedOil, id: 'duplicate-oil' });
+const duplicateState = JSON.stringify(workbench.phaseItems);
+workbench.beginRowDrag('phase_b', 'phase-a-oil', eventFor(210));
+const validEvent = eventFor(210);
+workbench.allowPhaseDrop('phase_b', validEvent, 'phase-b-preservative');
+const child = {};
+validEvent.currentTarget.contains = target => target === child;
+workbench.leaveRowDropTarget({ currentTarget: validEvent.currentTarget, relatedTarget: child });
+assert.equal(workbench.dropTargetPhaseKey, 'phase_b');
+const newerEvent = eventFor(210);
+workbench.allowPhaseDrop('phase_b', newerEvent, 'phase-b-vitamin-e');
+workbench.leaveRowDropTarget({ currentTarget: validEvent.currentTarget, relatedTarget: null });
+assert.equal(workbench.dropTargetRowId, 'phase-b-vitamin-e');
+workbench.leaveRowDropTarget({ currentTarget: newerEvent.currentTarget, relatedTarget: null });
+assert.equal(workbench.dropTargetPhaseKey, null);
+const invalidEvent = eventFor(210);
+workbench.allowPhaseDrop('phase_a', invalidEvent);
+assert.equal(invalidEvent.dataTransfer.dropEffect, 'none');
+assert.equal(workbench.dropTargetPhaseKey, null);
+assert.equal(workbench.dropTargetRowId, null);
+workbench.dropDraggedRow('phase_a', invalidEvent);
+assert.equal(JSON.stringify(workbench.phaseItems), duplicateState);
+assert.equal(workbench.draggedRowId, null);
+const ticks = [];
+const animations = [];
+let reduceMotion = false;
+window.matchMedia = () => ({ matches: reduceMotion });
+workbench.$nextTick = callback => ticks.push(callback);
+const renderedRows = () => workbench.phaseItems.phase_b.map(row => ({
+  dataset: { workbenchRowId: row.id },
+  animate(keyframes, options) {
+    const animation = { rowId: row.id, keyframes, options, cancelled: false, cancel() { this.cancelled = true; } };
+    animations.push(animation);
+    return animation;
+  },
+}));
+const root = { closest: () => root, querySelectorAll(selector) { assert.equal(selector, '[data-workbench-row-id]'); return renderedRows(); } };
+workbench.$el = root;
+drop('phase-b-preservative', 'phase-b-vitamin-e');
+workbench.endRowDrag();
+assert.equal(animations.length, 0);
+ticks.shift()();
+assert.equal(animations.length, 1);
+assert.equal(animations[0].rowId, 'phase-b-preservative');
+assert.deepEqual(animations[0].keyframes, [{ transform: 'translateY(-4px)', opacity: 0.75 }, { transform: 'translateY(0)', opacity: 1 }]);
+assert.equal(animations[0].options.duration, 260);
+assert.equal(animations[0].options.easing, 'cubic-bezier(0.25, 1, 0.5, 1)');
+drop('phase-b-preservative', 'phase-b-vitamin-e');
+assert.equal(animations[0].cancelled, true);
+assert.equal(ticks.length, 0);
+drop('phase-b-preservative', null);
+assert.equal(ticks.length, 1);
+workbench.beginRowDrag('phase_b', 'phase-a-oil', eventFor(210));
+ticks.shift()();
+assert.equal(animations.length, 1);
+workbench.endRowDrag();
+reduceMotion = true;
+drop('phase-a-oil', null);
+assert.equal(ticks.length, 0);
+reduceMotion = false;
+drop('phase-a-oil', 'phase-b-vitamin-e');
+reduceMotion = true;
+ticks.shift()();
+assert.equal(animations.length, 1);
+reduceMotion = false;
+workbench.phaseItems.phase_a.push({ ...preservedOil, id: 'duplicate-oil-again' });
+workbench.beginRowDrag('phase_b', 'phase-a-oil', eventFor(210));
+workbench.dropDraggedRow('phase_a', eventFor(210));
+assert.equal(ticks.length, 0);
+workbench.phaseItems.phase_a.pop();
+// Menu movement never queues native-drop feedback.
+workbench.moveFormulaRowBy('phase_b', 'phase-a-oil', 'down');
+assert.equal(ticks.length, 0);
+drop('phase-a-oil', 'phase-b-vitamin-e');
+workbench.removeUnsavedChangesGuard = () => {};
+workbench.destroyEditingProtection = () => {};
+workbench.destroy();
+ticks.shift()();
+assert.equal(animations.length, 1);
+
+// Restore the original result for the PHP-facing contract below.
+workbench.phaseItems.phase_a.pop();
+workbench.phaseItems.phase_b = ['phase-b-vitamin-e', 'phase-a-oil', 'phase-b-preservative', 'phase-a-glycerin'].map(id => workbench.phaseItems.phase_b.find(row => row.id === id));
+delegatedCalls.splice(2);
 
 console.log(JSON.stringify({
   delegatedCalls,
@@ -5268,7 +5474,7 @@ it('keeps formula table controls stepped and visually aligned', function () {
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
 
     expect($reactionCore)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('formatPercentageTotal(totalOilPercentage())')
@@ -5277,7 +5483,7 @@ it('keeps formula table controls stepped and visually aligned', function () {
         ->toContain('oilWeightDecimals(rowWeight(row))')
         ->not->toContain(':value="format(rowWeight(row), 1)"')
         ->and($postReaction)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('syncFormattedInput($el, row.percentage, 2)')

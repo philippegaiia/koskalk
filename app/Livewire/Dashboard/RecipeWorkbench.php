@@ -233,7 +233,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function saveCosting(array $costing, RecipeWorkbenchService $service): array
     {
-        return $this->mutateRecipe(fn (): array => $this->performSaveCosting($costing, $service), allowLocked: true);
+        return $this->mutateRecipe(fn (): array => $this->performSaveCosting($costing, $service));
     }
 
     /** @return array<string, mixed> */

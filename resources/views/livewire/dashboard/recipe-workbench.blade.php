@@ -5,7 +5,7 @@
     unset($workbench['contextualHelp']);
 @endphp
 
-<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
+<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" @drop.window="endRowDrag()" @dragend.window="endRowDrag()" @blur.window="stopRowDragScroll()" @dragleave.document="leaveRowDragDocument($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
  <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
  <div class="space-y-4">
  @include('livewire.dashboard.partials.recipe-workbench.header')
@@ -43,12 +43,17 @@
  @include('livewire.dashboard.partials.recipe-workbench.output-tab')
  @else
  @include('livewire.dashboard.partials.recipe-workbench.packaging-tab')
- @include('livewire.dashboard.partials.recipe-workbench.costing-tab')
  @include('livewire.dashboard.partials.recipe-workbench.output-tab')
  @include('livewire.dashboard.partials.recipe-workbench.instructions-media')
  @include('livewire.dashboard.partials.recipe-workbench.packaging-catalog-modal')
  @endif
  </fieldset>
+
+ @unless ($isPublicCalculator)
+ <fieldset @if (! $canEditRecipe) disabled @endif :disabled="!canAdjustCosting || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canAdjustCosting ? 'opacity-75' : ''" class="space-y-6 transition" data-costing-controls>
+ @include('livewire.dashboard.partials.recipe-workbench.costing-tab')
+ </fieldset>
+ @endunless
 
  <x-filament-actions::modals />
 </div>

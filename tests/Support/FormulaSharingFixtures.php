@@ -34,7 +34,7 @@ final class FormulaSharingFixtures
             UserEntitlement::factory()->for($subscriber)->create(['plan_id' => $plan->id]);
         }
         if (! RegulatoryRegime::query()->where('code', 'eu')->exists()) {
-            RegulatoryRegime::factory()->create(['code' => 'eu', 'status' => 'active']);
+            RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
         }
         foreach (['CH1', 'CH3'] as $catalogKey) {
             if (! Ingredient::withoutGlobalScopes()->where('catalog_key', $catalogKey)->exists()) {

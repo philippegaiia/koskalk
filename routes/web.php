@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BetaInviteAcceptanceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FormulaShareController;
 use App\Http\Controllers\HelpContentExportDownloadController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
@@ -90,6 +91,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/dashboard/media/{mediaAsset}/{conversion}', MediaAssetController::class)
         ->middleware('throttle:240,1')
         ->name('media.show');
+
+    Route::get('/dashboard/formula-shares', [FormulaShareController::class, 'index'])->name('formula-shares.index');
+    Route::get('/dashboard/recipes/{recipe}/share', [FormulaShareController::class, 'create'])->whereUuid('recipe')->name('formula-shares.create');
+    Route::get('/dashboard/formula-shares/{share}', [FormulaShareController::class, 'show'])->whereUuid('share')->name('formula-shares.show');
 
     Route::controller(RecipeController::class)
         ->prefix('/dashboard/recipes')

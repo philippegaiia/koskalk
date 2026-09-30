@@ -104,6 +104,11 @@
                                 </button>
                             </form>
                         @endif
+                        @if ($canShareFormula ?? false)
+                            @can('share', $recipe)
+                                <a href="{{ route('formula-shares.create', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">{{ __('sharing.share') }}</a>
+                            @endcan
+                        @endif
                         <form method="GET" action="{{ route('recipes.print.production', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
                             @foreach (collect($printQuery)->except('recipe') as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}" />

@@ -33,7 +33,7 @@ class IngredientShareResolver
                 try {
                     $graph = $this->graphs->current($destination, [$ingredient->id], $memo);
                     $work += array_fill_keys(array_keys($graph['source_keys']), true);
-                    $current[$ingredient->id] = $graph['nodes'][$graph['root_keys'][0]] + ['current_nodes' => array_values($graph['nodes'])];
+                    $current[$ingredient->id] = $graph['nodes'][$graph['root_keys'][0]] + ['current_nodes' => $graph['nodes']];
                 } catch (ValidationException) {
                     $current[$ingredient->id] = null;
                 }

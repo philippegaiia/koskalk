@@ -180,6 +180,9 @@ class RecipeController extends Controller
         return view('recipes.version', [
             ...$viewData,
             'isHistorical' => $isHistorical,
+            'canShareFormula' => ! $isHistorical && config('workspaces.formula_sharing.enabled', false)
+                && $user !== null && $user->can('share', $recipe)
+                && RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->exists(),
             'canUpdateRecipe' => $canUpdateRecipe,
             'canRestoreVersion' => $canUpdateRecipe,
             'canDuplicateRecipe' => $canDuplicateRecipe,

@@ -34043,6 +34043,1818 @@
       }
     },
     {
+      "group": "sharing",
+      "key": "accept",
+      "text": {
+        "de": "Unabhängige Kopie annehmen",
+        "es": "Aceptar copia independiente",
+        "fr": "Accepter une copie indépendante",
+        "it": "Accetta copia indipendente",
+        "nl": "Onafhankelijke kopie accepteren",
+        "pt_BR": "Aceitar cópia independente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "accepted",
+      "text": {
+        "de": "Dieses Angebot wurde angenommen. Der Empfänger besitzt ein unabhängiges Produkt.",
+        "es": "Esta oferta fue aceptada. El destinatario posee un producto independiente.",
+        "fr": "Cette offre a été acceptée. Le destinataire possède un produit indépendant.",
+        "it": "Questa offerta è stata accettata. Il destinatario possiede un prodotto indipendente.",
+        "nl": "Dit aanbod is geaccepteerd. De ontvanger bezit een onafhankelijk product.",
+        "pt_BR": "Esta oferta foi aceita. O destinatário possui um produto independente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "back",
+      "text": {
+        "de": "Zurück zum Teilen",
+        "es": "Volver a compartir",
+        "fr": "Retour au partage",
+        "it": "Torna alla condivisione",
+        "nl": "Terug naar delen",
+        "pt_BR": "Voltar ao compartilhamento"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "confirm",
+      "text": {
+        "de": "Ich habe alle freigegebenen Daten und den Empfänger-Arbeitsbereich geprüft.",
+        "es": "He revisado todos los datos compartidos y el espacio de trabajo destinatario.",
+        "fr": "J’ai vérifié toutes les données partagées et l’espace de travail destinataire.",
+        "it": "Ho verificato tutti i dati condivisi e lo spazio di lavoro destinatario.",
+        "nl": "Ik heb alle gedeelde gegevens en de ontvangende werkruimte gecontroleerd.",
+        "pt_BR": "Revisei todos os dados compartilhados e o espaço de trabalho destinatário."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "confirm_accept",
+      "text": {
+        "de": "Ich habe diese Formel, die Zutatenwahl und technischen Unterschiede geprüft.",
+        "es": "He revisado esta fórmula, las elecciones de ingredientes y las diferencias técnicas.",
+        "fr": "J’ai vérifié cette formule, les choix d’ingrédients et les différences techniques.",
+        "it": "Ho verificato questa formula, le scelte degli ingredienti e le differenze tecniche.",
+        "nl": "Ik heb deze formule, ingrediëntkeuzes en technische verschillen gecontroleerd.",
+        "pt_BR": "Revisei esta fórmula, as escolhas de ingredientes e as diferenças técnicas."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "confirm_substitute",
+      "text": {
+        "de": "Ich bestätige diese Ersetzung ausdrücklich für dieses Angebot.",
+        "es": "Confirmo explícitamente esta sustitución para esta oferta.",
+        "fr": "Je confirme explicitement cette substitution pour cette offre.",
+        "it": "Confermo esplicitamente questa sostituzione per questa offerta.",
+        "nl": "Ik bevestig deze vervanging expliciet voor dit aanbod.",
+        "pt_BR": "Confirmo explicitamente esta substituição para esta oferta."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "consequence",
+      "text": {
+        "de": "Nach der Annahme behält der Empfänger eine unabhängige Kopie.",
+        "es": "El destinatario conserva una copia independiente después de aceptar.",
+        "fr": "Le destinataire conserve une copie indépendante après acceptation.",
+        "it": "Il destinatario conserva una copia indipendente dopo l’accettazione.",
+        "nl": "De ontvanger behoudt na acceptatie een onafhankelijke kopie.",
+        "pt_BR": "O destinatário mantém uma cópia independente após aceitar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "copy_address",
+      "text": {
+        "de": "Adresse kopieren",
+        "es": "Copiar dirección",
+        "fr": "Copier l’adresse",
+        "it": "Copia indirizzo",
+        "nl": "Adres kopiëren",
+        "pt_BR": "Copiar endereço"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "decline",
+      "text": {
+        "de": "Angebot ablehnen",
+        "es": "Rechazar oferta",
+        "fr": "Refuser l’offre",
+        "it": "Rifiuta offerta",
+        "nl": "Aanbod afwijzen",
+        "pt_BR": "Recusar oferta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "description",
+      "text": {
+        "de": "Produktbeschreibung",
+        "es": "Descripción del producto",
+        "fr": "Description du produit",
+        "it": "Descrizione del prodotto",
+        "nl": "Productbeschrijving",
+        "pt_BR": "Descrição do produto"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "differences",
+      "text": {
+        "de": "Technische Unterschiede",
+        "es": "Diferencias técnicas",
+        "fr": "Différences techniques",
+        "it": "Differenze tecniche",
+        "nl": "Technische verschillen",
+        "pt_BR": "Diferenças técnicas"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "disclosure",
+      "text": {
+        "de": "Die folgenden Formel- und Zutatendaten werden geteilt",
+        "es": "Se compartirán los siguientes datos de fórmula e ingredientes",
+        "fr": "Les données suivantes de formule et d’ingrédients seront partagées",
+        "it": "Saranno condivisi i seguenti dati della formula e degli ingredienti",
+        "nl": "De volgende formule- en ingrediëntgegevens worden gedeeld",
+        "pt_BR": "Os seguintes dados da fórmula e dos ingredientes serão compartilhados"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "empty",
+      "text": {
+        "de": "Keine Angebote in diesem Arbeitsbereich.",
+        "es": "No hay ofertas en este espacio de trabajo.",
+        "fr": "Aucune offre dans cet espace de travail.",
+        "it": "Nessuna offerta in questo spazio di lavoro.",
+        "nl": "Geen aanbiedingen in deze werkruimte.",
+        "pt_BR": "Nenhuma oferta neste espaço de trabalho."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "excluded",
+      "text": {
+        "de": "Preise, Kosten, Lieferantendaten, Lagerbestand, Produktionsdaten und Medien sind ausgeschlossen. Eingebettete Verfahrensbilder und Anhänge werden entfernt.",
+        "es": "Se excluyen precios, costos, proveedores, existencias, producción y medios. Se eliminan las imágenes y adjuntos del procedimiento.",
+        "fr": "Les prix, coûts, données fournisseurs, stocks, données de production et médias sont exclus. Les images et pièces jointes intégrées au procédé sont retirées.",
+        "it": "Prezzi, costi, fornitori, scorte, dati di produzione e media sono esclusi. Le immagini e gli allegati incorporati nella procedura vengono rimossi.",
+        "nl": "Prijzen, kosten, leveranciersgegevens, voorraad, productiegegevens en media worden uitgesloten. Ingesloten procedureafbeeldingen en bijlagen worden verwijderd.",
+        "pt_BR": "Preços, custos, fornecedores, estoque, dados de produção e mídias são excluídos. Imagens e anexos incorporados ao procedimento são removidos."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "expires",
+      "text": {
+        "de": "Ablauf",
+        "es": "Caduca",
+        "fr": "Expiration",
+        "it": "Scadenza",
+        "nl": "Vervalt",
+        "pt_BR": "Expira"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "ifra_amendment",
+      "text": {
+        "de": "Gültige IFRA-Änderung",
+        "es": "Enmienda IFRA efectiva",
+        "fr": "Amendement IFRA effectif",
+        "it": "Emendamento IFRA effettivo",
+        "nl": "Effectief IFRA-amendement",
+        "pt_BR": "Emenda IFRA efetiva"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "ifra_category",
+      "text": {
+        "de": "Gültige IFRA-Kategorie",
+        "es": "Categoría IFRA efectiva",
+        "fr": "Catégorie IFRA effective",
+        "it": "Categoria IFRA effettiva",
+        "nl": "Effectieve IFRA-categorie",
+        "pt_BR": "Categoria IFRA efetiva"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "inbox",
+      "text": {
+        "de": "Posteingang",
+        "es": "Bandeja de entrada",
+        "fr": "Boîte de réception",
+        "it": "Posta in arrivo",
+        "nl": "Postvak in",
+        "pt_BR": "Caixa de entrada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "include_description",
+      "text": {
+        "de": "Produktbeschreibung einschließen",
+        "es": "Incluir descripción del producto",
+        "fr": "Inclure la description du produit",
+        "it": "Includi descrizione del prodotto",
+        "nl": "Productbeschrijving toevoegen",
+        "pt_BR": "Incluir descrição do produto"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "include_line_notes",
+      "text": {
+        "de": "Formelzeilennotizen einschließen",
+        "es": "Incluir notas de las líneas de fórmula",
+        "fr": "Inclure les notes des lignes de formule",
+        "it": "Includi note delle righe della formula",
+        "nl": "Notities bij formuleregels toevoegen",
+        "pt_BR": "Incluir notas das linhas da fórmula"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "include_procedure",
+      "text": {
+        "de": "Verfahrenstext einschließen",
+        "es": "Incluir texto del procedimiento",
+        "fr": "Inclure le texte du procédé",
+        "it": "Includi testo della procedura",
+        "nl": "Proceduretekst toevoegen",
+        "pt_BR": "Incluir texto do procedimento"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "incoming",
+      "text": {
+        "de": "Eingehende Daten",
+        "es": "Datos recibidos",
+        "fr": "Données reçues",
+        "it": "Dati ricevuti",
+        "nl": "Binnenkomende gegevens",
+        "pt_BR": "Dados recebidos"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "ingredient",
+      "text": {
+        "de": "Zutat",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "local",
+      "text": {
+        "de": "Ausgewählte lokale Daten",
+        "es": "Datos locales seleccionados",
+        "fr": "Données locales sélectionnées",
+        "it": "Dati locali selezionati",
+        "nl": "Geselecteerde lokale gegevens",
+        "pt_BR": "Dados locais selecionados"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "local_ingredient",
+      "text": {
+        "de": "Lokale Zutat",
+        "es": "Ingrediente local",
+        "fr": "Ingrédient local",
+        "it": "Ingrediente locale",
+        "nl": "Lokaal ingrediënt",
+        "pt_BR": "Ingrediente local"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "material_decision",
+      "text": {
+        "de": "Zutatenwahl",
+        "es": "Elección de ingrediente",
+        "fr": "Choix d’ingrédient",
+        "it": "Scelta dell’ingrediente",
+        "nl": "Ingrediëntkeuze",
+        "pt_BR": "Escolha de ingrediente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "materials",
+      "text": {
+        "de": "Zutaten und Abhängigkeiten",
+        "es": "Ingredientes y dependencias",
+        "fr": "Ingrédients et dépendances",
+        "it": "Ingredienti e dipendenze",
+        "nl": "Ingrediënten en afhankelijkheden",
+        "pt_BR": "Ingredientes e dependências"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "modes.automatic",
+      "text": {
+        "de": "Vorgeschlagene Lösung verwenden",
+        "es": "Usar resolución propuesta",
+        "fr": "Utiliser la résolution proposée",
+        "it": "Usa risoluzione proposta",
+        "nl": "Voorgestelde oplossing gebruiken",
+        "pt_BR": "Usar resolução proposta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "modes.decision",
+      "text": {
+        "de": "Entscheidung erforderlich",
+        "es": "Decisión necesaria",
+        "fr": "Décision requise",
+        "it": "Decisione necessaria",
+        "nl": "Keuze vereist",
+        "pt_BR": "Decisão necessária"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "modes.import",
+      "text": {
+        "de": "Unabhängige Zutat erstellen",
+        "es": "Crear ingrediente independiente",
+        "fr": "Créer un ingrédient indépendant",
+        "it": "Crea ingrediente indipendente",
+        "nl": "Onafhankelijk ingrediënt aanmaken",
+        "pt_BR": "Criar ingrediente independente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "modes.platform",
+      "text": {
+        "de": "Plattformzutat verwenden",
+        "es": "Usar ingrediente de plataforma",
+        "fr": "Utiliser l’ingrédient de la plateforme",
+        "it": "Usa ingrediente della piattaforma",
+        "nl": "Platformingrediënt gebruiken",
+        "pt_BR": "Usar ingrediente da plataforma"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "modes.reuse",
+      "text": {
+        "de": "Passende lokale Zutat verwenden",
+        "es": "Reutilizar ingrediente local equivalente",
+        "fr": "Réutiliser l’ingrédient local correspondant",
+        "it": "Riutilizza ingrediente locale corrispondente",
+        "nl": "Overeenkomend lokaal ingrediënt hergebruiken",
+        "pt_BR": "Reutilizar ingrediente local correspondente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "modes.substitute",
+      "text": {
+        "de": "Lokale Zutat ausdrücklich ersetzen",
+        "es": "Sustituir explícitamente por ingrediente local",
+        "fr": "Substituer explicitement un ingrédient local",
+        "it": "Sostituisci esplicitamente con ingrediente locale",
+        "nl": "Expliciet vervangen door lokaal ingrediënt",
+        "pt_BR": "Substituir explicitamente por ingrediente local"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "no",
+      "text": {
+        "de": "Nein",
+        "es": "No",
+        "fr": "Non",
+        "it": "No",
+        "nl": "Nee",
+        "pt_BR": "Não"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "no_differences",
+      "text": {
+        "de": "Keine technischen Unterschiede.",
+        "es": "Sin diferencias técnicas.",
+        "fr": "Aucune différence technique.",
+        "it": "Nessuna differenza tecnica.",
+        "nl": "Geen technische verschillen.",
+        "pt_BR": "Sem diferenças técnicas."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "note",
+      "text": {
+        "de": "Zeilennotiz",
+        "es": "Nota de línea",
+        "fr": "Note de ligne",
+        "it": "Nota della riga",
+        "nl": "Regelnotitie",
+        "pt_BR": "Nota da linha"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "open",
+      "text": {
+        "de": "Angebot prüfen",
+        "es": "Revisar oferta",
+        "fr": "Examiner l’offre",
+        "it": "Verifica offerta",
+        "nl": "Aanbod bekijken",
+        "pt_BR": "Revisar oferta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "open_product",
+      "text": {
+        "de": "Erhaltenes Produkt öffnen",
+        "es": "Abrir producto recibido",
+        "fr": "Ouvrir le produit reçu",
+        "it": "Apri prodotto ricevuto",
+        "nl": "Ontvangen product openen",
+        "pt_BR": "Abrir produto recebido"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "outbox",
+      "text": {
+        "de": "Postausgang",
+        "es": "Bandeja de salida",
+        "fr": "Boîte d’envoi",
+        "it": "Posta in uscita",
+        "nl": "Postvak uit",
+        "pt_BR": "Caixa de saída"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "percentage",
+      "text": {
+        "de": "Prozentsatz",
+        "es": "Porcentaje",
+        "fr": "Pourcentage",
+        "it": "Percentuale",
+        "nl": "Percentage",
+        "pt_BR": "Porcentagem"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "platform",
+      "text": {
+        "de": "Plattformzutat",
+        "es": "Ingrediente de plataforma",
+        "fr": "Ingrédient de la plateforme",
+        "it": "Ingrediente della piattaforma",
+        "nl": "Platformingrediënt",
+        "pt_BR": "Ingrediente da plataforma"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "preview",
+      "text": {
+        "de": "Freigabe prüfen",
+        "es": "Revisar datos compartidos",
+        "fr": "Vérifier les données partagées",
+        "it": "Verifica dati condivisi",
+        "nl": "Gedeelde gegevens controleren",
+        "pt_BR": "Revisar dados compartilhados"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "private",
+      "text": {
+        "de": "Private Zutat",
+        "es": "Ingrediente privado",
+        "fr": "Ingrédient privé",
+        "it": "Ingrediente privato",
+        "nl": "Privé-ingrediënt",
+        "pt_BR": "Ingrediente privado"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "private_disclosure",
+      "text": {
+        "de": "Alle benötigten privaten Zutaten und Mischungskomponenten sind unten aufgeführt. Prüfen Sie technische Daten und ausgewählte Texte auf vertrauliche Angaben.",
+        "es": "A continuación se incluyen todos los ingredientes privados y componentes necesarios. Revise los datos técnicos y textos seleccionados por si contienen información confidencial.",
+        "fr": "Tous les ingrédients privés et composants nécessaires figurent ci-dessous. Vérifiez les données techniques et les textes sélectionnés pour repérer toute information confidentielle.",
+        "it": "Sono inclusi tutti gli ingredienti privati e componenti necessari. Verifica che dati tecnici e testi selezionati non contengano informazioni riservate.",
+        "nl": "Alle benodigde privé-ingrediënten en mengselcomponenten staan hieronder. Controleer technische gegevens en geselecteerde tekst op vertrouwelijke informatie.",
+        "pt_BR": "Todos os ingredientes privados e componentes necessários estão incluídos abaixo. Revise os dados técnicos e textos selecionados quanto a informações confidenciais."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "procedure",
+      "text": {
+        "de": "Verfahrenstext",
+        "es": "Texto del procedimiento",
+        "fr": "Texte du procédé",
+        "it": "Testo della procedura",
+        "nl": "Proceduretekst",
+        "pt_BR": "Texto do procedimento"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "product",
+      "text": {
+        "de": "Produkt",
+        "es": "Producto",
+        "fr": "Produit",
+        "it": "Prodotto",
+        "nl": "Product",
+        "pt_BR": "Produto"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "quota",
+      "text": {
+        "de": ":count private Zutaten werden erstellt. Aktuelle Nutzung: :used von :limit.",
+        "es": "Se crearán :count ingredientes privados. Uso actual: :used de :limit.",
+        "fr": ":count ingrédients privés seront créés. Utilisation actuelle : :used sur :limit.",
+        "it": "Verranno creati :count ingredienti privati. Utilizzo attuale: :used di :limit.",
+        "nl": "Er worden :count privé-ingrediënten aangemaakt. Huidig gebruik: :used van :limit.",
+        "pt_BR": "Serão criados :count ingredientes privados. Uso atual: :used de :limit."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "recipient",
+      "text": {
+        "de": "Empfänger-Arbeitsbereich",
+        "es": "Espacio de trabajo destinatario",
+        "fr": "Espace de travail destinataire",
+        "it": "Spazio di lavoro destinatario",
+        "nl": "Ontvangende werkruimte",
+        "pt_BR": "Espaço de trabalho destinatário"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "recipient_address",
+      "text": {
+        "de": "Adresse des Empfänger-Arbeitsbereichs",
+        "es": "Dirección del espacio de trabajo destinatario",
+        "fr": "Adresse de l’espace de travail destinataire",
+        "it": "Indirizzo dello spazio di lavoro destinatario",
+        "nl": "Adres van de ontvangende werkruimte",
+        "pt_BR": "Endereço do espaço de trabalho destinatário"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "refresh",
+      "text": {
+        "de": "Vorschau aktualisieren",
+        "es": "Actualizar vista previa",
+        "fr": "Actualiser l’aperçu",
+        "it": "Aggiorna anteprima",
+        "nl": "Voorbeeld vernieuwen",
+        "pt_BR": "Atualizar prévia"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "remaining",
+      "text": {
+        "de": "Entscheiden Sie für alle Zutaten und aktualisieren Sie die Vorschau vor der Annahme.",
+        "es": "Resuelva todas las elecciones de ingredientes y actualice la vista previa antes de aceptar.",
+        "fr": "Résolvez tous les choix d’ingrédients, puis actualisez l’aperçu avant d’accepter.",
+        "it": "Risolvi tutte le scelte degli ingredienti e aggiorna l’anteprima prima di accettare.",
+        "nl": "Maak alle ingrediëntkeuzes en vernieuw het voorbeeld voordat u accepteert.",
+        "pt_BR": "Resolva todas as escolhas de ingredientes e atualize a prévia antes de aceitar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "removed_product",
+      "text": {
+        "de": "Produktdetails entfernt",
+        "es": "Detalles del producto eliminados",
+        "fr": "Détails du produit supprimés",
+        "it": "Dettagli del prodotto rimossi",
+        "nl": "Productgegevens verwijderd",
+        "pt_BR": "Detalhes do produto removidos"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "removed_workspace",
+      "text": {
+        "de": "Arbeitsbereich entfernt",
+        "es": "Espacio de trabajo eliminado",
+        "fr": "Espace de travail supprimé",
+        "it": "Spazio di lavoro eliminato",
+        "nl": "Werkruimte verwijderd",
+        "pt_BR": "Espaço de trabalho removido"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "resolve",
+      "text": {
+        "de": "Arbeitsbereich suchen",
+        "es": "Buscar espacio de trabajo",
+        "fr": "Rechercher l’espace de travail",
+        "it": "Trova spazio di lavoro",
+        "nl": "Werkruimte zoeken",
+        "pt_BR": "Buscar espaço de trabalho"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "review_required",
+      "text": {
+        "de": "Prüfen Sie Katalog- und regulatorische Hinweise zum erhaltenen Produkt vor der Verwendung.",
+        "es": "Revise las indicaciones del catálogo y normativas del producto recibido antes de usarlo.",
+        "fr": "Vérifiez les indications du catalogue et la réglementation du produit reçu avant utilisation.",
+        "it": "Verifica le indicazioni del catalogo e normative del prodotto ricevuto prima dell’uso.",
+        "nl": "Controleer catalogus- en wettelijke richtlijnen voor het ontvangen product vóór gebruik.",
+        "pt_BR": "Revise as orientações do catálogo e regulatórias do produto recebido antes de usar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "revoke",
+      "text": {
+        "de": "Angebot widerrufen",
+        "es": "Revocar oferta",
+        "fr": "Révoquer l’offre",
+        "it": "Revoca offerta",
+        "nl": "Aanbod intrekken",
+        "pt_BR": "Revogar oferta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "saved_only",
+      "text": {
+        "de": "Nur die zuletzt gespeicherte Formel wird geteilt. Speichern Sie aktuelle Änderungen zuerst.",
+        "es": "Solo se incluye la última fórmula guardada. Guarde los cambios actuales antes de compartir.",
+        "fr": "Seule la dernière formule enregistrée est incluse. Enregistrez les modifications actuelles avant de partager.",
+        "it": "È inclusa solo l’ultima formula salvata. Salva prima le modifiche attuali.",
+        "nl": "Alleen de laatst opgeslagen formule wordt gedeeld. Sla huidige wijzigingen eerst op.",
+        "pt_BR": "Somente a última fórmula salva é incluída. Salve as alterações atuais antes de compartilhar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "send",
+      "text": {
+        "de": "Angebot senden",
+        "es": "Enviar oferta",
+        "fr": "Envoyer l’offre",
+        "it": "Invia offerta",
+        "nl": "Aanbod verzenden",
+        "pt_BR": "Enviar oferta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "sender",
+      "text": {
+        "de": "Absender-Arbeitsbereich",
+        "es": "Espacio de trabajo remitente",
+        "fr": "Espace de travail expéditeur",
+        "it": "Spazio di lavoro mittente",
+        "nl": "Verzendende werkruimte",
+        "pt_BR": "Espaço de trabalho remetente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.batch_size",
+      "text": {
+        "de": "Chargengröße",
+        "es": "Tamaño del lote",
+        "fr": "Taille du lot",
+        "it": "Dimensione lotto",
+        "nl": "Batchgrootte",
+        "pt_BR": "Tamanho do lote"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.batch_unit",
+      "text": {
+        "de": "Chargeneinheit",
+        "es": "Unidad del lote",
+        "fr": "Unité du lot",
+        "it": "Unità lotto",
+        "nl": "Batcheenheid",
+        "pt_BR": "Unidade do lote"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.calculation_basis",
+      "text": {
+        "de": "Berechnungsgrundlage",
+        "es": "Base de cálculo",
+        "fr": "Base de calcul",
+        "it": "Base di calcolo",
+        "nl": "Berekeningsbasis",
+        "pt_BR": "Base de cálculo"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.dilution_mode",
+      "text": {
+        "de": "Verdünnungseinstellung",
+        "es": "Ajuste de dilución",
+        "fr": "Réglage de dilution",
+        "it": "Impostazione diluizione",
+        "nl": "Verdunningsinstelling",
+        "pt_BR": "Configuração de diluição"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.dilution_value",
+      "text": {
+        "de": "Verdünnungswert",
+        "es": "Valor de dilución",
+        "fr": "Valeur de dilution",
+        "it": "Valore diluizione",
+        "nl": "Verdunningswaarde",
+        "pt_BR": "Valor de diluição"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.dual_lye_koh_percentage",
+      "text": {
+        "de": "KOH-Anteil (%)",
+        "es": "Proporción de KOH (%)",
+        "fr": "Part du KOH (%)",
+        "it": "Quota KOH (%)",
+        "nl": "KOH-aandeel (%)",
+        "pt_BR": "Proporção de KOH (%)"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.editing_mode",
+      "text": {
+        "de": "Bearbeitungseinstellung",
+        "es": "Preferencia de edición",
+        "fr": "Préférence d’édition",
+        "it": "Preferenza di modifica",
+        "nl": "Bewerkingsvoorkeur",
+        "pt_BR": "Preferência de edição"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.exposure_mode",
+      "text": {
+        "de": "Exposition",
+        "es": "Exposición",
+        "fr": "Exposition",
+        "it": "Esposizione",
+        "nl": "Blootstelling",
+        "pt_BR": "Exposição"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.ifra_selection_mode",
+      "text": {
+        "de": "IFRA-Auswahl",
+        "es": "Selección IFRA",
+        "fr": "Sélection IFRA",
+        "it": "Selezione IFRA",
+        "nl": "IFRA-selectie",
+        "pt_BR": "Seleção IFRA"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.koh_purity_percentage",
+      "text": {
+        "de": "KOH-Reinheit (%)",
+        "es": "Pureza de KOH (%)",
+        "fr": "Pureté du KOH (%)",
+        "it": "Purezza KOH (%)",
+        "nl": "KOH-zuiverheid (%)",
+        "pt_BR": "Pureza do KOH (%)"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.lye_type",
+      "text": {
+        "de": "Alkali",
+        "es": "Álcali",
+        "fr": "Alcali",
+        "it": "Alcali",
+        "nl": "Alkali",
+        "pt_BR": "Álcali"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.manufacturing_mode",
+      "text": {
+        "de": "Herstellungsmodus",
+        "es": "Modo de fabricación",
+        "fr": "Mode de fabrication",
+        "it": "Modalità di produzione",
+        "nl": "Productiemodus",
+        "pt_BR": "Modo de fabricação"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.oil_unit",
+      "text": {
+        "de": "Eingabemasseneinheit",
+        "es": "Unidad de masa de entrada",
+        "fr": "Unité de masse saisie",
+        "it": "Unità della massa inserita",
+        "nl": "Eenheid van invoermassa",
+        "pt_BR": "Unidade de massa informada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.oil_weight",
+      "text": {
+        "de": "Eingabemasse der Formulierung",
+        "es": "Masa de entrada de formulación",
+        "fr": "Masse de formulation saisie",
+        "it": "Massa di formulazione inserita",
+        "nl": "Ingevoerde formuleringsmassa",
+        "pt_BR": "Massa de formulação informada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.product_family",
+      "text": {
+        "de": "Produktfamilie",
+        "es": "Familia de producto",
+        "fr": "Famille de produit",
+        "it": "Famiglia di prodotto",
+        "nl": "Productfamilie",
+        "pt_BR": "Família de produto"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.product_type",
+      "text": {
+        "de": "Produkttyp",
+        "es": "Tipo de producto",
+        "fr": "Type de produit",
+        "it": "Tipo di prodotto",
+        "nl": "Producttype",
+        "pt_BR": "Tipo de produto"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.regulatory_regime",
+      "text": {
+        "de": "Regulatorischer Kontext",
+        "es": "Contexto normativo",
+        "fr": "Contexte réglementaire",
+        "it": "Contesto normativo",
+        "nl": "Wettelijke context",
+        "pt_BR": "Contexto regulatório"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.superfat",
+      "text": {
+        "de": "Überfettung (%)",
+        "es": "Sobreengrasado (%)",
+        "fr": "Surgraissage (%)",
+        "it": "Surgrassamento (%)",
+        "nl": "Overvetting (%)",
+        "pt_BR": "Sobreengorduramento (%)"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "share",
+      "text": {
+        "de": "Gespeicherte Formel teilen",
+        "es": "Compartir fórmula guardada",
+        "fr": "Partager la formule enregistrée",
+        "it": "Condividi formula salvata",
+        "nl": "Opgeslagen formule delen",
+        "pt_BR": "Compartilhar fórmula salva"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "state",
+      "text": {
+        "de": "Status",
+        "es": "Estado",
+        "fr": "État",
+        "it": "Stato",
+        "nl": "Status",
+        "pt_BR": "Estado"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "states.accepted",
+      "text": {
+        "de": "Angenommen",
+        "es": "Aceptada",
+        "fr": "Acceptée",
+        "it": "Accettata",
+        "nl": "Geaccepteerd",
+        "pt_BR": "Aceita"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "states.declined",
+      "text": {
+        "de": "Abgelehnt",
+        "es": "Rechazada",
+        "fr": "Refusée",
+        "it": "Rifiutata",
+        "nl": "Afgewezen",
+        "pt_BR": "Recusada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "states.expired",
+      "text": {
+        "de": "Abgelaufen",
+        "es": "Caducada",
+        "fr": "Expirée",
+        "it": "Scaduta",
+        "nl": "Verlopen",
+        "pt_BR": "Expirada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "states.pending",
+      "text": {
+        "de": "Ausstehend",
+        "es": "Pendiente",
+        "fr": "En attente",
+        "it": "In attesa",
+        "nl": "In afwachting",
+        "pt_BR": "Pendente"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "states.revoked",
+      "text": {
+        "de": "Widerrufen",
+        "es": "Revocada",
+        "fr": "Révoquée",
+        "it": "Revocata",
+        "nl": "Ingetrokken",
+        "pt_BR": "Revogada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.allergens",
+      "text": {
+        "de": "Allergene",
+        "es": "Alérgenos",
+        "fr": "Allergènes",
+        "it": "Allergeni",
+        "nl": "Allergenen",
+        "pt_BR": "Alérgenos"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.category",
+      "text": {
+        "de": "Kategorie",
+        "es": "Categoría",
+        "fr": "Catégorie",
+        "it": "Categoria",
+        "nl": "Categorie",
+        "pt_BR": "Categoria"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.components",
+      "text": {
+        "de": "Mischungskomponenten",
+        "es": "Componentes de mezcla",
+        "fr": "Composants du mélange",
+        "it": "Componenti della miscela",
+        "nl": "Mengselcomponenten",
+        "pt_BR": "Componentes da mistura"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.fatty_acids",
+      "text": {
+        "de": "Fettsäureprofil",
+        "es": "Perfil de ácidos grasos",
+        "fr": "Profil d’acides gras",
+        "it": "Profilo degli acidi grassi",
+        "nl": "Vetzuurprofiel",
+        "pt_BR": "Perfil de ácidos graxos"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.ifra_certificates",
+      "text": {
+        "de": "IFRA-Zertifikate und Grenzwerte",
+        "es": "Certificados y límites IFRA",
+        "fr": "Certificats et limites IFRA",
+        "it": "Certificati e limiti IFRA",
+        "nl": "IFRA-certificaten en limieten",
+        "pt_BR": "Certificados e limites IFRA"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.is_blend",
+      "text": {
+        "de": "Mischung",
+        "es": "Mezcla",
+        "fr": "Mélange",
+        "it": "Miscela",
+        "nl": "Mengsel",
+        "pt_BR": "Mistura"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.is_essential_oil",
+      "text": {
+        "de": "Ätherisches Öl",
+        "es": "Aceite esencial",
+        "fr": "Huile essentielle",
+        "it": "Olio essenziale",
+        "nl": "Etherische olie",
+        "pt_BR": "Óleo essencial"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.market_labels",
+      "text": {
+        "de": "Marktkennzeichnungen",
+        "es": "Etiquetas de mercado",
+        "fr": "Étiquettes de marché",
+        "it": "Etichette di mercato",
+        "nl": "Marktlabels",
+        "pt_BR": "Rótulos de mercado"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.sap_profile",
+      "text": {
+        "de": "Verseifungsprofil",
+        "es": "Perfil de saponificación",
+        "fr": "Profil de saponification",
+        "it": "Profilo di saponificazione",
+        "nl": "Verzepingsprofiel",
+        "pt_BR": "Perfil de saponificação"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical.substances",
+      "text": {
+        "de": "Stoffe",
+        "es": "Sustancias",
+        "fr": "Substances",
+        "it": "Sostanze",
+        "nl": "Stoffen",
+        "pt_BR": "Substâncias"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "technical_data",
+      "text": {
+        "de": "Technische Daten",
+        "es": "Datos técnicos",
+        "fr": "Données techniques",
+        "it": "Dati tecnici",
+        "nl": "Technische gegevens",
+        "pt_BR": "Dados técnicos"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "title",
+      "text": {
+        "de": "Formeln teilen",
+        "es": "Compartir fórmulas",
+        "fr": "Partage de formules",
+        "it": "Condivisione formule",
+        "nl": "Formules delen",
+        "pt_BR": "Compartilhamento de fórmulas"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "unavailable",
+      "text": {
+        "de": "Dieses Angebot ist geschlossen oder abgelaufen. Kehren Sie zum Posteingang zurück.",
+        "es": "Esta oferta está cerrada o caducada. Vuelva a la bandeja de entrada.",
+        "fr": "Cette offre est close ou expirée. Revenez à la boîte de réception.",
+        "it": "Questa offerta è chiusa o scaduta. Torna alla posta in arrivo.",
+        "nl": "Dit aanbod is gesloten of verlopen. Ga terug naar het postvak in.",
+        "pt_BR": "Esta oferta está encerrada ou expirada. Volte à caixa de entrada."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "unlimited",
+      "text": {
+        "de": "unbegrenzt",
+        "es": "ilimitado",
+        "fr": "illimité",
+        "it": "illimitato",
+        "nl": "onbeperkt",
+        "pt_BR": "ilimitado"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.accepted_deleted",
+      "text": {
+        "de": "Das Angebot wurde angenommen, das Produkt aber gelöscht. Eine erneute Annahme ist unmöglich.",
+        "es": "La oferta fue aceptada y su producto eliminado. No se puede aceptar de nuevo.",
+        "fr": "L’offre a été acceptée puis son produit supprimé. Elle ne peut pas être acceptée à nouveau.",
+        "it": "L’offerta è stata accettata e il prodotto eliminato. Non si può accettare di nuovo.",
+        "nl": "Dit aanbod is geaccepteerd en het product verwijderd. Het kan niet opnieuw worden geaccepteerd.",
+        "pt_BR": "A oferta foi aceita e o produto excluído. Não pode ser aceita novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.changed",
+      "text": {
+        "de": "Formel, Zutaten oder Empfänger haben sich geändert. Prüfen Sie eine neue Vorschau vor dem Senden.",
+        "es": "La fórmula, ingredientes o destinatario cambiaron. Revise una nueva vista previa antes de enviar.",
+        "fr": "La formule, les ingrédients ou le destinataire ont changé. Vérifiez un nouvel aperçu avant l’envoi.",
+        "it": "Formula, ingredienti o destinatario sono cambiati. Verifica una nuova anteprima prima di inviare.",
+        "nl": "De formule, ingrediënten of ontvanger zijn veranderd. Bekijk een nieuw voorbeeld voordat u verzendt.",
+        "pt_BR": "A fórmula, ingredientes ou destinatário mudaram. Revise uma nova prévia antes de enviar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.confirm",
+      "text": {
+        "de": "Prüfen und bestätigen Sie eine aktuelle Vorschau vor dem Fortfahren.",
+        "es": "Revise y confirme una vista previa actualizada antes de continuar.",
+        "fr": "Vérifiez et confirmez un nouvel aperçu avant de continuer.",
+        "it": "Verifica e conferma una nuova anteprima prima di continuare.",
+        "nl": "Controleer en bevestig een nieuw voorbeeld voordat u doorgaat.",
+        "pt_BR": "Revise e confirme uma nova prévia antes de continuar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.content",
+      "text": {
+        "de": "Dieses Format kann nicht geteilt werden. Speichern Sie unterstützten Text und prüfen Sie erneut.",
+        "es": "Este formato no se puede compartir. Guarde texto compatible y revise de nuevo.",
+        "fr": "Ce format ne peut pas être partagé. Enregistrez un texte compatible et relancez l’aperçu.",
+        "it": "Questo formato non può essere condiviso. Salva testo supportato e riprova.",
+        "nl": "Dit formaat kan niet worden gedeeld. Sla ondersteunde tekst op en vernieuw.",
+        "pt_BR": "Este formato não pode ser compartilhado. Salve texto compatível e revise novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.decisions",
+      "text": {
+        "de": "Wählen Sie für jede zu prüfende Zutat eine gültige lokale Zutat oder erstellen Sie eine unabhängige Kopie.",
+        "es": "Elija un ingrediente local válido o cree una copia independiente para cada material que requiera revisión.",
+        "fr": "Choisissez un ingrédient local valide ou créez une copie indépendante pour chaque matière à vérifier.",
+        "it": "Scegli un ingrediente locale valido o crea una copia indipendente per ogni materiale da verificare.",
+        "nl": "Kies een geldig lokaal ingrediënt of maak een onafhankelijke kopie voor elk te beoordelen materiaal.",
+        "pt_BR": "Escolha um ingrediente local válido ou crie uma cópia independente para cada material a revisar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.filter",
+      "text": {
+        "de": "Wählen Sie einen gültigen Posteingang, Postausgang oder eine Seitengröße.",
+        "es": "Elija una bandeja o tamaño de página válido.",
+        "fr": "Choisissez une boîte ou une taille de page valide.",
+        "it": "Scegli una casella o dimensione pagina valida.",
+        "nl": "Kies een geldig postvak of paginaformaat.",
+        "pt_BR": "Escolha uma caixa ou tamanho de página válido."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.formula",
+      "text": {
+        "de": "Die gespeicherte Formel enthält unvollständige oder widersprüchliche Zeilen. Korrigieren und speichern Sie sie erneut.",
+        "es": "La fórmula guardada tiene líneas incompletas o incoherentes. Corrija y vuelva a guardar.",
+        "fr": "La formule enregistrée contient des lignes incomplètes ou incohérentes. Corrigez-la et enregistrez à nouveau.",
+        "it": "La formula salvata contiene righe incomplete o incoerenti. Correggi e salva di nuovo.",
+        "nl": "De opgeslagen formule bevat onvolledige of inconsistente regels. Corrigeer en sla opnieuw op.",
+        "pt_BR": "A fórmula salva contém linhas incompletas ou inconsistentes. Corrija e salve novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.graph_invalid",
+      "text": {
+        "de": "Eine Zutatenabhängigkeit fehlt, ist unzugänglich oder zyklisch (:path). Korrigieren Sie die Formel und prüfen Sie erneut.",
+        "es": "Una dependencia falta, es inaccesible o circular (:path). Corrija la fórmula y vuelva a revisar.",
+        "fr": "Une dépendance manque, est inaccessible ou circulaire (:path). Corrigez la formule et relancez l’aperçu.",
+        "it": "Una dipendenza manca, è inaccessibile o circolare (:path). Correggi la formula e riprova.",
+        "nl": "Een afhankelijkheid ontbreekt, is ontoegankelijk of circulair (:path). Corrigeer de formule en vernieuw het voorbeeld.",
+        "pt_BR": "Uma dependência está ausente, inacessível ou circular (:path). Corrija a fórmula e revise novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.graph_limit",
+      "text": {
+        "de": "Diese Formel hat zu viele Zutatenabhängigkeiten. Vereinfachen Sie sie und versuchen Sie erneut.",
+        "es": "La fórmula tiene demasiadas dependencias. Simplifíquela e inténtelo de nuevo.",
+        "fr": "Cette formule comporte trop de dépendances. Simplifiez-la et réessayez.",
+        "it": "La formula ha troppe dipendenze. Semplificala e riprova.",
+        "nl": "Deze formule heeft te veel afhankelijkheden. Vereenvoudig deze en probeer opnieuw.",
+        "pt_BR": "A fórmula tem dependências demais. Simplifique e tente novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.manufactured_output",
+      "text": {
+        "de": "Nur Formeln fertiger Produkte können geteilt werden. Diese Formel erzeugt eine hergestellte Zutat.",
+        "es": "Solo se comparten fórmulas de productos terminados. Esta produce un ingrediente fabricado.",
+        "fr": "Seules les formules de produits finis peuvent être partagées. Celle-ci produit un ingrédient fabriqué.",
+        "it": "Si possono condividere solo formule di prodotti finiti. Questa produce un ingrediente fabbricato.",
+        "nl": "Alleen formules voor eindproducten kunnen worden gedeeld. Deze produceert een vervaardigd ingrediënt.",
+        "pt_BR": "Somente fórmulas de produtos acabados podem ser compartilhadas. Esta produz um ingrediente fabricado."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.missing_trusted_baseline",
+      "text": {
+        "de": "Eine geeignete private Zutat hat keine nutzbaren ursprünglichen Chemiedaten. Korrigieren Sie ihre Quelldaten vor dem Teilen.",
+        "es": "Un ingrediente privado apto no tiene datos químicos originales utilizables. Corrija sus datos antes de compartir.",
+        "fr": "Un ingrédient privé admissible n’a pas de référence chimique d’origine utilisable. Corrigez ses données avant de partager.",
+        "it": "Un ingrediente privato idoneo non ha dati chimici originali utilizzabili. Correggi i dati prima di condividere.",
+        "nl": "Een geschikt privé-ingrediënt mist bruikbare oorspronkelijke chemiegegevens. Corrigeer de brongegevens voordat u deelt.",
+        "pt_BR": "Um ingrediente privado elegível não tem referência química original utilizável. Corrija os dados antes de compartilhar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.options",
+      "text": {
+        "de": "Wählen Sie nur unterstützte Inhaltsoptionen.",
+        "es": "Elija solo opciones de contenido admitidas.",
+        "fr": "Choisissez uniquement les options de contenu disponibles.",
+        "it": "Scegli solo opzioni di contenuto supportate.",
+        "nl": "Kies alleen ondersteunde inhoudsopties.",
+        "pt_BR": "Escolha apenas opções de conteúdo compatíveis."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.pending_limit",
+      "text": {
+        "de": "Dieser Arbeitsbereich hat zu viele offene Angebote. Schließen Sie ein bestehendes Angebot.",
+        "es": "Este espacio tiene demasiadas ofertas pendientes. Cierre una oferta existente.",
+        "fr": "Cet espace a trop d’offres en attente. Fermez une offre existante.",
+        "it": "Questo spazio ha troppe offerte in attesa. Chiudi un’offerta esistente.",
+        "nl": "Deze werkruimte heeft te veel openstaande aanbiedingen. Sluit een bestaand aanbod.",
+        "pt_BR": "Este espaço tem ofertas pendentes demais. Encerre uma oferta existente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.preview_changed",
+      "text": {
+        "de": "Gewählte Zutaten oder Kataloghinweise haben sich geändert. Prüfen Sie eine neue Vorschau vor der Annahme.",
+        "es": "Los ingredientes elegidos o indicaciones del catálogo cambiaron. Revise una nueva vista previa.",
+        "fr": "Les ingrédients choisis ou les indications du catalogue ont changé. Vérifiez un nouvel aperçu avant d’accepter.",
+        "it": "Gli ingredienti scelti o le indicazioni del catalogo sono cambiati. Verifica una nuova anteprima.",
+        "nl": "Gekozen ingrediënten of catalogusrichtlijnen zijn veranderd. Bekijk een nieuw voorbeeld voordat u accepteert.",
+        "pt_BR": "Os ingredientes escolhidos ou orientações do catálogo mudaram. Revise uma nova prévia antes de aceitar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.rate_limit",
+      "text": {
+        "de": "Zu viele Freigabeanfragen. Versuchen Sie es in :seconds Sekunden erneut.",
+        "es": "Demasiadas solicitudes. Inténtelo en :seconds segundos.",
+        "fr": "Trop de demandes de partage. Réessayez dans :seconds secondes.",
+        "it": "Troppe richieste. Riprova tra :seconds secondi.",
+        "nl": "Te veel deelverzoeken. Probeer over :seconds seconden opnieuw.",
+        "pt_BR": "Muitas solicitações. Tente novamente em :seconds segundos."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.recipient",
+      "text": {
+        "de": "Geben Sie eine gültige Adresse eines anderen Arbeitsbereichs ein.",
+        "es": "Introduzca una dirección válida de otro espacio de trabajo.",
+        "fr": "Saisissez l’adresse valide d’un autre espace de travail.",
+        "it": "Inserisci un indirizzo valido di un altro spazio di lavoro.",
+        "nl": "Voer een geldig adres van een andere werkruimte in.",
+        "pt_BR": "Insira um endereço válido de outro espaço de trabalho."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.reference",
+      "text": {
+        "de": "Eine benötigte Katalog- oder regulatorische Referenz fehlt. Korrigieren Sie die Formel und prüfen Sie erneut.",
+        "es": "Falta una referencia de catálogo o normativa. Corrija la fórmula y revise de nuevo.",
+        "fr": "Une référence de catalogue ou réglementaire manque. Corrigez la formule et relancez l’aperçu.",
+        "it": "Manca un riferimento di catalogo o normativo. Correggi la formula e riprova.",
+        "nl": "Een catalogus- of wettelijke referentie ontbreekt. Corrigeer de formule en vernieuw.",
+        "pt_BR": "Falta uma referência de catálogo ou regulatória. Corrija a fórmula e revise novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.reference_unavailable",
+      "text": {
+        "de": "Eine benötigte Katalogreferenz fehlt. Korrigieren Sie die Quellzutat vor dem Teilen.",
+        "es": "Falta una referencia de catálogo necesaria. Corrija el ingrediente de origen.",
+        "fr": "Une référence de catalogue nécessaire manque. Corrigez l’ingrédient source avant de partager.",
+        "it": "Manca un riferimento di catalogo necessario. Correggi l’ingrediente di origine.",
+        "nl": "Een vereiste catalogusreferentie ontbreekt. Corrigeer het broningrediënt voordat u deelt.",
+        "pt_BR": "Falta uma referência de catálogo necessária. Corrija o ingrediente de origem."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.request",
+      "text": {
+        "de": "Diese Anfrage ist ungültig. Prüfen Sie die Vorschau und versuchen Sie erneut.",
+        "es": "La solicitud no es válida. Revise la oferta e inténtelo de nuevo.",
+        "fr": "Cette demande est invalide. Vérifiez l’aperçu et réessayez.",
+        "it": "La richiesta non è valida. Verifica l’anteprima e riprova.",
+        "nl": "Dit verzoek is ongeldig. Bekijk het voorbeeld en probeer opnieuw.",
+        "pt_BR": "A solicitação é inválida. Revise a prévia e tente novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.request_reused",
+      "text": {
+        "de": "Diese Anfrage wurde bereits für ein anderes Angebot verwendet. Erstellen Sie eine neue Vorschau.",
+        "es": "La solicitud ya se usó para otra oferta. Cree una nueva vista previa.",
+        "fr": "Cette demande a déjà servi pour une autre offre. Créez un nouvel aperçu.",
+        "it": "La richiesta è già stata usata per un’altra offerta. Crea una nuova anteprima.",
+        "nl": "Dit verzoek is al voor een ander aanbod gebruikt. Maak een nieuw voorbeeld.",
+        "pt_BR": "A solicitação já foi usada em outra oferta. Crie uma nova prévia."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.saponification",
+      "text": {
+        "de": "Die gewählte Zutat muss unter ihren eigenen ursprünglichen Chemiedaten bereits zur Verseifung geeignet sein.",
+        "es": "El ingrediente elegido debe ser apto para saponificación según sus propios datos químicos originales.",
+        "fr": "L’ingrédient choisi doit déjà être admissible à la saponification selon sa propre référence chimique.",
+        "it": "L’ingrediente scelto deve essere già idoneo alla saponificazione secondo i propri dati chimici originali.",
+        "nl": "Het gekozen ingrediënt moet al geschikt zijn voor verzeping volgens zijn eigen oorspronkelijke chemiegegevens.",
+        "pt_BR": "O ingrediente escolhido já deve ser elegível para saponificação segundo sua própria referência química."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.saved_required",
+      "text": {
+        "de": "Speichern Sie eine Formel vor dem Teilen dieses Produkts.",
+        "es": "Guarde una fórmula antes de compartir este producto.",
+        "fr": "Enregistrez une formule avant de partager ce produit.",
+        "it": "Salva una formula prima di condividere questo prodotto.",
+        "nl": "Sla een formule op voordat u dit product deelt.",
+        "pt_BR": "Salve uma fórmula antes de compartilhar este produto."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.settings",
+      "text": {
+        "de": "Die gespeicherte Formel hat fehlende oder nicht unterstützte Berechnungseinstellungen. Korrigieren und speichern Sie sie erneut.",
+        "es": "La fórmula guardada tiene ajustes de cálculo ausentes o incompatibles. Corrija y guarde de nuevo.",
+        "fr": "La formule enregistrée a des paramètres de calcul manquants ou incompatibles. Corrigez et enregistrez à nouveau.",
+        "it": "La formula salvata ha impostazioni di calcolo mancanti o non supportate. Correggi e salva di nuovo.",
+        "nl": "De opgeslagen formule mist geldige berekeningsinstellingen. Corrigeer en sla opnieuw op.",
+        "pt_BR": "A fórmula salva tem configurações de cálculo ausentes ou incompatíveis. Corrija e salve novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.snapshot_size",
+      "text": {
+        "de": "Dieses Angebot ist zu groß. Reduzieren Sie optionale Inhalte oder Abhängigkeiten.",
+        "es": "La oferta es demasiado grande. Reduzca contenido opcional o dependencias.",
+        "fr": "Cette offre est trop volumineuse. Réduisez les contenus facultatifs ou les dépendances.",
+        "it": "L’offerta è troppo grande. Riduci contenuti facoltativi o dipendenze.",
+        "nl": "Dit aanbod is te groot. Verminder optionele inhoud of afhankelijkheden.",
+        "pt_BR": "A oferta é muito grande. Reduza conteúdo opcional ou dependências."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.substitute_confirm",
+      "text": {
+        "de": "Bestätigen Sie jede lokale Ersetzung vor dem Aktualisieren ausdrücklich.",
+        "es": "Confirme explícitamente cada sustitución local antes de actualizar.",
+        "fr": "Confirmez explicitement chaque substitution locale avant d’actualiser.",
+        "it": "Conferma esplicitamente ogni sostituzione locale prima di aggiornare.",
+        "nl": "Bevestig iedere lokale vervanging expliciet voordat u vernieuwt.",
+        "pt_BR": "Confirme explicitamente cada substituição local antes de atualizar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.unavailable",
+      "text": {
+        "de": "Dieses Angebot kann nicht mehr angenommen werden. Kehren Sie zum Posteingang zurück.",
+        "es": "La oferta ya no se puede aceptar. Vuelva a la bandeja de entrada.",
+        "fr": "Cette offre ne peut plus être acceptée. Revenez à la boîte de réception.",
+        "it": "L’offerta non può più essere accettata. Torna alla posta in arrivo.",
+        "nl": "Dit aanbod kan niet meer worden geaccepteerd. Ga terug naar het postvak in.",
+        "pt_BR": "A oferta não pode mais ser aceita. Volte à caixa de entrada."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.automatic",
+      "text": {
+        "de": "Automatisch",
+        "es": "Automática",
+        "fr": "Automatique",
+        "it": "Automatica",
+        "nl": "Automatisch",
+        "pt_BR": "Automática"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.blend_only",
+      "text": {
+        "de": "Nur mischen",
+        "es": "Solo mezclar",
+        "fr": "Mélange seul",
+        "it": "Solo miscela",
+        "nl": "Alleen mengen",
+        "pt_BR": "Somente misturar"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.dual",
+      "text": {
+        "de": "NaOH + KOH",
+        "es": "NaOH + KOH",
+        "fr": "NaOH + KOH",
+        "it": "NaOH + KOH",
+        "nl": "NaOH + KOH",
+        "pt_BR": "NaOH + KOH"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.initial_oils",
+      "text": {
+        "de": "Ausgangsöle",
+        "es": "Aceites iniciales",
+        "fr": "Huiles initiales",
+        "it": "Oli iniziali",
+        "nl": "Beginoliën",
+        "pt_BR": "Óleos iniciais"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.koh",
+      "text": {
+        "de": "KOH",
+        "es": "KOH",
+        "fr": "KOH",
+        "it": "KOH",
+        "nl": "KOH",
+        "pt_BR": "KOH"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.leave_on",
+      "text": {
+        "de": "Verbleibt auf der Haut",
+        "es": "Sin aclarado",
+        "fr": "Sans rinçage",
+        "it": "Senza risciacquo",
+        "nl": "Niet afspoelen",
+        "pt_BR": "Sem enxágue"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.lye_concentration",
+      "text": {
+        "de": "Alkalikonzentration",
+        "es": "Concentración de álcali",
+        "fr": "Concentration d’alcali",
+        "it": "Concentrazione alcali",
+        "nl": "Alkaliconcentratie",
+        "pt_BR": "Concentração de álcali"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.lye_ratio",
+      "text": {
+        "de": "Verhältnis Flüssigkeit zu Alkali",
+        "es": "Proporción líquido/álcali",
+        "fr": "Rapport liquide/alcali",
+        "it": "Rapporto liquido/alcali",
+        "nl": "Verhouding vloeistof/alkali",
+        "pt_BR": "Proporção líquido/álcali"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.manual",
+      "text": {
+        "de": "Manuell",
+        "es": "Manual",
+        "fr": "Manuelle",
+        "it": "Manuale",
+        "nl": "Handmatig",
+        "pt_BR": "Manual"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.naoh",
+      "text": {
+        "de": "NaOH",
+        "es": "NaOH",
+        "fr": "NaOH",
+        "it": "NaOH",
+        "nl": "NaOH",
+        "pt_BR": "NaOH"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.percent_of_oils",
+      "text": {
+        "de": "Prozentsatz der Öle",
+        "es": "Porcentaje de aceites",
+        "fr": "Pourcentage des huiles",
+        "it": "Percentuale degli oli",
+        "nl": "Percentage van oliën",
+        "pt_BR": "Porcentagem dos óleos"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.percentage",
+      "text": {
+        "de": "Prozentsatz",
+        "es": "Porcentaje",
+        "fr": "Pourcentage",
+        "it": "Percentuale",
+        "nl": "Percentage",
+        "pt_BR": "Porcentagem"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.rinse_off",
+      "text": {
+        "de": "Abspülbar",
+        "es": "Con aclarado",
+        "fr": "À rincer",
+        "it": "Da risciacquare",
+        "nl": "Afspoelen",
+        "pt_BR": "Com enxágue"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.saponify_in_formula",
+      "text": {
+        "de": "In der Formel verseifen",
+        "es": "Saponificar en fórmula",
+        "fr": "Saponifier dans la formule",
+        "it": "Saponifica nella formula",
+        "nl": "Verzepen in formule",
+        "pt_BR": "Saponificar na fórmula"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.total_formula",
+      "text": {
+        "de": "Gesamte Formel",
+        "es": "Fórmula total",
+        "fr": "Formule totale",
+        "it": "Formula totale",
+        "nl": "Totale formule",
+        "pt_BR": "Fórmula total"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.weight",
+      "text": {
+        "de": "Gewicht",
+        "es": "Peso",
+        "fr": "Poids",
+        "it": "Peso",
+        "nl": "Gewicht",
+        "pt_BR": "Peso"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.ambiguous",
+      "text": {
+        "de": "Mehrere lokale Zutaten stimmen überein. Wählen Sie eine oder erstellen Sie eine unabhängige Kopie.",
+        "es": "Coinciden varios ingredientes locales. Elija uno o cree una copia independiente.",
+        "fr": "Plusieurs ingrédients locaux correspondent. Choisissez-en un ou créez une copie indépendante.",
+        "it": "Corrispondono più ingredienti locali. Scegline uno o crea una copia indipendente.",
+        "nl": "Meerdere lokale ingrediënten komen overeen. Kies er één of maak een onafhankelijke kopie.",
+        "pt_BR": "Vários ingredientes locais correspondem. Escolha um ou crie uma cópia independente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.ifra_selection_changed",
+      "text": {
+        "de": "Aktuelle IFRA-Hinweise weichen vom Angebot ab. Die erhaltene Formel verwendet die hier gezeigten Hinweise.",
+        "es": "Las indicaciones IFRA actuales difieren de la oferta. La fórmula recibida usa las indicaciones mostradas aquí.",
+        "fr": "Les indications IFRA actuelles diffèrent de l’offre. La formule reçue utilise les indications affichées ici.",
+        "it": "Le indicazioni IFRA attuali differiscono dall’offerta. La formula ricevuta usa quelle mostrate qui.",
+        "nl": "Actuele IFRA-richtlijnen verschillen van het aanbod. De ontvangen formule gebruikt de hier getoonde richtlijnen.",
+        "pt_BR": "As orientações IFRA atuais diferem da oferta. A fórmula recebida usa as orientações mostradas aqui."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.platform_changed",
+      "text": {
+        "de": "Technische Plattformdaten haben sich seit dem Versand geändert.",
+        "es": "Los datos técnicos de la plataforma cambiaron desde el envío.",
+        "fr": "Les données techniques de la plateforme ont changé depuis l’envoi.",
+        "it": "I dati tecnici della piattaforma sono cambiati dall’invio.",
+        "nl": "Technische platformgegevens zijn veranderd sinds verzending.",
+        "pt_BR": "Os dados técnicos da plataforma mudaram desde o envio."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.procedure_media_excluded",
+      "text": {
+        "de": "Bilder oder Anhänge im ausgewählten Verfahren wurden entfernt. Nur der hier gezeigte Text wird geteilt.",
+        "es": "Se eliminaron imágenes o adjuntos del procedimiento seleccionado. Solo se compartirá el texto mostrado.",
+        "fr": "Les images ou pièces jointes du procédé sélectionné ont été retirées. Seul le texte affiché sera partagé.",
+        "it": "Le immagini o gli allegati della procedura selezionata sono stati rimossi. Verrà condiviso solo il testo mostrato.",
+        "nl": "Afbeeldingen of bijlagen uit de gekozen procedure zijn verwijderd. Alleen de getoonde tekst wordt gedeeld.",
+        "pt_BR": "Imagens ou anexos do procedimento selecionado foram removidos. Somente o texto mostrado será compartilhado."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.remembered_substitution",
+      "text": {
+        "de": "Ein früheres Angebot verwendete eine Ersetzung. Wählen Sie für dieses Angebot ausdrücklich erneut.",
+        "es": "Una oferta anterior usó una sustitución. Elija explícitamente de nuevo.",
+        "fr": "Une offre précédente utilisait une substitution. Choisissez à nouveau explicitement.",
+        "it": "Un’offerta precedente usava una sostituzione. Scegli di nuovo esplicitamente.",
+        "nl": "Een vorig aanbod gebruikte een vervanging. Kies voor dit aanbod opnieuw expliciet.",
+        "pt_BR": "Uma oferta anterior usou uma substituição. Escolha explicitamente novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.stale_mapping",
+      "text": {
+        "de": "Die gespeicherte Wahl hat sich geändert. Wählen Sie erneut.",
+        "es": "La elección recordada cambió. Elija de nuevo.",
+        "fr": "Le choix mémorisé a changé. Choisissez à nouveau.",
+        "it": "La scelta memorizzata è cambiata. Scegli di nuovo.",
+        "nl": "De onthouden keuze is veranderd. Kies opnieuw.",
+        "pt_BR": "A escolha memorizada mudou. Escolha novamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.substitution",
+      "text": {
+        "de": "Die gewählte Zutat ist eine ausdrückliche Ersetzung. Prüfen Sie die Unterschiede.",
+        "es": "El ingrediente elegido es una sustitución explícita. Revise las diferencias.",
+        "fr": "L’ingrédient choisi est une substitution explicite. Vérifiez les différences.",
+        "it": "L’ingrediente scelto è una sostituzione esplicita. Verifica le differenze.",
+        "nl": "Het gekozen ingrediënt is een expliciete vervanging. Controleer de verschillen.",
+        "pt_BR": "O ingrediente escolhido é uma substituição explícita. Revise as diferenças."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "warnings.technical_changed",
+      "text": {
+        "de": "Die lokale Zutat hat andere technische Daten. Prüfen Sie die Unterschiede und wählen Sie ausdrücklich.",
+        "es": "El ingrediente local tiene datos técnicos diferentes. Revise las diferencias y elija explícitamente.",
+        "fr": "L’ingrédient local a des données techniques différentes. Vérifiez les écarts et choisissez explicitement.",
+        "it": "L’ingrediente locale ha dati tecnici diversi. Verifica le differenze e scegli esplicitamente.",
+        "nl": "Het lokale ingrediënt heeft andere technische gegevens. Controleer verschillen en kies expliciet.",
+        "pt_BR": "O ingrediente local tem dados técnicos diferentes. Revise as diferenças e escolha explicitamente."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "weight",
+      "text": {
+        "de": "Gewicht",
+        "es": "Peso",
+        "fr": "Poids",
+        "it": "Peso",
+        "nl": "Gewicht",
+        "pt_BR": "Peso"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "workspace_address",
+      "text": {
+        "de": "Ihre Arbeitsbereichsadresse",
+        "es": "Dirección de su espacio de trabajo",
+        "fr": "Adresse de votre espace de travail",
+        "it": "Indirizzo del tuo spazio di lavoro",
+        "nl": "Adres van uw werkruimte",
+        "pt_BR": "Endereço do seu espaço de trabalho"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "yes",
+      "text": {
+        "de": "Ja",
+        "es": "Sí",
+        "fr": "Oui",
+        "it": "Sì",
+        "nl": "Ja",
+        "pt_BR": "Sim"
+      }
+    },
+    {
       "group": "table",
       "key": "pagination.go_to_page",
       "text": {

@@ -23,6 +23,7 @@ class FormulaSharePreview
         private readonly EntitlementService $entitlements,
         private readonly LyeLiquidIngredientValidator $dilutionLiquids,
         private readonly FormulaSharePhaseValidator $phases,
+        private readonly FormulaSharePresenter $presenter,
     ) {}
 
     /** Browser-safe projection only.
@@ -41,8 +42,8 @@ class FormulaSharePreview
             $snapshot = $share->snapshot;
             $rows = collect($prepared['resolution']['nodes'])->map(function (array $row, string $key) use ($snapshot): array {
                 $incoming = $snapshot['ingredients']['nodes'][$key];
-                $technical = $this->displayTechnical($incoming['technical']);
-                $local = $row['local_projection'] === null ? null : $this->displayTechnical($row['local_projection']['technical']);
+                $technical = $this->presenter->technical($incoming['technical'], $snapshot['ingredients']['nodes']);
+                $local = $row['local_projection'] === null ? null : $this->presenter->technical($row['local_projection']['technical'], $row['local_projection']['current_nodes']);
 
                 return [
                     'key' => $key, 'kind' => $incoming['kind'], 'name' => $incoming['display']['display_name'], 'identity' => $incoming['display'],
@@ -53,13 +54,14 @@ class FormulaSharePreview
                     'warning' => $row['warning'],
                     'candidates' => collect($row['candidates'])->map(fn (array $candidate): array => [
                         'public_id' => $candidate['public_id'], 'name' => $candidate['name'],
-                        'differences' => $this->differences($technical, $this->displayTechnical($candidate['projection']['technical'])),
+                        'differences' => $this->differences($technical, $this->presenter->technical($candidate['projection']['technical'], $candidate['projection']['current_nodes'])),
                     ])->all(),
                 ];
             })->values()->all();
 
             return [
                 'share_public_id' => $share->public_id, 'product_name' => $snapshot['product']['name'],
+                'settings' => $this->presenter->settings($snapshot),
                 'description' => $snapshot['product']['description'] ?? null,
                 'procedure' => $snapshot['formula']['manufacturing_instructions'] ?? null,
                 'phases' => collect($snapshot['formula']['phases'])->map(fn (array $phase): array => Arr::only($phase, ['key', 'slug', 'name', 'phase_type', 'sort_order', 'is_system', 'items']))->all(),
@@ -130,23 +132,6 @@ class FormulaSharePreview
             'amendment_code' => $references[IfraAmendment::class.':'.$effective['amendment_id']]['code'] ?? null,
             'changed' => $ifraChanged,
         ]];
-    }
-
-    /** @param array<string, mixed> $technical @return array<string, mixed> */
-    private function displayTechnical(array $technical): array
-    {
-        unset($technical['baseline'], $technical['is_soap_saponification_trusted']);
-        $technical['components'] = collect($technical['components'])->map(fn (array $component): array => Arr::only($component, ['key', 'percentage_in_parent', 'sort_order']))->all();
-        $stripIds = function (mixed $value) use (&$stripIds): mixed {
-            if (! is_array($value)) {
-                return $value;
-            }
-            unset($value['id']);
-
-            return collect($value)->map(fn (mixed $entry): mixed => $stripIds($entry))->all();
-        };
-
-        return $stripIds($technical);
     }
 
     /** @param array<string, mixed> $incoming @param array<string, mixed> $local @return list<string> */

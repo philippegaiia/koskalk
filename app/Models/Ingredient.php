@@ -74,7 +74,9 @@ class Ingredient extends Model
 
     public function sharingLineageKey(): ?string
     {
-        return $this->owner_type === null ? null : ($this->share_lineage_key ?? $this->public_id);
+        $isPlatform = $this->owner_type === null && $this->owner_id === null && $this->workspace_id === null;
+
+        return $isPlatform ? null : ($this->share_lineage_key ?? $this->public_id);
     }
 
     public function sapProfile(): HasOne

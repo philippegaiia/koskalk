@@ -13,6 +13,16 @@ class RecipePolicy
 {
     use HandlesWorkspaceAuthorization;
 
+    public function share(User $user, Recipe $recipe): bool
+    {
+        $actor = User::withoutGlobalScopes()->find($user->id);
+        $source = Recipe::withoutGlobalScopes()->find($recipe->id);
+
+        return config('workspaces.formula_sharing.enabled', false)
+            && $actor !== null && $source?->workspace_id !== null
+            && app(WorkspaceAuthorization::class)->canManage($actor, $source->workspace_id);
+    }
+
     public function viewAny(User $user): bool
     {
         return true;

@@ -32,6 +32,7 @@
         <env name="INGREDIENT_ENRICHMENT_MODEL" value="gpt-5.6-terra"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="WORKSPACE_COLLABORATION_ENABLED" value="false"/>
+        <env name="WORKSPACE_FORMULA_SHARING_ENABLED" value="false"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

@@ -72,3 +72,6 @@ Ingredient replacement/removal and packaging removal can mutate multiple formula
 
 ## Allow member accounts to become first-time company owners
 Beta owner invitations may target an existing member account that owns no company. Require the matching verified login to accept; preserve its password, identity and other memberships. Recheck ownership while locking user before invitation; at most one owned company remains the launch policy. A member invitation must still never provision ownership or an entitlement.
+
+## Advance workspace MVCC versions for coherent sharing writes
+Workspace row locks alone do not refresh PostgreSQL REPEATABLE READ snapshots. Sharing write transactions must acquire WorkspaceWriteLock in the outer retrying transaction before quota or mapping checks; the common quota and locked-Product paths use the same lock. Its no-op updated_at update advances MVCC without changing business timestamps or emitting model events. Set REPEATABLE READ before the first query only in an outer PostgreSQL transaction, reload records on retries, and lock relevant membership rows before reauthorizing Admins.

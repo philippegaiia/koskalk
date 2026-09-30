@@ -205,10 +205,7 @@ class EntitlementService
     public function withinWorkspaceQuotaLock(Workspace $workspace, Closure $callback, int $attempts = 5): mixed
     {
         return DB::transaction(function () use ($callback, $workspace): mixed {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->with('owner')
-                ->lockForUpdate()
-                ->findOrFail($workspace->id);
+            $lockedWorkspace = app(WorkspaceWriteLock::class)->acquire($workspace->id)->load('owner');
 
             return $callback($lockedWorkspace);
         }, attempts: $attempts);

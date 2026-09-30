@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\Workspace;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
@@ -98,7 +97,7 @@ class RecipeEditingService
         return DB::transaction(function () use ($recipe, $callback): mixed {
             $workspaceId = Recipe::withoutGlobalScopes()->whereKey($recipe->id)->value('workspace_id');
             if ($workspaceId !== null) {
-                Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspaceId);
+                app(WorkspaceWriteLock::class)->acquire((int) $workspaceId);
             }
             $locked = Recipe::withoutGlobalScopes()->lockForUpdate()->findOrFail($recipe->id);
             if ($locked->workspace_id !== $workspaceId) {

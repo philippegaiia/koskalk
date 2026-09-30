@@ -23,6 +23,9 @@ class IngredientShareFingerprint
         if ($value === null) {
             return null;
         }
+        if (is_float($value) && is_finite($value)) {
+            return number_format($value, $scale, '.', '');
+        }
         if (! is_numeric($value) || ! is_finite((float) $value) || preg_match('/^-?\d+(?:\.\d+)?$/D', (string) $value) !== 1) {
             throw new InvalidArgumentException('Technical decimals must use canonical storage notation.');
         }

@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\IngredientShareGraph;
 use App\Services\IngredientShareProjector;
+use App\Services\UserIngredientAuthoringService;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -140,4 +141,18 @@ it('projects localized identity without guidance and keeps unchanged platform re
         ->and($projection['lineage_key'])->toBeNull()
         ->and(data_get($projection, 'display.translations.0.display_name'))->toBe('Huile d’olive')
         ->and(json_encode($projection))->not->toContain('SECRET');
+});
+
+it('canonicalizes tiny original fatty acid percentages from server stored duplicate baselines', function (): void {
+    $owner = User::factory()->create();
+    $trace = FattyAcid::factory()->create(['key' => 'trace']);
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic']);
+    $platform = Ingredient::factory()->create(['owner_type' => null, 'owner_id' => null, 'workspace_id' => null, 'category' => IngredientCategory::Lipids, 'is_soap_saponification_trusted' => true]);
+    $platform->sapProfile()->create(['koh_sap_value' => '0.188']);
+    $platform->fattyAcidEntries()->createMany([['fatty_acid_id' => $trace->id, 'percentage' => '0.00001'], ['fatty_acid_id' => $oleic->id, 'percentage' => '80.20000']]);
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($platform, $owner);
+
+    $projection = app(IngredientShareProjector::class)->project($copy);
+
+    expect(data_get($projection, 'technical.baseline.fatty_acid_profile.trace'))->toBe('0.00001');
 });

@@ -7,6 +7,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Closure;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class FormulaShareTransaction
 {
@@ -20,8 +21,12 @@ class FormulaShareTransaction
         sort($workspaceIds, SORT_NUMERIC);
 
         return DB::transaction(function () use ($outermost, $actorId, $workspaceIds, $callback, $write): mixed {
-            if ($outermost && DB::connection()->getDriverName() === 'pgsql') {
-                DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                if ($outermost) {
+                    DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                } elseif (! in_array(DB::selectOne('SHOW transaction_isolation')->transaction_isolation, ['repeatable read', 'serializable'], true)) {
+                    throw new RuntimeException('Formula sharing inside a transaction requires repeatable-read or serializable isolation.');
+                }
             }
             $freshActor = User::withoutGlobalScopes()->lockForUpdate()->findOrFail($actorId);
             $workspaces = [];

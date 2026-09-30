@@ -80,3 +80,27 @@ it('refuses an in-memory SQLite database overridden by a persistent URL', functi
         ],
     ]))->toThrow(RuntimeException::class, 'Refusing to run tests');
 });
+
+it('allows an explicitly opted in formula sharing PostgreSQL database matching its expected disposable identity', function (): void {
+    expect(TestDatabaseSafety::assertSafe([
+        'database' => ['default' => 'pgsql', 'connections' => ['pgsql' => ['driver' => 'pgsql', 'database' => 'koskalk_formula_sharing_test_20260930']]],
+    ], allowFormulaSharingPostgres: true, expectedFormulaSharingDatabase: 'koskalk_formula_sharing_test_20260930'))->toBeNull();
+});
+
+it('refuses formula sharing PostgreSQL connections without explicit opt in and matching disposable identity', function (string $database, bool $optIn, ?string $expected): void {
+    expect(fn () => TestDatabaseSafety::assertSafe([
+        'database' => ['default' => 'pgsql', 'connections' => ['pgsql' => ['driver' => 'pgsql', 'database' => $database]]],
+    ], allowFormulaSharingPostgres: $optIn, expectedFormulaSharingDatabase: $expected))->toThrow(RuntimeException::class, 'Refusing to run tests');
+})->with([
+    ['koskalk_formula_sharing_test_20260930', false, 'koskalk_formula_sharing_test_20260930'],
+    ['koskalk_formula_sharing_test_20260930', true, null],
+    ['koskalk_formula_sharing_test_20260930', true, 'koskalk_formula_sharing_test_20261001'],
+    ['koskalk_restore_20260722_023001', true, 'koskalk_restore_20260722_023001'],
+    ['koskalk_formula_sharing_test_production', true, 'koskalk_formula_sharing_test_production'],
+]);
+
+it('refuses a formula sharing test identity overridden by a working database URL', function (): void {
+    expect(fn () => TestDatabaseSafety::assertSafe([
+        'database' => ['default' => 'pgsql', 'connections' => ['pgsql' => ['driver' => 'pgsql', 'database' => 'koskalk_formula_sharing_test_20260930', 'url' => 'postgres://postgres@127.0.0.1/koskalk_restore_20260722_023001']]],
+    ], allowFormulaSharingPostgres: true, expectedFormulaSharingDatabase: 'koskalk_formula_sharing_test_20260930'))->toThrow(RuntimeException::class, 'Refusing to run tests');
+});

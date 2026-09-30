@@ -23,7 +23,8 @@ class IngredientSoapTrustValidator
 
     public function assertTransferable(Ingredient $ingredient): void
     {
-        if ($ingredient->owner_type === null || ! $ingredient->is_soap_saponification_trusted) {
+        $isPlatform = $ingredient->owner_type === null && $ingredient->owner_id === null && $ingredient->workspace_id === null;
+        if ($isPlatform || ! $ingredient->is_soap_saponification_trusted) {
             return;
         }
 

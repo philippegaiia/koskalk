@@ -116,7 +116,7 @@ class FormulaShareSnapshotBuilder
             || ($recipe->product_type_id !== null && ($type === null || ! $type->is_active || ! $type->productFamilies()->whereKey($family->id)->exists()))) {
             $this->invalid('reference');
         }
-        $formula = $this->settings($saved, $family);
+        $formula = $this->settings($saved, $family, $type);
         $limit = (int) config('workspaces.formula_sharing.limits.relation_rows', 10000);
         $phases = RecipePhase::withoutGlobalScopes()->where('recipe_version_id', $saved->id)->orderBy('sort_order')->orderBy('id')->limit($limit + 1)->get();
         $items = RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $saved->id)->orderBy('position')->orderBy('id')->limit($limit + 1)->get();
@@ -172,7 +172,7 @@ class FormulaShareSnapshotBuilder
     }
 
     /** @return array<string, mixed> */
-    private function settings(RecipeVersion $version, ProductFamily $family): array
+    private function settings(RecipeVersion $version, ProductFamily $family, ?ProductType $type): array
     {
         if (! in_array($version->manufacturing_mode, ['saponify_in_formula', 'blend_only'], true)
             || ! in_array($version->exposure_mode, ['rinse_off', 'leave_on'], true) || MassUnit::tryFrom((string) $version->batch_unit) === null) {
@@ -227,7 +227,7 @@ class FormulaShareSnapshotBuilder
         $mapping = $version->product_type_ifra_category_id === null ? null : ProductTypeIfraCategory::query()->find($version->product_type_ifra_category_id);
         if (($version->ifra_product_category_id !== null && ($category === null || ! $category->is_active))
             || ($version->ifra_amendment_id !== null && $amendment === null)
-            || ($version->product_type_ifra_category_id !== null && ($mapping === null || ! $mapping->is_active || $mapping->ifra_amendment_id !== $amendment?->id || $mapping->ifra_product_category_id !== $category?->id))
+            || ($version->product_type_ifra_category_id !== null && ($mapping === null || ! $mapping->is_active || $mapping->product_type_id !== $type?->id || $mapping->ifra_amendment_id !== $amendment?->id || $mapping->ifra_product_category_id !== $category?->id))
             || ($mode === IfraCategorySelectionMode::Manual && $category === null)) {
             $this->invalid('reference');
         }

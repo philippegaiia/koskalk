@@ -75,3 +75,6 @@ Beta owner invitations may target an existing member account that owns no compan
 
 ## Advance workspace MVCC versions for coherent sharing writes
 Workspace row locks alone do not refresh PostgreSQL REPEATABLE READ snapshots. Sharing write transactions must acquire WorkspaceWriteLock in the outer retrying transaction before quota or mapping checks; the common quota and locked-Product paths use the same lock. Its no-op updated_at update advances MVCC without changing business timestamps or emitting model events. Set REPEATABLE READ before the first query only in an outer PostgreSQL transaction, reload records on retries, and lock relevant membership rows before reauthorizing Admins.
+
+## Require coherent existing isolation for nested formula sharing
+Nested PostgreSQL formula-sharing calls may run only inside REPEATABLE READ or SERIALIZABLE transactions. Reject READ COMMITTED and other unsupported parent isolation before reading actor/source records; never change an existing parent transaction’s isolation. SQLite test transactions retain their normal semantics.

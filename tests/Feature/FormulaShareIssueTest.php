@@ -6,8 +6,11 @@ use App\Enums\ProductionOutputType;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\FormulaShare;
 use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductType;
+use App\Models\ProductTypeIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -314,4 +317,38 @@ it('preserves readable rich table cells and escapes the same plain text for late
         ->and($sanitizer->richText($text))->toBe("<p>Heat 40 &lt; 50<br>\nStir Slowly</p>")
         ->and($sanitizer->plainText(['type' => 'doc', 'content' => [$table]]))->toBe('Readable')
         ->and(fn () => $sanitizer->plainText(['type' => 'doc', 'content' => 'invalid']))->toThrow(ValidationException::class);
+});
+
+it('rejects a saved IFRA mapping retargeted to another Product type and writes no grant', function (): void {
+    extract(formulaShareIssueContext());
+    $type = ProductType::factory()->create();
+    $type->productFamilies()->attach($recipe->product_family_id);
+    $recipe->forceFill(['product_type_id' => $type->id])->save();
+    $mapping = ProductTypeIfraCategory::factory()->create(['product_type_id' => $type->id]);
+    $saved->forceFill(['ifra_amendment_id' => $mapping->ifra_amendment_id, 'ifra_product_category_id' => $mapping->ifra_product_category_id, 'product_type_ifra_category_id' => $mapping->id])->save();
+    $builder = app(FormulaShareSnapshotBuilder::class);
+    expect($builder->build($owner, $recipe, [])['formula']['ifra']['mapping']['product_type_id'])->toBe($type->id);
+    $mapping->forceFill(['product_type_id' => ProductType::factory()->create()->id])->save();
+
+    expect(fn () => $builder->build($owner, $recipe, []))->toThrow(ValidationException::class);
+    expect(FormulaShare::query()->count())->toBe(0);
+});
+
+it('rejects eligible workspace material without a baseline even when its owner type is null', function (): void {
+    extract(formulaShareIssueContext());
+    $ingredient->forceFill(['workspace_id' => $source->id, 'is_soap_saponification_trusted' => true, 'source_data' => null])->save();
+    IngredientSapProfile::factory()->for($ingredient)->create(['koh_sap_value' => '0.188000']);
+
+    expect(fn () => app(FormulaShareSnapshotBuilder::class)->build($owner, $recipe, []))->toThrow(ValidationException::class);
+    expect(FormulaShare::query()->count())->toBe(0);
+});
+
+it('continues capturing a true eligible platform material without a private baseline', function (): void {
+    extract(formulaShareIssueContext());
+    $ingredient->forceFill(['is_soap_saponification_trusted' => true, 'source_data' => null])->save();
+    IngredientSapProfile::factory()->for($ingredient)->create(['koh_sap_value' => '0.188000']);
+    $snapshot = app(FormulaShareSnapshotBuilder::class)->build($owner, $recipe, []);
+
+    expect($snapshot['ingredients']['nodes']['n1']['kind'])->toBe('platform')
+        ->and($snapshot['ingredients']['nodes']['n1']['technical']['baseline'])->toBeNull();
 });

@@ -19,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class FormulaShareReferences
 {
+    public function __construct(private readonly RecipeWorkbenchPayloadNormalizer $normalizer) {}
+
     /** Current technical reference state, restricted to the active material closure.
      * @param  array<string, mixed>  $snapshot  @param array<string, mixed> $resolution @return array<string, mixed>
      */
@@ -53,6 +55,20 @@ class FormulaShareReferences
                 if (($key !== 'amendment' && ! $row->is_active) || ($key === 'mapping' && ($row->product_type_id !== $type || $row->ifra_product_category_id !== data_get($snapshot, 'formula.ifra.category.id') || $row->ifra_amendment_id !== data_get($snapshot, 'formula.ifra.amendment.id')))) {
                     $this->invalid();
                 }
+            }
+        }
+        $effective = $this->normalizer->resolveIfraSelection([
+            'ifra_category_selection_mode' => data_get($snapshot, 'formula.ifra.selection_mode', 'automatic'),
+            'ifra_product_category_id' => data_get($snapshot, 'formula.ifra.category.id'),
+        ], $type === null ? null : ProductType::query()->find($type));
+        $state['effective_ifra'] = [
+            'selection_mode' => $effective['ifra_category_selection_mode']->value,
+            'amendment_id' => $effective['ifra_amendment_id'], 'category_id' => $effective['ifra_product_category_id'],
+            'mapping_id' => $effective['product_type_ifra_category_id'],
+        ];
+        foreach (['amendment_id' => [IfraAmendment::class, ['code', 'status', 'notification_date']], 'category_id' => [IfraProductCategory::class, ['code', 'is_active']], 'mapping_id' => [ProductTypeIfraCategory::class, ['product_type_id', 'ifra_product_category_id', 'ifra_amendment_id', 'is_active', 'is_default', 'sort_order']]] as $key => [$class, $fields]) {
+            if ($state['effective_ifra'][$key] !== null) {
+                $this->add($state, $class, $state['effective_ifra'][$key], $key === 'mapping_id' && $state['effective_ifra']['selection_mode'] === 'manual' ? array_values(array_diff($fields, ['is_default', 'sort_order'])) : $fields);
             }
         }
         $allergens = [];

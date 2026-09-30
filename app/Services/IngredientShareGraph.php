@@ -32,14 +32,14 @@ class IngredientShareGraph
     /** Server-only technical graph; callers authorize the workspace before projecting any display data.
      * @param  list<int>  $rootIds  @return array{nodes: array<string, array<string, mixed>>, root_keys: list<string>, source_keys: array<int, string>}
      */
-    public function current(Workspace $source, array $rootIds): array
+    public function current(Workspace $source, array $rootIds, array &$memo = []): array
     {
         $nodes = [];
         $sourceKeys = [];
         $stack = [];
         $edges = 0;
         $relations = 0;
-        $walk = function (int $id, int $depth, array $path) use (&$walk, &$nodes, &$sourceKeys, &$stack, &$edges, &$relations, $source): string {
+        $walk = function (int $id, int $depth, array $path) use (&$walk, &$nodes, &$sourceKeys, &$stack, &$edges, &$relations, &$memo, $source): string {
             if ($depth > (int) config('workspaces.formula_sharing.limits.depth', 12) || isset($stack[$id])) {
                 throw ValidationException::withMessages(['ingredient' => __('sharing.validation.graph_invalid', ['path' => implode(' → ', $path)])]);
             }
@@ -49,20 +49,24 @@ class IngredientShareGraph
             if (count($sourceKeys) >= (int) config('workspaces.formula_sharing.limits.nodes', 200)) {
                 throw ValidationException::withMessages(['ingredient' => __('sharing.validation.graph_limit')]);
             }
-            $ingredient = Ingredient::withoutGlobalScopes()->find($id);
-            $platform = $ingredient !== null && $ingredient->owner_type === null && $ingredient->owner_id === null && $ingredient->workspace_id === null;
-            $owned = $ingredient !== null && $ingredient->workspace_id === $source->id
-                && ($ingredient->owner_type !== OwnerType::Workspace || $ingredient->owner_id === $source->id);
-            if ($ingredient === null || ! $ingredient->is_active || (! $platform && ! $owned)
-                || ($platform && $ingredient->visibility !== Visibility::Public)) {
-                throw ValidationException::withMessages(['ingredient' => __('sharing.validation.graph_invalid', ['path' => implode(' → ', $path)])]);
+            $memoKey = $source->id.':'.$id;
+            if (! isset($memo[$memoKey])) {
+                $ingredient = Ingredient::withoutGlobalScopes()->find($id);
+                $platform = $ingredient !== null && $ingredient->owner_type === null && $ingredient->owner_id === null && $ingredient->workspace_id === null;
+                $owned = $ingredient !== null && $ingredient->workspace_id === $source->id
+                    && ($ingredient->owner_type !== OwnerType::Workspace || $ingredient->owner_id === $source->id);
+                if ($ingredient === null || ! $ingredient->is_active || (! $platform && ! $owned)
+                    || ($platform && $ingredient->visibility !== Visibility::Public)) {
+                    throw ValidationException::withMessages(['ingredient' => __('sharing.validation.graph_invalid', ['path' => implode(' → ', $path)])]);
+                }
+                $memo[$memoKey] = ['projection' => $this->projector->project($ingredient), 'relations' => $this->projector->relationCount($ingredient)];
             }
-            $path[] = $ingredient->display_name ?? __('sharing.ingredient');
+            $projection = $memo[$memoKey]['projection'];
+            $path[] = $projection['display']['display_name'] ?? __('sharing.ingredient');
             $key = 'n'.(count($sourceKeys) + 1);
             $sourceKeys[$id] = $key;
             $stack[$id] = true;
-            $projection = $this->projector->project($ingredient);
-            $relations += $this->projector->relationCount($ingredient);
+            $relations += $memo[$memoKey]['relations'];
             if ($relations > (int) config('workspaces.formula_sharing.limits.relation_rows', 10000)) {
                 throw ValidationException::withMessages(['ingredient' => __('sharing.validation.graph_limit')]);
             }

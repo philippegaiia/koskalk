@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Enums\FormulaShareStatus;
+use App\Enums\IngredientCategory;
 use App\Models\FormulaShare;
+use App\Models\IfraAmendment;
+use App\Models\IfraProductCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Arr;
@@ -18,6 +21,7 @@ class FormulaSharePreview
         private readonly FormulaShareBudget $budget,
         private readonly FormulaShareReferences $references,
         private readonly EntitlementService $entitlements,
+        private readonly LyeLiquidIngredientValidator $dilutionLiquids,
     ) {}
 
     /** Browser-safe projection only.
@@ -58,10 +62,11 @@ class FormulaSharePreview
                 'description' => $snapshot['product']['description'] ?? null,
                 'procedure' => $snapshot['formula']['manufacturing_instructions'] ?? null,
                 'phases' => collect($snapshot['formula']['phases'])->map(fn (array $phase): array => Arr::only($phase, ['key', 'slug', 'name', 'phase_type', 'sort_order', 'is_system', 'items']))->all(),
-                'ingredients' => $rows, 'warnings' => array_values(array_unique(array_merge($snapshot['warnings'] ?? [], collect($rows)->pluck('warning')->filter()->all()))),
+                'ingredients' => $rows, 'warnings' => array_values(array_unique(array_merge($snapshot['warnings'] ?? [], collect($rows)->pluck('warning')->filter()->all(), $prepared['ifra']['changed'] ? ['ifra_selection_changed'] : []))),
                 'remaining_keys' => $prepared['resolution']['remaining_keys'], 'import_count' => $prepared['resolution']['import_count'],
                 'private_ingredient_quota' => $this->entitlements->privateIngredientUsageFor($fresh),
                 'expected_hash' => $prepared['expected_hash'],
+                'ifra' => $prepared['ifra'],
             ];
         }, write: false);
     }
@@ -79,6 +84,19 @@ class FormulaSharePreview
         $resolution = $this->resolver->resolve($destination, $snapshot['ingredients'], $decisions);
         if (data_get($snapshot, 'formula.manufacturing_mode') === 'saponify_in_formula') {
             foreach ($snapshot['formula']['phases'] as $phase) {
+                if ($phase['phase_type'] === 'lye_water') {
+                    $this->dilutionLiquids->assertMaximumRows($phase['items']);
+                    $localRows = [];
+                    foreach ($phase['items'] as $item) {
+                        $row = $resolution['nodes'][$item['ingredient_key']];
+                        if ($row['ingredient_id'] !== null) {
+                            $localRows[] = ['ingredient_id' => $row['ingredient_id'], 'percentage' => $item['percentage']];
+                        } elseif ($row['mode'] === 'import' && $snapshot['ingredients']['nodes'][$item['ingredient_key']]['technical']['category'] === IngredientCategory::SoapmakingAlkalis->value) {
+                            throw ValidationException::withMessages(['decisions' => __('workbench.validation.lye_liquid_alkali')]);
+                        }
+                    }
+                    $this->dilutionLiquids->validate($localRows, $actor);
+                }
                 if ($phase['phase_type'] !== 'saponified_oils') {
                     continue;
                 }
@@ -94,13 +112,22 @@ class FormulaSharePreview
         $state = collect($resolution['nodes'])->map(fn (array $row): array => [
             'mode' => $row['mode'], 'public_id' => $row['ingredient_public_id'], 'fingerprint' => $row['local_fingerprint'], 'warning' => $row['warning'],
         ])->all();
+        $references = $this->references->state($snapshot, $resolution);
+        $effective = $references['effective_ifra'];
+        $ifraChanged = $effective['amendment_id'] !== data_get($snapshot, 'formula.ifra.amendment.id')
+            || $effective['category_id'] !== data_get($snapshot, 'formula.ifra.category.id')
+            || $effective['mapping_id'] !== data_get($snapshot, 'formula.ifra.mapping.id');
         $hash = hash('sha256', 'formula-share-preview-v1\n'.json_encode([
             'share' => $share->public_id, 'snapshot' => $snapshot, 'snapshot_hash' => $share->snapshot_hash,
             'recipient' => $destination->public_id, 'decisions' => $resolution['decisions'],
-            'state' => $state, 'references' => $this->references->state($snapshot, $resolution),
+            'state' => $state, 'references' => $references,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        return ['resolution' => $resolution, 'expected_hash' => $hash];
+        return ['resolution' => $resolution, 'expected_hash' => $hash, 'ifra' => [
+            'category_code' => $references[IfraProductCategory::class.':'.$effective['category_id']]['code'] ?? null,
+            'amendment_code' => $references[IfraAmendment::class.':'.$effective['amendment_id']]['code'] ?? null,
+            'changed' => $ifraChanged,
+        ]];
     }
 
     /** @param array<string, mixed> $technical @return array<string, mixed> */

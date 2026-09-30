@@ -1,12 +1,17 @@
 <?php
 
+use App\Enums\IngredientCategory;
 use App\Enums\OwnerType;
 use App\Models\Allergen;
 use App\Models\FormulaShare;
 use App\Models\IfraAmendment;
 use App\Models\IfraAmendmentMilestone;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientShareMapping;
+use App\Models\ProductFamily;
+use App\Models\ProductType;
+use App\Models\ProductTypeIfraCategory;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\User;
@@ -207,6 +212,9 @@ it('validates substitutions against the union of actual formula roles and permit
     $decisions = [['key' => 'n1', 'mode' => 'substitute', 'ingredient_public_id' => $substitute->public_id]];
     $preview = app(FormulaSharePreview::class);
     expect($preview->build($destination->owner, $share, $decisions)['import_count'])->toBe(0);
+    $substitute->forceFill(['category' => IngredientCategory::SoapmakingAlkalis])->save();
+    expect(fn () => $preview->build($destination->owner, $share, $decisions))->toThrow(ValidationException::class);
+    $substitute->forceFill(['category' => IngredientCategory::Other])->save();
     $snapshot = $share->snapshot;
     $snapshot['formula']['phases'][] = ['key' => 'p2', 'phase_type' => 'saponified_oils', 'items' => [['ingredient_key' => 'n1']]];
     $share->forceFill(['snapshot' => $snapshot])->save();
@@ -214,4 +222,71 @@ it('validates substitutions against the union of actual formula roles and permit
     $substitute->forceFill(['is_soap_saponification_trusted' => true, 'source_data' => ['user_authoring' => ['trusted_koh_sap_value' => '0.188', 'trusted_fatty_acid_profile' => []]]])->save();
     $substitute->sapProfile()->create(['koh_sap_value' => '0.188']);
     expect($preview->build($destination->owner, $share, $decisions)['import_count'])->toBe(0);
+});
+
+it('counts a shared local child once and short circuits valid explicit choices before unrelated candidates', function (): void {
+    extract(shareResolutionContext());
+    $child = Ingredient::factory()->create(['workspace_id' => $source->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $source->id]);
+    $other = Ingredient::factory()->create(['workspace_id' => $source->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $source->id]);
+    foreach ([$ingredient, $other] as $parent) {
+        $parent->components()->create(['component_ingredient_id' => $child->id, 'percentage_in_parent' => '100', 'sort_order' => 1]);
+    }
+    $graph = app(IngredientShareGraph::class)->capture($owner, $source, [$ingredient->id, $other->id]);
+    $localChild = resolutionCopy($child, $destination);
+    foreach ([$ingredient, $other] as $parent) {
+        resolutionCopy($parent, $destination)->components()->create(['component_ingredient_id' => $localChild->id, 'percentage_in_parent' => '100', 'sort_order' => 1]);
+    }
+    config(['workspaces.formula_sharing.limits.nodes' => 3]);
+    expect(app(IngredientShareResolver::class)->resolve($destination, $graph, [])['import_count'])->toBe(0);
+    config(['workspaces.formula_sharing.limits.nodes' => 200]);
+    $graph = app(IngredientShareGraph::class)->capture($owner, $source, [$child->id]);
+    foreach (range(1, 4) as $unused) {
+        resolutionCopy($child, $destination);
+    }
+    config(['workspaces.formula_sharing.limits.nodes' => 1]);
+    expect(app(IngredientShareResolver::class)->resolve($destination, $graph, [['key' => 'n1', 'mode' => 'reuse', 'ingredient_public_id' => $localChild->public_id]])['nodes']['n1']['ingredient_id'])->toBe($localChild->id);
+    IngredientShareMapping::factory()->create(['workspace_id' => $destination->id, 'lineage_key' => $child->public_id, 'incoming_fingerprint' => $graph['nodes']['n1']['fingerprint'], 'local_fingerprint' => $graph['nodes']['n1']['fingerprint'], 'ingredient_id' => $localChild->id, 'resolution' => 'exact']);
+    expect(app(IngredientShareResolver::class)->resolve($destination, $graph, [])['nodes']['n1']['ingredient_id'])->toBe($localChild->id);
+});
+
+it('binds effective live IFRA selection to default switches and newer applicable amendments only', function (): void {
+    extract(shareResolutionContext());
+    $type = ProductType::factory()->create();
+    $family = ProductFamily::factory()->create();
+    $type->productFamilies()->attach($family->id);
+    $amendment = IfraAmendment::factory()->create(['status' => 'notified', 'notification_date' => today()->subDays(2)]);
+    $category = IfraProductCategory::factory()->create();
+    $mapping = ProductTypeIfraCategory::factory()->create(['product_type_id' => $type->id, 'ifra_amendment_id' => $amendment->id, 'ifra_product_category_id' => $category->id, 'is_default' => true]);
+    $other = ProductTypeIfraCategory::factory()->create(['product_type_id' => $type->id, 'ifra_amendment_id' => $amendment->id, 'is_default' => false]);
+    $share = FormulaShare::factory()->create(['source_workspace_id' => $source->id, 'recipient_workspace_id' => $destination->id, 'snapshot' => ['schema_version' => 1, 'product' => ['name' => 'Product', 'family' => ['id' => $family->id, 'slug' => $family->slug], 'type' => ['id' => $type->id]], 'formula' => ['phases' => [], 'manufacturing_mode' => 'blend_only', 'ifra' => ['selection_mode' => 'automatic', 'amendment' => ['id' => $amendment->id], 'category' => ['id' => $category->id], 'mapping' => ['id' => $mapping->id]]], 'ingredients' => $graph]]);
+    $preview = app(FormulaSharePreview::class);
+    $first = $preview->build($destination->owner, $share, []);
+    ProductTypeIfraCategory::factory()->create(['ifra_amendment_id' => $amendment->id, 'is_default' => true]);
+    expect($preview->build($destination->owner, $share, [])['expected_hash'])->toBe($first['expected_hash']);
+    $mapping->update(['is_default' => false]);
+    $other->update(['is_default' => true]);
+    $second = $preview->build($destination->owner, $share, []);
+    expect($second['expected_hash'])->not->toBe($first['expected_hash'])->and($second['warnings'])->toContain('ifra_selection_changed');
+    $newer = IfraAmendment::factory()->create(['status' => 'notified', 'notification_date' => today()->subDay()]);
+    ProductTypeIfraCategory::factory()->create(['product_type_id' => $type->id, 'ifra_amendment_id' => $newer->id, 'is_default' => true]);
+    expect($preview->build($destination->owner, $share, [])['expected_hash'])->not->toBe($second['expected_hash']);
+});
+
+it('keeps manual IFRA category selection stable across default changes while binding the effective amendment', function (): void {
+    extract(shareResolutionContext());
+    $type = ProductType::factory()->create();
+    $family = ProductFamily::factory()->create();
+    $type->productFamilies()->attach($family->id);
+    $amendment = IfraAmendment::factory()->create(['status' => 'notified', 'notification_date' => today()->subDays(2)]);
+    $category = IfraProductCategory::factory()->create();
+    $mapping = ProductTypeIfraCategory::factory()->create(['product_type_id' => $type->id, 'ifra_amendment_id' => $amendment->id, 'ifra_product_category_id' => $category->id, 'is_default' => true]);
+    $share = FormulaShare::factory()->create(['source_workspace_id' => $source->id, 'recipient_workspace_id' => $destination->id, 'snapshot' => ['schema_version' => 1, 'product' => ['name' => 'Product', 'family' => ['id' => $family->id, 'slug' => $family->slug], 'type' => ['id' => $type->id]], 'formula' => ['phases' => [], 'manufacturing_mode' => 'blend_only', 'ifra' => ['selection_mode' => 'manual', 'amendment' => ['id' => $amendment->id], 'category' => ['id' => $category->id], 'mapping' => ['id' => $mapping->id]]], 'ingredients' => $graph]]);
+    $preview = app(FormulaSharePreview::class);
+    $first = $preview->build($destination->owner, $share, []);
+    $mapping->update(['is_default' => false]);
+    expect($preview->build($destination->owner, $share, [])['expected_hash'])->toBe($first['expected_hash']);
+    $newer = IfraAmendment::factory()->create(['status' => 'notified', 'notification_date' => today()->subDay()]);
+    ProductTypeIfraCategory::factory()->create(['product_type_id' => $type->id, 'ifra_amendment_id' => $newer->id, 'is_default' => true]);
+    $second = $preview->build($destination->owner, $share, []);
+    expect($second['expected_hash'])->not->toBe($first['expected_hash'])->and($second['ifra']['category_code'])->toBe($category->code);
 });

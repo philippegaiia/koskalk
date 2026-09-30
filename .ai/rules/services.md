@@ -78,3 +78,6 @@ Workspace row locks alone do not refresh PostgreSQL REPEATABLE READ snapshots. S
 
 ## Require coherent existing isolation for nested formula sharing
 Nested PostgreSQL formula-sharing calls may run only inside REPEATABLE READ or SERIALIZABLE transactions. Reject READ COMMITTED and other unsupported parent isolation before reading actor/source records; never change an existing parent transaction’s isolation. SQLite test transactions retain their normal semantics.
+
+## Validate received roles and effective IFRA selection before acceptance
+Formula sharing preview must validate the union of persisted formula roles, including dilution liquids through LyeLiquidIngredientValidator. Bind the preview to the normalizer’s actual live IFRA selection and only its effective reference/control dependencies; unrelated Product-type mappings and manual-mode default switches must not invalidate it. Ingredient resolution memoizes current facts only within one resolve attempt and counts distinct local dependency IDs, while valid explicit/remembered choices precede unselected candidate enumeration.

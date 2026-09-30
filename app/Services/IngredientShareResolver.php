@@ -26,17 +26,18 @@ class IngredientShareResolver
         $choices = $this->decisions($incoming, $decisions);
         $resolved = [];
         $current = [];
-        $work = 0;
-        $projection = function (Ingredient $ingredient) use (&$current, &$work, $destination): ?array {
+        $work = [];
+        $memo = [];
+        $projection = function (Ingredient $ingredient) use (&$current, &$work, &$memo, $destination): ?array {
             if (! array_key_exists($ingredient->id, $current)) {
                 try {
-                    $graph = $this->graphs->current($destination, [$ingredient->id]);
-                    $work += count($graph['nodes']);
+                    $graph = $this->graphs->current($destination, [$ingredient->id], $memo);
+                    $work += array_fill_keys(array_keys($graph['source_keys']), true);
                     $current[$ingredient->id] = $graph['nodes'][$graph['root_keys'][0]] + ['current_nodes' => array_values($graph['nodes'])];
                 } catch (ValidationException) {
                     $current[$ingredient->id] = null;
                 }
-                if ($work > (int) config('workspaces.formula_sharing.limits.nodes', 200)) {
+                if (count($work) > (int) config('workspaces.formula_sharing.limits.nodes', 200)) {
                     throw ValidationException::withMessages(['decisions' => __('sharing.validation.graph_limit')]);
                 }
             }
@@ -66,6 +67,26 @@ class IngredientShareResolver
             }
             $mapping = IngredientShareMapping::query()->where('workspace_id', $destination->id)->where('lineage_key', $node['lineage_key'])
                 ->where('fingerprint_version', IngredientShareFingerprint::VERSION)->where('incoming_fingerprint', $node['fingerprint'])->first();
+            if (isset($choices[$key])) {
+                $choice = $choices[$key];
+                if ($choice['mode'] === 'import') {
+                    return $row;
+                }
+                $candidate = $this->localQuery($destination)->where('public_id', $choice['ingredient_public_id'])->first();
+                $state = $candidate === null ? null : $projection($candidate);
+                if ($state === null || ($choice['mode'] === 'reuse' && ($candidate->sharingLineageKey() !== $node['lineage_key'] || $state['fingerprint'] !== $node['fingerprint']))) {
+                    $this->invalid();
+                }
+
+                return $this->selected($row, $candidate, $state, $choice['mode']);
+            }
+            if ($mapping?->resolution === 'exact') {
+                $candidate = $this->localQuery($destination)->find($mapping->ingredient_id);
+                $state = $candidate === null ? null : $projection($candidate);
+                if ($state !== null && $state['fingerprint'] === $mapping->local_fingerprint && $state['fingerprint'] === $node['fingerprint']) {
+                    return $this->selected($row, $candidate, $state, 'reuse');
+                }
+            }
             $cap = (int) config('workspaces.formula_sharing.limits.nodes', 200);
             $candidates = $this->localQuery($destination)->where(fn (Builder $query): Builder => $query->where('share_lineage_key', $node['lineage_key'])
                 ->orWhere(fn (Builder $query): Builder => $query->whereNull('share_lineage_key')->where('public_id', $node['lineage_key'])))->orderBy('id')->limit($cap + 1)->get();
@@ -81,19 +102,6 @@ class IngredientShareResolver
                         $exact[$candidate->public_id] = [$candidate, $state];
                     }
                 }
-            }
-            if (isset($choices[$key])) {
-                $choice = $choices[$key];
-                if ($choice['mode'] === 'import') {
-                    return $row;
-                }
-                $candidate = $this->localQuery($destination)->where('public_id', $choice['ingredient_public_id'])->first();
-                $state = $candidate === null ? null : $projection($candidate);
-                if ($state === null || ($choice['mode'] === 'reuse' && ! isset($exact[$candidate->public_id]))) {
-                    $this->invalid();
-                }
-
-                return $this->selected($row, $candidate, $state, $choice['mode']);
             }
             if ($mapping !== null) {
                 $candidate = $this->localQuery($destination)->find($mapping->ingredient_id);

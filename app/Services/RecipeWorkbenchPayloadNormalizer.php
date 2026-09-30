@@ -340,7 +340,7 @@ class RecipeWorkbenchPayloadNormalizer
      * @param  array<string, mixed>  $payload
      * @return array{ifra_category_selection_mode: IfraCategorySelectionMode, ifra_amendment_id: int|null, product_type_ifra_category_id: int|null, ifra_product_category_id: int|null}
      */
-    private function resolveIfraSelection(array $payload, ?ProductType $productType): array
+    public function resolveIfraSelection(array $payload, ?ProductType $productType): array
     {
         $selectionMode = IfraCategorySelectionMode::tryFrom(
             (string) ($payload['ifra_category_selection_mode'] ?? IfraCategorySelectionMode::Automatic->value),

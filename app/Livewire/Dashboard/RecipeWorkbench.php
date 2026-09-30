@@ -291,7 +291,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     {
         $recipe = $this->currentRecipe();
         if (! $recipe instanceof Recipe) {
-            return $this->withCreationWorkspace($action);
+            return $this->withCreationWorkspace(function () use ($action): array {
+                $result = $action();
+                $createdRecipe = $this->currentRecipe();
+                $user = $this->currentUser();
+                if (! ($result['ok'] ?? false) || ! $createdRecipe instanceof Recipe || ! $user instanceof User) {
+                    return $result;
+                }
+
+                $state = app(RecipeEditingService::class)->status($createdRecipe, $user);
+                $this->acceptEditingRevisions($state);
+
+                return [...$result, 'editing' => $state];
+            });
         }
         $user = $this->currentUser();
         abort_unless($user instanceof User, 403);

@@ -1582,10 +1582,14 @@ function createPersistenceSection() {
                 return;
             }
 
-            await this.queueRevisionMutation(
+            const response = await this.queueRevisionMutation(
                 () => persistWorkbench(this, method),
                 queueOptions,
             );
+
+            if (method === 'save' || method === 'publish') {
+                await this.activateSavedRecipeEditing(response);
+            }
 
             if (this.saveStatus === 'success') {
                 this.removedFormulaRowUndo = null;

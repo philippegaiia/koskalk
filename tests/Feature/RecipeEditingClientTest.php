@@ -5,6 +5,81 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
+it('starts editing protection when newer input keeps the first save on the creation page', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+let focused = true;
+let expired = false;
+globalThis.document = { visibilityState: 'visible', hasFocus: () => focused, addEventListener() {}, removeEventListener() {} };
+globalThis.window = { addEventListener() {}, removeEventListener() {}, location: { assign() { throw new Error('Newer input must stay on the page'); } } };
+let poll;
+globalThis.setInterval = callback => { poll = callback; return 1; };
+globalThis.clearInterval = () => {};
+const serializeDraft = workbench => ({ name: workbench.formulaName });
+const bridge = fs.readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8').replace(/^import[^;]+;\n/gm, '').replaceAll('export async function', 'async function');
+eval(`${bridge}\nglobalThis.persistWorkbench = persistWorkbench;`);
+const persistWorkbench = globalThis.persistWorkbench;
+const source = fs.readFileSync('resources/js/recipe-workbench/component.js', 'utf8').replace(/^import[\s\S]*?;\n/gm, '').replaceAll('export function', 'function');
+eval(`${source}\nglobalThis.createPersistenceSection = createPersistenceSection;`);
+const baseline = { recipe_revision: 0, current_version_id: 12, costing_revision: 0, status: 'available' };
+let beginCalls = 0;
+let heartbeatCalls = 0;
+const workbench = {
+    recipeId: null, formulaName: 'Submitted', isFormulaLocked: false, costingSaveSeq: 0,
+    t: key => key, flushCostingSave: async () => true, refreshDirtyBaseline() {},
+    dirtyStateRegistry: { set() {} },
+    $wire: {
+        async save() {
+            workbench.formulaName = 'Newer unsaved input';
+            return { ok: true, editing: baseline, snapshot: { draft: { recipe: { id: 30 } } }, redirect: '/saved-formula' };
+        },
+        async beginEditing(token) {
+            beginCalls++;
+            assert.match(token, /^[0-9a-f-]{36}$/);
+            return { ok: true, editing: { ...baseline, status: 'acquired' } };
+        },
+        async heartbeatEditing() {
+            heartbeatCalls++;
+            return expired ? { ok: false, errors: { editing_lease: ['Expired'] } } : { ok: true, editing: { ...baseline, status: 'acquired' } };
+        },
+        async editingStatus() { return { ok: true, editing: baseline }; },
+        async releaseEditing() { return { ok: true }; },
+    },
+};
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createEditingSection({ canPersist: true, recipe: null, editing: null })));
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPersistenceSection()));
+await workbench.persist('save');
+assert.equal(workbench.editingRequired, true);
+assert.equal(workbench.recipeId, 30);
+assert.equal(workbench.formulaName, 'Newer unsaved input');
+assert.equal(workbench.editingStatus, 'acquired');
+assert.equal(workbench.canWriteRecipe, true);
+assert.equal(beginCalls, 1);
+assert.equal(typeof poll, 'function');
+await workbench.pollEditingState();
+assert.equal(heartbeatCalls, 1);
+focused = false;
+await workbench.pollEditingState();
+assert.equal(heartbeatCalls, 1);
+focused = true;
+expired = true;
+await workbench.pollEditingState();
+assert.equal(workbench.editingStatus, 'available');
+assert.equal(workbench.canWriteRecipe, false);
+assert.equal(workbench.formulaName, 'Newer unsaved input');
+await workbench.retryEditing();
+assert.equal(beginCalls, 2);
+assert.equal(workbench.canWriteRecipe, true);
+assert.equal(workbench.formulaName, 'Newer unsaved input');
+workbench.destroyEditingProtection();
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
 it('reserves saved edit surfaces and polls blocked status without reacquiring', function (): void {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

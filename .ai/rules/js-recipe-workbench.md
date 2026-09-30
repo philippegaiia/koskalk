@@ -25,3 +25,6 @@ Bind workbench window blur to stopRowDragScroll(), retaining source identity so 
 
 ## Keep locked costing simulations temporary
 Locked workbench costing permits local batch, yield and price scenarios, with a reset to the last loaded saved costing. Never schedule autosave or mark simulation changes as persistent dirty input. Preserve normal unlocked costing autosave and editing revision/lease protection; the Livewire saveCosting endpoint must reject permanent locks.
+
+## Start editing protection when creation stays on the page
+First save/publish returns an editing revision baseline and initializes the mounted Livewire component's expected revisions. If newer input suppresses the redirect and leaves recipeId unset, adopt only the saved recipe/version identity and start normal reservation acquisition and heartbeats. Preserve the newer draft, do not rebase it to a subsequent poll, and do not acquire a creation-page lease when the snapshot was applied and navigation is proceeding.

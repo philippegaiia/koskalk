@@ -113,6 +113,25 @@ export function createEditingSection(payload) {
                 && Boolean(this.editingServerState?.can_take_over);
         },
 
+        async activateSavedRecipeEditing(response) {
+            const recipe = response?.snapshot?.draft?.recipe;
+
+            if (!response?.ok || !response.editing || !recipe?.id || this.recipeId != null
+                || this.editingRequired || !this.canEditRecipe) {
+                return null;
+            }
+
+            this.recipeId = recipe.id;
+            this.currentVersionId = recipe.current_version_id ?? this.currentVersionId;
+            this.currentVersionNumber = recipe.version_number ?? this.currentVersionNumber;
+            this.currentVersionIsDraft = recipe.is_current ?? this.currentVersionIsDraft;
+            this.editingRequired = true;
+            this.editingToken = editingToken();
+            this.recordEditingMutation(response);
+
+            return this.startEditingProtection();
+        },
+
         async startEditingProtection() {
             if (!this.editingRequired || this.editingStarted) {
                 return null;

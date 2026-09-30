@@ -15,6 +15,7 @@ use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\MediaAsset;
 use App\Models\PackagingItem;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\ProductTypeIfraCategory;
@@ -24,6 +25,7 @@ use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\SupplierListing;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetUsageService;
@@ -593,6 +595,34 @@ it('does not save a draft from a mounted component after the auth session is gon
         ->and(Recipe::withoutGlobalScopes()->where('name', 'Fallback Draft')->exists())->toBeFalse()
         ->and($soapFamily->exists)->toBeTrue();
 });
+
+it('establishes editing protection after creation without reopening the workbench', function (string $method): void {
+    $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeCarrierOilIngredient();
+    $this->actingAs($workspace->owner);
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $draft = workbenchSoapDraftPayload($ingredient, name: 'New formula');
+    $service = app(RecipeWorkbenchService::class);
+    $content = app(RecipeContentUpdater::class);
+
+    $result = $component->{$method}($draft, $service, $content);
+
+    expect($result['ok'])->toBeTrue();
+    expect($result)->toHaveKey('editing');
+    expect($result['editing']['status'])->toBe('available');
+    expect($component->expectedVersionId)->toBe($result['editing']['current_version_id']);
+    $this->assertDatabaseCount('recipe_edit_leases', 0);
+
+    $reservation = $component->beginEditing((string) Str::uuid());
+    expect($reservation['editing']['status'])->toBe('acquired');
+    $draft['name'] = 'Continued formula';
+    $continued = $component->save($draft, $service, $content);
+    expect($continued['ok'])->toBeTrue();
+    expect($continued['editing']['recipe_revision'])->toBe($result['editing']['recipe_revision'] + 1);
+})->with(['save', 'publish']);
 
 it('stores instructions entered before the first draft on the new current version', function () {
     $user = User::factory()->create();

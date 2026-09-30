@@ -13,3 +13,6 @@ Build test-owned records with model factories (pass attributes inline as needed)
 
 ## Assert JSON with atomic chained assertions
 Assert JSON responses with atomic chained assertions on the response (->assertJsonPath('path', value), ->assertJsonCount(...), ->assertJsonStructure([...]), ->assertJsonFragment([...])). Do not use whole-payload assertJson([...]) arrays or the fluent AssertableJson API.
+
+## Guard and reset disposable formula sharing PostgreSQL sessions
+Real sharing races require VERIFY_FORMULA_SHARING_POSTGRES=true plus FORMULA_SHARING_POSTGRES_DATABASE matching a koskalk_formula_sharing_test_YYYYMMDD name. Verify current_database() before destructive public-schema reset; this clears residual migration trigger functions. Finish/join forked child sessions before another reset. SQLite skips are never evidence of PostgreSQL concurrency behavior.

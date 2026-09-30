@@ -15,7 +15,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/css/**/*.css | .ai/rules/css.md |
 | {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**} | .ai/rules/dashboard-partials-recipe-workbench.md |
-| app/Livewire/Dashboard/IngredientEditor.php | .ai/rules/dashboard.md |
+| app/Livewire/Dashboard/IngredientEditor.php, app/Livewire/Dashboard/RecipeWorkbench.php | .ai/rules/dashboard.md |
 | {lang/en/workbench.php,database/seeders/data/interface-translations.json} | .ai/rules/data.md |
 | app/Forms/** | .ai/rules/forms.md |
 | vite.config.js | .ai/rules/general.md |

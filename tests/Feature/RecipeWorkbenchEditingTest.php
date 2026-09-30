@@ -14,6 +14,27 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+it('keeps the mounted editing baseline in workbench renders after a saved mutation', function (): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
+    $version = RecipeVersion::factory()->create(['recipe_id' => $recipe->id, 'workspace_id' => $workspace->id, 'is_current' => true]);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
+        ->set('data.description', '<p>First save.</p>')
+        ->call('saveRecipeContent')
+        ->assertReturned(fn (array $response): bool => $response['ok']);
+    $recipe->increment('edit_revision');
+
+    $component->call('$refresh')
+        ->assertViewHas('workbench', fn (array $workbench): bool => $workbench['editing'] !== null
+            && $workbench['editing']['recipe_revision'] === 1
+            && $workbench['editing']['current_version_id'] === $version->id
+            && $workbench['editing']['costing_revision'] === 0)
+        ->assertSet('expectedRecipeRevision', 1);
+});
+
 it('allows inspecting locked formula settings while protecting their controls', function (string $familySlug): void {
     $workspace = Workspace::factory()->create();
     $family = ProductFamily::factory()->create(['slug' => $familySlug, 'calculation_basis' => $familySlug === 'soap' ? 'initial_oils' : 'total_formula']);

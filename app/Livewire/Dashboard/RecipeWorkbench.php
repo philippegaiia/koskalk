@@ -979,15 +979,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $recipe = $this->currentRecipe();
         $recipeWorkbenchViewDataBuilder = app(RecipeWorkbenchViewDataBuilder::class);
         $user = $this->currentUser();
+        $canEditRecipe = $this->initialWorkbench['canEditRecipe']
+            ?? (request()->routeIs('calculator') || $this->canEditRecipe($recipe));
         $workbench = $this->initialWorkbench ?? $recipeWorkbenchViewDataBuilder->build(
             $this->productFamily(),
             $recipe,
             $user,
             $this->productType(),
+            $recipe instanceof Recipe && $canEditRecipe ? [
+                'recipe_revision' => $this->expectedRecipeRevision,
+                'current_version_id' => $this->expectedVersionId,
+                'costing_revision' => $this->expectedCostingRevision,
+            ] : null,
         );
-        $canEditRecipe = $this->initialWorkbench !== null
-            ? $workbench['canEditRecipe']
-            : request()->routeIs('calculator') || $this->canEditRecipe($recipe);
         $workbench['canEditRecipe'] = $canEditRecipe;
         if ($this->initialWorkbench === null && is_array($workbench['recipe'] ?? null)) {
             $workbench['recipe']['can_duplicate'] = $user?->can('create', Recipe::class) ?? false;

@@ -63,10 +63,10 @@ class FormulaShareRecipeImporter
                 $this->invalid();
             }
         }
-        $procedure = $this->sanitizer->richText($formula['manufacturing_instructions']);
+        $procedure = $formula['manufacturing_instructions'] === null ? null : $this->sanitizer->richText($formula['manufacturing_instructions']);
         $payload = [
             'name' => $snapshot['product']['name'], 'product_type_id' => $snapshot['product']['type']['id'] ?? null,
-            'oil_weight' => $context['oil_weight'], 'oil_unit' => $context['oil_unit'], 'editing_mode' => $context['editing_mode'],
+            'oil_weight' => $context['oil_weight'], 'oil_unit' => $context['oil_unit'], 'editing_mode' => 'percentage',
             'manufacturing_mode' => $formula['manufacturing_mode'], 'exposure_mode' => $formula['exposure_mode'], 'regulatory_regime' => $formula['regulatory_regime']['code'],
             'ifra_category_selection_mode' => $formula['ifra']['selection_mode'], 'ifra_product_category_id' => $formula['ifra']['category']['id'] ?? null,
             'lye_type' => $context['lye_type'] ?? 'naoh', 'koh_purity_percentage' => $context['koh_purity_percentage'] ?? 90,
@@ -75,7 +75,7 @@ class FormulaShareRecipeImporter
             'phases' => $phases, 'phase_items' => $items, 'manufacturing_instructions' => $procedure,
             'packaging_items' => [], 'production_output_type' => ProductionOutputType::FinishedProduct->value,
         ];
-        $saved = $this->workbench->publish($actor, $family, $payload);
+        $saved = $this->workbench->publish($actor, $family, $payload, prepareFormulation: fn (array $normalized): array => $this->preserveQuantities($normalized, $items, $context));
         $recipe = Recipe::withoutGlobalScopes()->findOrFail($saved->recipe_id);
         if ($recipe->workspace_id !== $destination->id) {
             throw new AuthorizationException;
@@ -86,9 +86,60 @@ class FormulaShareRecipeImporter
         ]);
 
         return $this->content->update($recipe, [
-            'description' => $this->sanitizer->richText($snapshot['product']['description']),
+            'description' => $snapshot['product']['description'] === null ? null : $this->sanitizer->richText($snapshot['product']['description']),
             'manufacturing_instructions' => $procedure,
         ]);
+    }
+
+    /** Preserves independently rounded, server-captured pairs before ordinary publication validation.
+     * @param  array<string, mixed>  $normalized  @param array<string, list<array<string, mixed>>> $items @param array<string, mixed> $context @return array<string, mixed>
+     */
+    private function preserveQuantities(array $normalized, array $items, array $context): array
+    {
+        if (! is_string($context['oil_weight']) || preg_match('/^\d+\.\d{9}$/D', $context['oil_weight']) !== 1 || bccomp($context['oil_weight'], '0', 9) <= 0) {
+            $this->invalid();
+        }
+        $weightTotal = '0';
+        $percentageTotal = '0';
+        $oilPercentage = '0';
+        foreach ($normalized['phases'] as &$phase) {
+            if ($phase['key'] === 'lye_water' && ($context['calculation_basis'] ?? null) !== 'total_formula') {
+                continue;
+            }
+            $stored = $items[$phase['key']] ?? [];
+            if (count($stored) !== count($phase['items'])) {
+                $this->invalid();
+            }
+            foreach ($phase['items'] as $index => &$row) {
+                $source = $stored[$index];
+                if ($row['ingredient_id'] !== $source['ingredient_id'] || preg_match('/^\d+\.\d{4}$/D', $source['percentage']) !== 1 || preg_match('/^\d+\.\d{4}$/D', $source['weight']) !== 1
+                    || bccomp((string) $row['percentage'], $source['percentage'], 4) !== 0) {
+                    $this->invalid();
+                }
+                $expectedWeight = bcdiv(bcmul($source['percentage'], $context['oil_weight'], 18), '100', 18);
+                $tolerance = bcadd('0.000050000025', bcadd(bcmul($context['oil_weight'], '0.0000005', 18), bcmul($source['percentage'], '0.0000005', 18), 18), 18);
+                $difference = bcsub($expectedWeight, $source['weight'], 18);
+                if (bccomp($difference, '0', 18) < 0) {
+                    $difference = bcmul($difference, '-1', 18);
+                }
+                if (bccomp($difference, $tolerance, 18) > 0) {
+                    $this->invalid();
+                }
+                $row['percentage'] = $source['percentage'];
+                $row['weight'] = $source['weight'];
+                $weightTotal = bcadd($weightTotal, $source['weight'], 4);
+                $percentageTotal = bcadd($percentageTotal, $source['percentage'], 4);
+                if ($phase['key'] === 'saponified_oils') {
+                    $oilPercentage = bcadd($oilPercentage, $source['percentage'], 4);
+                }
+            }
+            unset($row);
+        }
+        unset($phase);
+        $normalized['editing_mode'] = $context['editing_mode'];
+        $normalized['totals'] = ['oil_percentage' => $oilPercentage, 'formula_percentage_of_oils' => $percentageTotal, 'formula_weight' => $weightTotal];
+
+        return $normalized;
     }
 
     private function invalid(): never

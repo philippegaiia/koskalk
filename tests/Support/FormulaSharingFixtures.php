@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 final class FormulaSharingFixtures
 {
     /** @return array<string, mixed> */
-    public static function offer(string $familySlug = 'soap', ?int $recipeLimit = 100, ?int $ingredientLimit = 100): array
+    public static function offer(string $familySlug = 'soap', ?int $recipeLimit = 100, ?int $ingredientLimit = 100, ?array $options = null, bool $weightBoundary = false, bool $percentageBoundary = false, int $weightRows = 2, bool $multiLiquid = false, string $waterMode = 'percent_of_oils'): array
     {
         $owner = User::factory()->create();
         $source = Workspace::factory()->for($owner, 'owner')->create();
@@ -60,11 +60,51 @@ final class FormulaSharingFixtures
                 ? ['saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => '100', 'weight' => '1000.125', 'note' => 'Keep line note']], 'lye_water' => [['ingredient_id' => $liquid->id, 'percentage' => '25', 'weight' => '0']], 'additives' => [['ingredient_id' => $liquid->id, 'percentage' => '1.2345', 'weight' => '0']], 'fragrance' => [['ingredient_id' => $liquid->id, 'percentage' => '0.1234', 'weight' => '0']]]
                 : ['phase_a' => [['ingredient_id' => $oil->id, 'percentage' => '70.1234', 'weight' => '0', 'note' => 'Keep line note']], 'phase_b' => [['ingredient_id' => $liquid->id, 'percentage' => '29.8766', 'weight' => '0']]],
         ];
+        if ($weightBoundary) {
+            $payload['editing_mode'] = 'weight';
+            $payload['oil_weight'] = '1';
+            if ($familySlug === 'soap') {
+                $payload['phase_items']['saponified_oils'] = [['ingredient_id' => $oil->id, 'weight' => '0.500049'], ['ingredient_id' => $oil->id, 'weight' => '0.499951']];
+                $payload['phase_items']['additives'] = [['ingredient_id' => $liquid->id, 'weight' => '0.000051'], ['ingredient_id' => $liquid->id, 'weight' => '0.000050']];
+                $payload['phase_items']['fragrance'] = [['ingredient_id' => $liquid->id, 'weight' => '0.000049']];
+            } else {
+                $payload['phase_items']['phase_a'][0]['weight'] = '0.500049';
+                $payload['phase_items']['phase_b'][0]['weight'] = '0.499951';
+            }
+        }
+        if ($percentageBoundary) {
+            $payload['oil_weight'] = '100000';
+            if ($familySlug === 'soap') {
+                $payload['phase_items']['saponified_oils'] = [['ingredient_id' => $oil->id, 'percentage' => '50.000049'], ['ingredient_id' => $oil->id, 'percentage' => '49.999951']];
+            } else {
+                $payload['phase_items']['phase_a'][0]['percentage'] = '50.000049';
+                $payload['phase_items']['phase_b'][0]['percentage'] = '49.999951';
+            }
+        }
+        if ($weightRows === 6) {
+            $rows = array_fill(0, 6, ['ingredient_id' => $oil->id, 'weight' => '0.16666666666666667']);
+            if ($familySlug === 'soap') {
+                $payload['phase_items']['saponified_oils'] = $rows;
+            } else {
+                $payload['phase_items']['phase_a'] = array_slice($rows, 0, 3);
+                $payload['phase_items']['phase_b'] = array_slice($rows, 3);
+            }
+        }
+        if ($multiLiquid) {
+            $payload['oil_weight'] = '1000.1256';
+            $payload['phase_items']['lye_water'] = array_map(fn (string $percentage): array => ['ingredient_id' => $liquid->id, 'percentage' => $percentage], ['33.3333', '33.3333', '33.3334']);
+        }
+        $payload['water_mode'] = $waterMode;
+        $payload['water_value'] = match ($waterMode) {
+            'lye_ratio' => 2,
+            'lye_concentration' => 33,
+            default => 38,
+        };
         $current = app(RecipeWorkbenchService::class)->publish($owner, $family, $payload);
         $recipe = Recipe::withoutGlobalScopes()->findOrFail($current->recipe_id);
         $saved = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->firstOrFail();
         app(RecipeContentUpdater::class)->update($recipe, ['description' => '<p>Description &amp; details.</p>', 'manufacturing_instructions' => '<p>Mix &amp; rest.</p>']);
-        $options = ['include_procedure' => true, 'include_description' => true, 'include_line_notes' => true];
+        $options ??= ['include_procedure' => true, 'include_description' => true, 'include_line_notes' => true];
         $builder = app(FormulaShareSnapshotBuilder::class);
         $snapshot = $builder->build($owner, $recipe, $options);
         $share = app(SendFormulaShare::class)->handle($owner, $recipe, $recipient, $options, $builder->previewHash($snapshot, $recipient), (string) Str::uuid());

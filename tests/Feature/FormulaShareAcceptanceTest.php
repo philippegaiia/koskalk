@@ -13,6 +13,7 @@ use App\Models\RecipeItem;
 use App\Models\RecipeVersionCosting;
 use App\Services\FormulaSharePreview;
 use App\Services\FormulaShareSnapshotBuilder;
+use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -127,11 +128,16 @@ it('rolls back imported Ingredients mappings and Product when publication fails 
         $snapshot['formula']['phases'][0]['items'][0]['percentage'] = '65.0000';
         $share->forceFill(['snapshot' => $snapshot])->save();
     }
+    if ($failure === 'quantity') {
+        $snapshot = $share->snapshot;
+        $snapshot['formula']['phases'][0]['items'][0]['weight'] = '99999.0000';
+        $share->forceFill(['snapshot' => $snapshot])->save();
+    }
     $preview = app(FormulaSharePreview::class)->build($actor, $share, []);
     expect(fn () => app(AcceptFormulaShare::class)->handle($actor, $share, [], $preview['expected_hash']))->toThrow(ValidationException::class);
     expect(Ingredient::withoutGlobalScopes()->where('workspace_id', $recipient->id)->count())->toBe(0)->and(IngredientShareMapping::query()->count())->toBe(0)
         ->and(Recipe::withoutGlobalScopes()->where('workspace_id', $recipient->id)->count())->toBe(0)->and($share->fresh()->status)->toBe(FormulaShareStatus::Pending);
-})->with(['quota', 'ingredient_quota', 'validation']);
+})->with(['quota', 'ingredient_quota', 'validation', 'quantity']);
 
 it('accepts captured private facts after source edits and source Saved formula and Product deletion', function (): void {
     extract(FormulaSharingFixtures::offer('cosmetic'));
@@ -156,3 +162,90 @@ it('rejects inconsistent saved phase classification at capture and in a persiste
     expect(fn () => app(FormulaSharePreview::class)->build($recipient->owner, $share, []))->toThrow(ValidationException::class, __('sharing.validation.formula'));
     expect(FormulaShare::query()->count())->toBe(1)->and(Recipe::withoutGlobalScopes()->where('workspace_id', $recipient->id)->count())->toBe(0);
 });
+
+it('accepts the default and each optional text choice while keeping omitted content empty', function (bool $procedure, bool $description): void {
+    extract(FormulaSharingFixtures::offer(options: ['include_procedure' => $procedure, 'include_description' => $description]));
+    $actor = $recipient->owner;
+    $this->actingAs($actor);
+    $accepted = app(AcceptFormulaShare::class)->handle($actor, $share, [], app(FormulaSharePreview::class)->build($actor, $share, [])['expected_hash']);
+    expect($accepted->description)->toBe($description ? '<p>Description &amp; details.</p>' : null)
+        ->and($accepted->latestPublishedVersion->manufacturing_instructions)->toBe($procedure ? '<p>Mix &amp; rest.</p>' : null)
+        ->and($accepted->currentVersion->manufacturing_instructions)->toBe($procedure ? '<p>Mix &amp; rest.</p>' : null)
+        ->and($accepted->latestPublishedVersion->items->pluck('note')->filter()->all())->toBe([]);
+})->with([[false, false], [true, false], [false, true], [true, true]]);
+
+it('preserves both persisted quantities and editing preference at storage rounding boundaries', function (string $familySlug, bool $weight): void {
+    extract(FormulaSharingFixtures::offer($familySlug, weightBoundary: $weight, percentageBoundary: ! $weight));
+    $actor = $recipient->owner;
+    $this->actingAs($actor);
+    $accepted = app(AcceptFormulaShare::class)->handle($actor, $share, [], app(FormulaSharePreview::class)->build($actor, $share, [])['expected_hash']);
+    $map = $share->fresh()->import_receipt['ingredient_map'];
+    foreach ([$accepted->latestPublishedVersion, $accepted->currentVersion] as $version) {
+        expect($version->calculation_context['editing_mode'])->toBe($weight ? 'weight' : 'percentage');
+        foreach ($share->snapshot['formula']['phases'] as $phase) {
+            $expected = collect($phase['items'])->map(fn (array $row): array => ['ingredient_id' => $map[$row['ingredient_key']], 'percentage' => $row['percentage'], 'weight' => $row['weight']])->all();
+            expect($version->phases->firstWhere('slug', $phase['slug'])->items->map(fn (RecipeItem $row): array => $row->only(['ingredient_id', 'percentage', 'weight']))->all())->toBe($expected);
+        }
+    }
+})->with([['soap', true], ['cosmetic', true], ['soap', false], ['cosmetic', false]]);
+
+it('accepts six independently rounded weight rows without changing totals or discarding repeated Ingredients', function (string $familySlug): void {
+    extract(FormulaSharingFixtures::offer($familySlug, weightBoundary: true, weightRows: 6));
+    $actor = $recipient->owner;
+    $this->actingAs($actor);
+    $accepted = app(AcceptFormulaShare::class)->handle($actor, $share, [], app(FormulaSharePreview::class)->build($actor, $share, [])['expected_hash']);
+    foreach ([$accepted->latestPublishedVersion, $accepted->currentVersion] as $version) {
+        $rows = $version->phases->filter(fn ($phase): bool => $familySlug === 'cosmetic' || $phase->slug === 'saponified_oils')->flatMap->items;
+        expect($rows)->toHaveCount(6)->and($rows->pluck('percentage')->unique()->all())->toBe(['16.6667'])
+            ->and($rows->pluck('weight')->unique()->all())->toBe(['0.1667'])->and($version->calculation_context['editing_mode'])->toBe('weight');
+    }
+})->with(['soap', 'cosmetic']);
+
+it('does not enable persisted quantity preservation from arbitrary ordinary authoring payload flags', function (): void {
+    extract(FormulaSharingFixtures::offer(weightBoundary: true));
+    foreach ($payload['phase_items']['saponified_oils'] as &$row) {
+        $row['weight'] = '0.5';
+    }
+    unset($row);
+    $payload['preserve_quantities'] = true;
+    $payload['prepareFormulation'] = $share->snapshot;
+    $payload['sharing_snapshot'] = $share->snapshot;
+    $working = app(RecipeWorkbenchService::class)->publish($owner, $family, $payload);
+    $rows = $working->phases()->withoutGlobalScopes()->where('slug', 'saponified_oils')->firstOrFail()->items()->withoutGlobalScopes()->get();
+    expect($rows->pluck('percentage')->all())->toBe(['50.0000', '50.0000'])->and($working->calculation_context['editing_mode'])->toBe('weight');
+});
+
+it('rejects malformed negative and nonfinite persisted formulation quantities atomically', function (string $field, string $value): void {
+    extract(FormulaSharingFixtures::offer('cosmetic'));
+    $snapshot = $share->snapshot;
+    $snapshot['formula']['phases'][0]['items'][0][$field] = $value;
+    $share->forceFill(['snapshot' => $snapshot])->save();
+    $actor = $recipient->owner;
+    $hash = app(FormulaSharePreview::class)->build($actor, $share, [])['expected_hash'];
+    expect(fn () => app(AcceptFormulaShare::class)->handle($actor, $share, [], $hash))->toThrow(ValidationException::class)
+        ->and(Ingredient::withoutGlobalScopes()->where('workspace_id', $recipient->id)->count())->toBe(0)->and($share->fresh()->status)->toBe(FormulaShareStatus::Pending);
+})->with([['weight', '-0.0001'], ['weight', '1e999'], ['weight', 'NaN'], ['percentage', '-0.0001']]);
+
+it('recalculates conserved dilution-liquid output from the selected oil chemistry while retaining unchanged input quantities', function (string $waterMode): void {
+    extract(FormulaSharingFixtures::offer(multiLiquid: true, waterMode: $waterMode));
+    $actor = $recipient->owner;
+    $this->actingAs($actor);
+    $action = app(AcceptFormulaShare::class);
+    $preview = app(FormulaSharePreview::class);
+    $offered = collect($share->snapshot['formula']['phases'])->firstWhere('slug', 'lye_water')['items'];
+    $first = $action->handle($actor, $share, [], $preview->build($actor, $share, [])['expected_hash']);
+    expect($first->latestPublishedVersion->phases->firstWhere('slug', 'lye_water')->items->pluck('weight')->all())->toBe(collect($offered)->pluck('weight')->all());
+    $builder = app(FormulaShareSnapshotBuilder::class);
+    $captured = $builder->build($owner, $recipe, $share->options);
+    $other = app(SendFormulaShare::class)->handle($owner, $recipe, $recipient, $share->options, $builder->previewHash($captured, $recipient), (string) Str::uuid());
+    $oilKey = collect($other->snapshot['formula']['phases'])->firstWhere('slug', 'saponified_oils')['items'][0]['ingredient_key'];
+    $substitute = Ingredient::factory()->create(['workspace_id' => $recipient->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $recipient->id, 'is_soap_saponification_trusted' => true,
+        'source_data' => ['user_authoring' => ['trusted_koh_sap_value' => '0.250000', 'trusted_fatty_acid_profile' => []]]]);
+    $substitute->sapProfile()->create(['koh_sap_value' => '0.250000']);
+    $choices = [['key' => $oilKey, 'mode' => 'substitute', 'ingredient_public_id' => $substitute->public_id]];
+    $second = $action->handle($actor, $other, $choices, $preview->build($actor, $other, $choices)['expected_hash']);
+    $liquids = $second->latestPublishedVersion->phases->firstWhere('slug', 'lye_water')->items;
+    expect($liquids->pluck('percentage')->all())->toBe(collect($offered)->pluck('percentage')->all())
+        ->and($liquids->pluck('weight')->all())->not->toBe(collect($offered)->pluck('weight')->all())
+        ->and($second->latestPublishedVersion->calculation_context['oil_weight'])->toBe(1000.1256);
+})->with(['lye_ratio', 'lye_concentration']);

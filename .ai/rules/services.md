@@ -84,3 +84,6 @@ Formula sharing preview must validate the union of persisted formula roles, incl
 
 ## Validate shared phase roles by stable slug and classification
 Persisted soap phase_type is reaction_core/reaction_medium/post_reaction, not its slug. Validate slug/classification consistency at capture and review, derive oil/dilution roles from the stable slug, and preserve every supported phase row through normal publication. Cosmetic custom phase slugs remain supported under cosmetic_phase.
+
+## Preserve independently rounded shared formulation quantities before validation
+Shared formula storage has independent percentage/weight decimals. Restore server-captured pairs through a separate formulation callback before normal total/access/calculation/publish validation, with finite canonical rounding-interval checks, original calculation-context batch scale and freshly recomputed totals. Browser payload flags never activate it. Recalculate dilution-liquid weights from actual selected chemistry and normal conserved allocation; only its percentages are formulation inputs. Omitted optional text must remain null.

@@ -243,12 +243,13 @@ class RecipeWorkbenchService
         array $payload,
         ?Recipe $recipe = null,
         ?Closure $preparePayloadForRecipe = null,
+        ?Closure $prepareFormulation = null,
     ): RecipeVersion {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
         }
 
-        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true, $recipe);
+        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true, $recipe, $prepareFormulation);
         if ($recipe instanceof Recipe) {
             $this->recipeFormulaItemLimitService->assertUpdateAllowed($user, $normalizedPayload, $recipe);
         } else {

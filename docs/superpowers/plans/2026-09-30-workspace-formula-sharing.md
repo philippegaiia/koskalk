@@ -253,12 +253,12 @@ expect((float) $copy->fresh('sapProfile')->sapProfile->koh_sap_value)->toBe(0.18
 
 **Create:** `app/Services/IngredientShareProjector.php`, `app/Services/IngredientShareFingerprint.php`, `app/Services/IngredientShareGraph.php`, `tests/Feature/IngredientShareProjectionTest.php`, `tests/Unit/IngredientShareFingerprintTest.php`.
 
-- [ ] Add projection tests using real ingredient relations: allergens, nullable substances with non-supplier provenance, all IFRA certificates, market declarations, precision, modified trusted oils, and one private blend sharing a child with another blend.
-- [ ] Add pure fingerprint tests: array order normalization, null versus zero, locale-independent decimals, display-name changes not changing technical hash, child chemistry changes changing parent hash, trusted-baseline changes changing hash, unsupported version rejection.
-- [ ] Implement `IngredientShareProjector::project(Ingredient $ingredient): array` with the whitelist in section 3 and no caller-provided data. Keep machine provenance separate from display/evidence metadata.
-- [ ] Implement `IngredientShareGraph::capture(User $actor, Workspace $source, array $rootIds): array` with bounded eager loading, authorized closure traversal, recursion-stack cycle detection and deterministic snapshot-local keys. Project platform nodes too for drift detection, but do not copy them on import.
-- [ ] Implement `IngredientShareFingerprint::forProjection(array $projection): string`, recursively combining child projections already resolved by the graph. Prefix schema version in the digest input; never hash localized formatted numbers.
-- [ ] Run `php artisan test --compact tests/Feature/IngredientShareProjectionTest.php tests/Unit/IngredientShareFingerprintTest.php`, Pint and commit.
+- [x] Add projection tests using real ingredient relations: allergens, nullable substances with non-supplier provenance, all IFRA certificates, market declarations, precision, modified trusted oils, and one private blend sharing a child with another blend.
+- [x] Add pure fingerprint tests: array order normalization, null versus zero, locale-independent decimals, display-name changes not changing technical hash, child chemistry changes changing parent hash, trusted-baseline changes changing hash, unsupported version rejection.
+- [x] Implement `IngredientShareProjector::project(Ingredient $ingredient): array` with the whitelist in section 3 and no caller-provided data. Keep machine provenance separate from display/evidence metadata.
+- [x] Implement `IngredientShareGraph::capture(User $actor, Workspace $source, array $rootIds): array` with bounded eager loading, authorized closure traversal, recursion-stack cycle detection and deterministic snapshot-local keys. Project platform nodes too for drift detection, but do not copy them on import.
+- [x] Implement `IngredientShareFingerprint::forProjection(array $projection): string`, recursively combining child projections already resolved by the graph. Prefix schema version in the digest input; never hash localized formatted numbers.
+- [x] Run `php artisan test --compact tests/Feature/IngredientShareProjectionTest.php tests/Unit/IngredientShareFingerprintTest.php`, Pint and commit.
 
 Security acceptance: insert sentinel secrets into every excluded field/relation and assert they are absent from serialized snapshots. Explicitly cover `source_data`, nested component notes and IFRA document paths; absence from the visible screen alone is insufficient.
 

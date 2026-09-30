@@ -243,11 +243,11 @@ expect((float) $copy->fresh('sapProfile')->sapProfile->koh_sap_value)->toBe(0.18
 
 **Modify:** `app/Models/Ingredient.php` for the server-owned lineage accessor/cast only.
 
-- [ ] Run read-only `php artisan truss:export --format=llm --focus=ingredients --depth=1 --no-interaction` and `php artisan truss:doctor --no-interaction`. Do not fix unrelated doctor findings.
-- [ ] Add tests for unique request/mapping identities, null-on-delete mapping behavior, accepted Product survival after source deletion, and absence of snapshot/internal receipt in serialization.
-- [ ] Generate migrations/models/factories and implement section 5 exactly, using `#[Fillable]`, `casts()`, `HasPublicId`, enum string columns, named short indexes and reversible `down()` methods. Snapshot fields are only assigned explicitly by the issuer service.
-- [ ] Test forward/reverse migrations on the test database. Run `truss:diff` only against a database where this task's migrations were intentionally applied; never migrate the user's working database just for planning/verification.
-- [ ] Run `php artisan test --compact tests/Feature/FormulaSharePersistenceTest.php`, Pint and commit.
+- [x] Run read-only `php artisan truss:export --format=llm --focus=ingredients --depth=1 --no-interaction` and `php artisan truss:doctor --no-interaction`. Do not fix unrelated doctor findings.
+- [x] Add tests for unique request/mapping identities, null-on-delete mapping behavior, accepted Product survival after source deletion, and absence of snapshot/internal receipt in serialization.
+- [x] Generate migrations/models/factories and implement section 5 exactly, using `#[Fillable]`, `casts()`, `HasPublicId`, enum string columns, named short indexes and reversible `down()` methods. Snapshot fields are only assigned explicitly by the issuer service.
+- [x] Test forward/reverse migrations on the test database. Run `truss:diff` only against a database where this task's migrations were intentionally applied; never migrate the user's working database just for planning/verification.
+- [x] Run `php artisan test --compact tests/Feature/FormulaSharePersistenceTest.php`, Pint and commit.
 
 ### Task 3 — Build technical projection, fingerprints and dependency traversal
 

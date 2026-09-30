@@ -585,6 +585,7 @@ class UserIngredientAuthoringService
         $copy->saponification_name = $source->localizedSaponificationName($user->locale) ?? $source->saponification_name;
         $copy->info_markdown = null;
         $copy->source_data = $this->duplicateSourceData($source);
+        $copy->share_lineage_key = $this->isPlatformIngredient($source) ? null : $source->share_lineage_key;
         $copy->featured_image_path = null;
         $copy->featured_image_original_name = null;
         $copy->icon_image_path = null;

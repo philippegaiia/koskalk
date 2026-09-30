@@ -16,6 +16,7 @@ use App\Services\WorkspaceAuthorization;
 use App\Support\InciName;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -59,6 +60,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'icon_image_path',
     'icon_image_original_name',
 ])]
+#[Hidden(['share_lineage_key'])]
 class Ingredient extends Model
 {
     /** @use HasFactory<IngredientFactory> */
@@ -68,6 +70,11 @@ class Ingredient extends Model
     use HasPublicId;
     use HasTenantOwnership {
         isAccessibleBy as tenantIsAccessibleBy;
+    }
+
+    public function sharingLineageKey(): ?string
+    {
+        return $this->owner_type === null ? null : ($this->share_lineage_key ?? $this->public_id);
     }
 
     public function sapProfile(): HasOne
@@ -459,6 +466,7 @@ class Ingredient extends Model
             'is_active' => 'bool',
             'is_manufactured' => 'bool',
             'source_data' => 'array',
+            'share_lineage_key' => 'string',
             'featured_image_original_name' => OriginalFilename::class,
             'icon_image_original_name' => OriginalFilename::class,
         ];

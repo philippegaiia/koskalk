@@ -34,3 +34,6 @@ Use the shared draftSignature for both the formula dirty baseline and changes-du
 
 ## Keep normal saves inside the current editing session
 Save/publish of an existing formula applies the returned snapshot and revisions without navigating back to the same recipe; creation and duplication still open the new formula. After a failed heartbeat, quietly reacquire only a previously owned reservation whose server status is available and whose recipe/version/costing revisions still match. Never take over another holder or rebase a stale draft automatically.
+
+## Release formula reservations only on confirmed departure
+Release through the authenticated token-checked HTTP endpoint using fetch keepalive on livewire:navigating, pagehide and component teardown; do not rely on a destroyed Livewire component. Never release on cancellable livewire:navigate, beforeunload, blur or visibility changes. Stop queued renewals/writes after departure and release late acquired responses too. Browser-cache restoration checks revisions before resuming the former holder; waiting observers still choose Resume editing. Retain 15-second polling and the 90-second expiry fallback.

@@ -58,6 +58,12 @@ export function createEditingSection(payload) {
         pollTimer: null,
         focusHandler: null,
         visibilityHandler: null,
+        departureHandler: null,
+        restoreHandler: null,
+        departing: false,
+        destroyed: false,
+        releasePromise: null,
+        resumeOnRestore: false,
     };
 
     return {
@@ -77,7 +83,7 @@ export function createEditingSection(payload) {
         editingMessage: '',
 
         get isEditingUnavailable() {
-            return this.editingRequired && this.editingStatus !== 'acquired';
+            return (this.editingRequired && this.editingStatus !== 'acquired') || runtime.departing;
         },
 
         get canWriteRecipe() {
@@ -133,7 +139,7 @@ export function createEditingSection(payload) {
         },
 
         async startEditingProtection() {
-            if (!this.editingRequired || this.editingStarted) {
+            if (!this.editingRequired || this.editingStarted || runtime.departing) {
                 return null;
             }
 
@@ -151,12 +157,21 @@ export function createEditingSection(payload) {
                     void this.pollEditingState();
                 }
             };
+            runtime.departureHandler = () => this.releaseEditingOnDeparture();
+            runtime.restoreHandler = event => {
+                if (event.persisted) {
+                    void this.restoreEditingProtection();
+                }
+            };
 
             if (typeof window !== 'undefined') {
                 window.addEventListener?.('focus', runtime.focusHandler);
+                window.addEventListener?.('pagehide', runtime.departureHandler);
+                window.addEventListener?.('pageshow', runtime.restoreHandler);
             }
             if (typeof document !== 'undefined') {
                 document.addEventListener?.('visibilitychange', runtime.visibilityHandler);
+                document.addEventListener?.('livewire:navigating', runtime.departureHandler);
             }
 
             runtime.pollTimer = globalThis.setInterval(() => {
@@ -175,6 +190,10 @@ export function createEditingSection(payload) {
         },
 
         async acquireEditingReservation(waitForPoll = true) {
+            if (runtime.departing) {
+                return leaseErrorResponse(this);
+            }
+
             if (!this.editingToken) {
                 this.markEditingLost(this.t('editing.token_unavailable'));
 
@@ -190,6 +209,9 @@ export function createEditingSection(payload) {
 
             if (waitForPoll && runtime.pollPromise) {
                 await runtime.pollPromise;
+                if (runtime.departing) {
+                    return leaseErrorResponse(this);
+                }
                 this.editingStatus = 'acquiring';
             }
 
@@ -224,7 +246,8 @@ export function createEditingSection(payload) {
         },
 
         async pollEditingState() {
-            if (!this.editingRequired
+            if (runtime.departing
+                || !this.editingRequired
                 || !this.editingStarted
                 || this.editingStatus === 'acquiring'
                 || !isVisibleAndFocused()) {
@@ -236,11 +259,20 @@ export function createEditingSection(payload) {
             }
 
             const promise = enqueueEditingRead(runtime, async () => {
+                if (runtime.departing) {
+                    return null;
+                }
                 const previouslyOwnedLease = this.editingOwnsLease;
                 const method = previouslyOwnedLease ? 'heartbeatEditing' : 'editingStatus';
 
                 try {
                     let response = await this.$wire[method]();
+
+                    if (runtime.departing) {
+                        this.applyEditingStatusResponse(response, 'poll');
+
+                        return response;
+                    }
 
                     if (!response?.ok && method === 'heartbeatEditing') {
                         this.editingOwnsLease = false;
@@ -272,6 +304,13 @@ export function createEditingSection(payload) {
         },
 
         applyEditingStatusResponse(response, source) {
+            if (runtime.departing) {
+                if (response?.editing?.status === 'acquired') {
+                    this.releaseEditingOnDeparture(response.editing, true);
+                }
+
+                return;
+            }
             if (!response?.ok || !response.editing) {
                 const hasLeaseError = Boolean(response?.errors?.editing_lease);
                 this.markEditingLost(response?.message || this.t(hasLeaseError ? 'editing.lease_lost' : 'editing.status_failed'));
@@ -298,6 +337,13 @@ export function createEditingSection(payload) {
         },
 
         recordEditingMutation(response) {
+            if (runtime.departing) {
+                if (response?.editing?.status === 'acquired') {
+                    this.releaseEditingOnDeparture(response.editing, true);
+                }
+
+                return response;
+            }
             if (!this.editingRequired || !response || typeof response !== 'object') {
                 return response;
             }
@@ -355,7 +401,7 @@ export function createEditingSection(payload) {
                     await runtime.acquisitionPromise;
                 }
 
-                if (!this.canEditRecipe || (!allowWithoutLease && this.isEditingUnavailable) || (this.isFormulaLocked && !allowLocked)) {
+                if (runtime.departing || !this.canEditRecipe || (!allowWithoutLease && this.isEditingUnavailable) || (this.isFormulaLocked && !allowLocked)) {
                     return leaseErrorResponse(this);
                 }
 
@@ -445,12 +491,16 @@ export function createEditingSection(payload) {
         async confirmEditingTakeover() {
             const reason = this.editingTakeoverReason.trim();
 
-            if (!this.canTakeOverEditing || reason === '') {
+            if (runtime.departing || !this.canTakeOverEditing || reason === '') {
                 return;
             }
 
             if (runtime.pollPromise) {
                 await runtime.pollPromise;
+            }
+
+            if (runtime.departing) {
+                return;
             }
 
             this.editingStatus = 'acquiring';
@@ -479,7 +529,67 @@ export function createEditingSection(payload) {
             this.recordEditingMutation({ ok: true, editing });
         },
 
+        releaseEditingOnDeparture(editing = this.editingServerState, repeat = false) {
+            if (!runtime.departing || repeat) {
+                runtime.resumeOnRestore = this.editingOwnsLease || editing?.status === 'acquired';
+            }
+            runtime.departing = true;
+            this.editingOwnsLease = false;
+            this.editingStatus = 'inactive';
+
+            if (!this.editingRequired || !this.editingToken || !editing?.release_url
+                || typeof globalThis.fetch !== 'function' || (runtime.releasePromise && !repeat)) {
+                return runtime.releasePromise;
+            }
+
+            const csrfToken = globalThis.document?.querySelector?.('meta[name="csrf-token"]')?.getAttribute('content');
+
+            try {
+                const release = globalThis.fetch(editing.release_url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    keepalive: true,
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ?? '',
+                    },
+                    body: JSON.stringify({ token: this.editingToken }),
+                }).catch(() => {});
+                runtime.releasePromise = Promise.all([runtime.releasePromise, release]);
+            } catch {
+                // The lease still expires if the browser cannot send a departure request.
+            }
+
+            return runtime.releasePromise;
+        },
+
+        async restoreEditingProtection() {
+            if (!runtime.departing || runtime.destroyed) {
+                return;
+            }
+
+            await Promise.all([runtime.acquisitionPromise, runtime.pollPromise, runtime.mutationQueue]);
+            await runtime.releasePromise;
+
+            if (runtime.destroyed) {
+                return;
+            }
+
+            runtime.departing = false;
+            runtime.releasePromise = null;
+            this.editingStatus = 'available';
+            await this.pollEditingState();
+
+            if (runtime.resumeOnRestore && this.editingStatus === 'available' && !this.editingStale
+                && this.canEditRecipe && !this.isFormulaLocked) {
+                await this.acquireEditingReservation(false);
+            }
+        },
+
         destroyEditingProtection() {
+            runtime.destroyed = true;
+            this.releaseEditingOnDeparture();
             if (runtime.pollTimer !== null) {
                 globalThis.clearInterval(runtime.pollTimer);
                 runtime.pollTimer = null;
@@ -495,9 +605,15 @@ export function createEditingSection(payload) {
                 runtime.visibilityHandler = null;
             }
 
-            if (this.editingOwnsLease && typeof this.$wire?.releaseEditing === 'function') {
-                Promise.resolve(this.$wire.releaseEditing()).catch(() => {});
-                this.editingOwnsLease = false;
+            if (runtime.departureHandler) {
+                globalThis.window?.removeEventListener?.('pagehide', runtime.departureHandler);
+                globalThis.document?.removeEventListener?.('livewire:navigating', runtime.departureHandler);
+                runtime.departureHandler = null;
+            }
+
+            if (runtime.restoreHandler) {
+                globalThis.window?.removeEventListener?.('pageshow', runtime.restoreHandler);
+                runtime.restoreHandler = null;
             }
         },
     };

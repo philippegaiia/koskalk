@@ -5,6 +5,187 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
+it('releases only on confirmed departure and survives component teardown', function (string $departure): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+const documentEvents = new EventTarget();
+const windowEvents = new EventTarget();
+globalThis.document = Object.assign(documentEvents, {
+    visibilityState: 'visible', hasFocus: () => true,
+    querySelector: selector => {
+        assert.equal(selector, 'meta[name="csrf-token"]');
+        return { getAttribute: () => 'csrf-token' };
+    },
+});
+globalThis.window = windowEvents;
+globalThis.setInterval = () => 1;
+globalThis.clearInterval = () => {};
+const requests = [];
+globalThis.fetch = async (url, options) => { requests.push({ url, options }); return { ok: true }; };
+const baseline = { recipe_revision: 4, current_version_id: 12, costing_revision: 0, status: 'available', release_url: '/recipes/abc/editing/release' };
+let beginCalls = 0;
+const workbench = { t: key => key, isFormulaLocked: false, $wire: {
+    async beginEditing() { beginCalls++; return { ok: true, editing: { ...baseline, status: 'acquired' } }; },
+    async editingStatus() { return { ok: true, editing: baseline }; },
+    async heartbeatEditing() { return { ok: true, editing: { ...baseline, status: 'acquired' } }; },
+    releaseEditing() { throw new Error('Departure must not depend on a destroyed Livewire component'); },
+} };
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createEditingSection({ canPersist: true, recipe: { id: 1 }, editing: baseline })));
+await workbench.startEditingProtection();
+const token = workbench.editingToken;
+documentEvents.dispatchEvent(new Event('livewire:navigate', { cancelable: true }));
+windowEvents.dispatchEvent(new Event('beforeunload', { cancelable: true }));
+document.visibilityState = 'hidden';
+documentEvents.dispatchEvent(new Event('visibilitychange'));
+windowEvents.dispatchEvent(new Event('blur'));
+assert.equal(requests.length, 0, 'Unconfirmed navigation and switching tabs must keep the lease');
+assert.equal(workbench.canWriteRecipe, true);
+document.visibilityState = 'visible';
+const departure = __DEPARTURE__;
+if (departure === 'destroy') {
+    workbench.destroyEditingProtection();
+} else {
+    (departure === 'pagehide' ? windowEvents : documentEvents).dispatchEvent(new Event(departure));
+}
+assert.equal(requests.length, 1);
+assert.equal(workbench.canWriteRecipe, false);
+let writes = 0;
+await workbench.queueRevisionMutation(async () => { writes++; return { ok: true }; });
+assert.equal(writes, 0, 'Queued work must not run after departure');
+assert.equal(requests[0].url, baseline.release_url);
+assert.equal(requests[0].options.keepalive, true);
+assert.equal(requests[0].options.method, 'POST');
+assert.equal(requests[0].options.credentials, 'same-origin');
+assert.equal(requests[0].options.headers['X-CSRF-TOKEN'], 'csrf-token');
+assert.deepEqual(JSON.parse(requests[0].options.body), { token });
+workbench.destroyEditingProtection();
+windowEvents.dispatchEvent(new Event('pagehide'));
+documentEvents.dispatchEvent(new Event('livewire:navigating'));
+assert.equal(requests.length, 1, 'Navigation and destroy must not send duplicate release requests');
+assert.equal(beginCalls, 1);
+JS;
+    $script = str_replace('__DEPARTURE__', json_encode($departure, JSON_THROW_ON_ERROR), $script);
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+})->with(['livewire:navigating', 'pagehide', 'destroy']);
+
+it('releases late acquisitions and keeps browser-restored drafts protected', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+globalThis.document = Object.assign(new EventTarget(), { visibilityState: 'visible', hasFocus: () => true, querySelector: () => ({ getAttribute: () => 'csrf' }) });
+globalThis.window = new EventTarget();
+globalThis.setInterval = () => 1;
+globalThis.clearInterval = () => {};
+const tick = () => new Promise(resolve => setImmediate(resolve));
+const requests = [];
+globalThis.fetch = async (...args) => { requests.push(args); return { ok: true }; };
+const baseline = { recipe_revision: 4, current_version_id: 12, costing_revision: 0, status: 'available', release_url: '/release' };
+let finishAcquisition;
+let beginCalls = 0;
+let changed = false;
+const workbench = { formulaName: 'Local draft', t: key => key, isFormulaLocked: false, $wire: {
+    async beginEditing() {
+        beginCalls++;
+        if (beginCalls === 1) { await new Promise(resolve => { finishAcquisition = resolve; }); }
+        return { ok: true, editing: { ...baseline, status: 'acquired' } };
+    },
+    async editingStatus() { return { ok: true, editing: { ...baseline, recipe_revision: changed ? 5 : 4 } }; },
+    async releaseEditing() { return { ok: true }; },
+} };
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createEditingSection({ canPersist: true, recipe: { id: 1 }, editing: baseline })));
+const acquisition = workbench.startEditingProtection();
+window.dispatchEvent(new Event('pagehide'));
+finishAcquisition();
+await acquisition;
+assert.ok(requests.length >= 1, 'A reservation acquired after departure still needs release');
+assert.equal(workbench.canWriteRecipe, false);
+const pageshow = () => {
+    const event = new Event('pageshow');
+    Object.defineProperty(event, 'persisted', { value: true });
+    window.dispatchEvent(event);
+};
+pageshow();
+await tick();
+assert.equal(workbench.canWriteRecipe, true);
+assert.equal(beginCalls, 2);
+assert.equal(workbench.formulaName, 'Local draft');
+window.dispatchEvent(new Event('pagehide'));
+changed = true;
+pageshow();
+await tick();
+assert.equal(workbench.editingStale, true, 'Browser restoration cannot overwrite a newer saved formula');
+assert.equal(workbench.canWriteRecipe, false);
+assert.equal(beginCalls, 2);
+assert.equal(workbench.editingRecipeRevision, 4);
+assert.equal(workbench.formulaName, 'Local draft');
+workbench.destroyEditingProtection();
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('does not renew or restart queued work after departure and contains release failures', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+globalThis.document = Object.assign(new EventTarget(), { visibilityState: 'visible', hasFocus: () => true, querySelector: () => null });
+globalThis.window = new EventTarget();
+globalThis.setInterval = () => 1;
+globalThis.clearInterval = () => {};
+let releases = 0;
+globalThis.fetch = async () => { releases++; throw new Error('Offline'); };
+const baseline = { recipe_revision: 4, current_version_id: 12, costing_revision: 0, release_url: '/release' };
+let finishSave;
+let heartbeats = 0;
+let beginCalls = 0;
+let blocked = false;
+const workbench = { t: key => key, isFormulaLocked: false, $wire: {
+    async beginEditing() { beginCalls++; return { ok: true, editing: { ...baseline, status: blocked ? 'blocked' : 'acquired' } }; },
+    async heartbeatEditing() { heartbeats++; throw new Error('Departed pages cannot renew'); },
+    async editingStatus() { return { ok: true, editing: { ...baseline, status: 'available' } }; },
+} };
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createEditingSection({ canPersist: true, recipe: { id: 1 }, editing: baseline })));
+await workbench.startEditingProtection();
+const save = workbench.queueRevisionMutation(async () => {
+    await new Promise(resolve => { finishSave = resolve; });
+    return { ok: true, editing: { ...baseline, recipe_revision: 5, status: 'acquired' } };
+});
+await new Promise(resolve => setImmediate(resolve));
+const poll = workbench.pollEditingState();
+window.dispatchEvent(new Event('pagehide'));
+finishSave();
+await save;
+await poll;
+assert.equal(heartbeats, 0, 'A poll queued behind a save must stop on departure');
+assert.equal(workbench.canWriteRecipe, false);
+assert.equal(beginCalls, 1);
+assert.equal(releases, 2, 'A late acquired response must be released after the initial departure request');
+workbench.destroyEditingProtection();
+
+blocked = true;
+const observer = { ...workbench, $wire: workbench.$wire };
+Object.defineProperties(observer, Object.getOwnPropertyDescriptors(createEditingSection({ canPersist: true, recipe: { id: 1 }, editing: baseline })));
+await observer.startEditingProtection();
+assert.equal(observer.editingStatus, 'blocked');
+window.dispatchEvent(new Event('pagehide'));
+const restored = new Event('pageshow');
+Object.defineProperty(restored, 'persisted', { value: true });
+window.dispatchEvent(restored);
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(observer.editingStatus, 'available');
+assert.equal(observer.canWriteRecipe, false, 'Restoring a waiting page still requires Resume editing');
+assert.equal(beginCalls, 2);
+observer.destroyEditingProtection();
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
 it('starts editing protection when newer input keeps the first save on the creation page', function (): void {
     $script = <<<'JS'
 import assert from 'node:assert/strict';

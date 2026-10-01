@@ -40,6 +40,14 @@ Important implementation constraints found during inspection:
 - Production journal document Actions are shared with purchasing documents. Only the production-record branch receives this phase's guard.
 - Formula reservation behaviour is established by commit `7fe3530d`; normal saves stay on the same page. Do not change that behaviour as part of this work.
 
+### Formula-sharing integration baseline
+
+This specification was rechecked after formula sharing was merged into local `main` at `4e34e899`. The original design commit `22f94bbc` and the tested formula editing behaviour are preserved. Start implementation from the merged baseline; do not restore the earlier checkout or reset the working database.
+
+The merged `WorkspaceWriteLock` acquires the workspace row lock and, on PostgreSQL, performs a no-op physical update of `updated_at`. This advances the row's MVCC version without changing its business timestamp or emitting model events. A row lock alone cannot provide the same stale-snapshot protection for a competing REPEATABLE READ writer. Production editing and guarded production mutations must reuse this service at their workspace locking boundary; do not replace its update with only `lockForUpdate()`.
+
+Formula sharing reads the latest Saved source without taking or changing its formula editing reservation. Accepted copies are independent destination Products. Neither flow transfers a production reservation or adds Production Bench implementation. Keep these boundaries and fresh `WorkspaceAuthorization`/`ProductionBenchAccess` checks intact.
+
 Use the installed PHP 8.5, Laravel 13, Livewire 4 and Filament 5 APIs. Do not infer Filament APIs from older inline examples.
 
 ## User experience
@@ -148,6 +156,10 @@ Use production-specific services; do not route productions through the formula-s
 
 Other Action/Service code keeps its existing boundaries and calculations. Bring affected writers into a consistent lock order rather than wrapping reverse-order locks and hoping transaction retries will conceal deadlocks. Workspace-wide serialization exists only for the brief transaction, not for the lease duration.
 
+Use `WorkspaceWriteLock` before production rows or write-authority checks that rely on the protected workspace state. The production portion remains workspace → productions in ascending ID order → child rows. If an operation locks its actor user, acquire that lock before the workspace; if membership rows need locking for reauthorization, lock them after the workspace and before production rows. Never acquire a user lock after holding a workspace lock, or acquire another workspace after locking a production. This is compatible with sharing's actor → sorted workspaces → membership → share → recipe → ingredients order; production operations do not call formula-sharing transactions or import their record locks.
+
+Keep production transactions at their established isolation level unless implementation analysis proves a stronger level necessary. Do not copy sharing's outermost REPEATABLE READ setup or change an existing parent transaction's isolation. The shared workspace fence must remain effective for concurrent sharing transactions even when the production writer uses READ COMMITTED. Retry eligible concurrency failures at the outer transaction boundary, reload authoritative records on every attempt, and keep uploads and other nontransactional side effects outside retrying callbacks. Verify PostgreSQL behavior with real concurrent connections rather than relying on SQLite.
+
 Document upload processing remains outside a long database transaction. Check editing eligibility before starting expensive processing, recheck the lease and expected revision inside the attachment transaction, and retain the existing unreferenced-upload rollback when attachment fails. A successful uploaded asset is not proof that the journal document was attached.
 
 ## Storage
@@ -214,7 +226,7 @@ Add behavioral tests before implementation, using existing factories and per-fil
 9. Normal lifecycle transitions, pending tasks after production completion, output quarantine/release, permitted finished-goods issuance and preserved stock/accounting effects.
 10. Journal/document guards and upload rollback; receipt document paths remain unaffected.
 11. Maintenance revision bump/skip rules and creation's existing idempotency behaviour.
-12. Migration round trip retains production data, numbering integrity triggers and indexes; PostgreSQL concurrent-acquisition/competing-command tests verify behavior that SQLite cannot prove.
+12. Migration round trip retains production data, numbering integrity triggers and indexes; PostgreSQL concurrent-acquisition/competing-command tests verify behavior that SQLite cannot prove. Include production writes competing with sharing/entitlement writes through `WorkspaceWriteLock`: stale REPEATABLE READ transactions retry or fail safely, business workspace timestamps remain unchanged, authority is rechecked after retries, and mixed paths retain the documented lock order.
 
 Use the existing formula editing tests as regression coverage. Do not install a browser-test dependency. Perform a manual two-profile walkthrough on Herd after narrow tests pass, then ask the user for the full suite. Run Pint after PHP changes and refresh Graphify after implementation. No local frontend build or deployment is part of this planning stage.
 

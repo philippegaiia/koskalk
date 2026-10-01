@@ -2223,6 +2223,7 @@ it('clears recipe content blocking after every successful workbench save', funct
     $script = <<<'JS'
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
 
 const source = fs
     .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
@@ -2295,6 +2296,92 @@ JS;
     $process->run();
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('ignores regenerated row identities while preserving real unsaved formula edits', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
+
+const source = path => fs.readFileSync(path, 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/^export \{[^}]*\};\n/gm, '')
+    .replace(/export (async )?function /g, '$1function ')
+    .replace(/export const /g, 'const ');
+const normalizedIfraProductCategoryId = () => null;
+eval(`${[
+    'number-format.js', 'utils.js', 'calculation.js', 'payload.js',
+    'snapshot.js', 'bridge.js', 'component.js',
+].map(path => source(`resources/js/recipe-workbench/${path}`)).join('\n')}
+const buildLyeBreakdown = lyeBreakdown;
+const buildSerializedDraft = serializeDraft;
+const buildDraftStateFromDraft = draftStateFromDraft;
+const buildSnapshotStateFromSnapshot = snapshotStateFromSnapshot;
+globalThis.makePersistenceSection = createPersistenceSection;
+globalThis.persistWorkbench = persistWorkbench;`);
+
+const navigations = [];
+globalThis.window = { Livewire: { navigate: target => navigations.push(target) } };
+
+for (const phaseKey of ['saponified_oils', 'phase_a']) {
+    const workbench = {
+        ...globalThis.makePersistenceSection(),
+        formulaName: 'Saved formula', oilUnit: 'kg', oilWeight: 1,
+        phaseOrder: [{ key: phaseKey, name: 'Ingredients' }],
+        phaseItems: { [phaseKey]: [
+            { id: 'saved-388', ingredient_id: 26, percentage: 22, note: '' },
+            { id: 'saved-389', ingredient_id: 84, percentage: 78, note: '' },
+        ] },
+        packagingPlanRows: [], costingSaveSeq: 0,
+        currentCalculationPhaseSignature: () => '',
+        reconcileCostingPrices() {}, syncIngredientListVariantSelection() {},
+        dirtyStateRegistry: { set() {} },
+        $wire: { data: null },
+    };
+    workbench.refreshDirtyBaseline();
+    workbench.phaseItems[phaseKey].forEach((row, index) => { row.id = `saved-${398 + index}`; });
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), false, 'Server-generated IDs are not formula edits');
+
+    for (const [field, value] of [['ingredient_id', 27], ['percentage', 23], ['note', 'New note']]) {
+        const previous = workbench.phaseItems[phaseKey][0][field];
+        workbench.phaseItems[phaseKey][0][field] = value;
+        assert.equal(workbench.hasUnsavedWorkbenchChanges(), true, `${field} must remain dirty`);
+        workbench.phaseItems[phaseKey][0][field] = previous;
+    }
+    workbench.phaseItems[phaseKey].reverse();
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), true, 'Row order must remain dirty');
+    workbench.phaseItems[phaseKey].reverse();
+
+    workbench.$wire.save = async () => {
+        workbench.phaseItems[phaseKey].forEach((row, index) => { row.id = `saved-${408 + index}`; });
+        return { ok: true, redirect: '/saved-formula' };
+    };
+    const navigationCount = navigations.length;
+    await globalThis.persistWorkbench(workbench, 'save');
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), false);
+    assert.equal(workbench.saveStatus, 'success');
+    assert.equal(navigations.length, navigationCount + 1, 'Identity regeneration must not suppress completed-save navigation');
+
+    workbench.$wire.save = async () => {
+        workbench.phaseItems[phaseKey][0].percentage = 24;
+        workbench.phaseItems[phaseKey][0].id = 'saved-418';
+        return { ok: true, redirect: '/saved-formula', snapshot: { draft: {
+            formulaName: 'Saved formula', phases: workbench.phaseOrder,
+            phaseItems: { [phaseKey]: [{ id: 'saved-428', ingredient_id: 26, percentage: 22, note: '' }] },
+        } } };
+    };
+    await globalThis.persistWorkbench(workbench, 'save');
+    assert.equal(workbench.phaseItems[phaseKey][0].percentage, 24, 'New input must survive an older save response');
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), true);
+    assert.equal(navigations.length, navigationCount + 1);
+}
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {
@@ -2720,6 +2807,7 @@ JS;
 it('does not load costing when the packaging tab is opened', function () {
     $script = <<<'JS'
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
 import fs from 'node:fs';
 
 const source = fs

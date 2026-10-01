@@ -10,6 +10,7 @@ it('starts editing protection when newer input keeps the first save on the creat
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
 let focused = true;
 let expired = false;
 globalThis.document = { visibilityState: 'visible', hasFocus: () => focused, addEventListener() {}, removeEventListener() {} };

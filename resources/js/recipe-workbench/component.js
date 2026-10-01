@@ -24,6 +24,7 @@ import {
     snapshotStateFromSnapshot as buildSnapshotStateFromSnapshot,
 } from './snapshot';
 import { humanizeKey as humanizeText } from './utils';
+import { draftSignature } from './draft-signature';
 import { resolveNumberLocale } from './number-format';
 import { MASS_UNITS, convertMass } from './mass';
 import { copyText } from './clipboard';
@@ -1494,7 +1495,7 @@ function createPersistenceSection() {
         },
 
         currentDirtySignature() {
-            return this.serializeDraftJson();
+            return draftSignature(this.serializeDraft());
         },
 
         refreshDirtyBaseline() {

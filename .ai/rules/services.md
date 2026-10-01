@@ -6,6 +6,7 @@ paths:
   - app/Services/IngredientCatalogConsolidationService.php
   - app/Services/SoapCalculationService.php
   - app/Services/EntitlementService.php
+  - 'app/Services/FormulaShare*.php'
 ---
 
 # Services
@@ -87,3 +88,6 @@ Persisted soap phase_type is reaction_core/reaction_medium/post_reaction, not it
 
 ## Preserve independently rounded shared formulation quantities before validation
 Shared formula storage has independent percentage/weight decimals. Restore server-captured pairs through a separate formulation callback before normal total/access/calculation/publish validation, with finite canonical rounding-interval checks, original calculation-context batch scale and freshly recomputed totals. Browser payload flags never activate it. Recalculate dilution-liquid weights from actual selected chemistry and normal conserved allocation; only its percentages are formulation inputs. Omitted optional text must remain null.
+
+## Recipient email identifies a verified owner’s workspace
+Sharing accepts an exact Workspace UUID or a trimmed, case-insensitive verified owner email. Resolve owned Workspaces, never the owner’s selected Workspace or arbitrary team memberships. Several owned Workspaces require the exact UUID; unknown/unverified/self recipients fail. Apply recipient lookup rate limits and re-resolve immediately before sending against the recipient-bound preview.

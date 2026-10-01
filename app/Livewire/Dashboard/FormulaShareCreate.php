@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard;
 use App\Actions\FormulaSharing\SendFormulaShare;
 use App\Livewire\Concerns\InteractsWithFormulaSharingWorkspace;
 use App\Models\Recipe;
+use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\FormulaSharePresenter;
 use App\Services\FormulaShareSnapshotBuilder;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -37,6 +38,9 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
     public ?string $recipientName = null;
 
     #[Locked]
+    public ?string $recipientAddress = null;
+
+    #[Locked]
     public ?string $expectedHash = null;
 
     /** @var array<string, mixed> */
@@ -60,7 +64,7 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('recipient_address')->label(__('sharing.recipient_address'))->required()->uuid()->maxLength(36),
+            TextInput::make('recipient_address')->label(__('sharing.recipient_lookup'))->helperText(__('sharing.recipient_help'))->required()->maxLength(254),
             Toggle::make('include_procedure')->label(__('sharing.include_procedure')),
             Toggle::make('include_description')->label(__('sharing.include_description')),
             Toggle::make('include_line_notes')->label(__('sharing.include_line_notes')),
@@ -71,6 +75,7 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
     {
         $this->product();
         $this->recipientName = null;
+        $this->recipientAddress = null;
         $this->expectedHash = null;
         $this->display = [];
         $this->confirmed = false;
@@ -81,7 +86,9 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
     {
         $builder = app(FormulaShareSnapshotBuilder::class);
         $data = $this->validatedData();
-        $this->recipientName = $builder->resolveRecipient($this->user(), $this->product(), $data['recipient_address'])->name;
+        $recipient = $builder->resolveRecipient($this->user(), $this->product(), $data['recipient_address']);
+        $this->recipientName = $recipient->name;
+        $this->recipientAddress = $recipient->public_id;
     }
 
     public function preview(): void
@@ -93,6 +100,7 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
         $recipient = $builder->resolveRecipient($this->user(), $product, $data['recipient_address']);
         $snapshot = $builder->build($this->user(), $product, $this->options($data));
         $this->recipientName = $recipient->name;
+        $this->recipientAddress = $recipient->public_id;
         $this->display = app(FormulaSharePresenter::class)->outgoing($snapshot);
         $this->expectedHash = $builder->previewHash($snapshot, $recipient);
         $this->confirmed = false;
@@ -106,8 +114,8 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
             throw ValidationException::withMessages(['sharing' => __('sharing.validation.confirm')]);
         }
         $builder = app(FormulaShareSnapshotBuilder::class);
-        $recipient = $builder->resolveRecipient($this->user(), $product, $data['recipient_address']);
         try {
+            $recipient = $builder->resolveRecipient($this->user(), $product, $data['recipient_address']);
             $share = app(SendFormulaShare::class)->handle($this->user(), $product, $recipient, $this->options($data), $this->expectedHash, $this->requestKey);
         } catch (ValidationException $exception) {
             $this->expectedHash = null;
@@ -122,7 +130,8 @@ class FormulaShareCreate extends Component implements HasActions, HasForms
     {
         $product = $this->product();
 
-        return view('livewire.dashboard.formula-share-create', ['productName' => $product->name]);
+        return view('livewire.dashboard.formula-share-create', ['productName' => $product->name, 'numberLocale' => $this->user()->number_locale,
+            'contextualHelp' => app(ApplicationHelpTopics::class)->resolve('formula-share-create', app()->getLocale())]);
     }
 
     private function product(): Recipe

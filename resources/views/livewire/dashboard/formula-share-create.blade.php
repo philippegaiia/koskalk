@@ -1,12 +1,14 @@
 <div class="mx-auto max-w-app space-y-6">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
     <section class="sk-card space-y-4 p-5">
-        <h1 class="text-xl font-semibold">{{ __('sharing.share') }} · {{ $productName }}</h1>
+        <h1 data-contextual-help-heading class="text-xl font-semibold">{{ __('sharing.share') }} · {{ $productName }}</h1>
         <p class="text-sm text-[var(--color-ink-soft)]">{{ __('sharing.saved_only') }}</p>
         <form wire:submit="preview" class="space-y-4">
             {{ $this->form }}
             <div class="flex flex-wrap gap-3"><button type="button" wire:click="resolveRecipient" class="sk-btn sk-btn-outline">{{ __('sharing.resolve') }}</button><button type="submit" class="sk-btn sk-btn-primary" wire:loading.attr="disabled">{{ __('sharing.preview') }}</button></div>
         </form>
-        @if ($recipientName)<p>{{ __('sharing.recipient') }}: <strong>{{ $recipientName }}</strong></p>@endif
+        @if ($recipientName)<p>{{ __('sharing.recipient') }}: <strong>{{ $recipientName }}</strong></p><p class="text-sm text-[var(--color-ink-soft)]">{{ __('sharing.sharing_address') }}: <span class="font-mono">{{ $recipientAddress }}</span></p>@endif
         @foreach ($errors->all() as $message)<p role="alert" class="text-sm text-[var(--color-danger)]">{{ $message }}</p>@endforeach
     </section>
     @if ($display !== [])

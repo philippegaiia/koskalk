@@ -11,6 +11,9 @@ final class ApplicationHelpTopics
     {
         return match ($surface) {
             'products' => ['products.getting_started', 'products.finding_and_archiving', 'products.versions_and_copies'],
+            'formula-sharing' => ['sharing.sending', 'sharing.receiving', 'sharing.ingredients'],
+            'formula-share-create' => ['sharing.sending'],
+            'formula-share-review' => ['sharing.receiving', 'sharing.ingredients'],
             'media' => ['media.uploading', 'media.organizing', 'media.reuse_and_removal'],
             'preferences' => ['settings.language', 'settings.numbers'],
             'workspace' => ['settings.workspace', 'workspaces.overview', 'workspaces.shared_allowances'],
@@ -33,6 +36,9 @@ final class ApplicationHelpTopics
     {
         return collect([
             'products' => 'Products',
+            'formula-sharing' => 'Formula sharing',
+            'formula-share-create' => 'Share Saved formula',
+            'formula-share-review' => 'Review shared formula',
             'media' => 'Media library',
             'preferences' => 'Settings · Preferences',
             'workspace' => 'Settings · Workspace',

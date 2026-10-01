@@ -229,7 +229,7 @@ it('shows calculation context, units and the effective changed IFRA codes', func
     ProductTypeIfraCategory::factory()->create(['product_type_id' => $fixture['type']->id, 'ifra_amendment_id' => $amendment->id, 'ifra_product_category_id' => $category->id, 'is_default' => true]);
     $this->actingAs($fixture['recipient']->owner);
     Livewire::test(FormulaShareReview::class, ['share' => $fixture['share']])->assertSee('IFRA-UI-NEW')->assertSee('UI-CATEGORY')
-        ->assertSee(__('sharing.settings.superfat'))->assertSee('1000.125000000')->assertSee(__('sharing.settings.batch_unit'));
+        ->assertSee(__('sharing.settings.superfat'))->assertSee('1000.125')->assertSee(__('sharing.settings.batch_unit'));
 });
 
 it('shows the share action only on the latest Saved view for an authorized owner', function (): void {

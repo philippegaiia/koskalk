@@ -15,7 +15,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/css/**/*.css | .ai/rules/css.md |
 | {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**} | .ai/rules/dashboard-partials-recipe-workbench.md |
-| app/Livewire/Dashboard/IngredientEditor.php, app/Livewire/Dashboard/RecipeWorkbench.php | .ai/rules/dashboard.md |
+| app/Livewire/Dashboard/IngredientEditor.php, app/Livewire/Dashboard/RecipeWorkbench.php, app/Livewire/Dashboard/FormulaShare*.php | .ai/rules/dashboard.md |
 | {lang/en/workbench.php,database/seeders/data/interface-translations.json} | .ai/rules/data.md |
 | app/Forms/** | .ai/rules/forms.md |
 | vite.config.js | .ai/rules/general.md |
@@ -46,7 +46,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | routes/*.php | .ai/rules/routes.md |
 | app/Filament/Resources/Ingredients/Schemas/IngredientForm.php | .ai/rules/schemas.md |
 | database/seeders/** | .ai/rules/seeders.md |
-| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php, app/Services/EntitlementService.php | .ai/rules/services.md |
+| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php, app/Services/EntitlementService.php, app/Services/FormulaShare*.php | .ai/rules/services.md |
 | app/Services/IngredientEnrichment/Sources/** | .ai/rules/sources.md |
 | app/Support/InciName.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

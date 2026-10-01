@@ -63,10 +63,22 @@ class FormulaShareSnapshotBuilder
     public function resolveRecipient(User $actor, Recipe $recipe, string $address): Workspace
     {
         $sourceId = $this->sourceWorkspaceId($actor, $recipe);
-        if (! Str::isUuid($address)) {
-            $this->invalid('recipient');
+        $this->budget->consume($actor, $sourceId, 'recipient');
+        $address = trim($address);
+        if (Str::isUuid($address)) {
+            $recipient = Workspace::withoutGlobalScopes()->where('public_id', $address)->first();
+        } else {
+            if (strlen($address) > 254 || filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
+                $this->invalid('recipient');
+            }
+            $owners = User::withoutGlobalScopes()->whereNotNull('email_verified_at')
+                ->whereRaw('LOWER(email) = ?', [mb_strtolower($address)])->select('id');
+            $matches = Workspace::withoutGlobalScopes()->whereIn('owner_user_id', $owners)->orderBy('id')->limit(2)->get();
+            if ($matches->count() > 1) {
+                $this->invalid('recipient_ambiguous');
+            }
+            $recipient = $matches->first();
         }
-        $recipient = Workspace::withoutGlobalScopes()->where('public_id', $address)->first();
         if ($recipient === null || $recipient->id === $sourceId) {
             $this->invalid('recipient');
         }

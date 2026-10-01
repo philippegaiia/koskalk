@@ -1,0 +1,104 @@
+{
+    "format_version": 1,
+    "export_uuid": "0fb4d4c6-e2e3-4ccf-ae0d-3e890e860275",
+    "captured_at": "2026-10-01T12:00:00+02:00",
+    "topics": [
+        {
+            "public_id": "9bde6012-e512-4a50-bd22-4a0e4a14019c",
+            "key": "sharing.sending",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "57b89b3d-7a86-4ea0-8b6e-4eee098ed032",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "57b89b3d-7a86-4ea0-8b6e-4eee098ed032",
+                            "revision_number": 1,
+                            "title": "Share a Saved formula",
+                            "summary": "Send an independent formula copy to another Workspace from Formula sharing or the Saved formula sheet.",
+                            "body_markdown": "### Start a share\n\n1. Open **Formula sharing** in Recipe Bench and choose **Share a formula**.\n2. Search for an active finished Product. The picker shows its family and latest Saved date. If a Product is missing, save its formula first.\n3. Choose the Product and continue. You can also use **Share Saved formula** on its latest Saved formula sheet.\n4. Enter the recipient Workspace owner’s verified email or its sharing address, then choose **Find Workspace**.\n5. Check the destination Workspace name and address before continuing.\n\nAn owner email resolves the Workspace that person owns, regardless of the Workspace they currently have selected. A team member’s email does not identify the destination. If the owner has several Workspaces, ask for the exact sharing address from the recipient’s Formula sharing page. An unknown or unverified email cannot be used. The address identifies the Workspace; it does not grant access to it.\n\n### Review before sending\n\nOnly the **latest Saved formula** is shared. Unsaved changes and older formula history are excluded. A locked Product or one being edited can still be shared because sharing reads its Saved formula without changing its lock or editing reservation. Formulas configured to produce a manufactured Ingredient cannot be shared in this version.\n\nProcedure text, Product description and formula line notes are optional and off by default. Review the disclosure, including every private Ingredient and blend component, confirm the recipient and choose **Send offer**.\n\nFormula settings, quantities and required technical Ingredient data travel with the offer. This includes available SAP and fatty acid data, allergens, substances and structured IFRA certificate facts. Private identifiers and technical text shown in the disclosure also travel, so check them for confidential details.\n\nPrices, costing, suppliers, stock, production records, packaging, private notes, images and attached files are excluded. Images and attachments embedded in selected procedure text are removed. Sharing does not send an email notification: the recipient reviews the offer in its Workspace inbox.\n\n### Permissions and pending offers\n\nThe Workspace Owner or an authorized Admin can send and manage sharing. You do not need to be a member of the recipient Workspace. Offers expire after **14 days**. Use the Outbox to review an offer or revoke it while it is pending. After acceptance, the recipient owns its independent copy; revoking access to your Workspace does not remove that copy.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-10-01T12:00:00+02:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        },
+        {
+            "public_id": "67702896-19ce-4043-9b5a-84bba1425978",
+            "key": "sharing.receiving",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "2f4e8b96-5382-4d6e-a969-7cb46dcf45df",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "2f4e8b96-5382-4d6e-a969-7cb46dcf45df",
+                            "revision_number": 1,
+                            "title": "Receive and accept a formula",
+                            "summary": "Review incoming offers, choose Ingredients and create an independent Product in your Workspace.",
+                            "body_markdown": "### Receive an offer\n\nGive the sender your Workspace sharing address from **Formula sharing → Receive formulas**, or your owner’s verified email. Select the correct Workspace, open its **Inbox**, and choose **Review offer**.\n\nRead the incoming formula, settings, optional text and Ingredient disclosure. Numbers use your number-format preference. Technical values retain their available precision so small differences remain visible; display formatting does not change the stored offer.\n\n### Choose and review\n\nThe **Choose the Ingredients for your copy** section starts with Automatic. This reuses an exact local match when possible or creates a private copy. If an Ingredient says **Decision required**, choose how to handle it. See the Ingredient choices help for reuse and substitution.\n\nChanging an effective Ingredient choice invalidates the preview. Choose **Refresh preview**, review the updated Ingredients, differences and count of private copies, then confirm **I reviewed this Formula, Ingredient choices and technical differences**. Choose **Accept independent copy**.\n\nIf you keep the resolved Automatic proposal, you can confirm and accept without changing the Ingredient controls. A substitution confirmation applies only when you deliberately choose **Use a different local Ingredient**. If ingredient facts or reference guidance change after previewing, refresh and review again. The application checks the choices and available Product and Ingredient allowances at acceptance; failed acceptance does not create a partial copy.\n\n### Your received Product\n\nAcceptance creates a new independent Product with a Saved formula. It starts unlocked and follows your Workspace’s ordinary editing permissions and editing reservations. Your Editors can work on it after acceptance. A separate offer creates another Product; retrying acceptance of the same offer does not create another copy.\n\nThe sender’s prices, stock, production data and media do not arrive. Recheck your own costing, Ingredient data, INCI and regulatory guidance before using the formula. Receipt is not a completed ingredient-change review or a compliance approval.\n\nYou may share your accepted formula onward after saving any changes. Onward sharing carries the Ingredients actually used in your copy, including any local substitutes.\n\n### Decline or unavailable offers\n\nChoose **Decline offer** to close a pending offer you do not want. Revoked or expired offers cannot be accepted. Archiving an accepted Product is different from deleting it; the accepted copy remains owned by your Workspace.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-10-01T12:00:00+02:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        },
+        {
+            "public_id": "d1db9eff-72b9-4dba-9384-e5e93c57ee3c",
+            "key": "sharing.ingredients",
+            "domain": "application",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "6a31da0c-7175-4d43-8195-00f4fd2666a7",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "6a31da0c-7175-4d43-8195-00f4fd2666a7",
+                            "revision_number": 1,
+                            "title": "Understand Ingredient reuse and substitution",
+                            "summary": "Choose between an exact local match, a private copy and a deliberate substitute without overwriting local Ingredients.",
+                            "body_markdown": "### The four choices\n\n- **Automatic — use the proposal:** reuse a known exact local match where possible; otherwise create a private copy. If the proposal needs a decision, select another choice explicitly.\n- **Create a private copy:** create a separate Ingredient with the incoming data. Your existing local Ingredients are left untouched.\n- **Reuse an exact local match:** select the same shared Ingredient with matching technical data. A matching name or INCI alone is not sufficient.\n- **Use a different local Ingredient:** deliberately substitute an active private Ingredient in your Workspace. Select it, explicitly confirm the substitution, then refresh the preview.\n\nPlatform Ingredients use platform references. The local selection controls are for incoming private Ingredients. If you need a private substitute based on a platform Ingredient, create an appropriate private duplicate in your Workspace first.\n\n### Review a substitution\n\nFor example, the sender uses its private lavender oil and you choose your own lavender oil. The received formula uses **your oil’s actual data**, including its SAP or fatty acids where relevant, allergens, substances and IFRA facts. Its existing data is never overwritten by the sender’s data.\n\nReview the selected local name and **Technical differences**. A formula line using a substitute shows the incoming name followed by the selected local name. Quantities are transferred through the normal formula validation; calculated soap quantities and live guidance are recomputed from the selected materials. A local oil placed in the saponification phase must already be eligible for saponification under its own trusted chemistry baseline. Selecting a substitute cannot grant eligibility or widen its editing limits.\n\nFor a blend, creating a copy transfers the required private component graph. Reusing or substituting a local blend uses that blend’s own components; it does not also create the unused incoming children.\n\n### Repeated and onward sharing\n\nUnchanged shared Ingredients can be reused across repeated offers, avoiding a new private Ingredient each time. If a local Ingredient has changed, the previous exact match may no longer be usable: review its differences and choose again. The application never silently replaces your existing facts.\n\nA previous substitution is remembered as a candidate, but requires explicit confirmation for **every new offer**. You can choose that substitute again, choose another one or create a private copy. Remembering a choice does not authorize future substitutions automatically.\n\nIf Workspace B substitutes its own lavender and then shares the formula to C, the offer carries B’s actual lavender. It is not treated as the sender’s original lavender. Matching uses known shared ancestry and technical facts, rather than names alone.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-10-01T12:00:00+02:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        }
+    ],
+    "digest": "a53bef51732a3240eadf08e56e387de4b8ba5d51db93255199240c9715e866f1"
+}

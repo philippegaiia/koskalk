@@ -17,7 +17,7 @@ class FormulaShareBudget
         if (! config('workspaces.formula_sharing.enabled', false) || $fresh === null || ! $this->authorization->canManage($fresh, $workspaceId)) {
             throw new AuthorizationException;
         }
-        if (! in_array($operation, ['preview', 'send', 'accept'], true)) {
+        if (! in_array($operation, ['recipient', 'preview', 'send', 'accept'], true)) {
             throw ValidationException::withMessages(['sharing' => __('sharing.validation.options')]);
         }
         $keys = [

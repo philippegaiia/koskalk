@@ -34080,6 +34080,126 @@
     },
     {
       "group": "sharing",
+      "key": "choice_help",
+      "text": {
+        "de": "Eine Kopie behält die eingehenden Daten. Wiederverwenden erfordert dieselbe geteilte Zutat und identische technische Daten. Ersetzen verwendet die Daten Ihrer lokalen Zutat.",
+        "es": "Crear una copia conserva los datos recibidos. Reutilizar exige el mismo Ingrediente compartido y datos técnicos idénticos. Sustituir usa los datos de su Ingrediente local.",
+        "fr": "Créer une copie conserve les données reçues. Réutiliser exige le même Ingrédient partagé et des données identiques. Substituer utilise les données de votre Ingrédient local.",
+        "it": "Creare una copia conserva i dati ricevuti. Riutilizzare richiede lo stesso Ingrediente condiviso e dati tecnici identici. Sostituire usa i dati del tuo Ingrediente locale.",
+        "nl": "Een kopie behoudt de ontvangen gegevens. Hergebruik vereist hetzelfde gedeelde Ingrediënt met identieke technische gegevens. Vervanging gebruikt de gegevens van uw lokale Ingrediënt.",
+        "pt_BR": "Criar uma cópia mantém os dados recebidos. Reutilizar exige o mesmo Ingrediente compartilhado e dados técnicos idênticos. Substituir usa os dados do seu Ingrediente local."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_intro",
+      "text": {
+        "de": "Automatisch verwendet nach Möglichkeit eine exakte lokale Übereinstimmung oder erstellt eine private Kopie. Wählen Sie einen Ersatz nur, wenn Sie bewusst eine andere lokale Zutat verwenden möchten.",
+        "es": "Automático usa una coincidencia local exacta si existe; si no, crea una copia privada. Sustituya solo si desea usar deliberadamente otro Ingrediente local.",
+        "fr": "Automatique utilise une correspondance locale exacte si possible, sinon crée une copie privée. Choisissez un substitut uniquement pour utiliser volontairement un autre Ingrédient local.",
+        "it": "Automatico usa una corrispondenza locale esatta se possibile, altrimenti crea una copia privata. Sostituisci solo se vuoi usare deliberatamente un altro Ingrediente locale.",
+        "nl": "Automatisch gebruikt zo mogelijk een exacte lokale overeenkomst en maakt anders een privékopie. Kies alleen een vervanging als u bewust een ander lokaal Ingrediënt wilt gebruiken.",
+        "pt_BR": "Automático usa uma correspondência local exata quando possível; caso contrário, cria uma cópia privada. Substitua apenas se quiser usar deliberadamente outro Ingrediente local."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_modes.automatic",
+      "text": {
+        "de": "Automatisch — Vorschlag verwenden",
+        "es": "Automático — usar la propuesta",
+        "fr": "Automatique — utiliser la proposition",
+        "it": "Automatico — usa la proposta",
+        "nl": "Automatisch — voorstel gebruiken",
+        "pt_BR": "Automático — usar a proposta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_modes.decision",
+      "text": {
+        "de": "Entscheidung erforderlich",
+        "es": "Decisión necesaria",
+        "fr": "Décision requise",
+        "it": "Decisione necessaria",
+        "nl": "Keuze vereist",
+        "pt_BR": "Decisão necessária"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_modes.import",
+      "text": {
+        "de": "Private Kopie erstellen",
+        "es": "Crear una copia privada",
+        "fr": "Créer une copie privée",
+        "it": "Crea una copia privata",
+        "nl": "Een privékopie maken",
+        "pt_BR": "Criar uma cópia privada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_modes.platform",
+      "text": {
+        "de": "Plattformzutat verwenden",
+        "es": "Usar ingrediente de plataforma",
+        "fr": "Utiliser l’ingrédient de la plateforme",
+        "it": "Usa ingrediente della piattaforma",
+        "nl": "Platformingrediënt gebruiken",
+        "pt_BR": "Usar ingrediente da plataforma"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_modes.reuse",
+      "text": {
+        "de": "Exakte lokale Übereinstimmung wiederverwenden",
+        "es": "Reutilizar una coincidencia local exacta",
+        "fr": "Réutiliser une correspondance locale exacte",
+        "it": "Riutilizza una corrispondenza locale esatta",
+        "nl": "Een exacte lokale overeenkomst hergebruiken",
+        "pt_BR": "Reutilizar uma correspondência local exata"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choice_modes.substitute",
+      "text": {
+        "de": "Andere lokale Zutat verwenden",
+        "es": "Usar otro Ingrediente local",
+        "fr": "Utiliser un autre Ingrédient local",
+        "it": "Usa un altro Ingrediente locale",
+        "nl": "Een ander lokaal Ingrediënt gebruiken",
+        "pt_BR": "Usar outro Ingrediente local"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choose_ingredients",
+      "text": {
+        "de": "Zutaten für Ihre Kopie auswählen",
+        "es": "Elegir los Ingredientes para su copia",
+        "fr": "Choisir les Ingrédients pour votre copie",
+        "it": "Scegli gli Ingredienti per la tua copia",
+        "nl": "Kies de Ingrediënten voor uw kopie",
+        "pt_BR": "Escolher os Ingredientes para sua cópia"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "choose_product",
+      "text": {
+        "de": "Produkt zum Teilen auswählen",
+        "es": "Elegir un Producto para compartir",
+        "fr": "Choisir un Produit à partager",
+        "it": "Scegli un Prodotto da condividere",
+        "nl": "Kies een Product om te delen",
+        "pt_BR": "Escolher um Produto para compartilhar"
+      }
+    },
+    {
+      "group": "sharing",
       "key": "confirm",
       "text": {
         "de": "Ich habe alle freigegebenen Daten und den Empfänger-Arbeitsbereich geprüft.",
@@ -34124,6 +34244,18 @@
         "it": "Il destinatario conserva una copia indipendente dopo l’accettazione.",
         "nl": "De ontvanger behoudt na acceptatie een onafhankelijke kopie.",
         "pt_BR": "O destinatário mantém uma cópia independente após aceitar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "continue",
+      "text": {
+        "de": "Zum Teilen fortfahren",
+        "es": "Continuar para compartir",
+        "fr": "Continuer le partage",
+        "it": "Continua alla condivisione",
+        "nl": "Doorgaan met delen",
+        "pt_BR": "Continuar para compartilhar"
       }
     },
     {
@@ -34524,6 +34656,18 @@
     },
     {
       "group": "sharing",
+      "key": "picker_help",
+      "text": {
+        "de": "Wählen Sie ein aktives fertiges Produkt mit gespeicherter Formel. Fehlt es, speichern Sie zuerst seine Formel. Gesperrte Produkte können geteilt werden.",
+        "es": "Elija un Producto terminado activo con una fórmula guardada. Si falta, guarde su fórmula primero. Los Productos bloqueados se pueden compartir.",
+        "fr": "Choisissez un Produit fini actif avec une formule enregistrée. S’il manque, enregistrez sa formule. Les Produits verrouillés peuvent être partagés.",
+        "it": "Scegli un Prodotto finito attivo con una formula salvata. Se manca, salva prima la formula. I Prodotti bloccati possono essere condivisi.",
+        "nl": "Kies een actief eindproduct met een opgeslagen formule. Ontbreekt het, sla dan eerst de formule op. Vergrendelde Producten kunnen worden gedeeld.",
+        "pt_BR": "Escolha um Produto acabado ativo com uma fórmula salva. Se não aparecer, salve a fórmula primeiro. Produtos bloqueados podem ser compartilhados."
+      }
+    },
+    {
+      "group": "sharing",
       "key": "platform",
       "text": {
         "de": "Plattformzutat",
@@ -34544,6 +34688,18 @@
         "it": "Verifica dati condivisi",
         "nl": "Gedeelde gegevens controleren",
         "pt_BR": "Revisar dados compartilhados"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "preview_needed",
+      "text": {
+        "de": "Die Zutatenauswahl hat sich geändert. Aktualisieren Sie die Vorschau, prüfen Sie das Ergebnis und bestätigen Sie die Annahme.",
+        "es": "Las elecciones de Ingredientes cambiaron. Actualice la vista previa, revise el resultado y confirme la aceptación.",
+        "fr": "Les choix d’Ingrédients ont changé. Cliquez sur Actualiser l’aperçu, vérifiez le résultat, puis confirmez l’acceptation.",
+        "it": "Le scelte degli Ingredienti sono cambiate. Aggiorna l’anteprima, verifica il risultato e conferma l’accettazione.",
+        "nl": "De Ingrediëntkeuzes zijn gewijzigd. Vernieuw het voorbeeld, bekijk het resultaat en bevestig de acceptatie.",
+        "pt_BR": "As escolhas de Ingredientes mudaram. Atualize a prévia, confira o resultado e confirme a aceitação."
       }
     },
     {
@@ -34608,6 +34764,30 @@
     },
     {
       "group": "sharing",
+      "key": "receive",
+      "text": {
+        "de": "Formeln empfangen",
+        "es": "Recibir fórmulas",
+        "fr": "Recevoir des formules",
+        "it": "Ricevi formule",
+        "nl": "Formules ontvangen",
+        "pt_BR": "Receber fórmulas"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "receive_help",
+      "text": {
+        "de": "Geben Sie einem anderen Arbeitsbereich diese Freigabeadresse oder die verifizierte E-Mail-Adresse Ihres Eigentümers.",
+        "es": "Dé a otro Espacio de trabajo esta dirección para compartir o el correo verificado de su propietario.",
+        "fr": "Donnez à un autre Espace de travail cette adresse de partage ou l’adresse e-mail vérifiée de votre propriétaire.",
+        "it": "Fornisci a un altro Spazio di lavoro questo indirizzo di condivisione o l’email verificata del proprietario.",
+        "nl": "Geef een andere Werkruimte dit deeladres of het geverifieerde e-mailadres van uw eigenaar.",
+        "pt_BR": "Forneça a outro Espaço de trabalho este endereço de compartilhamento ou o email verificado do proprietário."
+      }
+    },
+    {
+      "group": "sharing",
       "key": "recipient",
       "text": {
         "de": "Empfänger-Arbeitsbereich",
@@ -34628,6 +34808,30 @@
         "it": "Indirizzo dello spazio di lavoro destinatario",
         "nl": "Adres van de ontvangende werkruimte",
         "pt_BR": "Endereço do espaço de trabalho destinatário"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "recipient_help",
+      "text": {
+        "de": "Geben Sie die verifizierte E-Mail des Eigentümers oder die Freigabeadresse ein. Prüfen Sie den gefundenen Arbeitsbereich vor dem Senden.",
+        "es": "Introduzca el correo verificado del propietario o la dirección para compartir. Compruebe el Espacio de trabajo encontrado antes de enviar.",
+        "fr": "Saisissez l’e-mail vérifié du propriétaire ou l’adresse de partage. Vérifiez l’Espace de travail trouvé avant l’envoi.",
+        "it": "Inserisci l’email verificata del proprietario o l’indirizzo di condivisione. Verifica lo Spazio di lavoro trovato prima di inviare.",
+        "nl": "Voer de geverifieerde e-mail van de eigenaar of het deeladres in. Controleer de gevonden Werkruimte voordat u verzendt.",
+        "pt_BR": "Digite o email verificado do proprietário ou o endereço de compartilhamento. Confira o Espaço de trabalho encontrado antes de enviar."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "recipient_lookup",
+      "text": {
+        "de": "E-Mail des Eigentümers oder Freigabeadresse",
+        "es": "Correo del propietario o dirección para compartir",
+        "fr": "E-mail du propriétaire ou adresse de partage",
+        "it": "Email del proprietario o indirizzo di condivisione",
+        "nl": "E-mail van eigenaar of deeladres",
+        "pt_BR": "Email do proprietário ou endereço de compartilhamento"
       }
     },
     {
@@ -34712,6 +34916,18 @@
         "it": "Revoca offerta",
         "nl": "Aanbod intrekken",
         "pt_BR": "Revogar oferta"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "saved_date",
+      "text": {
+        "de": "Gespeichert :date",
+        "es": "Guardada :date",
+        "fr": "Enregistrée le :date",
+        "it": "Salvata :date",
+        "nl": "Opgeslagen :date",
+        "pt_BR": "Salva :date"
       }
     },
     {
@@ -34980,6 +35196,30 @@
     },
     {
       "group": "sharing",
+      "key": "sharing_address",
+      "text": {
+        "de": "Freigabeadresse des Arbeitsbereichs",
+        "es": "Dirección para compartir del Espacio de trabajo",
+        "fr": "Adresse de partage de l’Espace de travail",
+        "it": "Indirizzo di condivisione dello Spazio di lavoro",
+        "nl": "Deeladres van de Werkruimte",
+        "pt_BR": "Endereço de compartilhamento do Espaço de trabalho"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "start",
+      "text": {
+        "de": "Formel teilen",
+        "es": "Compartir una fórmula",
+        "fr": "Partager une formule",
+        "it": "Condividi una formula",
+        "nl": "Een formule delen",
+        "pt_BR": "Compartilhar uma fórmula"
+      }
+    },
+    {
+      "group": "sharing",
       "key": "state",
       "text": {
         "de": "Status",
@@ -35048,6 +35288,18 @@
         "it": "Revocata",
         "nl": "Ingetrokken",
         "pt_BR": "Revogada"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "substitute_help",
+      "text": {
+        "de": "Ihre lokale Zutat wird nicht überschrieben. Berechnungen und Hinweise verwenden ihre Daten. Bestätigen Sie diese Wahl bei jedem Angebot.",
+        "es": "Su Ingrediente local no se sobrescribe. Los cálculos y orientaciones usan sus datos. Confirme esta elección en cada oferta.",
+        "fr": "Votre Ingrédient local n’est pas modifié. Les calculs et indications utilisent ses données. Confirmez ce choix pour chaque offre.",
+        "it": "Il tuo Ingrediente locale non viene sovrascritto. Calcoli e indicazioni usano i suoi dati. Conferma questa scelta per ogni offerta.",
+        "nl": "Uw lokale Ingrediënt wordt niet overschreven. Berekeningen en richtlijnen gebruiken zijn gegevens. Bevestig deze keuze bij elk aanbod.",
+        "pt_BR": "Seu Ingrediente local não é sobrescrito. Cálculos e orientações usam seus dados. Confirme esta escolha em cada oferta."
       }
     },
     {
@@ -35388,6 +35640,18 @@
     },
     {
       "group": "sharing",
+      "key": "validation.product",
+      "text": {
+        "de": "Wählen Sie ein aktives fertiges Produkt mit gespeicherter Formel aus diesem Arbeitsbereich.",
+        "es": "Elija un Producto terminado activo con una fórmula guardada en este Espacio de trabajo.",
+        "fr": "Choisissez un Produit fini actif avec une formule enregistrée dans cet Espace de travail.",
+        "it": "Scegli un Prodotto finito attivo con una formula salvata in questo Spazio di lavoro.",
+        "nl": "Kies een actief eindproduct met een opgeslagen formule in deze Werkruimte.",
+        "pt_BR": "Escolha um Produto acabado ativo com uma fórmula salva neste Espaço de trabalho."
+      }
+    },
+    {
+      "group": "sharing",
       "key": "validation.rate_limit",
       "text": {
         "de": "Zu viele Freigabeanfragen. Versuchen Sie es in :seconds Sekunden erneut.",
@@ -35402,12 +35666,24 @@
       "group": "sharing",
       "key": "validation.recipient",
       "text": {
-        "de": "Geben Sie eine gültige Adresse eines anderen Arbeitsbereichs ein.",
-        "es": "Introduzca una dirección válida de otro espacio de trabajo.",
-        "fr": "Saisissez l’adresse valide d’un autre espace de travail.",
-        "it": "Inserisci un indirizzo valido di un altro spazio di lavoro.",
-        "nl": "Voer een geldig adres van een andere werkruimte in.",
-        "pt_BR": "Insira um endereço válido de outro espaço de trabalho."
+        "de": "Kein Ziel gefunden. Geben Sie die Freigabeadresse eines anderen Arbeitsbereichs oder die verifizierte E-Mail seines Eigentümers ein.",
+        "es": "Destino no encontrado. Introduzca la dirección para compartir de otro Espacio de trabajo o el correo verificado de su propietario.",
+        "fr": "Destination introuvable. Saisissez l’adresse de partage d’un autre Espace de travail ou l’e-mail vérifié de son propriétaire.",
+        "it": "Destinazione non trovata. Inserisci l’indirizzo di condivisione di un altro Spazio di lavoro o l’email verificata del proprietario.",
+        "nl": "Geen bestemming gevonden. Voer het deeladres van een andere Werkruimte of de geverifieerde e-mail van de eigenaar in.",
+        "pt_BR": "Destino não encontrado. Digite o endereço de compartilhamento de outro Espaço de trabalho ou o email verificado do proprietário."
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "validation.recipient_ambiguous",
+      "text": {
+        "de": "Dieser Eigentümer hat mehrere Arbeitsbereiche. Fragen Sie nach der Freigabeadresse des Ziels.",
+        "es": "Este propietario tiene varios Espacios de trabajo. Pida la dirección para compartir del destino.",
+        "fr": "Ce propriétaire a plusieurs Espaces de travail. Demandez l’adresse de partage de la destination.",
+        "it": "Questo proprietario ha più Spazi di lavoro. Chiedi l’indirizzo di condivisione della destinazione.",
+        "nl": "Deze eigenaar heeft meerdere Werkruimten. Vraag om het deeladres van de bestemming.",
+        "pt_BR": "Este proprietário tem vários Espaços de trabalho. Peça o endereço de compartilhamento do destino."
       }
     },
     {

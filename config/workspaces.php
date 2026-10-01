@@ -9,6 +9,7 @@ return [
         'maximum_pending_outgoing' => 100,
         'maximum_pending_per_pair' => 20,
         'rate_limits' => [
+            'recipient' => ['actor_per_minute' => 20, 'workspace_per_minute' => 60],
             'send' => ['actor_per_minute' => 5, 'workspace_per_minute' => 20],
             'preview' => ['actor_per_minute' => 10, 'workspace_per_minute' => 30],
             'accept' => ['actor_per_minute' => 10, 'workspace_per_minute' => 30],

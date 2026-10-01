@@ -1,7 +1,14 @@
 <div class="mx-auto max-w-app space-y-6">
+    <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <x-contextual-help.index-button :help="$contextualHelp" tab="page" />
     <section class="sk-card space-y-3 p-5" x-data="{ copied: false }">
-        <h1 class="text-xl font-semibold">{{ __('sharing.title') }}</h1>
-        <label for="sharing-workspace-address" class="block text-sm font-medium">{{ __('sharing.workspace_address') }}</label>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h1 data-contextual-help-heading class="text-xl font-semibold">{{ __('sharing.title') }}</h1>
+            {{ $this->shareFormulaAction }}
+        </div>
+        <h2 class="font-semibold">{{ __('sharing.receive') }}</h2>
+        <p class="text-sm text-[var(--color-ink-soft)]">{{ __('sharing.receive_help') }}</p>
+        <label for="sharing-workspace-address" class="block text-sm font-medium">{{ __('sharing.sharing_address') }}</label>
         <div class="flex flex-wrap items-center gap-3"><input id="sharing-workspace-address" readonly value="{{ $workspaceAddress }}" class="w-full max-w-md rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-2 font-mono text-sm"><button type="button" @click="navigator.clipboard.writeText(@js($workspaceAddress)).then(() => copied = true)" class="sk-btn sk-btn-outline">{{ __('sharing.copy_address') }}</button></div>
     </section>
     <section class="sk-card overflow-hidden">
@@ -11,4 +18,5 @@
         </tbody></table></div>
         <x-table-pagination :paginator="$offers" />
     </section>
+    <x-filament-actions::modals />
 </div>

@@ -1,7 +1,7 @@
 # Production editing protection — phase one
 
 **Date:** 2026-10-01
-**Status:** Phase-one scope and principles approved in conversation; detailed specification awaiting written review.
+**Status:** Approved by Philippe on 2026-10-01, including the formula-sharing integration amendment. Detailed implementation planning authorized; application implementation has not started.
 **Scope:** Existing production records, their stock preparation, and other entry points that change those same records.
 
 ## Goal

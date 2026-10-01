@@ -236,24 +236,23 @@ export function createEditingSection(payload) {
             }
 
             const promise = enqueueEditingRead(runtime, async () => {
-                const method = this.editingOwnsLease ? 'heartbeatEditing' : 'editingStatus';
+                const previouslyOwnedLease = this.editingOwnsLease;
+                const method = previouslyOwnedLease ? 'heartbeatEditing' : 'editingStatus';
 
                 try {
-                    const response = await this.$wire[method]();
+                    let response = await this.$wire[method]();
 
                     if (!response?.ok && method === 'heartbeatEditing') {
-                        this.markEditingLost(response?.message || this.t('editing.lease_lost'));
-                        try {
-                            const statusResponse = await this.$wire.editingStatus();
-                            this.applyEditingStatusResponse(statusResponse, 'poll');
-                        } catch (error) {
-                            this.markEditingLost(error?.message || this.t('editing.status_failed'));
-                        }
-
-                        return response;
+                        this.editingOwnsLease = false;
+                        response = await this.$wire.editingStatus();
                     }
 
                     this.applyEditingStatusResponse(response, 'poll');
+
+                    if (previouslyOwnedLease && this.editingStatus === 'available'
+                        && !this.editingStale && this.canEditRecipe && !this.isFormulaLocked) {
+                        return this.acquireEditingReservation(false);
+                    }
 
                     return response;
                 } catch (error) {

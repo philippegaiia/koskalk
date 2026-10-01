@@ -11,8 +11,50 @@ use App\Services\RecipeEditingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
+
+it('keeps routine reservation checks quiet and mentions preserved changes only for dirty input', function (): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $notice = $xpath->query('//section[contains(@x-show, "editingRequired")]')->item(0);
+    $preserved = collect($xpath->query('p', $notice))
+        ->first(fn (DOMElement $paragraph): bool => trim($paragraph->textContent) === __('workbench.editing.preserved'));
+    expect($preserved)->not->toBeNull();
+
+    $script = str_replace(['__NOTICE__', '__PRESERVED__'], [
+        json_encode($notice->getAttribute('x-show'), JSON_THROW_ON_ERROR),
+        json_encode($preserved->getAttribute('x-show'), JSON_THROW_ON_ERROR),
+    ], <<<'JS'
+import assert from 'node:assert/strict';
+const notice = new Function(`with (this) { return (${__NOTICE__}); }`);
+const preserved = new Function(`with (this) { return (${__PRESERVED__}); }`);
+for (const [status, visible] of [['acquiring', false], ['acquired', false], ['blocked', true], ['available', true], ['lost', true], ['stale', true]]) {
+    for (const dirty of [false, true]) {
+        const state = {
+            editingRequired: true, editingStatus: status, isEditingUnavailable: status !== 'acquired',
+            blocksNavigation: () => dirty,
+        };
+        assert.equal(Boolean(notice.call(state)), visible, `${status} notice visibility`);
+        if (visible) {
+            assert.equal(Boolean(preserved.call(state)), dirty, `${status} must not claim saved input is unsaved`);
+        }
+    }
+}
+assert.equal(Boolean(notice.call({ editingRequired: false })), false);
+JS);
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
 
 it('keeps the mounted editing baseline in workbench renders after a saved mutation', function (): void {
     $workspace = Workspace::factory()->create();

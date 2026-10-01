@@ -12,12 +12,11 @@
  @error('expected_revision')
  <p role="alert" class="rounded-lg bg-[var(--color-warning-soft)] p-3 text-sm text-[var(--color-warning-strong)]">{{ $message }}</p>
  @enderror
- <section x-show="editingRequired && isEditingUnavailable" x-cloak aria-live="polite" class="space-y-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] p-4 text-sm text-[var(--color-warning-strong)]">
-     <p x-show="editingStatus === 'acquiring'">{{ __('workbench.editing.acquiring') }}</p>
+ <section x-show="editingRequired && isEditingUnavailable && editingStatus !== 'acquiring'" x-cloak aria-live="polite" class="space-y-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] p-4 text-sm text-[var(--color-warning-strong)]">
      <p x-show="editingStatus === 'blocked'" x-text="t('editing.blocked', { name: editingHolderName })"></p>
      <p x-show="editingStatus === 'available'">{{ __('workbench.editing.available') }}</p>
      <p x-show="editingMessage" x-text="editingMessage"></p>
-     <p x-show="editingStatus !== 'acquiring'">{{ __('workbench.editing.preserved') }}</p>
+     <p x-show="blocksNavigation()">{{ __('workbench.editing.preserved') }}</p>
      <div class="flex flex-wrap gap-2">
          <button type="button" x-show="!editingStale && ['available', 'lost'].includes(editingStatus)" @click="retryEditing()" class="sk-btn sk-btn-outline">{{ __('workbench.editing.retry') }}</button>
          <button type="button" x-show="editingStatus === 'stale'" @click="reloadRecipeWithConfirmation()" class="sk-btn sk-btn-outline">{{ __('workbench.editing.reload') }}</button>

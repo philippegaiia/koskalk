@@ -2284,9 +2284,13 @@ assert.equal(navigations[0], '/recipes/first#instructions');
 const existingSave = makeWorkbench(42, 'output', '/recipes/existing');
 await globalThis.persistWorkbench(existingSave, 'save');
 
-    assert.deepEqual(existingSave.registryWrites, [['recipe-content', 'saved']]);
+assert.deepEqual(existingSave.registryWrites, [['recipe-content', 'saved']]);
 assert.equal(existingSave.isSaving, false);
-assert.equal(navigations[1], '/recipes/existing#output');
+assert.deepEqual(navigations, ['/recipes/first#instructions'], 'Saving an existing formula must preserve its mounted editing session');
+
+existingSave.$wire.duplicateFormula = async () => ({ ok: true, redirect: '/recipes/copy' });
+await globalThis.persistWorkbench(existingSave, 'duplicateFormula');
+assert.equal(navigations[1], '/recipes/copy#output', 'Duplicating must still open the new formula');
 JS;
 
     $process = Process::fromShellCommandline(

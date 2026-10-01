@@ -67,13 +67,10 @@ assert.equal(heartbeatCalls, 1);
 focused = true;
 expired = true;
 await workbench.pollEditingState();
-assert.equal(workbench.editingStatus, 'available');
-assert.equal(workbench.canWriteRecipe, false);
-assert.equal(workbench.formulaName, 'Newer unsaved input');
-await workbench.retryEditing();
-assert.equal(beginCalls, 2);
+assert.equal(workbench.editingStatus, 'acquired');
 assert.equal(workbench.canWriteRecipe, true);
 assert.equal(workbench.formulaName, 'Newer unsaved input');
+assert.equal(beginCalls, 2);
 workbench.destroyEditingProtection();
 JS;
     $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
@@ -392,5 +389,74 @@ assert.equal(workbench.canTakeOverEditing, false);
 JS;
     $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
     $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('restores only this pages expired reservation when the formula is unchanged and unclaimed', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+let focused = true;
+globalThis.document = { visibilityState: 'visible', hasFocus: () => focused, addEventListener() {}, removeEventListener() {} };
+globalThis.window = { addEventListener() {}, removeEventListener() {} };
+globalThis.setInterval = () => 1;
+globalThis.clearInterval = () => {};
+const baseline = { recipe_revision: 10, current_version_id: 31, costing_revision: 2 };
+
+for (const scenario of ['expired', 'blocked', 'stale', 'race', 'acquire-stale', 'locked']) {
+    let beginCalls = 0;
+    let heartbeatCalls = 0;
+    let releaseCalls = 0;
+    const tokens = [];
+    const workbench = createEditingSection({ canPersist: true, recipe: { id: 30 }, editing: baseline });
+    Object.assign(workbench, {
+        isFormulaLocked: false, formulaName: 'Local draft', t: key => key,
+        $wire: {
+            async beginEditing(token) {
+                beginCalls++;
+                tokens.push(token);
+                const status = scenario === 'race' && beginCalls > 1 ? 'blocked' : 'acquired';
+                return { ok: true, editing: {
+                    ...baseline, status,
+                    recipe_revision: scenario === 'acquire-stale' && beginCalls > 1 ? 11 : 10,
+                } };
+            },
+            async heartbeatEditing() {
+                heartbeatCalls++;
+                return { ok: false, errors: { editing_lease: ['Expired'] } };
+            },
+            async editingStatus() {
+                return { ok: true, editing: {
+                    ...baseline,
+                    recipe_revision: scenario === 'stale' ? 11 : 10,
+                    status: scenario === 'blocked' ? 'blocked' : 'available',
+                } };
+            },
+            async releaseEditing() { releaseCalls++; return { ok: true }; },
+        },
+    });
+    await workbench.startEditingProtection();
+    const token = workbench.editingToken;
+    workbench.isFormulaLocked = scenario === 'locked';
+    focused = false;
+    await workbench.pollEditingState();
+    assert.equal(heartbeatCalls, 0, 'Background pages must not keep the reservation alive');
+    focused = true;
+    await workbench.pollEditingState();
+
+    assert.equal(workbench.formulaName, 'Local draft', 'Recovery must preserve local input');
+    assert.equal(workbench.editingRecipeRevision, 10, 'Polling must not rebase the draft');
+    assert.equal(releaseCalls, scenario === 'acquire-stale' ? 1 : 0, 'Release only a reservation acquired against a stale draft');
+    assert.deepEqual(tokens, ['expired', 'race', 'acquire-stale'].includes(scenario) ? [token, token] : [token]);
+    assert.equal(workbench.editingStatus, {
+        expired: 'acquired', blocked: 'blocked', stale: 'stale', race: 'blocked', 'acquire-stale': 'stale', locked: 'available',
+    }[scenario]);
+    assert.equal(workbench.canWriteRecipe, scenario === 'expired');
+    workbench.destroyEditingProtection();
+}
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });

@@ -38,9 +38,10 @@ export async function refreshCalculationPreview(workbench) {
 
 /**
  * Save flows all share the same request contract: send the serialized draft,
- * apply an optional returned snapshot, and follow an optional redirect.
+ * apply an optional returned snapshot, and open a newly created formula.
  */
 export async function persistWorkbench(workbench, method) {
+    const opensNewRecipe = workbench.recipeId == null || method === 'duplicateFormula';
     workbench.isSaving = true;
     workbench.saveStatus = null;
     workbench.saveMessage = '';
@@ -79,7 +80,7 @@ export async function persistWorkbench(workbench, method) {
         }
         workbench.recordEditingMutation?.(response);
 
-        if (response.redirect && !changedDuringSave) {
+        if (response.redirect && !changedDuringSave && opensNewRecipe) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
             const target = response.redirect + hash;
 

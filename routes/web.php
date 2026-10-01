@@ -110,6 +110,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/{recipe}/saved/edit-current', 'editCurrentFormula')->name('saved.edit-current');
             Route::post('/{recipe}/saved/{version}/restore', 'restorePublishedFormula')->name('saved.restore');
             Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
+            Route::post('/{recipe}/editing/release', 'releaseEditing')->middleware('throttle:60,1')->name('editing.release');
             Route::post('/{recipe}/lock', 'lock')->name('lock');
             Route::post('/{recipe}/unlock', 'unlock')->name('unlock');
             Route::post('/{recipe}/archive', 'archive')->name('archive');

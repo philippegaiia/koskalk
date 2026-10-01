@@ -132,6 +132,14 @@
 }
 
 /* Public-safe Soapkraft primitives. Filament overrides live in filament-soapkraft.css. */
+@layer base {
+    :root,
+    [data-user-shell] {
+        --color-button-primary: var(--color-accent-hover);
+        --color-button-primary-hover: var(--color-accent);
+    }
+}
+
 @layer components {
     .sk-tone-chemistry {
         --sk-tone: var(--color-chemistry);

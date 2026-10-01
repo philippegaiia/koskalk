@@ -1,6 +1,7 @@
 @php
     $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
     $isPublicCalculator = $isPublicCalculator ?? false;
+    $canEditRecipe = $canEditRecipe ?? true;
     $lyeLiquidSearchOptions = collect($workbench['ingredients'] ?? [])
         ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis')
         ->map(fn (array $ingredient): array => [
@@ -20,7 +21,7 @@
 			<div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="! isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 				<div class="overflow-hidden">
 					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs" data-formula-settings-primary role="group" aria-label="Primary formulation settings">
-						<template x-for="card in formulaSetupSummaryCards.filter(card => ! card.context)" :key="`setup-primary-${card.id}`">
+						<template x-for="card in formulaSetupSummaryCards.filter(card => ! card.context && card.id !== 'formula-entry')" :key="`setup-primary-${card.id}`">
 							<span
 								:class="{
 									'sk-tone-chemistry': card.tone === 'chemistry',
@@ -35,14 +36,6 @@
 							</span>
 						</template>
 					</div>
-					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[var(--color-line)] pt-1.5 text-xs text-[var(--color-ink-soft)] sm:border-s sm:border-t-0 sm:ps-3 sm:pt-0" data-formula-settings-context role="group" aria-label="Secondary formula context">
-						<template x-for="card in formulaSetupSummaryCards.filter(card => card.context)" :key="`setup-context-${card.id}`">
-							<span class="inline-flex min-w-0 max-w-full items-center gap-1.5">
-								<span class="min-w-0 break-words whitespace-normal" x-text="card.label"></span>
-								<span class="min-w-0 break-words whitespace-normal font-medium text-[var(--color-ink-strong)]" x-text="card.value"></span>
-							</span>
-						</template>
-					</div>
 				</div>
 				</div>
 			</div>
@@ -53,12 +46,12 @@
 			aria-controls="formula-settings-panel"
 			class="sk-btn shrink-0 bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]"
 		>
-			<span x-text="isFormulaSettingsOpen ? t('settings.hide') : t('settings.edit')"></span>
+			<span x-text="isFormulaSettingsOpen ? t('settings.hide') : (canWriteRecipe ? t('settings.edit') : t('settings.view'))"></span>
 	</button>
 	</div>
 	<div id="formula-settings-panel" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 		<div :class="formulaSettingsOverflow ? 'overflow-visible' : 'overflow-hidden'">
-			<div class="mt-4">
+			<fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="mt-4 transition">
 @if ($isCosmeticWorkbench)
 	 <div class="space-y-4">
 	 <div data-cosmetic-primary-settings class="grid min-w-0 gap-4 lg:grid-cols-2">
@@ -108,14 +101,18 @@
 	 </div>
 	 </div>
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
-	 <button type="button" @click="isComplianceSettingsOpen = ! isComplianceSettingsOpen" :aria-expanded="isComplianceSettingsOpen.toString()" class="flex w-full items-start justify-between gap-4 text-left">
+	 <div x-show="!canWriteRecipe">
+	 <p class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</p>
+	 <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></p>
+	 </div>
+	 <button type="button" x-show="canWriteRecipe" @click="isComplianceSettingsOpen = ! isComplianceSettingsOpen" :aria-expanded="isComplianceSettingsOpen.toString()" class="flex w-full items-start justify-between gap-4 text-left">
 	 <span>
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
 	 <span class="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></span>
 	 </span>
 		 <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
 		 </button>
-		 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+		 <div data-formula-compliance-settings x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 		 <div class="overflow-hidden">
 		 <div class="mt-4 space-y-4">
 	 <div>
@@ -205,7 +202,11 @@
 	 </div>
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <div>
-	 <button type="button" @click="isComplianceSettingsOpen = ! isComplianceSettingsOpen" :aria-expanded="isComplianceSettingsOpen.toString()" class="flex w-full items-start justify-between gap-3 rounded-lg bg-white px-3 py-2.5 text-left transition hover:bg-[var(--color-panel)]">
+	 <div x-show="!canWriteRecipe" class="rounded-lg bg-white px-3 py-2.5">
+	 <p class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</p>
+	 <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></p>
+	 </div>
+	 <button type="button" x-show="canWriteRecipe" @click="isComplianceSettingsOpen = ! isComplianceSettingsOpen" :aria-expanded="isComplianceSettingsOpen.toString()" class="flex w-full items-start justify-between gap-3 rounded-lg bg-white px-3 py-2.5 text-left transition hover:bg-[var(--color-panel)]">
 	 <span>
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
 	 <span class="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></span>
@@ -222,7 +223,7 @@
 	 </div>
 @endunless
 
-	 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+	 <div data-formula-compliance-settings x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 	 <div class="overflow-hidden">
 	 <div class="mt-4 space-y-4">
 	 <div>
@@ -299,7 +300,7 @@
 	 </div>
 	 </div>
 @endif
-</div>
+</fieldset>
 </div>
 </div>
 	</section>

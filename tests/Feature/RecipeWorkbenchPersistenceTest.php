@@ -15,6 +15,7 @@ use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\MediaAsset;
 use App\Models\PackagingItem;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\ProductTypeIfraCategory;
@@ -24,6 +25,7 @@ use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\SupplierListing;
 use App\Models\User;
+use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetUsageService;
@@ -593,6 +595,34 @@ it('does not save a draft from a mounted component after the auth session is gon
         ->and(Recipe::withoutGlobalScopes()->where('name', 'Fallback Draft')->exists())->toBeFalse()
         ->and($soapFamily->exists)->toBeTrue();
 });
+
+it('establishes editing protection after creation without reopening the workbench', function (string $method): void {
+    $workspace = Workspace::factory()->create();
+    UserEntitlement::factory()->for($workspace->owner, 'user')->for(Plan::factory()->create(['allows_collaboration' => true]))->create();
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeCarrierOilIngredient();
+    $this->actingAs($workspace->owner);
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $draft = workbenchSoapDraftPayload($ingredient, name: 'New formula');
+    $service = app(RecipeWorkbenchService::class);
+    $content = app(RecipeContentUpdater::class);
+
+    $result = $component->{$method}($draft, $service, $content);
+
+    expect($result['ok'])->toBeTrue();
+    expect($result)->toHaveKey('editing');
+    expect($result['editing']['status'])->toBe('available');
+    expect($component->expectedVersionId)->toBe($result['editing']['current_version_id']);
+    $this->assertDatabaseCount('recipe_edit_leases', 0);
+
+    $reservation = $component->beginEditing((string) Str::uuid());
+    expect($reservation['editing']['status'])->toBe('acquired');
+    $draft['name'] = 'Continued formula';
+    $continued = $component->save($draft, $service, $content);
+    expect($continued['ok'])->toBeTrue();
+    expect($continued['editing']['recipe_revision'])->toBe($result['editing']['recipe_revision'] + 1);
+})->with(['save', 'publish']);
 
 it('stores instructions entered before the first draft on the new current version', function () {
     $user = User::factory()->create();
@@ -2193,6 +2223,7 @@ it('clears recipe content blocking after every successful workbench save', funct
     $script = <<<'JS'
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
 
 const source = fs
     .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
@@ -2253,9 +2284,13 @@ assert.equal(navigations[0], '/recipes/first#instructions');
 const existingSave = makeWorkbench(42, 'output', '/recipes/existing');
 await globalThis.persistWorkbench(existingSave, 'save');
 
-    assert.deepEqual(existingSave.registryWrites, [['recipe-content', 'saved']]);
+assert.deepEqual(existingSave.registryWrites, [['recipe-content', 'saved']]);
 assert.equal(existingSave.isSaving, false);
-assert.equal(navigations[1], '/recipes/existing#output');
+assert.deepEqual(navigations, ['/recipes/first#instructions'], 'Saving an existing formula must preserve its mounted editing session');
+
+existingSave.$wire.duplicateFormula = async () => ({ ok: true, redirect: '/recipes/copy' });
+await globalThis.persistWorkbench(existingSave, 'duplicateFormula');
+assert.equal(navigations[1], '/recipes/copy#output', 'Duplicating must still open the new formula');
 JS;
 
     $process = Process::fromShellCommandline(
@@ -2265,6 +2300,92 @@ JS;
     $process->run();
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('ignores regenerated row identities while preserving real unsaved formula edits', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
+
+const source = path => fs.readFileSync(path, 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/^export \{[^}]*\};\n/gm, '')
+    .replace(/export (async )?function /g, '$1function ')
+    .replace(/export const /g, 'const ');
+const normalizedIfraProductCategoryId = () => null;
+eval(`${[
+    'number-format.js', 'utils.js', 'calculation.js', 'payload.js',
+    'snapshot.js', 'bridge.js', 'component.js',
+].map(path => source(`resources/js/recipe-workbench/${path}`)).join('\n')}
+const buildLyeBreakdown = lyeBreakdown;
+const buildSerializedDraft = serializeDraft;
+const buildDraftStateFromDraft = draftStateFromDraft;
+const buildSnapshotStateFromSnapshot = snapshotStateFromSnapshot;
+globalThis.makePersistenceSection = createPersistenceSection;
+globalThis.persistWorkbench = persistWorkbench;`);
+
+const navigations = [];
+globalThis.window = { Livewire: { navigate: target => navigations.push(target) } };
+
+for (const phaseKey of ['saponified_oils', 'phase_a']) {
+    const workbench = {
+        ...globalThis.makePersistenceSection(),
+        formulaName: 'Saved formula', oilUnit: 'kg', oilWeight: 1,
+        phaseOrder: [{ key: phaseKey, name: 'Ingredients' }],
+        phaseItems: { [phaseKey]: [
+            { id: 'saved-388', ingredient_id: 26, percentage: 22, note: '' },
+            { id: 'saved-389', ingredient_id: 84, percentage: 78, note: '' },
+        ] },
+        packagingPlanRows: [], costingSaveSeq: 0,
+        currentCalculationPhaseSignature: () => '',
+        reconcileCostingPrices() {}, syncIngredientListVariantSelection() {},
+        dirtyStateRegistry: { set() {} },
+        $wire: { data: null },
+    };
+    workbench.refreshDirtyBaseline();
+    workbench.phaseItems[phaseKey].forEach((row, index) => { row.id = `saved-${398 + index}`; });
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), false, 'Server-generated IDs are not formula edits');
+
+    for (const [field, value] of [['ingredient_id', 27], ['percentage', 23], ['note', 'New note']]) {
+        const previous = workbench.phaseItems[phaseKey][0][field];
+        workbench.phaseItems[phaseKey][0][field] = value;
+        assert.equal(workbench.hasUnsavedWorkbenchChanges(), true, `${field} must remain dirty`);
+        workbench.phaseItems[phaseKey][0][field] = previous;
+    }
+    workbench.phaseItems[phaseKey].reverse();
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), true, 'Row order must remain dirty');
+    workbench.phaseItems[phaseKey].reverse();
+
+    workbench.$wire.save = async () => {
+        workbench.phaseItems[phaseKey].forEach((row, index) => { row.id = `saved-${408 + index}`; });
+        return { ok: true, redirect: '/saved-formula' };
+    };
+    const navigationCount = navigations.length;
+    await globalThis.persistWorkbench(workbench, 'save');
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), false);
+    assert.equal(workbench.saveStatus, 'success');
+    assert.equal(navigations.length, navigationCount + 1, 'Identity regeneration must not suppress completed-save navigation');
+
+    workbench.$wire.save = async () => {
+        workbench.phaseItems[phaseKey][0].percentage = 24;
+        workbench.phaseItems[phaseKey][0].id = 'saved-418';
+        return { ok: true, redirect: '/saved-formula', snapshot: { draft: {
+            formulaName: 'Saved formula', phases: workbench.phaseOrder,
+            phaseItems: { [phaseKey]: [{ id: 'saved-428', ingredient_id: 26, percentage: 22, note: '' }] },
+        } } };
+    };
+    await globalThis.persistWorkbench(workbench, 'save');
+    assert.equal(workbench.phaseItems[phaseKey][0].percentage, 24, 'New input must survive an older save response');
+    assert.equal(workbench.hasUnsavedWorkbenchChanges(), true);
+    assert.equal(navigations.length, navigationCount + 1);
+}
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {
@@ -2690,6 +2811,7 @@ JS;
 it('does not load costing when the packaging tab is opened', function () {
     $script = <<<'JS'
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
 import fs from 'node:fs';
 
 const source = fs
@@ -3245,6 +3367,7 @@ it('prevents additive-only carrier oils from moving into saponified oils', funct
     $script = <<<'JS'
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 
 const source = fs
   .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
@@ -3312,6 +3435,14 @@ const event = {
 
 workbench.beginRowDrag('additives', additiveRow.id, event);
 
+workbench.allowPhaseDrop('additives', event, additiveRow.id);
+assert.equal(workbench.dropTargetPhaseKey, 'additives');
+const unchanged = JSON.stringify(workbench.phaseItems);
+workbench.allowPhaseDrop('saponified_oils', event);
+assert.equal(event.dataTransfer.dropEffect, 'none');
+assert.equal(workbench.dropTargetPhaseKey, null);
+assert.equal(workbench.dropTargetRowId, null);
+assert.equal(JSON.stringify(workbench.phaseItems), unchanged);
 const canDropIntoSaponifiedOils = workbench.canDropRowInPhase('saponified_oils');
 
 workbench.dropDraggedRow('saponified_oils', event);
@@ -3347,6 +3478,7 @@ it('auto-scrolls the page near viewport edges while dragging formula rows', func
     $script = <<<'JS'
 import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 
 const source = fs
   .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
@@ -3380,11 +3512,17 @@ const createVersionSection = () => ({});
 `;
 
 const scrollCalls = [];
+const frames = new Map();
+let nextFrame = 0;
+const advance = (time) => { const [id, callback] = frames.entries().next().value; frames.delete(id); callback(time); };
 
 globalThis.document = { documentElement: { clientHeight: 600 } };
 globalThis.window = {
   innerHeight: 600,
+  innerWidth: 900,
   location: { hash: '' },
+  requestAnimationFrame(callback) { frames.set(++nextFrame, callback); return nextFrame; },
+  cancelAnimationFrame(id) { frames.delete(id); },
   scrollBy(options) {
     scrollCalls.push(options);
   },
@@ -3407,10 +3545,77 @@ workbench.beginRowDrag('saponified_oils', 'oil-1', {
 });
 
 workbench.autoScrollDuringRowDrag({ clientY: 590 });
-workbench.autoScrollDuringRowDrag({ clientY: 10 });
-workbench.autoScrollDuringRowDrag({ clientY: 300 });
-workbench.endRowDrag();
 workbench.autoScrollDuringRowDrag({ clientY: 590 });
+assert.equal(frames.size, 1);
+advance(100);
+assert.equal(scrollCalls.length, 0);
+advance(116);
+assert.ok(scrollCalls[0].top > 0 && scrollCalls[0].top <= 9.6);
+workbench.autoScrollDuringRowDrag({ clientY: 10 });
+advance(132);
+assert.ok(scrollCalls[1].top < 0);
+const staleMiddleCallback = frames.values().next().value;
+workbench.autoScrollDuringRowDrag({ clientY: 300 });
+assert.equal(frames.size, 0);
+staleMiddleCallback(148);
+assert.equal(frames.size, 0);
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+staleMiddleCallback(150);
+assert.equal(frames.size, 1);
+const staleEndedCallback = frames.values().next().value;
+workbench.endRowDrag();
+staleEndedCallback(164);
+assert.equal(frames.size, 0);
+assert.equal(scrollCalls.length, 2);
+workbench.beginRowDrag('saponified_oils', 'oil-1', {});
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+const staleExitCallback = frames.values().next().value;
+workbench.leaveRowDragDocument({ relatedTarget: {}, target: {}, clientX: 400, clientY: 300 });
+assert.equal(workbench.draggedRowId, 'oil-1');
+document.body = {};
+workbench.leaveRowDragDocument({ relatedTarget: null, target: document.body, clientX: 400, clientY: 300 });
+assert.equal(workbench.draggedRowId, 'oil-1');
+workbench.leaveRowDragDocument({ relatedTarget: null, target: document.documentElement, clientX: 400, clientY: 300 });
+assert.equal(workbench.draggedRowId, 'oil-1');
+workbench.leaveRowDragDocument({ relatedTarget: null, target: {}, clientX: 400, clientY: -1 });
+assert.equal(workbench.draggedRowId, null);
+staleExitCallback(180);
+assert.equal(frames.size, 0);
+assert.equal(scrollCalls.length, 2);
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+
+workbench.phaseItems.saponified_oils = [
+  { id: 'oil-1', ingredient_id: 1, percentage: 70, weight: 700 },
+  { id: 'oil-2', ingredient_id: 2, percentage: 30, weight: 300 },
+];
+const beforeBlurRows = JSON.stringify(workbench.phaseItems);
+const dropEvent = {
+  clientY: 210,
+  currentTarget: { getBoundingClientRect: () => ({ top: 200, height: 40 }) },
+  preventDefault() {},
+};
+workbench.beginRowDrag('saponified_oils', 'oil-2', {});
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+workbench.allowPhaseDrop('saponified_oils', dropEvent, 'oil-1');
+const staleBlurCallback = frames.values().next().value;
+const workbenchView = fs.readFileSync('resources/views/livewire/dashboard/recipe-workbench.blade.php', 'utf8');
+const blurHandler = workbenchView.match(/@blur\.window="([A-Za-z]+)\(\)"/)?.[1];
+assert.ok(blurHandler, 'The window blur binding must invoke a workbench handler');
+workbench[blurHandler]();
+assert.equal(frames.size, 0);
+assert.equal(workbench.draggedRowPhaseKey, 'saponified_oils');
+assert.equal(workbench.draggedRowId, 'oil-2');
+assert.equal(JSON.stringify(workbench.phaseItems), beforeBlurRows);
+staleBlurCallback(196);
+assert.equal(frames.size, 0);
+assert.equal(scrollCalls.length, 2);
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+assert.equal(frames.size, 1);
+workbench.dropDraggedRow('saponified_oils', dropEvent, 'oil-1');
+assert.deepEqual(workbench.phaseItems.saponified_oils.map(row => row.id), ['oil-2', 'oil-1']);
+assert.deepEqual(workbench.phaseItems.saponified_oils.map(row => [row.percentage, row.weight]), [[30, 300], [70, 700]]);
+assert.equal(workbench.draggedRowId, null);
+assert.equal(frames.size, 0);
 
 console.log(JSON.stringify({
   calls: scrollCalls,
@@ -4085,6 +4290,28 @@ const eventFor = (clientY, targetRow) => ({
   targetRow,
 });
 
+const previewRow = { getBoundingClientRect: () => ({ left: 20, top: 200, width: 500, height: 40 }) };
+let preview;
+let transferPayload;
+const previewEvent = eventFor(500);
+previewEvent.clientX = -10;
+previewEvent.currentTarget.closest = selector => { assert.equal(selector, '[data-workbench-row-id]'); return previewRow; };
+previewEvent.dataTransfer.setDragImage = (...args) => { preview = args; };
+previewEvent.dataTransfer.setData = (...args) => { transferPayload = args; };
+workbench.beginRowDrag('phase_a', 'phase-a-oil', previewEvent);
+assert.deepEqual(preview, [previewRow, 0, 40]);
+assert.deepEqual(transferPayload, ['text/plain', 'phase_a:phase-a-oil']);
+assert.equal(previewEvent.dataTransfer.effectAllowed, 'move');
+workbench.endRowDrag();
+
+const existingTargetRows = workbench.phaseItems.phase_b;
+workbench.phaseItems.phase_b = [{ id: 'b1' }, { id: 'b2' }, { id: 'b3' }];
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(210), 'b1'), 'b1');
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(230), 'b1'), 'b2');
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(230), 'b2'), 'b3');
+assert.equal(workbench.resolvedDropTargetRowId('phase_b', eventFor(230), 'b3'), null);
+workbench.phaseItems.phase_b = existingTargetRows;
+
 const beforeTargetEvent = eventFor(210, 'phase-b-preservative');
 workbench.beginRowDrag('phase_a', 'phase-a-oil', beforeTargetEvent);
 workbench.allowPhaseDrop('phase_b', beforeTargetEvent, 'phase-b-preservative');
@@ -4117,6 +4344,107 @@ assert.strictEqual(workbench.draggedRowPhaseKey, null);
 assert.strictEqual(workbench.draggedRowId, null);
 assert.strictEqual(workbench.dropTargetPhaseKey, null);
 assert.strictEqual(workbench.dropTargetRowId, null);
+
+const preservedOil = { ...workbench.phaseItems.phase_b.find(row => row.id === 'phase-a-oil') };
+const drop = (rowId, targetRowId, y = 210) => {
+  const event = eventFor(y);
+  workbench.beginRowDrag('phase_b', rowId, event);
+  assert.equal(workbench.dropTargetPhaseKey, null);
+  workbench.dropDraggedRow('phase_b', event, targetRowId);
+};
+drop('phase-a-glycerin', 'phase-b-vitamin-e');
+assert.deepEqual(rowIds('phase_b'), ['phase-a-glycerin', 'phase-b-vitamin-e', 'phase-a-oil', 'phase-b-preservative']);
+drop('phase-a-glycerin', 'phase-a-oil', 230);
+assert.deepEqual(rowIds('phase_b'), ['phase-b-vitamin-e', 'phase-a-oil', 'phase-a-glycerin', 'phase-b-preservative']);
+const unchanged = JSON.stringify(workbench.phaseItems);
+drop('phase-a-oil', 'phase-a-oil');
+drop('phase-a-oil', 'phase-a-glycerin');
+assert.equal(JSON.stringify(workbench.phaseItems), unchanged);
+assert.deepEqual(workbench.phaseItems.phase_b.find(row => row.id === 'phase-a-oil'), preservedOil);
+workbench.phaseItems.phase_a.push({ ...preservedOil, id: 'duplicate-oil' });
+const duplicateState = JSON.stringify(workbench.phaseItems);
+workbench.beginRowDrag('phase_b', 'phase-a-oil', eventFor(210));
+const validEvent = eventFor(210);
+workbench.allowPhaseDrop('phase_b', validEvent, 'phase-b-preservative');
+const child = {};
+validEvent.currentTarget.contains = target => target === child;
+workbench.leaveRowDropTarget({ currentTarget: validEvent.currentTarget, relatedTarget: child });
+assert.equal(workbench.dropTargetPhaseKey, 'phase_b');
+const newerEvent = eventFor(210);
+workbench.allowPhaseDrop('phase_b', newerEvent, 'phase-b-vitamin-e');
+workbench.leaveRowDropTarget({ currentTarget: validEvent.currentTarget, relatedTarget: null });
+assert.equal(workbench.dropTargetRowId, 'phase-b-vitamin-e');
+workbench.leaveRowDropTarget({ currentTarget: newerEvent.currentTarget, relatedTarget: null });
+assert.equal(workbench.dropTargetPhaseKey, null);
+const invalidEvent = eventFor(210);
+workbench.allowPhaseDrop('phase_a', invalidEvent);
+assert.equal(invalidEvent.dataTransfer.dropEffect, 'none');
+assert.equal(workbench.dropTargetPhaseKey, null);
+assert.equal(workbench.dropTargetRowId, null);
+workbench.dropDraggedRow('phase_a', invalidEvent);
+assert.equal(JSON.stringify(workbench.phaseItems), duplicateState);
+assert.equal(workbench.draggedRowId, null);
+const ticks = [];
+const animations = [];
+let reduceMotion = false;
+window.matchMedia = () => ({ matches: reduceMotion });
+workbench.$nextTick = callback => ticks.push(callback);
+const renderedRows = () => workbench.phaseItems.phase_b.map(row => ({
+  dataset: { workbenchRowId: row.id },
+  animate(keyframes, options) {
+    const animation = { rowId: row.id, keyframes, options, cancelled: false, cancel() { this.cancelled = true; } };
+    animations.push(animation);
+    return animation;
+  },
+}));
+const root = { closest: () => root, querySelectorAll(selector) { assert.equal(selector, '[data-workbench-row-id]'); return renderedRows(); } };
+workbench.$el = root;
+drop('phase-b-preservative', 'phase-b-vitamin-e');
+workbench.endRowDrag();
+assert.equal(animations.length, 0);
+ticks.shift()();
+assert.equal(animations.length, 1);
+assert.equal(animations[0].rowId, 'phase-b-preservative');
+assert.deepEqual(animations[0].keyframes, [{ transform: 'translateY(-4px)', opacity: 0.75 }, { transform: 'translateY(0)', opacity: 1 }]);
+assert.equal(animations[0].options.duration, 260);
+assert.equal(animations[0].options.easing, 'cubic-bezier(0.25, 1, 0.5, 1)');
+drop('phase-b-preservative', 'phase-b-vitamin-e');
+assert.equal(animations[0].cancelled, true);
+assert.equal(ticks.length, 0);
+drop('phase-b-preservative', null);
+assert.equal(ticks.length, 1);
+workbench.beginRowDrag('phase_b', 'phase-a-oil', eventFor(210));
+ticks.shift()();
+assert.equal(animations.length, 1);
+workbench.endRowDrag();
+reduceMotion = true;
+drop('phase-a-oil', null);
+assert.equal(ticks.length, 0);
+reduceMotion = false;
+drop('phase-a-oil', 'phase-b-vitamin-e');
+reduceMotion = true;
+ticks.shift()();
+assert.equal(animations.length, 1);
+reduceMotion = false;
+workbench.phaseItems.phase_a.push({ ...preservedOil, id: 'duplicate-oil-again' });
+workbench.beginRowDrag('phase_b', 'phase-a-oil', eventFor(210));
+workbench.dropDraggedRow('phase_a', eventFor(210));
+assert.equal(ticks.length, 0);
+workbench.phaseItems.phase_a.pop();
+// Menu movement never queues native-drop feedback.
+workbench.moveFormulaRowBy('phase_b', 'phase-a-oil', 'down');
+assert.equal(ticks.length, 0);
+drop('phase-a-oil', 'phase-b-vitamin-e');
+workbench.removeUnsavedChangesGuard = () => {};
+workbench.destroyEditingProtection = () => {};
+workbench.destroy();
+ticks.shift()();
+assert.equal(animations.length, 1);
+
+// Restore the original result for the PHP-facing contract below.
+workbench.phaseItems.phase_a.pop();
+workbench.phaseItems.phase_b = ['phase-b-vitamin-e', 'phase-a-oil', 'phase-b-preservative', 'phase-a-glycerin'].map(id => workbench.phaseItems.phase_b.find(row => row.id === id));
+delegatedCalls.splice(2);
 
 console.log(JSON.stringify({
   delegatedCalls,
@@ -5268,7 +5596,7 @@ it('keeps formula table controls stepped and visually aligned', function () {
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
 
     expect($reactionCore)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('formatPercentageTotal(totalOilPercentage())')
@@ -5277,7 +5605,7 @@ it('keeps formula table controls stepped and visually aligned', function () {
         ->toContain('oilWeightDecimals(rowWeight(row))')
         ->not->toContain(':value="format(rowWeight(row), 1)"')
         ->and($postReaction)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('syncFormattedInput($el, row.percentage, 2)')

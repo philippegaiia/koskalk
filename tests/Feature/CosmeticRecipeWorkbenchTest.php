@@ -215,7 +215,7 @@ it('uses wider cosmetic percentage and weight columns with half-gram weight step
     $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
 
     expect($cosmeticFormula)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain('type="text" inputmode="decimal"');
 });
 
@@ -523,7 +523,8 @@ it('exposes practical controls for choosing and reordering cosmetic phases', fun
         ->toContain('Drop ingredients here')
         ->toContain('class="space-y-5 bg-[var(--color-surface)] py-5"')
         ->toContain('class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-panel)] transition-shadow duration-300"')
-        ->not->toContain('bg-white')
+        ->toContain('gap-3 bg-white px-2.5 text-sm sk-formula-table-row')
+        ->toContain('bg-white sk-formula-table-cell')
         ->toContain('placeholder="Phase name"')
         ->toContain('max-w-md')
         ->toContain('<span aria-hidden="true">↑</span>')
@@ -534,7 +535,7 @@ it('exposes practical controls for choosing and reordering cosmetic phases', fun
         ->not->toContain('data-formula-total class="overflow-hidden rounded-lg')
         ->toContain('data-formula-total-grid')
         // Hairline-separated totals grid, matching the soap workbench's totals row.
-        ->toContain('class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0"')
+        ->toContain('class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:p-0"')
         ->toContain('class="flex flex-wrap items-center gap-3 px-5"')
         ->toContain("moveCosmeticPhase(phase.key, 'up')")
         ->toContain("moveCosmeticPhase(phase.key, 'down')")
@@ -589,9 +590,11 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
     ])->render();
 
     expect($header)
-        ->toContain('manufacturingModeLabel')
-        ->toContain('exposureModeLabel')
-        ->toContain('regulatoryRegimeLabel')
+        ->toContain('x-model="formulaName"')
+        ->toContain('x-text="productTypeName"')
+        ->not->toContain('manufacturingModeLabel')
+        ->not->toContain('exposureModeLabel')
+        ->not->toContain('regulatoryRegimeLabel')
         ->not->toContain('mt-4 flex flex-wrap gap-2 border-t')
         ->and($settings)
         ->toContain('<div data-cosmetic-primary-settings class="grid min-w-0 gap-4 lg:grid-cols-2">')
@@ -634,7 +637,7 @@ it('uses shared row actions and ownership affordances for cosmetic ingredients',
     expect($cosmeticFormulaSource)
         ->toContain('<x-recipe-workbench.formula-row-actions')
         ->toContain('phase-key-expression="phase.key"')
-        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="drag" :prominent="true" />')
         ->toContain('<x-action-icon name="info" />')
         ->toContain('role="img"')
         ->toContain('aria-label="{{ __(\'workbench.accessibility.user_owned\') }}"')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Dashboard\RecipeWorkbench;
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -10,8 +11,141 @@ use App\Services\RecipeEditingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
+
+it('keeps routine reservation checks quiet and mentions preserved changes only for dirty input', function (): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $notice = $xpath->query('//section[contains(@x-show, "editingRequired")]')->item(0);
+    $preserved = collect($xpath->query('p', $notice))
+        ->first(fn (DOMElement $paragraph): bool => trim($paragraph->textContent) === __('workbench.editing.preserved'));
+    expect($preserved)->not->toBeNull();
+
+    $script = str_replace(['__NOTICE__', '__PRESERVED__'], [
+        json_encode($notice->getAttribute('x-show'), JSON_THROW_ON_ERROR),
+        json_encode($preserved->getAttribute('x-show'), JSON_THROW_ON_ERROR),
+    ], <<<'JS'
+import assert from 'node:assert/strict';
+const notice = new Function(`with (this) { return (${__NOTICE__}); }`);
+const preserved = new Function(`with (this) { return (${__PRESERVED__}); }`);
+for (const [status, visible] of [['acquiring', false], ['acquired', false], ['blocked', true], ['available', true], ['lost', true], ['stale', true]]) {
+    for (const dirty of [false, true]) {
+        const state = {
+            editingRequired: true, editingStatus: status, isEditingUnavailable: status !== 'acquired',
+            blocksNavigation: () => dirty,
+        };
+        assert.equal(Boolean(notice.call(state)), visible, `${status} notice visibility`);
+        if (visible) {
+            assert.equal(Boolean(preserved.call(state)), dirty, `${status} must not claim saved input is unsaved`);
+        }
+    }
+}
+assert.equal(Boolean(notice.call({ editingRequired: false })), false);
+JS);
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('keeps the mounted editing baseline in workbench renders after a saved mutation', function (): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
+    $version = RecipeVersion::factory()->create(['recipe_id' => $recipe->id, 'workspace_id' => $workspace->id, 'is_current' => true]);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid())
+        ->set('data.description', '<p>First save.</p>')
+        ->call('saveRecipeContent')
+        ->assertReturned(fn (array $response): bool => $response['ok']);
+    $recipe->increment('edit_revision');
+
+    $component->call('$refresh')
+        ->assertViewHas('workbench', fn (array $workbench): bool => $workbench['editing'] !== null
+            && $workbench['editing']['recipe_revision'] === 1
+            && $workbench['editing']['current_version_id'] === $version->id
+            && $workbench['editing']['costing_revision'] === 0)
+        ->assertSet('expectedRecipeRevision', 1);
+});
+
+it('allows inspecting locked formula settings while protecting their controls', function (string $familySlug): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => $familySlug, 'calculation_basis' => $familySlug === 'soap' ? 'initial_oils' : 'total_formula']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id, 'locked_at' => now()]);
+    RecipeVersion::factory()->create(['recipe_id' => $recipe->id, 'workspace_id' => $workspace->id, 'is_current' => true]);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $disclosure = $xpath->query('//button[@aria-controls="formula-settings-panel"]')->item(0);
+
+    expect($disclosure)->not->toBeNull();
+    expect($xpath->query('ancestor::fieldset', $disclosure)->length)->toBe(0);
+    expect($disclosure->hasAttribute('disabled'))->toBeFalse();
+    expect($disclosure->getAttribute(':aria-expanded'))->toBe('isFormulaSettingsOpen.toString()');
+    expect($xpath->query('span', $disclosure)->item(0)->getAttribute('x-text'))->toContain("t('settings.view')");
+
+    $compliancePanel = $xpath->query('//*[@data-formula-compliance-settings]')->item(0);
+    expect($compliancePanel)->not->toBeNull();
+    expect($compliancePanel->getAttribute(':class'))->toBe("isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'");
+
+    $setting = $xpath->query('//*[@id="formula-settings-panel"]//input[@inputmode="decimal"]')->item(0);
+    expect($setting)->not->toBeNull();
+    $protection = $xpath->query('ancestor::fieldset', $setting);
+    expect($protection->length)->toBe(1);
+    expect($protection->item(0)->getAttribute(':disabled'))->toBe('!canWriteRecipe || (isSaving && !hasSavedRecipe)');
+
+    $entryMode = $xpath->query('//div[@aria-labelledby="formula-entry-mode-heading"]/button')->item(0);
+    expect($entryMode)->not->toBeNull();
+    expect($xpath->query('ancestor::fieldset', $entryMode)->length)->toBe(1);
+    expect($xpath->query('ancestor::fieldset', $entryMode)->item(0)->getAttribute(':disabled'))->toBe('!canWriteRecipe || (isSaving && !hasSavedRecipe)');
+    expect((int) $recipe->fresh()->edit_revision)->toBe(0);
+})->with(['soap', 'cosmetic']);
+
+it('loads locked costing without writes and rejects saving a simulation', function (string $familySlug): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => $familySlug, 'calculation_basis' => $familySlug === 'soap' ? 'initial_oils' : 'total_formula']);
+    if ($familySlug === 'soap') {
+        Ingredient::factory()->create(['catalog_key' => 'CH1', 'owner_type' => null, 'owner_id' => null, 'workspace_id' => null]);
+        Ingredient::factory()->create(['catalog_key' => 'CH3', 'owner_type' => null, 'owner_id' => null, 'workspace_id' => null]);
+    }
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id, 'locked_at' => now()]);
+    $version = RecipeVersion::factory()->create(['recipe_id' => $recipe->id, 'workspace_id' => $workspace->id, 'is_current' => true]);
+    $costing = RecipeVersionCosting::query()->create(['recipe_version_id' => $version->id, 'user_id' => $workspace->owner_user_id, 'currency' => 'EUR', 'oil_weight_for_costing' => 1000, 'oil_unit_for_costing' => 'g']);
+    $this->actingAs($workspace->owner);
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call('beginEditing', (string) Str::uuid());
+
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $costingPanel = $xpath->query('//*[@data-costing-controls]//*[@id="panel-costing"]')->item(0);
+    expect($costingPanel)->not->toBeNull();
+    expect($xpath->query('ancestor::fieldset', $costingPanel)->length)->toBe(1);
+    expect($costingPanel->parentNode->getAttribute(':disabled'))->toBe('!canAdjustCosting || (isSaving && !hasSavedRecipe)');
+
+    $component->call('loadCosting')
+        ->assertHasNoErrors()
+        ->assertReturned(fn (array $response): bool => $response['ok'])
+        ->call('saveCosting', ['oil_weight_for_costing' => 2000, 'oil_unit_for_costing' => 'g', 'units_produced' => 20, 'currency' => 'EUR', 'items' => [], 'packaging_items' => []])
+        ->assertReturned(fn (array $response): bool => ! $response['ok'] && $response['message'] === __('editing.formula_locked'));
+
+    expect((float) $costing->fresh()->oil_weight_for_costing)->toBe(1000.0);
+    expect((int) $costing->fresh()->edit_revision)->toBe(0);
+    expect((int) $recipe->fresh()->edit_revision)->toBe(0);
+    $this->assertDatabaseCount('recipe_version_costings', 1);
+})->with(['soap', 'cosmetic']);
 
 it('does not announce a deletion rolled back after the editing reservation expires', function (bool $current): void {
     $this->freezeTime();

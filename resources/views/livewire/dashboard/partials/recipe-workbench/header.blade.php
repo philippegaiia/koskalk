@@ -45,12 +45,6 @@
 
         @unless ($isPublicCalculator)
             <div class="sk-formula-actions flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
-                @if ($workbench['canEditRecipe'] ?? false)
-                    <button type="button" @click="publish()" :disabled="!canWriteRecipe || !canSaveRecipe || isSaving" :class="!canWriteRecipe || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="sk-btn">
-                        <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
-                    </button>
-                @endif
-
                 @if ($recipePublicId)
                     @if ($workbench['recipe']['can_manage_lock'] ?? false)
                         @if ((bool) ($workbench['recipe']['is_locked'] ?? false))
@@ -77,28 +71,11 @@
                     </button>
                 @endif
 
-                <details x-data="{ open: false }" :open="open" @toggle="open = $el.open" @click.outside="open = false" @keydown.escape.prevent.stop="open = false" class="relative">
-                    <summary class="sk-btn sk-btn-ghost size-10 cursor-pointer list-none px-0 [&::-webkit-details-marker]:hidden" aria-haspopup="menu" :aria-expanded="open.toString()">
-                        <span aria-hidden="true" class="text-lg leading-none tracking-[0.12em]">•••</span>
-                        <span class="sr-only">{{ __('workbench.header.more_actions') }}</span>
-                    </summary>
-                    <div class="absolute right-0 z-40 mt-2 w-72 rounded-lg bg-white p-2 shadow-xl">
-                        <div class="px-3 py-2">
-                            <p class="sk-eyebrow">{{ __('workbench.header.product_details') }}</p>
-                            <div class="mt-2 space-y-1 text-xs leading-5 text-[var(--color-ink-soft)]">
-                                <p x-text="manufacturingModeLabel"></p>
-                                <p x-text="exposureModeLabel"></p>
-                                <p x-text="regulatoryRegimeLabel"></p>
-                            </div>
-                        </div>
-
-                        @if ($workbench['recipe']['can_duplicate'] ?? false)
-                            <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
-                                {{ __('workbench.header.duplicate_product') }}
-                            </button>
-                        @endif
-                    </div>
-                </details>
+                @if ($recipePublicId && ($workbench['recipe']['can_duplicate'] ?? false))
+                    <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" class="sk-btn sk-btn-outline">
+                        {{ __('workbench.header.duplicate_product') }}
+                    </button>
+                @endif
             </div>
         @endunless
     </div>

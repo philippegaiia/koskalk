@@ -37560,6 +37560,18 @@
     },
     {
       "group": "workbench",
+      "key": "costing.settings.reset_simulation",
+      "text": {
+        "de": "Gespeicherte Kalkulation wiederherstellen",
+        "es": "Restablecer los costes guardados",
+        "fr": "Rétablir les coûts enregistrés",
+        "it": "Ripristina i costi salvati",
+        "nl": "Opgeslagen kostprijs herstellen",
+        "pt_BR": "Restaurar os custos salvos"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.settings.save_product_first",
       "text": {
         "de": "Speichere zuerst das Produkt",
@@ -37580,6 +37592,30 @@
         "it": "Salvato automaticamente",
         "nl": "Automatisch opgeslagen",
         "pt_BR": "Salvo automaticamente"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.settings.simulation",
+      "text": {
+        "de": "Simulation · nicht gespeichert",
+        "es": "Simulación · sin guardar",
+        "fr": "Simulation · non enregistrée",
+        "it": "Simulazione · non salvata",
+        "nl": "Simulatie · niet opgeslagen",
+        "pt_BR": "Simulação · não salva"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.settings.simulation_help",
+      "text": {
+        "de": "Dieses Produkt ist gesperrt. Erkunden Sie die Kosten, ohne die gespeicherte Rezeptur oder Kalkulation zu ändern.",
+        "es": "Este producto está bloqueado. Explora los costes sin cambiar la fórmula ni el cálculo de costes guardados.",
+        "fr": "Ce produit est verrouillé. Explorez les coûts sans modifier la formule ni le calcul des coûts enregistrés.",
+        "it": "Questo prodotto è bloccato. Esplora i costi senza modificare la formula o il calcolo dei costi salvati.",
+        "nl": "Dit product is vergrendeld. Verken de kosten zonder de opgeslagen formule of kostprijsberekening te wijzigen.",
+        "pt_BR": "Este produto está bloqueado. Explore os custos sem alterar a fórmula ou o cálculo de custos salvos."
       }
     },
     {
@@ -41396,6 +41432,18 @@
         "it": "Peso totale degli oli",
         "nl": "Totaalgewicht van de oliën",
         "pt_BR": "Peso total dos óleos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.view",
+      "text": {
+        "de": "Einstellungen ansehen",
+        "es": "Ver ajustes",
+        "fr": "Voir les paramètres",
+        "it": "Visualizza impostazioni",
+        "nl": "Instellingen bekijken",
+        "pt_BR": "Ver configurações"
       }
     },
     {

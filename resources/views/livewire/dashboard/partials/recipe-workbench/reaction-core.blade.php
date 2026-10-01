@@ -11,7 +11,7 @@
  <div class="p-5">
  <div class="relative">
  <div class="overflow-hidden rounded-lg border border-[var(--color-line)]">
-	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
+	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.oil') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]">% oils</div>
@@ -23,21 +23,23 @@
  <template x-for="row in oilRows" :key="row.id">
  <div @dragover="allowPhaseDrop('saponified_oils', $event, row.id)"
  @drop="dropDraggedRow('saponified_oils', $event, row.id)"
+ @dragleave="leaveRowDropTarget($event)"
  :class="{
- 'bg-[var(--color-active-soft)]': isDropTarget('saponified_oils', row.id),
- 'opacity-60': isDraggedRow('saponified_oils', row.id),
+ 'sk-formula-insertion-before': isDropTarget('saponified_oils', row.id),
+ 'sk-formula-insertion-after': isDropTarget('saponified_oils') && rowIsLastDropTarget('saponified_oils', row.id),
+ 'opacity-75': isDraggedRow('saponified_oils', row.id),
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
-		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:row-start-auto">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
+		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('saponified_oils', row.id, $event)"
  @dragend="endRowDrag()"
-	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
+	 class="sk-formula-row-control grid size-10 shrink-0 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] active:cursor-grabbing"
  aria-label="Drag to reorder or move this oil">
- <x-action-icon name="drag" />
+ <x-action-icon name="drag" :prominent="true" />
  </button>
  </div>
 		 <div class="col-span-2 row-start-2 flex items-center bg-white sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
@@ -132,7 +134,7 @@
  </template>
  </div>
  </div>
-		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:px-2 lg:row-start-auto">
+		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:row-start-auto">
  <x-recipe-workbench.formula-row-actions phase-key="saponified_oils" />
  </div>
  </div>
@@ -141,14 +143,15 @@
  <template x-if="oilRows.length === 0">
  <div @dragover="allowPhaseDrop('saponified_oils', $event)"
  @drop="dropDraggedRow('saponified_oils', $event)"
- :class="isDropTarget('saponified_oils') ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
+ @dragleave="leaveRowDropTarget($event)"
+ :class="isDropTarget('saponified_oils') ? 'sk-formula-drop-zone-active sk-formula-insertion-before' : 'text-[var(--color-ink-soft)]'"
 	 class="px-4 py-2.5 sk-formula-table-y text-center text-xs font-medium transition">
  {{ __('workbench.saponification.empty') }}
  </div>
  </template>
  </div>
 
-	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
+	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:p-0">
 			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
 			 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.saponification.total_oils') }}</div>
  <div class="col-span-full grid grid-cols-2 gap-3 lg:contents">

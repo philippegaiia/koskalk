@@ -51,7 +51,7 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toContain('isComplianceSettingsOpen: false')
         ->and($soapSettings)
         ->toContain('Label &amp; compliance')
-        ->toContain(":class=\"isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
+        ->toContain(":class=\"isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
         ->toContain('Suggested from product type')
         ->toContain('Choose another IFRA category')
         ->toContain('No IFRA category')
@@ -64,7 +64,7 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toContain('These dates apply to fragrance mixtures leaving a fragrance house.')
         ->and($cosmeticSettings)
         ->toContain('Label &amp; compliance')
-        ->toContain(":class=\"isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
+        ->toContain(":class=\"isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
         ->toContain('Suggested from product type')
         ->toContain('x-show="productTypes.length && ! hasSavedFormula"')
         ->toContain('x-show="hasSavedFormula"')
@@ -105,6 +105,7 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         'recipe' => [
             'public_id' => 'recipe-test',
             'can_manage_lock' => true,
+            'can_duplicate' => true,
             'has_saved_formula' => true,
             'is_locked' => false,
             'saved_formula_url' => $savedFormulaUrl,
@@ -199,12 +200,15 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->not->toContain('lg:row-start-')
         ->toContain('Lock product')
         ->and(strpos($header, 'Lock product'))
-        ->toBeLessThan(strpos($header, 'More actions'))
+        ->toBeLessThan(strpos($header, 'Duplicate product'))
         ->and(substr_count($header, 'Lock product'))
         ->toBe(1)
         ->and($header)
-        ->toContain('More actions')
-        ->toContain('<details')
+        ->toContain('Duplicate product')
+        ->not->toContain('More actions')
+        ->not->toContain('Product details')
+        ->not->toContain('<details')
+        ->not->toContain('@click="publish()"')
         ->not->toContain('Formula sheet')
         ->not->toContain('Open reference formula</a>')
         ->not->toContain('Save as reference formula');
@@ -247,8 +251,8 @@ it('hardens compact workbench controls for touch and keyboard use', function () 
         ->toContain('@keydown.escape.window="open = false"');
 
     expect($header)
-        ->toContain('@click.outside="open = false"')
-        ->toContain('@keydown.escape.prevent.stop="open = false"');
+        ->toContain('class="sk-btn sk-btn-outline')
+        ->not->toContain('<details');
 });
 
 it('uses quiet actionable formula balance readouts and flat formula ledgers', function () {
@@ -488,7 +492,7 @@ it('adapts recipe workbench tables for narrow screens before desktop grids', fun
 
     expect($combinedTableMarkup)
         ->toContain('grid-cols-1')
-        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain('lg:hidden')
         ->toContain('lg:grid')
         ->toContain('touch-pan-x')
@@ -509,7 +513,7 @@ it('keeps soap percentage and weight controls side by side below desktop', funct
     expect(substr_count($reactionCore, $mobileMeasurementGroup))->toBe(2)
         ->and(substr_count($postReaction, $mobileMeasurementGroup))->toBe(2)
         ->and($reactionCore)
-        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->toContain($mobileHandlePlacement)
         ->toContain($mobileIdentityPlacement)
         ->toContain($mobileRemovalPlacement)
@@ -548,7 +552,7 @@ it('matches the soap mobile ledger hierarchy for cosmetic rows', function (): vo
         ->toContain('col-span-2 row-start-2')
         ->toContain('col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents')
         ->toContain('col-start-2 row-start-1')
-        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem]')
         ->not->toContain('class="grid grid-cols-1 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row');
 });
 
@@ -603,19 +607,17 @@ it('uses one accessible row-actions menu in every formula ledger', function (): 
         ->toContain('min-h-11')
         ->toContain('min-w-11')
         ->toContain('border-0')
-        ->toContain('bg-transparent')
-        ->toContain('text-[var(--color-ink)]')
-        ->toContain('hover:text-[var(--color-ink-strong)]')
-        ->not->toContain('text-[var(--color-ink-soft)]')
-        ->not->toContain('hover:bg-[var(--color-field-muted)]')
+        ->toContain('sk-formula-row-control')
+        ->toContain('text-[var(--color-ink-soft)]')
+        ->not->toContain('hover:bg-')
         ->not->toContain('rounded-lg')
         ->not->toContain('border-[var(--color-line)]')
         ->not->toContain('bg-[var(--color-field)]')
-        ->and(substr_count($reactionCoreSource, '<x-action-icon name="drag" />'))
+        ->and(substr_count($reactionCoreSource, '<x-action-icon name="drag" :prominent="true" />'))
         ->toBe(1)
-        ->and(substr_count($postReactionSource, '<x-action-icon name="drag" />'))
+        ->and(substr_count($postReactionSource, '<x-action-icon name="drag" :prominent="true" />'))
         ->toBe(2)
-        ->and(substr_count($cosmeticFormulaSource, '<x-action-icon name="drag" />'))
+        ->and(substr_count($cosmeticFormulaSource, '<x-action-icon name="drag" :prominent="true" />'))
         ->toBe(1)
         ->and($rowTemplateSources)
         ->not->toMatch('/<button\b[^>]*(?:moveFormulaRow(?:By|ToPhase)|row_actions\.move_(?:up|down)|Move\s+(?:up|down))[^>]*>/i');
@@ -892,6 +894,22 @@ it('describes soap post-reaction percentages as oil-basis percentages', function
         ->toContain('@dragover.window="autoScrollDuringRowDrag($event)"');
 });
 
+it('uses shared primary button colors for bench saves and ingredient additions', function () {
+    $saveBar = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-bottom-action-bar.blade.php'));
+    $ingredientBrowser = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
+
+    expect($saveBar)
+        ->toContain("'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'sk-btn-primary'")
+        ->not->toContain('bg-[var(--color-accent)]')
+        ->not->toContain('hover:bg-[var(--color-accent-hover)]');
+
+    expect(substr_count($ingredientBrowser, 'bg-[var(--color-button-primary)]'))->toBe(3);
+    expect(substr_count($ingredientBrowser, 'hover:bg-[var(--color-button-primary-hover)]'))->toBe(3);
+    expect($ingredientBrowser)
+        ->not->toContain('bg-[var(--color-accent)]')
+        ->not->toContain('hover:bg-[var(--color-accent-hover)]');
+});
+
 it('keeps dashboard select chevrons away from the right edge', function () {
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
@@ -1141,7 +1159,6 @@ it('uses accessible currentColor SVG action icons across the soap workbench cont
     $rowActions = file_get_contents(resource_path('views/components/recipe-workbench/formula-row-actions.blade.php'));
 
     expect($iconSource)
-        ->toContain('stroke="currentColor"')
         ->toContain('aria-hidden="true"')
         ->toContain('focusable="false"')
         ->toContain("'drag'")
@@ -1162,6 +1179,17 @@ it('uses accessible currentColor SVG action icons across the soap workbench cont
             ->toContain('focusable="false"');
     }
 
+    foreach (['drag' => 6, 'more-horizontal' => 3] as $name => $dotCount) {
+        $prominentIcon = Blade::render('<x-action-icon name="'.$name.'" :prominent="true" />');
+
+        expect($prominentIcon)
+            ->toContain('size-5')
+            ->toContain('fill="currentColor"')
+            ->toContain('stroke="none"')
+            ->toContain('aria-hidden="true"')
+            ->and(substr_count($prominentIcon, '<circle '))->toBe($dotCount);
+    }
+
     expect($formulaTabSource)
         ->toContain('<x-action-icon name="plus" x-cloak x-show="! ingredientBrowserOpen" />')
         ->toContain('<x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />')
@@ -1177,26 +1205,26 @@ it('uses accessible currentColor SVG action icons across the soap workbench cont
         ->not->toContain('>×</button>');
 
     expect($reactionCore)
-        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="drag" :prominent="true" />')
         ->toContain('<x-action-icon name="info" />')
         ->not->toContain('<x-action-icon name="close" />')
         ->not->toContain('⋮⋮')
         ->not->toContain('>×</button>');
 
     expect($postReaction)
-        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="drag" :prominent="true" />')
         ->not->toContain('<x-action-icon name="close" />')
         ->not->toContain('⋮⋮')
         ->not->toContain('>×</button>');
 
     expect($cosmeticFormula)
-        ->toContain('<x-action-icon name="drag" />')
+        ->toContain('<x-action-icon name="drag" :prominent="true" />')
         ->toContain('<x-action-icon name="info" />')
         ->not->toContain('<x-action-icon name="close" />')
         ->not->toContain('⋮⋮')
         ->not->toContain('>×</button>')
         ->and($rowActions)
-        ->toContain('<x-action-icon name="more-horizontal" />');
+        ->toContain('<x-action-icon name="more-horizontal" :prominent="true" />');
 });
 
 it('allocates ingredient rail width and gutter from the real workbench width', function () {
@@ -1250,7 +1278,7 @@ it('shares the raised treatment across ingredient info popovers', function (): v
 it('keeps ingredient browser filters visible and pill shaped while focused', function () {
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
-    $genericWorkbenchFocusPosition = strpos($appStylesSource, '.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input), select, textarea, a, summary):focus-visible');
+    $genericWorkbenchFocusPosition = strpos($appStylesSource, '.sk-workbench :is(button:not([role="tab"]):not(.sk-formula-row-control), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input), select, textarea, a, summary):focus-visible');
     $ingredientFilterFocusPosition = strrpos($appStylesSource, '.sk-workbench .sk-ingredient-filter-control:focus-visible');
 
     expect($ingredientBrowser)
@@ -1273,7 +1301,7 @@ it('uses a slim radius respecting inset ring for focused workbench controls exce
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     preg_match(
-        '/\\.sk-workbench :is\\(button:not\\(\\[role="tab"\\]\\), input:not\\(\\[type="range"\\]\\):not\\(\\.sk-formula-title-control\\):not\\(\\.sk-field-control\\):not\\(\\.sk-input\\), select, textarea, a, summary\\):focus-visible \\{(?<rule>.*?)\\n\\}/s',
+        '/\\.sk-workbench :is\\(button:not\\(\\[role="tab"\\]\\):not\\(\\.sk-formula-row-control\\), input:not\\(\\[type="range"\\]\\):not\\(\\.sk-formula-title-control\\):not\\(\\.sk-field-control\\):not\\(\\.sk-input\\), select, textarea, a, summary\\):focus-visible \\{(?<rule>.*?)\\n\\}/s',
         $appStylesSource,
         $matches,
     );
@@ -1298,7 +1326,7 @@ it('keeps field focus rings off range tracks and marks the focused thumb for key
         ->toContain('.sk-workbench input[type="range"]:focus-visible::-webkit-slider-thumb')
         ->toContain('.sk-workbench input[type="range"]:focus-visible::-moz-range-thumb')
         ->toContain('0 0 0 4px var(--color-active)')
-        ->not->toContain('button:not([role="tab"]), input, select, textarea');
+        ->not->toContain('button:not([role="tab"]):not(.sk-formula-row-control), input, select, textarea');
 });
 
 it('uses an underline active state and keyboard-only focus treatment for workbench tabs', function () {
@@ -1316,7 +1344,7 @@ it('uses an underline active state and keyboard-only focus treatment for workben
         ->toContain('color: var(--color-accent-strong) !important')
         ->toContain('background-color: var(--color-active);')
         ->toContain('height: 0.125rem')
-        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input), select, textarea, a, summary):focus-visible')
+        ->toContain('.sk-workbench :is(button:not([role="tab"]):not(.sk-formula-row-control), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input), select, textarea, a, summary):focus-visible')
         ->toContain('.sk-workbench [role="tab"]:focus-visible')
         ->toContain('outline: 1px solid var(--color-active);')
         ->toContain('outline-offset: 2px;')
@@ -1376,8 +1404,8 @@ it('keeps a disabled lock control visible until a new formula is saved', functio
         ->toContain('Save the product before locking it.')
         ->toContain('disabled')
         ->toContain('Lock product')
-        ->and(strpos($formulaHeader, 'Lock product'))
-        ->toBeLessThan(strpos($formulaHeader, 'More actions'));
+        ->not->toContain('Duplicate product')
+        ->not->toContain('More actions');
 });
 
 it('uses the shared compact button sizing for workbench actions', function () {
@@ -1387,7 +1415,7 @@ it('uses the shared compact button sizing for workbench actions', function () {
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     expect(substr_count($formulaHeader, 'sk-btn'))
-        ->toBeGreaterThanOrEqual(3)
+        ->toBeGreaterThanOrEqual(2)
         ->and($formulaHeader)
         ->not->toContain('class="rounded-lg px-5 py-3 text-sm font-semibold transition"')
         ->not->toContain('bg-transparent px-4 py-3 text-sm font-medium')
@@ -2216,7 +2244,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain(".sk-card {\n        border: 1px solid transparent")
         ->toContain('.sk-inset')
         ->toContain('border: 1px solid color-mix(in oklab, var(--color-line) 88%, var(--color-ink) 4%)')
-        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input), select, textarea, a, summary):focus-visible')
+        ->toContain('.sk-workbench :is(button:not([role="tab"]):not(.sk-formula-row-control), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control):not(.sk-input), select, textarea, a, summary):focus-visible')
         ->toContain('box-shadow: inset 0 0 0 1px')
         ->toContain('outline: none !important')
         ->not->toContain('outline-style: solid !important')
@@ -2232,7 +2260,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->toContain('sk-status-surface')
         ->toContain("'sk-tone-chemistry': card.tone === 'chemistry'")
         ->toContain("'sk-tone-info': card.tone === 'info'")
-        ->toContain('text-[var(--color-on-accent)]')
+        ->toContain('sk-btn-primary')
         ->and($formulaSettings)
         ->toContain('sk-tone-chemistry')
         ->toContain('sk-tone-info')
@@ -2252,7 +2280,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->toContain('sk-tone-catalog')
         ->toContain('text-[var(--color-on-accent)]')
         ->and($ingredientBrowserSource)
-        ->toContain('class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)]')
+        ->toContain('class="grid size-9 place-items-center rounded-full bg-[var(--color-button-primary)]')
         ->toContain('hover:bg-[var(--color-active-soft)]')
         ->and($reactionCore)
         ->toContain('sk-section-header-formula')
@@ -2263,8 +2291,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain('sk-tone-materials')
         ->not->toContain('bg-[var(--color-accent-soft)]')
         ->and($formulaDropTargets)
-        ->toContain('bg-[var(--color-active-soft)]')
-        ->toContain('text-[var(--color-active-strong)]')
+        ->toContain('sk-formula-drop-zone-active')
         ->not->toContain("isDropTarget('saponified_oils') ? 'bg-[var(--color-accent-soft)]")
         ->not->toContain("isDropTarget('additives') ? 'bg-[var(--color-accent-soft)]")
         ->not->toContain("isDropTarget(phase.key) ? 'bg-[var(--color-accent-soft)]")
@@ -2347,12 +2374,12 @@ it('collapses formula settings into a setup summary for soap and cosmetic benche
         ->toContain('transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none')
         ->not->toContain('x-transition.opacity')
         ->toContain('data-formula-settings-primary')
-        ->toContain('data-formula-settings-context')
+        ->not->toContain('data-formula-settings-context')
         ->toContain('mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs')
         ->toContain('min-w-0 break-words whitespace-normal')
-        ->toContain('filter(card => ! card.context)')
-        ->toContain('filter(card => card.context)')
-        ->toContain('class="mt-4"')
+        ->toContain("filter(card => ! card.context && card.id !== 'formula-entry')")
+        ->not->toContain('filter(card => card.context)')
+        ->toContain('class="mt-4 transition"')
         ->toContain("'sk-tone-summary': card.tone === 'neutral'")
         ->not->toContain('Calculation assumptions')
         ->not->toContain('sk-section-header')
@@ -2489,4 +2516,42 @@ it('uses category fallback tiles for both soap and cosmetic ingredient browsers'
             ->toContain('x-on:error="imageFailed = true"')
             ->not->toContain('ingredientCategoryCode(ingredient)');
     }
+});
+
+it('keeps global drag cleanup bubbling after row placement and pauses scrolling on blur', function (): void {
+    $workbenchSource = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
+    preg_match_all('/@(?:drop|dragend|blur)(?:\.[\w-]+)*="[^"]*"/', $workbenchSource, $cleanupBindings);
+
+    expect($cleanupBindings[0])->toBe([
+        '@drop.window="endRowDrag()"',
+        '@dragend.window="endRowDrag()"',
+        '@blur.window="stopRowDragScroll()"',
+    ]);
+});
+
+it('marks exact formula insertion boundaries without tinting data cells', function (): void {
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+    $cosmeticFormulaSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/cosmetic-formula.blade.php'));
+    $reactionCoreSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/reaction-core.blade.php'));
+    $postReactionSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/post-reaction.blade.php'));
+
+    foreach ([$cosmeticFormulaSource, $reactionCoreSource, $postReactionSource] as $source) {
+        expect($source)
+            ->toContain("'sk-formula-insertion-before': isDropTarget(")
+            ->toContain("'opacity-75': isDraggedRow(")
+            ->not->toContain("'opacity-60': isDraggedRow(")
+            ->toContain('@dragleave="leaveRowDropTarget($event)"')
+            ->not->toContain("'bg-[var(--color-active-soft)]': isDropTarget(");
+    }
+
+    expect($cosmeticFormulaSource)
+        ->toContain('sk-formula-drop-zone-active sk-formula-insertion-before')
+        ->not->toContain("'sk-formula-insertion-after':");
+    expect($reactionCoreSource)->toContain("'sk-formula-insertion-after': isDropTarget('saponified_oils') && rowIsLastDropTarget('saponified_oils', row.id)");
+    expect($postReactionSource)->toContain("'sk-formula-insertion-after': isDropTarget('fragrance') && rowIsLastDropTarget('fragrance', row.id)");
+    expect($appStylesSource)
+        ->toContain('.sk-workbench .sk-formula-insertion-before::before')
+        ->toContain('.sk-workbench .sk-formula-insertion-after::after')
+        ->toContain('height: 2px;')
+        ->toContain('pointer-events: none;');
 });

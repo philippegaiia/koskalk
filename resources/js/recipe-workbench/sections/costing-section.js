@@ -28,8 +28,18 @@ const convertCostingPrice = typeof convertMassPrice === 'undefined'
  */
 export function createCostingSection(payload) {
     const saves = { pending: false, promise: null };
+    let savedCostingState = null;
 
     return {
+        get isCostingSimulation() {
+            return this.isFormulaLocked;
+        },
+
+        get canAdjustCosting() {
+            return this.canEditRecipe && !this.isLoadingCosting
+                && (this.isCostingSimulation || !this.isEditingUnavailable);
+        },
+
         initializeCostingState() {
             this.applyCostingPayload(payload.costing ?? null);
         },
@@ -110,6 +120,27 @@ export function createCostingSection(payload) {
             }));
             this.packagingCatalog = costingPayload?.packaging_catalog ?? this.packagingCatalog ?? [];
             this.reconcileCostingPrices();
+            savedCostingState = {
+                costingOilWeight: this.costingOilWeight,
+                costingOilUnit: this.costingOilUnit,
+                costingUnitsProduced: this.costingUnitsProduced,
+                costingCurrency: this.costingCurrency,
+                costingPriceByRowId: { ...this.costingPriceByRowId },
+                packagingCostRows: this.packagingCostRows.map((row) => ({ ...row })),
+            };
+        },
+
+        resetCostingSimulation() {
+            if (!this.isCostingSimulation || !savedCostingState) {
+                return;
+            }
+
+            Object.assign(this, savedCostingState, {
+                costingPriceByRowId: { ...savedCostingState.costingPriceByRowId },
+                packagingCostRows: savedCostingState.packagingCostRows.map((row) => ({ ...row })),
+            });
+            this.costingSaveStatus = null;
+            this.costingSaveMessage = '';
         },
 
         reconcileCostingPrices() {
@@ -556,6 +587,12 @@ export function createCostingSection(payload) {
         },
 
         scheduleCostingSave() {
+            if (this.isCostingSimulation) {
+                this.costingSaveSeq++;
+
+                return;
+            }
+
             if (!this.hasCurrentFormula) {
                 this.costingSaveStatus = 'warning';
                 this.costingSaveMessage = this.t('costing.messages.save_product');
@@ -577,7 +614,7 @@ export function createCostingSection(payload) {
         },
 
         async persistCosting() {
-            if (!this.hasCurrentFormula) {
+            if (this.isCostingSimulation || !this.hasCurrentFormula) {
                 return false;
             }
 
@@ -590,6 +627,13 @@ export function createCostingSection(payload) {
             if (this.costingSaveTimer) {
                 clearTimeout(this.costingSaveTimer);
                 this.costingSaveTimer = null;
+            }
+
+            if (this.isCostingSimulation) {
+                saves.pending = false;
+                this.dirtyStateRegistry?.remove('recipe-costing');
+
+                return true;
             }
 
             if (saves.promise) {
@@ -613,7 +657,7 @@ export function createCostingSection(payload) {
                             saves.pending = false;
 
                             return persistCosting(this, this.costingSaveSeq);
-                        }, { allowLocked: true });
+                        });
                     } catch (error) {
                         response = { ok: false };
                     }

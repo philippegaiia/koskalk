@@ -1,8 +1,13 @@
-@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+@php
+    $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
+    $isPublicCalculator = $isPublicCalculator ?? false;
+    $canEditRecipe = $canEditRecipe ?? true;
+@endphp
 
 <div x-show="activeWorkbenchTab === 'formula'" role="tabpanel" aria-labelledby="tab-formula" id="panel-formula" class="space-y-6 pb-40 sm:pb-28">
  @include('livewire.dashboard.partials.recipe-workbench.formula-settings')
 
+ <fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="space-y-6 transition">
  <section
  aria-label="{{ __('workbench.tabs.formula') }}"
  class="grid min-w-0 gap-4 @5xl/workbench:grid-cols-[19rem_minmax(0,1fr)] @5xl/workbench:gap-6 @7xl/workbench:gap-8"
@@ -40,4 +45,5 @@
  </section>
  @include('livewire.dashboard.partials.recipe-workbench.formula-confirmation-modal')
  @include('livewire.dashboard.partials.recipe-workbench.formula-bottom-action-bar')
+ </fieldset>
 </div>

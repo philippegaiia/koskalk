@@ -183,7 +183,9 @@ it('renders the formula workbench with one save path and lock controls', functio
         ->assertSee('Product sheet')
         ->assertSee('Save')
         ->assertSee('Lock product')
-        ->assertSeeInOrder(['Save', 'Lock product', 'More actions'])
+        ->assertSeeInOrder(['Lock product', 'Duplicate product'])
+        ->assertDontSeeHtml('<span class="sr-only">More actions</span>')
+        ->assertDontSeeHtml('<p class="sk-eyebrow">Product details</p>')
         ->assertDontSee('Editable draft')
         ->assertDontSee('Save draft')
         ->assertDontSee('Save as reference formula')
@@ -408,7 +410,8 @@ it('locks and unlocks a formula', function () {
         ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
         ->assertSee('Unlock product')
-        ->assertSeeInOrder(['Unlock product', 'More actions']);
+        ->assertSeeInOrder(['Unlock product', 'Duplicate product'])
+        ->assertDontSeeHtml('<span class="sr-only">More actions</span>');
 
     $this->actingAs($user)
         ->post(route('recipes.unlock', $recipe), ['expected_revision' => (int) $recipe->fresh()->edit_revision])

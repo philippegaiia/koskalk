@@ -1,4 +1,5 @@
 import { serializeCosting, serializeDraft } from './payload';
+import { draftSignature } from './draft-signature';
 
 /**
  * Preview calls are best-effort for incomplete drafts, but validation failures
@@ -37,14 +38,15 @@ export async function refreshCalculationPreview(workbench) {
 
 /**
  * Save flows all share the same request contract: send the serialized draft,
- * apply an optional returned snapshot, and follow an optional redirect.
+ * apply an optional returned snapshot, and open a newly created formula.
  */
 export async function persistWorkbench(workbench, method) {
+    const opensNewRecipe = workbench.recipeId == null || method === 'duplicateFormula';
     workbench.isSaving = true;
     workbench.saveStatus = null;
     workbench.saveMessage = '';
     const draft = serializeDraft(workbench);
-    const submittedSignature = JSON.stringify(draft);
+    const submittedSignature = draftSignature(draft);
     const submittedContent = JSON.stringify(workbench.$wire?.data ?? null);
     const submittedCostingSequence = workbench.costingSaveSeq;
 
@@ -61,7 +63,7 @@ export async function persistWorkbench(workbench, method) {
         workbench.saveStatus = 'success';
         workbench.saveMessage = response.message ?? 'Formula saved.';
 
-        const changedDuringSave = JSON.stringify(serializeDraft(workbench)) !== submittedSignature
+        const changedDuringSave = draftSignature(serializeDraft(workbench)) !== submittedSignature
             || JSON.stringify(workbench.$wire?.data ?? null) !== submittedContent
             || workbench.costingSaveSeq !== submittedCostingSequence;
 
@@ -78,7 +80,7 @@ export async function persistWorkbench(workbench, method) {
         }
         workbench.recordEditingMutation?.(response);
 
-        if (response.redirect && !changedDuringSave) {
+        if (response.redirect && !changedDuringSave && opensNewRecipe) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
             const target = response.redirect + hash;
 

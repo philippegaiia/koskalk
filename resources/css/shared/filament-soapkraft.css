@@ -224,14 +224,14 @@
     }
 
     [data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined) {
-        --color-500: var(--color-accent);
+        --color-500: var(--color-button-primary);
 
-        background: var(--color-accent) !important;
+        background: var(--color-button-primary) !important;
         color: var(--color-on-accent) !important;
     }
 
     [data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined):hover {
-        background: var(--color-accent-hover) !important;
+        background: var(--color-button-primary-hover) !important;
     }
 
     .fi-btn:not(.fi-color):not(.fi-outlined),

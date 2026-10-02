@@ -88,7 +88,7 @@ Do not display recurring availability banners to someone who is merely viewing. 
 
 If another successful mutation changes the production revision, a page with pending input becomes stale. It cannot save or automatically adopt the new revision. Offer a deliberate reload, confirming before discarding input. Never merge or replace local actuals, notes, dates, output quantities or manual allocations as a side effect of polling.
 
-For a clean viewing page, refresh saved information without a dirty-state warning. Refresh the whole coherent view, including form defaults and its mounted revision; do not advance the revision alone while leaving old form values behind.
+For a clean viewing page, show the changed-production indication and offer Reload without claiming unsaved changes. As refined in implementation Task 9, refresh only on explicit Reload: replace the whole coherent view, including form defaults and its mounted revision. Never advance the revision alone while leaving old form values behind. Reload first prepares a server-owned snapshot without replacing the mounted baseline. The browser applies it only if no new draft or upload arrived, then accepts that exact receipt. Acceptance renders the prepared snapshot, rather than fetching a newer revision for older form values. Keep writes disabled if acceptance is unconfirmed; polling cannot resolve that ambiguity. New input after applying the prepared snapshot remains dirty against that snapshot.
 
 If the production is deleted, show that it is unavailable, stop editing attempts and retain any local unsaved input for inspection. Do not represent deletion as temporary availability.
 

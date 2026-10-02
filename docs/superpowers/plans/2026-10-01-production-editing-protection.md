@@ -140,11 +140,11 @@ The guard returns `value`, preserving existing public Action return types. The n
 
 **Files:** migration above; `app/Models/ProductionRun.php`; `tests/Support/ProductionEditingFixture.php`; `tests/Feature/ProductionEditingMigrationTest.php`. Existing regression: `ProductionRunNumberStorageTest.php`, `ProductionPlanningSchemaTest.php`, `ProductionTaskSchemaTest.php`.
 
-- [ ] **Step 1: Inspect structure and current factory conventions.**
+- [x] **Step 1: Inspect structure and current factory conventions.**
 
 Run `php85 artisan truss:export --format=llm --focus=production_runs --depth=1 --compact` and `php85 artisan truss:doctor`. Record relevant findings in the task notes; do not repair unrelated findings. Read the existing recipe-editing migration/round-trip test and production numbering integrity tests.
 
-- [ ] **Step 2: Add the fixture and failing round-trip test.**
+- [x] **Step 2: Add the fixture and failing round-trip test.**
 
 The fixture is a `Tests\Support\ProductionEditingFixture` class with this complete factory method and constructor:
 
@@ -182,7 +182,7 @@ it('preserves a production through an editing migration round trip', function ()
 
 Run `php85 -d memory_limit=2G vendor/bin/pest tests/Feature/ProductionEditingMigrationTest.php`. Expected RED: missing migration/storage/cast, not an unrelated fixture error.
 
-- [ ] **Step 3: Generate and implement the additive migration.**
+- [x] **Step 3: Generate and implement the additive migration.**
 
 Add `unsignedBigInteger('edit_revision')->default(0)` to `production_runs`. Add `edit_revision => integer` to its existing `casts()` method without making the property browser-fillable. Create storage with the following exact schemas:
 
@@ -216,7 +216,7 @@ Schema::create('production_edit_takeovers', function (Blueprint $table): void {
 
 **Files:** `app/Services/ProductionEditingService.php`; `tests/Feature/ProductionEditingServiceTest.php`. Read `RecipeEditingService`, `WorkspaceWriteLock`, `WorkspaceAuthorization`, `ProductionBenchAccess` and merged services rules before coding.
 
-- [ ] **Step 1: Add behavioral tests before the service.**
+- [x] **Step 1: Add behavioral tests before the service.**
 
 ```php
 it('reads without reserving and blocks a genuine second owner tab', function (): void {
@@ -247,7 +247,7 @@ Add named datasets for these distinct boundaries: Owner/Admin/Editor acquire, Vi
 
 Run the service test; expected RED for missing service.
 
-- [ ] **Step 2: Implement the service API and lock boundary.**
+- [x] **Step 2: Implement the service API and lock boundary.**
 
 Use these exact public methods and return the status contract above:
 
@@ -302,7 +302,7 @@ Use Recipe Bench's active/owns/hash behavior with `production_run_id` and `hash_
 
 **Files:** context/result/scope classes from the contracts; `app/Services/ProductionMutationGuard.php`; `tests/Feature/ProductionEditingMutationTest.php`.
 
-- [ ] **Step 1: Prove rollback, stale rejection and no-op behavior.**
+- [x] **Step 1: Prove rollback, stale rejection and no-op behavior.**
 
 Add this complete `lease()` method to the fixture. Do not auto-refresh a context before a tested stale write.
 
@@ -342,7 +342,7 @@ Additional independent tests: null context rejected with no callback; wrong cont
 
 Run the mutation test; expected RED for missing guard/context.
 
-- [ ] **Step 2: Implement the native context/result, scope and guard.**
+- [x] **Step 2: Implement the native context/result, scope and guard.**
 
 Use this complete scope class. It never appears in public Livewire properties, HTTP input or serialized replies. Existing internal helpers require this object instead of optional booleans or ambient globals. It proves an enclosing root command and does not increment revisions itself.
 
@@ -476,7 +476,7 @@ Temporary acquisition inside this transaction may reuse the service's root lock 
 
 Also modify `app/Services/Production/ProductionCompletionService.php` and `ProductionRunNumberService.php` where workspace locking is centralized.
 
-- [ ] **Step 1: Add one stale/blocked entry test per command family.**
+- [x] **Step 1: Add one stale/blocked entry test per command family.**
 
 For each Action, extend its existing realistic fixture with an explicit editing context. Use that fixture's valid command input, advance the production revision through a competing temporary guard command, then submit the original context. Assert `production_editing` or `production_revision` errors and unchanged production/child/stock/accounting rows. Include direct `ProductionCompletionService::complete()` and `GenerateProductionTasks::handle()` so a service call cannot bypass protection. Missing-context calls must fail too. Existing authorization tests keep their asserted role refusal; check fresh authority before revealing lease/revision state.
 
@@ -495,7 +495,7 @@ it('blocks cancellation from a second tab without changing cancellation evidence
 
 Run the new entry tests and their containing regression file; expected RED because old Actions ignore/reject the editing argument or still write.
 
-- [ ] **Step 2: Move the existing domain transaction body beneath the guard.**
+- [x] **Step 2: Move the existing domain transaction body beneath the guard.**
 
 Append context to `handle()`; inject guard; replace the outer `DB::transaction` with guard `run()`. Use the supplied fresh actor/workspace/locked production rather than a stale passed model or reversed lock acquisition. Preserve existing validation and bcmath calculations. For a callback returning existing value, wrap that value in `ProductionMutationResult` and report only actually changed IDs.
 
@@ -527,7 +527,7 @@ For internal task generation and default calculated actuals, add required `Produ
 
 Replace guarded workspace lock calls with `WorkspaceWriteLock`; remove task/production-before-workspace root locks. Number settings, stock lots and children are locked after the already locked production set. No transaction isolation change. Preserve idempotency: a preparation replay returns its recorded result without new stock effects, and reports no new changed IDs; it must not bypass ownership/revision validation merely because it is a replay.
 
-- [ ] **Step 3: Update existing test callers explicitly.** Add context only for guarded existing-production operations. Keep new-record and unrelated inventory/purchasing setup unchanged. After a test's successful write, construct its next context from that command's acknowledged revisions; never silently acquire/rebase inside the Action. Do not delete or weaken existing assertions.
+- [x] **Step 3: Update existing test callers explicitly.** Add context only for guarded existing-production operations. Keep new-record and unrelated inventory/purchasing setup unchanged. After a test's successful write, construct its next context from that command's acknowledged revisions; never silently acquire/rebase inside the Action. Do not delete or weaken existing assertions.
 
 - [ ] **Step 4: Verify and checkpoint.** Run `ProductionEditingMutationTest.php`, `ProductionExecutionTest.php`, `ProductionPlanningTest.php`, `ProductionCalculatedMaterialsTest.php`, `ProductionStockPreparationTest.php`, `ProductionRunBatchNumberingTest.php`, `ProductionRunNumberStorageTest.php`, `ProductionDeleteAuthorizationTest.php`, `ProductionWorkspaceAuthorizationTest.php`. Expect PASS with identical domain/stock results and new revision checks. Pint and commit `feat: protect production lifecycle and stock commands`.
 
@@ -535,7 +535,7 @@ Replace guarded workspace lock calls with `WorkspaceWriteLock`; remove task/prod
 
 **Files:** `app/Actions/Production/{AssignProductionTask,CompleteProductionTask,ReopenProductionTask,RescheduleProductionTask,ResetProductionTaskDate,ReleaseOutputLot,IssueFinishedGoods}.php`; `ProductionEditingMutationTest.php`; existing task/output execution regressions.
 
-- [ ] **Step 1: Add direct-call tests.**
+- [x] **Step 1: Add direct-call tests.**
 
 Use task factory with the same workspace and production explicitly. Check a task-only write increments the parent; unchanged assignee/date retains revision; missing/wrong context does not alter the child. A completed production still allows the already supported completion/reopen behavior; assignment retains its existing terminal restriction. For output, create a completed production and linked output lot using the existing execution fixture; verify stale/blocked calls neither change handling status nor add stock movements.
 
@@ -552,7 +552,7 @@ it('advances the production revision for a task completion', function (): void {
 
 Run this test; expected RED for missing guard/revision acknowledgement.
 
-- [ ] **Step 2: Resolve the durable production parent and guard before locking children.**
+- [x] **Step 2: Resolve the durable production parent and guard before locking children.**
 
 Use this task lookup inside each guarded callback after deriving the hint parent without a lock and requiring its ID in the editing context:
 
@@ -577,7 +577,7 @@ Use this for task Actions after computing normalized before/after values. Output
 
 **Files:** journal Action, two Inventory document Actions, backfill Action/command; `ProductionEditingDocumentsTest.php`, `ProductionEditingMaintenanceTest.php`. Existing `ProductionDocumentAttachmentTest.php`, `ProductionFormulaSnapshotBackfillTest.php`, receipt tests.
 
-- [ ] **Step 1: Add distinct production/receipt and maintenance tests.**
+- [x] **Step 1: Add distinct production/receipt and maintenance tests.**
 
 Production attach/detach/journal writes require context and bump parent once; duplicate attachment changes nothing; Editor cannot detach despite owning lease; wrong-parent document IDs do not detach another production's evidence. Receipt attachment/detachment requires its existing permissions and no production context. An upload that finishes after lease loss rolls back unreferenced media and attaches nothing. Backfill skips an active lease, reports busy separately, increments exactly once for a missing snapshot write, and leaves completed-snapshot no-ops unchanged.
 
@@ -594,7 +594,7 @@ it('skips an actively edited snapshot backfill without invalidating the page', f
 
 Preserve the Action's boolean return; add a separate command-side busy classification before calling it, and recheck inside the Action. Do not reinterpret `false` as a completed snapshot. Run the new tests; expect RED for the active-lease skip/context requirements.
 
-- [ ] **Step 2: Implement only the production document branch.**
+- [x] **Step 2: Implement only the production document branch.**
 
 `AttachProductionDocument::handle()` appends optional native context. If `$documentable instanceof ProductionRun`, call the guard and resolve the current parent, asset and duplicate attachment inside it. Validate asset ready/type/workspace from fresh rows. Existing first-or-create result uses `$document->wasRecentlyCreated` to report changed IDs. The receipt branch retains its current flow and does not enter a production guard.
 
@@ -610,7 +610,7 @@ Backfill first uses `WorkspaceWriteLock`, then locks production. If `isActivelyR
 
 **Files:** request/controller/routes above; `ProductionEditingReleaseTest.php`.
 
-- [ ] **Step 1: Add HTTP behavior tests.**
+- [x] **Step 1: Add HTTP behavior tests.**
 
 Acquire two productions under one token and POST their public UUIDs. Verify release of only those leases, no revisions/stock changes, idempotent retry and unchanged unrelated lease. Cover guest authentication, malformed token/UUID, duplicate IDs, >100 IDs, foreign workspace, Viewer downgrade, cancelled Bench, revoked access, unknown/deleted IDs and late old-token release after takeover. Use atomic response assertions, not whole-payload comparisons.
 
@@ -624,7 +624,7 @@ $this->assertDatabaseMissing('production_edit_leases', ['production_run_id' => $
 
 Run the release test; expected RED for missing route.
 
-- [ ] **Step 2: Generate request/controller and add the route before the catch-all production detail route.**
+- [x] **Step 2: Generate request/controller and add the route before the catch-all production detail route.**
 
 Request `authorize()` returns authenticated-user presence. `rules()` is:
 
@@ -652,7 +652,7 @@ Keep it inside the existing authenticated/verified Production Bench web group an
 
 **Files:** `resources/js/production-editing.js`, `production-editing-draft.js`, app registration; two `.test.mjs` files and Pest process bridge. Read the current Recipe Bench editing/departure tests; reuse behavior, not its recipe-specific revision fields.
 
-- [ ] **Step 1: Add Node tests using fake time, deferred promises and EventTarget.**
+- [x] **Step 1: Add Node tests using fake time, deferred promises and EventTarget.**
 
 Test these observable states: init never acquires; begin blocks second tab; save/poll/heartbeat share one serial queue; failed save retains draft; successful acknowledgement clears only its submitted group; newer input during Save stays dirty; no-op save is clean; watcher does not auto-acquire; former holder safe reacquires only matching baseline; stale/blocked/deleted stops writes and preserves input; focus/visibility stop renewal, not release.
 
@@ -676,7 +676,7 @@ Departure matrix: cancelled `livewire:navigate`/`beforeunload`/blur sends nothin
 
 Run `node --test tests/Unit/production-editing.test.mjs tests/Unit/production-editing-draft.test.mjs`. Expected RED for missing modules.
 
-- [ ] **Step 2: Implement draft state as a small independent module.**
+- [x] **Step 2: Implement draft state as a small independent module.**
 
 ```js
 export function createProductionDraft(initial) {
@@ -712,7 +712,7 @@ export function createProductionDraft(initial) {
 
 This plain serialization applies only to small bounded form groups, not files/DOM/stock previews. File upload dirty state is tracked separately and never serialized. Canonical decimal/date values must use the same normalized shape in current/saved groups; sort dynamic map keys before initialization/set so key ordering cannot create phantom dirtiness.
 
-- [ ] **Step 3: Implement the coordinator with one closure-owned runtime.**
+- [x] **Step 3: Implement the coordinator with one closure-owned runtime.**
 
 Export `createProductionEditing(payload, environment = {})`; environment accepts document/window/fetch/setInterval/clearInterval for deterministic tests. Returned Alpine object exposes `init()`, `destroy()`, `begin()`, `finish()`, `poll()`, `runCommand(method, args, group)`, `takeover(reason)`, `reload()`, `restore()` and reactive `state`, `busy`, `stale`, `unavailable`, `owns`, `canWrite`, `message`, `draft`.
 
@@ -734,7 +734,7 @@ const enqueue = operation => {
 };
 ```
 
-Mounted payload contains server-generated Locked token, public IDs, mounted revisions, read-only initial state, draft groups and release URL. `init()` installs listeners and a 15-second interval but never calls begin. Visible+focused ownership calls heartbeat; visible waiting editor calls status; ordinary clean viewer may refresh saved snapshot without displaying availability warnings. Hidden/unfocused pages do neither. No `.window` lifecycle handler closes over a nested scope's private runtime.
+Mounted payload contains server-generated Locked token, public IDs, mounted revisions, read-only initial state, draft groups and release URL. `init()` installs listeners and a 15-second interval but never calls begin. Visible+focused ownership calls heartbeat; visible waiting editor calls status. An ordinary clean viewer receives a changed-production indication without an unsaved-input claim; explicit Reload refreshes its coherent snapshot as specified in Task 9. Hidden/unfocused pages do neither. No `.window` lifecycle handler closes over a nested scope's private runtime.
 
 Independent departure release uses this body and request, with the browser's matching page token:
 
@@ -751,7 +751,7 @@ const sendRelease = () => fetch(payload.releaseUrl, {
 
 `depart()` sets departing/generation before releasing, clears ownership, stops interval, deduplicates release, and stores whether it was a former holder. Calls already in flight check generation before applying state; an acquired reply after departure forces a fresh release after the first promise rather than being swallowed by deduplication. Native pagehide releases even when `persisted`; pageshow restoration retains draft, waits for releases then resets the queue generation and checks status before possible former-holder reacquisition. Network/CSRF failure leaves expiry as fallback and never restores ownership by assumption.
 
-`runCommand()` captures the named group's submitted draft when its queued operation starts; sends it to the appropriate server Action method, requires a successful explicit acknowledgement, advances only acknowledged revisions, and acknowledges only that group's canonical reply. A stale/lease failure does not clear the group. Other groups stay dirty. Destructive domain controls retain their existing confirmations before enqueueing. Finish/reload confirms discard if any group/upload is dirty; cancelling changes nothing. Takeover is explicit and passes a required reason, not an automatic retry.
+`runCommand()` captures the named group's submitted draft when the command is requested, before waiting in the queue; sends it to the appropriate server Action method, requires a successful explicit acknowledgement, advances only acknowledged revisions, and acknowledges only that group's canonical reply. A stale/lease failure does not clear the group. Other groups stay dirty. Destructive domain controls retain their existing confirmations before enqueueing. Finish/reload confirms discard if any group/upload is dirty; cancelling changes nothing. Takeover is explicit and passes a required reason, not an automatic retry.
 
 Register in `resources/js/app.js`:
 
@@ -760,7 +760,7 @@ import { createProductionEditing } from './production-editing';
 window.productionEditing = createProductionEditing;
 ```
 
-- [ ] **Step 4: Add this existing-style Pest Node bridge.** No browser dependency and no source-string-only substitute for behavior.
+- [x] **Step 4: Add this existing-style Pest Node bridge.** No browser dependency and no source-string-only substitute for behavior.
 
 ```php
 it('preserves production drafts and releases reservations on confirmed departure', function (): void {
@@ -778,7 +778,7 @@ it('preserves production drafts and releases reservations on confirmed departure
 
 **Files:** concern, `ProductionDetail.php`, detail Blade, status component; `ProductionEditingDetailTest.php`; existing detail/presenter tests.
 
-- [ ] **Step 1: Add Livewire tests before enabling controls.**
+- [x] **Step 1: Add Livewire tests before enabling controls.**
 
 ```php
 it('opens a production without reserving and requires explicit editing', function (): void {
@@ -792,9 +792,9 @@ it('opens a production without reserving and requires explicit editing', functio
 });
 ```
 
-Add tests for same-session successive saves, dirty state after failed save, stale poll preserving actuals/journal/date state, clean snapshot refresh updating forms and revision together, deletion unavailable, Locked identity/token/revision tampering, fresh workspace authority, same-workspace wrong-production task/document ID and post-completion valid operations. Call public write methods without begin and verify server refusal even if controls are bypassed.
+Add tests for same-session successive saves, dirty state after failed save, stale poll preserving actuals/journal/date state, explicit clean snapshot reload updating forms and revision together, deletion unavailable, Locked identity/token/revision tampering, fresh workspace authority, same-workspace wrong-production task/document ID and post-completion valid operations. Call public write methods without begin and verify server refusal even if controls are bypassed.
 
-- [ ] **Step 2: Implement the concern's Locked state and methods.**
+- [x] **Step 2: Implement the concern's Locked state and methods.**
 
 ```php
 #[Locked] public array $editingProductionIds = [];
@@ -821,11 +821,11 @@ return [
 
 Detail `productionId` becomes `#[Locked]`. Narrow `task()` with `->where('production_run_id', (int) $this->productionId)` and document lookup similarly. Every Task 4–6 caller passes the **same** locally constructed context used to collect the command receipt. Keep original workspace hydration guard.
 
-For draft-carrying methods such as Save actuals, accept an explicit submitted group array, normalize/validate through the current Action rules, and do not overwrite Livewire draft properties from a poll or save response. Return canonical rows renderlessly; client applies them only if its group generation is unchanged. Keep a separate presentation refresh for committed tables that does not reinitialize dirty form groups.
+For draft-carrying methods such as Save actuals, accept an explicit submitted group array, normalize/validate through the current Action rules, and do not overwrite Livewire draft properties from a poll or save response. Return canonical rows renderlessly; client applies them only if its group generation is unchanged. Keep a separate presentation refresh for committed tables that does not reinitialize dirty form groups. A failed refresh must preserve the acknowledged save result, saved baseline and editing access, with separate translated display feedback. Lifecycle request failures resolve to handled results with visible feedback instead of rejecting event-handler promises.
 
-The detail snapshot loader initializes these groups together with its revision: actual rows/calculated rows; planning date/location; completion quantity/mode/ingredient/manufacture/ready dates; task dates; cancellation reason; abort reason; finished-goods issue fields; journal body; document note. File input remains local dirty state. A clean reload fetches production and its children in one coherent readonly transaction, guarded by the workspace/parent lock order without the write MVCC fence. It updates both forms and baseline only on explicit clean reload or client-confirmed discard.
+The detail snapshot loader initializes these groups together with its revision: actual rows/calculated rows; planning date/location; completion quantity/mode/ingredient/manufacture/ready dates; task dates; cancellation reason; abort reason; finished-goods issue fields; journal body; document note. File input remains local dirty state. A clean reload fetches production and its children in one coherent readonly transaction, guarded by the workspace/parent lock order without the write MVCC fence. It updates both forms and baseline only on explicit clean reload or client-confirmed discard. `reloadProductionEditing()` prepares a Locked receipt without changing mounted revisions or drafts. The client rejects it if input or an upload arrived during preparation; otherwise it applies the exact groups and revisions before calling `acceptProductionReload(receiptId)`. Acceptance rechecks access and availability, adopts and renders that prepared snapshot, and consumes the receipt. A newer intervening database revision remains stale. Input arriving during acceptance stays dirty; unconfirmed acceptance disables writes through later polls until an explicit retry succeeds. Deliberate upload discard is client-owned; acceptance must not clear a newer upload.
 
-- [ ] **Step 3: Attach compact controls and route commands through the coordinator.**
+- [x] **Step 3: Attach compact controls and route commands through the coordinator.**
 
 Root `x-data="productionEditing(@js($editingPayload))"` receives original payload and shared closure. Keep unrelated modal visibility in the same Alpine object's presentation properties or an explicitly nested scope without shadowing coordinator state. The server `$mutationLocked` includes lack of reservation; client disabled state additionally uses `!canWrite || busy`.
 
@@ -849,7 +849,7 @@ Replace mutation `wire:click`, `wire:submit`, immediate task `wire:change` with 
 
 **Files:** `StockPreparation.php`, its Blade; `ProductionEditingStockPreparationTest.php`; existing two preparation test files.
 
-- [ ] **Step 1: Add group UI/server tests.** Mount is preview and creates no lease; begin acquires exact selected group; malformed/foreign/101 IDs reject before preview generation; one held or stale selected production acquires none. A late stock change fails confirmation while retaining manual draft. A successful group confirmation validates all matching leases/revisions before creating any stock reservation/number and retains existing redirect. A new single- or multi-production page never automatically claims the old detail token.
+- [x] **Step 1: Add group UI/server tests.** Mount is preview and creates no lease; begin acquires exact selected group; malformed/foreign/101 IDs reject before preview generation; one held or stale selected production acquires none. A late stock change fails confirmation while retaining manual draft. A successful group confirmation validates all matching leases/revisions before creating any stock reservation/number and retains existing redirect. A new single- or multi-production page never automatically claims the old detail token.
 
 ```php
 $page = \Livewire\Livewire::actingAs($fixture->owner)->withQueryParams(['ids' => $first->id.','.$second->id])
@@ -862,7 +862,7 @@ $this->assertDatabaseCount('production_edit_leases', 2);
 
 Run new preparation tests; expected RED for absent editing state and preview controls.
 
-- [ ] **Step 2: Bind the original group and manual allocation draft.** Make `productionIds` and `idempotencyKey` Locked. Normalize and validate original selection at mount with max100, authorize every selected record before computing proposals, then initialize concern state once. Never render a silently truncated group. Delete/unavailable states render readable pending allocations and an explicit selection/reload action instead of replacing them or repeatedly crashing renders.
+- [x] **Step 2: Bind the original group and manual allocation draft.** Make `productionIds` and `idempotencyKey` Locked. Normalize and validate original selection at mount with max100, authorize every selected record before computing proposals, then initialize concern state once. Never render a silently truncated group. Delete/unavailable states render readable pending allocations and an explicit selection/reload action instead of replacing them or repeatedly crashing renders.
 
 Bind `manualMode` and `manualQuantities` to one local `allocations` draft group. `toggleManual` affects draft only. Existing proposal rendering remains a stock preview. **Edit allocations** calls concern begin; confirmation passes context and current submitted manual allocation snapshot to `PrepareProductionStock`. Retain existing lot eligibility, locked availability, material units and idempotency validation. On success acknowledge changed revisions before redirect so late replies can release the right group; on failure retain manual values and valid ownership.
 
@@ -885,9 +885,9 @@ Validate submitted requirements belong to the **selected productions**, not mere
 
 **Files:** `ProductionIndex.php`, `TaskIndex.php`, corresponding views; `ProductionEditingRegistersTest.php`; existing index/task/numbering page tests.
 
-- [ ] **Step 1: Add displayed-revision and temporary-lease tests.** Verify a list action rejects an active same-user other-tab lease and a stale rendered revision without touching rows; reading/filtering/selecting creates no lease. A successful standalone assignment creates no enduring lease and updates row+revision together. A scheduling modal retains its opening revision despite later list refresh. Bulk numbering acquires/writes all-or-nothing while retaining already-numbered no-ops and counter integrity.
+- [x] **Step 1: Add displayed-revision and temporary-lease tests.** Verify a list action rejects an active same-user other-tab lease and a stale rendered revision without touching rows; reading/filtering/selecting creates no lease. A successful standalone assignment creates no enduring lease and updates row+revision together. A scheduling modal retains its opening revision despite later list refresh. Bulk numbering acquires/writes all-or-nothing while retaining already-numbered no-ops and counter integrity.
 
-- [ ] **Step 2: Keep server-owned displayed and modal baselines.**
+- [x] **Step 2: Keep server-owned displayed and modal baselines.**
 
 Add Locked bounded displayed revision maps alongside each rendered page. Initialize on mount/explicit list refresh/page change, not blindly in every render after a failed command. A modal has its own Locked production ID and opening revision copied when it opens; list refresh never updates it. Action task IDs must exist in the rendered/authorized selection and their durable production parent supplies the revision key. Do not accept arbitrary browser-provided expected revisions.
 
@@ -910,9 +910,9 @@ Pass it to each list mutation, preserving current manager/role and lifecycle res
 
 **Files:** `lang/en/production_bench.php`, six-locale catalogue JSON; `ProductionBenchLocalizationTest.php`; new view/client tests. Existing catalogue `production_bench => ['*']` needs no duplicate registration.
 
-- [ ] **Step 1: Add translation and copy behavior assertions.** Verify catalogue contains every new English key and de/es/fr/it/nl/pt_BR values, placeholders match, and holder-name copy is escaped. Clean saved viewer has no unsaved-draft sentence; repeated blocked polls update one existing status and produce no toast. Use existing catalogue test utilities rather than a new exporter script.
+- [x] **Step 1: Add translation and copy behavior assertions.** Verify catalogue contains every new English key and de/es/fr/it/nl/pt_BR values, placeholders match, and holder-name copy is escaped. Clean saved viewer has no unsaved-draft sentence; repeated blocked polls update one existing status and produce no toast. Use existing catalogue test utilities rather than a new exporter script.
 
-- [ ] **Step 2: Add this exact English subtree and catalogue rows.**
+- [x] **Step 2: Add this exact English subtree and catalogue rows.**
 
 ```php
 'editing' => [
@@ -951,7 +951,7 @@ Provide natural translations for all six existing catalogue locales, matching it
 
 **Files:** `ProductionEditingPostgresConcurrencyTest.php`; extend `tests/Support/FormulaSharePostgresRace.php` only if its current bounded race helper needs a reusable production scenario. Reuse its guarded disposable-database setup rather than introducing an unsafe reset path.
 
-- [ ] **Step 1: Add real concurrent-session tests with barriers, not timing guesses.**
+- [x] **Step 1: Add real concurrent-session tests with barriers, not timing guesses.**
 
 Use the existing `Tests\Support\FormulaSharePostgresDatabase` identity gate and `FormulaSharePostgresRace` process/join helper. This test file does not use SQLite `RefreshDatabase` or silently claim skipped tests as proof. It runs only with `VERIFY_FORMULA_SHARING_POSTGRES=true` and `FORMULA_SHARING_POSTGRES_DATABASE=koskalk_formula_sharing_test_YYYYMMDD`, matching `current_database()` and `TestDatabaseSafety`. Use an explicitly disposable database already approved for these tests. Never point the helper at Herd's working database.
 
@@ -971,11 +971,11 @@ Cases and persisted assertions:
 
 Add a separate assertion that workspace business `updated_at` is identical before/after the fencing no-op, and failed/retried commands acknowledge no uncommitted revision. Reset/join child sessions using the existing helper's cleanup even on assertion failure.
 
-- [ ] **Step 2: Run concurrency tests and report actual execution.**
+- [x] **Step 2: Run concurrency tests and report actual execution.**
 
 Run with the existing authorized disposable PostgreSQL environment and `php85 -d memory_limit=2G vendor/bin/pest tests/Feature/ProductionEditingPostgresConcurrencyTest.php tests/Feature/FormulaSharePostgresIsolationTest.php`. Expected PASS, **zero skips** for the requested PostgreSQL cases. If no disposable database is available, report this verification as pending and obtain the missing test-environment authorization rather than resetting another database. Preserve existing sharing/Recipe Bench isolation behavior.
 
-- [ ] **Step 3: Run the narrow integrated suite once after the complete rollout.**
+- [x] **Step 3: Run the narrow integrated suite once after the complete rollout.**
 
 ```bash
 php85 -d memory_limit=2G vendor/bin/pest tests/Feature/ProductionEditingMigrationTest.php tests/Feature/ProductionEditingServiceTest.php tests/Feature/ProductionEditingReleaseTest.php tests/Feature/ProductionEditingMutationTest.php tests/Feature/ProductionEditingDetailTest.php tests/Feature/ProductionEditingStockPreparationTest.php tests/Feature/ProductionEditingRegistersTest.php tests/Feature/ProductionEditingDocumentsTest.php tests/Feature/ProductionEditingMaintenanceTest.php tests/Feature/ProductionEditingClientTest.php
@@ -1017,4 +1017,43 @@ Exercise tasks, journal, output release and stock allocation group; introduce a 
 
 Before execution, retain the spec's production-wide scope and the existing page UX decisions. Before completion, inspect every `handle()`/`complete()` call site for the listed mutation families, including tests and internal services: no missing context may become a silent fallback, no public helper may accept a browser trust flag, and no child-only mutation may omit the parent revision. Check that group ID bounds apply before expensive proposal generation and that acknowledgement maps are recorded only after a transaction succeeds.
 
-This plan completes the design-to-plan stage. Application implementation starts only after the execution handoff.
+## Execution record — 2026-10-01
+
+**Final follow-up verification — 2026-10-02:** Philippe authorized the remaining small cleanup and coverage. Assign/Complete task workspace errors now use the existing translation key. Removed unused aliases in four task actions and Reopen's redundant post-null-check type guard. Renamed the public-ID visibility test to describe its rendered-text assertion. The production register now says Refresh productions, with the new key in English and all six catalogue locales. Added explicit coverage proving production B remains available and acquirable while production A is leased. The existing prepare/adopt/accept reload contract remains unchanged.
+
+Fresh affected verification passed **141 tests / 1,238 assertions**. A new PostgreSQL migration round-trip test passed **1 test / 15 assertions** against the identity-checked disposable `koskalk_formula_sharing_test_20261001_production` database: production history, indexes, constraints and triggers survive down/up, and the editing tables are recreated with their original definitions. The working database was not reset. Fresh full suite under `LANG=en_US.UTF-8` passed **4,659 tests, 66 skipped, 72,891 assertions** in 211.17 seconds, exit 0. This supersedes the outstanding full-suite and PostgreSQL migration checks recorded below; the PostgreSQL-only test skips in the default SQLite suite and was verified separately. Pint, whitespace checks and Graphify passed. No build, translation import, commit, push or deployment occurred; browser verification remains with Philippe.
+
+**Register/task follow-up — 2026-10-02:** After evaluating both follow-up reviews, Philippe authorized visible translated register-request failure feedback and restored task-domain errors. Rejected register promises return safely and display a warning to reload/check the result before retrying; both register templates supply the localized message. All five task actions validate the scoped durable parent before the guard and check the task again under the production lock. Deleted/foreign tasks and a task disappearing inside the guarded transaction have regression coverage. Added default-suite authority-change checks and coverage of the already-correct definitive unavailable-reload branch. The existing coherent reload receipt design is retained. Fresh affected verification passed **180 tests / 1,458 assertions**, plus **45 direct Node tests**. Full-suite and PostgreSQL migration round-trip verification remain pending; use `LANG=en_US.UTF-8 php85 artisan test --compact` for the complete suite. No build, translation import, commit, push or deployment occurred.
+
+**Final review update — 2026-10-02:** Philippe accepted manual browser verification after the computer-use failures. Independent standards review found no actionable defect; spec/client review reproduced and corrected task-date acknowledgements clearing rejected sibling input, a queued-date race clearing newer input, and the legacy Intermediate selector remaining hidden. Task commands capture input before waiting in the queue and acknowledge the individual target while refreshing only clean sibling dates. Legacy output selection now follows the local draft and requires its ingredient. All new regressions failed before their corrections. Independent re-review found no remaining concrete issue; the final affected run passed **149 tests / 1,135 assertions**, with **27 Node tests** passing directly. Pint, whitespace checks and Graphify passed. These narrow corrections do not change ownership, revisions or transaction locking; the earlier PostgreSQL evidence remains applicable. The previously recorded full-suite result predates these corrections; request a full-suite rerun before release. Task 9's explicit coherent Reload contract is now consistent across this plan and its design. Browser cases remain handed to Philippe, not claimed verified. No build, translation import, commit, push or deployment occurred. Other agents' unrelated files remain untouched and unstaged.
+
+Tasks 1–12 are implemented inline on main, including existing-production callers, native helper scopes, detail/stock editors, register shortcuts and all six catalogue locales. Verification/checkpoint boxes above retain their pending commit step; no checkpoint or integrated commit was made during implementation. Other agents' formula-sharing work and unrelated memory/export-plan files remain intact.
+
+Verification completed:
+
+- Integrated production, Recipe Bench and sharing regression run: 592 passed, 9 environment-dependent skips, 3,082 assertions. This final run includes the bounded-command additions and scheduling modal queue contract; raw groups of 101 entries reject before deduplication or stock/numbering work.
+- PostgreSQL: 11 production concurrency cases passed (59 assertions), plus 3 existing sharing-isolation cases (12 assertions), zero skips. Each file ran in a separate process against `koskalk_formula_sharing_test_20261001_production`; the working database and the other agent's disposable database were never reset. The sharing fence race covers two productions under READ COMMITTED against a REPEATABLE READ sharing writer, and preserves the workspace business timestamp.
+- Node: 15 draft/coordinator/register tests passed, including newer input, lifecycle defaults, pending uploads, CSRF departure, network failure, restoration and serialized scheduling-modal/register submissions. Pest executes the same Node tests through its process bridge.
+- Pint fixed formatting; `git diff --check` clean; `graphify update .` completed.
+- Applied only `2026_10_01_120000_add_production_editing_protection.php` to Herd's local database. Truss confirms `production_runs.edit_revision`, `production_edit_leases` and `production_edit_takeovers`; its cumulative diff also includes the other agent's pre-existing sharing tables and ingredient lineage column.
+
+Implementation refinements from final review: location assignment has a separate draft group from the planned date; Start returns its own transaction's canonical actuals defaults and updates only clean groups; same-date rescheduling preserves reserved stock as a no-op; identical actuals preserve timestamps and attribution; lease expiry also rolls back deletion; internal date/rescaling helpers require a live command scope.
+
+Follow-up verification found two outdated contextual-help tests: the shared-formula work adds three registered topics (96 total), and stock preparation must open a scheduled production rather than an empty selection. Both fixtures were updated without removing their publication assertions. The browser walkthrough also found unescaped Filament extra Alpine attributes truncating date-picker watchers; the values are now explicitly escaped, with a parsed-DOM regression test. The 53 focused help/date/task checks passed, and the 10 detail tests passed again after Pint.
+
+Browser verification in the existing Philippe Comet profile confirmed read-only opening, disabled date/task controls, explicit Edit enabling controls, and Save retaining editing ownership. The second browser profile could not be inspected because the computer-use server returned a ScreenCaptureKit audio/video capture failure, so the two-profile walkthrough remains pending. The fresh full suite passed after the corrections: 4,602 passed, 65 environment-dependent skips, 72,163 assertions (215.23 seconds). Complete the remaining walkthrough before the integrated commit/push. No local build, translation import, commit, push or deployment was performed.
+
+Philippe subsequently confirmed the editing flow works smoothly in his walkthrough. The approved visibility adjustment retains the status row's position, gives Finish editing the same outlined button as Resume editing, and adds a compact Viewing/Editing/current-holder badge. Active ownership uses the existing soft success colors; longer notices remain below. All six catalogue locales include the three new labels. The 23 affected detail, stock, client and localization tests passed (524 assertions); Pint and whitespace checks passed. No build or editing behavior change was introduced.
+
+The date/attachment follow-up labels the existing scheduled or reserved production action Save production date, while initial draft scheduling retains Plan production. A compact Unsaved changes badge and explicit Discard changes confirmation distinguish pending input from releasing editing access. File attachment readiness follows the Livewire upload property and upload lifecycle events; uploading, ready and failed feedback are translated in English and all six catalogue locales. Uploads block premature attachment and finishing, deliberate discard clears the temporary upload, and allocation pages never inspect a missing upload property. The queued backend attachment test uses a real image upload and verifies success plus retention of rejected evidence after a revision change. The 28 affected detail/document/client/localization/stock tests passed (640 assertions), including the Node process bridge. Comet confirmed the date label, read-only controls, editing enablement and opening/cancelling the file chooser; no file was uploaded through the browser and no production values were changed. Pint, whitespace checks and graphify completed. No build, translation import, commit or push was performed.
+
+Further manual feedback exposed two gaps: renderless attachment rejection had no message beside Attach, and a Save could reach an expired lease before the next visible-page poll renewed it. Attachment results now persist locally through polls, show Attaching and acknowledged success, and expose the shared 180 KB PDF limit (retained at Philippe's request). The production-location select has a standard 40px height and no flex stretching. Queued mutations check heartbeat first, renew only a previously held free unchanged selection, and stop before writing when stale, blocked or departed; the server guard remains strict. The 1.6 MB PDF test verifies explicit rejection with file/note retained and no media/document creation. A time-controlled date-save test covers the 91-second expiry boundary; Node covers competing renewal and late departure. All 76 affected checks passed (823 assertions), including the Node bridge; Pint, whitespace checks and graphify passed. Browser observation confirmed a pending upload and an editing-access error, but the user was actively using Comet so no further browser saves were performed. No build, translation import, commit or push was performed.
+
+The authorized final-verification phase refreshed the complete suite: **4,609 passed, 65 skipped, 72,506 assertions** (231.10 seconds, exit 0). All 24 Node draft/coordinator cases passed directly; fresh Pint and whitespace checks passed. No further code correction was identified in the reviewed ownership, acknowledgement, command and attachment paths. Comet control returned ScreenCaptureKit error `-3811` on both attempts, so the actual-browser cases remain explicitly pending in `2026-10-01-production-editing-final-verification.md`; computer-use restoration was requested. No browser action changed the local production. No build, translation import, commit, push or deployment occurred, and unrelated memory/export work remains unstaged.
+
+
+### Waiting and group-message review corrections — 2026-10-02
+
+Philippe authorized the two messaging findings. Successful acquisition clears the previous waiting state, so finishing returns to ordinary viewing without a stale Resume editing prompt or availability notice; a still-blocked observer retains the deliberate-resume prompt. Blocked multi-production selections now use the existing six-locale group warning from the mounted payload. Single-production notices still identify the holder, and the affected-production list remains available.
+
+The waiting/finish regression, group-copy regression and rendered-payload contract failed before the corrections. Fresh verification: **37 affected tests passed, 746 assertions**, including the Node process bridge; **43 Node tests passed directly**. Pint, whitespace checks and Graphify passed. No build, translation import, commit, push or deployment occurred. Full-suite and browser verification remain with Philippe; rerun `php artisan test --compact` before release.

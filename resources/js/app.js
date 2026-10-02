@@ -1,3 +1,4 @@
+import { createProductionEditing, createProductionRegister } from './production-editing';
 import { createContextualHelp } from './contextual-help';
 import './bootstrap';
 import { createAppNotification } from './app-notification';
@@ -31,6 +32,8 @@ window.ingredientEditor = (payload) => createIngredientEditor(payload, createDir
 window.ingredientDuplicationModal = (payload) => createIngredientDuplicationModal(payload);
 window.searchCombobox = createSearchCombobox;
 window.stickyTableHeader = createStickyTableHeader;
+window.productionEditing = createProductionEditing;
+window.productionRegister = createProductionRegister;
 window.productionCalendar = createProductionCalendar;
 window.productionCalendarComponent = createProductionCalendarComponent;
 

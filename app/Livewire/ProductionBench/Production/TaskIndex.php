@@ -13,6 +13,7 @@ use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ContextualHelp\ProductionHelpTopics;
+use App\Services\Production\ProductionEditingContext;
 use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -21,7 +22,9 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -35,6 +38,12 @@ class TaskIndex extends Component implements HasForms
     public string $scope = 'today';
 
     public string $status = 'open';
+
+    #[Locked]
+    public array $displayedProductionRevisions = [];
+
+    #[Locked]
+    public array $displayedTaskProductionIds = [];
 
     public string $search = '';
 
@@ -54,31 +63,43 @@ class TaskIndex extends Component implements HasForms
             $this->perPage = 25;
         }
 
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
     public function updatedScope(): void
     {
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
     public function updatedStatus(): void
     {
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
     public function updatedSearch(): void
     {
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
     public function updatedDepartmentId(): void
     {
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
     public function updatedEmployeeId(): void
     {
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
@@ -90,6 +111,8 @@ class TaskIndex extends Component implements HasForms
             $this->toDate = $this->fromDate;
         }
 
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
@@ -101,6 +124,8 @@ class TaskIndex extends Component implements HasForms
             $this->fromDate = $this->toDate;
         }
 
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
@@ -127,6 +152,8 @@ class TaskIndex extends Component implements HasForms
         $this->reset(['scope', 'status', 'search', 'departmentId', 'employeeId', 'fromDate', 'toDate']);
         $this->scope = 'today';
         $this->status = 'open';
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
         $this->resetPage();
     }
 
@@ -134,12 +161,15 @@ class TaskIndex extends Component implements HasForms
     {
         $task = $this->task($taskId);
 
+        $this->resetErrorBag();
         try {
+            $context = $this->registerEditingContext([$task->production_run_id]);
             if ($task->completed_at === null) {
-                $completeProductionTask->handle($this->user(), $task);
+                $completeProductionTask->handle($this->user(), $task, editing: $context);
             } else {
-                $reopenProductionTask->handle($this->user(), $task);
+                $reopenProductionTask->handle($this->user(), $task, editing: $context);
             }
+            $this->displayedProductionRevisions = array_replace($this->displayedProductionRevisions, $context->acknowledgedRevisions());
         } catch (ValidationException $exception) {
             $this->addActionErrors($exception);
         }
@@ -149,13 +179,17 @@ class TaskIndex extends Component implements HasForms
     {
         $task = $this->task($taskId);
 
+        $this->resetErrorBag();
         try {
+            $context = $this->registerEditingContext([$task->production_run_id]);
             $assignProductionTask->handle(
+                editing: $context,
                 actor: $this->user(),
                 task: $task,
                 departmentId: filled($departmentId) ? (int) $departmentId : null,
                 employeeId: $task->employee_id,
             );
+            $this->displayedProductionRevisions = array_replace($this->displayedProductionRevisions, $context->acknowledgedRevisions());
         } catch (ValidationException $exception) {
             $this->addActionErrors($exception);
         }
@@ -165,13 +199,17 @@ class TaskIndex extends Component implements HasForms
     {
         $task = $this->task($taskId);
 
+        $this->resetErrorBag();
         try {
+            $context = $this->registerEditingContext([$task->production_run_id]);
             $assignProductionTask->handle(
+                editing: $context,
                 actor: $this->user(),
                 task: $task,
                 departmentId: $task->department_id,
                 employeeId: filled($employeeId) ? (int) $employeeId : null,
             );
+            $this->displayedProductionRevisions = array_replace($this->displayedProductionRevisions, $context->acknowledgedRevisions());
         } catch (ValidationException $exception) {
             $this->addActionErrors($exception);
         }
@@ -201,15 +239,26 @@ class TaskIndex extends Component implements HasForms
 
         $this->applyDateScope($query);
 
+        $tasks = $query->orderBy('scheduled_for')->orderBy('id')->paginate($this->perPage);
+        if ($this->displayedProductionRevisions === []) {
+            $this->displayedTaskProductionIds = $tasks->getCollection()->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->production_run_id])->all();
+            $this->displayedProductionRevisions = $tasks->getCollection()->mapWithKeys(fn (ProductionTask $task): array => [$task->production_run_id => $task->productionRun->edit_revision])->all();
+        }
+
         return view('livewire.production-bench.production.task-index', [
             'contextualHelp' => $helpTopics->resolve('tasks', app()->getLocale()),
             'workspace' => $workspace,
-            'tasks' => $query->orderBy('scheduled_for')->orderBy('id')->paginate($this->perPage),
+            'tasks' => $tasks,
             'departments' => Department::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
             'employees' => Employee::query()->where('workspace_id', $workspace->id)->orderBy('last_name')->orderBy('first_name')->get(),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
         ]);
+    }
+
+    public function updatedPaginators(): void
+    {
+        $this->refreshProductionRegister();
     }
 
     private function applyDateScope(Builder $query): void
@@ -235,8 +284,11 @@ class TaskIndex extends Component implements HasForms
 
     private function task(int $taskId): ProductionTask
     {
+        abort_unless(isset($this->displayedTaskProductionIds[$taskId]), 422);
+
         return ProductionTask::query()
             ->where('workspace_id', $this->workspace()->id)
+            ->where('production_run_id', $this->displayedTaskProductionIds[$taskId])
             ->with('productionRun')
             ->findOrFail($taskId);
     }
@@ -248,6 +300,23 @@ class TaskIndex extends Component implements HasForms
                 $this->addError('task_'.$field, $message);
             }
         }
+    }
+
+    public function refreshProductionRegister(): void
+    {
+        $this->resetErrorBag();
+        $this->displayedProductionRevisions = [];
+        $this->displayedTaskProductionIds = [];
+    }
+
+    /** @param list<int> $ids */
+    private function registerEditingContext(array $ids): ProductionEditingContext
+    {
+        if ($ids === [] || count($ids) > 100 || array_diff($ids, array_keys($this->displayedProductionRevisions)) !== []) {
+            throw ValidationException::withMessages(['production_editing' => __('production_bench.editing.validation.selection')]);
+        }
+
+        return new ProductionEditingContext($this->workspace()->id, (string) Str::uuid(), array_intersect_key($this->displayedProductionRevisions, array_flip($ids)), temporary: true);
     }
 
     private function user(): User

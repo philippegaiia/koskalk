@@ -7,19 +7,24 @@ use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ProductionDateRescheduler;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class RescheduleProduction
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ProductionDateRescheduler $rescheduler,
     ) {}
 
-    public function handle(User $actor, ProductionRun $production, string $plannedFor): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production, string $plannedFor,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $this->validateDate($plannedFor);
         $workspace = $production->workspace;
 
@@ -29,15 +34,14 @@ class RescheduleProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $plannedFor, $production): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($production->workspace_id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($plannedFor, $production): ProductionMutationResult {
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages(['production' => __('production_bench.production.workspace_missing')]);
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
-            $lockedProduction = ProductionRun::query()->where('workspace_id', $lockedWorkspace->id)->lockForUpdate()->findOrFail($production->id);
+            $lockedProduction = $productions[$production->id];
 
             if (! in_array($lockedProduction->status, [
                 ProductionRunStatus::Draft,
@@ -49,10 +53,14 @@ class RescheduleProduction
                 ]);
             }
 
-            $this->rescheduler->rescheduleLocked($lockedWorkspace, $lockedProduction, $plannedFor);
+            $changed = $lockedProduction->planned_for?->toDateString() !== $plannedFor;
+            if (! $changed) {
+                return new ProductionMutationResult($lockedProduction->load(['requirements', 'tasks']), []);
+            }
+            $this->rescheduler->rescheduleLocked($actor, $lockedWorkspace, $lockedProduction, $plannedFor, $scope);
 
-            return $lockedProduction->fresh(['requirements', 'tasks']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'tasks']), $changed ? [$lockedProduction->id] : []);
+        });
     }
 
     private function validateDate(string $date): void

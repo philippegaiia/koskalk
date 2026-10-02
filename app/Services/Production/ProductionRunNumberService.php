@@ -7,12 +7,15 @@ use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\WorkspaceWriteLock;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ProductionRunNumberService
 {
+    public function __construct(private readonly WorkspaceWriteLock $workspaceLock) {}
+
     public function formatPermanentNumber(string $prefix, int $serial, string $suffix, int $padding): string
     {
         return $prefix.str_pad((string) $serial, $padding, '0', STR_PAD_LEFT).$suffix;
@@ -48,9 +51,7 @@ class ProductionRunNumberService
      */
     public function lockWorkspaceAndSettings(Workspace $workspace): array
     {
-        $lockedWorkspace = Workspace::withoutGlobalScopes()
-            ->lockForUpdate()
-            ->findOrFail($workspace->id);
+        $lockedWorkspace = $this->workspaceLock->acquire($workspace->id);
 
         ProductionRunNumberSetting::query()->firstOrCreate([
             'workspace_id' => $lockedWorkspace->id,

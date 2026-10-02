@@ -7,20 +7,24 @@ use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ResetProductionTaskDate
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ProductionWorkingCalendar $calendar,
     ) {}
 
-    public function handle(User $actor, ProductionTask $task): ProductionTask
-    {
+    public function handle(User $actor, ProductionTask $task,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionTask {
         $workspace = $task->workspace;
 
         if ($workspace === null) {
@@ -29,21 +33,19 @@ class ResetProductionTaskDate
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $task): ProductionTask {
-            $lockedTask = ProductionTask::query()->lockForUpdate()->findOrFail($task->id);
-            $production = ProductionRun::query()->lockForUpdate()->find($lockedTask->production_run_id);
+        $parentId = ProductionTask::query()->where('workspace_id', $workspace->id)->whereKey($task->id)->value('production_run_id');
+        if ($parentId === null || ! ProductionRun::query()->where('workspace_id', $workspace->id)->whereKey($parentId)->exists()) {
+            throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_missing')]);
+        }
+        $parentId = (int) $parentId;
 
-            if ($production === null) {
+        return $this->guard->run($actor, [$parentId], $editing, function (User $actor, Workspace $workspace, Collection $productions) use ($task, $parentId): ProductionMutationResult {
+            $production = $productions[$parentId];
+            $lockedTask = ProductionTask::query()->where('workspace_id', $workspace->id)->where('production_run_id', $parentId)->lockForUpdate()->find($task->id);
+            if ($lockedTask === null) {
                 throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_missing')]);
             }
-
-            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($production->workspace_id);
-
-            if ($workspace === null || (int) $lockedTask->workspace_id !== (int) $workspace->id) {
-                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_mismatch')]);
-            }
-
-            $this->access->assertWritable($actor, $workspace);
+            $before = [$lockedTask->employee_id, $lockedTask->department_id, $lockedTask->scheduled_for?->toDateString(), $lockedTask->scheduling_mode, $lockedTask->completed_at?->toIso8601String(), $production->planned_for?->toDateString()];
 
             if (! in_array($production->status, [
                 ProductionRunStatus::Draft,
@@ -80,7 +82,7 @@ class ResetProductionTaskDate
                 'scheduling_mode' => 'automatic',
             ]);
 
-            return $lockedTask->fresh(['productionRun', 'employee']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedTask->fresh(['productionRun.tasks', 'employee']), ($before !== [$lockedTask->employee_id, $lockedTask->department_id, $lockedTask->scheduled_for?->toDateString(), $lockedTask->scheduling_mode, $lockedTask->completed_at?->toIso8601String(), $production->planned_for?->toDateString()]) ? [$parentId] : []);
+        });
     }
 }

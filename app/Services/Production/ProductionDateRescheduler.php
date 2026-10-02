@@ -7,6 +7,7 @@ use App\Enums\StockReservationStatus;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\StockReservation;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Validation\ValidationException;
 
@@ -17,8 +18,9 @@ class ProductionDateRescheduler
         private readonly ProductionReadyDateService $readyDates,
     ) {}
 
-    public function rescheduleLocked(Workspace $workspace, ProductionRun $production, string $plannedFor): void
+    public function rescheduleLocked(User $actor, Workspace $workspace, ProductionRun $production, string $plannedFor, ProductionMutationScope $scope): void
     {
+        $scope->assertFor($actor, $production, $workspace);
         $this->calendar->refresh($workspace);
         if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
             throw ValidationException::withMessages([

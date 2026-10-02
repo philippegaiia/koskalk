@@ -10,6 +10,7 @@ use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionMutationScope;
 use Illuminate\Support\Facades\DB;
 
 class PlanProduction
@@ -63,7 +64,12 @@ class PlanProduction
                 taskSet: $taskSet,
             );
 
-            return $this->generateProductionTasks->handle($actor, $production);
+            if (! $production->wasRecentlyCreated) {
+                return $production;
+            }
+
+            return ProductionMutationScope::withinCreated($actor, $workspace, $production,
+                fn (ProductionMutationScope $scope): ProductionRun => $this->generateProductionTasks->generateForLockedProduction($actor, $production, $workspace, $scope));
         }, attempts: 5);
     }
 }

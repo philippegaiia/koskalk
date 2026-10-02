@@ -28,6 +28,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -68,7 +69,7 @@ it('retains cancellation evidence when an editor cancels a production', function
     [, $workspace, $editor] = productionAuthorizationContext();
     $production = ProductionRun::factory()->for($workspace)->create();
 
-    app(CancelProduction::class)->handle($editor, $production, 'Customer postponed order');
+    app(CancelProduction::class)->handle($editor, $production, 'Customer postponed order', editing: ProductionEditingFixture::command($editor, $production));
 
     expect($production->fresh())
         ->status->toBe(ProductionRunStatus::Cancelled)

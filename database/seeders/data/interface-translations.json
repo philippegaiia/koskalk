@@ -19212,6 +19212,378 @@
     },
     {
       "group": "production_bench",
+      "key": "editing.active",
+      "text": {
+        "de": "Bearbeitung",
+        "es": "Edición",
+        "fr": "Modification en cours",
+        "it": "Modifica in corso",
+        "nl": "Bewerken",
+        "pt_BR": "Edição"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.available",
+      "text": {
+        "de": "Diese Produktion kann bearbeitet werden.",
+        "es": "Esta producción está disponible para editar.",
+        "fr": "Cette production est disponible pour modification.",
+        "it": "Questa produzione è disponibile per la modifica.",
+        "nl": "Deze productie is beschikbaar om te bewerken.",
+        "pt_BR": "Esta produção está disponível para edição."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.begin",
+      "text": {
+        "de": "Produktion bearbeiten",
+        "es": "Editar producción",
+        "fr": "Modifier la production",
+        "it": "Modifica produzione",
+        "nl": "Productie bewerken",
+        "pt_BR": "Editar produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.begin_allocations",
+      "text": {
+        "de": "Zuteilungen bearbeiten",
+        "es": "Editar asignaciones",
+        "fr": "Modifier les allocations",
+        "it": "Modifica assegnazioni",
+        "nl": "Toewijzingen bewerken",
+        "pt_BR": "Editar alocações"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.blocked",
+      "text": {
+        "de": ":name bearbeitet diese Produktion. Sie können sie weiterhin ansehen.",
+        "es": ":name está editando esta producción. Puede seguir consultándola.",
+        "fr": ":name modifie cette production. Vous pouvez toujours la consulter.",
+        "it": ":name sta modificando questa produzione. Puoi continuare a consultarla.",
+        "nl": ":name bewerkt deze productie. Je kunt deze nog bekijken.",
+        "pt_BR": ":name está editando esta produção. Você ainda pode visualizá-la."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.command_failed",
+      "text": {
+        "de": "Die Aktion konnte nicht bestätigt werden. Laden Sie die Seite neu, um das Ergebnis zu prüfen, bevor Sie es erneut versuchen.",
+        "es": "No se pudo confirmar la acción. Recargue la página para comprobar el resultado antes de volver a intentarlo.",
+        "fr": "L’action n’a pas pu être confirmée. Rechargez la page pour vérifier le résultat avant de réessayer.",
+        "it": "Non è stato possibile confermare l’azione. Ricarica la pagina per verificare il risultato prima di riprovare.",
+        "nl": "De actie kon niet worden bevestigd. Herlaad de pagina om het resultaat te controleren voordat je het opnieuw probeert.",
+        "pt_BR": "Não foi possível confirmar a ação. Recarregue a página para verificar o resultado antes de tentar novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.discard",
+      "text": {
+        "de": "Änderungen verwerfen",
+        "es": "Descartar cambios",
+        "fr": "Abandonner les modifications",
+        "it": "Scarta modifiche",
+        "nl": "Wijzigingen weggooien",
+        "pt_BR": "Descartar alterações"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.discard_confirmation",
+      "text": {
+        "de": "Ungespeicherte Änderungen verwerfen?",
+        "es": "¿Descartar los cambios sin guardar?",
+        "fr": "Abandonner les modifications non enregistrées ?",
+        "it": "Eliminare le modifiche non salvate?",
+        "nl": "Niet-opgeslagen wijzigingen weggooien?",
+        "pt_BR": "Descartar as alterações não salvas?"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.finish",
+      "text": {
+        "de": "Bearbeitung beenden",
+        "es": "Finalizar edición",
+        "fr": "Terminer la modification",
+        "it": "Termina modifica",
+        "nl": "Bewerken beëindigen",
+        "pt_BR": "Concluir edição"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.group_blocked",
+      "text": {
+        "de": "Nicht alle ausgewählten Produktionen konnten reserviert werden. Prüfen Sie die Liste, bevor Sie fortfahren.",
+        "es": "No se pudieron reservar todas las producciones seleccionadas. Revise la lista antes de continuar.",
+        "fr": "Toutes les productions sélectionnées n’ont pas pu être réservées. Consultez la liste avant de continuer.",
+        "it": "Non è stato possibile riservare tutte le produzioni selezionate. Controlla l’elenco prima di continuare.",
+        "nl": "Niet alle geselecteerde producties konden worden gereserveerd. Controleer de lijst voordat je doorgaat.",
+        "pt_BR": "Não foi possível reservar todas as produções selecionadas. Confira a lista antes de continuar."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.holder",
+      "text": {
+        "de": ":name bearbeitet",
+        "es": ":name está editando",
+        "fr": ":name modifie",
+        "it": ":name sta modificando",
+        "nl": ":name is aan het bewerken",
+        "pt_BR": ":name está editando"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.pending",
+      "text": {
+        "de": "Ungespeicherte Änderungen",
+        "es": "Cambios sin guardar",
+        "fr": "Modifications non enregistrées",
+        "it": "Modifiche non salvate",
+        "nl": "Niet-opgeslagen wijzigingen",
+        "pt_BR": "Alterações não salvas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.refresh_failed",
+      "text": {
+        "de": "Ihre Änderungen wurden gespeichert, aber die Anzeige konnte nicht aktualisiert werden. Laden Sie die Produktion neu, um sie zu aktualisieren.",
+        "es": "Sus cambios se guardaron, pero no se pudo actualizar la vista. Vuelva a cargar la producción para actualizarla.",
+        "fr": "Vos modifications ont été enregistrées, mais l’affichage n’a pas pu être actualisé. Rechargez la production pour le mettre à jour.",
+        "it": "Le modifiche sono state salvate, ma non è stato possibile aggiornare la vista. Ricarica la produzione per aggiornarla.",
+        "nl": "Je wijzigingen zijn opgeslagen, maar de weergave kon niet worden bijgewerkt. Herlaad de productie om deze bij te werken.",
+        "pt_BR": "Suas alterações foram salvas, mas não foi possível atualizar a visualização. Recarregue a produção para atualizá-la."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.refresh_register",
+      "text": {
+        "de": "Produktionen aktualisieren",
+        "es": "Actualizar producciones",
+        "fr": "Actualiser les productions",
+        "it": "Aggiorna produzioni",
+        "nl": "Producties vernieuwen",
+        "pt_BR": "Atualizar produções"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.reload",
+      "text": {
+        "de": "Produktion neu laden",
+        "es": "Recargar producción",
+        "fr": "Recharger la production",
+        "it": "Ricarica produzione",
+        "nl": "Productie herladen",
+        "pt_BR": "Recarregar produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.reload_failed",
+      "text": {
+        "de": "Die Produktion konnte nicht neu geladen werden. Ihre Änderungen bleiben auf dieser Seite. Versuchen Sie es erneut.",
+        "es": "No se pudo volver a cargar la producción. Sus cambios permanecen en esta página. Intente cargarla de nuevo.",
+        "fr": "La production n’a pas pu être rechargée. Vos modifications restent sur cette page. Essayez de la recharger à nouveau.",
+        "it": "Non è stato possibile ricaricare la produzione. Le modifiche restano su questa pagina. Prova a ricaricarla di nuovo.",
+        "nl": "De productie kon niet worden herladen. Je wijzigingen blijven op deze pagina. Probeer opnieuw te herladen.",
+        "pt_BR": "Não foi possível recarregar a produção. Suas alterações permanecem nesta página. Tente recarregá-la novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.resume",
+      "text": {
+        "de": "Bearbeitung fortsetzen",
+        "es": "Reanudar edición",
+        "fr": "Reprendre la modification",
+        "it": "Riprendi modifica",
+        "nl": "Bewerken hervatten",
+        "pt_BR": "Retomar edição"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.stale",
+      "text": {
+        "de": "Diese Produktion wurde seit dem Öffnen geändert. Laden Sie sie vor dem Bearbeiten neu.",
+        "es": "Esta producción cambió desde que la abrió. Recárguela antes de editar.",
+        "fr": "Cette production a changé depuis son ouverture. Rechargez-la avant de la modifier.",
+        "it": "Questa produzione è cambiata da quando l’hai aperta. Ricaricala prima di modificarla.",
+        "nl": "Deze productie is gewijzigd sinds je deze opende. Herlaad voordat je gaat bewerken.",
+        "pt_BR": "Esta produção mudou desde que você a abriu. Recarregue antes de editar."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.status_failed",
+      "text": {
+        "de": "Der Bearbeitungsstatus konnte nicht geprüft werden. Ihre Änderungen bleiben auf dieser Seite.",
+        "es": "No se pudo comprobar el estado de edición. Sus cambios permanecen en esta página.",
+        "fr": "Le statut de modification n’a pas pu être vérifié. Vos modifications restent sur cette page.",
+        "it": "Non è stato possibile verificare lo stato della modifica. Le modifiche restano su questa pagina.",
+        "nl": "De bewerkingsstatus kon niet worden gecontroleerd. Je wijzigingen blijven op deze pagina.",
+        "pt_BR": "Não foi possível verificar o status da edição. Suas alterações permanecem nesta página."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.takeover",
+      "text": {
+        "de": "Bearbeitung übernehmen",
+        "es": "Tomar el control de la edición",
+        "fr": "Prendre la main",
+        "it": "Prendi il controllo della modifica",
+        "nl": "Bewerking overnemen",
+        "pt_BR": "Assumir a edição"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.takeover_reason",
+      "text": {
+        "de": "Grund für die Übernahme",
+        "es": "Motivo para tomar el control",
+        "fr": "Motif de la prise en main",
+        "it": "Motivo del subentro",
+        "nl": "Reden voor overname",
+        "pt_BR": "Motivo para assumir"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.unavailable",
+      "text": {
+        "de": "Diese Produktion ist nicht mehr verfügbar.",
+        "es": "Esta producción ya no está disponible.",
+        "fr": "Cette production n’est plus disponible.",
+        "it": "Questa produzione non è più disponibile.",
+        "nl": "Deze productie is niet meer beschikbaar.",
+        "pt_BR": "Esta produção não está mais disponível."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.unsaved",
+      "text": {
+        "de": "Ihre ungespeicherten Änderungen bleiben auf dieser Seite.",
+        "es": "Sus cambios sin guardar permanecen en esta página.",
+        "fr": "Vos modifications non enregistrées restent sur cette page.",
+        "it": "Le modifiche non salvate restano su questa pagina.",
+        "nl": "Je niet-opgeslagen wijzigingen blijven op deze pagina.",
+        "pt_BR": "Suas alterações não salvas permanecem nesta página."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.busy",
+      "text": {
+        "de": "Diese Produktion wird in einer anderen Sitzung bearbeitet.",
+        "es": "Esta producción se está editando en otra sesión.",
+        "fr": "Cette production est en cours de modification dans une autre session.",
+        "it": "Questa produzione viene modificata in un’altra sessione.",
+        "nl": "Deze productie wordt in een andere sessie bewerkt.",
+        "pt_BR": "Esta produção está sendo editada em outra sessão."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.lease",
+      "text": {
+        "de": "Der Bearbeitungszugriff ist abgelaufen. Ihre Änderungen wurden nicht gespeichert.",
+        "es": "El acceso de edición ha finalizado. Sus cambios no se han guardado.",
+        "fr": "L’accès en modification a pris fin. Vos modifications n’ont pas été enregistrées.",
+        "it": "L’accesso alla modifica è terminato. Le modifiche non sono state salvate.",
+        "nl": "De toegang om te bewerken is verlopen. Je wijzigingen zijn niet opgeslagen.",
+        "pt_BR": "O acesso à edição terminou. Suas alterações não foram salvas."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.reason",
+      "text": {
+        "de": "Geben Sie einen Grund mit höchstens 1.000 Zeichen ein.",
+        "es": "Introduzca un motivo de hasta 1.000 caracteres.",
+        "fr": "Saisissez un motif de 1 000 caractères maximum.",
+        "it": "Inserisci un motivo di massimo 1.000 caratteri.",
+        "nl": "Voer een reden in van maximaal 1.000 tekens.",
+        "pt_BR": "Informe um motivo de até 1.000 caracteres."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.revision",
+      "text": {
+        "de": "Diese Produktion wurde geändert. Laden Sie sie vor dem Speichern neu.",
+        "es": "Esta producción ha cambiado. Recárguela antes de guardar.",
+        "fr": "Cette production a changé. Rechargez-la avant d’enregistrer.",
+        "it": "Questa produzione è cambiata. Ricaricala prima di salvare.",
+        "nl": "Deze productie is gewijzigd. Herlaad voordat je opslaat.",
+        "pt_BR": "Esta produção mudou. Recarregue antes de salvar."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.selection",
+      "text": {
+        "de": "Wählen Sie 1 bis 100 Produktionen aus diesem Arbeitsbereich.",
+        "es": "Seleccione entre 1 y 100 producciones de este espacio de trabajo.",
+        "fr": "Choisissez entre 1 et 100 productions de cet espace de travail.",
+        "it": "Scegli da 1 a 100 produzioni di questo spazio di lavoro.",
+        "nl": "Kies 1 tot 100 producties uit deze werkruimte.",
+        "pt_BR": "Escolha de 1 a 100 produções deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.token",
+      "text": {
+        "de": "Eine gültige Bearbeitungssitzung ist erforderlich.",
+        "es": "Se requiere una sesión de edición válida.",
+        "fr": "Une session de modification valide est requise.",
+        "it": "È necessaria una sessione di modifica valida.",
+        "nl": "Een geldige bewerkingssessie is vereist.",
+        "pt_BR": "É necessária uma sessão de edição válida."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.validation.unavailable",
+      "text": {
+        "de": "Eine oder mehrere ausgewählte Produktionen sind nicht verfügbar.",
+        "es": "Una o más producciones seleccionadas no están disponibles.",
+        "fr": "Une ou plusieurs productions sélectionnées ne sont pas disponibles.",
+        "it": "Una o più produzioni selezionate non sono disponibili.",
+        "nl": "Een of meer geselecteerde producties zijn niet beschikbaar.",
+        "pt_BR": "Uma ou mais produções selecionadas não estão disponíveis."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "editing.viewing",
+      "text": {
+        "de": "Ansicht",
+        "es": "Visualización",
+        "fr": "Consultation",
+        "it": "Visualizzazione",
+        "nl": "Bekijken",
+        "pt_BR": "Visualização"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "filters.ingredients",
       "text": {
         "de": "Zutaten",
@@ -24576,6 +24948,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.attaching",
+      "text": {
+        "de": "Wird angehängt…",
+        "es": "Adjuntando…",
+        "fr": "Ajout de la pièce jointe…",
+        "it": "Inserimento allegato…",
+        "nl": "Bijvoegen…",
+        "pt_BR": "Anexando…"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.automatic_lots",
       "text": {
         "de": "Vorgeschlagene FEFO-Lose",
@@ -26592,6 +26976,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.save_date",
+      "text": {
+        "de": "Produktionsdatum speichern",
+        "es": "Guardar fecha de producción",
+        "fr": "Enregistrer la date de production",
+        "it": "Salva la data di produzione",
+        "nl": "Productiedatum opslaan",
+        "pt_BR": "Salvar data de produção"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.schedule",
       "text": {
         "de": "Produktion planen",
@@ -27056,6 +27452,42 @@
         "it": "In arrivo",
         "nl": "Aankomend",
         "pt_BR": "Próximas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.upload_failed",
+      "text": {
+        "de": "Upload fehlgeschlagen. Wählen Sie die Datei erneut aus.",
+        "es": "Error al subir. Vuelve a elegir el archivo.",
+        "fr": "Échec du téléversement. Sélectionnez à nouveau le fichier.",
+        "it": "Caricamento non riuscito. Seleziona di nuovo il file.",
+        "nl": "Upload mislukt. Kies het bestand opnieuw.",
+        "pt_BR": "Falha no envio. Selecione o arquivo novamente."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.upload_ready",
+      "text": {
+        "de": "Bereit zum Anhängen",
+        "es": "Listo para adjuntar",
+        "fr": "Prêt à joindre",
+        "it": "Pronto da allegare",
+        "nl": "Klaar om bij te voegen",
+        "pt_BR": "Pronto para anexar"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.uploading",
+      "text": {
+        "de": "Wird hochgeladen…",
+        "es": "Subiendo…",
+        "fr": "Téléversement en cours…",
+        "it": "Caricamento in corso…",
+        "nl": "Uploaden…",
+        "pt_BR": "Enviando…"
       }
     },
     {

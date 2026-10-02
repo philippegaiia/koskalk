@@ -7,15 +7,18 @@ use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberIssuance;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductionMutationGuard;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AssignProductionBatchNumbers
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ProductionRunNumberService $numbers,
     ) {}
@@ -24,21 +27,17 @@ class AssignProductionBatchNumbers
      * @param  array<int, int|string>  $productionIds
      * @return array{assigned: int, already_assigned: int}
      */
-    public function handle(User $actor, Workspace $workspace, array $productionIds): array
-    {
+    public function handle(User $actor, Workspace $workspace, array $productionIds,
+        ?ProductionEditingContext $editing = null,
+    ): array {
         $productionIds = $this->normalizeProductionIds($productionIds);
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $productionIds, $workspace): array {
-            [$lockedWorkspace, $settings] = $this->numbers->lockWorkspaceAndSettings($workspace);
+        return $this->guard->run($actor, $productionIds, $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($productionIds): ProductionMutationResult {
+            [, $settings] = $this->numbers->lockWorkspaceAndSettings($lockedWorkspace);
             $this->access->assertWritable($actor, $lockedWorkspace);
 
-            $productions = ProductionRun::query()
-                ->where('workspace_id', $lockedWorkspace->id)
-                ->whereIn('id', $productionIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            $productions = $productions->values();
 
             if ($productions->count() !== count($productionIds)) {
                 throw ValidationException::withMessages([
@@ -91,11 +90,11 @@ class AssignProductionBatchNumbers
                 ]);
             }
 
-            return [
+            return new ProductionMutationResult([
                 'assigned' => $eligible->count(),
                 'already_assigned' => $alreadyAssigned->count(),
-            ];
-        }, attempts: 5);
+            ], $eligible->pluck('id')->all());
+        });
     }
 
     /**
@@ -124,6 +123,9 @@ class AssignProductionBatchNumbers
      */
     private function normalizeProductionIds(array $productionIds): array
     {
+        if (count($productionIds) > 100) {
+            throw ValidationException::withMessages(['production_editing' => __('production_bench.editing.validation.selection')]);
+        }
         $normalized = [];
 
         foreach ($productionIds as $productionId) {

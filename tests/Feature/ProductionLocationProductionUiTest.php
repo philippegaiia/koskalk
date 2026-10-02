@@ -109,9 +109,11 @@ it('rejects assigning a production location from another workspace', function ()
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
+        ->call('beginEditing')
         ->set('productionLocationId', (string) $foreignLocation->id)
         ->call('assignProductionLocation')
-        ->assertHasErrors('productionLocationId');
+        ->assertHasErrors('productionLocationId')
+        ->call('finishEditing');
 
     expect($fixture['production']->fresh()->production_location_id)->toBe($fixture['location']->id);
 });
@@ -157,6 +159,7 @@ it('allows a manual reassignment that exceeds a location limit', function (): vo
 
     $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
+        ->call('beginEditing')
         ->set('productionLocationId', (string) $otherLocation->id)
         ->assertSee('Secondary lab')
         ->assertSee('2 / 1')
@@ -178,7 +181,8 @@ it('allows a manual reschedule that exceeds the overall limit', function (bool $
 
     $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
-        ->assertSee('wire:click="rescheduleProduction"', escape: false)
+        ->call('beginEditing')
+        ->assertSee('@click="runCommand(\'rescheduleProduction\', [], \'planning\')"', escape: false)
         ->set('scheduleDate', null)->assertSet('scheduleDate', '')
         ->set('scheduleDate', '2026-09-21 00:00:00')->assertSet('scheduleDate', '2026-09-21')
         ->assertSee('2 / 1')

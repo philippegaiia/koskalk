@@ -50,6 +50,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -142,7 +143,7 @@ it('snapshots configured output identity and ready dates when planning', functio
     expect($draft->estimated_ready_on)->toBeNull()
         ->and($draft->output_ingredient_id)->toBe($firstOutput->id);
 
-    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-08-21');
+    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-08-21', editing: ProductionEditingFixture::command($fixture['owner'], $draft));
 
     expect($scheduled->estimated_ready_on?->toDateString())->toBe('2026-08-25')
         ->and($scheduled->output_ready_delay_days)->toBe(4);
@@ -280,6 +281,7 @@ it('pins the latest published version and keeps that version when a newer one is
         basisInputValue: '2',
         basisInputUnit: 'kg',
         expectedUnits: 10,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($updated->recipe_version_id)->toBe($fixture['version']->id)
@@ -335,10 +337,10 @@ it('schedules a draft and does not allow rescheduling a non-draft', function ():
         idempotencyKey: 'schedule-1',
     );
 
-    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-09-01');
+    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-09-01', editing: ProductionEditingFixture::command($fixture['owner'], $draft));
 
     expect($scheduled->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and(fn () => app(ScheduleProduction::class)->handle($fixture['owner'], $scheduled, '2026-09-02'))
+        ->and(fn () => app(ScheduleProduction::class)->handle($fixture['owner'], $scheduled, '2026-09-02', editing: ProductionEditingFixture::command($fixture['owner'], $scheduled)))
         ->toThrow(ValidationException::class);
 });
 
@@ -365,6 +367,7 @@ it('rebuilds requirements only for draft or scheduled productions', function ():
         expectedUnits: 12,
         plannedFor: '2026-09-01',
         notes: 'Updated plan',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($updated->basis_quantity_grams)->toBe('1500.000000000')
@@ -380,6 +383,7 @@ it('rebuilds requirements only for draft or scheduled productions', function ():
         basisInputValue: '2',
         basisInputUnit: 'kg',
         expectedUnits: 12,
+        editing: ProductionEditingFixture::command($fixture['owner'], $updated),
     ))->toThrow(ValidationException::class);
 });
 
@@ -404,6 +408,7 @@ it('does not remove the date from an already scheduled production', function ():
         basisInputUnit: 'kg',
         expectedUnits: 10,
         plannedFor: null,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     ))->toThrow(ValidationException::class)
         ->and($production->fresh()->planned_for->toDateString())->toBe('2026-09-01');
 });
@@ -429,6 +434,7 @@ it('does not accept a non-working date when updating a scheduled production', fu
         basisInputUnit: 'kg',
         expectedUnits: 20,
         plannedFor: '2026-08-09',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     ))->toThrow(ValidationException::class)
         ->and($production->fresh()->planned_for->toDateString())->toBe('2026-08-10')
         ->and($production->fresh()->basis_quantity_grams)->toBe('1000.000000000');
@@ -471,6 +477,7 @@ it('rejects a plan update while active stock reservations exist', function (): v
             basisInputValue: '2',
             basisInputUnit: 'kg',
             expectedUnits: 10,
+            editing: ProductionEditingFixture::command($fixture['owner'], $production),
         ))->toThrow(ValidationException::class);
     } finally {
         Schema::dropIfExists('stock_reservations');
@@ -806,6 +813,7 @@ it('rescales snapshot quantities in place and keeps reservation history', functi
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 150,
         plannedFor: '2026-09-01',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($updated->basis_quantity_grams)->toBe('20000.000000000')
@@ -852,6 +860,7 @@ it('corrects quantities without the source version or a live recipe lookup', fun
         basisInputValue: '1.5',
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 12,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($updated->basis_quantity_grams)->toBe('1500.000000000')
@@ -880,6 +889,7 @@ it('rejects correction outside draft or scheduled status', function (string $sta
         basisInputValue: '20',
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 150,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     ))->toThrow(ValidationException::class);
 })->with([
     'reserved' => [ProductionRunStatus::Reserved->value],
@@ -988,7 +998,7 @@ it('generates tasks from the stored set after the product is archived', function
 
     $fixture['recipe']->update(['archived_at' => now()]);
 
-    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production);
+    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
     $task = $generated->tasks()->where('days_after_production', 2)->firstOrFail();
 
     expect($generated->tasks()->count())->toBe(2)
@@ -1018,7 +1028,7 @@ it('does not discover a task set attached to the product after creation', functi
     ]);
     $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
 
-    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production);
+    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($generated->production_task_set_id)->toBeNull()
         ->and($generated->tasks()->count())->toBe(0);
@@ -1046,7 +1056,7 @@ it('degrades without a product lookup when the stored task set was deleted', fun
 
     $taskSet->delete();
 
-    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production);
+    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($generated->production_task_set_id)->toBeNull()
         ->and($generated->tasks()->count())->toBe(0);
@@ -1089,11 +1099,12 @@ it('deletes draft and scheduled runs without reservations, including numbered ru
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
         productionIds: [$numbered->id],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$numbered->id]),
     );
 
-    app(DeleteProductionRun::class)->handle($fixture['owner'], $draft);
-    app(DeleteProductionRun::class)->handle($fixture['owner'], $scheduled);
-    app(DeleteProductionRun::class)->handle($fixture['owner'], $numbered->fresh());
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $draft, editing: ProductionEditingFixture::command($fixture['owner'], $draft));
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $scheduled, editing: ProductionEditingFixture::command($fixture['owner'], $scheduled));
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $numbered->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $numbered->fresh()));
 
     expect(ProductionRun::query()->find($draft->id))->toBeNull()
         ->and(ProductionRun::query()->find($scheduled->id))->toBeNull()
@@ -1120,10 +1131,11 @@ it('burns the permanent batch number when a numbered production is deleted', fun
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
         productionIds: [$first->id],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$first->id]),
     );
     $burnedNumber = $first->fresh()->batch_number;
 
-    app(DeleteProductionRun::class)->handle($fixture['owner'], $first->fresh());
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $first->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $first->fresh()));
 
     $second = app(CreateProductionDraft::class)->handle(
         actor: $fixture['owner'],
@@ -1140,6 +1152,7 @@ it('burns the permanent batch number when a numbered production is deleted', fun
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
         productionIds: [$second->id],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$second->id]),
     );
 
     expect($second->fresh()->batch_number)->not->toBe($burnedNumber)
@@ -1171,7 +1184,7 @@ it('rejects deletion once a reservation or a terminal status exists', function (
     };
 
     expect(function () use ($fixture, $production): void {
-        app(DeleteProductionRun::class)->handle($fixture['owner'], $production);
+        app(DeleteProductionRun::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
     })->toThrow(ValidationException::class)
         ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
 })->with([
@@ -1280,6 +1293,7 @@ it('keeps a partially prepared soap run planned until lye coverage is complete',
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'partial-lye-prepare-1',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     )[0];
 
     expect($partial->status)->toBe(ProductionRunStatus::Scheduled)
@@ -1303,13 +1317,14 @@ it('keeps a partially prepared soap run planned until lye coverage is complete',
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'partial-lye-prepare-2',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     )[0];
 
     expect($reserved->status)->toBe(ProductionRunStatus::Reserved)
         ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
         ->toBe(5);
 
-    $released = app(ReleaseProductionStock::class)->handle($fixture['owner'], $reserved->fresh());
+    $released = app(ReleaseProductionStock::class)->handle($fixture['owner'], $reserved->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $reserved->fresh()));
 
     expect($released->status)->toBe(ProductionRunStatus::Scheduled)
         ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
@@ -1320,7 +1335,7 @@ it('starts a fully reserved and permanently numbered production', function (): v
     $fixture = productionPlanningTask3SoapFixture();
     $production = productionPlanningReservedRun($fixture, 'start-ok-1');
 
-    $started = app(StartProduction::class)->handle($fixture['owner'], $production);
+    $started = app(StartProduction::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($started->status)->toBe(ProductionRunStatus::InProduction)
         ->and($started->started_at)->not->toBeNull()
@@ -1349,7 +1364,7 @@ it('rejects starting before the run is reserved', function (string $status): voi
     }
 
     expect(function () use ($fixture, $production): void {
-        app(StartProduction::class)->handle($fixture['owner'], $production);
+        app(StartProduction::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
     })->toThrow(ValidationException::class);
 })->with([
     'draft' => [ProductionRunStatus::Draft->value],
@@ -1392,10 +1407,11 @@ it('rejects starting without a permanent batch number', function (): void {
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'start-no-number-prepare',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect(function () use ($fixture, $production): void {
-        app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+        app(StartProduction::class)->handle($fixture['owner'], $production->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()));
     })->toThrow(ValidationException::class);
 });
 
@@ -1403,10 +1419,10 @@ it('rejects starting twice', function (): void {
     $fixture = productionPlanningTask3SoapFixture();
     $production = productionPlanningReservedRun($fixture, 'start-twice-1');
 
-    app(StartProduction::class)->handle($fixture['owner'], $production);
+    app(StartProduction::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect(function () use ($fixture, $production): void {
-        app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+        app(StartProduction::class)->handle($fixture['owner'], $production->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()));
     })->toThrow(ValidationException::class);
 });
 
@@ -1490,12 +1506,14 @@ function productionPlanningReservedRun(array $fixture, string $idempotencyKey): 
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: $idempotencyKey.'-prepare',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     app(AssignProductionBatchNumbers::class)->handle(
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
         productionIds: [$production->id],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     return $production->fresh();

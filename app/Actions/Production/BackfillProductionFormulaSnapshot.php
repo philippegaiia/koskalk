@@ -7,11 +7,13 @@ use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
+use App\Services\ProductionEditingService;
+use App\Services\WorkspaceWriteLock;
 use Illuminate\Support\Facades\DB;
 
 class BackfillProductionFormulaSnapshot
 {
-    public function __construct(
+    public function __construct(private readonly WorkspaceWriteLock $workspaceLock, private readonly ProductionEditingService $editing,
         private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
     ) {}
 
@@ -25,9 +27,15 @@ class BackfillProductionFormulaSnapshot
     public function handle(ProductionRun $production): bool
     {
         return DB::transaction(function () use ($production): bool {
-            $lockedProduction = ProductionRun::query()
+            $workspaceId = (int) ProductionRun::query()->whereKey($production->id)->value('workspace_id');
+            $this->workspaceLock->acquire($workspaceId);
+            $lockedProduction = ProductionRun::query()->where('workspace_id', $workspaceId)
                 ->lockForUpdate()
                 ->findOrFail($production->id);
+
+            if ($this->editing->isActivelyReserved($lockedProduction)) {
+                return false;
+            }
 
             if ($lockedProduction->formula_snapshot_completed_at !== null) {
                 return true;
@@ -83,8 +91,9 @@ class BackfillProductionFormulaSnapshot
             ]);
             $lockedProduction->formulaLines()->delete();
             $lockedProduction->formulaLines()->createMany($snapshot['lines']->all());
+            $lockedProduction->increment('edit_revision');
 
             return true;
-        }, attempts: 3);
+        }, attempts: 5);
     }
 }

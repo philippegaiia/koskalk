@@ -66,6 +66,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -79,7 +80,7 @@ it('defaults water actuals at start and saves them atomically with lot actuals',
     $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
     $movementCount = StockMovement::query()->count();
 
-    $started = app(StartProduction::class)->handle($fixture['owner'], $production);
+    $started = app(StartProduction::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($started->formulaLines()->whereKey($waterLine->id)->firstOrFail()->actual_mass_grams)
         ->toBe($waterLine->planned_mass_grams)
@@ -97,6 +98,7 @@ it('defaults water actuals at start and saves them atomically with lot actuals',
             'production_formula_line_id' => $waterLine->id,
             'actual_mass_grams' => '0',
         ]],
+        editing: ProductionEditingFixture::command($fixture['owner'], $started),
     ))->toThrow(ValidationException::class);
 
     expect($started->fresh()->consumption()->count())->toBe(0)
@@ -122,6 +124,7 @@ it('defaults water actuals at start and saves them atomically with lot actuals',
             'production_formula_line_id' => $waterLine->id,
             'actual_mass_grams' => '1540.5',
         ]],
+        editing: ProductionEditingFixture::command($fixture['owner'], $started),
     );
 
     expect($saved->formulaLines()->whereKey($waterLine->id)->firstOrFail()->actual_mass_grams)
@@ -140,7 +143,7 @@ it('does not start production with a reserved lot that is no longer consumable',
     $waterLine = $production->formulaLines()->where('component', ProductionFormulaComponent::Water)->firstOrFail();
     $lot->update($changes);
 
-    expect(fn () => app(StartProduction::class)->handle($fixture['owner'], $production))
+    expect(fn () => app(StartProduction::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production)))
         ->toThrow(ValidationException::class)
         ->and($production->fresh()->status)->toBe(ProductionRunStatus::Reserved)
         ->and($production->fresh()->started_at)->toBeNull()
@@ -172,7 +175,9 @@ it('records actual consumption during production without posting stock movements
             'stock_lot_id' => $packagingLot->id,
             'quantity' => '98',
         ],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $ingredientActual = $saved->consumption()->where('production_requirement_id', $ingredientRequirement->id)->sole();
 
@@ -201,7 +206,9 @@ it('rejects actual consumption from quarantined or not-yet-available lots', func
             'stock_lot_id' => $quarantinedLot->id,
             'quantity' => '1',
         ],
-    ]))->toThrow(ValidationException::class);
+    ],
+        editing: ProductionEditingFixture::command($quarantinedFixture['owner'], $quarantinedProduction),
+    ))->toThrow(ValidationException::class);
 
     $futureFixture = productionExecutionFixture();
     $futureProduction = productionExecutionRun($futureFixture, 'actuals-eligibility-future');
@@ -215,7 +222,9 @@ it('rejects actual consumption from quarantined or not-yet-available lots', func
             'stock_lot_id' => $futureLot->id,
             'quantity' => '1',
         ],
-    ]))->toThrow(ValidationException::class);
+    ],
+        editing: ProductionEditingFixture::command($futureFixture['owner'], $futureProduction),
+    ))->toThrow(ValidationException::class);
 });
 
 it('accepts an actual lot available on the execution date even when it expires before the planned date', function (): void {
@@ -231,7 +240,9 @@ it('accepts an actual lot available on the execution date even when it expires b
         'production_requirement_id' => $requirement->id,
         'stock_lot_id' => $lot->id,
         'quantity' => '1',
-    ]]);
+    ]],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     expect($saved->consumption()->where('stock_lot_id', $lot->id)->exists())->toBeTrue();
 });
@@ -249,7 +260,9 @@ it('rejects an actual lot that is unavailable on the current execution date', fu
         'production_requirement_id' => $requirement->id,
         'stock_lot_id' => $lot->id,
         'quantity' => '1',
-    ]]))->toThrow(ValidationException::class);
+    ]],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    ))->toThrow(ValidationException::class);
 });
 
 it('rechecks actual lots against the confirmed manufacture date before posting movements', function (): void {
@@ -274,7 +287,9 @@ it('rechecks actual lots against the confirmed manufacture date before posting m
             'stock_lot_id' => $packagingLot->id,
             'quantity' => '98',
         ],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $movementCount = StockMovement::query()->count();
     $outputLotCount = StockLot::query()
@@ -287,6 +302,7 @@ it('rechecks actual lots against the confirmed manufacture date before posting m
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-25',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     ))->toThrow(ValidationException::class);
 
     expect(StockMovement::query()->count())->toBe($movementCount)
@@ -308,7 +324,9 @@ it('updates and removes actual rows before the terminal action', function (): vo
             'stock_lot_id' => $oilLot->id,
             'quantity' => '10500.000000000',
         ],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         [
@@ -317,7 +335,9 @@ it('updates and removes actual rows before the terminal action', function (): vo
             'quantity' => '9000.000000000',
             'note' => 'Corrected at the bench',
         ],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     expect($production->consumption()->sole()->quantity)->toBe('9000.000000000')
         ->and($production->consumption()->sole()->note)->toBe('Corrected at the bench')
@@ -329,7 +349,9 @@ it('updates and removes actual rows before the terminal action', function (): vo
             'stock_lot_id' => $oilLot->id,
             'quantity' => '0',
         ],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     expect($production->consumption()->count())->toBe(0);
 });
@@ -349,7 +371,7 @@ it('rejects actual rows outside in-production and invalid quantities', function 
     );
 
     expect(function () use ($fixture, $production): void {
-        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, []);
+        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [], editing: ProductionEditingFixture::command($fixture['owner'], $production));
     })->toThrow(ValidationException::class);
 
     $started = productionExecutionRun($fixture, 'actuals-3');
@@ -363,7 +385,9 @@ it('rejects actual rows outside in-production and invalid quantities', function 
                 'stock_lot_id' => $packagingLot->id,
                 'quantity' => '2.5',
             ],
-        ]);
+        ],
+            editing: ProductionEditingFixture::command($fixture['owner'], $started),
+        );
     })->toThrow(ValidationException::class);
 
     expect(function () use ($fixture, $started, $packagingRequirement, $packagingLot): void {
@@ -373,7 +397,9 @@ it('rejects actual rows outside in-production and invalid quantities', function 
                 'stock_lot_id' => $packagingLot->id,
                 'quantity' => 'not-a-number',
             ],
-        ]);
+        ],
+            editing: ProductionEditingFixture::command($fixture['owner'], $started),
+        );
     })->toThrow(ValidationException::class);
 
     app(SaveProductionActuals::class)->handle($fixture['owner'], $started, [
@@ -382,7 +408,9 @@ it('rejects actual rows outside in-production and invalid quantities', function 
             'stock_lot_id' => $packagingLot->id,
             'quantity' => '0',
         ],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $started),
+    );
 
     expect($started->consumption()->count())->toBe(0);
 
@@ -394,7 +422,9 @@ it('rejects actual rows outside in-production and invalid quantities', function 
                 'stock_lot_id' => null,
                 'quantity' => '5',
             ],
-        ]);
+        ],
+            editing: ProductionEditingFixture::command($fixture['owner'], $started),
+        );
     })->toThrow(ValidationException::class);
 });
 
@@ -422,7 +452,7 @@ it('returns the catalogued localized message when actuals are saved outside prod
     );
 
     try {
-        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, []);
+        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [], editing: ProductionEditingFixture::command($fixture['owner'], $production));
     } catch (ValidationException $exception) {
         expect($exception->errors()['production'])->toBe([$messages[$locale]]);
 
@@ -446,6 +476,7 @@ it('saves actuals from the production sheet', function (): void {
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->assertSee(__('production_bench.production.actual_used'))
         ->set('actualRows.'.$ingredientRequirement->id.'.stock_lot_id', (string) $oilLot->id)
         ->set('actualRows.'.$ingredientRequirement->id.'.quantity', '10500')
@@ -456,7 +487,8 @@ it('saves actuals from the production sheet', function (): void {
             return $event === 'app-notification'
                 && str_starts_with($payload['message'], __('production_bench.production.actuals_saved'))
                 && $payload['type'] === 'success';
-        });
+        })
+        ->call('finishEditing');
 
     expect($production->consumption()->where('production_requirement_id', $ingredientRequirement->id)->sole()->quantity)
         ->toBe('10500.000000000');
@@ -475,13 +507,16 @@ it('completes a production atomically with consumption, costs, and an output lot
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000', 'note' => 'Over the plan'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect($completed->status)->toBe(ProductionRunStatus::Completed)
@@ -541,7 +576,9 @@ it('rechecks source lot eligibility before posting completion consumption', func
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $oilLot->update(['status' => StockLotStatus::Quarantined]);
 
@@ -550,6 +587,7 @@ it('rechecks source lot eligibility before posting completion consumption', func
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     ))->toThrow(ValidationException::class);
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::InProduction)
@@ -566,7 +604,9 @@ it('rejects completion while readiness is missing', function (): void {
     // Missing the ingredient actuals.
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     expect(function () use ($fixture, $production): void {
         app(CompleteProduction::class)->handle(
@@ -574,6 +614,7 @@ it('rejects completion while readiness is missing', function (): void {
             production: $production->fresh(),
             actualOutputQuantity: '95',
             manufactureDate: '2026-08-20',
+            editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
         );
     })->toThrow(ValidationException::class);
 
@@ -582,7 +623,9 @@ it('rejects completion while readiness is missing', function (): void {
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     expect(function () use ($fixture, $production): void {
         app(CompleteProduction::class)->handle(
@@ -590,6 +633,7 @@ it('rejects completion while readiness is missing', function (): void {
             production: $production->fresh(),
             actualOutputQuantity: '0',
             manufactureDate: '2026-08-20',
+            editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
         );
     })->toThrow(ValidationException::class);
 });
@@ -605,7 +649,9 @@ it('rolls back completion atomically when a step fails', function (): void {
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     // Force a failure: a lot already using the permanent batch number as its
     // code makes the output-lot insert violate the unique constraint.
@@ -622,6 +668,7 @@ it('rolls back completion atomically when a step fails', function (): void {
             production: $production->fresh(),
             actualOutputQuantity: '95',
             manufactureDate: '2026-08-20',
+            editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
         );
     })->toThrow(QueryException::class);
 
@@ -648,7 +695,9 @@ it('completes intermediate output in grams against an in-house ingredient', func
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
@@ -656,6 +705,7 @@ it('completes intermediate output in grams against an in-house ingredient', func
         actualOutputQuantity: '12000',
         manufactureDate: '2026-08-20',
         outputIngredientId: $intermediate->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect($completed->actual_output_mass_grams)->toBe('12000.000000000')
@@ -711,7 +761,9 @@ it('completes configured manufactured output from the production snapshot', func
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
@@ -719,6 +771,7 @@ it('completes configured manufactured output from the production snapshot', func
         actualOutputQuantity: '12000',
         manufactureDate: '2026-08-20',
         estimatedReadyOn: '2026-08-29',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     $outputLot = $completed->outputLot()->sole();
@@ -742,10 +795,13 @@ it('completes a production from the production sheet', function (): void {
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->assertSee('Complete production')
         ->set('actualOutputQuantity', '95')
         ->set('manufactureDate', '2026-08-20 00:00:00')
@@ -776,12 +832,15 @@ it('aborts a running production with reconciliation', function (): void {
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '4000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '30'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $aborted = app(AbortProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         reason: 'The batch seized in the mould',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect($aborted->status)->toBe(ProductionRunStatus::Aborted)
@@ -809,6 +868,7 @@ it('aborts without actuals by releasing reservations only', function (): void {
         actor: $fixture['owner'],
         production: $production,
         reason: 'Cancelled before the bench',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($aborted->status)->toBe(ProductionRunStatus::Aborted)
@@ -823,7 +883,7 @@ it('rejects aborting outside in-production and rolls back atomically', function 
     $production->update(['status' => ProductionRunStatus::Scheduled]);
 
     expect(function () use ($fixture, $production): void {
-        app(AbortProduction::class)->handle($fixture['owner'], $production, 'Nope');
+        app(AbortProduction::class)->handle($fixture['owner'], $production, 'Nope', editing: ProductionEditingFixture::command($fixture['owner'], $production));
     })->toThrow(ValidationException::class);
 
     $running = productionExecutionRun($fixture, 'abort-rollback-1');
@@ -831,11 +891,13 @@ it('rejects aborting outside in-production and rolls back atomically', function 
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     app(SaveProductionActuals::class)->handle($fixture['owner'], $running, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '4000.000000000'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $running),
+    );
     Schema::drop('stock_movements');
 
     expect(function () use ($fixture, $running): void {
-        app(AbortProduction::class)->handle($fixture['owner'], $running->fresh(), 'Broken');
+        app(AbortProduction::class)->handle($fixture['owner'], $running->fresh(), 'Broken', editing: ProductionEditingFixture::command($fixture['owner'], $running->fresh()));
     })->toThrow(QueryException::class);
 
     expect($running->fresh()->status)->toBe(ProductionRunStatus::InProduction)
@@ -853,12 +915,15 @@ it('releases a quarantined output lot and issues finished goods', function (): v
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
     $outputLot = $completed->outputLot()->sole();
 
@@ -866,13 +931,13 @@ it('releases a quarantined output lot and issues finished goods', function (): v
     expect($outputLot->status->value)->toBe('quarantined');
 
     expect(function () use ($fixture, $outputLot): void {
-        app(IssueFinishedGoods::class)->handle($fixture['owner'], $outputLot, StockMovementType::Sample, '1');
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $outputLot, StockMovementType::Sample, '1', editing: ProductionEditingFixture::command($fixture['owner'], $outputLot));
     })->toThrow(ValidationException::class);
 
     // Release before the estimate requires explicit confirmation.
     $outputLot->update(['estimated_ready_on' => now()->addDays(28)->toDateString()]);
     expect(function () use ($fixture, $outputLot): void {
-        app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot);
+        app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot, editing: ProductionEditingFixture::command($fixture['owner'], $outputLot));
     })->toThrow(ValidationException::class);
 
     $released = app(ReleaseOutputLot::class)->handle(
@@ -880,6 +945,7 @@ it('releases a quarantined output lot and issues finished goods', function (): v
         lot: $outputLot,
         note: 'Cured and packed',
         earlyReleaseConfirmed: true,
+        editing: ProductionEditingFixture::command($fixture['owner'], $outputLot),
     );
 
     expect($released->status->value)->toBe('released')
@@ -894,10 +960,11 @@ it('releases a quarantined output lot and issues finished goods', function (): v
         kind: StockMovementType::Shipment,
         quantity: '10',
         note: 'First customer order',
+        editing: ProductionEditingFixture::command($fixture['owner'], $released),
     );
-    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Sample, '2');
-    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Damaged, '1');
-    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::InternalUse, '3');
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Sample, '2', editing: ProductionEditingFixture::command($fixture['owner'], $issued));
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Damaged, '1', editing: ProductionEditingFixture::command($fixture['owner'], $issued));
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::InternalUse, '3', editing: ProductionEditingFixture::command($fixture['owner'], $issued));
 
     expect($issued->movements()->where('type', StockMovementType::Shipment)->sole()->quantity_delta)->toBe('-10.000000000')
         ->and($issued->movements()->where('type', StockMovementType::Sample)->sole()->quantity_delta)->toBe('-2.000000000')
@@ -906,7 +973,7 @@ it('releases a quarantined output lot and issues finished goods', function (): v
 
     // Over-issue rejected.
     expect(function () use ($fixture, $issued): void {
-        app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Shipment, '999');
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Shipment, '999', editing: ProductionEditingFixture::command($fixture['owner'], $issued));
     })->toThrow(ValidationException::class);
 });
 
@@ -920,12 +987,15 @@ it('requires all production tasks to be complete before releasing output', funct
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
     $task = ProductionTask::factory()->for($fixture['workspace'])->for($completed, 'productionRun')->create([
         'name_snapshot' => 'Final quality check',
@@ -935,12 +1005,12 @@ it('requires all production tasks to be complete before releasing output', funct
     $outputLot = $completed->outputLot()->sole();
     $outputLot->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
 
-    expect(fn () => app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot))
+    expect(fn () => app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot, editing: ProductionEditingFixture::command($fixture['owner'], $outputLot)))
         ->toThrow(ValidationException::class);
 
-    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task, editing: ProductionEditingFixture::command($fixture['owner'], $task));
 
-    expect(app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot)->status)
+    expect(app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot, editing: ProductionEditingFixture::command($fixture['owner'], $outputLot))->status)
         ->toBe(StockLotStatus::Released);
 });
 
@@ -948,13 +1018,13 @@ it('records journal entries during planning and production, read-only afterwards
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'journal-1');
 
-    $saved = app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $production, 'Mixed at 40°C, batter traced after 8 minutes.');
+    $saved = app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $production, 'Mixed at 40°C, batter traced after 8 minutes.', editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($saved->journalEntries()->count())->toBe(1)
         ->and($saved->journalEntries()->sole()->body)->toBe('Mixed at 40°C, batter traced after 8 minutes.')
         ->and($saved->journalEntries()->sole()->created_by_user_id)->toBe($fixture['owner']->id);
 
-    app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $production, 'Added lavender at trace.');
+    app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $production, 'Added lavender at trace.', editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($production->journalEntries()->count())->toBe(2)
         ->and($production->journalEntries()->first()->body)->toBe('Mixed at 40°C, batter traced after 8 minutes.');
@@ -966,16 +1036,19 @@ it('records journal entries during planning and production, read-only afterwards
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect(function () use ($fixture, $completed): void {
-        app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $completed, 'Too late to add.');
+        app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $completed, 'Too late to add.', editing: ProductionEditingFixture::command($fixture['owner'], $completed));
     })->toThrow(ValidationException::class);
 });
 
@@ -1039,6 +1112,7 @@ it('prepares stock partially and completes coverage on a later pass', function (
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'partial-prepare-confirm',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect($prepared[0]->status)->toBe(ProductionRunStatus::Scheduled)
@@ -1055,6 +1129,7 @@ it('prepares stock partially and completes coverage on a later pass', function (
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'partial-prepare-complete',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect($completed[0]->status)->toBe(ProductionRunStatus::Reserved)
@@ -1120,26 +1195,29 @@ it('shows the release stock control for a scheduled run with partial reservation
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'scheduled-release-ui-prepare',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect($prepared[0]->status)->toBe(ProductionRunStatus::Scheduled)
         ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(3);
 
     // Deletion is blocked while reservations exist…
-    expect(fn () => app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh()))
+    expect(fn () => app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh())))
         ->toThrow(ValidationException::class);
 
     // …but the detail page offers the release control on a scheduled run.
     Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => $production->id])
+        ->call('beginEditing')
         ->assertSee(__('production_bench.production.release_stock'))
         ->call('releaseStock')
         ->assertHasNoErrors()
-        ->assertDispatched('production-stock-released');
+        ->assertDispatched('production-stock-released')
+        ->call('finishEditing');
 
     expect(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0);
 
     // After release the run can be deleted.
-    app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh());
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()));
 
     expect(ProductionRun::query()->find($production->id))->toBeNull();
 });
@@ -1157,6 +1235,7 @@ it('releases reservations per requirement and returns to scheduled when empty', 
         actor: $fixture['owner'],
         production: $production,
         productionRequirementId: $ingredientRequirement->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($released->status)->toBe(ProductionRunStatus::Scheduled)
@@ -1167,12 +1246,14 @@ it('releases reservations per requirement and returns to scheduled when empty', 
         actor: $fixture['owner'],
         production: $released,
         productionRequirementId: $packagingRequirement->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $released),
     );
 
     $fullyReleased = app(ReleaseProductionStock::class)->handle(
         actor: $fixture['owner'],
         production: $emptied,
         productionRequirementId: $lyeRequirement->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $emptied),
     );
 
     expect($fullyReleased->status)->toBe(ProductionRunStatus::Scheduled)
@@ -1190,7 +1271,7 @@ it('shows lifecycle sections appropriate to the run status', function (): void {
         ->assertDontSee('Actual consumption')
         ->assertDontSee('Complete production');
 
-    $started = app(StartProduction::class)->handle($fixture['owner'], $reserved->fresh());
+    $started = app(StartProduction::class)->handle($fixture['owner'], $reserved->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $reserved->fresh()));
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $started->id])
@@ -1207,6 +1288,7 @@ it('requires explicit confirmation before starting ahead of the planned date', f
 
     $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
+        ->call('beginEditing')
         ->call('start')
         ->assertDispatched('early-start-confirmation-requested', function (string $event, array $payload): bool {
             return $event === 'early-start-confirmation-requested'
@@ -1291,13 +1373,16 @@ it('prices actual consumption at the received per-gram cost from a real receipt'
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '4000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     // 4,000 g × €0.013020833/g = €52.083332 — not €0.052.
@@ -1348,13 +1433,16 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     app(SaveProductionActuals::class)->handle($fixtureA['owner'], $runA, [
         ['production_requirement_id' => $ingredientRequirementA->id, 'stock_lot_id' => $oilLotA->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirementA->id, 'stock_lot_id' => $packagingLotA->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixtureA['owner'], $runA),
+    );
     $completedA = app(CompleteProduction::class)->handle(
         actor: $fixtureA['owner'],
         production: $runA->fresh(),
         actualOutputQuantity: '12000',
         manufactureDate: '2026-08-20',
         outputIngredientId: $intermediate->id,
+        editing: ProductionEditingFixture::command($fixtureA['owner'], $runA->fresh()),
     );
     $intermediateLot = $completedA->outputLot()->sole();
 
@@ -1366,7 +1454,7 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     // Manufactured output must be explicitly released and ready before it
     // can be consumed by a downstream production.
     $intermediateLot->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
-    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixtureA['owner'], $intermediateLot);
+    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixtureA['owner'], $intermediateLot, editing: ProductionEditingFixture::command($fixtureA['owner'], $intermediateLot));
 
     // Run B consumes the intermediate in the same workspace and prices it
     // from run A.
@@ -1378,12 +1466,15 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     app(SaveProductionActuals::class)->handle($fixtureB['owner'], $runB, [
         ['production_requirement_id' => $ingredientRequirementB->id, 'stock_lot_id' => $intermediateLot->id, 'quantity' => '6000.000000000'],
         ['production_requirement_id' => $packagingRequirementB->id, 'stock_lot_id' => $packagingLotB->id, 'quantity' => '50'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixtureB['owner'], $runB),
+    );
     $completedB = app(CompleteProduction::class)->handle(
         actor: $fixtureB['owner'],
         production: $runB->fresh(),
         actualOutputQuantity: '60',
         manufactureDate: '2026-08-22',
+        editing: ProductionEditingFixture::command($fixtureB['owner'], $runB->fresh()),
     );
 
     // 6,000 g × €0.015541666 = €93.249996 — never a silent zero.
@@ -1402,7 +1493,9 @@ it('shows saved actuals after a page reload instead of reservation defaults', fu
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '9000.000000000', 'note' => 'From the bench'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '80'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     // Fresh mount (reload) must load the saved actuals, not the defaults.
     Livewire::actingAs($fixture['owner'])
@@ -1446,12 +1539,14 @@ it('records and completes actuals from two lots of the same ingredient', functio
     // The sheet shows one row per lot with both lot codes.
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->assertSee($firstLot->internal_lot_code)
         ->assertSee($secondLot->internal_lot_code)
         ->set('actualRows.'.$firstKey.'.quantity', '8000')
         ->set('actualRows.'.$secondKey.'.quantity', '6000')
         ->set('actualRows.'.($packagingRequirement->id.'-'.$packagingLot->id).'.quantity', '98')
-        ->call('saveActuals');
+        ->call('saveActuals')
+        ->call('finishEditing');
 
     expect($production->consumption()->where('production_requirement_id', $ingredientRequirement->id)->count())->toBe(2)
         ->and($production->consumption()->where('stock_lot_id', $firstLot->id)->sole()->quantity)->toBe('8000.000000000')
@@ -1462,6 +1557,7 @@ it('records and completes actuals from two lots of the same ingredient', functio
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->where('stock_lot_id', $firstLot->id)->sole()->quantity_delta)
@@ -1498,7 +1594,9 @@ it('rejects completion when lots resolve to mixed currencies', function (): void
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     expect(function () use ($fixture, $production): void {
         app(CompleteProduction::class)->handle(
@@ -1506,6 +1604,7 @@ it('rejects completion when lots resolve to mixed currencies', function (): void
             production: $production->fresh(),
             actualOutputQuantity: '95',
             manufactureDate: '2026-08-20',
+            editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
         );
     })->toThrow(ValidationException::class);
 });
@@ -1525,16 +1624,19 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '12000',
         manufactureDate: '2026-08-20',
         outputIngredientId: $intermediate->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
     $completed->outputLot()->sole()->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
-    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
+    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole(), editing: ProductionEditingFixture::command($fixture['owner'], $completed->outputLot()->sole()));
 
     // A later production reserves 4,000 g of the 12,000 g intermediate.
     StockReservation::factory()->create([
@@ -1547,10 +1649,10 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
     ]);
 
     // 12,000 physical − 4,000 reserved = 8,000 issuable.
-    app(IssueFinishedGoods::class)->handle($fixture['owner'], $intermediateLot, StockMovementType::Shipment, '8000');
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $intermediateLot, StockMovementType::Shipment, '8000', editing: ProductionEditingFixture::command($fixture['owner'], $intermediateLot));
 
     expect(function () use ($fixture, $intermediateLot): void {
-        app(IssueFinishedGoods::class)->handle($fixture['owner'], $intermediateLot, StockMovementType::Shipment, '1');
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $intermediateLot, StockMovementType::Shipment, '1', editing: ProductionEditingFixture::command($fixture['owner'], $intermediateLot));
     })->toThrow(ValidationException::class);
 
     // A non-output lot (opening balance) cannot be released or issued.
@@ -1561,11 +1663,17 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
         'origin' => 'opening_balance',
     ]);
 
-    expect(function () use ($fixture, $openingLot): void {
-        app(ReleaseOutputLot::class)->handle($fixture['owner'], $openingLot);
-    })->toThrow(ValidationException::class)
-        ->and(fn (): StockLot => app(IssueFinishedGoods::class)->handle($fixture['owner'], $openingLot, StockMovementType::Sample, '1'))
-        ->toThrow(ValidationException::class);
+    $editing = ProductionEditingFixture::command($fixture['owner'], $completed->fresh());
+    expect(fn (): StockLot => app(ReleaseOutputLot::class)->handle($fixture['owner'], $openingLot, editing: $editing))
+        ->toThrow(function (ValidationException $exception): void {
+            expect($exception->errors())->toBe(['lot' => [__('production_bench.production.validation.output_lot_unlinked')]]);
+        });
+    expect(fn (): StockLot => app(IssueFinishedGoods::class)->handle($fixture['owner'], $openingLot, StockMovementType::Sample, '1', editing: $editing))
+        ->toThrow(function (ValidationException $exception): void {
+            expect($exception->errors())->toBe(['lot' => [__('production_bench.production.validation.issue_output_lot_required')]]);
+        });
+    expect($editing->acknowledgedRevisions())->toBe([]);
+    expect($openingLot->fresh()->movements()->count())->toBe(0);
 });
 
 it('rejects fractional issue quantities for finished count lots', function (): void {
@@ -1578,18 +1686,21 @@ it('rejects fractional issue quantities for finished count lots', function (): v
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
     $completed = app(CompleteProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
     $completed->outputLot()->sole()->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
-    $finishedLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
+    $finishedLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole(), editing: ProductionEditingFixture::command($fixture['owner'], $completed->outputLot()->sole()));
 
     expect(function () use ($fixture, $finishedLot): void {
-        app(IssueFinishedGoods::class)->handle($fixture['owner'], $finishedLot, StockMovementType::Shipment, '2.5');
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $finishedLot, StockMovementType::Shipment, '2.5', editing: ProductionEditingFixture::command($fixture['owner'], $finishedLot));
     })->toThrow(ValidationException::class);
 });
 
@@ -1609,11 +1720,11 @@ it('disables mutation controls for viewer-role members', function (): void {
     // Start, release, complete, and journal controls exist but are disabled.
     $page->assertSee('Start production')
         ->assertSee('Release stock')
-        ->assertSeeHtml('wire:click="start"')
+        ->assertSeeHtml('@click="runCommand(\'start\', [], null)"')
         ->assertSeeHtml('disabled');
 
     $html = $page->html();
-    preg_match('/wire:click="start"[^>]*/', $html, $m);
+    preg_match('/@click="runCommand\(\'start\', \[\], null\)"[^>]*/', $html, $m);
     expect($m[0] ?? '')->toContain('disabled');
 });
 
@@ -1642,7 +1753,9 @@ it('shows a live readiness checklist before completion', function (): void {
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
         ['production_requirement_id' => $lyeRequirement->id, 'stock_lot_id' => $lyeLot->id, 'quantity' => (string) $lyeRequirement->required_mass_grams],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
@@ -1666,6 +1779,7 @@ it('attaches a private journal document to the production', function (): void {
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->set('journalDocumentUpload', UploadedFile::fake()->image('batch-photo.jpg'))
         ->set('journalDocumentNote', 'Mould filled at 09:15')
         ->call('attachJournalDocument')
@@ -1673,7 +1787,8 @@ it('attaches a private journal document to the production', function (): void {
             return $event === 'app-notification'
                 && str_starts_with($payload['message'], __('production_bench.production.journal_document_attached'))
                 && $payload['type'] === 'success';
-        });
+        })
+        ->call('finishEditing');
 
     $document = $production->documents()->where('type', ProductionDocumentType::Journal)->sole();
 
@@ -1691,21 +1806,25 @@ it('detaches a journal document and frees the asset for library removal', functi
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->set('journalDocumentUpload', UploadedFile::fake()->image('batch-photo.jpg'))
         ->call('attachJournalDocument')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->call('finishEditing');
 
     $document = $production->documents()->where('type', ProductionDocumentType::Journal)->sole();
     $assetId = $document->media_asset_id;
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->call('detachJournalDocument', $document->id)
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'
                 && str_starts_with($payload['message'], __('production_bench.production.journal_document_detached'))
                 && $payload['type'] === 'success';
-        });
+        })
+        ->call('finishEditing');
 
     expect($production->documents()->count())->toBe(0)
         ->and(MediaAsset::query()->find($assetId))->not->toBeNull();
@@ -1729,7 +1848,9 @@ it('sets family and task based ready dates on output lots', function (): void {
         app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
             ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
             ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-        ]);
+        ],
+            editing: ProductionEditingFixture::command($fixture['owner'], $production),
+        );
 
         foreach ($tasks as $taskDate) {
             ProductionTask::factory()->for($production, 'productionRun')->create([
@@ -1744,6 +1865,7 @@ it('sets family and task based ready dates on output lots', function (): void {
             production: $production->fresh(),
             actualOutputQuantity: '95',
             manufactureDate: '2026-08-20',
+            editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
         );
     };
 
@@ -1775,13 +1897,17 @@ it('requires the manufacture date before completing from the sheet', function ()
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
-    ]);
+    ],
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
+    );
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('beginEditing')
         ->set('actualOutputQuantity', '95')
         ->call('complete')
-        ->assertHasErrors('manufacture_date');
+        ->assertHasErrors('manufacture_date')
+        ->call('finishEditing');
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::InProduction);
 });
@@ -1920,19 +2046,21 @@ function productionExecutionRun(array $fixture, string $idempotencyKey, bool $st
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: $idempotencyKey.'-prepare',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     app(AssignProductionBatchNumbers::class)->handle(
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
         productionIds: [$production->id],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     if (! $start) {
         return $production->fresh();
     }
 
-    return app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+    return app(StartProduction::class)->handle($fixture['owner'], $production->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()));
 }
 
 /** @return array<string, string> */

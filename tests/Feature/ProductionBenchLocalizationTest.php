@@ -2,6 +2,7 @@
 
 use App\Services\Translations\InterfaceTranslationCatalogue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Lang;
 
@@ -87,3 +88,42 @@ function productionLifecycleActionFiles(): array
         app_path('Actions/Production/UpdateProductionPlan.php'),
     ];
 }
+
+it('provides every editing message in all six catalogue locales with matching placeholders', function (): void {
+    $this->seed('Database\\Seeders\\SupportedLocaleSeeder');
+    $english = Arr::dot(Lang::get('production_bench.editing', [], 'en'));
+    $catalogue = app(InterfaceTranslationCatalogue::class)->read(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])->where('group', 'production_bench')->keyBy('key');
+    foreach ($english as $key => $message) {
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+            $translated = $rows->get('editing.'.$key)['text'][$locale] ?? null;
+            expect($translated)->toBeString()->not->toBeEmpty();
+            preg_match_all('/:[a-z_]+/', $message, $sourcePlaceholders);
+            preg_match_all('/:[a-z_]+/', $translated, $translatedPlaceholders);
+            expect($translatedPlaceholders[0])->toBe($sourcePlaceholders[0]);
+        }
+    }
+});
+
+it('provides date save and upload feedback in all six catalogue locales', function (): void {
+    $this->seed('Database\\Seeders\\SupportedLocaleSeeder');
+    $catalogue = app(InterfaceTranslationCatalogue::class)->read(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])->where('group', 'production_bench')->keyBy('key');
+    foreach (['production.save_date', 'production.uploading', 'production.upload_ready', 'production.upload_failed', 'production.attaching'] as $key) {
+        expect(Lang::has('production_bench.'.$key, 'en'))->toBeTrue();
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+            expect($rows->get($key)['text'][$locale] ?? null)->toBeString()->not->toBeEmpty();
+        }
+    }
+});
+
+it('provides translated recovery messages for reload and saved display failures', function (): void {
+    $catalogue = collect(json_decode(File::get(database_path('seeders/data/interface-translations.json')), true, flags: JSON_THROW_ON_ERROR)['translations']);
+    foreach (['refresh_failed', 'reload_failed'] as $key) {
+        expect(Lang::has("production_bench.editing.{$key}", 'en'))->toBeTrue();
+        $row = $catalogue->first(fn (array $row): bool => $row['group'] === 'production_bench' && $row['key'] === "editing.{$key}");
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+            expect($row['text'][$locale] ?? null)->toBeString()->not->toBeEmpty();
+        }
+    }
+});

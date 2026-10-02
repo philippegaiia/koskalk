@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\PrepareProductionStock;
+use App\Livewire\Concerns\InteractsWithProductionEditing;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionRun;
 use App\Models\User;
@@ -11,15 +12,21 @@ use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\StockReservationProposalService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 class StockPreparation extends Component
 {
+    use InteractsWithProductionEditing;
     use InteractsWithProductionWorkspace;
 
     /** @var list<int> */
+    #[Locked]
     public array $productionIds = [];
 
     /** @var array<string, bool> */
@@ -28,6 +35,7 @@ class StockPreparation extends Component
     /** @var array<string, array<string, string>> */
     public array $manualQuantities = [];
 
+    #[Locked]
     public string $idempotencyKey = '';
 
     public function mount(string|int|ProductionRun|null $productionRun = null): void
@@ -45,15 +53,18 @@ class StockPreparation extends Component
         $queryIds = request()->query('ids');
 
         if (is_string($queryIds) && $queryIds !== '') {
+            abort_if(count(explode(',', $queryIds)) > 100, 422);
             foreach (explode(',', $queryIds) as $queryId) {
-                if (ctype_digit($queryId) && (int) $queryId > 0) {
-                    $ids[] = (int) $queryId;
-                }
+                abort_unless(ctype_digit($queryId) && (int) $queryId > 0, 422);
+                $ids[] = (int) $queryId;
             }
         }
 
-        $this->productionIds = array_values(array_unique($ids));
+        abort_if(count($ids) < 1 || count($ids) > 100, 422);
+        $this->productionIds = collect($ids)->unique()->sort()->values()->all();
+        abort_unless(ProductionRun::query()->where('workspace_id', $this->workspace()->id)->whereIn('id', $this->productionIds)->count() === count($this->productionIds), 404);
         $this->idempotencyKey = (string) Str::uuid();
+        $this->initializeProductionEditing($this->productionIds);
     }
 
     public function toggleManual(int $requirementId): void
@@ -65,12 +76,15 @@ class StockPreparation extends Component
     public function confirm(PrepareProductionStock $prepareProductionStock): void
     {
         try {
+            $context = $this->productionEditingContext();
             $prepared = $prepareProductionStock->handle(
                 actor: $this->user(),
                 productionIds: $this->productionIds,
                 idempotencyKey: $this->idempotencyKey,
                 manualAllocations: $this->manualAllocations(),
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -98,23 +112,10 @@ class StockPreparation extends Component
         StockReservationProposalService $proposalService,
     ): View {
         $workspace = $this->workspace();
-        $productions = ProductionRun::query()
-            ->where('workspace_id', $workspace->id)
-            ->whereIn('id', $this->productionIds)
-            ->with(['requirements.productionRun'])
-            ->get()
-            ->sortBy(fn (ProductionRun $production): array => [
-                $production->planned_for?->toDateString() === null ? 1 : 0,
-                $production->planned_for?->toDateString() ?? '',
-                $production->id,
-            ])
-            ->values();
-
-        if ($productions->count() !== count($this->productionIds)) {
-            abort(404);
-        }
+        $productions = collect($this->editingPresentation)->map(fn (array $snapshot): ProductionRun => $this->productionModelFromSnapshot($snapshot))->values();
 
         return view('livewire.production-bench.production.stock-preparation', [
+            'editingPayload' => $this->productionEditingPayload(),
             'contextualHelp' => $helpTopics->resolve('stock', app()->getLocale()),
             'workspace' => $workspace,
             'productions' => $productions,
@@ -151,6 +152,43 @@ class StockPreparation extends Component
         }
 
         return $allocations;
+    }
+
+    private function productionSnapshotQuery(): Builder
+    {
+        return ProductionRun::query()->with(['workspace', 'requirements.productionRun.workspace']);
+    }
+
+    private function productionDraftGroupsFromSnapshot(Collection $productions): array
+    {
+        return ['allocations' => ['manualMode' => [], 'manualQuantities' => []]];
+    }
+
+    private function productionDraftGroups(): array
+    {
+        return ['allocations' => ['manualMode' => $this->manualMode, 'manualQuantities' => $this->manualQuantities]];
+    }
+
+    #[Renderless]
+    public function executeEditingCommand(string $method, array $arguments = [], ?array $submitted = null, ?string $group = null): array
+    {
+        abort_unless($method === 'confirm' && $arguments === [] && $group === 'allocations' && $submitted !== null, 422);
+        validator($submitted, [
+            'manualMode' => ['present', 'array', 'max:1000'], 'manualMode.*' => ['boolean'],
+            'manualQuantities' => ['present', 'array', 'max:1000'], 'manualQuantities.*' => ['array', 'max:100'], 'manualQuantities.*.*' => ['string', 'max:100'],
+        ])->validate();
+        $allowedRequirements = collect($this->editingPresentation)->flatMap(fn (array $snapshot): Collection => $this->productionModelFromSnapshot($snapshot)->requirements)->pluck('id')->map(fn (int $id): string => (string) $id)->all();
+        abort_unless(array_diff(array_map('strval', array_keys($submitted['manualMode'])), $allowedRequirements) === []
+            && array_diff(array_map('strval', array_keys($submitted['manualQuantities'])), $allowedRequirements) === [], 422);
+        $this->manualMode = $submitted['manualMode'];
+        $this->manualQuantities = $submitted['manualQuantities'];
+        $this->resetErrorBag();
+        $this->productionCommandAcknowledgment = [];
+        $this->confirm(app(PrepareProductionStock::class));
+
+        return ['ok' => $this->productionCommandAcknowledgment !== [] && $this->getErrorBag()->isEmpty(),
+            'revisions' => $this->productionCommandAcknowledgment, 'canonical' => $this->productionDraftGroups()['allocations'],
+            'state' => $this->observeProductionEditing(), 'errors' => $this->getErrorBag()->toArray()];
     }
 
     private function user(): User

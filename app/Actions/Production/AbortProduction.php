@@ -12,14 +12,18 @@ use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AbortProduction
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
     ) {}
 
@@ -28,8 +32,9 @@ class AbortProduction
      * every recorded actual, release all remaining active reservations, and
      * close the run as aborted. No output lot and no cost snapshot.
      */
-    public function handle(User $actor, ProductionRun $production, string $reason): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production, string $reason,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $workspace = $production->workspace;
 
         if (! $workspace instanceof Workspace) {
@@ -40,13 +45,8 @@ class AbortProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production, $reason): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->findOrFail($production->workspace_id);
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($production, $reason): ProductionMutationResult {
+            $lockedProduction = $productions[$production->id];
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 
@@ -111,7 +111,7 @@ class AbortProduction
                 'abort_reason' => $reason,
             ]);
 
-            return $lockedProduction->fresh(['requirements', 'consumption']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'consumption']), [$lockedProduction->id]);
+        });
     }
 }

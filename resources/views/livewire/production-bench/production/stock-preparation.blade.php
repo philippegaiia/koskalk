@@ -5,6 +5,8 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        <div x-data="productionEditing(@js($editingPayload))" class="space-y-6">
+        <x-production-bench.editing-status :allocations="true" />
         <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0 flex-1">
@@ -89,27 +91,27 @@
                                 @endif
 
                                 <div class="flex flex-wrap items-center justify-between gap-3">
-                                    <button type="button" wire:click="toggleManual({{ $requirement->id }})" class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline" @disabled($isReadOnly)>
-                                        {{ ($manualMode[(string) $requirement->id] ?? false) ? __('production_bench.production.use_automatic_lots') : __('production_bench.production.choose_lots_manually') }}
+                                    <button type="button" @click="field('allocations', 'manualMode.{{ $requirement->id }}', !value('allocations', 'manualMode.{{ $requirement->id }}'))" :disabled="!canWrite || busy" class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline" @disabled($isReadOnly)>
+                                        <span x-text="value('allocations', 'manualMode.{{ $requirement->id }}') ? @js(__('production_bench.production.use_automatic_lots')) : @js(__('production_bench.production.choose_lots_manually'))"></span>
                                     </button>
                                     <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.preview_only') }}</span>
                                 </div>
 
-                                @if ($manualMode[(string) $requirement->id] ?? false)
+                                <div x-cloak x-show="value('allocations', 'manualMode.{{ $requirement->id }}')">
                                     <div class="rounded-xl border border-[var(--color-accent)] bg-[var(--color-panel-muted)] p-4">
                                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('production_bench.production.manual_lots') }}</p>
                                         <div class="mt-3 space-y-3">
                                             @forelse ($requirementProposal['eligible_lots'] as $lotRow)
                                                 <label class="grid gap-2 sm:grid-cols-[1fr_10rem] sm:items-center">
                                                     <span class="text-sm text-[var(--color-ink-soft)]">{{ $lotRow['lot']->internal_lot_code }} @if ($workspace->uses_storage_locations) · {{ $lotRow['lot']->storageLocation?->name ?? __('locations.unassigned') }} @endif · {{ __('production_bench.production.available_quantity') }} {{ \App\Support\NumberLocale::formatAdaptiveDecimal($lotRow['available'], 0, 3, auth()->user()?->number_locale) }} · {{ $lotRow['lot']->expires_at?->format('Y-m-d') ?? __('production_bench.production.no_expiry') }}</span>
-                                                    <input type="text" inputmode="decimal" wire:model.live.debounce.300ms="manualQuantities.{{ $requirement->id }}.{{ $lotRow['lot']->id }}" class="sk-input w-full" placeholder="0">
+                                                    <input type="text" inputmode="decimal" wire:ignore :value="value('allocations', 'manualQuantities.{{ $requirement->id }}.{{ $lotRow['lot']->id }}')" @input="field('allocations', 'manualQuantities.{{ $requirement->id }}.{{ $lotRow['lot']->id }}', $event.target.value)" :disabled="!canWrite || busy" class="sk-input w-full" placeholder="0">
                                                 </label>
                                             @empty
                                                 <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_eligible_lots') }}</p>
                                             @endforelse
                                         </div>
                                     </div>
-                                @endif
+                                </div>
                             </article>
                         @endforeach
                     </div>
@@ -117,12 +119,13 @@
             @endforeach
         </div>
 
-        <form wire:submit="confirm" class="sk-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <form @submit.prevent="runCommand('confirm', [], 'allocations')" class="sk-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
                 <p class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.confirm_prepare_stock') }}</p>
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.confirm_prepare_stock_help') }}</p>
             </div>
-            <button type="submit" wire:loading.attr="disabled" @disabled($isReadOnly || ! $isBenchActive) class="sk-btn sk-btn-primary shrink-0">{{ __('production_bench.production.prepare_stock') }}</button>
+            <button type="submit" wire:loading.attr="disabled" :disabled="!canWrite || busy || @js($isReadOnly || ! $isBenchActive)" class="sk-btn sk-btn-primary shrink-0">{{ __('production_bench.production.prepare_stock') }}</button>
         </form>
+        </div>
     @endif
 </x-production-bench.page>

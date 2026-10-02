@@ -19,6 +19,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -107,6 +108,7 @@ it('assigns departments and employees independently while production is in progr
         task: $task,
         departmentId: $qualityDepartment->id,
         employeeId: $employee->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $task),
     );
     $task->productionRun->update(['status' => ProductionRunStatus::InProduction]);
 
@@ -115,6 +117,7 @@ it('assigns departments and employees independently while production is in progr
         task: $task->fresh(),
         departmentId: $productionDepartment->id,
         employeeId: null,
+        editing: ProductionEditingFixture::command($fixture['owner'], $task->fresh()),
     );
 
     expect($task->fresh()->department_id)->toBe($productionDepartment->id)
@@ -127,6 +130,7 @@ it('assigns departments and employees independently while production is in progr
         task: $task->fresh(),
         departmentId: $qualityDepartment->id,
         employeeId: $employee->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $task->fresh()),
     ))->toThrow(ValidationException::class);
 });
 
@@ -144,11 +148,13 @@ it('rejects inactive and cross-workspace assignment options', function (): void 
         actor: $fixture['owner'],
         task: $task,
         departmentId: $department->id,
+        editing: ProductionEditingFixture::command($fixture['owner'], $task),
     ))->toThrow(ValidationException::class)
         ->and(fn (): ProductionTask => app(AssignProductionTask::class)->handle(
             actor: $fixture['owner'],
             task: $task,
             employeeId: $employee->id,
+            editing: ProductionEditingFixture::command($fixture['owner'], $task),
         ))->toThrow(ValidationException::class);
 });
 

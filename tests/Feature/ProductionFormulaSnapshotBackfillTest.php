@@ -47,12 +47,14 @@ it('backfills a complete formula snapshot for a legacy soap production and is id
         ->toBe(['10500.000000000', '3500.000000000'])
         ->and($production->formulaLines()->where('component', 'naoh')->count())->toBe(1)
         ->and($production->formulaLines()->where('component', 'water')->count())->toBe(1)
-        ->and($production->formulaLines()->count())->toBe(4);
+        ->and($production->formulaLines()->count())->toBe(4)
+        ->and($production->edit_revision)->toBe(1);
 
     $lineCount = $production->formulaLines()->count();
 
     expect($action->handle($production))->toBeTrue()
-        ->and($production->formulaLines()->count())->toBe($lineCount);
+        ->and($production->formulaLines()->count())->toBe($lineCount)
+        ->and($production->fresh()->edit_revision)->toBe(1);
 });
 
 it('leaves the run incomplete and writes nothing when the source version is missing', function (): void {

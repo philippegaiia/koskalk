@@ -23,8 +23,9 @@ use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductionMutationGuard;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -32,7 +33,7 @@ class ProductionCompletionService
 {
     private const int GuardScale = 18;
 
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ConsumableStockLotPolicy $lotPolicy,
         private readonly ProductionBenchAccess $access,
     ) {}
@@ -50,26 +51,24 @@ class ProductionCompletionService
         string $manufactureDate,
         ?string $estimatedReadyOn = null,
         ?int $outputIngredientId = null,
+        ?ProductionEditingContext $editing = null,
     ): ProductionRun {
-        return DB::transaction(function () use (
-            $actor,
+        $this->access->assertWritable($actor, $production->workspace);
+
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $workspace, Collection $productions, ProductionMutationScope $scope) use (
             $actualOutputQuantity,
             $manufactureDate,
             $estimatedReadyOn,
             $outputIngredientId,
             $production,
-        ): ProductionRun {
-            $workspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->findOrFail($production->workspace_id);
+        ): ProductionMutationResult {
+
             $this->access->assertWritable($actor, $workspace);
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+            $lockedProduction = $productions[$production->id];
 
             $outputConfiguration = $this->resolveOutputConfiguration($lockedProduction, $outputIngredientId);
             $resolvedOutputIngredientId = $outputConfiguration['output_ingredient_id'];
-            $this->defaultCalculatedLyeActuals($actor, $lockedProduction);
+            $this->defaultCalculatedLyeActuals($actor, $lockedProduction, $workspace, $scope);
             $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $resolvedOutputIngredientId);
 
             $consumption = ProductionConsumption::query()
@@ -218,8 +217,8 @@ class ProductionCompletionService
                 'actual_cost_per_unit' => $costPerUnit,
             ]);
 
-            return $lockedProduction->fresh(['requirements', 'consumption', 'outputLot']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'consumption', 'outputLot']), [$lockedProduction->id]);
+        });
     }
 
     /**
@@ -391,8 +390,9 @@ class ProductionCompletionService
         $this->lotPolicy->assertConsumable($lot, Carbon::parse($manufactureDate), 'production');
     }
 
-    private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production): void
+    private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production, Workspace $workspace, ProductionMutationScope $scope): void
     {
+        $scope->assertFor($actor, $production, $workspace);
         $lyeLines = ProductionFormulaLine::query()
             ->where('production_run_id', $production->id)
             ->whereIn('component', [ProductionFormulaComponent::Naoh, ProductionFormulaComponent::Koh])

@@ -6,13 +6,16 @@ use App\Enums\ProductionRunStatus;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class SaveProductionJournalEntry
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
     ) {}
 
@@ -21,8 +24,9 @@ class SaveProductionJournalEntry
      * journal becomes read-only once the run is completed, aborted, or
      * cancelled.
      */
-    public function handle(User $actor, ProductionRun $production, string $body): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production, string $body,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $workspace = $production->workspace;
 
         if (! $workspace instanceof Workspace) {
@@ -41,14 +45,9 @@ class SaveProductionJournalEntry
             ]);
         }
 
-        return DB::transaction(function () use ($actor, $body, $production): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->findOrFail($production->workspace_id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions) use ($body, $production): ProductionMutationResult {
             $this->access->assertWritable($actor, $lockedWorkspace);
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+            $lockedProduction = $productions[$production->id];
 
             if (in_array($lockedProduction->status, [
                 ProductionRunStatus::Completed,
@@ -65,7 +64,7 @@ class SaveProductionJournalEntry
                 'created_by_user_id' => $actor->id,
             ]);
 
-            return $lockedProduction->fresh(['journalEntries']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['journalEntries']), [$lockedProduction->id]);
+        });
     }
 }

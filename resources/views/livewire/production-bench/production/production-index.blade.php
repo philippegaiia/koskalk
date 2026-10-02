@@ -1,4 +1,7 @@
 <x-production-bench.page active="production">
+    <div x-data="productionRegister()" data-failure-message="{{ __('production_bench.editing.command_failed') }}" class="space-y-6">
+    <p x-cloak x-show="message" x-text="message" role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]"></p>
+    <button type="button" @click="run('refreshProductionRegister')" x-bind:disabled="busy" class="sk-btn sk-btn-ghost">{{ __('production_bench.editing.refresh_register') }}</button>
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.inactive') }}</h1>
@@ -95,7 +98,7 @@
                     <div role="region" aria-label="{{ __('production_bench.production.bulk_actions') }}" class="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3">
                         <p class="mr-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ __('production_bench.production.selected_count', ['count' => count($visibleSelectedProductionIds)]) }}</p>
                         <button type="button" wire:click="prepareSelected" wire:loading.attr="disabled" wire:target="prepareSelected" class="sk-btn sk-btn-secondary text-xs">{{ __('production_bench.production.prepare_stock') }}</button>
-                        <button type="button" wire:click="assignSelectedBatchNumbers" wire:confirm="{{ __('production_bench.production.assign_batch_numbers_confirm') }}" wire:loading.attr="disabled" wire:target="assignSelectedBatchNumbers" class="sk-btn sk-btn-secondary text-xs">{{ __('production_bench.production.assign_batch_numbers') }}</button>
+                        <button type="button" @click="run('assignSelectedBatchNumbers', [], @js(__('production_bench.production.assign_batch_numbers_confirm')))" x-bind:disabled="busy"  wire:loading.attr="disabled" wire:target="assignSelectedBatchNumbers" class="sk-btn sk-btn-secondary text-xs">{{ __('production_bench.production.assign_batch_numbers') }}</button>
                         <button type="button" wire:click="clearSelection" class="sk-btn sk-btn-ghost text-xs">{{ __('production_bench.production.clear_selection') }}</button>
                     </div>
                 @endif
@@ -187,8 +190,8 @@
                                             @if ($canDelete)
                                                 <x-table-row-action icon="trash" label="{{ __('production_bench.production.delete') }}"
                                                     data-production-delete-action
-                                                    wire:click.stop="deleteProduction({{ $production->id }})"
-                                                    wire:confirm="{{ __('production_bench.production.delete_confirm') }}"
+                                                    @click.stop="run('deleteProduction', [{{ $production->id }}], @js(__('production_bench.production.delete_confirm')))" x-bind:disabled="busy"
+
                                                     wire:loading.attr="disabled"
                                                     aria-label="{{ __('production_bench.production.delete') }}: {{ $production->displayRecipeName() }}"
                                                 />
@@ -276,8 +279,8 @@
                                         @if ($canDelete)
                                             <x-table-row-action icon="trash" label="{{ __('production_bench.production.delete') }}"
                                                     data-production-delete-action
-                                                wire:click.stop="deleteProduction({{ $production->id }})"
-                                                wire:confirm="{{ __('production_bench.production.delete_confirm') }}"
+                                                @click.stop="run('deleteProduction', [{{ $production->id }}], @js(__('production_bench.production.delete_confirm')))" x-bind:disabled="busy"
+
                                                 wire:loading.attr="disabled"
                                                 aria-label="{{ __('production_bench.production.delete') }}: {{ $production->displayRecipeName() }}"
                                                 />
@@ -294,4 +297,5 @@
         </section>
     @endif
     <x-filament-actions::modals />
+    </div>
 </x-production-bench.page>

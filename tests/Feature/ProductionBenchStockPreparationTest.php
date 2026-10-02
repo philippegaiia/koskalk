@@ -46,12 +46,14 @@ it('previews lots and confirms an individual stock preparation', function (): vo
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(StockPreparation::class, ['productionRun' => $production->id])
+        ->call('beginEditing')
         ->assertSee('Prepare production stock')
         ->assertSee('SK-UI-0001')
         ->set('manualMode', [(string) $requirement->id => true])
         ->set('manualQuantities', [(string) $requirement->id => [(string) $lot->id => '10']])
         ->call('confirm')
-        ->assertRedirect(route('production-bench.production.show', $production));
+        ->assertRedirect(route('production-bench.production.show', $production))
+        ->call('finishEditing');
 
     expect($production->refresh()->status)->toBe(ProductionRunStatus::Reserved);
 });

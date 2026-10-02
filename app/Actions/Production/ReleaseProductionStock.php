@@ -8,18 +8,23 @@ use App\Models\ProductionRun;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ReleaseProductionStock
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(private readonly ProductionMutationGuard $guard, private readonly ProductionBenchAccess $access) {}
 
     public function handle(
         User $actor,
         ProductionRun $production,
         ?int $productionRequirementId = null,
+        ?ProductionEditingContext $editing = null,
     ): ProductionRun {
         $workspace = $production->workspace;
 
@@ -31,13 +36,8 @@ class ReleaseProductionStock
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production, $productionRequirementId): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($production->workspace_id);
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($production, $productionRequirementId): ProductionMutationResult {
+            $lockedProduction = $productions[$production->id];
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
@@ -61,6 +61,7 @@ class ReleaseProductionStock
                 ->lockForUpdate()
                 ->get();
 
+            $originalStatus = $lockedProduction->status;
             foreach ($reservations as $reservation) {
                 $reservation->update([
                     'status' => StockReservationStatus::Released,
@@ -72,8 +73,8 @@ class ReleaseProductionStock
                 $lockedProduction->update(['status' => ProductionRunStatus::Scheduled]);
             }
 
-            return $lockedProduction->fresh(['requirements', 'recipe']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'recipe']), ($reservations->isNotEmpty() || $originalStatus !== $lockedProduction->status) ? [$lockedProduction->id] : []);
+        });
     }
 
     private function isFullyReserved(ProductionRun $production): bool

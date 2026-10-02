@@ -22,6 +22,7 @@ use App\Models\Workspace;
 use App\Services\StockPositionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -38,6 +39,7 @@ it('reserves split ingredient and packaging lots atomically and changes only ava
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'prepare-split-1',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect($prepared)->toHaveCount(1)
@@ -76,6 +78,7 @@ it('posts available reservations when one selected production has a shortage', f
         actor: $fixture['owner'],
         productionIds: [$covered->id, $short->id],
         idempotencyKey: 'prepare-short-bulk',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$covered->id, $short->id]),
     );
 
     // The covered production is fully reserved; the short one reserves what is
@@ -97,6 +100,7 @@ it('does not reserve the same lot twice across competing planned productions', f
         actor: $fixture['owner'],
         productionIds: [$first->id, $second->id],
         idempotencyKey: 'prepare-competing-runs',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$first->id, $second->id]),
     );
 
     expect(StockReservation::query()->where('stock_lot_id', $lot->id)->sum('quantity'))->toEqual(100)
@@ -115,6 +119,7 @@ it('tracks lot availability across competing requirements in one production', fu
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'prepare-competing-requirements',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect(StockReservation::query()->where('stock_lot_id', $lot->id)->sum('quantity'))->toEqual(100)
@@ -139,6 +144,7 @@ it('requires manual allocations to exactly cover a requirement and validates who
                 ['stock_lot_id' => $second->id, 'quantity' => '8.000000000'],
             ],
         ],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
 
     expect($prepared[0]->status)->toBe(ProductionRunStatus::Reserved)
@@ -157,6 +163,7 @@ it('requires manual allocations to exactly cover a requirement and validates who
                 ['stock_lot_id' => $packagingLot->id, 'quantity' => '2.500000000'],
             ],
         ],
+        editing: ProductionEditingFixture::command($fixture['owner'], [$packagingProduction->id]),
     ))->toThrow(ValidationException::class);
 });
 
@@ -167,8 +174,8 @@ it('is idempotent for a repeated preparation key', function (): void {
     productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
 
     $action = app(PrepareProductionStock::class);
-    $first = $action->handle($fixture['owner'], [$production->id], 'prepare-idempotent');
-    $second = $action->handle($fixture['owner'], [$production->id], 'prepare-idempotent');
+    $first = $action->handle($fixture['owner'], [$production->id], 'prepare-idempotent', editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]));
+    $second = $action->handle($fixture['owner'], [$production->id], 'prepare-idempotent', editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]));
 
     expect($first[0]->status)->toBe(ProductionRunStatus::Reserved)
         ->and($second[0]->status)->toBe(ProductionRunStatus::Reserved)
@@ -180,9 +187,9 @@ it('releases reservations without deleting history and returns the production to
     $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
     productionStockIngredientRequirement($production, $fixture['ingredient'], '10.000000000');
     productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
-    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-release');
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-release', editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]));
 
-    $released = app(ReleaseProductionStock::class)->handle($fixture['owner'], $production);
+    $released = app(ReleaseProductionStock::class)->handle($fixture['owner'], $production, editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($released->status)->toBe(ProductionRunStatus::Scheduled)
         ->and(StockReservation::query()->count())->toBe(1)
@@ -196,12 +203,13 @@ it('releases prepared stock and returns a production to scheduled when it is res
     productionStockIngredientRequirement($production, $fixture['ingredient'], '10.000000000');
     productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
 
-    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-reschedule');
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-reschedule', editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]));
 
     $rescheduled = app(RescheduleProduction::class)->handle(
         actor: $fixture['owner'],
         production: $production->fresh(),
         plannedFor: '2026-08-24',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect($rescheduled->status)->toBe(ProductionRunStatus::Scheduled)
@@ -223,7 +231,7 @@ it('releases partial reservations when a scheduled production is rescheduled', f
     productionStockIngredientRequirement($production, $fixture['ingredient'], '100.000000000');
     productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
 
-    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-partial-reschedule');
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-partial-reschedule', editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]));
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Scheduled)
         ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(1);
@@ -232,6 +240,7 @@ it('releases partial reservations when a scheduled production is rescheduled', f
         actor: $fixture['owner'],
         production: $production->fresh(),
         plannedFor: '2026-08-24',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()),
     );
 
     expect($rescheduled->status)->toBe(ProductionRunStatus::Scheduled)
@@ -245,9 +254,9 @@ it('cancels a reserved production and marks active reservations cancelled', func
     $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
     productionStockIngredientRequirement($production, $fixture['ingredient'], '10.000000000');
     productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
-    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-cancel');
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-cancel', editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]));
 
-    $cancelled = app(CancelProduction::class)->handle($fixture['owner'], $production, 'Supplier cancellation');
+    $cancelled = app(CancelProduction::class)->handle($fixture['owner'], $production, 'Supplier cancellation', editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($cancelled->status)->toBe(ProductionRunStatus::Cancelled)
         ->and(StockReservation::query()->sole()->status)->toBe(StockReservationStatus::Cancelled)
@@ -268,6 +277,7 @@ it('rejects read-only preparation and cross-workspace production selections', fu
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'prepare-read-only',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     ))->toThrow(ValidationException::class);
 
     $other = productionStockPreparationFixture();
@@ -277,6 +287,7 @@ it('rejects read-only preparation and cross-workspace production selections', fu
         actor: $fixture['owner'],
         productionIds: [$production->id, $otherProduction->id],
         idempotencyKey: 'prepare-cross-workspace',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id, $otherProduction->id]),
     ))->toThrow(ValidationException::class);
 });
 
@@ -290,10 +301,12 @@ it('keeps released reservation history when a planned production is corrected', 
         actor: $fixture['owner'],
         productionIds: [$production->id],
         idempotencyKey: 'prepare-release-1',
+        editing: ProductionEditingFixture::command($fixture['owner'], [$production->id]),
     );
     $released = app(ReleaseProductionStock::class)->handle(
         actor: $fixture['owner'],
         production: $prepared[0],
+        editing: ProductionEditingFixture::command($fixture['owner'], $prepared[0]),
     );
     $reservation = $released->requirements()->first()->reservations()->first();
 
@@ -304,6 +317,7 @@ it('keeps released reservation history when a planned production is corrected', 
         basisInputUnit: 'kg',
         expectedUnits: 20,
         plannedFor: $released->planned_for?->toDateString(),
+        editing: ProductionEditingFixture::command($fixture['owner'], $released),
     );
 
     expect($updated->requirements()->first()->id)->toBe($ingredientRequirement->id)

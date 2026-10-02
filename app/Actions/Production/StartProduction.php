@@ -12,13 +12,17 @@ use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ConsumableStockLotPolicy;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class StartProduction
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ConsumableStockLotPolicy $lotPolicy,
     ) {}
@@ -28,8 +32,9 @@ class StartProduction
      * coverage and an assigned permanent batch number, and never performs
      * reservation itself.
      */
-    public function handle(User $actor, ProductionRun $production): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $workspace = $production->workspace;
 
         if (! $workspace instanceof Workspace) {
@@ -40,13 +45,8 @@ class StartProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($production->workspace_id);
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($production): ProductionMutationResult {
+            $lockedProduction = $productions[$production->id];
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
@@ -119,8 +119,8 @@ class StartProduction
                 'started_by_user_id' => $actor->id,
             ]);
 
-            return $lockedProduction->fresh(['formulaLines']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['formulaLines', 'consumption', 'requirements.reservations']), [$lockedProduction->id]);
+        });
     }
 
     private function isFullyReserved(ProductionRun $production): bool

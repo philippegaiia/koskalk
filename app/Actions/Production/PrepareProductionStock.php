@@ -11,16 +11,19 @@ use App\Models\StockLot;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\Production\StockReservationProposalService;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductionMutationGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PrepareProductionStock
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly StockReservationProposalService $proposal,
     ) {}
@@ -35,6 +38,7 @@ class PrepareProductionStock
         array $productionIds,
         string $idempotencyKey,
         array $manualAllocations = [],
+        ?ProductionEditingContext $editing = null,
     ): array {
         $productionIds = $this->normalizeProductionIds($productionIds);
         $idempotencyKey = trim($idempotencyKey);
@@ -80,11 +84,7 @@ class PrepareProductionStock
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $idempotencyKey, $manualAllocations, $productionIds, $workspace): array {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->whereKey($workspace->id)
-                ->lockForUpdate()
-                ->first();
+        return $this->guard->run($actor, $productionIds, $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($idempotencyKey, $manualAllocations, $productionIds): ProductionMutationResult {
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
@@ -94,12 +94,7 @@ class PrepareProductionStock
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 
-            $lockedProductions = ProductionRun::query()
-                ->where('workspace_id', $lockedWorkspace->id)
-                ->whereIn('id', $productionIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            $lockedProductions = $productions->values();
 
             if ($lockedProductions->count() !== count($productionIds)) {
                 throw ValidationException::withMessages([
@@ -113,6 +108,7 @@ class PrepareProductionStock
                 ]);
             }
 
+            $before = $lockedProductions->mapWithKeys(fn (ProductionRun $run): array => [$run->id => [$run->status, StockReservation::query()->where('production_run_id', $run->id)->count()]]);
             $this->assertProductionStatuses($lockedProductions);
 
             $requirements = ProductionRequirement::query()
@@ -144,11 +140,11 @@ class PrepareProductionStock
                 }
             }
 
-            return $lockedProductions
-                ->map(fn (ProductionRun $production): ProductionRun => $production->fresh(['requirements', 'recipe']))
-                ->values()
-                ->all();
-        }, attempts: 5);
+            $values = $lockedProductions->map(fn (ProductionRun $production): ProductionRun => $production->fresh(['requirements', 'recipe']))->values()->all();
+            $changed = collect($values)->filter(fn (ProductionRun $run): bool => $before[$run->id] !== [$run->status, StockReservation::query()->where('production_run_id', $run->id)->count()])->pluck('id')->all();
+
+            return new ProductionMutationResult($values, $changed);
+        });
     }
 
     /**
@@ -157,6 +153,9 @@ class PrepareProductionStock
      */
     private function normalizeProductionIds(array $productionIds): array
     {
+        if (count($productionIds) > 100) {
+            throw ValidationException::withMessages(['production_editing' => __('production_bench.editing.validation.selection')]);
+        }
         $ids = [];
 
         foreach ($productionIds as $productionId) {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\HelpTopicDomain;
+use App\Enums\ProductionRunStatus;
 use App\Filament\Resources\HelpTopics\Pages\EditHelpTopic;
 use App\Filament\Resources\HelpTopics\Pages\ListHelpTopics;
 use App\Livewire\ProductionBench\Production\BatchSizeForm;
@@ -68,7 +69,7 @@ it('renders published help on production pages without exposing newer drafts', f
     'batch register' => [fn (Workspace $workspace): array => [ProductionIndex::class, []], 'production.planning'],
     'plan batch' => [fn (Workspace $workspace): array => [ProductionCreate::class, []], 'production.planning'],
     'batch detail' => [fn (Workspace $workspace): array => [ProductionDetail::class, ['productionId' => ProductionRun::factory()->for($workspace)->create()->public_id]], 'production.planning'],
-    'stock preparation' => [fn (Workspace $workspace): array => [StockPreparation::class, []], 'production.stock_preparation'],
+    'stock preparation' => [fn (Workspace $workspace): array => [StockPreparation::class, ['productionRun' => ProductionRun::factory()->for($workspace)->create(['status' => ProductionRunStatus::Scheduled])->public_id]], 'production.stock_preparation'],
     'calendar' => [fn (Workspace $workspace): array => [ProductionCalendar::class, []], 'production.scheduling'],
     'flash planner' => [fn (Workspace $workspace): array => [FlashPlanner::class, []], 'production.flash_planning'],
     'tasks' => [fn (Workspace $workspace): array => [TaskIndex::class, []], 'production.tasks'],

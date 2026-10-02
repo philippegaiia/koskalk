@@ -16,9 +16,9 @@
         @endphp
 
         <div
-            x-data
-            x-on:early-start-confirmation-requested.window="if (window.confirm($event.detail.message)) { $wire.confirmEarlyStart(); }"
-            x-on:early-release-confirmation-requested.window="if (window.confirm($event.detail.message)) { $wire.confirmEarlyRelease(); }"
+            x-data="productionEditing(@js($editingPayload))"
+            x-on:early-start-confirmation-requested.window="if (window.confirm($event.detail.message)) { runCommand('confirmEarlyStart'); }"
+            x-on:early-release-confirmation-requested.window="if (window.confirm($event.detail.message)) { runCommand('confirmEarlyRelease'); }"
             class="space-y-6"
         >
             @if ($isReadOnly)
@@ -26,6 +26,8 @@
             @endif
 
             <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+
+            <x-production-bench.editing-status />
 
             <header class="sk-card space-y-5 p-5 sm:p-6" data-testid="production-header">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -55,19 +57,19 @@
                         @if ($primaryAction === 'schedule')
                             <div class="flex flex-col gap-1 sm:flex-row sm:items-start">
                                 <div class="min-w-48">{{ $this->planningDateForm }}</div>
-                                <button type="button" data-testid="primary-production-action" wire:click="scheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule') }}</button>
+                                <button type="button" data-testid="primary-production-action" @click="runCommand('scheduleProduction', [], 'planning')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule') }}</button>
                             </div>
                             @error('scheduleDate') <p role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                         @elseif ($primaryAction === 'prepare_stock')
                             <a data-testid="primary-production-action" href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.prepare_stock') }}</a>
                         @elseif ($primaryAction === 'assign_batch_number')
-                            <button type="button" data-testid="primary-production-action" wire:click="assignBatchNumber" wire:confirm="{{ __('production_bench.production.assign_batch_number_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.assign_batch_number') }}</button>
+                            <button type="button" data-testid="primary-production-action" @click="runCommand('assignBatchNumber', [], null, @js(__('production_bench.production.assign_batch_number_confirm')))"   :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.assign_batch_number') }}</button>
                         @elseif ($primaryAction === 'start')
-                            <button type="button" data-testid="primary-production-action" wire:click="start" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.start') }}</button>
+                            <button type="button" data-testid="primary-production-action" @click="runCommand('start', [], null)"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.start') }}</button>
                         @elseif ($primaryAction === 'complete')
                             <a data-testid="primary-production-action" href="#completion-section" class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</a>
                         @elseif ($primaryAction === 'release_batch')
-                            <button type="button" data-testid="primary-production-action" wire:click="releaseOutput" wire:loading.attr="disabled" @disabled($mutationLocked || ! $release['tasks_complete']) class="sk-btn sk-btn-primary">{{ __('production_bench.production.release_batch') }}</button>
+                            <button type="button" data-testid="primary-production-action" @click="runCommand('releaseOutput', [], null)"  :disabled="!canWrite || busy || @js($mutationLocked || ! $release['tasks_complete'])" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.release_batch') }}</button>
                         @endif
                     </div>
                 </div>
@@ -112,7 +114,7 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         @if ($productionDetail['has_active_reservations'])
-                            <button type="button" wire:click="releaseStock" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.release_stock') }}</button>
+                            <button type="button" @click="runCommand('releaseStock', [], null)"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.release_stock') }}</button>
                         @endif
                         @if ($primaryAction !== 'prepare_stock')
                             <a href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('production_bench.production.prepare_stock') }}</a>
@@ -147,8 +149,8 @@
                         @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Draft, \App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium" for="production-detail-location">{{ __('locations.assign_production_location') }}</label>
-                                <div class="flex flex-col gap-2 sm:flex-row">
-                                    <select id="production-detail-location" wire:model.live="productionLocationId" @disabled($mutationLocked) class="sk-input w-full">
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                    <select id="production-detail-location" wire:ignore :value="value('location', 'productionLocationId')" @input="field('location', 'productionLocationId', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input h-10 w-full py-2">
                                         <option value="">{{ __('locations.no_production_location') }}</option>
                                         @if ($production->productionLocation && ! $production->productionLocation->is_active)
                                             <option value="{{ $production->productionLocation->id }}">{{ $production->productionLocation->name }} ({{ __('locations.archived') }})</option>
@@ -157,7 +159,7 @@
                                             <option value="{{ $location->id }}">{{ $location->name }}</option>
                                         @endforeach
                                     </select>
-                                    <button type="button" wire:click="assignProductionLocation" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-secondary whitespace-nowrap">{{ __('locations.save_assignment') }}</button>
+                                    <button type="button" @click="runCommand('assignProductionLocation', [], 'location')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-secondary whitespace-nowrap">{{ __('locations.save_assignment') }}</button>
                                 </div>
                                 @error('productionLocationId') <span role="alert" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                                 @error('production') <span role="alert" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
@@ -170,9 +172,9 @@
 
             @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
                 <section class="sk-card p-5 sm:p-6">
-                    <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
                         <div class="w-full sm:w-64">{{ $this->planningDateForm }}</div>
-                        <button type="button" wire:click="rescheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-secondary">{{ __('production_bench.production.schedule') }}</button>
+                        <button type="button" data-production-save-date @click="runCommand('rescheduleProduction', [], 'planning')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-secondary whitespace-nowrap">{{ __('production_bench.production.save_date') }}</button>
                     </div>
                     @error('scheduleDate') <span role="alert" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                 </section>
@@ -244,10 +246,10 @@
                                                 @forelse ($material['actual']['rows'] as $actualRow)
                                                     <div class="flex flex-wrap items-center gap-2">
                                                         @if (str_starts_with($actualRow['state_key'], 'actualRows.'))
-                                                            <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="{{ $actualRow['state_key'] }}.quantity" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $material['material_name']]) }}" @disabled($mutationLocked || $material['actual']['mode'] !== 'editable') class="sk-input w-32 text-right font-mono">
-                                                            <input type="text" wire:model.live.debounce.500ms="{{ $actualRow['state_key'] }}.note" placeholder="{{ __('production_bench.production.actuals_note_placeholder') }}" aria-label="{{ __('production_bench.production.actuals_note_placeholder') }}" @disabled($mutationLocked || $material['actual']['mode'] !== 'editable') class="sk-input min-w-32 flex-1 text-sm">
+                                                            <input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('actuals', @js($actualRow['state_key'].'.quantity'))" @input="field('actuals', @js($actualRow['state_key'].'.quantity'), $event.target.value)" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $material['material_name']]) }}" :disabled="!canWrite || @js($mutationLocked || $material['actual']['mode'] !== 'editable')" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input w-32 text-right font-mono">
+                                                            <input type="text" wire:ignore :value="value('actuals', @js($actualRow['state_key'].'.note'))" @input="field('actuals', @js($actualRow['state_key'].'.note'), $event.target.value)" placeholder="{{ __('production_bench.production.actuals_note_placeholder') }}" aria-label="{{ __('production_bench.production.actuals_note_placeholder') }}" :disabled="!canWrite || @js($mutationLocked || $material['actual']['mode'] !== 'editable')" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input min-w-32 flex-1 text-sm">
                                                         @else
-                                                            <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="{{ $actualRow['state_key'] }}.actual_mass_grams" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $material['material_name']]) }}" @disabled($mutationLocked || $material['actual']['mode'] !== 'editable') class="sk-input w-32 text-right font-mono">
+                                                            <input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('actuals', @js($actualRow['state_key'].'.actual_mass_grams'))" @input="field('actuals', @js($actualRow['state_key'].'.actual_mass_grams'), $event.target.value)" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $material['material_name']]) }}" :disabled="!canWrite || @js($mutationLocked || $material['actual']['mode'] !== 'editable')" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input w-32 text-right font-mono">
                                                             <span class="font-mono text-xs text-[var(--color-ink-soft)]">g</span>
                                                         @endif
                                                     </div>
@@ -267,10 +269,8 @@
                 @if ($production->status === \App\Enums\ProductionRunStatus::InProduction)
                     <span class="sr-only">{{ __('production_bench.production.actuals_title') }}</span>
                     <div class="flex items-center justify-end gap-3 border-t border-[var(--color-line)] p-4 sm:px-6">
-                        @if ($actualsDirty)
-                            <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.actuals_unsaved') }}</span>
-                        @endif
-                        <button type="button" wire:click="saveActuals" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.actuals_save') }}</button>
+                        <span x-cloak x-show="dirty && draft.isDirty('actuals')" class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.actuals_unsaved') }}</span>
+                        <button type="button" @click="runCommand('saveActuals', [], 'actuals')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.actuals_save') }}</button>
                     </div>
                 @elseif ($production->status === \App\Enums\ProductionRunStatus::Completed)
                     <p class="border-t border-[var(--color-line)] px-5 py-3 text-xs text-[var(--color-ink-soft)] sm:px-6">{{ __('production_bench.production.actuals_posted_readonly') }}</p>
@@ -305,13 +305,13 @@
                     @error('production') <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     <div class="grid gap-4 sm:grid-cols-2">
                         @if ($production->production_output_type === null)
-                            <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><select wire:model.live="outputMode" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="units">{{ __('production_bench.production.output_units') }}</option><option value="intermediate">{{ __('production_bench.production.output_intermediate') }}</option></select></label>
+                            <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><select wire:ignore :value="value('completion', 'outputMode')" @input="field('completion', 'outputMode', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="units">{{ __('production_bench.production.output_units') }}</option><option value="intermediate">{{ __('production_bench.production.output_intermediate') }}</option></select></label>
                         @else
                             <div class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><p class="mt-1 sk-input bg-[var(--color-panel-muted)]">{{ $production->production_output_type->value === 'manufactured_ingredient' ? __('production_bench.production.output_intermediate').' · '.$production->outputIngredient?->display_name : __('production_bench.production.output_units') }}</p></div>
                         @endif
-                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:model.live="actualOutputQuantity" @disabled($mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
-                        @if ($production->production_output_type === null && $outputMode === 'intermediate')
-                            <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_intermediate_ingredient') }}</span><select wire:model.live="outputIngredientId" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="">{{ __('production_bench.production.choose_intermediate') }}</option>@foreach ($intermediateIngredients as $ingredient)<option value="{{ $ingredient->id }}">{{ $ingredient->display_name }}</option>@endforeach</select></label>
+                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('completion', 'actualOutputQuantity')" @input="field('completion', 'actualOutputQuantity', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
+                        @if ($production->production_output_type === null)
+                            <label data-production-intermediate-ingredient x-cloak x-show="value('completion', 'outputMode') === 'intermediate'" class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_intermediate_ingredient') }}</span><select wire:ignore :value="value('completion', 'outputIngredientId')" @input="field('completion', 'outputIngredientId', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="">{{ __('production_bench.production.choose_intermediate') }}</option>@foreach ($intermediateIngredients as $ingredient)<option value="{{ $ingredient->id }}">{{ $ingredient->display_name }}</option>@endforeach</select></label>
                         @endif
                         {{ $this->completionDatesForm->getComponent('manufactureDate') }}
                         {{ $this->completionDatesForm->getComponent('estimatedReadyOn') }}
@@ -320,14 +320,14 @@
                     @error('manufacture_date') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     @error('estimated_ready_on') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     @error('output_ingredient_id') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
-                    <div class="flex justify-end"><button type="button" wire:click="complete" wire:confirm="{{ __('production_bench.production.complete_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</button></div>
+                    <div class="flex justify-end"><button type="button" @click="runCommand('complete', [], 'completion', @js(__('production_bench.production.complete_confirm')))"   :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</button></div>
                 </section>
 
                 <section aria-labelledby="abort-heading" class="sk-card space-y-4 p-5 sm:p-6">
                     <div><h2 id="abort-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.abort_title') }} <x-contextual-help.trigger topic="production.cancel_abort" :topics="$contextualHelp['topics']" /></h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.abort_help') }}</p></div>
-                    <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.abort_reason') }}</span><textarea wire:model="abortReason" rows="2" maxlength="2000" required @disabled($mutationLocked) class="sk-input mt-1 w-full"></textarea></label>
+                    <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.abort_reason') }}</span><textarea wire:ignore :value="value('abort', 'abortReason')" @input="field('abort', 'abortReason', $event.target.value)" rows="2" maxlength="2000" required :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"></textarea></label>
                     @error('abort_reason') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
-                    <div class="flex justify-end"><button type="button" wire:click="abort" wire:confirm="{{ __('production_bench.production.abort_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.abort') }}</button></div>
+                    <div class="flex justify-end"><button type="button" @click="runCommand('abort', [], 'abort', @js(__('production_bench.production.abort_confirm')))"   :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.abort') }}</button></div>
                 </section>
             @endif
 
@@ -359,11 +359,11 @@
                     @else
                         <div class="space-y-4 p-5 sm:p-6">
                             <div class="grid gap-4 sm:grid-cols-4">
-                                <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_kind') }}</span><select wire:model.live="issueKind" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="shipment">{{ __('production_bench.production.issue_shipment') }}</option><option value="sample">{{ __('production_bench.production.issue_sample') }}</option><option value="damaged">{{ __('production_bench.production.issue_damaged') }}</option><option value="internal_use">{{ __('production_bench.production.issue_internal_use') }}</option></select></label>
-                                <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:model.live="issueQuantity" @disabled($mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
-                                <label class="block text-sm sm:col-span-2"><span class="font-medium">{{ __('production_bench.production.issue_note') }}</span><input type="text" wire:model.live="issueNote" @disabled($mutationLocked) class="sk-input mt-1 w-full"></label>
+                                <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_kind') }}</span><select wire:ignore :value="value('issue', 'issueKind')" @input="field('issue', 'issueKind', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="shipment">{{ __('production_bench.production.issue_shipment') }}</option><option value="sample">{{ __('production_bench.production.issue_sample') }}</option><option value="damaged">{{ __('production_bench.production.issue_damaged') }}</option><option value="internal_use">{{ __('production_bench.production.issue_internal_use') }}</option></select></label>
+                                <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('issue', 'issueQuantity')" @input="field('issue', 'issueQuantity', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
+                                <label class="block text-sm sm:col-span-2"><span class="font-medium">{{ __('production_bench.production.issue_note') }}</span><input type="text" wire:ignore :value="value('issue', 'issueNote')" @input="field('issue', 'issueNote', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"></label>
                             </div>
-                            <div class="flex justify-end"><button type="button" wire:click="issueFinishedGoods" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.issue') }}</button></div>
+                            <div class="flex justify-end"><button type="button" @click="runCommand('issueFinishedGoods', [], 'issue')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.issue') }}</button></div>
                         </div>
                     @endif
                 </section>
@@ -377,8 +377,8 @@
                         <div class="flex flex-col gap-2 px-5 py-4 sm:px-6">
                             <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
                             <div class="flex flex-wrap items-center gap-2">
-                                <select aria-label="{{ __('production_bench.production.choose_department') }}" wire:change="assignTaskDepartment({{ $task->id }}, $event.target.value)" class="sk-input w-40 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))><option value="">{{ __('production_bench.production.choose_department') }}</option>@foreach ($departments as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select>
-                                <select aria-label="{{ __('production_bench.production.choose_employee') }}" wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input w-40 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))><option value="">{{ __('production_bench.production.choose_employee') }}</option>@foreach ($employees as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select>
+                                <select aria-label="{{ __('production_bench.production.choose_department') }}" @change="runCommand('assignTaskDepartment', [{{ $task->id }}, $event.target.value], null)" class="sk-input w-40 py-1.5 text-sm" :disabled="!canWrite || busy || @js($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))" @disabled(! $editingOwnsLease || $mutationLocked)><option value="">{{ __('production_bench.production.choose_department') }}</option>@foreach ($departments as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select>
+                                <select aria-label="{{ __('production_bench.production.choose_employee') }}" @change="runCommand('assignTask', [{{ $task->id }}, $event.target.value], null)" class="sk-input w-40 py-1.5 text-sm" :disabled="!canWrite || busy || @js($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))" @disabled(! $editingOwnsLease || $mutationLocked)><option value="">{{ __('production_bench.production.choose_employee') }}</option>@foreach ($employees as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select>
                                 @if ($task->completed_at === null && ! in_array($production->status->value, ['in_production', 'completed', 'cancelled', 'aborted'], true))
                                     <div class="w-36">{{ $this->taskDatesForm->getComponent("task_date_{$task->id}") }}</div>
                                 @else
@@ -386,7 +386,7 @@
                                 @endif
                                 @if ($task->completed_at) <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.completed_task') }}</span> @endif
                                 @if (! in_array($production->status->value, ['cancelled', 'aborted'], true))
-                                    <button type="button" wire:click="toggleTask({{ $task->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-ghost py-1.5 text-sm">{{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}</button>
+                                    <button type="button" @click="runCommand('toggleTask', [{{ $task->id }}], null)"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-ghost py-1.5 text-sm">{{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}</button>
                                 @endif
                             </div>
                         </div>
@@ -414,30 +414,41 @@
                                     @if ($document->note)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
                                 </div>
                                 @if ($canDetachDocuments)
-                                    <button type="button" wire:click="detachJournalDocument({{ $document->id }})" wire:confirm="{{ __('production_bench.production.journal_document_detach_confirm') }}" wire:loading.attr="disabled" wire:target="detachJournalDocument" class="shrink-0 self-start text-xs font-medium text-[var(--color-danger-strong)] hover:underline">{{ __('production_bench.production.journal_document_detach') }}</button>
+                                    <button type="button" @click="runCommand('detachJournalDocument', [{{ $document->id }}], null, @js(__('production_bench.production.journal_document_detach_confirm')))" :disabled="!canWrite || busy" @disabled(! $editingOwnsLease || $mutationLocked) class="shrink-0 self-start text-xs font-medium text-[var(--color-danger-strong)] hover:underline">{{ __('production_bench.production.journal_document_detach') }}</button>
                                 @endif
                             </li>
                         @endforeach
                     </ul>
                 @endif
                 @if ($canMutate && ! in_array($production->status->value, ['completed', 'aborted', 'cancelled'], true))
-                    <form wire:submit="attachJournalDocument" class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
+                    <form @submit.prevent="runCommand('attachJournalDocument', [], 'document')" class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
                         <label class="block text-sm">
                             <span class="font-medium">{{ __('production_bench.production.journal_document') }}</span>
-                            <input type="file" wire:model="journalDocumentUpload" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" class="sk-input mt-1 w-full" />
+                            <input type="file" wire:model="journalDocumentUpload" x-on:livewire-upload-start="uploadStarted()" x-on:livewire-upload-finish="uploadFinished()" x-on:livewire-upload-error="uploadErrored()" x-on:livewire-upload-cancel="uploadCancelled()" :disabled="!canWrite || busy || uploading" @disabled(! $editingOwnsLease || $mutationLocked) accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" class="sk-input mt-1 w-full file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--color-field-muted)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--color-ink)]" />
+                            <span class="mt-1 block text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.document_upload_requirements', ['formats' => 'PDF, JPG, PNG, WebP, HEIC, HEIF', 'max' => (int) ceil(config('media.asset_uploads.max_size_kb', 10240) / 1024), 'pdfMax' => config('media.asset_uploads.pdf.max_size_kb', 180)]) }}</span>
                             @error('journalDocumentUpload')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                         </label>
                         <label class="block text-sm">
                             <span class="font-medium">{{ __('production_bench.production.journal_document_note') }}</span>
-                            <textarea wire:model="journalDocumentNote" rows="2" maxlength="1000" class="sk-input mt-1 w-full"></textarea>
+                            <textarea wire:ignore :value="value('document', 'journalDocumentNote')" @input="field('document', 'journalDocumentNote', $event.target.value)" rows="2" maxlength="1000" :disabled="!canWrite" @disabled(! $editingOwnsLease) class="sk-input mt-1 w-full"></textarea>
                         </label>
-                        <div class="flex justify-end"><button type="submit" wire:loading.attr="disabled" wire:target="attachJournalDocument" class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_document_attach') }}</button></div>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div data-production-upload-state aria-live="polite" class="text-sm text-[var(--color-ink-soft)]">
+                                <span x-cloak x-show="uploading">{{ __('production_bench.production.uploading') }}</span>
+                                <span x-cloak x-show="!uploading && !uploadFailed && !attaching && !documentAttached && !documentErrors.length && $wire.journalDocumentUpload">{{ __('production_bench.production.upload_ready') }}</span>
+                                <span x-cloak x-show="attaching">{{ __('production_bench.production.attaching') }}</span>
+                                <span data-production-document-attached x-cloak x-show="documentAttached" class="text-[var(--color-success-strong)]">{{ __('production_bench.production.journal_document_attached') }}</span>
+                                <p data-production-document-errors x-cloak x-show="documentErrors.length" role="alert" x-text="documentErrors.join(' ')" class="text-[var(--color-danger-strong)]"></p>
+                                <span x-cloak x-show="uploadFailed" class="text-[var(--color-danger-strong)]">{{ __('production_bench.production.upload_failed') }}</span>
+                            </div>
+                            <button type="submit" data-production-attach-document :disabled="!canAttach" @disabled(! $editingOwnsLease) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_document_attach') }}</button>
+                        </div>
                     </form>
                 @endif
                 @if (! $mutationLocked && ! in_array($production->status->value, ['completed', 'aborted', 'cancelled'], true))
                     <div class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
-                        <textarea wire:model="journalBody" rows="3" maxlength="20000" @disabled($mutationLocked) class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.production.journal_placeholder') }}"></textarea>
-                        <div class="flex justify-end"><button type="button" wire:click="saveJournalEntry" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_add') }}</button></div>
+                        <textarea wire:ignore :value="value('journal', 'journalBody')" @input="field('journal', 'journalBody', $event.target.value)" rows="3" maxlength="20000" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.production.journal_placeholder') }}"></textarea>
+                        <div class="flex justify-end"><button type="button" @click="runCommand('saveJournalEntry', [], 'journal')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_add') }}</button></div>
                     </div>
                 @endif
             </section>
@@ -445,7 +456,7 @@
             @if (in_array($production->status->value, ['draft', 'scheduled', 'reserved'], true))
                 <section aria-labelledby="cancel-production-heading" class="sk-card space-y-4 p-5 sm:p-6">
                     <div><h2 id="cancel-production-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.cancel') }} <x-contextual-help.trigger topic="production.cancel_abort" :topics="$contextualHelp['topics']" /></h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.cancel_help') }}</p></div>
-                    <form wire:submit="cancel" class="space-y-3"><label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.cancel_reason') }}</span><textarea wire:model="cancellationReason" rows="2" required @disabled($mutationLocked) class="sk-input mt-1 w-full"></textarea>@error('cancellationReason')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label><button type="submit" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.cancel') }}</button></form>
+                    <form @submit.prevent="runCommand('cancel', [], 'cancellation')" class="space-y-3"><label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.cancel_reason') }}</span><textarea wire:ignore :value="value('cancellation', 'cancellationReason')" @input="field('cancellation', 'cancellationReason', $event.target.value)" rows="2" required :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"></textarea>@error('cancellationReason')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label><button type="submit"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.cancel') }}</button></form>
                 </section>
             @endif
         </div>

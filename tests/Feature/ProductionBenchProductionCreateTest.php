@@ -376,10 +376,12 @@ it('rejects scheduling a draft on a non-working day and shows the error on the d
 
     // 2026-08-09 is a Sunday; the workspace does not work weekends.
     Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => $production->id])
+        ->call('beginEditing')
         ->set('scheduleDate', '2026-08-09')
         ->call('scheduleProduction')
         ->assertHasErrors(['scheduleDate'])
-        ->assertSee('The production date must be a working day.');
+        ->assertSee('The production date must be a working day.')
+        ->call('finishEditing');
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Draft);
 });

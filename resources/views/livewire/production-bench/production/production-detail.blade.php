@@ -424,9 +424,9 @@
                     <form @submit.prevent="runCommand('attachJournalDocument', [], 'document')" class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
                         <label class="block text-sm">
                             <span class="font-medium">{{ __('production_bench.production.journal_document') }}</span>
-                            <input type="file" wire:model="journalDocumentUpload" x-on:livewire-upload-start="uploadStarted()" x-on:livewire-upload-finish="uploadFinished()" x-on:livewire-upload-error="uploadErrored()" x-on:livewire-upload-cancel="uploadCancelled()" :disabled="!canWrite || busy || uploading" @disabled(! $editingOwnsLease || $mutationLocked) accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" class="sk-input mt-1 w-full file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--color-field-muted)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--color-ink)]" />
+                            <input type="file" data-production-document-input wire:model="journalDocumentUpload" x-on:livewire-upload-start="uploadStarted()" x-on:livewire-upload-finish="uploadFinished()" x-on:livewire-upload-error="uploadErrored()" x-on:livewire-upload-cancel="uploadCancelled()" :disabled="!canWrite || busy || uploading" @disabled(! $editingOwnsLease || $mutationLocked) accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" class="sk-input mt-1 w-full file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--color-field-muted)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--color-ink)]" />
                             <span class="mt-1 block text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.document_upload_requirements', ['formats' => 'PDF, JPG, PNG, WebP, HEIC, HEIF', 'max' => (int) ceil(config('media.asset_uploads.max_size_kb', 10240) / 1024), 'pdfMax' => config('media.asset_uploads.pdf.max_size_kb', 180)]) }}</span>
-                            @error('journalDocumentUpload')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                            @error('journalDocumentUpload')<span x-cloak x-show="documentErrors.length || uploadFailed" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                         </label>
                         <label class="block text-sm">
                             <span class="font-medium">{{ __('production_bench.production.journal_document_note') }}</span>
@@ -441,7 +441,10 @@
                                 <p data-production-document-errors x-cloak x-show="documentErrors.length" role="alert" x-text="documentErrors.join(' ')" class="text-[var(--color-danger-strong)]"></p>
                                 <span x-cloak x-show="uploadFailed" class="text-[var(--color-danger-strong)]">{{ __('production_bench.production.upload_failed') }}</span>
                             </div>
-                            <button type="submit" data-production-attach-document :disabled="!canAttach" @disabled(! $editingOwnsLease) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_document_attach') }}</button>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-production-clear-document x-cloak x-show="uploadedDocument || uploadFailed || documentErrors.length" @click="clearDocument()" :disabled="busy || uploading" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-ghost">{{ __('production_bench.common.clear') }}</button>
+                                <button type="submit" data-production-attach-document :disabled="!canAttach" @disabled(! $editingOwnsLease) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_document_attach') }}</button>
+                            </div>
                         </div>
                     </form>
                 @endif

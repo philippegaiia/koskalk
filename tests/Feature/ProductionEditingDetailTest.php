@@ -203,6 +203,11 @@ it('labels an existing production date save and binds attachment readiness to th
     $upload = $document->querySelector('input[type="file"]');
     expect($upload->getAttribute('x-on:livewire-upload-finish'))->toBe('uploadFinished()');
     expect($upload->getAttribute('x-on:livewire-upload-error'))->toBe('uploadErrored()');
+    expect($upload->hasAttribute('data-production-document-input'))->toBeTrue();
+    $clear = $document->querySelector('[data-production-clear-document]');
+    expect($clear)->not->toBeNull();
+    expect(trim($clear->textContent))->toBe('Clear');
+    expect($clear->getAttribute('@click'))->toBe('clearDocument()');
     expect($document->querySelector('[data-production-upload-state]'))->not->toBeNull();
     expect($document->querySelector('[data-production-document-errors]')->getAttribute('x-text'))->toBe("documentErrors.join(' ')");
     expect($document->querySelector('[data-production-document-attached]')->textContent)->toContain('Journal document attached.');

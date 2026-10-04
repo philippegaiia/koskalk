@@ -228,6 +228,25 @@ test('rejected attachments retain local feedback through polling and confirm a l
  f.runtime.destroy();await f.runtime.depart();
 });
 
+test('a rejected attachment can be cleared without losing the rest of the draft', async () => {
+ const f=fixture(async method=> method==='executeEditingCommand'
+  ? {ok:false,revisions:{},state:state('acquired'),canonical:{journalDocumentNote:''},errors:{journalDocumentUpload:['This PDF exceeds the 180 KB limit. Compress it and try again.']}}
+  : state('acquired'));
+ const updates=[];
+ f.runtime.$wire={journalDocumentUpload:'livewire-file:large.pdf',$set:(key,value,live)=>{updates.push([key,value,live]);f.runtime.$wire[key]=value;}};
+ await f.runtime.begin();f.runtime.uploadFinished();
+ f.runtime.field('document','journalDocumentNote','Keep this note');
+ await f.runtime.runCommand('attachJournalDocument',[],'document');
+ assert.equal(f.runtime.dirty,true);assert.equal(f.runtime.documentErrors.length,1);
+ await f.runtime.clearDocument();
+ assert.deepEqual(updates,[['journalDocumentUpload',null,false]]);
+ assert.deepEqual(f.runtime.documentErrors,[]);assert.equal(f.runtime.pendingUpload,false);assert.equal(f.runtime.canAttach,false);
+ assert.equal(f.runtime.dirty,true);assert.equal(f.runtime.forms.document.journalDocumentNote,'Keep this note');
+ f.runtime.uploadStarted();await f.runtime.clearDocument();
+ assert.equal(f.runtime.uploading,true);assert.equal(f.runtime.pendingUpload,true);
+ f.runtime.destroy();await f.runtime.depart();
+});
+
 test('a save renews an expired uncontested reservation before sending the current draft', async () => {
  const f=fixture(async method=> {
   if(method==='heartbeatEditing') return state('available');

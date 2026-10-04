@@ -56,6 +56,14 @@ export function createProductionEditing(payload, environment = {}) {
         uploadFinished() { this.uploading = false; this.uploadFailed = false; this.pendingUpload = Boolean(this.uploadedDocument); },
         uploadErrored() { this.uploading = false; this.uploadFailed = true; this.pendingUpload = Boolean(this.uploadedDocument); },
         uploadCancelled() { this.uploading = false; this.uploadFailed = false; this.pendingUpload = Boolean(this.uploadedDocument); },
+        clearDocument() {
+            if (this.uploading) return Promise.resolve(null);
+            if (this.uploadedDocument) this.$wire.$set('journalDocumentUpload', null, false);
+            const input = this.$el?.querySelector?.('[data-production-document-input]');
+            if (input) input.value = '';
+            this.pendingUpload = false; this.uploadFailed = false; this.documentErrors = []; this.documentAttached = false;
+            return Promise.resolve(null);
+        },
         apply(state) {
             this.state = state;
             this.stale = state.status === 'stale'; this.unavailable = state.status === 'unavailable';

@@ -107,7 +107,7 @@
             @endif
 
             @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
-                <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4">
+                <section data-testid="production-stock-preparation-section" class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4">
                     <div>
                         <p class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.stock_preparation') }}</p>
                         <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.prepare_stock_help_short') }}</p>
@@ -122,6 +122,16 @@
                     </div>
                 </section>
                 @error('production') <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+            @endif
+
+            @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
+                <section data-testid="production-date-section" class="sk-card p-5 sm:p-6">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="w-full sm:w-64" data-production-date-field>{{ $this->planningDateForm }}</div>
+                        <button type="button" data-production-save-date @click="runCommand('rescheduleProduction', [], 'planning')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-secondary whitespace-nowrap">{{ __('production_bench.production.save_date') }}</button>
+                    </div>
+                    @error('scheduleDate') <span role="alert" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                </section>
             @endif
 
             @if ($workspace->uses_production_locations)
@@ -167,16 +177,6 @@
                         @endif
                     </div>
 
-                </section>
-            @endif
-
-            @if (in_array($production->status, [\App\Enums\ProductionRunStatus::Scheduled, \App\Enums\ProductionRunStatus::Reserved], true))
-                <section class="sk-card p-5 sm:p-6">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-                        <div class="w-full sm:w-64">{{ $this->planningDateForm }}</div>
-                        <button type="button" data-production-save-date @click="runCommand('rescheduleProduction', [], 'planning')"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-secondary whitespace-nowrap">{{ __('production_bench.production.save_date') }}</button>
-                    </div>
-                    @error('scheduleDate') <span role="alert" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                 </section>
             @endif
 

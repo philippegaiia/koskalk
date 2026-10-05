@@ -234,6 +234,24 @@ it('uses a standard select height without stretching the production location row
     expect($select->parentElement->getAttribute('class'))->toContain('sm:items-center');
 });
 
+it('places the production date section between stock preparation and the production location', function (): void {
+    $fixture = ProductionEditingFixture::create();
+    $fixture->workspace->update(['uses_production_locations' => true]);
+    $run = ProductionRun::factory()->for($fixture->workspace)->create(['status' => ProductionRunStatus::Scheduled]);
+    $page = Livewire::actingAs($fixture->owner)->test(ProductionDetail::class, ['productionId' => $run->public_id]);
+    $document = HTMLDocument::createFromString($page->html(), LIBXML_NOERROR);
+    $order = [];
+    foreach ($document->querySelectorAll('[data-testid]') as $element) {
+        $order[] = $element->getAttribute('data-testid');
+    }
+    $date = array_search('production-date-section', $order, true);
+
+    expect($order)->toContain('production-stock-preparation-section', 'production-date-section', 'production-location-section');
+    expect($date)->toBeGreaterThan(array_search('production-stock-preparation-section', $order, true));
+    expect($date)->toBeLessThan(array_search('production-location-section', $order, true));
+    expect($document->querySelector('[data-production-date-field] .fi-fo-field-label-content'))->not->toBeNull();
+});
+
 it('prepares a reload without rebasing the server or clearing any mounted draft', function (): void {
     $fixture = ProductionEditingFixture::create();
     $run = ProductionRun::factory()->for($fixture->workspace)->create(['planned_for' => '2026-10-02']);

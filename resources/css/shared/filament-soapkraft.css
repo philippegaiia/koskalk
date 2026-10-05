@@ -76,6 +76,15 @@
         color: var(--color-ink-strong);
     }
 
+    /* The planning date picker stands in for a section heading on the production
+       detail page, so its label takes the 20px/600 size of the neighbouring <h2>
+       titles. Scoped to the section so the header scheduling control is untouched. */
+    [data-production-date-field] .fi-fo-field-label-content {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+        font-weight: 600;
+    }
+
     .fi-section-header-description,
     .fi-ta-header-description,
     .fi-fo-field-wrp-helper-text,

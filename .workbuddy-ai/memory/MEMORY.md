@@ -27,8 +27,11 @@ matching file before working in that area — they are not injected.
   `language_lines` is the runtime source, and `database/seeders/data/interface-translations.json` is
   *not* loaded automatically. Check with
   `array_diff(array_keys(app(EnglishTranslationSource::class)->all()), <db group.key list>)`. Fix with
-  `php artisan translations:catalogue:import --mode=preserve-existing` locally and
-  `--mode=authoritative --force` on deploy. `translations:sync` alone creates empty-text rows.
+  `php artisan translations:catalogue:import --mode=preserve-existing` — locally *and* on deploy.
+  `preserve-existing` is enough in both places: it creates missing rows and fills empty locales,
+  never overwriting a non-empty DB value, and needs no `--force`. Use `authoritative --force` only
+  to reset DB values back to the catalogue (it overwrites hand-edited translations).
+  `translations:sync` alone is not enough — it creates rows with `text => []`.
   No test catches this drift — the suite runs on a fresh DB.
 
 ## Reviewing: habits that prevent wrong calls

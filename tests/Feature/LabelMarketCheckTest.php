@@ -32,6 +32,27 @@ beforeEach(function (): void {
     ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
 });
 
+it('compares soap allergen thresholds with the cured product rather than the wet batch', function (): void {
+    // 20 g of fragrance at 0.7% allergen: about 0.009% of the wet batch but
+    // about 0.011% of the cured soap, which crosses the 0.01% rinse-off threshold.
+    $fixture = marketCheckFormula(allergenConcentration: 0.7);
+    RegulatoryRegimeAllergen::factory()->create([
+        'regulatory_regime_id' => RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active'])->id,
+        'allergen_id' => $fixture['allergen']->id,
+    ]);
+
+    $snapshot = app(RecipeWorkbenchService::class)->snapshotFromWorkbenchDraft(
+        marketCheckDraft($fixture, 'eu'),
+    );
+    $row = collect($snapshot['labeling']['declaration_rows'])->firstWhere('label', 'LINALOOL');
+
+    expect($row['percent_of_formula'])->toBeLessThan(0.01)
+        ->and($row['percent_of_cured_basis'])->toBeGreaterThanOrEqual(0.01)
+        ->and($row['exceeds_threshold'])->toBeTrue()
+        ->and($row['included_in_inci'])->toBeTrue()
+        ->and($snapshot['labeling']['final_labels'])->toContain('LINALOOL');
+});
+
 it('keeps composition but applies no market rule when no market is selected', function (): void {
     $fixture = marketCheckFormula(allergenConcentration: 50);
     $regime = RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);

@@ -112,6 +112,7 @@ class InciGenerationService
             $soapCalculation,
             $declarationRuleState['default_threshold_percent'],
         );
+        $declarationRuleState['declaration_basis_weight'] = $this->declarationBasisWeight($basis);
         $listVariants = $this->listVariants($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState);
         $defaultVariant = $this->defaultListVariant($listVariants);
         $plainLanguageList = $this->plainLanguageList(
@@ -1172,6 +1173,35 @@ class InciGenerationService
     }
 
     /**
+     * Declaration thresholds apply to the product as sold, so saponified soap is
+     * measured against its cured weight rather than the wet batch.
+     *
+     * @param  array{formula_weight: float, cured_weight: float|null}  $basis
+     */
+    private function declarationBasisWeight(array $basis): float
+    {
+        $curedWeight = $basis['cured_weight'] ?? null;
+
+        return $curedWeight !== null && $curedWeight > 0
+            ? (float) $curedWeight
+            : (float) $basis['formula_weight'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $declarationRuleState
+     */
+    private function percentOfDeclarationBasis(float $percentOfFormula, float $formulaWeight, array $declarationRuleState): float
+    {
+        $basisWeight = (float) ($declarationRuleState['declaration_basis_weight'] ?? $formulaWeight);
+
+        if ($basisWeight <= 0 || $formulaWeight <= 0) {
+            return $percentOfFormula;
+        }
+
+        return ($percentOfFormula * $formulaWeight) / $basisWeight;
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @param  array<int, array{
      *     phase_key: string,
@@ -1651,7 +1681,7 @@ class InciGenerationService
                 $thresholdPercent = $screeningChecked ? (float) $row['threshold_percent'] : null;
                 $thresholdOperator = (string) $row['threshold_operator'];
                 $exceedsThreshold = $thresholdPercent !== null && $this->passesDeclarationThreshold(
-                    $percentOfFormula,
+                    $this->percentOfDeclarationBasis($percentOfFormula, $formulaWeight, $declarationRuleState),
                     $thresholdPercent,
                     $thresholdOperator,
                 );
@@ -1923,7 +1953,11 @@ class InciGenerationService
                 continue;
             }
 
-            $declarationPercentOfFormula = $ingredientPercentOfFormula * ($concentrationPercent / 100);
+            $declarationPercentOfFormula = $this->percentOfDeclarationBasis(
+                $ingredientPercentOfFormula * ($concentrationPercent / 100),
+                $formulaWeight,
+                $declarationRuleState,
+            );
             $thresholdPercent = (float) ($rule['threshold_percent'] ?? $declarationRuleState['default_threshold_percent']);
             $thresholdOperator = (string) ($rule['threshold_operator'] ?? 'greater_than_or_equal');
 

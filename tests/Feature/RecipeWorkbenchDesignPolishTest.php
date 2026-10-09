@@ -2216,7 +2216,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
     ) ?? $formulaSettings;
 
     expect($themeSource)
-        ->toContain('--color-surface: oklch(96.4% 0.016 128)')
+        ->toContain('--color-surface: oklch(96.7% 0.009 128)')
         ->toContain('--color-panel: oklch(98.5% 0.006 85)')
         ->toContain('--color-forest: oklch(25.5% 0.030 155)')
         ->toContain('--color-accent: oklch(55.5% 0.112 55)')
@@ -2309,7 +2309,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
 
     expect($appStylesSource)
         ->toContain('[data-user-shell]')
-        ->toContain('--color-surface: oklch(97.2% 0.010 128)')
+        ->toContain('--color-surface: oklch(97.5% 0.0055 128)')
         ->toContain('--color-panel: oklch(98.8% 0.006 85)')
         ->toContain('--color-accent: oklch(53.0% 0.090 55)')
         ->toContain('[data-user-shell] .sk-tone-analysis')
@@ -2464,8 +2464,9 @@ it('surfaces one shared entry mode control immediately above each formula ledger
         ->and(substr_count($entryModeToggle, 'min-h-11'))
         ->toBe(2)
         ->and($entryModeToggle)
-        ->toContain("'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm'")
-        ->toContain("'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'");
+        ->toContain("'bg-[var(--color-active-soft)] text-[var(--color-ink-strong)]'")
+        ->toContain("'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-control-hover)] hover:text-[var(--color-ink)]'")
+        ->not->toContain('shadow-sm');
 });
 
 it('uses the open setup tone surfaces for collapsed and sticky formula summaries', function () {

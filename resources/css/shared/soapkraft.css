@@ -14,7 +14,17 @@
     --container-app: 74rem;
 
     /* Paper + ink (warm apothecary defaults — re-skin every shell) */
-    --color-surface: oklch(96.4% 0.016 128);
+    /* The page ground is the largest painted area in the app, and perceived
+       saturation grows with area — a chroma that reads as neutral paper in a
+       swatch reads as pale green across a full screen. It is also the surface
+       most exposed to display drift: near-neutral tints sit inside the spread
+       of panel white points, so a calibrated wide-gamut screen neutralises them
+       while a cheaper panel adds to the hue. Chroma is therefore held at 0.009
+       (was 0.016) with lightness up 0.3 to keep it paper, not grey. Do not
+       raise it back: the tint is meant to be felt, not seen. Small surfaces
+       (--color-active-soft, --color-success-soft, badges) keep their chroma —
+       small areas need more of it to register at all. */
+    --color-surface: oklch(96.7% 0.009 128);
     /* Same job as --color-panel-muted, named for the surface family. Used by the
        production detail table head and its group rows. */
     --color-surface-muted: var(--color-panel-muted);
@@ -75,6 +85,16 @@
     --color-on-active: oklch(98.0% 0.007 145);
     --color-control: oklch(99.1% 0.004 88);
 
+    /* Hover partner for --color-control, which never had one. Controls sit on
+       surfaces only ~2.7 lightness darker (--color-field-muted is 96.4%), so
+       there is no comfortable single step between the two: 97.6% takes the
+       middle. Because that step is small by necessity, pair it with a text step
+       (--color-ink-soft 46.5% -> --color-ink 30.0%) — the label carries the
+       hover, so it survives a panel whose white point drifts. Every group used
+       to hover to --color-panel, which is 0.6 lightness from --color-control,
+       i.e. visually nothing at all. */
+    --color-control-hover: oklch(97.6% 0.008 88);
+
     /* Semantic tones — carry meaning, never retune for branding */
     --color-warning: oklch(55.5% 0.146 49);
     --color-warning-hover: oklch(45.9% 0.119 50);
@@ -125,10 +145,27 @@
 
     /* Raised surfaces — a panel reads as lifted by shadow, never by an outline.
        `.sk-card`, `.sk-nav-rail` and the `shadow-card` utility all resolve to
-       this, so retuning the elevation moves every panel in the app together. */
+       this, so retuning the elevation moves every panel in the app together.
+
+       Elevation, not float: a section sits on the page, it does not hover over
+       it. Was 0 12px 24px / 0.07 — a 24px footprint below the card, which read
+       as a modal and exaggerated the gap between stacked sections. Now 6px
+       offset, 14px blur, -4px spread: roughly half the footprint at the same
+       perceived lift, and the negative spread keeps it hugging the edge instead
+       of pooling underneath. Unrelated elevations stay as they are on purpose —
+       .sk-card-elevation (public homepage) is a deliberate step up, popovers
+       and select pickers need a bigger throw because they float above content.
+
+       The 0 -1px layer is the top edge. Downward-only shadow left the top of a
+       panel undefined, which matters here because there is no border and the
+       panel (98.5%) sits only ~1.8 lightness above the ground (96.7%) — the
+       bottom edge had a shadow to describe it and the top edge had nothing.
+       Kept at 0.03 against the 0.04 below so the light still reads as coming
+       from above: the card is proud of the page all round, not levitating. */
     --shadow-card:
+        0 -1px 2px rgba(60, 50, 30, 0.03),
         0 1px 2px rgba(60, 50, 30, 0.04),
-        0 12px 24px rgba(60, 50, 30, 0.07);
+        0 6px 14px -4px rgba(60, 50, 30, 0.06);
 }
 
 /* Public-safe Soapkraft primitives. Filament overrides live in filament-soapkraft.css. */

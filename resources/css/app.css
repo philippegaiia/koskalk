@@ -20,7 +20,7 @@
     }
 
     [data-user-shell] {
-        --color-surface: oklch(97.2% 0.010 128);
+        --color-surface: oklch(97.5% 0.0055 128);
         --color-panel: oklch(98.8% 0.006 85);
 
         --color-accent: oklch(53.0% 0.090 55);
@@ -34,7 +34,14 @@
 
         --color-info-soft: oklch(96.5% 0.012 230);
 
-        --color-reference-header: oklch(98.0% 0.007 245);
+        /* Reference panels (ingredient browser, formula analysis, fatty acid
+           profile) are marked by a slate heading and a slate rule, not by a
+           blue ground. Hue 245 was a third hue family — the palette is warm
+           (50-95) plus botanical green (145-166) — and at chroma 0.007 it read
+           as cold grey rather than as a deliberate blue. The ground now sits in
+           the warm family and 1.2 lightness below --color-panel, so the header
+           separates from the card body more than the old 0.8 did. */
+        --color-reference-header: oklch(97.6% 0.004 85);
         --color-formula-header: oklch(96.8% 0.013 80);
 
         --color-reference-heading: oklch(37.0% 0.025 245);
@@ -59,13 +66,17 @@
         font-weight: 600;
     }
 
+    /* Deliberately not --color-reference-header. That token had to become a warm
+       near-white, and a near-white cannot mark a selected row against a
+       near-white dropdown. The table row-hover tint is the right weight here and
+       keeps the selection in the warm family. */
     .sk-combobox-reference .sk-combobox-control[data-has-selection="true"],
     .sk-combobox-reference [role="option"][aria-selected="true"] {
-        background-color: var(--color-reference-header);
+        background-color: var(--color-panel-muted);
     }
 
     .sk-combobox-reference .sk-combobox-control input:autofill {
-        box-shadow: inset 0 0 0 1000px var(--color-reference-header);
+        box-shadow: inset 0 0 0 1000px var(--color-panel-muted);
         -webkit-text-fill-color: var(--color-ink-strong);
     }
 

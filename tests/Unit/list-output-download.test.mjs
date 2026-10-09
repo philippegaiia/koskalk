@@ -259,3 +259,24 @@ test('captures a selected or cleared lot material before its server callback upd
     assert.equal(helper.captureParameters().lotMaterialType, '');
     assert.equal(helper.currentResultsAreEmpty(), false);
 });
+
+test('reads the component root after init when Alpine passes the clicked item as $el', async () => {
+    const fixture = outputRoot();
+    const requests = [];
+    const helper = createListOutputDownload({
+        ...fixture,
+        window: { location: { origin: 'https://koskalk.test' }, URL: fixture.URL },
+        setTimeout: (callback) => callback(),
+        fetch: async (url) => {
+            requests.push(url);
+
+            return { ok: true, headers: { get: () => null }, blob: async () => new Blob(['xlsx']) };
+        },
+    });
+    helper.$el = fixture.root;
+    helper.init();
+    helper.$el = { dataset: {}, querySelector: () => null };
+
+    assert.equal(await helper.exportList('xlsx'), true);
+    assert.equal(new URL(requests[0]).pathname, '/dashboard/ingredients/export');
+});

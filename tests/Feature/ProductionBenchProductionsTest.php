@@ -416,6 +416,7 @@ it('deletes a deletable run from the list and keeps reserved runs', function ():
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSeeHtml('data-production-delete-action')
         ->assertSeeHtml("run('deleteProduction', [".$fixture['production']->id.']')
+        ->assertDontSeeHtml('@js(')
         ->call('deleteProduction', $fixture['production']->id)
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'

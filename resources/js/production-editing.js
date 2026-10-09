@@ -237,14 +237,16 @@ export function createProductionEditing(payload, environment = {}) {
 
 export function createProductionRegister() {
     let queue = Promise.resolve();
+    let root = null;
     return {
         busy: false, message: '',
+        init() { root = this.$el; },
         run(method, args = [], confirmation = null) {
             if (confirmation && !window.confirm(confirmation)) return Promise.resolve(null);
             const next = queue.then(async () => {
                 this.busy = true; this.message = '';
                 try { return await this.$wire.$call(method, ...args); }
-                catch (error) { this.message = this.$el.dataset.failureMessage; return null; }
+                catch (error) { this.message = (root ?? this.$el).dataset.failureMessage; return null; }
                 finally { this.busy = false; }
             });
             queue = next.catch(() => {});

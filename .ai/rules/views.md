@@ -13,3 +13,6 @@ The CMS at soapkraft.com (WordPress or Ghost) owns the homepage, blog, training,
 
 ## Alpine event names must not begin with a Blade directive name
 Blade compiles any `@word` it has registered, before Alpine ever sees it. `@production-row-actions-opened.window="..."` compiles as Laravel's `@production` environment directive, so the view fails with "syntax error, unexpected end of file, expecting elseif/else/endif". Prefix the event instead (`@bench-production-row-actions-opened`); `@formula-...`, `@click`, `@scroll`, `@resize` and `@keydown` are safe because those words are not directives.
+
+## Alpine methods read their component root from init()
+Inside a method called from an event expression, Alpine resolves `this.$el` to the element the event fired on (a menu item or button), not the `x-data` root, so `this.$el.dataset` silently returns undefined. Components that keep configuration in data attributes on their root must store the root in `init()` and read it from there; `$root` is not safe when a nested `x-data` sits between. The app shell also loads `@livewireScripts` explicitly, because Livewire (and its bundled Alpine) is only auto-injected on pages that render a Livewire component.

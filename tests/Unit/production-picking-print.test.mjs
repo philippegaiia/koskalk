@@ -31,3 +31,9 @@ test('successful response fills synchronously opened window', async () => {
     const component = createProductionPickingPrint({ window: { open: () => ({ closed: false, focus() {}, document: { open() {}, write(value) { html = value; }, close() {} } }) }, document: { querySelector: () => ({ content: 'csrf' }) }, fetch: async () => ({ ok: true, text: async () => '<html>sheet</html>' }) }); component.$el = root();
     assert.equal(await component.printPicking(), true); assert.equal(html, '<html>sheet</html>'); assert.equal(component.pending, false);
 });
+test('reads the component root after init when Alpine passes the print button as $el', async () => {
+    let requestedUrl;
+    const component = createProductionPickingPrint({ window: { open: () => ({ closed: false, focus() {}, document: { open() {}, write() {}, close() {} } }) }, document: { querySelector: () => ({ content: 'csrf' }) }, fetch: async (url) => { requestedUrl = url; return { ok: true, text: async () => '<html></html>' }; } });
+    component.$el = root(); component.init(); component.$el = { dataset: {} };
+    assert.equal(await component.printPicking(), true); assert.equal(requestedUrl, '/print');
+});

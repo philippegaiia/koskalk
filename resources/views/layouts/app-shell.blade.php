@@ -174,6 +174,7 @@
 
         <x-contextual-help.panel />
 
+        @livewireScripts
         @filamentScripts
     </body>
 </html>

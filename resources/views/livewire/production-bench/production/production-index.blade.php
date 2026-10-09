@@ -190,7 +190,7 @@
                                             @if ($canDelete)
                                                 <x-table-row-action icon="trash" label="{{ __('production_bench.production.delete') }}"
                                                     data-production-delete-action
-                                                    @click.stop="run('deleteProduction', [{{ $production->id }}], @js(__('production_bench.production.delete_confirm')))" x-bind:disabled="busy"
+                                                    @click.stop="run('deleteProduction', [{{ $production->id }}], {{ \Illuminate\Support\Js::from(__('production_bench.production.delete_confirm')) }})" x-bind:disabled="busy"
 
                                                     wire:loading.attr="disabled"
                                                     aria-label="{{ __('production_bench.production.delete') }}: {{ $production->displayRecipeName() }}"
@@ -279,7 +279,7 @@
                                         @if ($canDelete)
                                             <x-table-row-action icon="trash" label="{{ __('production_bench.production.delete') }}"
                                                     data-production-delete-action
-                                                @click.stop="run('deleteProduction', [{{ $production->id }}], @js(__('production_bench.production.delete_confirm')))" x-bind:disabled="busy"
+                                                @click.stop="run('deleteProduction', [{{ $production->id }}], {{ \Illuminate\Support\Js::from(__('production_bench.production.delete_confirm')) }})" x-bind:disabled="busy"
 
                                                 wire:loading.attr="disabled"
                                                 aria-label="{{ __('production_bench.production.delete') }}: {{ $production->displayRecipeName() }}"

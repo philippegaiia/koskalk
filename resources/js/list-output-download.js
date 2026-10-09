@@ -78,6 +78,10 @@ export function createListOutputDownload(dependencies = {}) {
     const schedule = dependencies.setTimeout ?? globalThis.setTimeout;
     const MutationObserver = dependencies.MutationObserver ?? globalThis.MutationObserver;
     let serverResultsObserver = null;
+    let root = null;
+    // Inside an event handler Alpine resolves this.$el to the clicked element,
+    // so the component root (which carries the data attributes) is kept from init().
+    const outputRoot = (component) => root ?? component.$el;
 
     return {
         outputPending: false,
@@ -89,12 +93,13 @@ export function createListOutputDownload(dependencies = {}) {
         serverParameters: {},
 
         init() {
+            root = this.$el;
             this.visibleSearch = this.searchInput()?.value ?? '';
             this.syncServerResults();
 
             if (typeof MutationObserver === 'function') {
                 serverResultsObserver = new MutationObserver(() => this.syncServerResults());
-                serverResultsObserver.observe(this.$el, {
+                serverResultsObserver.observe(outputRoot(this), {
                     attributes: true,
                     attributeFilter: ['data-export-has-results', 'data-export-server-search', 'data-export-parameters'],
                 });
@@ -106,34 +111,34 @@ export function createListOutputDownload(dependencies = {}) {
         },
 
         syncServerResults() {
-            this.serverHasResults = this.$el.dataset.exportHasResults === 'true';
-            this.serverSearch = this.$el.dataset.exportServerSearch ?? '';
-            this.serverParameters = JSON.parse(this.$el.dataset.exportParameters ?? '{}');
+            this.serverHasResults = outputRoot(this).dataset.exportHasResults === 'true';
+            this.serverSearch = outputRoot(this).dataset.exportServerSearch ?? '';
+            this.serverParameters = JSON.parse(outputRoot(this).dataset.exportParameters ?? '{}');
         },
 
         searchInput() {
-            return this.$el.querySelector(this.$el.dataset.exportSearchSelector ?? '[data-list-output-search]');
+            return outputRoot(this).querySelector(outputRoot(this).dataset.exportSearchSelector ?? '[data-list-output-search]');
         },
 
         captureParameters() {
             const parameters = { ...this.serverParameters };
-            for (const key of JSON.parse(this.$el.dataset.exportLivewireFilters ?? '[]')) {
+            for (const key of JSON.parse(outputRoot(this).dataset.exportLivewireFilters ?? '[]')) {
                 parameters[key] = this.$wire.$get(key);
             }
-            if (this.$el.dataset.exportMaterialSelection) {
-                const selection = this.$wire.$get(this.$el.dataset.exportMaterialSelection) ?? '';
+            if (outputRoot(this).dataset.exportMaterialSelection) {
+                const selection = this.$wire.$get(outputRoot(this).dataset.exportMaterialSelection) ?? '';
                 const separator = selection.indexOf(':');
                 parameters.lotMaterialType = separator < 0 ? '' : selection.slice(0, separator);
                 parameters.lotMaterial = separator < 0 ? '' : selection.slice(separator + 1);
             }
-            parameters[this.$el.dataset.exportSearchParameter ?? 'search'] = this.searchInput()?.value ?? '';
+            parameters[outputRoot(this).dataset.exportSearchParameter ?? 'search'] = this.searchInput()?.value ?? '';
 
             return parameters;
         },
 
         currentResultsAreEmpty() {
             const current = this.captureParameters();
-            for (const key of JSON.parse(this.$el.dataset.exportLivewireFilters ?? '[]')) {
+            for (const key of JSON.parse(outputRoot(this).dataset.exportLivewireFilters ?? '[]')) {
                 if ((current[key] ?? '') !== (this.serverParameters[key] ?? '')) {
                     return false;
                 }
@@ -162,25 +167,25 @@ export function createListOutputDownload(dependencies = {}) {
             const popup = window.open('', '_blank');
             this.outputError = '';
             if (! popup) {
-                this.outputError = this.$el.dataset.exportErrorPopup;
+                this.outputError = outputRoot(this).dataset.exportErrorPopup;
                 return false;
             }
             this.outputPending = true;
             try {
-                popup.document.title = this.$el.dataset.exportPreparing;
+                popup.document.title = outputRoot(this).dataset.exportPreparing;
                 const message = popup.document.createElement('p');
-                message.textContent = this.$el.dataset.exportPreparing;
+                message.textContent = outputRoot(this).dataset.exportPreparing;
                 popup.document.body.replaceChildren(message);
-                const url = buildListOutputUrl({ endpoint: this.$el.dataset.printUrl, origin: window.location.origin, parameters: this.captureParameters() });
+                const url = buildListOutputUrl({ endpoint: outputRoot(this).dataset.printUrl, origin: window.location.origin, parameters: this.captureParameters() });
                 const response = await fetch(url, { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' } });
                 if (! response.ok) {
                     throw new Error(await responseError(response, {
-                        access: this.$el.dataset.exportErrorAccess,
-                        forbidden: this.$el.dataset.exportErrorForbidden,
-                        workspaceChanged: this.$el.dataset.exportErrorWorkspaceChanged,
-                        invalid: this.$el.dataset.exportErrorInvalid,
-                        throttled: this.$el.dataset.exportErrorThrottled,
-                        failed: this.$el.dataset.exportErrorFailed,
+                        access: outputRoot(this).dataset.exportErrorAccess,
+                        forbidden: outputRoot(this).dataset.exportErrorForbidden,
+                        workspaceChanged: outputRoot(this).dataset.exportErrorWorkspaceChanged,
+                        invalid: outputRoot(this).dataset.exportErrorInvalid,
+                        throttled: outputRoot(this).dataset.exportErrorThrottled,
+                        failed: outputRoot(this).dataset.exportErrorFailed,
                     }));
                 }
                 const html = await response.text();
@@ -195,7 +200,7 @@ export function createListOutputDownload(dependencies = {}) {
                 if (! popup.closed) {
                     popup.close();
                 }
-                this.outputError = error instanceof Error && error.message ? error.message : this.$el.dataset.exportErrorFailed;
+                this.outputError = error instanceof Error && error.message ? error.message : outputRoot(this).dataset.exportErrorFailed;
                 return false;
             } finally {
                 this.outputPending = false;
@@ -214,7 +219,7 @@ export function createListOutputDownload(dependencies = {}) {
                 const parameters = this.captureParameters();
                 parameters.format = format;
                 const url = buildListOutputUrl({
-                    endpoint: this.$el.dataset.exportUrl,
+                    endpoint: outputRoot(this).dataset.exportUrl,
                     origin: window.location.origin,
                     parameters,
                 });
@@ -226,16 +231,16 @@ export function createListOutputDownload(dependencies = {}) {
 
                 if (! response.ok) {
                     throw new Error(await responseError(response, {
-                        access: this.$el.dataset.exportErrorAccess,
-                        forbidden: this.$el.dataset.exportErrorForbidden,
-                        workspaceChanged: this.$el.dataset.exportErrorWorkspaceChanged,
-                        invalid: this.$el.dataset.exportErrorInvalid,
-                        throttled: this.$el.dataset.exportErrorThrottled,
-                        failed: this.$el.dataset.exportErrorFailed,
+                        access: outputRoot(this).dataset.exportErrorAccess,
+                        forbidden: outputRoot(this).dataset.exportErrorForbidden,
+                        workspaceChanged: outputRoot(this).dataset.exportErrorWorkspaceChanged,
+                        invalid: outputRoot(this).dataset.exportErrorInvalid,
+                        throttled: outputRoot(this).dataset.exportErrorThrottled,
+                        failed: outputRoot(this).dataset.exportErrorFailed,
                     }));
                 }
 
-                const fallback = this.$el.dataset.exportFilenameFallback?.replace('{format}', format) ?? `ingredients.${format}`;
+                const fallback = outputRoot(this).dataset.exportFilenameFallback?.replace('{format}', format) ?? `ingredients.${format}`;
                 const filename = filenameFromContentDisposition(response.headers.get('Content-Disposition'), fallback);
                 downloadBlob(await response.blob(), filename, document, URLApi, schedule);
 
@@ -243,7 +248,7 @@ export function createListOutputDownload(dependencies = {}) {
             } catch (error) {
                 this.outputError = error instanceof Error && error.message
                     ? error.message
-                    : this.$el.dataset.exportErrorFailed;
+                    : outputRoot(this).dataset.exportErrorFailed;
 
                 return false;
             } finally {

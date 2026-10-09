@@ -108,6 +108,7 @@ it('renders the formula sheet around one aligned table', function () {
         ->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Formula Sheet')
+        ->assertSee('data-update-uri', false)
         ->assertSeeInOrder(['Saponified oils', 'Lye and water', 'Formula additions'])
         ->assertSee('% of oils')
         ->assertSee('NaOH')

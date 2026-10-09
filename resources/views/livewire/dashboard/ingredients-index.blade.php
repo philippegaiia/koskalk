@@ -114,10 +114,9 @@
                                     wire:loading.attr="disabled"
                                     wire:target="setOwnershipFilter,sortBy"
                                     @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())"
-                                    class="sk-btn sk-btn-outline min-h-11 justify-center"
+                                    class="sk-btn sk-btn-outline min-h-11 justify-center gap-2 whitespace-nowrap"
                                 >
-                                    {{ __('ingredients.exports.ui.label') }}
-                                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+                                    <x-action-icon name="download" />{{ __('ingredients.exports.ui.label') }}<x-action-icon name="chevron-down" />
                                 </button>
 
                                 <div id="ingredient-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('ingredients.exports.ui.menu_label') }}" @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()" class="absolute left-0 right-auto top-full z-30 mt-2 min-w-52 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg sm:left-auto sm:right-0">

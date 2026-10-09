@@ -39,8 +39,8 @@
                 <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('formula_documents.composition.no_authored_label') }}</p>
             @endif
         </div>
-        <a href="{{ $compositionExportUrl }}" class="sk-btn sk-btn-ghost min-h-11 shrink-0">
-            {{ __('formula_documents.actions.export_composition') }}
+        <a href="{{ $compositionExportUrl }}" class="sk-btn sk-btn-outline min-h-11 shrink-0 gap-2 whitespace-nowrap">
+            <x-action-icon name="download" />{{ __('formula_documents.actions.export_composition') }}
         </a>
     </section>
 </div>

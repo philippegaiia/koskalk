@@ -7,7 +7,8 @@
 @endphp
 
 <div class="sk-workbench-navigation border-b border-[var(--color-line)]">
-    <div class="flex min-w-0 items-center gap-2">
+    {{-- Output actions sit beside the tabs when the workbench is wide enough, and wrap to their own row below it so the tabs keep their full width. --}}
+    <div class="flex min-w-0 flex-col gap-2 @6xl/workbench:flex-row @6xl/workbench:items-center">
     <div class="{{ $isPublicCalculator ? 'w-full' : 'relative min-w-0 max-w-full overflow-hidden flex-1' }}">
     <nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-0 max-w-full gap-7 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-width:thin]' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
         <button

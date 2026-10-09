@@ -17,6 +17,7 @@ return [
         'export_composition' => 'Export composition',
         'export_excel' => 'Export Excel',
         'export_formula' => 'Export formula',
+        'export_costing' => 'Export costing',
         'export_costing_excel' => 'Export costing Excel',
         'export_xlsx_option' => 'Excel (.xlsx)',
         'open' => 'Open formula',

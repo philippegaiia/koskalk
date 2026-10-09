@@ -2343,7 +2343,7 @@ it('reserves copper for actions and uses botanical green for selected user state
         ->toContain('h-full rounded-full bg-[var(--color-active)]')
         ->not->toContain('h-full rounded-full bg-[var(--color-accent)]')
         ->and($appStylesSource)
-        ->toContain(".sk-btn-outline {\n        border: 1px solid var(--color-line);\n        background: var(--color-panel);");
+        ->toContain(".sk-btn-outline,\n    .sk-btn-secondary {\n        border: 1px solid var(--color-line);\n        background: var(--color-panel);");
 });
 
 it('collapses formula settings into a setup summary for soap and cosmetic benches', function () {

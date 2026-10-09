@@ -127,8 +127,8 @@
                             <button x-ref="exportMenuTrigger" type="button" aria-haspopup="menu" aria-controls="materials-export-menu"
                                 :aria-expanded="outputMenuOpen.toString()" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"
                                 :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="materialType,stockState,demandFilter,categoryFilter,subcategoryFilter,sort,direction,clearMaterialFilters,toggleShortageFilter,toggleBelowBufferFilter"
-                                @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())" class="sk-btn sk-btn-outline min-h-11">
-                                {{ __('production_bench.output.ui.materials') }}
+                                @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                                <x-action-icon name="download" />{{ __('production_bench.output.ui.materials') }}<x-action-icon name="chevron-down" />
                             </button>
                             <div id="materials-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('production_bench.output.ui.materials') }}"
                                 @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()"
@@ -308,8 +308,8 @@
                             <button x-ref="exportMenuTrigger" type="button" aria-haspopup="menu" aria-controls="stock-export-menu"
                                 :aria-expanded="outputMenuOpen.toString()" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"
                                 :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial"
-                                @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())" class="sk-btn sk-btn-outline min-h-11">
-                                {{ __('production_bench.output.ui.stock') }}
+                                @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                                <x-action-icon name="download" />{{ __('production_bench.output.ui.stock') }}<x-action-icon name="chevron-down" />
                             </button>
                             <div id="stock-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('production_bench.output.ui.stock') }}"
                                 @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()"
@@ -318,7 +318,7 @@
                                 <button x-ref="csvExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial" @click="outputMenuOpen = false; $refs.exportMenuTrigger.focus(); exportList('csv')" @keydown.arrow-down.prevent="$refs.xlsxExport.focus()" @keydown.arrow-up.prevent="$refs.xlsxExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-panel-strong)]">{{ __('production_bench.output.ui.csv') }}</button>
                             </div>
                         </div>
-                        <button type="button" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()" :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial" @click="printList()" class="sk-btn sk-btn-outline min-h-11">{{ __('production_bench.output.ui.count') }}</button>
+                        <button type="button" :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()" :disabled="currentResultsAreEmpty()" wire:loading.attr="disabled" wire:target="lotFilters.lotMaterialSelection,lotMaterial,lotMaterialType,lotScope,lotStatus,lotSupplier,lotOrigin,lotDateBasis,lotDateFrom,lotDateUntil,lotExpiry,lotStorageLocation,lotSort,clearLotFilters,clearLotMaterial" @click="printList()" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap"><x-action-icon name="printer" />{{ __('production_bench.output.ui.count') }}</button>
                         <p x-show="outputPending" x-cloak role="status" class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.output.ui.pending') }}</p>
                         <p x-show="outputError" x-cloak role="alert" class="text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
                         {{-- Outside the disclosure on purpose: it used to appear only with a

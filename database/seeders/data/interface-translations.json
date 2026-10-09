@@ -1164,6 +1164,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "actions.export_costing",
+      "text": {
+        "de": "Kosten exportieren",
+        "es": "Exportar costes",
+        "fr": "Exporter les coûts",
+        "it": "Esporta i costi",
+        "nl": "Kosten exporteren",
+        "pt_BR": "Exportar custos"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "actions.export_costing_excel",
       "text": {
         "de": "Kosten in Excel exportieren",

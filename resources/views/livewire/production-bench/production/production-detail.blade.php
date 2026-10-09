@@ -54,7 +54,7 @@
 
                     <div class="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
                         @if ($production->status !== \App\Enums\ProductionRunStatus::Cancelled)
-                            <a data-testid="production-print" href="{{ route('production-bench.production.print', ['productionRun' => $production, 'workspace' => $workspace->public_id]) }}" target="_blank" rel="noopener" class="sk-btn sk-btn-secondary">{{ __('production_bench.run_print.'.(in_array($production->status, [\App\Enums\ProductionRunStatus::Completed, \App\Enums\ProductionRunStatus::Aborted], true) ? 'print_record' : 'print_sheet')) }}</a>
+                            <a data-testid="production-print" href="{{ route('production-bench.production.print', ['productionRun' => $production, 'workspace' => $workspace->public_id]) }}" target="_blank" rel="noopener" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap"><x-action-icon name="printer" />{{ __('production_bench.run_print.'.(in_array($production->status, [\App\Enums\ProductionRunStatus::Completed, \App\Enums\ProductionRunStatus::Aborted], true) ? 'print_record' : 'print_sheet')) }}</a>
                         @endif
 
 

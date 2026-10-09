@@ -135,7 +135,7 @@
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.confirm_prepare_stock_help') }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <button type="button" @click="printPicking()" :disabled="pending || busy" class="sk-btn sk-btn-secondary">{{ __('production_bench.picking.print') }}</button>
+                <button type="button" @click="printPicking()" :disabled="pending || busy" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap"><x-action-icon name="printer" />{{ __('production_bench.picking.print') }}</button>
                 <span x-cloak x-show="pending" role="status" class="text-sm">{{ __('production_bench.output.ui.pending') }}</span>
                 <p x-cloak x-show="error" x-text="error" role="alert" class="text-sm text-[var(--color-danger-strong)]"></p>
             <button type="submit" wire:loading.attr="disabled" :disabled="!canWrite || busy || @js($isReadOnly || ! $isBenchActive)" class="sk-btn sk-btn-primary shrink-0">{{ __('production_bench.production.prepare_stock') }}</button>

@@ -61,11 +61,11 @@
                             @csrf
                             <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                             <input type="hidden" name="confirm_replace_current" value="1" />
-                            <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                            <button type="submit" class="sk-btn sk-btn-primary min-h-11">
                                 {{ $currentReplaceConfirmation['action_label'] ?? 'Replace formula' }}
                             </button>
                         </form>
-                        <a href="{{ route('recipes.saved', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.saved', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">
                             Keep current formula
                         </a>
                     </div>
@@ -89,38 +89,37 @@
 
                     <div class="mt-4 flex flex-wrap gap-2">
                         @if ($isHistorical)
-                            <a href="{{ route('recipes.saved', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                            <a href="{{ route('recipes.saved', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">
                                 {{ __('formula_documents.actions.back_to_current') }}
                             </a>
                         @endif
-                        <a href="{{ route('recipes.edit', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.edit', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">
                             {{ __('formula_documents.actions.open') }}
                         </a>
                         @if ($canDuplicateRecipe)
                             <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
                                 @csrf
-                                <button type="submit" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                <button type="submit" class="sk-btn sk-btn-outline min-h-11">
                                     {{ __('products.actions.duplicate') }}
                                 </button>
                             </form>
                         @endif
                         @if ($canShareFormula ?? false)
                             @can('share', $recipe)
-                                <a href="{{ route('formula-shares.create', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">{{ __('sharing.share') }}</a>
+                                <a href="{{ route('formula-shares.create', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">{{ __('sharing.share') }}</a>
                             @endcan
                         @endif
                         <form method="GET" action="{{ route('recipes.print.recipe', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
                             @foreach (collect($printQuery)->except('recipe') as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
                             @endforeach
-                            <button type="submit" class="sk-btn sk-btn-primary min-h-11">
-                                {{ __('formula_documents.actions.print_sheet') }}
+                            <button type="submit" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                                <x-action-icon name="printer" />{{ __('formula_documents.actions.print_sheet') }}
                             </button>
                         </form>
                         <div x-data="{ savedExportMenuOpen: false }" @click.outside="savedExportMenuOpen = false" class="relative">
-                            <button x-ref="savedExportMenuTrigger" type="button" aria-haspopup="menu" :aria-expanded="savedExportMenuOpen" @click="savedExportMenuOpen = !savedExportMenuOpen; if (savedExportMenuOpen) $nextTick(() => $refs.savedExcelExport.focus())" class="sk-btn sk-btn-ghost min-h-11">
-                                {{ __('formula_documents.actions.export_formula') }}
-                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+                            <button x-ref="savedExportMenuTrigger" type="button" aria-haspopup="menu" :aria-expanded="savedExportMenuOpen" @click="savedExportMenuOpen = !savedExportMenuOpen; if (savedExportMenuOpen) $nextTick(() => $refs.savedExcelExport.focus())" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                                <x-action-icon name="download" />{{ __('formula_documents.actions.export_formula') }}<x-action-icon name="chevron-down" />
                             </button>
                             <div x-show="savedExportMenuOpen" x-cloak role="menu" @keydown.escape.stop.prevent="savedExportMenuOpen = false; $refs.savedExportMenuTrigger.focus()" class="absolute right-0 top-full z-20 mt-2 min-w-48 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg">
                                 <a x-ref="savedExcelExport" role="menuitem" href="{{ route('recipes.export.xlsx', $printQuery) }}" @keydown.arrow-down.prevent="$refs.savedCsvExport.focus()" @keydown.arrow-up.prevent="$refs.savedCsvExport.focus()" class="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('formula_documents.actions.export_xlsx_option') }}</a>
@@ -138,10 +137,10 @@
                         <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ $snapshot['draft']['oilUnit'] ?? 'g' }}</span>
                     </div>
                     <div class="mt-3 flex gap-2">
-                        <button type="submit" class="rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
+                        <button type="submit" class="sk-btn sk-btn-primary min-h-11">
                             {{ __('formula_documents.actions.recalculate') }}
                         </button>
-                        <a href="{{ $sheetRoute }}" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">
+                        <a href="{{ $sheetRoute }}" class="sk-btn sk-btn-outline min-h-11">
                             {{ __('formula_documents.actions.reset') }}
                         </a>
                     </div>
@@ -171,7 +170,7 @@
                                     <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $savedVersion['public_id']]) }}">
                                         @csrf
                                         <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
-                                        <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                        <button type="submit" class="sk-btn sk-btn-outline min-h-11">
                                             {{ __('formula_documents.actions.use_as_current') }}
                                         </button>
                                     </form>
@@ -307,7 +306,7 @@
                                 </dd>
                             </div>
                         </dl>
-                        <button type="submit" class="rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
+                        <button type="submit" class="sk-btn sk-btn-primary min-h-11">
                             Record production
                         </button>
                     </div>
@@ -406,7 +405,7 @@
             @else
                 <div class="px-5 py-8 text-center">
                     <p class="text-sm text-[var(--color-ink-soft)]">No packaging items in this formula's plan yet.</p>
-                    <a href="{{ route('recipes.edit', $recipe) }}" class="mt-3 inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                    <a href="{{ route('recipes.edit', $recipe) }}" class="mt-3 sk-btn sk-btn-outline min-h-11">
                         Add packaging on the workbench
                     </a>
                 </div>

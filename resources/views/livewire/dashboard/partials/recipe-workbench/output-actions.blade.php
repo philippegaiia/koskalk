@@ -1,11 +1,14 @@
 @if (is_array($workbench['output'] ?? null) && ! ($isPublicCalculator ?? false))
-    <div x-show="['formula', 'instructions', 'costing', 'output'].includes(activeWorkbenchTab)" x-cloak :aria-busy="outputPending" class="flex shrink-0 items-center gap-1">
-        <div x-show="activeWorkbenchTab === 'formula'" x-cloak class="flex items-center gap-1">
-            <button title="{{ __('formula_documents.actions.print_sheet') }}" type="button" @click="printCurrentFormula({ printContext: 'formula' })" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"><span class="sr-only">{{ __('formula_documents.actions.print_sheet') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM18 12h.01" /></svg></button>
+    {{-- Print and export buttons follow the shared output-button pattern: see "Print and export buttons share one look" in .ai/rules/views.md. --}}
+    <div x-show="['formula', 'instructions', 'costing', 'output'].includes(activeWorkbenchTab)" x-cloak :aria-busy="outputPending" class="flex shrink-0 items-center justify-end gap-2 pb-2 @6xl/workbench:pb-0">
+        <div x-show="activeWorkbenchTab === 'formula'" x-cloak class="flex items-center gap-2">
+            <button type="button" @click="printCurrentFormula({ printContext: 'formula' })" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                <x-action-icon name="printer" />{{ __('formula_documents.actions.print_sheet') }}
+            </button>
 
             <div x-data="{ outputExportMenuOpen: false }" @click.outside="outputExportMenuOpen = false" class="relative">
-                <button title="{{ __('formula_documents.actions.export_formula') }}" x-ref="exportMenuTrigger" type="button" aria-haspopup="menu" :aria-expanded="outputExportMenuOpen" @click="outputExportMenuOpen = !outputExportMenuOpen; if (outputExportMenuOpen) $nextTick(() => $refs.xlsxExport.focus())" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50">
-                    <span class="sr-only">{{ __('formula_documents.actions.export_formula') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6M8 12h8v6H8zM8 15h8M12 12v6" /></svg>
+                <button x-ref="exportMenuTrigger" type="button" aria-haspopup="menu" :aria-expanded="outputExportMenuOpen" @click="outputExportMenuOpen = !outputExportMenuOpen; if (outputExportMenuOpen) $nextTick(() => $refs.xlsxExport.focus())" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                    <x-action-icon name="download" />{{ __('formula_documents.actions.export_formula') }}<x-action-icon name="chevron-down" />
                 </button>
 
                 <div x-show="outputExportMenuOpen" x-cloak role="menu" @keydown.escape.stop.prevent="outputExportMenuOpen = false; $refs.exportMenuTrigger.focus()" class="absolute right-0 top-full z-20 mt-2 min-w-48 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg">
@@ -15,18 +18,28 @@
             </div>
         </div>
 
-        <div x-show="activeWorkbenchTab === 'instructions'" x-cloak class="flex items-center gap-1">
-            <button title="{{ __('formula_documents.actions.print_sheet') }}" type="button" @click="printCurrentFormula({ printContext: 'instructions' })" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"><span class="sr-only">{{ __('formula_documents.actions.print_sheet') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM18 12h.01" /></svg></button>
+        <div x-show="activeWorkbenchTab === 'instructions'" x-cloak class="flex items-center gap-2">
+            <button type="button" @click="printCurrentFormula({ printContext: 'instructions' })" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                <x-action-icon name="printer" />{{ __('formula_documents.actions.print_sheet') }}
+            </button>
         </div>
 
-        <div x-show="activeWorkbenchTab === 'costing' && hasLoadedCosting" x-cloak class="flex items-center gap-1">
-            <button title="{{ __('formula_documents.actions.print_sheet') }}" type="button" @click="printCurrentFormula({ printContext: 'costing' })" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"><span class="sr-only">{{ __('formula_documents.actions.print_sheet') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM18 12h.01" /></svg></button>
-            <button title="{{ __('formula_documents.actions.export_costing_excel') }}" type="button" @click="exportCurrentCosting()" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"><span class="sr-only">{{ __('formula_documents.actions.export_costing_excel') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6M8 12h8v6H8zM8 15h8M12 12v6" /></svg></button>
+        <div x-show="activeWorkbenchTab === 'costing' && hasLoadedCosting" x-cloak class="flex items-center gap-2">
+            <button type="button" @click="printCurrentFormula({ printContext: 'costing' })" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                <x-action-icon name="printer" />{{ __('formula_documents.actions.print_sheet') }}
+            </button>
+            <button type="button" @click="exportCurrentCosting()" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                <x-action-icon name="download" />{{ __('formula_documents.actions.export_costing') }}
+            </button>
         </div>
 
-        <div x-show="activeWorkbenchTab === 'output'" x-cloak class="flex items-center gap-1">
-            <button title="{{ __('formula_documents.actions.print_sheet') }}" type="button" @click="printCurrentFormula({ printContext: 'output' })" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"><span class="sr-only">{{ __('formula_documents.actions.print_sheet') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM18 12h.01" /></svg></button>
-            <button title="{{ __('formula_documents.actions.export_composition') }}" type="button" @click="exportCurrentFormula('xlsx', 'composition')" :disabled="outputPending" class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"><span class="sr-only">{{ __('formula_documents.actions.export_composition') }}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6M8 12h8v6H8zM8 15h8M12 12v6" /></svg></button>
+        <div x-show="activeWorkbenchTab === 'output'" x-cloak class="flex items-center gap-2">
+            <button type="button" @click="printCurrentFormula({ printContext: 'output' })" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                <x-action-icon name="printer" />{{ __('formula_documents.actions.print_sheet') }}
+            </button>
+            <button type="button" @click="exportCurrentFormula('xlsx', 'composition')" :disabled="outputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                <x-action-icon name="download" />{{ __('formula_documents.actions.export_composition') }}
+            </button>
         </div>
     </div>
 @endif

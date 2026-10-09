@@ -32,8 +32,8 @@
                             Back to formula
                         </a>
                     @endif
-                    <a href="{{ route('production-batches.print', $productionBatch) }}" class="inline-flex rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
-                        Print
+                    <a href="{{ route('production-batches.print', $productionBatch) }}" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                        <x-action-icon name="printer" />Print
                     </a>
                     @can('delete', $productionBatch)
                         <form method="POST" action="{{ route('production-batches.destroy', $productionBatch) }}" x-data="{ confirming: false }" @submit.prevent="confirming ? $el.submit() : (confirming = true)" class="inline">

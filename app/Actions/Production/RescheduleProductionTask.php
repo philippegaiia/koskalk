@@ -8,14 +8,17 @@ use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class RescheduleProductionTask
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ProductionWorkingCalendar $calendar,
     ) {}
@@ -26,6 +29,7 @@ class RescheduleProductionTask
         ?string $scheduledFor = null,
         ?Employee $employee = null,
         bool $clearEmployee = false,
+        ?ProductionEditingContext $editing = null,
     ): ProductionTask {
         if ($scheduledFor !== null) {
             $this->validateDate($scheduledFor);
@@ -39,21 +43,22 @@ class RescheduleProductionTask
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $clearEmployee, $employee, $scheduledFor, $task): ProductionTask {
-            $lockedTask = ProductionTask::query()->lockForUpdate()->findOrFail($task->id);
-            $lockedProduction = ProductionRun::query()->lockForUpdate()->find($lockedTask->production_run_id);
+        $parentId = ProductionTask::query()->where('workspace_id', $workspace->id)->whereKey($task->id)->value('production_run_id');
+        if ($parentId === null || ! ProductionRun::query()->where('workspace_id', $workspace->id)->whereKey($parentId)->exists()) {
+            throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_missing')]);
+        }
+        $parentId = (int) $parentId;
 
-            if ($lockedProduction === null) {
+        return $this->guard->run($actor, [$parentId], $editing, function (User $actor, Workspace $workspace, Collection $productions) use ($clearEmployee, $employee, $scheduledFor, $task, $parentId): ProductionMutationResult {
+            $production = $productions[$parentId];
+            $lockedProduction = $production;
+            $lockedWorkspace = $workspace;
+            $lockedTask = ProductionTask::query()->where('workspace_id', $workspace->id)->where('production_run_id', $parentId)->lockForUpdate()->find($task->id);
+            if ($lockedTask === null) {
                 throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_missing')]);
             }
-
-            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($lockedProduction->workspace_id);
-
-            if ($lockedWorkspace === null || (int) $lockedTask->workspace_id !== (int) $lockedWorkspace->id) {
-                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_mismatch')]);
-            }
-
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $before = [$lockedTask->employee_id, $lockedTask->department_id, $lockedTask->scheduled_for?->toDateString(), $lockedTask->scheduling_mode, $lockedTask->completed_at?->toIso8601String(), $production->planned_for?->toDateString()];
+            $datesBefore = $production->tasks()->orderBy('id')->pluck('scheduled_for', 'id')->all();
 
             if (! in_array($lockedProduction->status, [
                 ProductionRunStatus::Draft,
@@ -85,7 +90,7 @@ class RescheduleProductionTask
             if ($scheduledFor === null) {
                 $lockedTask->save();
 
-                return $lockedTask->fresh(['productionRun', 'employee']);
+                return new ProductionMutationResult($lockedTask->fresh(['productionRun.tasks', 'employee']), ($before !== [$lockedTask->employee_id, $lockedTask->department_id, $lockedTask->scheduled_for?->toDateString(), $lockedTask->scheduling_mode, $lockedTask->completed_at?->toIso8601String(), $production->planned_for?->toDateString()] || $datesBefore !== $production->tasks()->orderBy('id')->pluck('scheduled_for', 'id')->all()) ? [$parentId] : []);
             }
 
             $anchorTaskId = ProductionTask::query()
@@ -138,8 +143,8 @@ class RescheduleProductionTask
                 $lockedTask->save();
             }
 
-            return $lockedTask->fresh(['productionRun', 'employee']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedTask->fresh(['productionRun.tasks', 'employee']), ($before !== [$lockedTask->employee_id, $lockedTask->department_id, $lockedTask->scheduled_for?->toDateString(), $lockedTask->scheduling_mode, $lockedTask->completed_at?->toIso8601String(), $production->planned_for?->toDateString()] || $datesBefore !== $production->tasks()->orderBy('id')->pluck('scheduled_for', 'id')->all()) ? [$parentId] : []);
+        });
     }
 
     private function validateDate(string $date): void

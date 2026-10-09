@@ -10,8 +10,12 @@ final class TestDatabaseSafety
     /**
      * @param  array<string, mixed>  $configuration
      */
-    public static function assertSafe(array $configuration, bool $allowDisposablePostgres = false): void
-    {
+    public static function assertSafe(
+        array $configuration,
+        bool $allowDisposablePostgres = false,
+        bool $allowFormulaSharingPostgres = false,
+        ?string $expectedFormulaSharingDatabase = null,
+    ): void {
         $databaseConfiguration = $configuration['database'] ?? [];
         $connection = is_array($databaseConfiguration)
             ? ($databaseConfiguration['default'] ?? null)
@@ -45,8 +49,14 @@ final class TestDatabaseSafety
             return;
         }
 
+        if ($allowFormulaSharingPostgres && $driver === 'pgsql' && is_string($database)
+            && preg_match('/^koskalk_formula_sharing_test_\d{8}(?:_[a-z0-9]+)*$/D', $database) === 1
+            && $expectedFormulaSharingDatabase === $database) {
+            return;
+        }
+
         throw new RuntimeException(sprintf(
-            'Refusing to run tests against [%s:%s]. Tests must use SQLite [:memory:] unless explicit PostgreSQL index verification targets a koskalk_fk_index_roundtrip_* database. Clear the Laravel configuration cache before running Pest.',
+            'Refusing to run tests against [%s:%s]. Tests must use SQLite [:memory:] unless explicitly opted into a disposable PostgreSQL index database, or a koskalk_formula_sharing_test_YYYYMMDD database matching the expected identity. Clear the Laravel configuration cache before running Pest.',
             is_scalar($driver) ? (string) $driver : get_debug_type($driver),
             is_scalar($database) ? (string) $database : get_debug_type($database),
         ));

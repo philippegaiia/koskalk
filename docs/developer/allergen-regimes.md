@@ -1,6 +1,6 @@
 # Allergen Regimes
 
-Last updated: 2026-05-07
+Last updated: 2026-10-09
 
 This document explains how fragrance allergen declaration works in the formula workbench, and where to update it when a market rule changes.
 
@@ -13,35 +13,59 @@ The system separates factual ingredient composition from regulatory declaration 
 - `regulatory_regimes` stores selectable market rule sets, for example EU, Canada 2026, or US MoCRA preview.
 - `regulatory_regime_allergens` maps which allergens are declarable in a specific regime, with thresholds and optional printed labels.
 - `recipe_versions.regulatory_regime_id` stores the selected regime relationship for saved formulas.
-- `recipe_versions.regulatory_regime` keeps the legacy code string for compatibility and payload readability.
+- `recipe_versions.regulatory_regime` keeps the code string. It survives when the regime row is deleted (the foreign key is nulled, the string is not), which is how a formula can still name a retired market.
+- `workspaces.default_regulatory_regime` is the market new formulas start on. It defaults to `none`.
 
 Do not duplicate ingredient allergen composition per country. The ingredient remains factual; the selected regime decides which of those factual allergens are declared.
 
 Allergen rules are label-declaration rules only. Substance restrictions use `substance_catalog`, `ingredient_substance_entries`, and `regulatory_regime_substance_rules`. When a molecule appears in both systems, such as Linalool, the substance row may link back to the allergen row through `allergen_id`; that link is optional and is the exception, not the default.
 
+## Market selection fails closed
+
+Label market checks are opt-in per formula. `RegulatoryRegime::NONE_CODE` (`none`) means the formula is not checked against any market.
+
+- A blank, missing, unknown, retired or out-of-date market code never falls back to EU. `RegulatoryRegime::normalizeCode()` returns `none` for anything outside the `selectable` scope (active or preview, and inside its effective dates), and no payload default is `eu`.
+- EU is not built in. It is checked against its `regulatory_regimes` row like any other market. Tests that expect EU behaviour must create an `eu` regime with the allergen rules they rely on.
+- A saved formula whose regime was retired or deleted keeps its stored code. The workbench, the recipe page and documents report it as **unavailable**, with a warning, rather than as unchecked. An explicit save of that formula stores `none`.
+- With `none` or an unavailable market, names follow canonical INCI, no allergen threshold is applied, and restrictions report `not_checked`. Nothing renders as a pass.
+- `none` is reserved: the admin regime form rejects it as a code.
+
 ## Runtime flow
 
 When the INCI preview is generated:
 
-1. The workbench payload sends `regulatory_regime`, usually a code such as `eu` or `canada_2026`.
-2. `InciGenerationService` loads that regime when its status is `active` or `preview`.
-3. The service loads active allergen rules for that regime.
-4. Each ingredient's `ingredient_allergen_entries` are screened against those rules.
-5. If the selected regime has a rule for an allergen, the allergen can be declared when it crosses the exposure threshold.
-6. If the selected regime does not have a rule for an allergen, that allergen is ignored for that regime.
-7. If the selected regime exists but has no active mappings, no allergens are declared.
-8. If the selected regime code does not exist, the service falls back to the legacy all-recorded-allergens behavior.
+1. The workbench payload sends `regulatory_regime`: `none` or a code such as `eu` or `canada_2026`.
+2. `none` stops here: the state is `not_selected`.
+3. `InciGenerationService` loads the regime when its status is `active` or `preview` and today is inside its effective dates. If none is found, the state is `unavailable`.
+4. The service loads active allergen rules for that regime.
+5. Each ingredient's `ingredient_allergen_entries` are screened against those rules.
+6. If the selected regime has a rule for an allergen, the allergen is declared when it crosses the exposure threshold.
+7. If the selected regime does not have a rule for an allergen, that allergen is ignored for that regime.
+8. If the selected regime exists but has no active mappings, no allergens are declared.
 
 Only one regime is selected for a formula. Regimes are not combined.
 
+### Soap threshold basis
+
+For soap, allergen percentages are compared with the cured soap (non-water mass ÷ 0.89), not the wet batch. This matches the "Soap %" column. The basis is part of the saved-list hash (`declaration_threshold_basis`), so every soap formula with a saved final list is flagged once for review; cosmetic lists are unaffected.
+
+### Substance restriction statuses
+
+`SubstanceComplianceService` summarises restrictions as:
+
+- `fail` / `warning`: a rule matched and needs correction or review.
+- `unverified`: shown as "Includes starter rules". At least one matched rule is a Koskalk starter placeholder (`RegulatoryRegimeSubstanceRule::hasSpecificComplianceData()` is false).
+- `no_rules`: the market has no active substance rules, so nothing was evaluated.
+- `not_checked`: no market, or the market is unavailable.
+- `pass`: rules exist and none matched the formula. Only this status renders as a pass.
+
 ## Seeded regimes
 
-`RegulatoryRegimeSeeder` creates four regimes:
+`RegulatoryRegimeSeeder` creates three regimes:
 
-- `eu`: active default, mapped to the current full platform allergen catalog.
-- `canada_2026`: active, mapped to Canada's initial 24 fragrance allergens required from April 12, 2026.
-- `canada_expanded_preview`: preview, mapped to the platform allergen catalog for Canada's expanded Annex III alignment.
-- `us_mocra_preview`: preview shell only, with no allergen mappings until the FDA final rule is available.
+- `eu`: active, `is_default`, mapped to the current full platform allergen catalog. "Default" only orders the market list; new formulas start on the workspace default, which is `none` unless the company changes it.
+- `canada_2026`: active, mapped to the full platform allergen catalog (Health Canada adopted the EU expanded list, SOR/DORS-63). New cosmetics disclose from August 1, 2026; existing products from August 1, 2028. The former `canada_expanded_preview` regime is removed and its saved versions are re-pointed to `canada_2026`.
+- `us_mocra_preview`: preview shell only, with no allergen or substance rules until the FDA final rule is available. Its restrictions report `no_rules`.
 
 The EU and Canada thresholds are seeded as:
 

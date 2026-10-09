@@ -8,16 +8,21 @@ use App\Models\ProductionRun;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class CancelProduction
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(private readonly ProductionMutationGuard $guard, private readonly ProductionBenchAccess $access) {}
 
-    public function handle(User $actor, ProductionRun $production, string $reason): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production, string $reason,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $reason = trim($reason);
 
         if ($reason === '' || mb_strlen($reason) > 1000) {
@@ -36,11 +41,7 @@ class CancelProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production, $reason, $workspace): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->whereKey($workspace->id)
-                ->lockForUpdate()
-                ->first();
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($production, $reason): ProductionMutationResult {
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -50,10 +51,7 @@ class CancelProduction
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 
-            $lockedProduction = ProductionRun::query()
-                ->where('workspace_id', $lockedWorkspace->id)
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+            $lockedProduction = $productions[$production->id];
 
             if (! in_array($lockedProduction->status, [ProductionRunStatus::Draft, ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([
@@ -82,7 +80,7 @@ class CancelProduction
                 'cancellation_reason' => $reason,
             ]);
 
-            return $lockedProduction->fresh(['requirements', 'tasks', 'recipe']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'tasks', 'recipe']), [$lockedProduction->id]);
+        });
     }
 }

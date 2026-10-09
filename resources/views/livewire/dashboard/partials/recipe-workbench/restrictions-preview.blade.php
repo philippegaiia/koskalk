@@ -61,10 +61,20 @@
  </div>
  </template>
 
- <template x-if="restrictionRows.length === 0">
+ <template x-if="restrictionRows.length === 0 && restrictionsNotChecked">
+ <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
+ {{ __('workbench.output.restrictions.not_checked') }}
+ </div>
+ </template>
+
+ <template x-if="restrictionRows.length === 0 && ! restrictionsNotChecked && ! restrictionsHaveNoRules">
  <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
  {{ __('workbench.output.restrictions.empty') }}
  </div>
+ </template>
+
+ <template x-if="restrictionsHaveStarterRules">
+ <p class="border-t border-[var(--color-line)] px-5 py-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.restrictions.starter_rule_note') }}</p>
  </template>
 
  <template x-if="restrictionWarnings.length > 0">

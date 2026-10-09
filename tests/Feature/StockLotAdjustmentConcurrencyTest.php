@@ -17,6 +17,7 @@ use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\ProductionEditingFixture;
 
 it('serializes stock adjustments against another database session', function (string $competingWrite): void {
     if (DB::getDriverName() !== 'pgsql' || ! function_exists('pcntl_fork')) {
@@ -46,7 +47,7 @@ it('serializes stock adjustments against another database session', function (st
         'required_mass_grams' => '100',
     ]);
     if ($competingWrite === 'consumption') {
-        app(AssignProductionBatchNumbers::class)->handle($owner, $workspace, [$production->id]);
+        app(AssignProductionBatchNumbers::class)->handle($owner, $workspace, [$production->id], editing: ProductionEditingFixture::command($owner, [$production->id]));
         $production->refresh()->update(['status' => ProductionRunStatus::InProduction]);
         ProductionConsumption::factory()->for($production, 'productionRun')->create([
             'production_requirement_id' => $requirement->id,
@@ -69,8 +70,8 @@ it('serializes stock adjustments against another database session', function (st
             match ($competingWrite) {
                 'different adjustment' => $adjust((string) Str::uuid()),
                 'duplicate submission' => $adjust($key),
-                'reservation' => app(PrepareProductionStock::class)->handle($owner, [$production->id], 'concurrent-reservation'),
-                'consumption' => app(CompleteProduction::class)->handle($owner, $production, '1', '2026-09-19'),
+                'reservation' => app(PrepareProductionStock::class)->handle($owner, [$production->id], 'concurrent-reservation', editing: ProductionEditingFixture::command($owner, [$production->id])),
+                'consumption' => app(CompleteProduction::class)->handle($owner, $production, '1', '2026-09-19', editing: ProductionEditingFixture::command($owner, $production)),
             };
         },
     );

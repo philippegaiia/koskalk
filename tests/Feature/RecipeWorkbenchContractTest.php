@@ -8,6 +8,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -187,6 +188,7 @@ it('keeps the workbench draft payload intact when building a snapshot', function
 
 it('returns the saved version through the workbench payload and snapshot contract', function () {
     $user = User::factory()->create();
+    RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',

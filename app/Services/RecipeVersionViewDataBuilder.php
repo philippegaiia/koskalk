@@ -6,6 +6,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionPackagingItem;
+use App\Models\RegulatoryRegime;
 use App\Models\User;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
@@ -386,7 +387,9 @@ class RecipeVersionViewDataBuilder
             ],
             [
                 'label' => 'Regime',
-                'value' => strtoupper((string) ($draft['regulatoryRegime'] ?? 'eu')),
+                'value' => ($draft['regulatoryRegime'] ?? RegulatoryRegime::NONE_CODE) === RegulatoryRegime::NONE_CODE
+                    ? __('workbench.output.market_check.none_label')
+                    : strtoupper((string) ($draft['regulatoryRegime'] ?? RegulatoryRegime::NONE_CODE)),
             ],
             [
                 'label' => 'Manufacturing mode',

@@ -80,6 +80,7 @@ class RecipeWorkbenchViewDataBuilder
             'ifraGuidance' => $ifraOptions,
             'ifraProductCategories' => $ifraOptions['all_categories'],
             'regulatoryRegimes' => $this->regulatoryRegimes(),
+            'defaultRegulatoryRegime' => RegulatoryRegime::normalizeCode($user?->company()?->default_regulatory_regime),
             'defaultIfraProductCategoryId' => $ifraOptions['default_category_id'],
             'costing' => null,
             'costingLoaded' => false,
@@ -118,8 +119,9 @@ class RecipeWorkbenchViewDataBuilder
     private function regulatoryRegimes(): array
     {
         $today = now()->toDateString();
-        $regimes = RegulatoryRegime::query()
-            ->whereIn('status', ['active', 'preview'])
+
+        return RegulatoryRegime::query()
+            ->selectable($today)
             ->withCount([
                 'allergenRules as allergen_rule_count' => fn (Builder $query): Builder => $this->activeRuleCountQuery($query, $today),
                 'substanceRules as substance_rule_count' => fn (Builder $query): Builder => $this->activeRuleCountQuery($query, $today),
@@ -144,18 +146,6 @@ class RecipeWorkbenchViewDataBuilder
             ])
             ->values()
             ->all();
-
-        return $regimes !== []
-            ? $regimes
-            : [[
-                'code' => 'eu',
-                'name' => 'EU regime',
-                'version_label' => null,
-                'status' => 'active',
-                'allergen_rule_count' => 0,
-                'substance_rule_count' => 0,
-                'milestones' => [],
-            ]];
     }
 
     private function activeRuleCountQuery(Builder $query, string $today): Builder

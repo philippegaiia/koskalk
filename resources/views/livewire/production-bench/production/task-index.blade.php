@@ -1,5 +1,7 @@
 <x-production-bench.page active="tasks">
     <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
+    <div x-data="productionRegister()" data-failure-message="{{ __('production_bench.editing.command_failed') }}" class="space-y-6">
+    <p x-cloak x-show="message" x-text="message" role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]"></p>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0 flex-1">
             <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
@@ -48,9 +50,9 @@
                     <div><p class="font-mono tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }}</p><p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $task->completed_at ? __('production_bench.production.completed_task') : $task->productionRun?->status?->label() }}</p></div>
                     <div><p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p><a href="{{ route('production-bench.production.show', $task->productionRun) }}" wire:navigate class="mt-1 inline-block text-xs text-[var(--color-accent-strong)] hover:underline">{{ $task->productionRun?->public_id }}</a></div>
                     <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.product') }}</p><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $task->productionRun?->displayRecipeName() ?? __('production_bench.production.unknown_product') }}</p></div>
-                    <label class="text-sm"><span class="sr-only">{{ __('production_bench.production.choose_department') }}</span><select wire:change="assignDepartment({{ $task->id }}, $event.target.value)" class="sk-input w-full py-1.5 text-sm" @disabled($isReadOnly || $terminal)><option value="">{{ __('production_bench.production.unassigned') }}</option>@foreach ($departments->where('is_active', true) as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select></label>
-                    <label class="text-sm"><span class="sr-only">{{ __('production_bench.production.choose_employee') }}</span><select wire:change="assignEmployee({{ $task->id }}, $event.target.value)" class="sk-input w-full py-1.5 text-sm" @disabled($isReadOnly || $terminal)><option value="">{{ __('production_bench.production.unassigned') }}</option>@foreach ($employees->where('is_active', true) as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select></label>
-                    <button type="button" wire:click="toggleTask({{ $task->id }})" wire:loading.attr="disabled" class="sk-btn sk-btn-ghost whitespace-nowrap" @disabled($isReadOnly || $terminal)>{{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}</button>
+                    <label class="text-sm"><span class="sr-only">{{ __('production_bench.production.choose_department') }}</span><select @change="run('assignDepartment', [{{ $task->id }}, $event.target.value])" :disabled="busy" class="sk-input w-full py-1.5 text-sm" @disabled($isReadOnly || $terminal)><option value="">{{ __('production_bench.production.unassigned') }}</option>@foreach ($departments->where('is_active', true) as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select></label>
+                    <label class="text-sm"><span class="sr-only">{{ __('production_bench.production.choose_employee') }}</span><select @change="run('assignEmployee', [{{ $task->id }}, $event.target.value])" :disabled="busy" class="sk-input w-full py-1.5 text-sm" @disabled($isReadOnly || $terminal)><option value="">{{ __('production_bench.production.unassigned') }}</option>@foreach ($employees->where('is_active', true) as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select></label>
+                    <button type="button" @click="run('toggleTask', [{{ $task->id }}])" :disabled="busy" wire:loading.attr="disabled" class="sk-btn sk-btn-ghost whitespace-nowrap" @disabled($isReadOnly || $terminal)>{{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}</button>
                 </article>
             @empty
                 <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_tasks_match') }}</p>
@@ -58,4 +60,5 @@
         </div>
         <x-table-pagination :paginator="$tasks" />
     </section>
+    </div>
 </x-production-bench.page>

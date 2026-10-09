@@ -9,16 +9,21 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
 use App\Services\Production\ProductionDateRescheduler;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionSnapshotRescaler;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class UpdateProductionPlan
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly ProductionSnapshotRescaler $rescaler,
@@ -34,6 +39,7 @@ class UpdateProductionPlan
         int|string|float $expectedUnits,
         ?string $plannedFor = null,
         ?string $notes = null,
+        ?ProductionEditingContext $editing = null,
     ): ProductionRun {
         $workspace = $production->workspace;
 
@@ -49,19 +55,7 @@ class UpdateProductionPlan
         $massUnit = $this->massUnit($basisInputUnit);
         $basisQuantityGrams = $this->massConverter->toGrams($basisInputValue, $massUnit);
 
-        return DB::transaction(function () use (
-            $actor,
-            $basisInputValue,
-            $basisQuantityGrams,
-            $expectedUnits,
-            $massUnit,
-            $notes,
-            $plannedFor,
-            $production,
-        ): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($production->workspace_id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($basisInputValue, $basisQuantityGrams, $expectedUnits, $massUnit, $notes, $plannedFor, $production): ProductionMutationResult {
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -70,10 +64,7 @@ class UpdateProductionPlan
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
-            $lockedProduction = ProductionRun::query()
-                ->where('workspace_id', $lockedWorkspace->id)
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+            $lockedProduction = $productions[$production->id];
 
             if (! in_array($lockedProduction->status, [
                 ProductionRunStatus::Draft,
@@ -90,15 +81,24 @@ class UpdateProductionPlan
                 ]);
             }
 
+            $changed = bccomp((string) $lockedProduction->basis_quantity_grams, $basisQuantityGrams, 9) !== 0
+                || bccomp((string) $lockedProduction->basis_input_value, $basisInputValue, 9) !== 0
+                || $lockedProduction->basis_input_unit !== $massUnit
+                || $lockedProduction->expected_units !== $expectedUnits
+                || $lockedProduction->planned_for?->toDateString() !== $plannedFor
+                || $lockedProduction->notes !== $notes;
             $this->assertNoActiveReservations($lockedProduction);
+            if (! $changed) {
+                return new ProductionMutationResult($lockedProduction->load(['requirements', 'formulaLines']), []);
+            }
             $scheduledDateChanged = $lockedProduction->status === ProductionRunStatus::Scheduled
                 && $lockedProduction->planned_for?->toDateString() !== $plannedFor;
 
             if ($scheduledDateChanged) {
-                $this->dateRescheduler->rescheduleLocked($lockedWorkspace, $lockedProduction, $plannedFor);
+                $this->dateRescheduler->rescheduleLocked($actor, $lockedWorkspace, $lockedProduction, $plannedFor, $scope);
             }
 
-            $this->rescaler->rescale($lockedProduction, $basisQuantityGrams, $expectedUnits);
+            $this->rescaler->rescale($actor, $lockedWorkspace, $lockedProduction, $basisQuantityGrams, $expectedUnits, $scope);
 
             $updates = [
                 'basis_quantity_grams' => $basisQuantityGrams,
@@ -117,8 +117,8 @@ class UpdateProductionPlan
 
             $lockedProduction->update($updates);
 
-            return $lockedProduction->fresh(['requirements', 'formulaLines']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'formulaLines']), $changed ? [$lockedProduction->id] : []);
+        });
     }
 
     private function massUnit(MassUnit|string $unit): MassUnit

@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\ProductionDailyOccupancy;
+use App\Services\Production\ProductionEditingContext;
 use App\Services\ProductionBenchAccess;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -29,7 +30,9 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -44,6 +47,15 @@ class ProductionIndex extends Component implements HasActions, HasForms
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [10, 25, 50, 100];
+
+    #[Locked]
+    public array $displayedProductionRevisions = [];
+
+    #[Locked]
+    public ?int $schedulingProductionId = null;
+
+    #[Locked]
+    public ?int $schedulingRevision = null;
 
     public string $search = '';
 
@@ -71,12 +83,14 @@ class ProductionIndex extends Component implements HasActions, HasForms
     public function updatedSearch(): void
     {
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
     public function updatedStatus(): void
     {
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
@@ -84,6 +98,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
     {
         $this->dateFrom = $this->normalizeDatePickerState($this->dateFrom);
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
@@ -91,12 +106,14 @@ class ProductionIndex extends Component implements HasActions, HasForms
     {
         $this->dateTo = $this->normalizeDatePickerState($this->dateTo);
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
     public function updatedRecipeFilter(): void
     {
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
@@ -119,6 +136,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
     public function updatedLocationFilter(): void
     {
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
@@ -126,11 +144,13 @@ class ProductionIndex extends Component implements HasActions, HasForms
     {
         $this->perPage = $this->normalizedPerPage();
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
     public function updatedPaginators(): void
     {
+        $this->displayedProductionRevisions = [];
         $this->clearSelection();
     }
 
@@ -143,17 +163,21 @@ class ProductionIndex extends Component implements HasActions, HasForms
     {
         $this->recipeFilter = '';
         $this->clearSelection();
+        $this->displayedProductionRevisions = [];
         $this->resetPage();
     }
 
     public function deleteProduction(int $productionId, DeleteProductionRun $deleteProductionRun): void
     {
+        $this->resetErrorBag();
         try {
             $production = ProductionRun::query()
                 ->where('workspace_id', $this->workspace()->id)
                 ->findOrFail($productionId);
 
-            $deleteProductionRun->handle($this->user(), $production);
+            $context = $this->registerEditingContext([$productionId]);
+            $deleteProductionRun->handle($this->user(), $production, editing: $context);
+            $this->displayedProductionRevisions = [];
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -186,18 +210,21 @@ class ProductionIndex extends Component implements HasActions, HasForms
     public function assignSelectedBatchNumbers(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
         $this->constrainSelectionToCurrentPage();
+        $this->resetErrorBag();
 
         try {
+            $context = $this->registerEditingContext($this->selectedProductionIds);
             $result = $assignProductionBatchNumbers->handle(
                 actor: $this->user(),
                 workspace: $this->workspace(),
                 productionIds: $this->selectedProductionIds,
+                editing: $context,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
                     $this->addError(
-                        in_array($field, ['production_ids', 'batch_number', 'next_permanent_serial', 'production_bench'], true)
+                        in_array($field, ['production_ids', 'batch_number', 'next_permanent_serial', 'production_bench', 'production_editing'], true)
                             ? 'selectedProductionIds'
                             : $field,
                         $message,
@@ -208,6 +235,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
             return;
         }
 
+        $this->displayedProductionRevisions = [];
         $this->selectedProductionIds = [];
         $this->showAppNotification(__('production_bench.production.batch_numbers_assigned', [
             'assigned' => $result['assigned'],
@@ -237,6 +265,10 @@ class ProductionIndex extends Component implements HasActions, HasForms
             ], true);
         $productions = $this->productionQuery($workspace, $locationFilterId, $filteredRecipe?->id)
             ->paginate($this->normalizedPerPage());
+
+        if ($this->displayedProductionRevisions === []) {
+            $this->displayedProductionRevisions = $productions->getCollection()->mapWithKeys(fn (ProductionRun $run): array => [$run->id => $run->edit_revision])->all();
+        }
 
         return view('livewire.production-bench.production.production-index', [
             'contextualHelp' => $helpTopics->resolve('index', app()->getLocale()),
@@ -463,6 +495,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
         if (! $workspace->uses_production_locations) {
             if ($this->locationFilter !== '') {
                 $this->locationFilter = '';
+                $this->displayedProductionRevisions = [];
                 $this->resetPage();
             }
 
@@ -482,6 +515,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
         if (! $location instanceof ProductionLocation) {
             $this->locationFilter = '';
+            $this->displayedProductionRevisions = [];
             $this->resetPage();
 
             return null;
@@ -509,9 +543,16 @@ class ProductionIndex extends Component implements HasActions, HasForms
         return Action::make('scheduleDraft')
             ->label(__('production_bench.production.schedule_draft'))
             ->modalHeading(__('production_bench.production.schedule_draft'))
+            ->formWrapper(false)
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->alpineClickHandler("run('callMountedAction')")
+                ->extraAttributes(['x-bind:disabled' => 'busy']))
             ->visible(app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace()))
             ->fillForm(function (array $arguments): array {
-                $this->draftForScheduling($arguments);
+                $production = $this->draftForScheduling($arguments);
+                abort_unless(isset($this->displayedProductionRevisions[$production->id]), 422);
+                $this->schedulingProductionId = $production->id;
+                $this->schedulingRevision = $this->displayedProductionRevisions[$production->id];
 
                 return ['planned_for' => null];
             })
@@ -538,7 +579,12 @@ class ProductionIndex extends Component implements HasActions, HasForms
             ->action(function (array $data, array $arguments, ScheduleProduction $scheduleProduction): void {
                 $production = $this->draftForScheduling($arguments);
                 try {
-                    $scheduleProduction->handle($this->user(), $production, $data['planned_for']);
+                    abort_unless($this->schedulingProductionId === $production->id && $this->schedulingRevision !== null, 422);
+                    $context = new ProductionEditingContext($this->workspace()->id, (string) Str::uuid(), [$production->id => $this->schedulingRevision], temporary: true);
+                    $scheduleProduction->handle($this->user(), $production, $data['planned_for'], editing: $context);
+                    $this->displayedProductionRevisions = [];
+                    $this->schedulingProductionId = null;
+                    $this->schedulingRevision = null;
                 } catch (ValidationException $exception) {
                     throw ValidationException::withMessages([
                         $this->getMountedActionSchema()->getStatePath().'.planned_for' => collect($exception->errors())->flatten()->all(),
@@ -555,6 +601,22 @@ class ProductionIndex extends Component implements HasActions, HasForms
         return ProductionRun::query()->where('workspace_id', $this->workspace()->id)
             ->where('status', ProductionRunStatus::Draft)
             ->findOrFail($arguments['productionId'] ?? null);
+    }
+
+    public function refreshProductionRegister(): void
+    {
+        $this->resetErrorBag();
+        $this->displayedProductionRevisions = [];
+    }
+
+    /** @param list<int> $ids */
+    private function registerEditingContext(array $ids): ProductionEditingContext
+    {
+        if ($ids === [] || count($ids) > 100 || array_diff($ids, array_keys($this->displayedProductionRevisions)) !== []) {
+            throw ValidationException::withMessages(['production_editing' => __('production_bench.editing.validation.selection')]);
+        }
+
+        return new ProductionEditingContext($this->workspace()->id, (string) Str::uuid(), array_intersect_key($this->displayedProductionRevisions, array_flip($ids)), temporary: true);
     }
 
     private function user(): User

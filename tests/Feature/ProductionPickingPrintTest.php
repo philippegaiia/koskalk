@@ -169,3 +169,11 @@ it('runs picking capture and popup failure behavior in node', function (): void 
     $process->run();
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('reads unconfirmed manual lot choices from the editing draft when printing', function (): void {
+    $view = file_get_contents(resource_path('views/livewire/production-bench/production/stock-preparation.blade.php'));
+
+    expect(strpos($view, 'x-data="productionEditing('))->toBeLessThan(strpos($view, 'x-data="productionPickingPrint()"'))
+        ->and($view)->toContain(":data-picking-manual=\"value('allocations', 'manualMode.{{ \$requirement->id }}') ? 'true' : 'false'\"")
+        ->and($view)->toContain('<input data-picking-manual-lot="{{ $lotRow[\'lot\']->id }}" type="text" inputmode="decimal" wire:ignore :value="value(\'allocations\'');
+});

@@ -25,3 +25,6 @@ Generate all URLs and redirects from named routes with route('name', $params); u
 
 ## Bind workspace forms to their original company
 Mounted company forms keep a Locked original workspace ID and reject hydration/submission after switching company or losing access. Production Bench uses InteractsWithProductionWorkspace. Read-only raw workspace queries must also authorize live collaboration access; hiding controls or filtering workspace_id alone is insufficient.
+
+## Escape Filament extra Alpine attribute values
+Filament 5 extraAlpineAttributes() renders values without escaping. Explicitly HTML-escape JavaScript strings containing quotes before passing them, and test the parsed rendered attributes so date-picker watchers and disabled bindings cannot become visible text or truncated expressions.

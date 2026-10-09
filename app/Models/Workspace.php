@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system', 'production_works_on_weekends', 'uses_production_locations', 'uses_storage_locations', 'production_daily_limit'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system', 'production_works_on_weekends', 'uses_production_locations', 'uses_storage_locations', 'production_daily_limit', 'default_regulatory_regime'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
@@ -27,6 +27,7 @@ class Workspace extends Model
         'uses_production_locations' => false,
         'uses_storage_locations' => false,
         'production_daily_limit' => 1,
+        'default_regulatory_regime' => RegulatoryRegime::NONE_CODE,
     ];
 
     protected static function booted(): void

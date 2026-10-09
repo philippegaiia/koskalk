@@ -38,6 +38,18 @@ class RegulatoryRegimeSubstanceRule extends Model
         return $this->belongsTo(Substance::class);
     }
 
+    /**
+     * Platform starter rules are "watch" placeholders without limits or an official
+     * source; they must never be presented as a market determination.
+     */
+    public function hasSpecificComplianceData(): bool
+    {
+        return $this->rule_type !== 'watch'
+            || $this->rinse_off_max_percent !== null
+            || $this->leave_on_max_percent !== null
+            || ($this->source_reference !== null && ! str((string) $this->source_reference)->lower()->contains('starter'));
+    }
+
     protected function casts(): array
     {
         return [

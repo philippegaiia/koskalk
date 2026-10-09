@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BetaInviteAcceptanceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FormulaShareController;
 use App\Http\Controllers\HelpContentExportDownloadController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\MediaLibraryController;
 use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProcurementDocumentController;
 use App\Http\Controllers\ProductionBatchController;
+use App\Http\Controllers\ProductionEditingController;
 use App\Http\Controllers\ProductionPickingPrintController;
 use App\Http\Controllers\ProductionRunPrintController;
 use App\Http\Controllers\RecipeController;
@@ -39,14 +41,14 @@ Route::post('/workspace-invitations/{token}', [WorkspaceInvitationAcceptanceCont
     ->middleware('throttle:10,1')
     ->name('workspace-invitations.accept');
 
-Route::middleware('guest')->group(function (): void {
-    Route::get('/invite/{token}', [BetaInviteAcceptanceController::class, 'show'])
-        ->middleware('throttle:20,1')
-        ->name('beta-invites.show');
-    Route::post('/invite/{token}', [BetaInviteAcceptanceController::class, 'accept'])
-        ->middleware('throttle:beta-invite-accept')
-        ->name('beta-invites.accept');
+Route::get('/invite/{token}', [BetaInviteAcceptanceController::class, 'show'])
+    ->middleware('throttle:20,1')
+    ->name('beta-invites.show');
+Route::post('/invite/{token}', [BetaInviteAcceptanceController::class, 'accept'])
+    ->middleware('throttle:beta-invite-accept')
+    ->name('beta-invites.accept');
 
+Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:5,1');
@@ -102,6 +104,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->middleware('throttle:240,1')
         ->name('media.show');
 
+    Route::get('/dashboard/formula-shares', [FormulaShareController::class, 'index'])->name('formula-shares.index');
+    Route::get('/dashboard/recipes/{recipe}/share', [FormulaShareController::class, 'create'])->whereUuid('recipe')->name('formula-shares.create');
+    Route::get('/dashboard/formula-shares/{share}', [FormulaShareController::class, 'show'])->whereUuid('share')->name('formula-shares.show');
+
     Route::controller(RecipeController::class)
         ->prefix('/dashboard/recipes')
         ->name('recipes.')
@@ -116,6 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/{recipe}/saved/edit-current', 'editCurrentFormula')->name('saved.edit-current');
             Route::post('/{recipe}/saved/{version}/restore', 'restorePublishedFormula')->name('saved.restore');
             Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
+            Route::post('/{recipe}/editing/release', 'releaseEditing')->middleware('throttle:60,1')->name('editing.release');
             Route::post('/{recipe}/lock', 'lock')->name('lock');
             Route::post('/{recipe}/unlock', 'unlock')->name('unlock');
             Route::post('/{recipe}/archive', 'archive')->name('archive');
@@ -239,6 +246,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/production/tasks', 'production-bench.production.task-index')->name('production.tasks');
             Route::post('/production/picking/print', ProductionPickingPrintController::class)->middleware('throttle:workspace-prints')->name('production.picking.print');
             Route::get('/production/{productionRun}/print', ProductionRunPrintController::class)->middleware('throttle:workspace-prints')->name('production.print');
+            Route::post('/production/editing/release', [ProductionEditingController::class, 'release'])->middleware('throttle:60,1')->name('production.editing.release');
             Route::view('/production/{productionRun}', 'production-bench.production.show')->name('production.show');
             Route::redirect('/purchasing', '/dashboard/production-bench/purchasing/suppliers')->name('purchasing');
             Route::view('/purchasing/suppliers', 'production-bench.purchasing.suppliers')->name('purchasing.suppliers');

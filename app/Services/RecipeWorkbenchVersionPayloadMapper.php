@@ -87,9 +87,7 @@ class RecipeWorkbenchVersionPayloadMapper
             'exposureMode' => in_array($version->exposure_mode, ['rinse_off', 'leave_on'], true)
                 ? $version->exposure_mode
                 : 'rinse_off',
-            'regulatoryRegime' => RegulatoryRegime::normalizeCode(
-                $version->regulatoryRegime?->code ?? $version->regulatory_regime,
-            ),
+            'regulatoryRegime' => $this->storedRegulatoryRegimeCode($version),
             'editMode' => ($calculationContext['editing_mode'] ?? null) === 'weight' ? 'weight' : 'percentage',
             'lyeType' => in_array($lyeType, ['naoh', 'koh', 'dual'], true)
                 ? $lyeType
@@ -132,6 +130,18 @@ class RecipeWorkbenchVersionPayloadMapper
             'nominalContentUnit' => $version->recipe?->nominal_content_unit?->value,
             'catalogReview' => $catalogReview,
         ];
+    }
+
+    /**
+     * The saved market code, kept even when its regime was retired or deleted
+     * so the label checks report the market as unavailable instead of
+     * silently showing the formula as unchecked.
+     */
+    private function storedRegulatoryRegimeCode(RecipeVersion $version): string
+    {
+        $code = strtolower(trim((string) ($version->regulatoryRegime?->code ?? $version->regulatory_regime)));
+
+        return $code !== '' ? $code : RegulatoryRegime::NONE_CODE;
     }
 
     private function displayUnit(mixed $value): MassUnit

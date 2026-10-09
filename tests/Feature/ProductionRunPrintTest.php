@@ -21,6 +21,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use App\Services\Production\ProductionRunPrintDataBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -81,7 +82,7 @@ it('freezes manufacturing lot evidence on completion or abort and never rewrites
         'formula_context_snapshot' => ['manufacturing_procedure_html' => '<p>Original procedure</p>'],
         'notes' => 'Manufacturing note',
     ]);
-    app(AssignProductionBatchNumbers::class)->handle($owner, $workspace, [$run->id]);
+    app(AssignProductionBatchNumbers::class)->handle($owner, $workspace, [$run->id], editing: ProductionEditingFixture::command($owner, [$run->id]));
     $run->update(['status' => ProductionRunStatus::InProduction]);
     $requirement = ProductionRequirement::factory()->for($run, 'productionRun')->create(['subject_name_snapshot' => 'Original material']);
     ProductionFormulaLine::factory()->for($run, 'productionRun')->create(['ingredient_id' => $requirement->ingredient_id, 'subject_name_snapshot' => 'Original material']);
@@ -93,9 +94,9 @@ it('freezes manufacturing lot evidence on completion or abort and never rewrites
     ]);
     ProductionConsumption::factory()->for($run, 'productionRun')->for($requirement, 'productionRequirement')->for($lot, 'stockLot')->create(['subject_name_snapshot' => 'Original material', 'quantity' => '99', 'note' => 'Weighed twice']);
     if ($aborted) {
-        app(AbortProduction::class)->handle($owner, $run, 'Mixing stopped');
+        app(AbortProduction::class)->handle($owner, $run, 'Mixing stopped', editing: ProductionEditingFixture::command($owner, [$run->id]));
     } else {
-        app(CompleteProduction::class)->handle($owner, $run, '9', '2026-09-28');
+        app(CompleteProduction::class)->handle($owner, $run, '9', '2026-09-28', editing: ProductionEditingFixture::command($owner, [$run->id]));
     }
     $builder = app(ProductionRunPrintDataBuilder::class);
     $before = $builder->build($run->fresh());

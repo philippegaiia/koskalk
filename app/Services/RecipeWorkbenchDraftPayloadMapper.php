@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\RegulatoryRegime;
+
 class RecipeWorkbenchDraftPayloadMapper
 {
     /**
@@ -13,7 +15,7 @@ class RecipeWorkbenchDraftPayloadMapper
         return [
             'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
             'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
-            'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
+            'regulatory_regime' => $draft['regulatoryRegime'] ?? RegulatoryRegime::NONE_CODE,
             'product_type_id' => $draft['productTypeId'] ?? null,
             'ifra_category_selection_mode' => $draft['ifraCategorySelectionMode'] ?? 'automatic',
             'ifra_product_category_id' => $draft['selectedIfraProductCategoryId'] ?? null,
@@ -45,7 +47,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
             'manufacturing_instructions' => $draft['manufacturingInstructions'] ?? null,
             'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
-            'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
+            'regulatory_regime' => $draft['regulatoryRegime'] ?? RegulatoryRegime::NONE_CODE,
             'product_type_id' => $draft['productTypeId'] ?? null,
             'ifra_category_selection_mode' => $draft['ifraCategorySelectionMode'] ?? 'automatic',
             'editing_mode' => ($draft['editMode'] ?? 'percentage') === 'weight' ? 'weight' : 'percentage',

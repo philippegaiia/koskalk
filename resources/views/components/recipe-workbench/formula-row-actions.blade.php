@@ -72,9 +72,9 @@
         :aria-controls="`formula-row-actions-${row.id}`"
         aria-haspopup="menu"
         :aria-label="t('row_actions.label', { ingredient: row.name })"
-        class="grid min-h-11 min-w-11 place-items-center border-0 bg-transparent text-[var(--color-ink)] transition-colors duration-150 motion-reduce:transition-none hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        class="sk-formula-row-control grid min-h-11 min-w-11 place-items-center border-0 text-[var(--color-ink-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
     >
-        <x-action-icon name="more-horizontal" />
+        <x-action-icon name="more-horizontal" :prominent="true" />
     </button>
 
     <template x-teleport="body">

@@ -19,6 +19,7 @@ return [
         'products' => ['*'],
         'production_bench' => ['*'],
         'settings' => ['*'],
+        'sharing' => ['*'],
         'table' => ['*'],
         'workbench' => ['*'],
         'number_formats' => ['*'],

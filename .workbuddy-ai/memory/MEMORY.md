@@ -7,6 +7,8 @@ matching file before working in that area — they are not injected.
 
 - **Never push without asking** — `main` carries the owner's own unpushed work. Pre-existing failures
   on `main` (Pint + 4 full-suite) are not ours.
+- **A large currency-shaped failure cluster is almost always the locale trap, not the repo** — see the
+  Environment note on `LANG=C`. Re-run the single file with a UTF-8 locale before blaming the tree.
 - **Commit subjects: sentence case, imperative, no prefix.**
 - **Check `git rev-parse --abbrev-ref HEAD` before every commit** — the owner shares this checkout;
   leave HEAD where they had it. Prefer `revert` over `reset --hard`.
@@ -18,7 +20,23 @@ matching file before working in that area — they are not injected.
 - Test helpers in Feature tests are **file-scoped** — copy them, don't call cross-file.
 - Under `.workbuddy-ai/`: commit `memory/`, `artifacts/`, `reports/`; ignore only `skills/`.
 - `record-rule` writes to the **main checkout, not your worktree** — copy over, then revert main.
-- A **graphify post-commit hook runs automatically** — never run `graphify update .` by hand.
+- A **graphify post-commit hook runs automatically**, and **graphify is installed on the owner's Mac**
+  (owner, 2026-10-08) — run `graphify update .` after code changes. The 2026-10-04 "not installed" note
+  came from a shell that was not the Mac. Remote/sandboxed shells (Linux VM, cloud) cannot run it; ask
+  the owner to run it instead.
+- **In a shell that cannot delete files in the repo, run git with `GIT_OPTIONAL_LOCKS=0`.** Plain
+  `git status`/`git diff` take `.git/index.lock` and leave it stuck when unlink is denied, blocking the
+  owner's next git command (happened 2026-10-08).
+- **New `__()` keys are not translated until the catalogue is imported into the database.**
+  `language_lines` is the runtime source, and `database/seeders/data/interface-translations.json` is
+  *not* loaded automatically. Check with
+  `array_diff(array_keys(app(EnglishTranslationSource::class)->all()), <db group.key list>)`. Fix with
+  `php artisan translations:catalogue:import --mode=preserve-existing` — locally *and* on deploy.
+  `preserve-existing` is enough in both places: it creates missing rows and fills empty locales,
+  never overwriting a non-empty DB value, and needs no `--force`. Use `authoritative --force` only
+  to reset DB values back to the catalogue (it overwrites hand-edited translations).
+  `translations:sync` alone is not enough — it creates rows with `text => []`.
+  No test catches this drift — the suite runs on a fresh DB.
 
 ## Reviewing: habits that prevent wrong calls
 
@@ -33,8 +51,24 @@ Full list in `memory/reference/reviewing.md`. The three that bite:
 
 - **PHP is not on PATH:** `/Users/philippe/Library/Application Support/Herd/bin/php85`.
 - **Bash `grep` is unreliable — use the Grep tool.** A bash-grep miss is not evidence of absence.
-- **`php artisan test` OOMs** — `php85 -d memory_limit=2G vendor/bin/pest` (~2m20s).
+  Bit me twice on 2026-10-02: I used bash grep to "prove" `data-failure-message` did not exist in two
+  blades and reported a half-wired fix; the attribute was on line 3 of both. Before reporting that
+  something is missing, re-check with the Grep tool.
+- **AGENTS.md prescribes `php artisan test --compact`** (narrow runs by the agent, full suite by the
+  user). CLI `memory_limit` already defaults to 2048M. A 2026-09 note claimed `php artisan test`
+  OOMs and prescribed `php85 -d memory_limit=2G vendor/bin/pest` — that limit equals the default, so
+  the OOM claim is unverified; if a full-suite OOM recurs, reproduce and record the actual error
+  before adopting a workaround.
 - `herd` CLI is on PATH; `koskalk.test` needs no symlink (Herd parks `~/Herd`); worktree previews do.
+- **Run tests with a UTF-8 locale (`LANG=en_US.UTF-8`) — before judging ANY failure cluster.**
+  In an agent shell `LANG=C` is common and leaves PHP's `intl` default locale empty, so Symfony Intl
+  `Currencies::exists()` fails for *every* code: `selectableCodes()` returns `[]`,
+  `CurrencyCatalogTest` fails 2 of 4, and currency validation errors cascade into dozens of unrelated
+  failures. Reproduced 2026-10-02 twice: 2 failed under `LANG=C`, 4 passed with `LANG=en_US.UTF-8`.
+  **The blast radius is not only currency tests** — `ProductionWorkspaceAuthorizationTest` also
+  reported a bogus 403-vs-200 on its `demotion` dataset under `LANG=C` and passed 14/14 with UTF-8.
+  I declared "74 pre-existing failures on main" from this artifact and had to retract it. Also
+  recorded in `.ai/rules/tests.md` via `record-rule`.
 - **`npm run build` is sandbox-denied** (Vite `loadEnv` reads `.env`); check CSS via `public/hot`.
 
 ## Skills

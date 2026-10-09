@@ -19,6 +19,11 @@ Schedule::command('media:prune-orphaned-recipe')
     ->dailyAt('03:30')
     ->withoutOverlapping();
 
+Schedule::command('formula-shares:prune')
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 Schedule::command('media:fail-stale-assets')
     ->everyFiveMinutes()
     ->withoutOverlapping()

@@ -29,6 +29,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithProductionEditing;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
 use App\Models\Department;
@@ -54,9 +55,12 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -65,10 +69,12 @@ class ProductionDetail extends Component implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithProductionEditing;
     use InteractsWithProductionWorkspace;
     use NormalizesDatePickerState;
     use WithFileUploads;
 
+    #[Locked]
     public string $productionId = '';
 
     public string $cancellationReason = '';
@@ -121,11 +127,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
         try {
+            $context = $this->productionEditingContext();
             $assignProductionBatchNumbers->handle(
                 actor: $this->user(),
                 workspace: $this->workspace(),
                 productionIds: [(int) $this->productionId],
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -150,12 +159,15 @@ class ProductionDetail extends Component implements HasActions, HasForms
         try {
             $task = $this->task($taskId);
 
+            $context = $this->productionEditingContext();
             $assignProductionTask->handle(
                 actor: $this->user(),
                 task: $task,
                 employeeId: filled($employeeId) ? (int) $employeeId : null,
                 departmentId: $task->department_id,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             $this->addTaskErrors($exception);
 
@@ -171,12 +183,15 @@ class ProductionDetail extends Component implements HasActions, HasForms
         try {
             $task = $this->task($taskId);
 
+            $context = $this->productionEditingContext();
             $assignProductionTask->handle(
                 actor: $this->user(),
                 task: $task,
                 employeeId: $task->employee_id,
                 departmentId: filled($departmentId) ? (int) $departmentId : null,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             $this->addTaskErrors($exception);
 
@@ -193,9 +208,13 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
         try {
             if ($task->completed_at === null) {
-                $completeProductionTask->handle($this->user(), $task);
+                $context = $this->productionEditingContext();
+                $completeProductionTask->handle($this->user(), $task, editing: $context);
+                $this->acknowledgeProductionMutation($context);
             } else {
-                $reopenProductionTask->handle($this->user(), $task);
+                $context = $this->productionEditingContext();
+                $reopenProductionTask->handle($this->user(), $task, editing: $context);
+                $this->acknowledgeProductionMutation($context);
             }
         } catch (ValidationException $exception) {
             $this->addTaskErrors($exception);
@@ -212,18 +231,21 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $scheduledFor = $this->normalizeDatePickerState($scheduledFor);
 
         try {
-            $rescheduleProductionTask->handle(
+            $context = $this->productionEditingContext();
+            $savedTask = $rescheduleProductionTask->handle(
                 actor: $this->user(),
                 task: $this->task($taskId),
                 scheduledFor: $scheduledFor,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             $this->addTaskErrors($exception);
 
             return;
         }
 
-        $this->taskDates[$taskId] = $scheduledFor;
+        $this->taskDates = $savedTask->productionRun->tasks->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->scheduled_for->toDateString()])->all();
         $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-task-updated');
     }
@@ -231,14 +253,16 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public function resetTaskDate(int $taskId, ResetProductionTaskDate $resetProductionTaskDate): void
     {
         try {
-            $resetProductionTaskDate->handle($this->user(), $this->task($taskId));
+            $context = $this->productionEditingContext();
+            $savedTask = $resetProductionTaskDate->handle($this->user(), $this->task($taskId), editing: $context);
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             $this->addTaskErrors($exception);
 
             return;
         }
 
-        $this->taskDates[$taskId] = $this->task($taskId)->scheduled_for->toDateString();
+        $this->taskDates = $savedTask->productionRun->tasks->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->scheduled_for->toDateString()])->all();
 
         $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-task-updated');
@@ -256,11 +280,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 ->value('id') ?? abort(404));
         }
 
-        $this->loadSavedActualRows();
-        $this->loadSavedProductionState();
-        $this->taskDates = $this->production()->tasks
-            ->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->scheduled_for->toDateString()])
-            ->all();
+        $this->initializeProductionEditing([(int) $this->productionId]);
     }
 
     public function assignProductionLocation(AssignProductionLocation $assignProductionLocation): void
@@ -270,11 +290,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
             : (ctype_digit((string) $this->productionLocationId) ? (int) $this->productionLocationId : 0);
 
         try {
+            $context = $this->productionEditingContext();
             $production = $assignProductionLocation->handle(
                 actor: $this->user(),
                 production: $this->production(),
                 locationId: $locationId,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -327,21 +350,8 @@ class ProductionDetail extends Component implements HasActions, HasForms
      * Load saved actual rows so a page reload never shows reservation
      * defaults over real bench data.
      */
-    private function loadSavedActualRows(): void
+    private function loadSavedActualRows(ProductionRun $production): void
     {
-        if ($this->productionId === '') {
-            return;
-        }
-
-        $production = ProductionRun::query()
-            ->where('workspace_id', $this->workspace()->id)
-            ->with(['consumption', 'requirements.reservations.stockLot', 'formulaLines'])
-            ->find((int) $this->productionId);
-
-        if ($production === null) {
-            return;
-        }
-
         foreach ($production->consumption as $consumption) {
             $key = $consumption->production_requirement_id.'-'.($consumption->stock_lot_id ?? '');
             $this->actualRows[$key] = [
@@ -376,11 +386,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public function cancel(CancelProduction $cancelProduction): void
     {
         try {
+            $context = $this->productionEditingContext();
             $cancelProduction->handle(
                 actor: $this->user(),
                 production: $this->production(),
                 reason: $this->cancellationReason,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -423,10 +436,13 @@ class ProductionDetail extends Component implements HasActions, HasForms
     private function performStart(StartProduction $startProduction, ProductionRun $production): void
     {
         try {
-            $startProduction->handle(
+            $context = $this->productionEditingContext();
+            $startedProduction = $startProduction->handle(
                 actor: $this->user(),
                 production: $production,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -437,7 +453,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
             return;
         }
 
-        $this->loadSavedActualRows();
+        $this->loadSavedActualRows($startedProduction);
 
         $this->showAppNotification(__('production_bench.production.started'));
         $this->dispatch('production-started');
@@ -446,10 +462,13 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public function releaseStock(ReleaseProductionStock $releaseProductionStock): void
     {
         try {
+            $context = $this->productionEditingContext();
             $releaseProductionStock->handle(
                 actor: $this->user(),
                 production: $this->production(),
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -510,7 +529,9 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 ];
             }
 
-            $saveProductionActuals->handle($this->user(), $production, $rows, $calculatedRows);
+            $context = $this->productionEditingContext();
+            $savedProduction = $saveProductionActuals->handle($this->user(), $production, $rows, $calculatedRows, editing: $context);
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -521,7 +542,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
             return;
         }
 
-        $freshProduction = $production->fresh(['requirements', 'consumption', 'formulaLines']);
+        $freshProduction = $savedProduction;
         $this->actualRows = $this->actualRowsFromProduction($freshProduction);
         $this->calculatedActualRows = $this->calculatedActualRowsFromProduction($freshProduction);
         $this->actualsDirty = false;
@@ -540,11 +561,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $production = $this->production();
 
         try {
+            $context = $this->productionEditingContext();
             $scheduleProduction->handle(
                 actor: $this->user(),
                 production: $production,
                 plannedFor: $this->scheduleDate,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -567,11 +591,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
         ]);
 
         try {
+            $context = $this->productionEditingContext();
             $production = $rescheduleProduction->handle(
                 actor: $this->user(),
                 production: $this->production(),
                 plannedFor: $this->scheduleDate,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -595,12 +622,25 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $production = $this->production();
 
         try {
+            if ($production->production_output_type === null) {
+                validator([
+                    'output_mode' => $this->outputMode,
+                    'output_ingredient_id' => $this->outputIngredientId,
+                ], [
+                    'output_mode' => ['required', 'in:units,intermediate'],
+                    'output_ingredient_id' => ['nullable', 'required_if:output_mode,intermediate', 'integer', 'min:1'],
+                ], [
+                    'output_ingredient_id.required_if' => __('production_bench.production.validation.output_ingredient_required'),
+                ])->validate();
+            }
+
             if ($this->manufactureDate === '') {
                 $this->addError('manufacture_date', __('production_bench.production.manufacture_date_required'));
 
                 return;
             }
 
+            $context = $this->productionEditingContext();
             $completeProduction->handle(
                 actor: $this->user(),
                 production: $production,
@@ -610,7 +650,9 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 outputIngredientId: $this->outputMode === 'intermediate' && $this->outputIngredientId !== null
                     ? (int) $this->outputIngredientId
                     : null,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -628,11 +670,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public function abort(AbortProduction $abortProduction): void
     {
         try {
+            $context = $this->productionEditingContext();
             $abortProduction->handle(
                 actor: $this->user(),
                 production: $this->production(),
                 reason: $this->abortReason,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -666,11 +711,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
         }
 
         try {
+            $context = $this->productionEditingContext();
             app(ReleaseOutputLot::class)->handle(
                 actor: $this->user(),
                 lot: $outputLot,
                 earlyReleaseConfirmed: $earlyReleaseConfirmed,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 if ($field === 'early_release_confirmation') {
@@ -710,13 +758,16 @@ class ProductionDetail extends Component implements HasActions, HasForms
         };
 
         try {
+            $context = $this->productionEditingContext();
             app(IssueFinishedGoods::class)->handle(
                 actor: $this->user(),
                 outputLot: $outputLot,
                 kind: $kind,
                 quantity: NumberLocale::normalizeDecimalString($this->issueQuantity) ?? $this->issueQuantity,
                 note: $this->issueNote,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -736,11 +787,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public function saveJournalEntry(SaveProductionJournalEntry $saveProductionJournalEntry): void
     {
         try {
+            $context = $this->productionEditingContext();
             $saveProductionJournalEntry->handle(
                 actor: $this->user(),
                 production: $this->production(),
                 body: $this->journalBody,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -768,6 +822,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $asset = null;
 
         try {
+            $this->assertProductionEditingBeforeUpload();
             $asset = $uploads->start(
                 $this->user(),
                 $this->workspace(),
@@ -776,13 +831,16 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 processSynchronously: true,
             )->refresh();
 
+            $context = $this->productionEditingContext();
             app(AttachProductionDocument::class)->handle(
                 actor: $this->user(),
                 documentable: $production,
                 asset: $asset,
                 type: ProductionDocumentType::Journal,
                 note: filled($validated['journalDocumentNote'] ?? null) ? trim($validated['journalDocumentNote']) : null,
+                editing: $context,
             );
+            $this->acknowledgeProductionMutation($context);
         } catch (\Throwable $exception) {
             if ($asset !== null && $asset->exists) {
                 try {
@@ -820,7 +878,9 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
         abort_unless($document !== null, 404);
 
-        app(DetachProductionDocument::class)->handle($this->user(), $document);
+        $context = $this->productionEditingContext();
+        app(DetachProductionDocument::class)->handle($this->user(), $document, editing: $context);
+        $this->acknowledgeProductionMutation($context);
 
         $this->showAppNotification(__('production_bench.production.journal_document_detached'));
         $this->dispatch('production-journal-updated');
@@ -867,6 +927,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
+            'editingPayload' => $this->productionEditingPayload(),
             'productionLocations' => $productionLocations,
             'capacityWarnings' => $this->capacityWarnings(
                 workspace: $workspace,
@@ -900,6 +961,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
     {
         return ProductionTask::query()
             ->where('workspace_id', $this->workspace()->id)
+            ->where('production_run_id', (int) $this->productionId)
             ->findOrFail($taskId);
     }
 
@@ -914,10 +976,18 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
     private function production(): ProductionRun
     {
+        if (isset($this->editingPresentation[(int) $this->productionId])) {
+            return $this->productionModelFromSnapshot($this->editingPresentation[(int) $this->productionId]);
+        }
+
+        return $this->productionSnapshotQuery()->where('workspace_id', $this->workspace()->id)->findOrFail((int) $this->productionId);
+    }
+
+    private function productionSnapshotQuery(): Builder
+    {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'outputIngredient', 'productionLocation', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy', 'outputLot', 'cancelledBy', 'batchNumberAssignedBy'])
-            ->findOrFail((int) $this->productionId);
+            ->with(['recipe', 'outputIngredient', 'productionLocation', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy:id,name', 'outputLot', 'cancelledBy:id,name', 'batchNumberAssignedBy:id,name']);
     }
 
     private function loadSavedProductionState(): void
@@ -1127,6 +1197,12 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
     public function updated(string $property): void
     {
+        if (str_starts_with($property, 'taskDates.')) {
+            $id = substr($property, strlen('taskDates.'));
+            $this->taskDates[$id] = $this->normalizeDatePickerState($this->taskDates[$id]);
+
+            return;
+        }
         if ($property !== 'scheduleDate') {
             return;
         }
@@ -1143,8 +1219,8 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 ->label(__('production_bench.production.production_date'))
                 ->native(false)
                 ->displayFormat('d/m/Y')
-                ->live()
                 ->required()
+                ->extraAlpineAttributes($this->productionDateAttributes('planning', 'scheduleDate'))
                 ->disabled(! app(ProductionBenchAccess::class)->canWrite($this->user(), $this->workspace())),
         ]);
     }
@@ -1158,14 +1234,14 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 ->label(__('production_bench.production.manufacture_date'))
                 ->native(false)
                 ->displayFormat('d/m/Y')
-                ->live()
+                ->extraAlpineAttributes($this->productionDateAttributes('completion', 'manufactureDate'))
                 ->disabled($disabled),
             DatePicker::make('estimatedReadyOn')
                 ->label(__('production_bench.production.estimated_ready_date'))
                 ->native(false)
                 ->displayFormat('d/m/Y')
                 ->helperText(__('production_bench.production.estimated_ready_date_help'))
-                ->live()
+                ->extraAlpineAttributes($this->productionDateAttributes('completion', 'estimatedReadyOn'))
                 ->disabled($disabled),
         ]);
     }
@@ -1181,15 +1257,121 @@ class ProductionDetail extends Component implements HasActions, HasForms
                 ->hiddenLabel()
                 ->native(false)
                 ->displayFormat('d/m/Y')
-                ->live()
                 ->disabled($disabled)
-                ->afterStateUpdated(fn (mixed $state) => $this->rescheduleTask(
-                    $taskId,
-                    (string) $state,
-                    app(RescheduleProductionTask::class),
-                )))
+                ->extraAlpineAttributes($this->productionDateAttributes('tasks', "taskDates.{$taskId}")))
             ->values()
             ->all());
+    }
+
+    private function productionDateAttributes(string $group, string $path): array
+    {
+        $groupJson = json_encode($group, JSON_THROW_ON_ERROR);
+        $pathJson = json_encode($path, JSON_THROW_ON_ERROR);
+
+        $command = $group === 'tasks' ? " runCommand('rescheduleTask', [".(int) substr($path, strlen('taskDates.')).", date], 'tasks');" : '';
+
+        return [
+            'x-init' => e("state = value({$groupJson}, {$pathJson}); \$watch('state', next => { const date = (next || '').slice(0, 10); if (date !== value({$groupJson}, {$pathJson})) { field({$groupJson}, {$pathJson}, date); {$command} } }); \$watch('forms.{$group}', () => { const next = value({$groupJson}, {$pathJson}); if ((state || '').slice(0, 10) !== next) state = next; });"),
+            'x-effect' => e('[$refs.button, $refs.button?.querySelector("input")].forEach(input => { if (input) input.disabled = !canWrite; })'),
+        ];
+    }
+
+    private function productionDraftGroupsFromSnapshot(Collection $productions): array
+    {
+        $production = $productions->first();
+        $actualRows = $this->actualRowsFromProduction($production);
+        if ($production->status === ProductionRunStatus::InProduction) {
+            foreach ($production->requirements as $requirement) {
+                foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
+                    $actualRows[$requirement->id.'-'.$reservation->stock_lot_id] ??= [
+                        'stock_lot_id' => $reservation->stock_lot_id, 'quantity' => (string) $reservation->quantity, 'note' => null,
+                    ];
+                }
+            }
+        }
+
+        return [
+            'actuals' => ['actualRows' => $actualRows, 'calculatedActualRows' => $this->calculatedActualRowsFromProduction($production)],
+            'planning' => ['scheduleDate' => $production->planned_for?->toDateString() ?? ''],
+            'location' => ['productionLocationId' => $production->production_location_id === null ? null : (string) $production->production_location_id],
+            'completion' => [
+                'actualOutputQuantity' => (string) ($production->actual_output_units ?? $production->actual_output_mass_grams ?? ''),
+                'manufactureDate' => $production->manufacture_date?->toDateString() ?? '',
+                'estimatedReadyOn' => $production->estimated_ready_on?->toDateString() ?? '',
+                'outputMode' => $production->output_ingredient_id === null ? 'units' : 'intermediate',
+                'outputIngredientId' => $production->output_ingredient_id === null ? null : (string) $production->output_ingredient_id,
+            ],
+            'tasks' => ['taskDates' => $production->tasks->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->scheduled_for->toDateString()])->all()],
+            'cancellation' => ['cancellationReason' => ''], 'abort' => ['abortReason' => ''],
+            'issue' => ['issueKind' => $this->issueKind, 'issueQuantity' => '', 'issueNote' => ''],
+            'journal' => ['journalBody' => ''], 'document' => ['journalDocumentNote' => ''],
+        ];
+    }
+
+    private function productionDraftGroups(): array
+    {
+        return collect($this->productionDraftFields())->map(fn (array $fields): array => collect($fields)->mapWithKeys(fn (string $field): array => [$field => $this->{$field}])->all())->all();
+    }
+
+    private function productionDraftFields(): array
+    {
+        return [
+            'actuals' => ['actualRows', 'calculatedActualRows'],
+            'planning' => ['scheduleDate'], 'location' => ['productionLocationId'],
+            'completion' => ['outputMode', 'actualOutputQuantity', 'outputIngredientId', 'manufactureDate', 'estimatedReadyOn'],
+            'tasks' => ['taskDates'], 'cancellation' => ['cancellationReason'], 'abort' => ['abortReason'],
+            'issue' => ['issueKind', 'issueQuantity', 'issueNote'], 'journal' => ['journalBody'], 'document' => ['journalDocumentNote'],
+        ];
+    }
+
+    #[Renderless]
+    public function executeEditingCommand(string $method, array $arguments = [], ?array $submitted = null, ?string $group = null): array
+    {
+        $commands = [
+            'assignBatchNumber' => [null, []], 'assignProductionLocation' => ['location', []],
+            'assignTask' => [null, ['taskId', 'employeeId']], 'assignTaskDepartment' => [null, ['taskId', 'departmentId']],
+            'toggleTask' => [null, ['taskId']], 'rescheduleTask' => ['tasks', ['taskId', 'scheduledFor']], 'resetTaskDate' => ['tasks', ['taskId']],
+            'cancel' => ['cancellation', []], 'start' => [null, []], 'confirmEarlyStart' => [null, []], 'releaseStock' => [null, []],
+            'saveActuals' => ['actuals', []], 'scheduleProduction' => ['planning', []], 'rescheduleProduction' => ['planning', []],
+            'complete' => ['completion', []], 'abort' => ['abort', []], 'releaseOutput' => [null, []], 'confirmEarlyRelease' => [null, []],
+            'issueFinishedGoods' => ['issue', []], 'saveJournalEntry' => ['journal', []], 'attachJournalDocument' => ['document', []],
+            'detachJournalDocument' => [null, ['documentId']],
+        ];
+        abort_unless(isset($commands[$method]) && $group === $commands[$method][0] && count($arguments) === count($commands[$method][1]), 422);
+        $this->resetErrorBag();
+        $this->productionCommandAcknowledgment = [];
+        try {
+            if ($group !== null) {
+                $fields = $this->productionDraftFields()[$group];
+                abort_unless($submitted !== null && array_diff(array_keys($submitted), $fields) === [] && strlen(json_encode($submitted, JSON_THROW_ON_ERROR)) <= 200000, 422);
+                foreach ($fields as $field) {
+                    if (array_key_exists($field, $submitted)) {
+                        $value = $submitted[$field];
+                        $type = (new \ReflectionProperty($this, $field))->getType();
+                        validator([$field => $value], [$field => $type->getName() === 'array'
+                            ? ['array', 'max:1000'] : [($type->allowsNull() ? 'nullable' : 'present'), 'string', 'max:20000']])->validate();
+                        $this->{$field} = $value;
+                    }
+                }
+            }
+            $named = array_combine($commands[$method][1], $arguments);
+            app()->call([$this, $method], $named);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+        }
+
+        return [
+            'ok' => $this->productionCommandAcknowledgment !== [] && $this->getErrorBag()->isEmpty(),
+            'revisions' => $this->productionCommandAcknowledgment,
+            'canonical' => $group === null ? null : $this->productionDraftGroups()[$group],
+            'groups' => in_array($method, ['start', 'confirmEarlyStart'], true) && $this->productionCommandAcknowledgment !== []
+                ? ['actuals' => $this->productionDraftGroups()['actuals']] : [],
+            'state' => $this->observeProductionEditing(), 'errors' => $this->getErrorBag()->toArray(),
+        ];
     }
 
     private function user(): User

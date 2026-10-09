@@ -128,7 +128,7 @@
  <div class="flex justify-end">
  @if ($isCosmeticWorkbench)
  <template x-if="phaseOrder.length <= 1">
- <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
+ <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-button-primary)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-button-primary-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
  <x-action-icon name="plus" />
  </button>
  </template>
@@ -151,7 +151,7 @@
  this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
  },
  }" @phase-chooser-opened.window="if ($event.detail.ingredientId !== ingredient.id) { open = false; }" class="relative">
- <button type="button" x-ref="trigger" @click.stop="if (open) { open = false; } else { $dispatch('phase-chooser-opened', { ingredientId: ingredient.id }); open = true; $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
+ <button type="button" x-ref="trigger" @click.stop="if (open) { open = false; } else { $dispatch('phase-chooser-opened', { ingredientId: ingredient.id }); open = true; $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-button-primary)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-button-primary-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
  <x-action-icon name="plus" />
  </button>
  <template x-teleport="body">
@@ -175,7 +175,7 @@
  </div>
  </template>
  @else
- <button type="button" @click.stop="addIngredient(ingredient)" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
+ <button type="button" @click.stop="addIngredient(ingredient)" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-button-primary)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-button-primary-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
  <x-action-icon name="plus" />
  </button>
  @endif

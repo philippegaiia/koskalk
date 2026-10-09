@@ -8,22 +8,27 @@ use App\Models\ProductionTask;
 use App\Models\ProductionTaskSet;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\Production\ProductionTaskLimits;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class GenerateProductionTasks
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ProductionWorkingCalendar $calendar,
         private readonly ProductionTaskLimits $limits,
     ) {}
 
-    public function handle(User $actor, ProductionRun $production): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production,
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $workspace = $production->workspace;
 
         if ($workspace === null) {
@@ -34,13 +39,8 @@ class GenerateProductionTasks
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production): ProductionRun {
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($production): ProductionMutationResult {
+            $lockedProduction = $productions[$production->id];
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -50,15 +50,20 @@ class GenerateProductionTasks
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 
-            return $this->generateForLockedProduction($actor, $lockedProduction, $lockedWorkspace);
-        }, attempts: 5);
+            $before = $lockedProduction->tasks()->count();
+            $result = $this->generateForLockedProduction($actor, $lockedProduction, $lockedWorkspace, $scope);
+
+            return new ProductionMutationResult($result, $result->tasks->count() !== $before ? [$result->id] : []);
+        });
     }
 
     public function generateForLockedProduction(
         User $actor,
         ProductionRun $lockedProduction,
         Workspace $lockedWorkspace,
+        ProductionMutationScope $scope,
     ): ProductionRun {
+        $scope->assertFor($actor, $lockedProduction, $lockedWorkspace);
         $this->access->assertWritable($actor, $lockedWorkspace);
 
         if (! in_array($lockedProduction->status, [

@@ -509,7 +509,20 @@ export function createPresentationSection() {
         },
 
         get restrictionsRequireAttention() {
-            return this.restrictionSummary.status !== 'pass' || this.restrictionWarnings.length > 0;
+            return !['pass', 'unverified', 'not_checked'].includes(this.restrictionSummary.status)
+                || this.restrictionWarnings.length > 0;
+        },
+
+        get restrictionsNotChecked() {
+            return this.restrictionSummary.status === 'not_checked';
+        },
+
+        get restrictionsHaveNoRules() {
+            return this.restrictionSummary.status === 'no_rules';
+        },
+
+        get restrictionsHaveStarterRules() {
+            return this.restrictionRows.some((row) => row.status === 'starter_rule');
         },
 
         get declarationRowsRequireAttention() {
@@ -529,6 +542,9 @@ export function createPresentationSection() {
                 fail: 'Needs correction',
                 warning: 'Needs review',
                 pass: 'No restriction flags',
+                unverified: this.t('output.restrictions.starter_rules_only'),
+                not_checked: this.t('output.market_check.not_checked'),
+                no_rules: this.t('output.restrictions.no_rules'),
             }[this.restrictionSummary.status] ?? 'No restriction flags';
         },
 

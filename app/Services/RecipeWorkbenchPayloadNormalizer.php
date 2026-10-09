@@ -13,6 +13,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
 use App\Support\NumberLocale;
+use Closure;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -63,6 +64,7 @@ class RecipeWorkbenchPayloadNormalizer
         ?ProductFamily $productFamily = null,
         bool $requireComplete = true,
         ?Recipe $product = null,
+        ?Closure $prepareFormulation = null,
     ): array {
         $rawLyeLiquidRows = data_get($payload, 'phase_items.lye_water', []);
         $this->lyeLiquidIngredientValidator->assertMaximumRows(
@@ -81,7 +83,7 @@ class RecipeWorkbenchPayloadNormalizer
         $ifraSelection = $this->resolveIfraSelection($payload, $productType);
 
         if ($this->recipeWorkbenchPhaseBlueprints->isCosmeticFamily($productFamily)) {
-            return $this->normalizeCosmetic($payload, $productType, $ifraSelection, $requireComplete);
+            return $this->normalizeCosmetic($payload, $productType, $ifraSelection, $requireComplete, $prepareFormulation);
         }
 
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
@@ -100,6 +102,11 @@ class RecipeWorkbenchPayloadNormalizer
             throw ValidationException::withMessages([
                 $this->normalizationErrorField($exception->getMessage()) => $exception->getMessage(),
             ]);
+        }
+
+        if ($prepareFormulation instanceof Closure) {
+            $normalizedRecipe = $prepareFormulation($normalizedRecipe);
+            $editingMode = $normalizedRecipe['editing_mode'] === 'weight' ? 'weight' : 'percent';
         }
 
         if (abs($normalizedRecipe['totals']['oil_percentage'] - 100) > 0.01) {
@@ -146,7 +153,7 @@ class RecipeWorkbenchPayloadNormalizer
             'mass_grams' => $this->massConverter->toGrams($normalizedRecipe['oil_weight'], $massUnit),
             'manufacturing_mode' => $this->normalizeManufacturingMode($payload['manufacturing_mode'] ?? 'saponify_in_formula'),
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'rinse_off'),
-            'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
+            'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? RegulatoryRegime::NONE_CODE),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
             ...$ifraSelection,
             'manufacturing_instructions' => $this->nullableTrimmedText($payload['manufacturing_instructions'] ?? null),
@@ -227,6 +234,7 @@ class RecipeWorkbenchPayloadNormalizer
         ?ProductType $productType,
         array $ifraSelection,
         bool $requireComplete,
+        ?Closure $prepareFormulation = null,
     ): array {
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
         $totalBatchWeight = $this->positiveWeight($payload['oil_weight'] ?? 0, 'total batch weight');
@@ -293,6 +301,13 @@ class RecipeWorkbenchPayloadNormalizer
             ];
         }
 
+        if ($prepareFormulation instanceof Closure) {
+            $prepared = $prepareFormulation(['oil_weight' => round($totalBatchWeight, 4), 'phases' => $normalizedPhases]);
+            $normalizedPhases = $prepared['phases'];
+            $formulaPercentage = (float) $prepared['totals']['formula_percentage_of_oils'];
+            $formulaWeight = (float) $prepared['totals']['formula_weight'];
+            $editingMode = $prepared['editing_mode'] === 'weight' ? 'weight' : 'percent';
+        }
         $formulaPercentage = round($formulaPercentage, 4);
         $formulaWeight = round($formulaWeight, 4);
 
@@ -312,7 +327,7 @@ class RecipeWorkbenchPayloadNormalizer
             'mass_grams' => $this->massConverter->toGrams($totalBatchWeight, $massUnit),
             'manufacturing_mode' => 'blend_only',
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'leave_on'),
-            'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
+            'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? RegulatoryRegime::NONE_CODE),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
             ...$ifraSelection,
             'manufacturing_instructions' => $this->nullableTrimmedText($payload['manufacturing_instructions'] ?? null),
@@ -340,7 +355,7 @@ class RecipeWorkbenchPayloadNormalizer
      * @param  array<string, mixed>  $payload
      * @return array{ifra_category_selection_mode: IfraCategorySelectionMode, ifra_amendment_id: int|null, product_type_ifra_category_id: int|null, ifra_product_category_id: int|null}
      */
-    private function resolveIfraSelection(array $payload, ?ProductType $productType): array
+    public function resolveIfraSelection(array $payload, ?ProductType $productType): array
     {
         $selectionMode = IfraCategorySelectionMode::tryFrom(
             (string) ($payload['ifra_category_selection_mode'] ?? IfraCategorySelectionMode::Automatic->value),

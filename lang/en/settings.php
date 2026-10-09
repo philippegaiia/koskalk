@@ -29,6 +29,9 @@ return [
             'us_customary' => 'US customary',
             'us_customary_example' => 'oz and lb · prices per lb',
         ],
+        'default_market' => 'Default label market',
+        'default_market_unavailable' => 'The saved default market (:market) is no longer available, so new formulas start on None. Choose a market and save to replace it.',
+        'default_market_help' => 'New formulas start on this market. "None" leaves labels unchecked until someone picks a market. Existing formulas keep their own market, and each formula can still switch.',
     ],
     'actions' => [
         'save_preferences' => 'Save preferences',

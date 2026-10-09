@@ -182,6 +182,7 @@ class ProductionRun extends Model
     protected function casts(): array
     {
         return [
+            'edit_revision' => 'integer',
             'status' => ProductionRunStatus::class,
             'source' => ProductionRunSource::class,
             'production_output_type' => ProductionOutputType::class,

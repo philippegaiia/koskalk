@@ -10,13 +10,16 @@ use App\Models\ProductionTask;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ReleaseOutputLot
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
     ) {}
 
@@ -29,52 +32,42 @@ class ReleaseOutputLot
         StockLot $lot,
         ?string $note = null,
         bool $earlyReleaseConfirmed = false,
+        ?ProductionEditingContext $editing = null,
     ): StockLot {
-        $this->access->assertWritable($actor, $lot->workspace);
+        $workspace = $lot->workspace;
+        if (! $workspace instanceof Workspace) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.output_lot_workspace_missing'),
+            ]);
+        }
+        $this->access->assertWritable($actor, $workspace);
+        $lotReference = StockLot::withoutGlobalScopes()->where('workspace_id', $workspace->id)->findOrFail($lot->id);
+        $parentId = $lotReference->production_run_id;
+        if ($parentId === null) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.output_lot_unlinked'),
+            ]);
+        }
+        if ($parentId !== $lot->production_run_id
+            || ! ProductionRun::query()->where('workspace_id', $workspace->id)->whereKey($parentId)->exists()) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.output_production_missing'),
+            ]);
+        }
 
-        return DB::transaction(function () use ($actor, $earlyReleaseConfirmed, $lot, $note): StockLot {
-            $lotReference = StockLot::query()
-                ->withoutGlobalScopes()
-                ->findOrFail($lot->id);
-            $workspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($lotReference->workspace_id);
-
-            if (! $workspace instanceof Workspace) {
-                throw ValidationException::withMessages([
-                    'lot' => __('production_bench.production.validation.output_lot_workspace_missing'),
-                ]);
-            }
-
-            $this->access->assertWritable($actor, $workspace);
-
-            if ($lotReference->production_run_id === null) {
-                throw ValidationException::withMessages([
-                    'lot' => __('production_bench.production.validation.output_lot_unlinked'),
-                ]);
-            }
-
-            $production = ProductionRun::query()
-                ->where('workspace_id', $workspace->id)
-                ->lockForUpdate()
-                ->find($lotReference->production_run_id);
-
-            if (! $production instanceof ProductionRun) {
-                throw ValidationException::withMessages([
-                    'lot' => __('production_bench.production.validation.output_production_missing'),
-                ]);
-            }
-
+        return $this->guard->run($actor, [$parentId], $editing, function (User $actor, Workspace $workspace, Collection $productions) use ($earlyReleaseConfirmed, $lot, $note, $parentId): ProductionMutationResult {
+            $production = $productions[$parentId];
             $tasks = ProductionTask::query()
                 ->where('production_run_id', $production->id)
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
-            $lockedLot = StockLot::query()
-                ->withoutGlobalScopes()
-                ->where('workspace_id', $workspace->id)
-                ->lockForUpdate()
-                ->findOrFail($lot->id);
+            $lockedLot = StockLot::withoutGlobalScopes()->where('workspace_id', $workspace->id)->lockForUpdate()->findOrFail($lot->id);
+            if ($lockedLot->production_run_id !== $parentId) {
+                throw ValidationException::withMessages([
+                    'lot' => __('production_bench.production.validation.output_production_missing'),
+                ]);
+            }
 
             if ($production->status !== ProductionRunStatus::Completed) {
                 throw ValidationException::withMessages([
@@ -121,7 +114,7 @@ class ReleaseOutputLot
                 'release_note' => $note !== null && trim($note) !== '' ? trim($note) : null,
             ]);
 
-            return $lockedLot->refresh();
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedLot->refresh(), [$parentId]);
+        });
     }
 }

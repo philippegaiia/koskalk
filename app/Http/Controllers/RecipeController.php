@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpectedRecipeRevisionRequest;
+use App\Http\Requests\ReleaseRecipeEditingRequest;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
@@ -16,6 +17,7 @@ use App\Services\MediaStorage;
 use App\Services\ProductCreationCatalog;
 use App\Services\RecipeControlMutationGuard;
 use App\Services\RecipeCsvExporter;
+use App\Services\RecipeEditingService;
 use App\Services\RecipeExportDataBuilder;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionDeletionService;
@@ -27,6 +29,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -34,6 +37,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RecipeController extends Controller
 {
+    public function releaseEditing(ReleaseRecipeEditingRequest $request, string $recipe, CurrentAppUserResolver $resolver, RecipeEditingService $editing): Response
+    {
+        $user = $resolver->resolve();
+        abort_unless($user !== null, 403);
+        $record = $this->accessibleRecipe($recipe, $resolver);
+        $editing->release($record, $user, (string) $request->validated('token'));
+
+        return response()->noContent();
+    }
+
     public function index(): View
     {
         return view('recipes.index');
@@ -182,6 +195,9 @@ class RecipeController extends Controller
         return view('recipes.version', [
             ...$viewData,
             'isHistorical' => $isHistorical,
+            'canShareFormula' => ! $isHistorical && config('workspaces.formula_sharing.enabled', false)
+                && $user !== null && $user->can('share', $recipe)
+                && RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->exists(),
             'canUpdateRecipe' => $canUpdateRecipe,
             'canRestoreVersion' => $canUpdateRecipe,
             'canDuplicateRecipe' => $canDuplicateRecipe,

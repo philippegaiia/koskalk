@@ -28,6 +28,7 @@ it('shows a planning reference and assigns one permanent number from the product
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
+        ->call('beginEditing')
         ->assertSee($fixture['production']->planning_batch_number)
         ->assertSee('12 kg')
         ->assertDontSee('12.000000000')
@@ -39,7 +40,8 @@ it('shows a planning reference and assigns one permanent number from the product
             return $event === 'app-notification'
                 && $payload['message'] === __('production_bench.production.batch_number_assigned')
                 && $payload['type'] === 'success';
-        });
+        })
+        ->call('finishEditing');
 
     $assigned = $fixture['production']->fresh();
 
@@ -49,10 +51,12 @@ it('shows a planning reference and assigns one permanent number from the product
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $assigned->id])
+        ->call('beginEditing')
         ->assertSee($assigned->batch_number)
         ->assertDontSee(__('production_bench.production.assign_batch_number'))
         ->call('assignBatchNumber')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->call('finishEditing');
 
     expect($assigned->fresh()->batch_number)->toBe('B-00001');
 });
@@ -78,9 +82,11 @@ it('hides individual assignment from viewers and read-only production benches', 
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
+        ->call('beginEditing')
         ->assertDontSee(__('production_bench.production.assign_batch_number'))
         ->call('assignBatchNumber')
-        ->assertHasErrors('production_bench');
+        ->assertHasErrors('production_bench')
+        ->call('finishEditing');
 });
 
 it('assigns selected productions chronologically, skips issued numbers, and clears the selection', function (): void {

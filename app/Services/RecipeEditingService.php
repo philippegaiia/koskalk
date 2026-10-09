@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\Workspace;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
@@ -98,7 +97,7 @@ class RecipeEditingService
         return DB::transaction(function () use ($recipe, $callback): mixed {
             $workspaceId = Recipe::withoutGlobalScopes()->whereKey($recipe->id)->value('workspace_id');
             if ($workspaceId !== null) {
-                Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspaceId);
+                app(WorkspaceWriteLock::class)->acquire((int) $workspaceId);
             }
             $locked = Recipe::withoutGlobalScopes()->lockForUpdate()->findOrFail($recipe->id);
             if ($locked->workspace_id !== $workspaceId) {
@@ -179,12 +178,13 @@ class RecipeEditingService
         ];
     }
 
-    /** @return array{status: string, is_locked: bool, can_take_over: bool, holder_name: ?string, expires_at: ?string, recipe_revision: int, current_version_id: ?int, costing_revision: int} */
+    /** @return array{status: string, release_url: string, is_locked: bool, can_take_over: bool, holder_name: ?string, expires_at: ?string, recipe_revision: int, current_version_id: ?int, costing_revision: int} */
     private function state(Recipe $recipe, ?stdClass $lease, string $status, User $user): array
     {
 
         return [
             'status' => $status,
+            'release_url' => route('recipes.editing.release', $recipe->public_id),
             'is_locked' => $recipe->locked_at !== null,
             'can_take_over' => $user->can('manageLock', $recipe),
             'holder_name' => $this->active($lease) ? $lease->holder_name : null,

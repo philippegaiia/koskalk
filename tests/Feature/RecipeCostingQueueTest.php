@@ -2,6 +2,61 @@
 
 use Symfony\Component\Process\Process;
 
+it('keeps locked costing scenarios local and resets every assumption to the saved baseline', function (): void {
+    runCostingQueueScenario(<<<'JS'
+let writes = 0;
+workbench.$wire.saveCosting = async () => { writes++; return saved(5, 20); };
+for (const isCosmeticFormula of [false, true]) {
+    Object.defineProperty(workbench, 'isCosmeticFormula', { configurable: true, value: isCosmeticFormula });
+    workbench.isFormulaLocked = true;
+    workbench.editingStatus = 'blocked';
+    workbench.oilWeight = 1000;
+    workbench.oilUnit = 'g';
+    workbench.hasLoadedCosting = true;
+    workbench.phaseOrder = [{ key: 'main', name: 'Main' }];
+    workbench.phaseItems = { main: [{ id: 'oil', ingredient_id: 1, name: 'Oil', percentage: 100 }] };
+    workbench.costingPriceByRowId = {};
+    workbench.applyCostingPayload({
+        settings: { oilWeightForCosting: 1000, oilUnitForCosting: 'g', unitsProduced: 10, currency: 'EUR' },
+        item_prices: [{ ingredient_id: 1, phase_key: 'main', position: 1, price_per_kg: 0 }],
+        packaging_items: [{ id: 2, name: 'Jar', unit_cost: 2, components_per_unit: 1 }],
+    });
+    assert.equal(workbench.canAdjustCosting, true);
+    assert.equal(workbench.canWriteRecipe, false);
+    const row = workbench.costingFormulaRows[0];
+    assert.equal(workbench.costingPriceForRow(row), 0);
+    workbench.updateCostingOilWeight({ target: { value: '2000' } });
+    workbench.costingUnitsProduced = 20;
+    workbench.updateCostingPrice(row, '3');
+    workbench.updatePackagingUnitCost(workbench.packagingCostRows[0], '5');
+    assert.equal(workbench.costingFormulaRows[0].weight, 2000);
+    assert.equal(workbench.totalBatchCost, 106);
+    assert.equal(workbench.oilWeight, 1000);
+    assert.equal(workbench.phaseItems.main[0].percentage, 100);
+    assert.equal(workbench.costingSaveTimer, null);
+    assert.equal(registry.blocksNavigation(), false);
+    assert.equal(await workbench.persistCosting(), false);
+    assert.equal(await workbench.flushCostingSave(), true);
+    assert.equal(writes, 0);
+    workbench.changeCostingUnit('kg');
+    assert.equal(workbench.costingOilWeight, 2);
+    assert.equal(workbench.totalBatchCost, 106);
+    workbench.resetCostingSimulation();
+    assert.equal(workbench.costingOilWeight, 1000);
+    assert.equal(workbench.costingOilUnit, 'g');
+    assert.equal(workbench.costingUnitsProduced, 10);
+    assert.equal(workbench.costingPriceForRow(workbench.costingFormulaRows[0]), 0);
+    assert.equal(workbench.packagingCostRows[0].unit_cost, 2);
+    workbench.packagingCostRows[0].unit_cost = 99;
+    workbench.resetCostingSimulation();
+    assert.equal(workbench.packagingCostRows[0].unit_cost, 2);
+    workbench.canEditRecipe = false;
+    assert.equal(workbench.canAdjustCosting, false);
+    workbench.canEditRecipe = true;
+}
+JS);
+});
+
 it('coalesces newer costing input and accepts each successful revision without overwriting it', function (): void {
     runCostingQueueScenario(<<<'JS'
 const first = deferred();

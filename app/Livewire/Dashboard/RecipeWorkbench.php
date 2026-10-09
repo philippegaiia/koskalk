@@ -233,7 +233,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function saveCosting(array $costing, RecipeWorkbenchService $service): array
     {
-        return $this->mutateRecipe(fn (): array => $this->performSaveCosting($costing, $service), allowLocked: true);
+        return $this->mutateRecipe(fn (): array => $this->performSaveCosting($costing, $service));
     }
 
     /** @return array<string, mixed> */
@@ -291,7 +291,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     {
         $recipe = $this->currentRecipe();
         if (! $recipe instanceof Recipe) {
-            return $this->withCreationWorkspace($action);
+            return $this->withCreationWorkspace(function () use ($action): array {
+                $result = $action();
+                $createdRecipe = $this->currentRecipe();
+                $user = $this->currentUser();
+                if (! ($result['ok'] ?? false) || ! $createdRecipe instanceof Recipe || ! $user instanceof User) {
+                    return $result;
+                }
+
+                $state = app(RecipeEditingService::class)->status($createdRecipe, $user);
+                $this->acceptEditingRevisions($state);
+
+                return [...$result, 'editing' => $state];
+            });
         }
         $user = $this->currentUser();
         abort_unless($user instanceof User, 403);
@@ -967,15 +979,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $recipe = $this->currentRecipe();
         $recipeWorkbenchViewDataBuilder = app(RecipeWorkbenchViewDataBuilder::class);
         $user = $this->currentUser();
+        $canEditRecipe = $this->initialWorkbench['canEditRecipe']
+            ?? (request()->routeIs('calculator') || $this->canEditRecipe($recipe));
         $workbench = $this->initialWorkbench ?? $recipeWorkbenchViewDataBuilder->build(
             $this->productFamily(),
             $recipe,
             $user,
             $this->productType(),
+            $recipe instanceof Recipe && $canEditRecipe ? [
+                'recipe_revision' => $this->expectedRecipeRevision,
+                'current_version_id' => $this->expectedVersionId,
+                'costing_revision' => $this->expectedCostingRevision,
+            ] : null,
         );
-        $canEditRecipe = $this->initialWorkbench !== null
-            ? $workbench['canEditRecipe']
-            : request()->routeIs('calculator') || $this->canEditRecipe($recipe);
         $workbench['canEditRecipe'] = $canEditRecipe;
         if ($this->initialWorkbench === null && is_array($workbench['recipe'] ?? null)) {
             $workbench['recipe']['can_duplicate'] = $user?->can('create', Recipe::class) ?? false;

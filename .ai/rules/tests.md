@@ -13,3 +13,12 @@ Build test-owned records with model factories (pass attributes inline as needed)
 
 ## Assert JSON with atomic chained assertions
 Assert JSON responses with atomic chained assertions on the response (->assertJsonPath('path', value), ->assertJsonCount(...), ->assertJsonStructure([...]), ->assertJsonFragment([...])). Do not use whole-payload assertJson([...]) arrays or the fluent AssertableJson API.
+
+## Guard and reset disposable formula sharing PostgreSQL sessions
+Real sharing races require VERIFY_FORMULA_SHARING_POSTGRES=true plus FORMULA_SHARING_POSTGRES_DATABASE matching a koskalk_formula_sharing_test_YYYYMMDD name. Verify current_database() before destructive public-schema reset; this clears residual migration trigger functions. Finish/join forked child sessions before another reset. SQLite skips are never evidence of PostgreSQL concurrency behavior.
+
+## Run the suite under a UTF-8 locale, not LANG=C
+A shell with LANG=C (or no locale) leaves PHP's intl default locale empty, so Symfony Intl's Currencies::exists() and isValidInAnyCountry() fail for every code. CurrencyCatalogTest then fails 2 of 4 and currency validation errors cascade into dozens of unrelated failures that look like pre-existing breakage. Export LANG=en_US.UTF-8 (or any UTF-8 locale) before running the suite. Confirm a suspected environment failure by re-running the single file with the locale set before concluding the repo is broken.
+
+## Create the EU regime for EU behaviour
+EU label behaviour requires an active `eu` regulatory_regimes row with the allergen rules the test relies on; a regime with no allergen rules declares nothing. Without the row, `eu` reports `unavailable`. Create it with RegulatoryRegime/RegulatoryRegimeAllergen factories in the test.

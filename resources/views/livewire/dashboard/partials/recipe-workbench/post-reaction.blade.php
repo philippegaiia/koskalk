@@ -16,7 +16,7 @@
  <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.additives') }}</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.additives_help') }}</p>
  </div>
-	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
+	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)]">
 	 <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.ingredient') }}</div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]">% oils</div>
@@ -28,21 +28,23 @@
  <template x-for="row in additiveRows" :key="row.id">
  <div @dragover="allowPhaseDrop('additives', $event, row.id)"
  @drop="dropDraggedRow('additives', $event, row.id)"
+ @dragleave="leaveRowDropTarget($event)"
  :class="{
- 'bg-[var(--color-active-soft)]': isDropTarget('additives', row.id),
- 'opacity-60': isDraggedRow('additives', row.id),
+ 'sk-formula-insertion-before': isDropTarget('additives', row.id),
+ 'sk-formula-insertion-after': isDropTarget('additives') && rowIsLastDropTarget('additives', row.id),
+ 'opacity-75': isDraggedRow('additives', row.id),
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
-		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:row-start-auto">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
+		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('additives', row.id, $event)"
  @dragend="endRowDrag()"
-	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
+	 class="sk-formula-row-control grid size-10 shrink-0 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] active:cursor-grabbing"
  aria-label="Drag to reorder or move this additive">
- <x-action-icon name="drag" />
+ <x-action-icon name="drag" :prominent="true" />
  </button>
  </div>
 		 <div class="col-span-2 row-start-2 flex flex-col justify-center bg-white sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
@@ -69,7 +71,7 @@
  </template>
  </div>
  </div>
-		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:px-2 lg:row-start-auto">
+		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:row-start-auto">
  <x-recipe-workbench.formula-row-actions phase-key="additives" />
  </div>
  </div>
@@ -79,7 +81,8 @@
  <template x-if="additiveRows.length === 0">
  <div @dragover="allowPhaseDrop('additives', $event)"
  @drop="dropDraggedRow('additives', $event)"
- :class="isDropTarget('additives') ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
+ @dragleave="leaveRowDropTarget($event)"
+ :class="isDropTarget('additives') ? 'sk-formula-drop-zone-active sk-formula-insertion-before' : 'text-[var(--color-ink-soft)]'"
 	 class="px-4 py-2.5 sk-formula-table-y text-center text-xs font-medium transition">
  {{ __('workbench.additions.empty_oil') }}
  </div>
@@ -93,7 +96,7 @@
  <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.fragrance') }}</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.fragrance_help') }}</p>
  </div>
-	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
+	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)]">
 	 <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.ingredient') }}</div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]">% oils</div>
@@ -105,21 +108,23 @@
  <template x-for="row in fragranceRows" :key="row.id">
  <div @dragover="allowPhaseDrop('fragrance', $event, row.id)"
  @drop="dropDraggedRow('fragrance', $event, row.id)"
+ @dragleave="leaveRowDropTarget($event)"
  :class="{
- 'bg-[var(--color-active-soft)]': isDropTarget('fragrance', row.id),
- 'opacity-60': isDraggedRow('fragrance', row.id),
+ 'sk-formula-insertion-before': isDropTarget('fragrance', row.id),
+ 'sk-formula-insertion-after': isDropTarget('fragrance') && rowIsLastDropTarget('fragrance', row.id),
+ 'opacity-75': isDraggedRow('fragrance', row.id),
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
-	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
-		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:px-2 lg:row-start-auto">
+	 class="grid grid-cols-2 gap-3 bg-white px-2.5 text-sm sk-formula-table-row transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)] lg:px-0">
+		 <div class="col-start-1 row-start-1 flex items-center justify-start bg-white sk-formula-table-handle-cell lg:col-start-1 lg:justify-center lg:row-start-auto">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('fragrance', row.id, $event)"
  @dragend="endRowDrag()"
-	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
+	 class="sk-formula-row-control grid size-10 shrink-0 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] active:cursor-grabbing"
  aria-label="Drag to reorder this aromatic ingredient">
- <x-action-icon name="drag" />
+ <x-action-icon name="drag" :prominent="true" />
  </button>
  </div>
 		 <div class="col-span-2 row-start-2 flex flex-col justify-center bg-white sk-formula-table-cell lg:col-span-1 lg:col-start-2 lg:px-4 lg:row-start-auto">
@@ -146,7 +151,7 @@
  </template>
  </div>
  </div>
-		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:px-2 lg:row-start-auto">
+		 <div class="col-start-2 row-start-1 flex items-center justify-end bg-white sk-formula-table-cell sk-formula-table-action-cell lg:col-start-5 lg:justify-center lg:row-start-auto">
  <x-recipe-workbench.formula-row-actions phase-key="fragrance" />
  </div>
  </div>

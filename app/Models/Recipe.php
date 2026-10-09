@@ -73,6 +73,8 @@ class Recipe extends Model implements HasRichContent
         static::addGlobalScope(new OwnedByCurrentTenantScope);
 
         static::deleting(function (self $recipe): void {
+            FormulaShare::query()->where('accepted_recipe_id', $recipe->id)->whereNull('accepted_product_deleted_at')
+                ->update(['accepted_product_deleted_at' => now()]);
             $versionIds = RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)
                 ->pluck('id');

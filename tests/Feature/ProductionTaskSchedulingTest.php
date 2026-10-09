@@ -37,6 +37,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -140,7 +141,7 @@ it('returns the catalogued localized message when rescheduling onto a non-workin
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
 
     try {
-        app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-09');
+        app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-09', editing: ProductionEditingFixture::command($fixture['owner'], $production));
     } catch (ValidationException $exception) {
         expect($exception->errors()['planned_for'])->toBe([$messages[$locale]]);
 
@@ -184,7 +185,7 @@ it('keeps production and the first task synchronized in both directions', functi
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $first = $production->tasks()->orderBy('id')->firstOrFail();
 
-    app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-12');
+    app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-12', editing: ProductionEditingFixture::command($fixture['owner'], $production));
     expect($production->fresh()->planned_for->toDateString())->toBe('2026-08-12')
         ->and($first->fresh()->scheduled_for->toDateString())->toBe('2026-08-12');
 
@@ -192,6 +193,7 @@ it('keeps production and the first task synchronized in both directions', functi
         actor: $fixture['owner'],
         task: $first->fresh(),
         scheduledFor: '2026-08-14',
+        editing: ProductionEditingFixture::command($fixture['owner'], $first->fresh()),
     );
 
     expect($production->fresh()->planned_for->toDateString())->toBe('2026-08-14')
@@ -214,6 +216,7 @@ it('reschedules automatic tasks when a scheduled production plan is updated', fu
         basisInputUnit: 'kg',
         expectedUnits: 10,
         plannedFor: '2026-08-12',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     );
 
     expect($updated->planned_for->toDateString())->toBe('2026-08-12')
@@ -233,20 +236,21 @@ it('marks later dates custom, resets them, and leaves completed tasks stable', f
         actor: $fixture['owner'],
         task: $tasks[1],
         scheduledFor: '2026-08-20',
+        editing: ProductionEditingFixture::command($fixture['owner'], $tasks[1]),
     );
-    app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-12');
+    app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-12', editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($tasks[0]->fresh()->scheduled_for->toDateString())->toBe('2026-08-12')
         ->and($tasks[1]->fresh()->scheduled_for->toDateString())->toBe('2026-08-20')
         ->and($tasks[1]->fresh()->scheduling_mode)->toBe('custom');
 
-    app(ResetProductionTaskDate::class)->handle($fixture['owner'], $tasks[1]->fresh());
+    app(ResetProductionTaskDate::class)->handle($fixture['owner'], $tasks[1]->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $tasks[1]->fresh()));
 
     expect($tasks[1]->fresh()->scheduled_for->toDateString())->toBe('2026-08-14')
         ->and($tasks[1]->fresh()->scheduling_mode)->toBe('automatic');
 
-    app(CompleteProductionTask::class)->handle($fixture['owner'], $tasks[1]->fresh());
-    app(ReopenProductionTask::class)->handle($fixture['owner'], $tasks[1]->fresh());
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $tasks[1]->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $tasks[1]->fresh()));
+    app(ReopenProductionTask::class)->handle($fixture['owner'], $tasks[1]->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $tasks[1]->fresh()));
 
     expect($tasks[1]->fresh()->completed_at)->toBeNull();
 });
@@ -258,11 +262,11 @@ it('reopens a completed task while production output awaits release', function (
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $task = $production->tasks()->firstOrFail();
 
-    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task, editing: ProductionEditingFixture::command($fixture['owner'], $task));
     $production->update(['status' => ProductionRunStatus::Completed]);
     productionTaskSchedulingOutputLot($fixture, $production, StockLotStatus::Quarantined);
 
-    $reopened = app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh());
+    $reopened = app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $task->fresh()));
 
     expect($reopened->completed_at)->toBeNull();
 });
@@ -274,11 +278,11 @@ it('does not reopen a production task after output release', function (): void {
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $task = $production->tasks()->firstOrFail();
 
-    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task, editing: ProductionEditingFixture::command($fixture['owner'], $task));
     $production->update(['status' => ProductionRunStatus::Completed]);
     productionTaskSchedulingOutputLot($fixture, $production, StockLotStatus::Released);
 
-    expect(fn (): ProductionTask => app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh()))
+    expect(fn (): ProductionTask => app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $task->fresh())))
         ->toThrow(ValidationException::class)
         ->and($task->fresh()->completed_at)->not->toBeNull();
 
@@ -295,8 +299,8 @@ it('does not move a completed automatic task when the production date changes', 
     $tasks = $production->tasks()->orderBy('id')->get();
     $completedDate = $tasks[1]->scheduled_for->toDateString();
 
-    app(CompleteProductionTask::class)->handle($fixture['owner'], $tasks[1]);
-    app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-12');
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $tasks[1], editing: ProductionEditingFixture::command($fixture['owner'], $tasks[1]));
+    app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-12', editing: ProductionEditingFixture::command($fixture['owner'], $production));
 
     expect($tasks[0]->fresh()->scheduled_for->toDateString())->toBe('2026-08-12')
         ->and($tasks[1]->fresh()->scheduled_for->toDateString())->toBe($completedDate)
@@ -320,6 +324,7 @@ it('accepts an active employee and preserves a later deactivated assignment', fu
         actor: $fixture['owner'],
         task: $task,
         employee: $employee,
+        editing: ProductionEditingFixture::command($fixture['owner'], $task),
     );
     $employee->update(['is_active' => false]);
 
@@ -337,6 +342,7 @@ it('accepts an active employee and preserves a later deactivated assignment', fu
         actor: $fixture['owner'],
         task: $task->fresh(),
         employee: $foreignEmployee,
+        editing: ProductionEditingFixture::command($fixture['owner'], $task->fresh()),
     ))->toThrow(ValidationException::class);
 });
 
@@ -392,11 +398,13 @@ it('rejects task date mutations after production starts', function (): void {
         $fixture['owner'],
         $production,
         '2026-08-12',
+        editing: ProductionEditingFixture::command($fixture['owner'], $production),
     ))->toThrow(ValidationException::class)
         ->and(fn (): ProductionTask => app(RescheduleProductionTask::class)->handle(
             actor: $fixture['owner'],
             task: $task,
             scheduledFor: '2026-08-12',
+            editing: ProductionEditingFixture::command($fixture['owner'], $task),
         ))->toThrow(ValidationException::class);
 });
 
@@ -406,7 +414,7 @@ it('does not duplicate tasks when generation is retried', function (): void {
     $set = productionTaskSchedulingSet($fixture, $pour, null, [0]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
 
-    app(GenerateProductionTasks::class)->handle($fixture['owner'], $production->fresh());
+    app(GenerateProductionTasks::class)->handle($fixture['owner'], $production->fresh(), editing: ProductionEditingFixture::command($fixture['owner'], $production->fresh()));
 
     expect($production->tasks()->count())->toBe(1);
 });
@@ -442,6 +450,7 @@ it('rolls back draft scheduling when task generation fails', function (): void {
         actor: $fixture['owner'],
         production: $draft,
         plannedFor: '2026-08-10',
+        editing: ProductionEditingFixture::command($fixture['owner'], $draft),
     ))->toThrow(ValidationException::class);
 
     $fresh = $draft->fresh();

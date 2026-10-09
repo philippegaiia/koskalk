@@ -13,13 +13,17 @@ use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ConsumableStockLotPolicy;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class SaveProductionActuals
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ConsumableStockLotPolicy $lotPolicy,
     ) {}
@@ -34,8 +38,9 @@ class SaveProductionActuals
      * @param  array<int, array{production_requirement_id: int, stock_lot_id?: int|null, quantity: string, note?: string|null}>  $rows
      * @param  array<int, array{production_formula_line_id: int, actual_mass_grams: string}>  $calculatedRows
      */
-    public function handle(User $actor, ProductionRun $production, array $rows, array $calculatedRows = []): ProductionRun
-    {
+    public function handle(User $actor, ProductionRun $production, array $rows, array $calculatedRows = [],
+        ?ProductionEditingContext $editing = null,
+    ): ProductionRun {
         $workspace = $production->workspace;
 
         if (! $workspace instanceof Workspace) {
@@ -46,13 +51,8 @@ class SaveProductionActuals
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $calculatedRows, $production, $rows): ProductionRun {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($production->workspace_id);
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+        return $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($calculatedRows, $production, $rows): ProductionMutationResult {
+            $lockedProduction = $productions[$production->id];
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
@@ -80,6 +80,7 @@ class SaveProductionActuals
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
+            $before = $this->actualsSnapshot($lockedProduction);
             $calculatedLineIds = [];
 
             foreach ($calculatedRows as $index => $row) {
@@ -152,6 +153,13 @@ class SaveProductionActuals
                     ]);
                 }
 
+                $existing = ProductionConsumption::query()->where('production_run_id', $lockedProduction->id)
+                    ->where('production_requirement_id', $requirement->id)->where('stock_lot_id', $lot->id)->first();
+                if ($existing !== null && bccomp((string) $existing->quantity, $quantity, 9) === 0
+                    && $existing->note === $this->nullableString($row['note'] ?? null)) {
+                    continue;
+                }
+
                 ProductionConsumption::query()->updateOrCreate(
                     [
                         'production_run_id' => $lockedProduction->id,
@@ -171,8 +179,17 @@ class SaveProductionActuals
                 );
             }
 
-            return $lockedProduction->fresh(['requirements', 'consumption']);
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedProduction->fresh(['requirements', 'consumption', 'formulaLines']), $before !== $this->actualsSnapshot($lockedProduction) ? [$lockedProduction->id] : []);
+        });
+    }
+
+    /** @return array{consumption: array, calculated: array} */
+    private function actualsSnapshot(ProductionRun $production): array
+    {
+        return [
+            'consumption' => ProductionConsumption::query()->where('production_run_id', $production->id)->orderBy('production_requirement_id')->orderBy('stock_lot_id')->get(['production_requirement_id', 'stock_lot_id', 'quantity', 'note'])->toArray(),
+            'calculated' => ProductionFormulaLine::query()->where('production_run_id', $production->id)->orderBy('id')->get(['id', 'actual_mass_grams'])->toArray(),
+        ];
     }
 
     private function resolveLot(

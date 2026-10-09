@@ -55,7 +55,7 @@ it('hides entitlement controls from editors and rejects direct cancellation', fu
     $this->actingAs($editor);
 
     Livewire::test(HomeIndex::class)
-        ->assertDontSeeHtml('wire:click="cancel"')
+        ->assertDontSeeHtml('@click="runCommand(\'cancel\', [], null)"')
         ->call('cancel')
         ->assertForbidden();
 

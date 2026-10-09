@@ -143,13 +143,15 @@ it('assigns employees and lets the operator complete or reopen a task', function
 
     $page = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
         'productionId' => $fixture['production']->id,
-    ]);
+    ])
+        ->call('beginEditing');
 
     $page->call('assignTask', $task->id, (string) $employee->id)
         ->assertHasNoErrors();
     expect($task->fresh()->employee_id)->toBe($employee->id);
 
     $page->set("taskDates.{$task->id}", '2026-08-12 00:00:00')
+        ->call('rescheduleTask', $task->id, '2026-08-12')
         ->assertSet("taskDates.{$task->id}", '2026-08-12')
         ->assertHasNoErrors();
     expect($task->fresh()->scheduled_for->toDateString())->toBe('2026-08-12');
@@ -172,7 +174,8 @@ it('rejects invalid employee assignments and displays task operation errors', fu
 
     $page = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
         'productionId' => $fixture['production']->id,
-    ]);
+    ])
+        ->call('beginEditing');
 
     $page->call('assignTask', $task->id, '999999')
         ->assertHasErrors('task_employee');
@@ -195,9 +198,11 @@ it('cancels draft and scheduled productions with a required reason', function ()
     Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
         'productionId' => $fixture['production']->id,
     ])
+        ->call('beginEditing')
         ->set('cancellationReason', 'Customer postponed the batch.')
         ->call('cancel')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->call('finishEditing');
 
     $cancelled = $fixture['production']->fresh();
 
@@ -217,8 +222,10 @@ it('rejects cancellation without a reason and while the bench is read-only', fun
     Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
         'productionId' => $fixture['production']->id,
     ])
+        ->call('beginEditing')
         ->call('cancel')
-        ->assertHasErrors('cancellationReason');
+        ->assertHasErrors('cancellationReason')
+        ->call('finishEditing');
 
     $fixture['workspace']->productionEntitlement()->update([
         'status' => 'cancelled',
@@ -228,9 +235,11 @@ it('rejects cancellation without a reason and while the bench is read-only', fun
     Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
         'productionId' => $fixture['production']->id,
     ])
+        ->call('beginEditing')
         ->set('cancellationReason', 'No longer needed.')
         ->call('cancel')
-        ->assertHasErrors('cancellationReason');
+        ->assertHasErrors('cancellationReason')
+        ->call('finishEditing');
 
     expect($fixture['production']->fresh()->status)->toBe(ProductionRunStatus::Scheduled);
 });
@@ -405,7 +414,8 @@ it('deletes a deletable run from the list and keeps reserved runs', function ():
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->assertSeeHtml('wire:click.stop="deleteProduction('.$fixture['production']->id.')')
+        ->assertSeeHtml('data-production-delete-action')
+        ->assertSeeHtml("run('deleteProduction', [".$fixture['production']->id.']')
         ->call('deleteProduction', $fixture['production']->id)
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'
@@ -423,7 +433,7 @@ it('deletes a deletable run from the list and keeps reserved runs', function ():
     expect(ProductionRun::query()->find($other->id))->not->toBeNull();
 });
 
-it('keeps the public id only inside production URLs', function (): void {
+it('keeps production public ids out of visible page text', function (): void {
     $fixture = productionListFixture();
     $publicId = $fixture['production']->public_id;
 
@@ -431,7 +441,7 @@ it('keeps the public id only inside production URLs', function (): void {
     $detailHtml = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => (string) $fixture['production']->id])->html();
 
     foreach ([$listHtml, $detailHtml] as $html) {
-        expect(preg_replace('/href="[^"]*"/', '', $html))->not->toContain($publicId)
+        expect(strip_tags($html))->not->toContain($publicId)
             ->and($html)->toContain($publicId);
     }
 });

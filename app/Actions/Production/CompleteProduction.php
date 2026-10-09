@@ -6,6 +6,7 @@ use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ProductionCompletionService;
+use App\Services\Production\ProductionEditingContext;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Validation\ValidationException;
 
@@ -23,6 +24,7 @@ class CompleteProduction
         string $manufactureDate,
         ?string $estimatedReadyOn = null,
         ?int $outputIngredientId = null,
+        ?ProductionEditingContext $editing = null,
     ): ProductionRun {
         $workspace = $production->workspace;
 
@@ -41,6 +43,7 @@ class CompleteProduction
             manufactureDate: $manufactureDate,
             estimatedReadyOn: $estimatedReadyOn,
             outputIngredientId: $outputIngredientId,
+            editing: $editing,
         );
     }
 }

@@ -4,6 +4,7 @@ namespace App\Livewire\Dashboard;
 
 use App\Enums\MassDisplaySystem;
 use App\Enums\WorkspaceMemberRole;
+use App\Models\RegulatoryRegime;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
@@ -37,6 +38,15 @@ class SettingsIndex extends Component
     public string $workspaceCurrency = 'EUR';
 
     public string $workspaceMassDisplaySystem = MassDisplaySystem::Metric->value;
+
+    public string $workspaceDefaultRegulatoryRegime = RegulatoryRegime::NONE_CODE;
+
+    /**
+     * The stored default market when it is no longer available, so the reset to
+     * "none" is shown instead of happening silently on the next save.
+     */
+    #[Locked]
+    public ?string $unavailableDefaultRegulatoryRegime = null;
 
     public string $preferencesStatus = '';
 
@@ -73,6 +83,11 @@ class SettingsIndex extends Component
             $this->workspaceCurrency = $workspace->default_currency ?? 'EUR';
             $this->workspaceMassDisplaySystem = $workspace->mass_display_system?->value
                 ?? MassDisplaySystem::Metric->value;
+            $this->workspaceDefaultRegulatoryRegime = RegulatoryRegime::normalizeCode($workspace->default_regulatory_regime);
+            $this->unavailableDefaultRegulatoryRegime = filled($workspace->default_regulatory_regime)
+                && $workspace->default_regulatory_regime !== $this->workspaceDefaultRegulatoryRegime
+                    ? $workspace->default_regulatory_regime
+                    : null;
         }
     }
 
@@ -140,6 +155,7 @@ class SettingsIndex extends Component
             'workspaceName' => ['required', 'string', 'max:255'],
             'workspaceCurrency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
             'workspaceMassDisplaySystem' => ['required', Rule::enum(MassDisplaySystem::class)],
+            'workspaceDefaultRegulatoryRegime' => ['required', 'string', Rule::in(array_keys(RegulatoryRegime::selectableMarkets()))],
         ]);
 
         /** @var User $user */
@@ -161,6 +177,7 @@ class SettingsIndex extends Component
                     'name' => $this->workspaceName,
                     'default_currency' => $this->workspaceCurrency,
                     'mass_display_system' => $this->workspaceMassDisplaySystem,
+                    'default_regulatory_regime' => $this->workspaceDefaultRegulatoryRegime,
                 ]);
                 $workspace->save();
             } else {
@@ -172,6 +189,7 @@ class SettingsIndex extends Component
                     'slug' => Str::slug($this->workspaceName.'-'.Str::random(6)),
                     'default_currency' => $this->workspaceCurrency,
                     'mass_display_system' => $this->workspaceMassDisplaySystem,
+                    'default_regulatory_regime' => $this->workspaceDefaultRegulatoryRegime,
                 ]);
 
                 $workspace->members()->create([
@@ -184,6 +202,7 @@ class SettingsIndex extends Component
 
         }, attempts: 5);
 
+        $this->unavailableDefaultRegulatoryRegime = null;
         $this->workspaceStatus = 'success';
         $this->workspaceMessage = __('settings.status.workspace_saved');
     }
@@ -210,6 +229,7 @@ class SettingsIndex extends Component
 
         return view('livewire.dashboard.settings-index', [
             'currencyOptions' => $currencyOptions,
+            'marketOptions' => RegulatoryRegime::selectableMarkets(),
             'canManageMembers' => $canManageMembers,
             'canManageWorkspace' => $this->workspaceId === null
                 ? auth()->user()->can('create', Workspace::class)
@@ -229,6 +249,7 @@ class SettingsIndex extends Component
             'workspaceName' => __('settings.workspace.name'),
             'workspaceCurrency' => __('settings.workspace.default_currency'),
             'workspaceMassDisplaySystem' => __('settings.workspace.mass_display'),
+            'workspaceDefaultRegulatoryRegime' => __('settings.workspace.default_market'),
         ];
     }
 }

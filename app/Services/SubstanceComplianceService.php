@@ -22,6 +22,10 @@ class SubstanceComplianceService
     {
         $ruleState = $this->ruleState($payload);
 
+        if ($ruleState['market_check'] !== 'checked') {
+            return $this->uncheckedResult($payload, $ruleState, $soapCalculation);
+        }
+
         if ($ruleState['rules_by_substance_id'] === []) {
             $basis = $this->basisState($payload, $this->ingredientFormulaContextResolver->raw($payload), $soapCalculation);
 
@@ -31,8 +35,9 @@ class SubstanceComplianceService
                     'code' => $ruleState['regime_code'],
                     'label' => $ruleState['regime_label'],
                     'uses_regime_rules' => false,
+                    'market_check' => 'checked',
                 ],
-                'summary' => $this->summary([]),
+                'summary' => [...$this->summary([]), 'status' => 'no_rules'],
                 'rows' => [],
                 'warnings' => $this->warnings([], [
                     ...$ruleState,
@@ -53,10 +58,44 @@ class SubstanceComplianceService
                 'code' => $ruleState['regime_code'],
                 'label' => $ruleState['regime_label'],
                 'uses_regime_rules' => $ruleState['uses_regime_rules'],
+                'market_check' => 'checked',
             ],
             'summary' => $this->summary($rows),
             'rows' => $rows,
             'warnings' => $this->warnings($rows, $ruleState),
+        ];
+    }
+
+    /**
+     * No market selected, or the stored market is no longer available: nothing is
+     * evaluated, and the result says so instead of rendering as a pass.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $ruleState
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<string, mixed>
+     */
+    private function uncheckedResult(array $payload, array $ruleState, ?array $soapCalculation): array
+    {
+        return [
+            'basis' => $this->basisState($payload, $this->ingredientFormulaContextResolver->raw($payload), $soapCalculation),
+            'regime' => [
+                'code' => $ruleState['regime_code'],
+                'label' => $ruleState['regime_label'],
+                'uses_regime_rules' => false,
+                'market_check' => $ruleState['market_check'],
+            ],
+            'summary' => [
+                'status' => 'not_checked',
+                'fail_count' => 0,
+                'warning_count' => 0,
+                'pass_count' => 0,
+                'row_count' => 0,
+            ],
+            'rows' => [],
+            'warnings' => $ruleState['market_check'] === 'unavailable'
+                ? [__('workbench.output.market_check.unavailable', ['market' => $ruleState['regime_code']])]
+                : [],
         ];
     }
 
@@ -70,16 +109,18 @@ class SubstanceComplianceService
         $warningStatuses = ['unknown_concentration', 'watch', 'no_limit_recorded'];
         $failCount = count(array_filter($rows, fn (array $row): bool => in_array($row['status'], $failStatuses, true)));
         $warningCount = count(array_filter($rows, fn (array $row): bool => in_array($row['status'], $warningStatuses, true)));
+        $starterRuleCount = count(array_filter($rows, fn (array $row): bool => $row['status'] === 'starter_rule'));
 
         return [
             'status' => match (true) {
                 $failCount > 0 => 'fail',
                 $warningCount > 0 => 'warning',
+                $starterRuleCount > 0 => 'unverified',
                 default => 'pass',
             },
             'fail_count' => $failCount,
             'warning_count' => $warningCount,
-            'pass_count' => count($rows) - $failCount - $warningCount,
+            'pass_count' => count($rows) - $failCount - $warningCount - $starterRuleCount,
             'row_count' => count($rows),
         ];
     }
@@ -109,6 +150,7 @@ class SubstanceComplianceService
     /**
      * @param  array<string, mixed>  $payload
      * @return array{
+     *     market_check: 'checked'|'not_selected'|'unavailable',
      *     uses_regime_rules: bool,
      *     regime_code: string,
      *     regime_label: string,
@@ -118,21 +160,29 @@ class SubstanceComplianceService
      */
     private function ruleState(array $payload): array
     {
-        $regimeCode = RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu');
+        $requestedCode = strtolower(trim((string) ($payload['regulatory_regime'] ?? RegulatoryRegime::NONE_CODE)));
+        $regimeCode = RegulatoryRegime::normalizeCode($requestedCode);
         $exposureMode = (string) ($payload['exposure_mode'] ?? 'rinse_off');
         $today = now()->toDateString();
 
+        if ($regimeCode === RegulatoryRegime::NONE_CODE) {
+            $marketSelected = $requestedCode !== '' && $requestedCode !== RegulatoryRegime::NONE_CODE;
+
+            return [
+                'market_check' => $marketSelected ? 'unavailable' : 'not_selected',
+                'uses_regime_rules' => false,
+                'regime_code' => $marketSelected ? $requestedCode : RegulatoryRegime::NONE_CODE,
+                'regime_label' => $marketSelected
+                    ? strtoupper($requestedCode)
+                    : __('workbench.output.market_check.none_label'),
+                'exposure_mode' => $exposureMode,
+                'rules_by_substance_id' => [],
+            ];
+        }
+
         $regime = RegulatoryRegime::query()
             ->where('code', $regimeCode)
-            ->whereIn('status', ['active', 'preview'])
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_from')
-                    ->orWhereDate('effective_from', '<=', $today);
-            })
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_until')
-                    ->orWhereDate('effective_until', '>=', $today);
-            })
+            ->selectable($today)
             ->with(['substanceRules' => function ($query) use ($today, $exposureMode): void {
                 $query
                     ->where('is_active', true)
@@ -151,6 +201,7 @@ class SubstanceComplianceService
 
         if (! $regime instanceof RegulatoryRegime) {
             return [
+                'market_check' => 'unavailable',
                 'uses_regime_rules' => false,
                 'regime_code' => $regimeCode,
                 'regime_label' => strtoupper($regimeCode),
@@ -180,10 +231,12 @@ class SubstanceComplianceService
                     : 'less_than_or_equal',
                 'label_warning_text' => $rule->label_warning_text,
                 'source_reference' => $rule->source_reference,
+                'is_starter_rule' => ! $rule->hasSpecificComplianceData(),
             ];
         }
 
         return [
+            'market_check' => 'checked',
             'uses_regime_rules' => true,
             'regime_code' => $regime->code,
             'regime_label' => $regime->name,
@@ -261,6 +314,7 @@ class SubstanceComplianceService
                 'watch' => 3,
                 'no_limit_recorded' => 4,
                 'within_limit' => 5,
+                'starter_rule' => 6,
             ];
 
             return ($statusOrder[$left['status']] ?? 99) <=> ($statusOrder[$right['status']] ?? 99)
@@ -288,6 +342,7 @@ class SubstanceComplianceService
             'threshold_operator' => $rule['threshold_operator'],
             'label_warning_text' => $rule['label_warning_text'],
             'source_reference' => $rule['source_reference'],
+            'is_starter_rule' => $rule['is_starter_rule'],
             'percent_of_formula' => 0.0,
             'has_unknown_concentration' => false,
             'source_ingredients' => [],
@@ -311,6 +366,10 @@ class SubstanceComplianceService
 
     private function rowStatus(array $row): string
     {
+        if ((bool) $row['is_starter_rule']) {
+            return 'starter_rule';
+        }
+
         if ((bool) $row['has_unknown_concentration']) {
             return 'unknown_concentration';
         }
@@ -348,6 +407,7 @@ class SubstanceComplianceService
             'within_limit' => 'Within limit',
             'unknown_concentration' => 'Needs concentration data',
             'no_limit_recorded' => 'Limit missing',
+            'starter_rule' => __('workbench.output.restrictions.starter_rule'),
             default => 'Watch',
         };
     }

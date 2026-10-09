@@ -6,6 +6,8 @@ use App\Enums\ProductionRequirementKind;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
+use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Validation\ValidationException;
 
 class ProductionSnapshotRescaler
@@ -23,10 +25,14 @@ class ProductionSnapshotRescaler
      * and components-per-unit stored on each row.
      */
     public function rescale(
+        User $actor,
+        Workspace $workspace,
         ProductionRun $lockedProduction,
         string $basisQuantityGrams,
         int $expectedUnits,
+        ProductionMutationScope $scope,
     ): void {
+        $scope->assertFor($actor, $lockedProduction, $workspace);
         $lines = ProductionFormulaLine::query()
             ->where('production_run_id', $lockedProduction->id)
             ->orderBy('id')

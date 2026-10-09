@@ -28,6 +28,10 @@ return [
         'password_confirmation' => 'Confirm password',
         'submit' => 'Create workspace',
         'expires' => 'This invitation expires :expiry.',
+        'validation' => [
+            'already_owner' => 'This account already owns a company. A second owned company is not available yet.',
+            'already_accepted' => 'This beta invitation has already been accepted.',
+        ],
         'email' => [
             'subject' => 'Your Soapkraft beta invitation',
             'greeting' => 'Welcome to Soapkraft',

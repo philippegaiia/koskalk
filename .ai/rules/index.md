@@ -4,6 +4,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
+| app/{Actions,Services}/** | .ai/rules/actions-services.md |
 | app/Actions/** | .ai/rules/actions.md |
 | app/**, app/*.php | .ai/rules/app.md |
 | app/Services/Billing/** | .ai/rules/billing.md |
@@ -11,11 +12,12 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Console/Commands/** | .ai/rules/commands.md |
 | resources/views/components/contextual-help/** | .ai/rules/components-contextual-help.md |
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
+| {resources/js/production-editing.js,app/Livewire/Concerns/InteractsWithProductionEditing.php} | .ai/rules/concerns.md |
 | app/Services/ContextualHelp/** | .ai/rules/contextual-help.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/css/**/*.css | .ai/rules/css.md |
 | {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**} | .ai/rules/dashboard-partials-recipe-workbench.md |
-| app/Livewire/Dashboard/IngredientEditor.php | .ai/rules/dashboard.md |
+| app/Livewire/Dashboard/IngredientEditor.php, app/Livewire/Dashboard/RecipeWorkbench.php, app/Livewire/Dashboard/FormulaShare*.php | .ai/rules/dashboard.md |
 | {lang/en/workbench.php,database/seeders/data/interface-translations.json} | .ai/rules/data.md |
 | app/Forms/** | .ai/rules/forms.md |
 | vite.config.js | .ai/rules/general.md |
@@ -23,11 +25,13 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/IngredientEnrichment/**, app/Services/IngredientIntake/**, app/Actions/IngredientIntake/** | .ai/rules/ingredient-enrichment.md |
 | {app/Livewire/**,app/Services/Inventory/WorkspaceMaterialInventoryQuery.php,resources/views/components/table-pagination.blade.php} | .ai/rules/inventory-views-components.md |
 | app/Actions/Inventory/** | .ai/rules/inventory.md |
+| {resources/js/production-editing*.js,app/Livewire/ProductionBench/Production/ProductionDetail.php} | .ai/rules/js-livewire-production-bench-production.md |
 | resources/js/recipe-workbench/** | .ai/rules/js-recipe-workbench.md |
 | app/Http/Controllers/RecipeController.php, resources/views/recipes/**, resources/js/product-creation-selector.js, resources/js/sticky-table-header.js | .ai/rules/js.md |
 | resources/{js,views}/**/recipe-workbench/** | .ai/rules/jsviews-recipe-workbench.md |
 | lang/**/*.php | .ai/rules/lang.md |
 | resources/views/livewire/dashboard/ingredients-index.blade.php, resources/views/livewire/dashboard/packaging-items-index.blade.php, resources/views/livewire/dashboard/packaging-item-editor.blade.php | .ai/rules/livewire-dashboard.md |
+| {resources/js/production-editing.js,resources/views/livewire/production-bench/production/production-detail.blade.php} | .ai/rules/livewire-production-bench-production.md |
 | app/Livewire/ProductionBench/** | .ai/rules/livewire-production-bench.md |
 | app/Livewire/** | .ai/rules/livewire.md |
 | database/migrations/** | .ai/rules/migrations.md |
@@ -47,7 +51,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Filament/Resources/Ingredients/Schemas/IngredientForm.php | .ai/rules/schemas.md |
 | database/seeders/** | .ai/rules/seeders.md |
 | app/Services/Production/** | .ai/rules/services-production.md |
-| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php, app/Services/EntitlementService.php, app/Services/*Exporter.php | .ai/rules/services.md |
+| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php, app/Services/EntitlementService.php, app/Services/*Exporter.php, app/Services/FormulaShare*.php | .ai/rules/services.md |
 | app/Services/IngredientEnrichment/Sources/** | .ai/rules/sources.md |
 | app/Support/InciName.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

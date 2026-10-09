@@ -6,14 +6,19 @@ use App\Enums\ProductionRunStatus;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
+use App\Services\Production\ProductionMutationScope;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class DeleteProductionRun
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
     ) {}
 
@@ -22,8 +27,9 @@ class DeleteProductionRun
      * permanent batch number alone does not protect a run: assigning one may
      * be a mistake, and only reserved stock must keep the record.
      */
-    public function handle(User $actor, ProductionRun $production): void
-    {
+    public function handle(User $actor, ProductionRun $production,
+        ?ProductionEditingContext $editing = null,
+    ): void {
         $workspace = $production->workspace;
 
         if (! $workspace instanceof Workspace) {
@@ -34,14 +40,8 @@ class DeleteProductionRun
 
         $this->access->assertCanConfigure($actor, $workspace);
 
-        DB::transaction(function () use ($actor, $production): void {
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($production->workspace_id);
-            $lockedProduction = ProductionRun::query()
-                ->where('workspace_id', $production->workspace_id)
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+        $this->guard->run($actor, [$production->id], $editing, function (User $actor, Workspace $lockedWorkspace, Collection $productions, ProductionMutationScope $scope) use ($production): ProductionMutationResult {
+            $lockedProduction = $productions[$production->id];
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
@@ -63,7 +63,9 @@ class DeleteProductionRun
             $this->assertNoActiveReservations($lockedProduction);
 
             $lockedProduction->delete();
-        }, attempts: 5);
+
+            return new ProductionMutationResult(null, [$lockedProduction->id]);
+        });
     }
 
     private function assertNoActiveReservations(ProductionRun $production): void

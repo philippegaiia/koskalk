@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\RegulatoryRegimeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,20 +29,63 @@ class RegulatoryRegime extends Model
     /** @use HasFactory<RegulatoryRegimeFactory> */
     use HasFactory;
 
+    /**
+     * Stored when a formula's label is not checked against any market.
+     */
+    public const NONE_CODE = 'none';
+
+    /**
+     * Resolve a submitted market code. Blank, unknown and inactive codes fail
+     * closed to "none"; EU is checked like any other market, never assumed.
+     */
     public static function normalizeCode(?string $value): string
     {
         $code = strtolower(trim((string) $value));
 
-        if ($code === '' || $code === 'eu') {
-            return 'eu';
+        if ($code === '' || $code === self::NONE_CODE) {
+            return self::NONE_CODE;
         }
 
         $regimeExists = self::query()
             ->where('code', $code)
-            ->whereIn('status', ['active', 'preview'])
+            ->selectable()
             ->exists();
 
-        return $regimeExists ? $code : 'eu';
+        return $regimeExists ? $code : self::NONE_CODE;
+    }
+
+    /**
+     * Market choices offered for new formulas: none first, then every
+     * selectable market in display order.
+     *
+     * @return array<string, string> code => name
+     */
+    public static function selectableMarkets(): array
+    {
+        return [
+            self::NONE_CODE => __('workbench.output.market_check.none_option'),
+            ...self::query()
+                ->selectable()
+                ->orderByDesc('is_default')
+                ->orderBy('market_code')
+                ->orderBy('name')
+                ->pluck('name', 'code')
+                ->all(),
+        ];
+    }
+
+    /**
+     * Markets a formula can be checked against today: active or preview, and
+     * inside their effective dates.
+     */
+    public function scopeSelectable(Builder $query, ?string $onDate = null): Builder
+    {
+        $onDate ??= now()->toDateString();
+
+        return $query
+            ->whereIn('status', ['active', 'preview'])
+            ->where(fn (Builder $query): Builder => $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', $onDate))
+            ->where(fn (Builder $query): Builder => $query->whereNull('effective_until')->orWhereDate('effective_until', '>=', $onDate));
     }
 
     public function allergenRules(): HasMany

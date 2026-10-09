@@ -7,6 +7,7 @@ paths:
   - app/Services/SoapCalculationService.php
   - app/Services/EntitlementService.php
   - 'app/Services/*Exporter.php'
+  - 'app/Services/FormulaShare*.php'
 ---
 
 # Services
@@ -76,3 +77,27 @@ Use explicit StringCell for user-entered text: OpenSpout 4.32 Cell::fromValue tr
 
 ## Preserve tiny float values at decimal boundaries
 NumberLocale::normalizeDecimalString rejects scientific notation, which PHP can produce when stringifying small floats. At a calculation/output boundary, convert finite float inputs to fixed decimal strings before normalization, following LyeLiquidAllocationService::decimal(); otherwise a valid small dose can silently become zero. Keep unrounded source values through arithmetic and format only for display.
+
+## Allow member accounts to become first-time company owners
+Beta owner invitations may target an existing member account that owns no company. Require the matching verified login to accept; preserve its password, identity and other memberships. Recheck ownership while locking user before invitation; at most one owned company remains the launch policy. A member invitation must still never provision ownership or an entitlement.
+
+## Advance workspace MVCC versions for coherent sharing writes
+Workspace row locks alone do not refresh PostgreSQL REPEATABLE READ snapshots. Sharing write transactions must acquire WorkspaceWriteLock in the outer retrying transaction before quota or mapping checks; the common quota and locked-Product paths use the same lock. Its no-op updated_at update advances MVCC without changing business timestamps or emitting model events. Set REPEATABLE READ before the first query only in an outer PostgreSQL transaction, reload records on retries, and lock relevant membership rows before reauthorizing Admins.
+
+## Require coherent existing isolation for nested formula sharing
+Nested PostgreSQL formula-sharing calls may run only inside REPEATABLE READ or SERIALIZABLE transactions. Reject READ COMMITTED and other unsupported parent isolation before reading actor/source records; never change an existing parent transaction’s isolation. SQLite test transactions retain their normal semantics.
+
+## Validate received roles and effective IFRA selection before acceptance
+Formula sharing preview must validate the union of persisted formula roles, including dilution liquids through LyeLiquidIngredientValidator. Bind the preview to the normalizer’s actual live IFRA selection and only its effective reference/control dependencies; unrelated Product-type mappings and manual-mode default switches must not invalidate it. Ingredient resolution memoizes current facts only within one resolve attempt and counts distinct local dependency IDs, while valid explicit/remembered choices precede unselected candidate enumeration.
+
+## Validate shared phase roles by stable slug and classification
+Persisted soap phase_type is reaction_core/reaction_medium/post_reaction, not its slug. Validate slug/classification consistency at capture and review, derive oil/dilution roles from the stable slug, and preserve every supported phase row through normal publication. Cosmetic custom phase slugs remain supported under cosmetic_phase.
+
+## Preserve independently rounded shared formulation quantities before validation
+Shared formula storage has independent percentage/weight decimals. Restore server-captured pairs through a separate formulation callback before normal total/access/calculation/publish validation, with finite canonical rounding-interval checks, original calculation-context batch scale and freshly recomputed totals. Browser payload flags never activate it. Recalculate dilution-liquid weights from actual selected chemistry and normal conserved allocation; only its percentages are formulation inputs. Omitted optional text must remain null.
+
+## Recipient email identifies a verified owner’s workspace
+Sharing accepts an exact Workspace UUID or a trimmed, case-insensitive verified owner email. Resolve owned Workspaces, never the owner’s selected Workspace or arbitrary team memberships. Several owned Workspaces require the exact UUID; unknown/unverified/self recipients fail. Apply recipient lookup rate limits and re-resolve immediately before sending against the recipient-bound preview.
+
+## Label markets fail closed to none, never to EU
+A blank, missing, unknown, retired or out-of-date market code resolves to `RegulatoryRegime::NONE_CODE` for evaluation; never default a payload key to `eu`. EU is not built in: it is checked against its regulatory_regimes row like any market. Keep a saved formula's stored code when its regime is gone so output reports `unavailable` instead of unchecked. Only `pass` may render as a pass; `no_rules`, `not_checked` and `unverified` must not.

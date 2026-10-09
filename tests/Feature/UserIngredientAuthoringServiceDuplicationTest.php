@@ -20,6 +20,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
 use App\Services\EntitlementService;
+use App\Services\IngredientSoapTrustValidator;
 use App\Services\UserIngredientAuthoringService;
 use App\Services\WorkspaceProvisioner;
 use Database\Seeders\SupportedLocaleSeeder;
@@ -1153,4 +1154,87 @@ it('refuses to duplicate a platform soapmaking alkali into a workspace', functio
         ->where('category', IngredientCategory::SoapmakingAlkalis->value)
         ->whereNotNull('owner_type')
         ->exists())->toBeFalse();
+});
+
+it('rejects forged trust state without partially changing the private oil', function (string $attempt): void {
+    $owner = User::factory()->create();
+    $acid = FattyAcid::factory()->create(['is_active' => true]);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => '0.188']);
+    $source->fattyAcidEntries()->create(['fatty_acid_id' => $acid->id, 'percentage' => '80.200']);
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $owner);
+    $state = $service->formData($copy);
+    $state['name'] = 'Rejected name';
+    if ($attempt === 'source_data') {
+        $state['sap_profile']['koh_sap_value'] = '0.195';
+        $state['source_data']['user_authoring']['trusted_koh_sap_value'] = '0.195';
+    } elseif ($attempt === 'trust_flag') {
+        $state['is_soap_saponification_trusted'] = false;
+        $state['sap_profile']['koh_sap_value'] = '0.195';
+    } elseif ($attempt === 'original_percentage') {
+        $state['fatty_acid_entries'][0]['percentage'] = 96.2;
+        $state['fatty_acid_entries'][0]['_original_percentage'] = 96.249;
+    } elseif ($attempt === 'nan_koh') {
+        $state['sap_profile']['koh_sap_value'] = NAN;
+    } elseif ($attempt === 'overflow_koh') {
+        $state['sap_profile']['koh_sap_value'] = '1e999';
+    } elseif ($attempt === 'infinite_koh') {
+        $state['sap_profile']['koh_sap_value'] = INF;
+    } else {
+        $state['fatty_acid_entries'][0]['percentage'] = NAN;
+        unset($state['fatty_acid_entries'][0]['_original_percentage']);
+    }
+
+    expect(fn () => $service->update($copy, $state, $owner))->toThrow(ValidationException::class);
+
+    $fresh = $copy->fresh(['sapProfile', 'fattyAcidEntries']);
+    expect($fresh->display_name)->toBe($copy->display_name)
+        ->and($fresh->is_soap_saponification_trusted)->toBeTrue()
+        ->and((float) $fresh->sapProfile->koh_sap_value)->toBe(0.188)
+        ->and((float) $fresh->fattyAcidEntries->first()->percentage)->toBe(80.2)
+        ->and(data_get($fresh->source_data, 'user_authoring.trusted_koh_sap_value'))->toBe(0.188);
+})->with(['source_data', 'trust_flag', 'original_percentage', 'nan_koh', 'infinite_koh', 'overflow_koh', 'nan_fatty_acid']);
+
+it('retains the first original chemistry when duplicating a modified duplicate', function (): void {
+    $owner = User::factory()->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => '0.188']);
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $owner);
+    $state = $service->formData($copy);
+    $state['sap_profile']['koh_sap_value'] = '0.193';
+    $copy = $service->update($copy, $state, $owner);
+
+    $second = $service->duplicate($copy, $owner);
+    $state = $service->formData($second);
+    $state['sap_profile']['koh_sap_value'] = '0.198';
+
+    expect(data_get($second->source_data, 'user_authoring.trusted_koh_sap_value'))->toBe(0.188)
+        ->and((float) $second->sapProfile->koh_sap_value)->toBe(0.193);
+    expect(fn () => $service->update($second, $state, $owner))->toThrow(ValidationException::class);
+});
+
+it('blocks transferring eligible private chemistry without a stored original baseline', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => Workspace::factory(),
+        'is_soap_saponification_trusted' => true,
+        'source_data' => null,
+    ]);
+    $ingredient->sapProfile()->create(['koh_sap_value' => '0.188']);
+
+    expect(fn () => app(IngredientSoapTrustValidator::class)->assertTransferable($ingredient))
+        ->toThrow(ValidationException::class);
 });

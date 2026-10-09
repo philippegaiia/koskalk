@@ -17,6 +17,12 @@ class InciGenerationService
 
     private const INCORPORATED_LIST_VARIANT_KEY = 'incorporated_ingredients';
 
+    /**
+     * Naming used when no market is checked: canonical INCI, with no market
+     * declaration override applied.
+     */
+    private const CANONICAL_NAMING = 'canonical';
+
     public function __construct(
         private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
         private readonly IngredientDeclarationNameResolver $ingredientDeclarationNameResolver,
@@ -48,7 +54,7 @@ class InciGenerationService
      *         label: string,
      *         percent_of_formula: float,
      *         percent_of_cured_basis: float|null,
-     *         threshold_percent: float,
+     *         threshold_percent: float|null,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
      *         suppressed_by_existing_label: bool,
@@ -74,7 +80,7 @@ class InciGenerationService
      *             label: string,
      *             percent_of_formula: float,
      *             percent_of_cured_basis: float|null,
-     *             threshold_percent: float,
+     *             threshold_percent: float|null,
      *             exceeds_threshold: bool,
      *             included_in_inci: bool,
      *             suppressed_by_existing_label: bool,
@@ -90,6 +96,7 @@ class InciGenerationService
      *     default_variant_key: string,
      *     final_labels: array<int, string>,
      *     final_label_text: string,
+     *     market_check: array{state: 'checked'|'not_selected'|'unavailable', regime_code: string},
      *     warnings: array<int, string>
      * }
      */
@@ -111,6 +118,7 @@ class InciGenerationService
             $soapCalculation,
             $declarationRuleState['default_threshold_percent'],
         );
+        $declarationRuleState['declaration_basis_weight'] = $this->declarationBasisWeight($basis);
         $listVariants = $this->listVariants($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState);
         $defaultVariant = $this->defaultListVariant($listVariants);
         $plainLanguageList = $this->plainLanguageList(
@@ -119,7 +127,7 @@ class InciGenerationService
             $soapCalculation,
             $declarationRuleState['market_code'] ?? null,
         );
-        $ingredientListBasisHash = $this->ingredientListBasisHash($payload);
+        $ingredientListBasisHash = $this->ingredientListBasisHash($payload, $basis);
         $finalIngredientList = $this->finalIngredientListState(
             $payload,
             $ingredientListBasisHash,
@@ -143,6 +151,10 @@ class InciGenerationService
             'plain_language_list' => $plainLanguageList,
             'print_ingredient_list_text' => $finalIngredientList['final_text'],
             'print_plain_ingredient_list_text' => $plainLanguageList['final_text'],
+            'market_check' => [
+                'state' => $declarationRuleState['screening_state'],
+                'regime_code' => $declarationRuleState['regime_code'],
+            ],
             'warnings' => $this->warnings(
                 $payload,
                 $rowContexts,
@@ -151,6 +163,7 @@ class InciGenerationService
                     ...($plainLanguageList['warnings'] ?? []),
                 ],
                 $soapCalculation,
+                $declarationRuleState,
             ),
         ];
     }
@@ -158,6 +171,7 @@ class InciGenerationService
     /**
      * @param  array<string, mixed>  $payload
      * @return array{
+     *     screening_state: 'checked'|'not_selected'|'unavailable',
      *     uses_regime_rules: bool,
      *     default_threshold_percent: float,
      *     rules_by_allergen_id: array<int, array{label: string, threshold_percent: float, threshold_operator: string}>,
@@ -169,22 +183,18 @@ class InciGenerationService
     private function declarationRuleState(array $payload): array
     {
         $exposureMode = (string) ($payload['exposure_mode'] ?? 'rinse_off');
-        $regimeCode = Str::lower(trim((string) ($payload['regulatory_regime'] ?? 'eu')));
-        $regimeCode = $regimeCode !== '' ? $regimeCode : 'eu';
+        $regimeCode = Str::lower(trim((string) ($payload['regulatory_regime'] ?? RegulatoryRegime::NONE_CODE)));
+        $regimeCode = $regimeCode !== '' ? $regimeCode : RegulatoryRegime::NONE_CODE;
         $defaultThresholdPercent = $this->thresholdPercent($exposureMode);
         $today = now()->toDateString();
 
+        if ($regimeCode === RegulatoryRegime::NONE_CODE) {
+            return $this->uncheckedDeclarationRuleState($defaultThresholdPercent, $regimeCode, 'not_selected');
+        }
+
         $regime = RegulatoryRegime::query()
             ->where('code', $regimeCode)
-            ->whereIn('status', ['active', 'preview'])
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_from')
-                    ->orWhereDate('effective_from', '<=', $today);
-            })
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_until')
-                    ->orWhereDate('effective_until', '>=', $today);
-            })
+            ->selectable($today)
             ->with(['allergenRules' => function ($query) use ($today): void {
                 $query
                     ->where('is_active', true)
@@ -201,14 +211,7 @@ class InciGenerationService
             ->first();
 
         if (! $regime instanceof RegulatoryRegime) {
-            return [
-                'uses_regime_rules' => false,
-                'default_threshold_percent' => $defaultThresholdPercent,
-                'rules_by_allergen_id' => [],
-                'regime_code' => $regimeCode,
-                'regime_label' => Str::upper($regimeCode),
-                'market_code' => $regimeCode === 'eu' ? 'eu' : $regimeCode,
-            ];
+            return $this->uncheckedDeclarationRuleState($defaultThresholdPercent, $regimeCode, 'unavailable');
         }
 
         $rulesByAllergenId = [];
@@ -239,6 +242,7 @@ class InciGenerationService
         }
 
         return [
+            'screening_state' => 'checked',
             'uses_regime_rules' => true,
             'default_threshold_percent' => $defaultThresholdPercent,
             'rules_by_allergen_id' => $rulesByAllergenId,
@@ -284,7 +288,7 @@ class InciGenerationService
      *     declaration_rows: array<int, array{
      *         label: string,
      *         percent_of_formula: float,
-     *         threshold_percent: float,
+     *         threshold_percent: float|null,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
      *         suppressed_by_existing_label: bool,
@@ -367,7 +371,7 @@ class InciGenerationService
      *     declaration_rows: array<int, array{
      *         label: string,
      *         percent_of_formula: float,
-     *         threshold_percent: float,
+     *         threshold_percent: float|null,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
      *         suppressed_by_existing_label: bool,
@@ -447,7 +451,7 @@ class InciGenerationService
      *     declaration_rows: array<int, array{
      *         label: string,
      *         percent_of_formula: float,
-     *         threshold_percent: float,
+     *         threshold_percent: float|null,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
      *         suppressed_by_existing_label: bool,
@@ -477,7 +481,7 @@ class InciGenerationService
      *     declaration_rows: array<int, array{
      *         label: string,
      *         percent_of_formula: float,
-     *         threshold_percent: float,
+     *         threshold_percent: float|null,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
      *         suppressed_by_existing_label: bool,
@@ -523,7 +527,7 @@ class InciGenerationService
      * @param  array<int, array{
      *     label: string,
      *     percent_of_formula: float,
-     *     threshold_percent: float,
+     *     threshold_percent: float|null,
      *     exceeds_threshold: bool,
      *     included_in_inci: bool,
      *     suppressed_by_existing_label: bool,
@@ -975,11 +979,20 @@ class InciGenerationService
     }
 
     /**
+     * Hashes what a saved final list was based on. Soap declarations are
+     * compared with the cured weight, so that basis is part of the hash: lists
+     * accepted under the former wet-batch basis are flagged for review.
+     *
      * @param  array<string, mixed>  $payload
+     * @param  array{cured_weight: float|null}  $basis
      */
-    private function ingredientListBasisHash(array $payload): string
+    private function ingredientListBasisHash(array $payload, array $basis): string
     {
         $basisPayload = $payload;
+
+        if (($basis['cured_weight'] ?? null) !== null && $basis['cured_weight'] > 0) {
+            $basisPayload['declaration_threshold_basis'] = 'cured_weight';
+        }
 
         foreach ([
             'final_ingredient_list',
@@ -1031,7 +1044,7 @@ class InciGenerationService
      *     declaration_rows: array<int, array{
      *         label: string,
      *         percent_of_formula: float,
-     *         threshold_percent: float,
+     *         threshold_percent: float|null,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
      *         suppressed_by_existing_label: bool,
@@ -1126,6 +1139,73 @@ class InciGenerationService
             'cured_weight' => $curedWeight,
             'residual_water_weight' => $curedWeight === null ? null : round($curedWeight * 0.11, 5),
         ];
+    }
+
+    /**
+     * No market selected, or the stored market is not available: composition stays
+     * visible under canonical INCI naming, and no declaration rule is applied.
+     *
+     * @param  'not_selected'|'unavailable'  $screeningState
+     * @return array{
+     *     screening_state: 'not_selected'|'unavailable',
+     *     uses_regime_rules: bool,
+     *     default_threshold_percent: float,
+     *     rules_by_allergen_id: array<int, array{label: string, threshold_percent: float, threshold_operator: string}>,
+     *     regime_code: string,
+     *     regime_label: string,
+     *     market_code: string
+     * }
+     */
+    private function uncheckedDeclarationRuleState(float $defaultThresholdPercent, string $regimeCode, string $screeningState): array
+    {
+        return [
+            'screening_state' => $screeningState,
+            'uses_regime_rules' => false,
+            'default_threshold_percent' => $defaultThresholdPercent,
+            'rules_by_allergen_id' => [],
+            'regime_code' => $regimeCode,
+            'regime_label' => $screeningState === 'not_selected'
+                ? __('workbench.output.market_check.none_label')
+                : Str::upper($regimeCode),
+            'market_code' => self::CANONICAL_NAMING,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $declarationRuleState
+     */
+    private function declarationScreeningChecked(array $declarationRuleState): bool
+    {
+        return ($declarationRuleState['screening_state'] ?? 'checked') === 'checked';
+    }
+
+    /**
+     * Declaration thresholds apply to the product as sold, so saponified soap is
+     * measured against its cured weight rather than the wet batch.
+     *
+     * @param  array{formula_weight: float, cured_weight: float|null}  $basis
+     */
+    private function declarationBasisWeight(array $basis): float
+    {
+        $curedWeight = $basis['cured_weight'] ?? null;
+
+        return $curedWeight !== null && $curedWeight > 0
+            ? (float) $curedWeight
+            : (float) $basis['formula_weight'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $declarationRuleState
+     */
+    private function percentOfDeclarationBasis(float $percentOfFormula, float $formulaWeight, array $declarationRuleState): float
+    {
+        $basisWeight = (float) ($declarationRuleState['declaration_basis_weight'] ?? $formulaWeight);
+
+        if ($basisWeight <= 0 || $formulaWeight <= 0) {
+            return $percentOfFormula;
+        }
+
+        return ($percentOfFormula * $formulaWeight) / $basisWeight;
     }
 
     /**
@@ -1535,7 +1615,7 @@ class InciGenerationService
      *     label: string,
      *     percent_of_formula: float,
      *     percent_of_cured_basis: float|null,
-     *     threshold_percent: float,
+     *     threshold_percent: float|null,
      *     exceeds_threshold: bool,
      *     included_in_inci: bool,
      *     suppressed_by_existing_label: bool,
@@ -1602,11 +1682,16 @@ class InciGenerationService
         }
 
         $rows = array_values(array_map(
-            function (array $row) use ($ingredientLabelKeys, $curedWeight, $formulaWeight): array {
+            function (array $row) use ($ingredientLabelKeys, $curedWeight, $formulaWeight, $declarationRuleState): array {
                 $percentOfFormula = round((float) $row['percent_of_formula'], 5);
-                $thresholdPercent = (float) $row['threshold_percent'];
+                $screeningChecked = $this->declarationScreeningChecked($declarationRuleState);
+                $thresholdPercent = $screeningChecked ? (float) $row['threshold_percent'] : null;
                 $thresholdOperator = (string) $row['threshold_operator'];
-                $exceedsThreshold = $this->passesDeclarationThreshold($percentOfFormula, $thresholdPercent, $thresholdOperator);
+                $exceedsThreshold = $thresholdPercent !== null && $this->passesDeclarationThreshold(
+                    $this->percentOfDeclarationBasis($percentOfFormula, $formulaWeight, $declarationRuleState),
+                    $thresholdPercent,
+                    $thresholdOperator,
+                );
                 $suppressedByExistingLabel = $exceedsThreshold
                     && in_array($this->normalizeLabel($row['label']), $ingredientLabelKeys, true);
                 $includedInInci = $exceedsThreshold && ! $suppressedByExistingLabel;
@@ -1632,16 +1717,14 @@ class InciGenerationService
                     'exceeds_threshold' => $exceedsThreshold,
                     'included_in_inci' => $includedInInci,
                     'suppressed_by_existing_label' => $suppressedByExistingLabel,
-                    'status_label' => $this->declarationStatusLabel(
-                        $exceedsThreshold,
-                        $suppressedByExistingLabel,
-                    ),
+                    'status_label' => $screeningChecked
+                        ? $this->declarationStatusLabel($exceedsThreshold, $suppressedByExistingLabel)
+                        : __('workbench.output.market_check.not_checked'),
                     'source_ingredients' => $sourceIngredients,
                     'source_is_user_owned' => $sourceIsUserOwned,
-                    'notes' => $this->declarationNotes(
-                        $exceedsThreshold,
-                        $suppressedByExistingLabel,
-                    ),
+                    'notes' => $screeningChecked
+                        ? $this->declarationNotes($exceedsThreshold, $suppressedByExistingLabel)
+                        : __('workbench.output.market_check.declaration_not_checked_note'),
                 ];
             },
             $rowsByLabel,
@@ -1805,6 +1888,10 @@ class InciGenerationService
      */
     private function resolveIngredientDeclarationWithWarning(Ingredient $ingredient, string $marketCode): array
     {
+        if ($marketCode === self::CANONICAL_NAMING) {
+            return ['label' => $this->normalizePrintedLabel($ingredient->inci_name), 'warning' => null];
+        }
+
         ['declaration_name' => $declarationName, 'fallback' => $fallback] = $this->ingredientDeclarationNameResolver->resolveWithFallback(
             $ingredient,
             $marketCode,
@@ -1852,6 +1939,7 @@ class InciGenerationService
             ! $ingredient instanceof Ingredient
             || $context['phase_key'] !== 'fragrance'
             || $formulaWeight <= 0
+            || ! $this->declarationScreeningChecked($declarationRuleState)
         ) {
             return null;
         }
@@ -1876,7 +1964,11 @@ class InciGenerationService
                 continue;
             }
 
-            $declarationPercentOfFormula = $ingredientPercentOfFormula * ($concentrationPercent / 100);
+            $declarationPercentOfFormula = $this->percentOfDeclarationBasis(
+                $ingredientPercentOfFormula * ($concentrationPercent / 100),
+                $formulaWeight,
+                $declarationRuleState,
+            );
             $thresholdPercent = (float) ($rule['threshold_percent'] ?? $declarationRuleState['default_threshold_percent']);
             $thresholdOperator = (string) ($rule['threshold_operator'] ?? 'greater_than_or_equal');
 
@@ -2131,6 +2223,7 @@ class InciGenerationService
      * }>  $rowContexts
      * @param  array<int, string>  $fallbackWarnings
      * @param  array<string, mixed>|null  $soapCalculation
+     * @param  array<string, mixed>  $declarationRuleState
      * @return array<int, string>
      */
     private function warnings(
@@ -2138,8 +2231,15 @@ class InciGenerationService
         array $rowContexts,
         array $fallbackWarnings,
         ?array $soapCalculation,
+        array $declarationRuleState,
     ): array {
         $warnings = $fallbackWarnings;
+
+        if (($declarationRuleState['screening_state'] ?? null) === 'unavailable') {
+            $warnings[] = __('workbench.output.market_check.unavailable', [
+                'market' => $declarationRuleState['regime_code'],
+            ]);
+        }
 
         if (
             ($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'saponify_in_formula'
@@ -2156,6 +2256,7 @@ class InciGenerationService
                 $context['phase_key'] !== 'fragrance'
                 || ! $ingredient instanceof Ingredient
                 || $ingredient->allergenEntries->isNotEmpty()
+                || ! $this->declarationScreeningChecked($declarationRuleState)
             ) {
                 continue;
             }

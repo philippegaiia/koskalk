@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Actions\Production\BackfillProductionFormulaSnapshot;
 use App\Models\ProductionRun;
+use App\Services\ProductionEditingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -30,9 +31,10 @@ class BackfillProductionFormulaSnapshots extends Command
 
         $completed = 0;
         $skipped = 0;
+        $busy = 0;
         $failedIds = [];
 
-        $query->chunkById((int) $this->option('chunk'), function (Collection $runs) use (&$completed, &$skipped, &$failedIds): void {
+        $query->chunkById((int) $this->option('chunk'), function (Collection $runs) use (&$completed, &$skipped, &$busy, &$failedIds): void {
             foreach ($runs as $run) {
                 if ($run->formula_snapshot_completed_at !== null) {
                     $skipped++;
@@ -40,9 +42,17 @@ class BackfillProductionFormulaSnapshots extends Command
                     continue;
                 }
 
+                if (app(ProductionEditingService::class)->isActivelyReserved($run)) {
+                    $busy++;
+
+                    continue;
+                }
+
                 try {
                     if (app(BackfillProductionFormulaSnapshot::class)->handle($run)) {
                         $completed++;
+                    } elseif (app(ProductionEditingService::class)->isActivelyReserved($run)) {
+                        $busy++;
                     } else {
                         $failedIds[] = $run->id;
                     }
@@ -52,7 +62,7 @@ class BackfillProductionFormulaSnapshots extends Command
             }
         });
 
-        $this->info("Completed: {$completed}, skipped: {$skipped}, failed: ".count($failedIds));
+        $this->info("Completed: {$completed}, skipped: {$skipped}, busy: {$busy}, failed: ".count($failedIds));
 
         if ($failedIds !== []) {
             $this->error('Incomplete production-run IDs: '.implode(', ', $failedIds));

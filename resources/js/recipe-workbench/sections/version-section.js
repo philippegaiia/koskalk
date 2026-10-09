@@ -48,11 +48,38 @@ export function createVersionSection() {
             return this.regulatoryRegimes.find((regime) => regime.code === this.regulatoryRegime) ?? null;
         },
 
+        get isMarketCheckOff() {
+            return this.regulatoryRegime === 'none';
+        },
+
+        get isLockedMarketPreview() {
+            return this.isFormulaLocked
+                && this.savedRegulatoryRegime !== null
+                && this.regulatoryRegime !== this.savedRegulatoryRegime;
+        },
+
+        get savedRegulatoryRegimeLabel() {
+            if (this.savedRegulatoryRegime === 'none') {
+                return this.t('output.market_check.none_label');
+            }
+
+            return this.regulatoryRegimes.find((regime) => regime.code === this.savedRegulatoryRegime)?.name
+                ?? String(this.savedRegulatoryRegime ?? '').toUpperCase();
+        },
+
         get regulatoryRegimeLabel() {
+            if (this.isMarketCheckOff) {
+                return this.t('output.market_check.none_label');
+            }
+
             return this.selectedRegulatoryRegimeRecord?.name ?? this.regulatoryRegime.toUpperCase();
         },
 
         get regulatoryRegimeCoverageLabel() {
+            if (this.isMarketCheckOff) {
+                return this.t('output.market_check.coverage_none');
+            }
+
             const allergenCount = Number(this.selectedRegulatoryRegimeRecord?.allergen_rule_count ?? 0);
             const substanceCount = Number(this.selectedRegulatoryRegimeRecord?.substance_rule_count ?? 0);
 

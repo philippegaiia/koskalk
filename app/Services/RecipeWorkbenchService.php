@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\Models\Workspace;
 use Closure;
@@ -243,12 +244,13 @@ class RecipeWorkbenchService
         array $payload,
         ?Recipe $recipe = null,
         ?Closure $preparePayloadForRecipe = null,
+        ?Closure $prepareFormulation = null,
     ): RecipeVersion {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
         }
 
-        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true, $recipe);
+        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true, $recipe, $prepareFormulation);
         if ($recipe instanceof Recipe) {
             $this->recipeFormulaItemLimitService->assertUpdateAllowed($user, $normalizedPayload, $recipe);
         } else {
@@ -611,7 +613,7 @@ class RecipeWorkbenchService
         return [
             'manufacturing_mode' => $payload['manufacturing_mode'] ?? 'saponify_in_formula',
             'exposure_mode' => $payload['exposure_mode'] ?? 'rinse_off',
-            'regulatory_regime' => $payload['regulatory_regime'] ?? 'eu',
+            'regulatory_regime' => $payload['regulatory_regime'] ?? RegulatoryRegime::NONE_CODE,
             'product_type_id' => $payload['product_type_id'] ?? null,
             'oil_weight' => $calculationContext['oil_weight'] ?? $payload['oil_weight'] ?? 0,
             'lye_type' => $calculationContext['lye_type'] ?? 'naoh',

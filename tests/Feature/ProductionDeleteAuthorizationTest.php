@@ -18,6 +18,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
 
@@ -31,7 +32,7 @@ it('restricts eligible production record deletion to owners and admins', functio
     }
     $record = $modelClass::factory()->for($workspace)->create();
     $delete = fn () => $record instanceof ProductionRun
-        ? app($actionClass)->handle($actor, $record)
+        ? app($actionClass)->handle($actor, $record, editing: ProductionEditingFixture::command($actor, $record))
         : app($actionClass)->handle($actor, $workspace, $record);
 
     if (in_array($role, [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true)) {

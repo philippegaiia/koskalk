@@ -7,18 +7,22 @@ use App\Enums\StockLotStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
+use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionEditingContext;
+use App\Services\Production\ProductionMutationResult;
 use App\Services\ProductionBenchAccess;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProductionMutationGuard;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class IssueFinishedGoods
 {
-    public function __construct(
+    public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
     ) {}
 
@@ -32,6 +36,7 @@ class IssueFinishedGoods
         StockMovementType $kind,
         string $quantity,
         ?string $note = null,
+        ?ProductionEditingContext $editing = null,
     ): StockLot {
         if (! in_array($kind, [
             StockMovementType::Shipment,
@@ -50,15 +55,40 @@ class IssueFinishedGoods
             ]);
         }
 
-        $this->access->assertWritable($actor, $outputLot->workspace);
+        $workspace = $outputLot->workspace;
+        if (! $workspace instanceof Workspace) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.output_lot_workspace_missing'),
+            ]);
+        }
+        $this->access->assertWritable($actor, $workspace);
+        $lotReference = StockLot::withoutGlobalScopes()->where('workspace_id', $workspace->id)->findOrFail($outputLot->id);
+        if ($lotReference->origin !== StockLotOrigin::ProductionOutput) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.issue_output_lot_required'),
+            ]);
+        }
+        $parentId = $lotReference->production_run_id;
+        if ($parentId === null) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.output_lot_unlinked'),
+            ]);
+        }
+        if ($parentId !== $outputLot->production_run_id
+            || ! ProductionRun::query()->where('workspace_id', $workspace->id)->whereKey($parentId)->exists()) {
+            throw ValidationException::withMessages([
+                'lot' => __('production_bench.production.validation.output_production_missing'),
+            ]);
+        }
 
-        return DB::transaction(function () use ($actor, $kind, $note, $outputLot, $quantity): StockLot {
-            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($outputLot->workspace_id);
+        return $this->guard->run($actor, [$parentId], $editing, function (User $actor, Workspace $workspace, Collection $productions) use ($kind, $note, $outputLot, $quantity, $parentId): ProductionMutationResult {
             $this->access->assertWritable($actor, $workspace);
-            $lockedLot = StockLot::query()
-                ->withoutGlobalScopes()
-                ->lockForUpdate()
-                ->findOrFail($outputLot->id);
+            $lockedLot = StockLot::withoutGlobalScopes()->where('workspace_id', $workspace->id)->lockForUpdate()->findOrFail($outputLot->id);
+            if ($lockedLot->production_run_id !== $parentId) {
+                throw ValidationException::withMessages([
+                    'lot' => __('production_bench.production.validation.output_production_missing'),
+                ]);
+            }
 
             if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
                 throw ValidationException::withMessages([
@@ -112,7 +142,7 @@ class IssueFinishedGoods
                 'note' => $note !== null && trim($note) !== '' ? trim($note) : null,
             ]);
 
-            return $lockedLot->refresh();
-        }, attempts: 5);
+            return new ProductionMutationResult($lockedLot->refresh(), [$parentId]);
+        });
     }
 }

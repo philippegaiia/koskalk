@@ -1,0 +1,40 @@
+{
+    "format_version": 1,
+    "export_uuid": "05658b35-a456-4e80-a725-f60e71d7ed6c",
+    "captured_at": "2026-10-09T10:00:00+00:00",
+    "topics": [
+        {
+            "public_id": "4df18aa9-6a67-4c5e-b7fb-1ae73b771f40",
+            "key": "shared.label_market",
+            "domain": "shared_workbench",
+            "archived_at": null,
+            "locales": [
+                {
+                    "locale": "en",
+                    "latest_revision_uuid": "54c5ddf4-501e-44da-8dc1-e8837b261cc1",
+                    "published_revision_uuid": null,
+                    "lock_version": 1,
+                    "published_by_uuid": null,
+                    "published_at": null,
+                    "revisions": [
+                        {
+                            "public_id": "54c5ddf4-501e-44da-8dc1-e8837b261cc1",
+                            "revision_number": 1,
+                            "title": "Choose a label market",
+                            "summary": "The label market decides which allergen thresholds and substance rules are checked. None checks nothing.",
+                            "body_markdown": "1. Choose the market where the product will be sold under **Label market** in Composition & labeling. The ingredient list, declarations and restrictions follow that market.\n2. **None** keeps the composition and INCI names but applies no allergen threshold or substance rule. Nothing is shown as passing.\n3. New formulas start on the company's default market, set in **Settings → Workspace**. Existing formulas keep their own market.\n\n### What the restriction status means\n\n- **Not checked**: no market is selected.\n- **No rules for this market**: the market has no substance rules recorded yet, so nothing was evaluated.\n- **Includes starter rules**: some substances only have a Koskalk placeholder, not an official limit. Check them against supplier documents and the market rule.\n- **Market unavailable**: the market saved on the formula has been retired. Choose another market.\n\n### Locked formulas\n\nYou can preview another market on a locked formula without changing it. **Back to saved market** returns to the saved one. A duplicate keeps the saved market.\n\n### Soap\n\nSoap allergen percentages are compared with the cured soap, not the wet batch.\n\nA checked market is guidance from recorded reference data. It does not approve the label.",
+                            "source_english_revision_uuid": null,
+                            "origin": "import",
+                            "ai_model": null,
+                            "prompt_version": null,
+                            "created_by_uuid": null,
+                            "created_at": "2026-10-09T10:00:00+00:00"
+                        }
+                    ],
+                    "translation_requests": []
+                }
+            ]
+        }
+    ],
+    "digest": "e1b120b3ed085c97f693dbb585c84747cdd2d7ca59ab5efc8b35d106b54a62b1"
+}

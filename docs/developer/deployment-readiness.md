@@ -78,6 +78,24 @@ Help jobs retain a 120-second timeout; the shared worker allows the longer ingre
 
 Verify a manual snapshot in Admin → Content → Help imports & backups before release. Confirm the recorded snapshot checksum, private download, and an isolated restore. Help reads only published content and falls back to published English when a translation is missing or out of date. Editing English alone does not invalidate a live translation; publishing changed English does.
 
+## Label market opt-in release
+
+This release makes label market checks opt-in and moves soap allergen thresholds to the cured basis.
+
+- Migrations add `workspaces.default_regulatory_regime` (default `none`) and change the PostgreSQL default of `recipe_versions.regulatory_regime` from `eu` to `none`. Existing formulas keep their stored market; existing companies start new formulas on **None** until an owner or admin picks a default in Settings → Workspace.
+- No regulatory seeder needs to run. The `SubstanceSeeder` change is a refactor with no data change.
+- The interface catalogue step above imports the new and reworded strings.
+- After deployment, saved soap ingredient lists whose declarations change on the cured basis are flagged for review. Tell soap users to recheck their final lists.
+
+Import the label market help topic as an English draft, then review and publish it in Admin → Content → Help Topics:
+
+```shell
+php artisan help:import database/seeders/data/contextual-help.label-markets.en.json --mode=bootstrap
+php artisan help:import database/seeders/data/contextual-help.label-markets.en.json --mode=bootstrap --apply --force --no-interaction
+```
+
+The topic appears on the workbench Composition & labeling tab and on Settings → Workspace once published. The existing **What does the guidance check?** and labeling topics still say "Check the selected label market"; bootstrap does not change them, so edit them in the admin if you want them to mention **None**.
+
 ## Company collaboration and its help content
 
 Code deployment does not copy development plan assignments or enable collaboration automatically. A beta owner invitation always assigns the active `free-beta` plan; a company member invitation adds membership under the existing company's owner entitlement. Neither flow opens a plan selector or creates a paid subscription.

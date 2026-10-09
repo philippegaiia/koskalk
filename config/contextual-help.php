@@ -88,6 +88,7 @@ return [
         'shared.manufacturing_procedure' => ['domain' => 'shared_workbench'],
         'shared.media' => ['domain' => 'shared_workbench'],
         'shared.compliance_guidance' => ['domain' => 'shared_workbench'],
+        'shared.label_market' => ['domain' => 'shared_workbench'],
         'shared.ingredient_change_review' => ['domain' => 'shared_workbench'],
         'shared.collaborative_editing' => ['domain' => 'shared_workbench'],
         'soap.reaction_core' => ['domain' => 'soap_workbench'],

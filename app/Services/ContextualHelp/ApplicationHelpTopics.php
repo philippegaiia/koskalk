@@ -16,7 +16,7 @@ final class ApplicationHelpTopics
             'formula-share-review' => ['sharing.receiving', 'sharing.ingredients'],
             'media' => ['media.uploading', 'media.organizing', 'media.reuse_and_removal'],
             'preferences' => ['settings.language', 'settings.numbers'],
-            'workspace' => ['settings.workspace', 'workspaces.overview', 'workspaces.shared_allowances'],
+            'workspace' => ['settings.workspace', 'shared.label_market', 'workspaces.overview', 'workspaces.shared_allowances'],
             'members' => ['workspaces.roles', 'workspaces.invitations', 'workspaces.shared_allowances'],
             'workspace-selection' => ['workspaces.overview'],
             default => [],

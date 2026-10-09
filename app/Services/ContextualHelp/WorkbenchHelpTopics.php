@@ -17,7 +17,7 @@ final class WorkbenchHelpTopics
         if ($canPersist) {
             $formula = [...$formula, 'shared.saving_and_history', 'shared.formula_lock', 'shared.collaborative_editing'];
         }
-        $tabs = ['formula' => $formula, 'output' => [$family.'.output_basis', $family.'.labeling', 'shared.compliance_guidance', 'shared.ifra_context']];
+        $tabs = ['formula' => $formula, 'output' => [$family.'.output_basis', $family.'.labeling', 'shared.label_market', 'shared.compliance_guidance', 'shared.ifra_context']];
         if ($canPersist) {
             $tabs['output'][] = 'shared.ingredient_change_review';
             $tabs['packaging'] = ['shared.packaging'];

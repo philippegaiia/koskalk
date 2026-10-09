@@ -59,7 +59,7 @@ it('maps workspace help topics to their settings, team, and company selection su
     $topics = app(ApplicationHelpTopics::class);
 
     expect($topics->forSurface('workspace'))->toBe([
-        'settings.workspace', 'workspaces.overview', 'workspaces.shared_allowances',
+        'settings.workspace', 'shared.label_market', 'workspaces.overview', 'workspaces.shared_allowances',
     ])->and($topics->forSurface('members'))->toBe([
         'workspaces.roles', 'workspaces.invitations', 'workspaces.shared_allowances',
     ])->and($topics->forSurface('workspace-selection'))->toBe([

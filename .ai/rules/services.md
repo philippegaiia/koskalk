@@ -91,3 +91,6 @@ Shared formula storage has independent percentage/weight decimals. Restore serve
 
 ## Recipient email identifies a verified owner’s workspace
 Sharing accepts an exact Workspace UUID or a trimmed, case-insensitive verified owner email. Resolve owned Workspaces, never the owner’s selected Workspace or arbitrary team memberships. Several owned Workspaces require the exact UUID; unknown/unverified/self recipients fail. Apply recipient lookup rate limits and re-resolve immediately before sending against the recipient-bound preview.
+
+## Label markets fail closed to none, never to EU
+A blank, missing, unknown, retired or out-of-date market code resolves to `RegulatoryRegime::NONE_CODE` for evaluation; never default a payload key to `eu`. EU is not built in: it is checked against its regulatory_regimes row like any market. Keep a saved formula's stored code when its regime is gone so output reports `unavailable` instead of unchecked. Only `pass` may render as a pass; `no_rules`, `not_checked` and `unverified` must not.

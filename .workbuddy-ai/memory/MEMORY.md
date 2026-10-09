@@ -20,9 +20,13 @@ matching file before working in that area — they are not injected.
 - Test helpers in Feature tests are **file-scoped** — copy them, don't call cross-file.
 - Under `.workbuddy-ai/`: commit `memory/`, `artifacts/`, `reports/`; ignore only `skills/`.
 - `record-rule` writes to the **main checkout, not your worktree** — copy over, then revert main.
-- A **graphify post-commit hook runs automatically**. AGENTS.md also asks for `graphify update .`
-  after modifying code in-session, but **the binary is not installed** (`command -v graphify` → not
-  found, 2026-10-04), so that step cannot be run; the hook detects this and skips. Don't hunt for it.
+- A **graphify post-commit hook runs automatically**, and **graphify is installed on the owner's Mac**
+  (owner, 2026-10-08) — run `graphify update .` after code changes. The 2026-10-04 "not installed" note
+  came from a shell that was not the Mac. Remote/sandboxed shells (Linux VM, cloud) cannot run it; ask
+  the owner to run it instead.
+- **In a shell that cannot delete files in the repo, run git with `GIT_OPTIONAL_LOCKS=0`.** Plain
+  `git status`/`git diff` take `.git/index.lock` and leave it stuck when unlink is denied, blocking the
+  owner's next git command (happened 2026-10-08).
 - **New `__()` keys are not translated until the catalogue is imported into the database.**
   `language_lines` is the runtime source, and `database/seeders/data/interface-translations.json` is
   *not* loaded automatically. Check with

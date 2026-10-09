@@ -57,7 +57,6 @@
      </form>
  </section>
  @include('livewire.dashboard.partials.recipe-workbench.navigation')
- @includeWhen(! $isCalculatorRoute, 'livewire.dashboard.partials.recipe-workbench.output-actions')
  </div>
  <fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="space-y-6 transition">
  @include('livewire.dashboard.partials.recipe-workbench.formula-tab')

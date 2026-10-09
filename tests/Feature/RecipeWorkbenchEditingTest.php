@@ -177,3 +177,23 @@ it('accepts fresh costing after explicit reload while preserving the formula rev
         ->assertSet('expectedCostingRevision', 1)
         ->assertSet('expectedRecipeRevision', 0);
 });
+
+it('rejects missing editing tokens without replacing an existing reservation', function (string $action, array $arguments): void {
+    $workspace = Workspace::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
+    $this->actingAs($workspace->owner);
+    $token = (string) Str::uuid();
+    app(RecipeEditingService::class)->acquire($recipe, $workspace->owner, $token);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->call($action, ...$arguments)
+        ->assertReturned(fn (array $response): bool => ! $response['ok'] && isset($response['errors']['editing_lease']))
+        ->assertSet('editingToken', null);
+
+    $this->assertDatabaseHas('recipe_edit_leases', ['recipe_id' => $recipe->id, 'token_hash' => hash('sha256', $token)]);
+    $this->assertDatabaseCount('recipe_edit_leases', 1);
+})->with([
+    ['beginEditing', [null]],
+    ['takeoverEditing', [null, 'Recover editing']],
+]);

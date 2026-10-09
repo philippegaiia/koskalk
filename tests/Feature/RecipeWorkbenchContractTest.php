@@ -15,19 +15,24 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('places formula output actions after the tabs and outside the edit lock', function (): void {
+it('keeps compact formula output actions beside the tabs and outside the edit lock', function (): void {
     $workbenchView = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
     $actions = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-actions.blade.php'));
 
     $navigationPosition = strpos($workbenchView, "@include('livewire.dashboard.partials.recipe-workbench.navigation')");
-    $actionsPosition = strpos($workbenchView, '@includeWhen(! $isCalculatorRoute, \'livewire.dashboard.partials.recipe-workbench.output-actions\')');
+    $navigation = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/navigation.blade.php'));
+    $actionsPosition = strpos($navigation, '@includeWhen(! ($isCalculatorRoute ?? false), \'livewire.dashboard.partials.recipe-workbench.output-actions\')');
     $fieldsetPosition = strpos($workbenchView, '<fieldset');
 
     expect($navigationPosition)->toBeInt()
         ->and($actionsPosition)->toBeInt()
         ->and($fieldsetPosition)->toBeInt()
-        ->and($actionsPosition)->toBeGreaterThan($navigationPosition)
-        ->and($actionsPosition)->toBeLessThan($fieldsetPosition)
+        ->and($navigationPosition)->toBeLessThan($fieldsetPosition)
+        ->and($actionsPosition)->toBeGreaterThan(strpos($navigation, '</nav>'))
+        ->and($navigation)->toContain('flex min-w-0 items-center gap-2')
+        ->and($navigation)->toContain('outputPending || outputError || outputFallbackUrl')
+        ->and($actions)->toContain('sr-only', 'title=', 'size-11')
+        ->and($actions)->not->toContain('border-b', 'py-3')
         ->and($workbenchView)->toContain('$isCalculatorRoute = request()->routeIs(\'calculator\');')
         ->and($actions)->toContain("activeWorkbenchTab === 'formula'")
         ->and($actions)->toContain("activeWorkbenchTab === 'instructions'")

@@ -7,8 +7,9 @@
 @endphp
 
 <div class="sk-workbench-navigation border-b border-[var(--color-line)]">
-    <div class="{{ $isPublicCalculator ? '' : 'relative min-w-0 max-w-full overflow-hidden' }}">
-    <nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-0 max-w-full gap-7 overflow-x-auto overscroll-x-contain pr-10 touch-pan-x [scrollbar-width:thin]' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
+    <div class="flex min-w-0 items-center gap-2">
+    <div class="{{ $isPublicCalculator ? 'w-full' : 'relative min-w-0 max-w-full overflow-hidden flex-1' }}">
+    <nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-0 max-w-full gap-7 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-width:thin]' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
         <button
             id="tab-formula"
             role="tab"
@@ -79,8 +80,14 @@
             @endif
         @endunless
     </nav>
-    @unless ($isPublicCalculator)
-        <span aria-hidden="true" data-tab-overflow-cue class="pointer-events-none absolute inset-y-0 end-0 block w-10 bg-gradient-to-l from-[var(--color-panel)] via-[var(--color-panel)]/90 to-transparent"></span>
-    @endunless
     </div>
+    @includeWhen(! ($isCalculatorRoute ?? false), 'livewire.dashboard.partials.recipe-workbench.output-actions')
+    </div>
+    @if (is_array($workbench['output'] ?? null) && ! ($isCalculatorRoute ?? false) && ! $isPublicCalculator)
+        <div x-show="outputPending || outputError || outputFallbackUrl" x-cloak class="pb-2" aria-live="polite" aria-atomic="true">
+            <p x-show="outputPending" x-cloak class="text-sm text-[var(--color-ink-soft)]" x-text="outputConfig?.messages?.pending"></p>
+            <p x-show="outputError" x-cloak role="alert" class="text-sm text-[var(--color-danger-strong)]" x-text="outputError"></p>
+            <a x-show="outputFallbackUrl" x-cloak :href="outputFallbackUrl" target="_blank" rel="noopener" class="text-sm font-medium text-[var(--color-accent-strong)] underline underline-offset-2" x-text="outputFallbackLabel"></a>
+        </div>
+    @endif
 </div>

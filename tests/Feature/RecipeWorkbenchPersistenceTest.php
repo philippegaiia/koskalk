@@ -23,6 +23,7 @@ use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
+use App\Models\RegulatoryRegime;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\UserEntitlement;
@@ -1473,6 +1474,7 @@ it('does not re-render the workbench when refreshing the calculation preview', f
 
 it('stores formula context on recipe versions and returns it in the draft payload', function () {
     $user = User::factory()->create();
+    RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',

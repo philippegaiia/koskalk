@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\RegulatoryRegimes\Schemas;
 
+use App\Models\RegulatoryRegime;
+use Closure;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -27,6 +29,12 @@ class RegulatoryRegimeForm
                             ->helperText('Stable lowercase key used by saved formulas, for example eu, us_mocra_preview, or canada.')
                             ->required()
                             ->unique(ignoreRecord: true)
+                            ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                                if (strtolower(trim((string) $value)) === RegulatoryRegime::NONE_CODE) {
+                                    $fail('"none" is reserved for formulas that are not checked against a market.');
+                                }
+                            })
+                            ->dehydrateStateUsing(fn (?string $state): string => strtolower(trim((string) $state)))
                             ->maxLength(64),
                         TextInput::make('market_code')
                             ->label('Market')

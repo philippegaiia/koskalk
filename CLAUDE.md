@@ -19,7 +19,7 @@ Koskalk is a professional formulation workspace for soap and cosmetic recipes. T
 1. **No DB writes on field change** - Alpine manages live draft state locally; explicit actions only
 2. **Service-layer focus** - Livewire components and controllers remain thin; business logic lives in services
 3. **Tenant-aware data** - User/workspace data uses global scopes and policies from day one
-4. **Versioning is mandatory** - Ingredients, recipes, and compliance runs are all versioned
+4. **Versioning is mandatory** - Ingredients and recipes are versioned; compliance output is live guidance recomputed from current data, not a stored run (see `.ai/rules/app.md`)
 5. **Admin vs Public separation** - Filament is for data stewardship only; public UI uses custom Blade/Livewire
 
 ## Common Development Commands
@@ -115,21 +115,23 @@ Product families (defined in `ProductFamily`) drive IFRA mapping, restriction ap
 **Platform-owned (admin-controlled):**
 - Ingredients, ingredient versions, SAP profiles
 - Allergen catalog, IFRA categories
-- Compliance rules and jurisdictions
+- Regulatory regimes (label markets), allergen and substance rules
 
 **Tenant-aware (user/workspace-owned):**
 - Recipes, recipe versions, recipe items, recipe phases
 - User ingredient prices and packaging items
-- Compliance runs and results
 - Private custom additives
 
 ### Non-negotiable Rules
 
 1. Users cannot create saponifiable oils that drive soap math
-2. Compliance runs are append-only — never overwrite
+2. Compliance output is point-in-time, non-authoritative guidance — never present or persist it as a certification
 3. Every tenant-aware model gets global scope + policy before first controller
-4. `product_family_id` drives IFRA and restriction logic — never hard-code
+4. Product Family selects the calculation engine; IFRA suggestions come from amendment-scoped Product Type mappings — never hard-code either
 5. Filament is admin-only — no user-facing functionality leaks there
+6. Label market checks are opt-in per formula: new formulas start on the `none` market, and a blank or unknown market fails closed to `none`, never to EU
+
+The committed rules in `.ai/rules/` (mapped by `.ai/rules/index.md`) are more current than this file; follow them where they differ.
 
 ## Frontend Architecture
 

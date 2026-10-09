@@ -50,7 +50,7 @@ class SubstanceSeeder extends Seeder
                         'substance_id' => $substance->id,
                     ]);
 
-                    if ($rule->exists && $this->ruleHasSpecificComplianceData($rule)) {
+                    if ($rule->exists && $rule->hasSpecificComplianceData()) {
                         return;
                     }
 
@@ -157,16 +157,6 @@ class SubstanceSeeder extends Seeder
                 'seed_scope' => 'starter_rule',
             ],
         ];
-    }
-
-    private function ruleHasSpecificComplianceData(RegulatoryRegimeSubstanceRule $rule): bool
-    {
-        $sourceReference = str((string) $rule->source_reference)->lower();
-
-        return $rule->rule_type !== 'watch'
-            || $rule->rinse_off_max_percent !== null
-            || $rule->leave_on_max_percent !== null
-            || ($rule->source_reference !== null && ! $sourceReference->contains('starter'));
     }
 
     /**

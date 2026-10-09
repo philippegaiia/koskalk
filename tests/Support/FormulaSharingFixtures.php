@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 final class FormulaSharingFixtures
 {
     /** @return array<string, mixed> */
-    public static function offer(string $familySlug = 'soap', ?int $recipeLimit = 100, ?int $ingredientLimit = 100, ?array $options = null, bool $weightBoundary = false, bool $percentageBoundary = false, int $weightRows = 2, bool $multiLiquid = false, string $waterMode = 'percent_of_oils'): array
+    public static function offer(string $familySlug = 'soap', ?int $recipeLimit = 100, ?int $ingredientLimit = 100, ?array $options = null, bool $weightBoundary = false, bool $percentageBoundary = false, int $weightRows = 2, bool $multiLiquid = false, string $waterMode = 'percent_of_oils', string $regulatoryRegime = 'eu'): array
     {
         $owner = User::factory()->create();
         $source = Workspace::factory()->for($owner, 'owner')->create();
@@ -51,7 +51,7 @@ final class FormulaSharingFixtures
         $liquid = Ingredient::factory()->create(['workspace_id' => $source->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $source->id]);
         $payload = [
             'name' => 'Received Product', 'product_type_id' => $type->id, 'oil_weight' => '1000.125', 'oil_unit' => 'g',
-            'manufacturing_mode' => $familySlug === 'soap' ? 'saponify_in_formula' : 'blend_only', 'exposure_mode' => 'rinse_off', 'regulatory_regime' => 'eu',
+            'manufacturing_mode' => $familySlug === 'soap' ? 'saponify_in_formula' : 'blend_only', 'exposure_mode' => 'rinse_off', 'regulatory_regime' => $regulatoryRegime,
             'editing_mode' => 'percentage', 'lye_type' => 'dual', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'superfat' => 5, 'water_mode' => 'percent_of_oils', 'water_value' => 38,
             'production_output_type' => ProductionOutputType::FinishedProduct->value, 'packaging_items' => [],
             'manufacturing_instructions' => '<p>Mix &amp; rest.</p>',

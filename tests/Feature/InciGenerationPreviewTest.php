@@ -110,6 +110,7 @@ it('returns a generated ingredient list and declaration details in the live prev
         'source_notes' => null,
     ]);
 
+    seedEuRegimeCoveringAllergens();
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
@@ -363,6 +364,7 @@ it('suppresses duplicate declaration rows when the ingredient list already names
         'source_notes' => null,
     ]);
 
+    seedEuRegimeCoveringAllergens();
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
@@ -408,6 +410,7 @@ it('replaces an explicit ingredient label with the grouped eu declaration label 
         'source_notes' => null,
     ]);
 
+    seedEuRegimeCoveringAllergens();
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
@@ -483,6 +486,7 @@ it('expands composite aromatics into child inci rows and child-derived declarati
         'source_notes' => null,
     ]);
 
+    seedEuRegimeCoveringAllergens();
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
@@ -960,6 +964,22 @@ it('keeps a zero lye liquid placeholder from stealing the following replacement 
         ->and($curedOutput['inci'])->toContain('CAPRAE LAC')
         ->not->toContain('ROSA DAMASCENA FLOWER WATER');
 });
+
+/**
+ * The EU regime as production seeds it: an active row mapping every allergen
+ * at the 0.01% rinse-off / 0.001% leave-on thresholds.
+ */
+function seedEuRegimeCoveringAllergens(): RegulatoryRegime
+{
+    $regime = RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
+
+    Allergen::query()->pluck('id')->each(fn (int $allergenId) => RegulatoryRegimeAllergen::factory()->create([
+        'regulatory_regime_id' => $regime->id,
+        'allergen_id' => $allergenId,
+    ]));
+
+    return $regime;
+}
 
 function makeSoapOilIngredient(array $overrides = [], float $kohSapValue = 0.188): Ingredient
 {

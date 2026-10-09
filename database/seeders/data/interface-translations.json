@@ -2292,6 +2292,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "settings.no_market",
+      "text": {
+        "de": "Kein Markt",
+        "es": "Ningún mercado",
+        "fr": "Aucun marché",
+        "it": "Nessun mercato",
+        "nl": "Geen markt",
+        "pt_BR": "Nenhum mercado"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "settings.oil_water_value",
       "text": {
         "de": ":value% der Öle",
@@ -34356,6 +34368,42 @@
     },
     {
       "group": "settings",
+      "key": "workspace.default_market",
+      "text": {
+        "de": "Standard-Etikettenmarkt",
+        "es": "Mercado de etiqueta predeterminado",
+        "fr": "Marché d’étiquetage par défaut",
+        "it": "Mercato di etichettatura predefinito",
+        "nl": "Standaard etiketmarkt",
+        "pt_BR": "Mercado de rótulo padrão"
+      }
+    },
+    {
+      "group": "settings",
+      "key": "workspace.default_market_help",
+      "text": {
+        "de": "Neue Formeln beginnen mit diesem Markt. Bei „Keiner“ bleiben Etiketten ungeprüft, bis jemand einen Markt wählt. Bestehende Formeln behalten ihren eigenen Markt, und jede Formel kann weiterhin wechseln.",
+        "es": "Las fórmulas nuevas empiezan con este mercado. «Ninguno» deja las etiquetas sin comprobar hasta que alguien elija un mercado. Las fórmulas existentes conservan su propio mercado y cada fórmula puede seguir cambiándolo.",
+        "fr": "Les nouvelles formules démarrent sur ce marché. « Aucun » laisse les étiquettes non vérifiées jusqu’à ce qu’un marché soit choisi. Les formules existantes gardent leur propre marché, et chaque formule peut toujours en changer.",
+        "it": "Le nuove formule partono da questo mercato. «Nessuno» lascia le etichette non verificate finché qualcuno non sceglie un mercato. Le formule esistenti mantengono il proprio mercato e ogni formula può ancora cambiarlo.",
+        "nl": "Nieuwe formules starten op deze markt. Met ‘Geen’ blijven etiketten ongecontroleerd tot iemand een markt kiest. Bestaande formules behouden hun eigen markt en elke formule kan nog steeds wisselen.",
+        "pt_BR": "Novas fórmulas começam neste mercado. “Nenhum” deixa os rótulos sem verificação até que alguém escolha um mercado. As fórmulas existentes mantêm seu próprio mercado, e cada fórmula ainda pode mudar."
+      }
+    },
+    {
+      "group": "settings",
+      "key": "workspace.default_market_unavailable",
+      "text": {
+        "de": "Der gespeicherte Standardmarkt (:market) ist nicht mehr verfügbar, daher beginnen neue Formeln mit „Keiner“. Wählen Sie einen Markt und speichern Sie, um ihn zu ersetzen.",
+        "es": "El mercado predeterminado guardado (:market) ya no está disponible, así que las fórmulas nuevas empiezan en «Ninguno». Elige un mercado y guarda para sustituirlo.",
+        "fr": "Le marché par défaut enregistré (:market) n’est plus disponible : les nouvelles formules démarrent donc sur « Aucun ». Choisissez un marché et enregistrez pour le remplacer.",
+        "it": "Il mercato predefinito salvato (:market) non è più disponibile, quindi le nuove formule partono da «Nessuno». Scegli un mercato e salva per sostituirlo.",
+        "nl": "De opgeslagen standaardmarkt (:market) is niet meer beschikbaar, dus nieuwe formules beginnen op ‘Geen’. Kies een markt en sla op om hem te vervangen.",
+        "pt_BR": "O mercado padrão salvo (:market) não está mais disponível, então novas fórmulas começam em “Nenhum”. Escolha um mercado e salve para substituí-lo."
+      }
+    },
+    {
+      "group": "settings",
       "key": "workspace.description",
       "text": {
         "de": "Verwalten Sie die gemeinsamen Vorgaben für Produkte, Zutaten, Verpackungen und Kalkulationen in diesem Arbeitsbereich.",
@@ -36356,6 +36404,18 @@
         "it": "NaOH",
         "nl": "NaOH",
         "pt_BR": "NaOH"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "values.none",
+      "text": {
+        "de": "Keiner",
+        "es": "Ninguno",
+        "fr": "Aucun",
+        "it": "Nessuno",
+        "nl": "Geen",
+        "pt_BR": "Nenhum"
       }
     },
     {
@@ -40368,6 +40428,102 @@
     },
     {
       "group": "workbench",
+      "key": "output.market_check.back_to_saved",
+      "text": {
+        "de": "Zurück zum gespeicherten Markt",
+        "es": "Volver al mercado guardado",
+        "fr": "Revenir au marché enregistré",
+        "it": "Torna al mercato salvato",
+        "nl": "Terug naar opgeslagen markt",
+        "pt_BR": "Voltar ao mercado salvo"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.coverage_none",
+      "text": {
+        "de": "Namen folgen INCI. Es werden keine Allergenschwellen oder Stoffregeln eines Marktes angewendet. Wählen Sie einen Markt, um sie zu prüfen.",
+        "es": "Los nombres siguen INCI. No se aplican umbrales de alérgenos ni reglas de sustancias de ningún mercado. Elige un mercado para comprobarlos.",
+        "fr": "Les noms suivent l’INCI. Aucun seuil d’allergènes ni aucune règle sur les substances d’un marché n’est appliqué. Choisissez un marché pour les vérifier.",
+        "it": "I nomi seguono l’INCI. Non si applicano soglie per gli allergeni né regole sulle sostanze di alcun mercato. Scegli un mercato per verificarli.",
+        "nl": "Namen volgen INCI. Er worden geen allergeendrempels of stofregels van een markt toegepast. Kies een markt om ze te controleren.",
+        "pt_BR": "Os nomes seguem o INCI. Nenhum limite de alergênicos nem regra de substâncias de um mercado é aplicado. Escolha um mercado para verificá-los."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.declaration_not_checked_note",
+      "text": {
+        "de": "Nur Zusammensetzung. Wählen Sie einen Markt, um sie mit einem Deklarationsschwellenwert zu vergleichen.",
+        "es": "Solo composición. Elige un mercado para compararla con un umbral de declaración.",
+        "fr": "Composition uniquement. Choisissez un marché pour la comparer à un seuil de déclaration.",
+        "it": "Solo composizione. Scegli un mercato per confrontarla con una soglia di dichiarazione.",
+        "nl": "Alleen samenstelling. Kies een markt om deze te vergelijken met een declaratiedrempel.",
+        "pt_BR": "Apenas composição. Escolha um mercado para compará-la com um limite de declaração."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.locked_preview",
+      "text": {
+        "de": "Nur Vorschau. Diese gesperrte Formel bleibt mit :market gespeichert.",
+        "es": "Solo vista previa. Esta fórmula bloqueada sigue guardada con :market.",
+        "fr": "Aperçu uniquement. Cette formule verrouillée reste enregistrée sur :market.",
+        "it": "Solo anteprima. Questa formula bloccata resta salvata su :market.",
+        "nl": "Alleen voorbeeld. Deze vergrendelde formule blijft opgeslagen op :market.",
+        "pt_BR": "Apenas visualização. Esta fórmula bloqueada continua salva em :market."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.none_label",
+      "text": {
+        "de": "Kein Markt",
+        "es": "Ningún mercado",
+        "fr": "Aucun marché",
+        "it": "Nessun mercato",
+        "nl": "Geen markt",
+        "pt_BR": "Nenhum mercado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.none_option",
+      "text": {
+        "de": "Keiner",
+        "es": "Ninguno",
+        "fr": "Aucun",
+        "it": "Nessuno",
+        "nl": "Geen",
+        "pt_BR": "Nenhum"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.not_checked",
+      "text": {
+        "de": "Nicht geprüft",
+        "es": "Sin comprobar",
+        "fr": "Non vérifié",
+        "it": "Non verificato",
+        "nl": "Niet gecontroleerd",
+        "pt_BR": "Não verificado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.market_check.unavailable",
+      "text": {
+        "de": "Der für diese Formel gespeicherte Markt (:market) ist nicht mehr verfügbar. Namen folgen INCI und es wird nichts geprüft. Wählen Sie einen Markt.",
+        "es": "El mercado guardado en esta fórmula (:market) ya no está disponible. Los nombres siguen INCI y no se comprueba nada. Elige un mercado.",
+        "fr": "Le marché enregistré pour cette formule (:market) n’est plus disponible. Les noms suivent l’INCI et rien n’est vérifié. Choisissez un marché.",
+        "it": "Il mercato salvato in questa formula (:market) non è più disponibile. I nomi seguono l’INCI e non viene verificato nulla. Scegli un mercato.",
+        "nl": "De markt die bij deze formule is opgeslagen (:market) is niet meer beschikbaar. Namen volgen INCI en er wordt niets gecontroleerd. Kies een markt.",
+        "pt_BR": "O mercado salvo nesta fórmula (:market) não está mais disponível. Os nomes seguem o INCI e nada é verificado. Escolha um mercado."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.restrictions.empty",
       "text": {
         "de": "No restricted or prohibited substance rules matched the current formula.",
@@ -40404,6 +40560,30 @@
     },
     {
       "group": "workbench",
+      "key": "output.restrictions.no_rules",
+      "text": {
+        "de": "Keine Regeln für diesen Markt",
+        "es": "Sin reglas para este mercado",
+        "fr": "Aucune règle pour ce marché",
+        "it": "Nessuna regola per questo mercato",
+        "nl": "Geen regels voor deze markt",
+        "pt_BR": "Sem regras para este mercado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.not_checked",
+      "text": {
+        "de": "Nicht geprüft. Wählen Sie einen Markt, um eingeschränkte Stoffe zu prüfen.",
+        "es": "Sin comprobar. Elige un mercado para comprobar las sustancias restringidas.",
+        "fr": "Non vérifié. Choisissez un marché pour vérifier les substances restreintes.",
+        "it": "Non verificato. Scegli un mercato per verificare le sostanze soggette a restrizioni.",
+        "nl": "Niet gecontroleerd. Kies een markt om beperkte stoffen te controleren.",
+        "pt_BR": "Não verificado. Escolha um mercado para verificar as substâncias restritas."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.restrictions.rule",
       "text": {
         "de": "Rule",
@@ -40412,6 +40592,42 @@
         "it": "Rule",
         "nl": "Rule",
         "pt_BR": "Rule"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.starter_rule",
+      "text": {
+        "de": "Startregel",
+        "es": "Regla inicial",
+        "fr": "Règle de départ",
+        "it": "Regola iniziale",
+        "nl": "Startregel",
+        "pt_BR": "Regra inicial"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.starter_rule_note",
+      "text": {
+        "de": "Für einige Stoffe gibt es nur eine Koskalk-Startregel, keinen offiziellen Grenzwert. Prüfen Sie sie anhand der Lieferantenunterlagen und der Marktregel.",
+        "es": "Algunas sustancias solo tienen una regla inicial de Koskalk, no un límite oficial. Compruébalas con la documentación del proveedor y la norma del mercado.",
+        "fr": "Certaines substances n’ont qu’une règle de départ Koskalk, pas de limite officielle. Vérifiez-les à l’aide des documents du fournisseur et de la règle du marché.",
+        "it": "Alcune sostanze hanno solo una regola iniziale di Koskalk, non un limite ufficiale. Verificale con la documentazione del fornitore e la regola del mercato.",
+        "nl": "Voor sommige stoffen is er alleen een startregel van Koskalk, geen officiële limiet. Controleer ze aan de hand van de leveranciersdocumenten en de marktregel.",
+        "pt_BR": "Algumas substâncias têm apenas uma regra inicial da Koskalk, não um limite oficial. Confira-as com os documentos do fornecedor e a regra do mercado."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.starter_rules_only",
+      "text": {
+        "de": "Enthält Startregeln",
+        "es": "Incluye reglas iniciales",
+        "fr": "Inclut des règles de départ",
+        "it": "Include regole iniziali",
+        "nl": "Bevat startregels",
+        "pt_BR": "Inclui regras iniciais"
       }
     },
     {

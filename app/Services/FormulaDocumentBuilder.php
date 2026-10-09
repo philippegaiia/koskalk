@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\RegulatoryRegime;
 use App\Support\NumberLocale;
 use Illuminate\Support\Arr;
 
@@ -57,7 +58,9 @@ class FormulaDocumentBuilder
             ],
             [
                 'label' => __('formula_documents.settings.regime'),
-                'value' => mb_strtoupper((string) ($draft['regulatoryRegime'] ?? 'eu')),
+                'value' => ($draft['regulatoryRegime'] ?? RegulatoryRegime::NONE_CODE) === RegulatoryRegime::NONE_CODE
+                    ? __('formula_documents.settings.no_market')
+                    : mb_strtoupper((string) ($draft['regulatoryRegime'] ?? RegulatoryRegime::NONE_CODE)),
             ],
         ];
 

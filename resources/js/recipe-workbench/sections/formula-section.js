@@ -190,7 +190,7 @@ export function createFormulaSection() {
         },
 
         get formulaSetupLabelSummary() {
-            const labels = [this.regulatoryRegime?.toUpperCase() ?? ''];
+            const labels = [this.isMarketCheckOff ? this.regulatoryRegimeLabel : (this.regulatoryRegime?.toUpperCase() ?? '')];
 
             if (this.selectedIfraProductCategory) {
                 labels.push(`IFRA ${this.selectedIfraProductCategory.code}`);

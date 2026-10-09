@@ -240,7 +240,7 @@
  </template>
  </td>
  <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 4)}%`"></span></td>
- <td class="numeric px-4 py-3"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.threshold_percent)" x-text="`${format(row.threshold_percent, 3)}%`"></span></td>
+ <td class="numeric px-4 py-3"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.threshold_percent)" x-text="row.threshold_percent === null || row.threshold_percent === undefined ? '—' : `${format(row.threshold_percent, 3)}%`"></span></td>
  <td class="px-4 py-3 text-center">
  <span :class="declarationStatusClasses(row)" class="inline-flex justify-center rounded-full border px-3 py-1 text-[0.6875rem] font-medium leading-5" x-text="row.status_label"></span>
  </td>

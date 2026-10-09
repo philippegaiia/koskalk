@@ -194,7 +194,8 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         oilWeight: convertWorkbenchMass(defaultMassGrams, 'g', initialMassUnit),
         manufacturingMode: isCosmeticFormula ? 'blend_only' : 'saponify_in_formula',
         exposureMode: isCosmeticFormula ? 'leave_on' : 'rinse_off',
-        regulatoryRegime: 'eu',
+        regulatoryRegime: payload.defaultRegulatoryRegime ?? 'none',
+        savedRegulatoryRegime: null,
         editMode: 'percentage',
         lyeType: 'naoh',
         kohPurity: 90,
@@ -217,7 +218,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         ifraProductCategories: payload.ifraProductCategories ?? [],
         ifraGuidance: payload.ifraGuidance ?? { amendment: null, default_category_id: null, options: [], all_categories: [], milestones: [] },
         ifraCategorySelectionMode: initialDraft?.ifraCategorySelectionMode ?? 'automatic',
-        regulatoryRegimes: payload.regulatoryRegimes?.length ? payload.regulatoryRegimes : [{ code: 'eu', name: 'EU regime', version_label: null, status: 'active', allergen_rule_count: 0, substance_rule_count: 0 }],
+        regulatoryRegimes: payload.regulatoryRegimes ?? [],
         selectedIfraProductCategoryId: payload.defaultIfraProductCategoryId === null || payload.defaultIfraProductCategoryId === undefined ? '' : String(payload.defaultIfraProductCategoryId),
         finalIngredientList: '',
         finalIngredientListBasisHash: '',
@@ -1495,10 +1496,18 @@ function createPersistenceSection() {
         },
 
         currentDirtySignature() {
-            return draftSignature(this.serializeDraft());
+            const draft = this.serializeDraft();
+
+            // A locked formula previews other label markets without editing it.
+            if (this.isFormulaLocked && this.savedRegulatoryRegime !== null) {
+                draft.regulatory_regime = this.savedRegulatoryRegime;
+            }
+
+            return draftSignature(draft);
         },
 
         refreshDirtyBaseline() {
+            this.savedRegulatoryRegime = this.regulatoryRegime;
             this.dirtyBaselineSignature = this.currentDirtySignature();
         },
 
@@ -1572,6 +1581,11 @@ function createPersistenceSection() {
         },
 
         async duplicateFormula() {
+            // A locked formula is duplicated as saved, not with a previewed label market.
+            if (this.isLockedMarketPreview) {
+                this.regulatoryRegime = this.savedRegulatoryRegime;
+            }
+
             await this.persist('duplicateFormula', {
                 allowLocked: true,
                 allowWithoutLease: true,

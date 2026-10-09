@@ -58,6 +58,7 @@ return [
         'lye_concentration_value' => 'Lye concentration: :value%',
         'lye_ratio_value' => 'Lye ratio: :value',
         'lye_system' => 'Lye system',
+        'no_market' => 'No market',
         'oil_water_value' => ':value% of oils',
         'percentage' => 'Percentage',
         'regime' => 'Regulatory regime',

@@ -177,6 +177,26 @@
                     @enderror
                     <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('settings.workspace.mass_display_help') }}</p>
                 </fieldset>
+
+                <label class="sk-inset block p-4 md:col-span-2">
+                    <span class="sk-eyebrow">{{ __('settings.workspace.default_market') }}</span>
+                    <select
+                        wire:model="workspaceDefaultRegulatoryRegime"
+                        aria-label="{{ __('settings.workspace.default_market') }}"
+                        class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)] sm:max-w-sm"
+                    >
+                        @foreach ($marketOptions as $code => $name)
+                            <option value="{{ $code }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+                    @if ($unavailableDefaultRegulatoryRegime)
+                        <p role="alert" class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-warning-strong)]">{{ __('settings.workspace.default_market_unavailable', ['market' => $unavailableDefaultRegulatoryRegime]) }}</p>
+                    @endif
+                    @error('workspaceDefaultRegulatoryRegime')
+                        <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                    @enderror
+                    <span class="mt-2 block max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('settings.workspace.default_market_help') }}</span>
+                </label>
             </div>
 
             @if ($canManageWorkspace)

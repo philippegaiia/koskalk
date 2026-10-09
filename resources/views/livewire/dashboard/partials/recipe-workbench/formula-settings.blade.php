@@ -118,6 +118,7 @@
 	 <div>
 	 <p id="setting-regime" class="sk-eyebrow">{{ __('workbench.settings.regulatory_framework') }}</p>
 	 <select aria-labelledby="setting-regime" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
+	 <option value="none">{{ __('workbench.output.market_check.none_option') }}</option>
 	 <template x-for="regime in regulatoryRegimes" :key="regime.code">
 	 <option :value="regime.code" x-text="regime.version_label ? `${regime.name} - ${regime.version_label}` : regime.name"></option>
 	 </template>
@@ -229,6 +230,7 @@
 	 <div>
 	 <p id="setting-regime-soap" class="sk-eyebrow">{{ __('workbench.settings.regulatory_framework') }}</p>
 	 <select aria-labelledby="setting-regime-soap" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
+	 <option value="none">{{ __('workbench.output.market_check.none_option') }}</option>
 	 <template x-for="regime in regulatoryRegimes" :key="regime.code">
 	 <option :value="regime.code" x-text="regime.version_label ? `${regime.name} - ${regime.version_label}` : regime.name"></option>
 	 </template>

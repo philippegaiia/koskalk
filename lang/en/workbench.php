@@ -444,6 +444,21 @@ return [
         'restrictions' => [
             'title' => 'Restrictions', 'substance' => 'Substance', 'rule' => 'Rule', 'limit' => 'Limit', 'empty' => 'No restricted or prohibited substance rules matched the current formula.',
             'no_active_rule_set' => 'No active substance rule set is available for the selected regime.',
+            'starter_rule' => 'Starter rule',
+            'starter_rules_only' => 'Includes starter rules',
+            'no_rules' => 'No rules for this market',
+            'starter_rule_note' => 'Some substances only have a Koskalk starter rule, not an official limit. Confirm them against your supplier documents and the market rule.',
+            'not_checked' => 'Not checked. Choose a market to check restricted substances.',
+        ],
+        'market_check' => [
+            'none_label' => 'No market',
+            'none_option' => 'None',
+            'coverage_none' => 'Names follow INCI. No market allergen thresholds or substance rules are applied. Choose a market to check them.',
+            'not_checked' => 'Not checked',
+            'declaration_not_checked_note' => 'Composition only. Choose a market to compare it with a declaration threshold.',
+            'unavailable' => 'The market saved on this formula (:market) is no longer available. Names follow INCI and nothing is checked. Choose a market.',
+            'locked_preview' => 'Preview only. This locked formula stays saved on :market.',
+            'back_to_saved' => 'Back to saved market',
         ],
     ],
     'messages' => [

@@ -228,9 +228,12 @@ class FormulaShareSnapshotBuilder
             }
             $water = ['mode' => $storedWater['mode'], 'value' => $this->number($storedWater['value'] ?? null, 9)];
         }
-        $regime = $version->regulatory_regime_id === null ? RegulatoryRegime::query()->where('code', $version->regulatory_regime)->first() : RegulatoryRegime::query()->find($version->regulatory_regime_id);
-        if ($regime === null || ! in_array($regime->status, ['active', 'preview'], true) || $regime->code !== $version->regulatory_regime) {
-            $this->invalid('reference');
+        $regime = null;
+        if ($version->regulatory_regime !== RegulatoryRegime::NONE_CODE) {
+            $regime = $version->regulatory_regime_id === null ? RegulatoryRegime::query()->where('code', $version->regulatory_regime)->first() : RegulatoryRegime::query()->find($version->regulatory_regime_id);
+            if ($regime === null || ! in_array($regime->status, ['active', 'preview'], true) || $regime->code !== $version->regulatory_regime) {
+                $this->invalid('reference');
+            }
         }
         $mode = IfraCategorySelectionMode::tryFrom((string) $version->getRawOriginal('ifra_category_selection_mode'));
         if ($mode === null) {
@@ -250,7 +253,9 @@ class FormulaShareSnapshotBuilder
             'name' => $version->name, 'batch_size' => $this->number($version->batch_size, 3), 'batch_unit' => $version->batch_unit,
             'batch_mass_grams' => $this->number($version->batch_mass_grams, 9),
             'manufacturing_mode' => $version->manufacturing_mode, 'exposure_mode' => $version->exposure_mode,
-            'regulatory_regime' => ['id' => $regime->id, 'code' => $regime->code, 'status' => $regime->status],
+            'regulatory_regime' => $regime === null
+                ? ['id' => null, 'code' => RegulatoryRegime::NONE_CODE, 'status' => null]
+                : ['id' => $regime->id, 'code' => $regime->code, 'status' => $regime->status],
             'ifra' => ['selection_mode' => $mode->value, 'category' => $category === null ? null : ['id' => $category->id, 'code' => $category->code],
                 'amendment' => $amendment === null ? null : ['id' => $amendment->id, 'code' => $amendment->code],
                 'mapping' => $mapping === null ? null : ['id' => $mapping->id, 'product_type_id' => $mapping->product_type_id]],

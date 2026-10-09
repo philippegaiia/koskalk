@@ -28,12 +28,21 @@ class RegulatoryRegime extends Model
     /** @use HasFactory<RegulatoryRegimeFactory> */
     use HasFactory;
 
+    /**
+     * Stored when a formula's label is not checked against any market.
+     */
+    public const NONE_CODE = 'none';
+
+    /**
+     * Resolve a submitted market code. Blank, unknown and inactive codes fail
+     * closed to "none"; EU is checked like any other market, never assumed.
+     */
     public static function normalizeCode(?string $value): string
     {
         $code = strtolower(trim((string) $value));
 
-        if ($code === '' || $code === 'eu') {
-            return 'eu';
+        if ($code === '' || $code === self::NONE_CODE) {
+            return self::NONE_CODE;
         }
 
         $regimeExists = self::query()
@@ -41,7 +50,27 @@ class RegulatoryRegime extends Model
             ->whereIn('status', ['active', 'preview'])
             ->exists();
 
-        return $regimeExists ? $code : 'eu';
+        return $regimeExists ? $code : self::NONE_CODE;
+    }
+
+    /**
+     * Market choices offered for new formulas: none first, then every
+     * active or preview market in display order.
+     *
+     * @return array<string, string> code => name
+     */
+    public static function selectableMarkets(): array
+    {
+        return [
+            self::NONE_CODE => __('workbench.output.market_check.none_option'),
+            ...self::query()
+                ->whereIn('status', ['active', 'preview'])
+                ->orderByDesc('is_default')
+                ->orderBy('market_code')
+                ->orderBy('name')
+                ->pluck('name', 'code')
+                ->all(),
+        ];
     }
 
     public function allergenRules(): HasMany

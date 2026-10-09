@@ -102,7 +102,7 @@ return [
         'saponify_in_formula' => 'Saponify in Formula', 'blend_only' => 'Blend only', 'rinse_off' => 'Rinse-off', 'leave_on' => 'Leave-on',
         'initial_oils' => 'Initial oils', 'total_formula' => 'Total Formula', 'percentage' => 'Percentage', 'weight' => 'Weight',
         'percent_of_oils' => 'Percentage of oils', 'lye_ratio' => 'Liquid to alkali ratio', 'lye_concentration' => 'Alkali concentration',
-        'automatic' => 'Automatic', 'manual' => 'Manual', 'dual' => 'NaOH + KOH', 'naoh' => 'NaOH', 'koh' => 'KOH',
+        'automatic' => 'Automatic', 'manual' => 'Manual', 'none' => 'None', 'dual' => 'NaOH + KOH', 'naoh' => 'NaOH', 'koh' => 'KOH',
     ],
     'technical' => [
         'category' => 'Category', 'is_blend' => 'Blend', 'is_essential_oil' => 'Essential oil', 'sap_profile' => 'Saponification profile',

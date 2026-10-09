@@ -112,7 +112,7 @@ class RecipeWorkbenchViewDataBuilder
         $today = now()->toDateString();
 
         return RegulatoryRegime::query()
-            ->whereIn('status', ['active', 'preview'])
+            ->selectable($today)
             ->withCount([
                 'allergenRules as allergen_rule_count' => fn (Builder $query): Builder => $this->activeRuleCountQuery($query, $today),
                 'substanceRules as substance_rule_count' => fn (Builder $query): Builder => $this->activeRuleCountQuery($query, $today),

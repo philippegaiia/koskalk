@@ -24,7 +24,7 @@ Allergen rules are label-declaration rules only. Substance restrictions use `sub
 
 Label market checks are opt-in per formula. `RegulatoryRegime::NONE_CODE` (`none`) means the formula is not checked against any market.
 
-- A blank, missing, unknown, retired or out-of-date market code never falls back to EU. `RegulatoryRegime::normalizeCode()` returns `none` for anything that is not an active or preview regime, and no payload default is `eu`.
+- A blank, missing, unknown, retired or out-of-date market code never falls back to EU. `RegulatoryRegime::normalizeCode()` returns `none` for anything outside the `selectable` scope (active or preview, and inside its effective dates), and no payload default is `eu`.
 - EU is not built in. It is checked against its `regulatory_regimes` row like any other market. Tests that expect EU behaviour must create an `eu` regime with the allergen rules they rely on.
 - A saved formula whose regime was retired or deleted keeps its stored code. The workbench, the recipe page and documents report it as **unavailable**, with a warning, rather than as unchecked. An explicit save of that formula stores `none`.
 - With `none` or an unavailable market, names follow canonical INCI, no allergen threshold is applied, and restrictions report `not_checked`. Nothing renders as a pass.
@@ -47,7 +47,7 @@ Only one regime is selected for a formula. Regimes are not combined.
 
 ### Soap threshold basis
 
-For soap, allergen percentages are compared with the cured soap (non-water mass ÷ 0.89), not the wet batch. This matches the "Soap %" column. Changing the basis changes saved soap declarations, so their saved ingredient lists are flagged for review.
+For soap, allergen percentages are compared with the cured soap (non-water mass ÷ 0.89), not the wet batch. This matches the "Soap %" column. The basis is part of the saved-list hash (`declaration_threshold_basis`), so every soap formula with a saved final list is flagged once for review; cosmetic lists are unaffected.
 
 ### Substance restriction statuses
 

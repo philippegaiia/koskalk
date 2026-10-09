@@ -85,7 +85,7 @@ This release makes label market checks opt-in and moves soap allergen thresholds
 - Migrations add `workspaces.default_regulatory_regime` (default `none`) and change the PostgreSQL default of `recipe_versions.regulatory_regime` from `eu` to `none`. Existing formulas keep their stored market; existing companies start new formulas on **None** until an owner or admin picks a default in Settings → Workspace.
 - No regulatory seeder needs to run. The `SubstanceSeeder` change is a refactor with no data change.
 - The interface catalogue step above imports the new and reworded strings.
-- After deployment, saved soap ingredient lists whose declarations change on the cured basis are flagged for review. Tell soap users to recheck their final lists.
+- After deployment, every soap formula with a saved final ingredient list is flagged once for review, because the threshold basis is part of the list hash. Tell soap users to recheck those lists; cosmetic lists are unaffected.
 
 Import the label market help topic as an English draft, then review and publish it in Admin → Content → Help Topics:
 

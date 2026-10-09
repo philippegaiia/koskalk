@@ -182,15 +182,7 @@ class SubstanceComplianceService
 
         $regime = RegulatoryRegime::query()
             ->where('code', $regimeCode)
-            ->whereIn('status', ['active', 'preview'])
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_from')
-                    ->orWhereDate('effective_from', '<=', $today);
-            })
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_until')
-                    ->orWhereDate('effective_until', '>=', $today);
-            })
+            ->selectable($today)
             ->with(['substanceRules' => function ($query) use ($today, $exposureMode): void {
                 $query
                     ->where('is_active', true)

@@ -2,11 +2,13 @@
 
 use App\Actions\FormulaSharing\AcceptFormulaShare;
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientLabelMarket;
 use App\Filament\Resources\RegulatoryRegimes\Pages\CreateRegulatoryRegime;
 use App\Livewire\Dashboard\SettingsIndex;
 use App\Models\Allergen;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientMarketLabel;
 use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\ProductFamily;
@@ -20,6 +22,7 @@ use App\Models\Substance;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\FormulaSharePreview;
+use App\Services\InciGenerationService;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,6 +54,62 @@ it('compares soap allergen thresholds with the cured product rather than the wet
         ->and($row['exceeds_threshold'])->toBeTrue()
         ->and($row['included_in_inci'])->toBeTrue()
         ->and($snapshot['labeling']['final_labels'])->toContain('LINALOOL');
+});
+
+it('flags a soap list saved under the wet batch basis for review', function (): void {
+    $fixture = marketCheckFormula(allergenConcentration: 0.7);
+    RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
+    $wetBasisHash = fn (array $payload): string => hash('sha256', json_encode(marketCheckSortedForHash($payload), JSON_THROW_ON_ERROR));
+    $listState = function (array $payload) use ($wetBasisHash): array {
+        $calculation = app(RecipeWorkbenchService::class)->previewSoapCalculation($payload);
+
+        return app(InciGenerationService::class)->generate([
+            ...$payload,
+            'final_ingredient_list' => 'OLEA EUROPAEA FRUIT OIL, LAVANDULA ANGUSTIFOLIA OIL',
+            'final_ingredient_list_basis_hash' => $wetBasisHash($payload),
+        ], $calculation)['final_ingredient_list'];
+    };
+
+    $soap = marketCheckSavePayload($fixture, 'eu');
+    $blend = [...$soap, 'manufacturing_mode' => 'blend_only'];
+
+    expect($listState($soap)['is_outdated'])->toBeTrue()
+        ->and($listState($blend)['is_outdated'])->toBeFalse();
+});
+
+it('uses canonical INCI names rather than EU declaration names when no market is checked', function (): void {
+    $fixture = marketCheckFormula(allergenConcentration: 50);
+    IngredientMarketLabel::factory()->create([
+        'ingredient_id' => $fixture['fragrance']->id,
+        'market_code' => IngredientLabelMarket::Eu,
+        'declaration_name' => 'LAVANDULA ANGUSTIFOLIA HERB OIL',
+    ]);
+    RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
+
+    $labels = fn (string $market): array => app(RecipeWorkbenchService::class)->snapshotFromWorkbenchDraft(
+        marketCheckDraft($fixture, $market),
+    )['labeling']['final_labels'];
+
+    expect($labels('eu'))->toContain('LAVANDULA ANGUSTIFOLIA HERB OIL')
+        ->and($labels(RegulatoryRegime::NONE_CODE))->toContain('LAVANDULA ANGUSTIFOLIA OIL')
+        ->not->toContain('LAVANDULA ANGUSTIFOLIA HERB OIL')
+        ->and($labels('retired_market'))->toContain('LAVANDULA ANGUSTIFOLIA OIL');
+});
+
+it('treats a market outside its effective dates as unavailable', function (): void {
+    $fixture = marketCheckFormula(allergenConcentration: 50);
+    RegulatoryRegime::factory()->create(['code' => 'future_market', 'market_code' => 'xx', 'status' => 'active', 'effective_from' => now()->addMonth()]);
+    RegulatoryRegime::factory()->create(['code' => 'ended_market', 'market_code' => 'yy', 'status' => 'active', 'effective_until' => now()->subDay()]);
+
+    $snapshot = app(RecipeWorkbenchService::class)->snapshotFromWorkbenchDraft(
+        marketCheckDraft($fixture, 'future_market'),
+    );
+
+    expect(RegulatoryRegime::normalizeCode('future_market'))->toBe(RegulatoryRegime::NONE_CODE)
+        ->and(RegulatoryRegime::normalizeCode('ended_market'))->toBe(RegulatoryRegime::NONE_CODE)
+        ->and(array_keys(RegulatoryRegime::selectableMarkets()))->toBe([RegulatoryRegime::NONE_CODE])
+        ->and($snapshot['labeling']['market_check']['state'])->toBe('unavailable')
+        ->and($snapshot['restrictions']['summary']['status'])->toBe('not_checked');
 });
 
 it('keeps composition but applies no market rule when no market is selected', function (): void {
@@ -317,13 +376,45 @@ it('reserves the none code so no regime can replace the no market option', funct
         ->call('create')
         ->assertHasNoFormErrors();
 
-    expect(RegulatoryRegime::query()->where('code', 'uk_2027')->exists())->toBeTrue()
+    Livewire::test(CreateRegulatoryRegime::class)
+        ->fillForm([
+            'code' => ' Uk_2027',
+            'market_code' => 'UK',
+            'name' => 'United Kingdom again',
+            'status' => 'preview',
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['code']);
+
+    expect(RegulatoryRegime::query()->where('code', 'uk_2027')->count())->toBe(1)
         ->and(RegulatoryRegime::query()->where('code', 'none')->exists())->toBeFalse();
 });
 
 it('labels a shared formula without a market as none', function (): void {
     expect(__('sharing.values.'.RegulatoryRegime::NONE_CODE))->toBe('None');
 });
+
+/**
+ * Mirrors the service's key ordering so a test can build the hash a list was
+ * saved with before the cured threshold basis existed.
+ *
+ * @param  array<mixed>  $value
+ * @return array<mixed>
+ */
+function marketCheckSortedForHash(array $value): array
+{
+    foreach ($value as $key => $item) {
+        if (is_array($item)) {
+            $value[$key] = marketCheckSortedForHash($item);
+        }
+    }
+
+    if (! array_is_list($value)) {
+        ksort($value);
+    }
+
+    return $value;
+}
 
 /**
  * @return array{oil: Ingredient, fragrance: Ingredient, allergen: Allergen}

@@ -17,6 +17,12 @@ class InciGenerationService
 
     private const INCORPORATED_LIST_VARIANT_KEY = 'incorporated_ingredients';
 
+    /**
+     * Naming used when no market is checked: canonical INCI, with no market
+     * declaration override applied.
+     */
+    private const CANONICAL_NAMING = 'canonical';
+
     public function __construct(
         private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
         private readonly IngredientDeclarationNameResolver $ingredientDeclarationNameResolver,
@@ -121,7 +127,7 @@ class InciGenerationService
             $soapCalculation,
             $declarationRuleState['market_code'] ?? null,
         );
-        $ingredientListBasisHash = $this->ingredientListBasisHash($payload);
+        $ingredientListBasisHash = $this->ingredientListBasisHash($payload, $basis);
         $finalIngredientList = $this->finalIngredientListState(
             $payload,
             $ingredientListBasisHash,
@@ -188,15 +194,7 @@ class InciGenerationService
 
         $regime = RegulatoryRegime::query()
             ->where('code', $regimeCode)
-            ->whereIn('status', ['active', 'preview'])
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_from')
-                    ->orWhereDate('effective_from', '<=', $today);
-            })
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('effective_until')
-                    ->orWhereDate('effective_until', '>=', $today);
-            })
+            ->selectable($today)
             ->with(['allergenRules' => function ($query) use ($today): void {
                 $query
                     ->where('is_active', true)
@@ -981,11 +979,20 @@ class InciGenerationService
     }
 
     /**
+     * Hashes what a saved final list was based on. Soap declarations are
+     * compared with the cured weight, so that basis is part of the hash: lists
+     * accepted under the former wet-batch basis are flagged for review.
+     *
      * @param  array<string, mixed>  $payload
+     * @param  array{cured_weight: float|null}  $basis
      */
-    private function ingredientListBasisHash(array $payload): string
+    private function ingredientListBasisHash(array $payload, array $basis): string
     {
         $basisPayload = $payload;
+
+        if (($basis['cured_weight'] ?? null) !== null && $basis['cured_weight'] > 0) {
+            $basisPayload['declaration_threshold_basis'] = 'cured_weight';
+        }
 
         foreach ([
             'final_ingredient_list',
@@ -1135,8 +1142,8 @@ class InciGenerationService
     }
 
     /**
-     * No market selected, or the stored market no longer exists: composition stays
-     * visible under canonical INCI naming, but no declaration rule is applied.
+     * No market selected, or the stored market is not available: composition stays
+     * visible under canonical INCI naming, and no declaration rule is applied.
      *
      * @param  'not_selected'|'unavailable'  $screeningState
      * @return array{
@@ -1160,7 +1167,7 @@ class InciGenerationService
             'regime_label' => $screeningState === 'not_selected'
                 ? __('workbench.output.market_check.none_label')
                 : Str::upper($regimeCode),
-            'market_code' => IngredientLabelMarket::Eu->value,
+            'market_code' => self::CANONICAL_NAMING,
         ];
     }
 
@@ -1881,6 +1888,10 @@ class InciGenerationService
      */
     private function resolveIngredientDeclarationWithWarning(Ingredient $ingredient, string $marketCode): array
     {
+        if ($marketCode === self::CANONICAL_NAMING) {
+            return ['label' => $this->normalizePrintedLabel($ingredient->inci_name), 'warning' => null];
+        }
+
         ['declaration_name' => $declarationName, 'fallback' => $fallback] = $this->ingredientDeclarationNameResolver->resolveWithFallback(
             $ingredient,
             $marketCode,

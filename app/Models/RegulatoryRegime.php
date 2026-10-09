@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\RegulatoryRegimeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -47,7 +48,7 @@ class RegulatoryRegime extends Model
 
         $regimeExists = self::query()
             ->where('code', $code)
-            ->whereIn('status', ['active', 'preview'])
+            ->selectable()
             ->exists();
 
         return $regimeExists ? $code : self::NONE_CODE;
@@ -55,7 +56,7 @@ class RegulatoryRegime extends Model
 
     /**
      * Market choices offered for new formulas: none first, then every
-     * active or preview market in display order.
+     * selectable market in display order.
      *
      * @return array<string, string> code => name
      */
@@ -64,13 +65,27 @@ class RegulatoryRegime extends Model
         return [
             self::NONE_CODE => __('workbench.output.market_check.none_option'),
             ...self::query()
-                ->whereIn('status', ['active', 'preview'])
+                ->selectable()
                 ->orderByDesc('is_default')
                 ->orderBy('market_code')
                 ->orderBy('name')
                 ->pluck('name', 'code')
                 ->all(),
         ];
+    }
+
+    /**
+     * Markets a formula can be checked against today: active or preview, and
+     * inside their effective dates.
+     */
+    public function scopeSelectable(Builder $query, ?string $onDate = null): Builder
+    {
+        $onDate ??= now()->toDateString();
+
+        return $query
+            ->whereIn('status', ['active', 'preview'])
+            ->where(fn (Builder $query): Builder => $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', $onDate))
+            ->where(fn (Builder $query): Builder => $query->whereNull('effective_until')->orWhereDate('effective_until', '>=', $onDate));
     }
 
     public function allergenRules(): HasMany

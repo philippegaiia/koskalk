@@ -28,10 +28,22 @@ class RegulatoryRegimeForm
                         TextInput::make('code')
                             ->helperText('Stable lowercase key used by saved formulas, for example eu, us_mocra_preview, or canada.')
                             ->required()
-                            ->unique(ignoreRecord: true)
-                            ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
-                                if (strtolower(trim((string) $value)) === RegulatoryRegime::NONE_CODE) {
+                            ->rule(fn (?RegulatoryRegime $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                                $code = strtolower(trim((string) $value));
+
+                                if ($code === RegulatoryRegime::NONE_CODE) {
                                     $fail('"none" is reserved for formulas that are not checked against a market.');
+
+                                    return;
+                                }
+
+                                $taken = RegulatoryRegime::query()
+                                    ->where('code', $code)
+                                    ->when($record !== null, fn ($query) => $query->whereKeyNot($record->getKey()))
+                                    ->exists();
+
+                                if ($taken) {
+                                    $fail('Another regime already uses this code.');
                                 }
                             })
                             ->dehydrateStateUsing(fn (?string $state): string => strtolower(trim((string) $state)))

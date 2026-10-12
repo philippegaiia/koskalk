@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/Http/Controllers/**'
+  - app/Http/Controllers/IngredientExportController.php
 ---
 
 # Controllers
@@ -16,3 +17,6 @@ Return JSON from controllers as inline arrays built with response()->json([...])
 
 ## Preserve recorded price currencies in exports
 CurrentMaterialPrice stores its own currency; changing a workspace default does not convert or rewrite existing prices. Export each recorded amount with its recorded currency and use a currency-neutral amount header when rows may differ. Do not relabel an old amount using today's default currency or imply an exchange conversion.
+
+## Limit user-facing ingredient exports to price-book data
+To reduce bulk reuse of the ingredient catalogue, CSV/XLSX exports omit Recorded INCI and Subcategory, plus Export generated, Search filter, Ownership filter, Sorted by and Sort direction. Do not reintroduce these in workbook context rows. Retain the current filtering and sorting behavior.

@@ -2,7 +2,9 @@
 
 use App\Enums\MaterialPriceSource;
 use App\Enums\PackagingCategory;
+use App\Jobs\GenerateFileExport;
 use App\Models\CurrentMaterialPrice;
+use App\Models\FileExport;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
@@ -10,6 +12,7 @@ use App\Models\ProductType;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /*
@@ -147,4 +150,52 @@ function testProductTypeIdForFamily(string $familySlug): int
         'name' => "Test {$family->name} Product Type",
         'slug' => "test-{$familySlug}-product-type-{$family->id}",
     ])->id;
+}
+
+function queuedExportDownload(TestResponse $response): TestResponse
+{
+    $response->assertStatus(202)->assertJsonPath('status', 'pending');
+    $publicId = basename(parse_url($response->json('status_url'), PHP_URL_PATH));
+    $export = FileExport::query()->where('public_id', $publicId)->firstOrFail();
+    $actor = auth()->user();
+    auth()->forgetUser();
+    try {
+        app()->call([new GenerateFileExport($export->id), 'handle']);
+        expect(auth()->user())->toBeNull();
+    } finally {
+        test()->actingAs($actor);
+    }
+    test()->getJson($response->json('status_url'))->assertOk()->assertJsonPath('status', 'ready');
+
+    return test()->get(route('file-exports.download', $export));
+}
+
+function xlsxCellNumberFormat(string $contents, string $reference, int $sheet = 1): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'xlsx-format-');
+    $archive = new ZipArchive;
+
+    try {
+        file_put_contents($path, $contents);
+        $archive->open($path);
+        $worksheet = new DOMDocument;
+        $worksheet->loadXML($archive->getFromName("xl/worksheets/sheet{$sheet}.xml"));
+        $styles = new DOMDocument;
+        $styles->loadXML($archive->getFromName('xl/styles.xml'));
+        $cell = (new DOMXPath($worksheet))->query('//*[local-name()="c" and @r="'.$reference.'"]')->item(0);
+        $styleIndex = (int) $cell->getAttribute('s');
+        $style = (new DOMXPath($styles))->query('//*[local-name()="cellXfs"]/*')->item($styleIndex);
+        $formatId = $style->getAttribute('numFmtId');
+        $customFormat = (new DOMXPath($styles))->query('//*[local-name()="numFmt" and @numFmtId="'.$formatId.'"]')->item(0);
+
+        return $customFormat?->getAttribute('formatCode') ?? match ($formatId) {
+            '0' => 'General',
+            '1' => '0',
+            '2' => '0.00',
+            default => throw new RuntimeException('Unknown spreadsheet number format.'),
+        };
+    } finally {
+        $archive->close();
+        unlink($path);
+    }
 }

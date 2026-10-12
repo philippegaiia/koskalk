@@ -14,9 +14,9 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
 | {resources/js/production-editing.js,app/Livewire/Concerns/InteractsWithProductionEditing.php} | .ai/rules/concerns.md |
 | app/Services/ContextualHelp/** | .ai/rules/contextual-help.md |
-| app/Http/Controllers/** | .ai/rules/controllers.md |
+| app/Http/Controllers/**, app/Http/Controllers/IngredientExportController.php | .ai/rules/controllers.md |
 | resources/css/**/*.css | .ai/rules/css.md |
-| {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**} | .ai/rules/dashboard-partials-recipe-workbench.md |
+| {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/**}, {resources/css/app.css,resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php} | .ai/rules/dashboard-partials-recipe-workbench.md |
 | app/Livewire/Dashboard/IngredientEditor.php, app/Livewire/Dashboard/RecipeWorkbench.php, app/Livewire/Dashboard/FormulaShare*.php | .ai/rules/dashboard.md |
 | {lang/en/workbench.php,database/seeders/data/interface-translations.json} | .ai/rules/data.md |
 | app/Forms/** | .ai/rules/forms.md |
@@ -38,7 +38,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models,Services}/** | .ai/rules/models-services.md |
 | app/Models/**, app/Models/{ProductArea,ProductCategory,ProductType,IfraProductCategory}.php | .ai/rules/models.md |
 | resources/views/livewire/dashboard/partials/recipe-workbench/** | .ai/rules/partials-recipe-workbench.md |
-| app/Http/Controllers/RecipeController.php, app/Policies/RecipePolicy.php, resources/views/**/recipe*.blade.php, app/Policies/** | .ai/rules/policies-views.md |
+| app/Http/Controllers/RecipeController.php, app/Policies/RecipePolicy.php, resources/views/**/recipe*.blade.php, app/Policies/**, resources/views/** | .ai/rules/policies-views.md |
 | app/Policies/** | .ai/rules/policies.md |
 | app/Livewire/ProductionBench/Production/** | .ai/rules/production-bench-production.md |
 | {resources/views/livewire/production-bench/purchasing/procurement-index.blade.php,resources/views/livewire/production-bench/purchasing/receipt-detail.blade.php} | .ai/rules/production-bench-purchasing.md |
@@ -50,8 +50,9 @@ Before planning or editing, find the row whose globs match the file's path and r
 | routes/*.php | .ai/rules/routes.md |
 | app/Filament/Resources/Ingredients/Schemas/IngredientForm.php | .ai/rules/schemas.md |
 | database/seeders/** | .ai/rules/seeders.md |
+| app/{Services/QueuedFileExports.php,Jobs/GenerateFileExport.php,Console/Commands/PruneFileExports.php} | .ai/rules/services-commands.md |
 | app/Services/Production/** | .ai/rules/services-production.md |
-| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php, app/Services/EntitlementService.php, app/Services/*Exporter.php, app/Services/FormulaShare*.php | .ai/rules/services.md |
+| app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php, app/Services/IngredientCatalogConsolidationService.php, app/Services/SoapCalculationService.php, app/Services/EntitlementService.php, app/Services/*Exporter.php, app/Services/FormulaShare*.php, app/Services/IngredientFileExporter.php | .ai/rules/services.md |
 | app/Services/IngredientEnrichment/Sources/** | .ai/rules/sources.md |
 | app/Support/InciName.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

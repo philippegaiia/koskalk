@@ -89,15 +89,15 @@
  <div class="divide-y divide-[var(--color-line)] bg-white">
  <template x-for="row in costingFormulaRows" :key="`${row.phaseKey}-${row.rowId}`">
  <div class="grid grid-cols-[8rem_minmax(0,1.6fr)_8rem_8rem_8rem_9rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"></div>
- <div class="flex items-center bg-white px-4 py-3">
+ <div class="flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"></div>
+ <div class="flex items-center bg-white px-4 py-2">
  <div>
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></span></div>
- <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 2)"></span></div>
- <div class="flex items-center bg-white px-3 py-3">
+ <div class="numeric flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></span></div>
+ <div class="numeric flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 2)"></span></div>
+ <div class="flex items-center bg-white px-3 py-2">
  <input
  :value="costingPriceForRow(row) === null ? '' : format(costingPriceForRow(row), 2)"
  @change="updateCostingPrice(row, $event.target.value)"
@@ -109,17 +109,17 @@
  class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(lineCostForRow(row))" x-text="lineCostForRow(row) === null ? '' : format(lineCostForRow(row), 2)"></span></div>
+ <div class="numeric flex items-center bg-white px-4 py-2 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(lineCostForRow(row))" x-text="lineCostForRow(row) === null ? '' : format(lineCostForRow(row), 2)"></span></div>
  </div>
  </template>
 
  <div class="grid grid-cols-[8rem_minmax(0,1.6fr)_8rem_8rem_8rem_9rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.subtotal') }}</div>
- <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="numeric flex items-center bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(ingredientCostTotal)" x-text="format(ingredientCostTotal, 2)"></span></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-2"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-2 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.subtotal') }}</div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-2"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-2"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-2"></div>
+ <div class="numeric flex items-center bg-[var(--color-field-muted)] px-4 py-2 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(ingredientCostTotal)" x-text="format(ingredientCostTotal, 2)"></span></div>
  </div>
  </div>
  </div>
@@ -162,14 +162,14 @@
  <div class="divide-y divide-[var(--color-line)] bg-white">
  <template x-for="row in displayedPackagingCostRows" :key="row.id">
  <div class="grid grid-cols-[minmax(0,1.8fr)_9rem_9rem_9rem_9rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="flex items-center bg-white px-4 py-3">
+ <div class="flex items-center bg-white px-4 py-2">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  <p x-show="row.material_code" x-text="row.material_code" class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]"></p>
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]">
+ <div class="numeric flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]">
  <span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.quantity)" x-text="formatPackagingQuantity(row.quantity)"></span>
  </div>
- <div class="flex items-center bg-white px-3 py-3">
+ <div class="flex items-center bg-white px-3 py-2">
  <input
  :value="row.unit_cost === null || row.unit_cost === '' ? '' : format(row.unit_cost, 2)"
  @change="updatePackagingUnitCost(row, $event.target.value)"
@@ -181,8 +181,8 @@
  class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))" x-text="packagingCostPerFinishedUnitForRow(row) === null ? '' : format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]">
+ <div class="numeric flex items-center bg-white px-4 py-2 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))" x-text="packagingCostPerFinishedUnitForRow(row) === null ? '' : format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>
+ <div class="numeric flex items-center bg-white px-4 py-2 font-medium text-[var(--color-ink-strong)]">
      <template x-if="costingUnitsProducedValue > 0 && packagingBatchCostForRow(row) !== null"><span class="sk-decimal-aligned inline-flex" :style="decimalAlignmentStyle(packagingBatchCostForRow(row))" x-text="format(packagingBatchCostForRow(row), 2)"></span></template>
      <template x-if="costingUnitsProducedValue <= 0"><span x-text="t('costing.summary.enter_finished_units')"></span></template>
      <template x-if="costingUnitsProducedValue > 0 && packagingBatchCostForRow(row) === null"><span x-text="t('costing.summary.prices_required')"></span></template>

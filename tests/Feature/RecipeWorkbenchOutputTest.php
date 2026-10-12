@@ -12,6 +12,7 @@ use App\Models\MediaAssetUsage;
 use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
@@ -309,6 +310,7 @@ it('exports loaded current costing as a typed workbook from the live formula and
 
 it('selects costing print sections by context and does not save captured prices', function (): void {
     ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id, 'slug' => 'bar-soap']);
     $koh = Ingredient::factory()->create([
         'catalog_key' => 'CH3',
         'category' => IngredientCategory::SoapmakingAlkalis,
@@ -317,6 +319,7 @@ it('selects costing print sections by context and does not save captured prices'
         'is_active' => true,
     ]);
     $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['product_type_id'] = $productType->id;
     $payload['draft']['lye_type'] = 'koh';
     $payload['draft']['koh_purity_percentage'] = 100;
     $payload['costing'] = [
@@ -346,7 +349,9 @@ it('selects costing print sections by context and does not save captured prices'
     ] as $context => $expectedSections) {
         $contextPayload = [...$payload, 'print_context' => $context];
         $response = $this->actingAs($user)->postJson(route('recipes.workbench.print'), $contextPayload)->assertSuccessful();
-        $response->assertViewHas('selectedSections', $expectedSections);
+        $response->assertViewHas('selectedSections', $expectedSections)
+            ->assertViewHas('returnUrl', route('recipes.create', ['family' => 'soap', 'type' => 'bar-soap']).'#'.$context)
+            ->assertSee('data-return-to-workbench', false);
 
         if ($context === 'costing') {
             $response->assertViewHas('costingProjection', fn (array $projection): bool => $projection['currency'] === 'CHF'
@@ -714,14 +719,16 @@ it('allows a viewer to print the current working copy of a locked saved recipe w
 
     $response = $this->actingAs($viewer)->postJson(route('recipes.workbench.print'), $payload);
     $response->assertSuccessful()
-        ->assertSee('Current formula — working copy')
+        ->assertDontSee('<dt class="font-semibold text-slate-600">Source</dt>', false)
+        ->assertDontSee('<dt class="font-semibold text-slate-600">Version</dt>', false)
         ->assertSee('Current Working Soap')
         ->assertSee('Current draft procedure')
         ->assertSee('750')
         ->assertViewHas('formulaDocument', fn (array $document): bool => $document['identity']['state'] === 'current_working_copy'
             && $document['metadata']['version_number'] === null
             && $document['basis_weight'] === 750.0)
-        ->assertViewHas('returnUrl', route('recipes.saved', ['recipe' => $recipe]));
+        ->assertViewHas('returnUrl', route('recipes.edit', ['recipe' => $recipe]).'#formula')
+        ->assertSee('data-return-to-workbench', false);
 
     expect($recipe->fresh()->edit_revision)->toBe($originalRecipe->edit_revision)
         ->and($recipe->fresh()->updated_at)->toEqual($originalRecipe->updated_at)

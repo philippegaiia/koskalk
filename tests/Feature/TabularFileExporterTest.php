@@ -4,6 +4,78 @@ use App\Services\TabularFileExporter;
 use OpenSpout\Common\Entity\Cell\NumericCell;
 use OpenSpout\Reader\XLSX\Reader;
 
+it('formats CSV decimals without changing unformatted numbers or missing values', function (mixed $value, string $format, string $expected): void {
+    $csv = app(TabularFileExporter::class)->exportCsv([
+        'columns' => [
+            ['key' => 'value', 'label' => 'Price', 'type' => 'number', 'format' => $format],
+            ['key' => 'raw', 'label' => 'Raw', 'type' => 'number'],
+        ],
+        'rows' => [['value' => $value, 'raw' => '0.000000001']],
+    ]);
+
+    expect(str_getcsv(explode("\n", $csv)[1], escape: ''))->toBe([$expected, '0.000000001']);
+})->with([
+    'round half up' => ['5.125', '0.00', '5.13'],
+    'carry to integer' => ['9.995', '0.00', '10.00'],
+    'negative half up' => ['-1.235', '0.00', '-1.24'],
+    'zero price' => ['0', '0.00', '0.00'],
+    'missing price' => [null, '0.00', ''],
+    'adaptive minimum' => ['1.2', '0.00##', '1.20'],
+    'small packaging price' => ['0.035', '0.00##', '0.035'],
+    'four decimal rounding' => ['0.01235', '0.00##', '0.0124'],
+    'scientific float' => [0.0001, '0.00##', '0.0001'],
+    'integer count' => ['12.000000000', '0', '12'],
+]);
+
+it('uses each row unit to format mixed quantities in CSV and XLSX while keeping numeric cell precision', function (): void {
+    $table = [
+        'name' => 'Inventory',
+        'columns' => [
+            ['key' => 'quantity', 'label' => 'Quantity', 'type' => 'number', 'format' => fn (array $row): string => $row['unit'] === 'count' ? '0' : '0.00'],
+            ['key' => 'unit', 'label' => 'Unit', 'type' => 'string'],
+        ],
+        'rows' => [
+            ['quantity' => '-1.23456', 'unit' => 'kg'],
+            ['quantity' => '100.000000000', 'unit' => 'count'],
+        ],
+    ];
+    $exporter = app(TabularFileExporter::class);
+    $csv = $exporter->exportCsv($table);
+    $xlsx = $exporter->exportXlsx([$table]);
+
+    expect(str_getcsv(explode("\n", $csv)[1], escape: ''))->toBe(['-1.23', 'kg']);
+    expect(str_getcsv(explode("\n", $csv)[2], escape: ''))->toBe(['100', 'count']);
+    expect(xlsxCellNumberFormat($xlsx, 'A5'))->toBe('0.00');
+    expect(xlsxCellNumberFormat($xlsx, 'A6'))->toBe('0');
+
+    $path = tempnam(sys_get_temp_dir(), 'numeric-export-');
+    try {
+        file_put_contents($path, $xlsx);
+        $reader = new Reader;
+        $reader->open($path);
+        $rows = collect($reader->getSheetIterator()->current()->getRowIterator())->values();
+        $reader->close();
+
+        expect($rows[2]->getCells()[0])->toBeInstanceOf(NumericCell::class);
+        expect($rows[2]->getCells()[0]->getValue())->toBe(-1.23456);
+    } finally {
+        unlink($path);
+    }
+});
+
+it('rejects unsupported CSV number formats and nonfinite values', function (mixed $value, string $format): void {
+    expect(fn () => app(TabularFileExporter::class)->exportCsv([
+        'columns' => [['key' => 'value', 'label' => 'Value', 'type' => 'number', 'format' => $format]],
+        'rows' => [['value' => $value]],
+    ]))->toThrow(InvalidArgumentException::class);
+})->with([
+    'currency literal' => ['1', '0.00 USD'],
+    'empty decimal pattern' => ['1', '0.'],
+    'infinity' => [INF, '0.00'],
+    'not a number' => [NAN, '0.00'],
+    'exponent overflow' => ['1e9999', '0.00'],
+]);
+
 it('writes typed XLSX cells and keeps formula-like user text as text', function (): void {
     $exporter = app(TabularFileExporter::class);
     $path = $exporter->writeTemporaryXlsx([

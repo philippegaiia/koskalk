@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\NumberLocale;
+use Closure;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use OpenSpout\Common\Entity\Cell;
@@ -13,6 +15,7 @@ use OpenSpout\Common\Entity\Style\Style;
 use OpenSpout\Writer\AutoFilter;
 use OpenSpout\Writer\Common\Entity\Sheet;
 use OpenSpout\Writer\XLSX\Entity\SheetView;
+use OpenSpout\Writer\XLSX\Options;
 use OpenSpout\Writer\XLSX\Writer;
 use RuntimeException;
 use Throwable;
@@ -27,9 +30,9 @@ class TabularFileExporter
      *     name: string,
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>,
      *     rows: iterable<array<string, scalar|null>>,
-     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
+     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
      * }>  $sheets
      */
     public function exportXlsx(array $sheets): string
@@ -54,9 +57,9 @@ class TabularFileExporter
      *     name: string,
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>,
      *     rows: iterable<array<string, scalar|null>>,
-     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
+     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
      * }>  $sheets
      */
     public function writeTemporaryXlsx(array $sheets, ?string $directory = null): string
@@ -89,9 +92,9 @@ class TabularFileExporter
      *     name: string,
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>,
      *     rows: iterable<array<string, scalar|null>>,
-     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
+     *     tables?: list<array{title?: string, columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>, rows: iterable<array<string, scalar|null>>}>
      * }>  $sheets
      */
     public function writeXlsxToFile(string $path, array $sheets): void
@@ -100,7 +103,9 @@ class TabularFileExporter
             throw new InvalidArgumentException('At least one worksheet is required.');
         }
 
-        $writer = new Writer;
+        $options = new Options;
+        $options->setTempFolder(dirname($path));
+        $writer = new Writer($options);
         $opened = false;
 
         try {
@@ -132,7 +137,7 @@ class TabularFileExporter
 
     /**
      * @param  array{
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean'}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string}>,
      *     rows: iterable<array<string, scalar|null>>
      * }  $table
      */
@@ -161,7 +166,7 @@ class TabularFileExporter
 
     /**
      * @param  array{
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean'}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string}>,
      *     rows: iterable<array<string, scalar|null>>
      * }  $table
      */
@@ -182,7 +187,7 @@ class TabularFileExporter
 
     /**
      * @param  array{
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean'}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string}>,
      *     rows: iterable<array<string, scalar|null>>
      * }  $table
      */
@@ -221,7 +226,7 @@ class TabularFileExporter
     /**
      * @param  resource  $stream
      * @param array{
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean'}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string}>,
      *     rows: iterable<array<string, scalar|null>>
      * } $table
      */
@@ -239,7 +244,7 @@ class TabularFileExporter
             $values = [];
 
             foreach ($table['columns'] as $column) {
-                $values[] = $this->csvValue($row[$column['key']] ?? null, $column['type']);
+                $values[] = $this->csvValue($row[$column['key']] ?? null, $column['type'], $this->columnFormat($column, $row));
             }
 
             $this->writeCsvRow($stream, $values);
@@ -261,11 +266,11 @@ class TabularFileExporter
      *     name: string,
      *     title?: string,
      *     context?: list<array{label: string, value: scalar|null, type?: 'string'|'number'|'boolean'}>,
-     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
+     *     columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>,
      *     rows: iterable<array<string, scalar|null>>,
      *     tables?: list<array{
      *         title?: string,
-     *         columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string, width?: float}>,
+     *         columns: list<array{key: string, label: string, type: 'string'|'number'|'boolean', format?: string|Closure(array<string, scalar|null>): string, width?: float}>,
      *         rows: iterable<array<string, scalar|null>>
      *     }>
      * }  $definition
@@ -323,7 +328,7 @@ class TabularFileExporter
                 $cells = [];
 
                 foreach ($columns as $column) {
-                    $cells[] = $this->cell($row[$column['key']] ?? null, $column['type'], $column['format'] ?? null);
+                    $cells[] = $this->cell($row[$column['key']] ?? null, $column['type'], $this->columnFormat($column, $row));
                 }
 
                 $writer->addRow(new Row($cells));
@@ -395,7 +400,7 @@ class TabularFileExporter
         return new NumericCell($number, $style);
     }
 
-    private function csvValue(mixed $value, string $type): string
+    private function csvValue(mixed $value, string $type, ?string $format): string
     {
         if ($value === null || $value === '') {
             return '';
@@ -412,10 +417,36 @@ class TabularFileExporter
         }
 
         if ($type === 'number' && (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value)))) {
+            if (! is_finite((float) $value)) {
+                throw new InvalidArgumentException('Numeric CSV cells require a finite numeric value.');
+            }
+
+            if ($format !== null) {
+                if (preg_match('/^0(?:\.(0*)(#*))?$/D', $format, $matches) !== 1 || $format === '0.') {
+                    throw new InvalidArgumentException('CSV number formats must use decimal zeros and optional trailing hashes.');
+                }
+
+                $minimumDecimals = strlen($matches[1] ?? '');
+                $maximumDecimals = $minimumDecimals + strlen($matches[2] ?? '');
+
+                return NumberLocale::formatAdaptiveDecimal($value, $minimumDecimals, $maximumDecimals, 'en_US');
+            }
+
             return (string) $value;
         }
 
         throw new InvalidArgumentException("Unsupported CSV cell value for type [{$type}].");
+    }
+
+    /**
+     * @param  array{format?: string|Closure(array<string, scalar|null>): string}  $column
+     * @param  array<string, scalar|null>  $row
+     */
+    private function columnFormat(array $column, array $row): ?string
+    {
+        $format = $column['format'] ?? null;
+
+        return $format instanceof Closure ? $format($row) : $format;
     }
 
     private function sheetName(string $name): string

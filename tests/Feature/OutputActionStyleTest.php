@@ -9,10 +9,12 @@
 function outputActionViews(): array
 {
     return [
+        'print preview' => ['components/formula-document/print-options.blade.php', ['formula_documents.actions.print_sheet']],
         'workbench' => ['livewire/dashboard/partials/recipe-workbench/output-actions.blade.php', ['formula_documents.actions.print_sheet', 'formula_documents.actions.export_formula', 'formula_documents.actions.export_costing', 'formula_documents.actions.export_composition']],
         'saved formula sheet' => ['recipes/version.blade.php', ['formula_documents.actions.print_sheet', 'formula_documents.actions.export_formula']],
         'saved sheet labeling' => ['recipes/partials/version-sheet.blade.php', ['formula_documents.actions.export_composition']],
         'ingredients' => ['livewire/dashboard/ingredients-index.blade.php', ['ingredients.exports.ui.label']],
+        'packaging' => ['livewire/dashboard/packaging-items-index.blade.php', ['packaging.exports.ui.label']],
         'inventory' => ['livewire/production-bench/inventory-index.blade.php', ['production_bench.output.ui.materials', 'production_bench.output.ui.stock', 'production_bench.output.ui.count']],
         'stock preparation' => ['livewire/production-bench/production/stock-preparation.blade.php', ['production_bench.picking.print']],
         'production detail' => ['livewire/production-bench/production/production-detail.blade.php', ['production_bench.run_print.']],

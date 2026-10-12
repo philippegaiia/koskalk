@@ -1,6 +1,32 @@
 <?php
 
+use App\Services\RecipeCostingExportDataBuilder;
 use App\Services\RecipeVersionCostPreviewBuilder;
+use App\Services\RecipeWorkbookExporter;
+
+it('formats costing workbook prices with two decimals and retains additional precision for small costs', function (): void {
+    $data = app(RecipeCostingExportDataBuilder::class)->build([], [
+        'ingredient_rows' => [[
+            'ingredient_name' => 'Tiny dose', 'percentage' => '0.00001', 'quantity' => '0.000001',
+            'price_per_kg' => '5.125', 'line_cost' => '0.00000001', 'is_unpriced' => false,
+        ]],
+        'packaging_rows' => [[
+            'name' => 'Label', 'components_per_unit' => '1', 'unit_cost' => '0.035',
+            'cost_per_finished_unit' => '0.035', 'line_cost' => '0.105', 'is_unpriced' => false,
+        ]],
+        'ingredient_total' => '0.00000001', 'packaging_total' => '0.105',
+        'total_cost' => '0.10500001', 'cost_per_unit' => '0.035000003333',
+    ]);
+
+    $xlsx = app(RecipeWorkbookExporter::class)->exportCosting($data);
+
+    expect(xlsxCellNumberFormat($xlsx, 'G15'))->toBe('0.00');
+    expect(xlsxCellNumberFormat($xlsx, 'I15'))->toBe('0.00######');
+    expect(xlsxCellNumberFormat($xlsx, 'D15', 2))->toBe('0.00######');
+    expect(xlsxCellNumberFormat($xlsx, 'B15', 3))->toBe('0.00######');
+    expect($data['ingredientRows'][0]['line_cost'])->toBe('0.00000001');
+    expect($data['summary']['cost_per_unit'])->toBe('0.035000003333');
+});
 
 it('calculates a scaled ingredient and finished-unit packaging cost from independent values', function (): void {
     $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromTransientRows(

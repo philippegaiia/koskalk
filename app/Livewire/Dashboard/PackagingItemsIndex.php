@@ -4,18 +4,17 @@ namespace App\Livewire\Dashboard;
 
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
-use App\Models\CurrentMaterialPrice;
 use App\Models\PackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ContextualHelp\MaterialHelpTopics;
 use App\Services\CurrentAppUserResolver;
+use App\Services\PackagingCatalogQuery;
 use App\Services\PackagingItemAuthoringService;
 use App\Services\PackagingItemFormulaMutationService;
 use App\Services\WorkspaceAuthorization;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -236,6 +235,7 @@ class PackagingItemsIndex extends Component
         return view('livewire.dashboard.packaging-items-index', [
             'contextualHelp' => $helpTopics->resolve('packaging', app()->getLocale()),
             'currentUser' => $currentUser,
+            'destinationWorkspacePublicId' => $currentUser?->company(fresh: true)?->public_id,
             'canCreateItems' => $canUpdateItems,
             'canUpdateItems' => $canUpdateItems,
             'canDeleteItems' => $canDeleteItems,
@@ -264,26 +264,14 @@ class PackagingItemsIndex extends Component
             return PackagingItem::query()->whereRaw('1 = 0')->paginate($perPage);
         }
 
-        return PackagingItem::query()
+        return app(PackagingCatalogQuery::class)->query($this->destinationWorkspaceId ?? 0, [
+            'search' => $this->search,
+            'sortField' => $this->sortField,
+            'sortDirection' => $this->sortDirection,
+        ])
             ->select(['id', 'public_id', 'workspace_id', 'created_by_user_id', 'name', 'material_code', 'category', 'notes', 'is_active', 'featured_image_path', 'created_at', 'updated_at'])
-            ->where('workspace_id', $this->destinationWorkspaceId)
             ->withCount('costingItems')
-            ->with(['currentPrice', 'mediaAssetUsages.mediaAsset'])
-            ->when($this->search !== '', fn (Builder $query): Builder => $query
-                ->where(fn (Builder $where): Builder => $where
-                    ->where('name', 'like', '%'.$this->search.'%')
-                    ->orWhere('material_code', 'like', '%'.$this->search.'%')
-                    ->orWhere('notes', 'like', '%'.$this->search.'%')))
-            ->when($this->sortField === 'unit_cost', fn (Builder $query): Builder => $query
-                ->orderBy(
-                    CurrentMaterialPrice::query()
-                        ->select('price_per_canonical_unit')
-                        ->whereColumn('packaging_item_id', 'packaging_items.id'),
-                    $this->sortDirection,
-                )
-                ->orderBy('id'))
-            ->when($this->sortField === 'name', fn (Builder $query): Builder => $query->orderBy('name', $this->sortDirection)->orderBy('id', $this->sortDirection))
-            ->when($this->sortField === 'material_code', fn (Builder $query): Builder => $query->orderBy('material_code', $this->sortDirection)->orderBy('id', $this->sortDirection))
+            ->with('mediaAssetUsages.mediaAsset')
             ->paginate($perPage);
     }
 

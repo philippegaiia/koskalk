@@ -714,11 +714,17 @@ it('uses the users default currency when creating a price from the ingredient ta
         ->value('currency'))->toBe('GBP');
 });
 
-it('renders compact price inputs with the shared field treatment', function (): void {
+it('renders compact ingredient rows and price inputs with the shared field treatment', function (): void {
     $ingredientsIndexSource = file_get_contents(resource_path('views/livewire/dashboard/ingredients-index.blade.php'));
 
     expect($ingredientsIndexSource)
+        ->toContain('class="sk-table table-auto"')
         ->toContain('class="sk-input numeric py-2 text-right"');
+
+    $styles = file_get_contents(resource_path('css/app.css'));
+    preg_match('/\.sk-table tbody td\s*\{([^}]+)\}/', $styles, $matches);
+
+    expect($matches[1])->toContain('padding: 0.5rem 1rem;');
 });
 
 it('does not offer private ingredient deletion to workspace editors', function (): void {

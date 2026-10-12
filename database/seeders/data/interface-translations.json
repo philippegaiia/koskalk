@@ -3720,6 +3720,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "print.pdf_hint",
+      "text": {
+        "de": "Um eine PDF zu speichern, wählen Sie „Als PDF speichern“ oder „PDF“ im Druckdialog.",
+        "es": "Para guardar un PDF, elige «Guardar como PDF» o «PDF» en el cuadro de impresión.",
+        "fr": "Pour enregistrer un PDF, choisissez « Enregistrer au format PDF » ou « PDF » dans la fenêtre d’impression.",
+        "it": "Per salvare un PDF, scegli «Salva come PDF» o «PDF» nella finestra di stampa.",
+        "nl": "Kies ‘Opslaan als pdf’ of ‘PDF’ in het afdrukvenster om een pdf op te slaan.",
+        "pt_BR": "Para salvar um PDF, escolha “Salvar como PDF” ou “PDF” na janela de impressão."
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "print.prepared_by",
       "text": {
         "de": "Vorbereitet von",
@@ -3782,12 +3794,12 @@
       "group": "formula_documents",
       "key": "print.title",
       "text": {
-        "de": "Herstellungsblatt",
-        "es": "Hoja de elaboración",
-        "fr": "Fiche de fabrication",
-        "it": "Scheda di lavorazione",
-        "nl": "Bereidingsblad",
-        "pt_BR": "Ficha de fórmula de trabalho"
+        "de": "Formelblatt",
+        "es": "Ficha de fórmula",
+        "fr": "Fiche de formule",
+        "it": "Scheda formula",
+        "nl": "Formuleblad",
+        "pt_BR": "Ficha de fórmula"
       }
     },
     {
@@ -12384,6 +12396,30 @@
     },
     {
       "group": "ingredients",
+      "key": "exports.ui.background_failed",
+      "text": {
+        "de": "Der Export konnte nicht vorbereitet werden. Bitte versuchen Sie es erneut.",
+        "es": "No se pudo preparar la exportación. Inténtalo de nuevo.",
+        "fr": "Impossible de préparer l’export. Veuillez réessayer.",
+        "it": "Impossibile preparare l’esportazione. Riprova.",
+        "nl": "De export kon niet worden voorbereid. Probeer het opnieuw.",
+        "pt_BR": "Não foi possível preparar a exportação. Tente novamente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.busy",
+      "text": {
+        "de": "Ihr Arbeitsbereich hat sein Exportlimit erreicht. Versuchen Sie es später erneut.",
+        "es": "Tu espacio de trabajo ha alcanzado el límite de exportaciones. Inténtalo más tarde.",
+        "fr": "Votre espace de travail a atteint sa limite d’exports. Réessayez plus tard.",
+        "it": "Il tuo spazio di lavoro ha raggiunto il limite di esportazioni. Riprova più tardi.",
+        "nl": "Je werkruimte heeft de exportlimiet bereikt. Probeer het later opnieuw.",
+        "pt_BR": "Seu espaço de trabalho atingiu o limite de exportações. Tente novamente mais tarde."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "exports.ui.csv",
       "text": {
         "de": "CSV-Datei (.csv)",
@@ -12500,6 +12536,18 @@
         "it": "Preparazione dell’esportazione degli ingredienti…",
         "nl": "Ingrediëntenexport voorbereiden…",
         "pt_BR": "Preparando a exportação de ingredientes…"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "exports.ui.too_large",
+      "text": {
+        "de": "Dieser Export ist zu groß. Grenzen Sie die Filter ein und versuchen Sie es erneut.",
+        "es": "Esta exportación es demasiado grande. Reduce los resultados con los filtros e inténtalo de nuevo.",
+        "fr": "Cet export est trop volumineux. Affinez les filtres et réessayez.",
+        "it": "Questa esportazione è troppo grande. Restringi i filtri e riprova.",
+        "nl": "Deze export is te groot. Verfijn de filters en probeer het opnieuw.",
+        "pt_BR": "Esta exportação é muito grande. Refine os filtros e tente novamente."
       }
     },
     {
@@ -20996,6 +21044,186 @@
         "it": "Nessuna confezione corrisponde alla ricerca",
         "nl": "Geen verpakkingen gevonden",
         "pt_BR": "Nenhuma embalagem corresponde à pesquisa"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.columns.unit_price",
+      "text": {
+        "de": "Stückpreis",
+        "es": "Precio unitario",
+        "fr": "Prix unitaire",
+        "it": "Prezzo unitario",
+        "nl": "Stukprijs",
+        "pt_BR": "Preço unitário"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.filename",
+      "text": {
+        "de": "verpackungspreisliste",
+        "es": "precios-envases",
+        "fr": "tarifs-emballages",
+        "it": "listino-imballaggi",
+        "nl": "verpakkingsprijslijst",
+        "pt_BR": "precos-embalagens"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.sheet_name",
+      "text": {
+        "de": "Verpackungen",
+        "es": "Envases",
+        "fr": "Emballages",
+        "it": "Imballaggi",
+        "nl": "Verpakkingen",
+        "pt_BR": "Embalagens"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.title",
+      "text": {
+        "de": "Verpackungspreisliste",
+        "es": "Lista de precios de envases",
+        "fr": "Tarifs des emballages",
+        "it": "Listino prezzi degli imballaggi",
+        "nl": "Verpakkingsprijslijst",
+        "pt_BR": "Lista de preços de embalagens"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.errors.access",
+      "text": {
+        "de": "Melden Sie sich an, um Verpackungen zu exportieren.",
+        "es": "Inicia sesión para exportar envases.",
+        "fr": "Connectez-vous pour exporter les emballages.",
+        "it": "Accedi per esportare gli imballaggi.",
+        "nl": "Log in om verpakkingen te exporteren.",
+        "pt_BR": "Entre para exportar embalagens."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.errors.failed",
+      "text": {
+        "de": "Verpackungen konnten nicht exportiert werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "es": "No se pudieron exportar los envases. Actualiza la página e inténtalo de nuevo.",
+        "fr": "Impossible d’exporter les emballages. Actualisez la page et réessayez.",
+        "it": "Impossibile esportare gli imballaggi. Aggiorna la pagina e riprova.",
+        "nl": "Verpakkingen konden niet worden geëxporteerd. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Não foi possível exportar as embalagens. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.errors.forbidden",
+      "text": {
+        "de": "Ihr Zugriff auf den Verpackungsexport hat sich geändert. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "es": "Tu acceso a la exportación de envases ha cambiado. Actualiza la página e inténtalo de nuevo.",
+        "fr": "Votre accès à l’export des emballages a changé. Actualisez la page et réessayez.",
+        "it": "Il tuo accesso all’esportazione degli imballaggi è cambiato. Aggiorna la pagina e riprova.",
+        "nl": "Je toegang tot de verpakkingsexport is gewijzigd. Vernieuw de pagina en probeer het opnieuw.",
+        "pt_BR": "Seu acesso à exportação de embalagens mudou. Atualize a página e tente novamente."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.errors.invalid",
+      "text": {
+        "de": "Prüfen Sie die Filter für den Verpackungsexport und versuchen Sie es erneut.",
+        "es": "Revisa los filtros de exportación de envases e inténtalo de nuevo.",
+        "fr": "Vérifiez les filtres d’export des emballages et réessayez.",
+        "it": "Controlla i filtri di esportazione degli imballaggi e riprova.",
+        "nl": "Controleer de filters voor de verpakkingsexport en probeer het opnieuw.",
+        "pt_BR": "Confira os filtros de exportação de embalagens e tente novamente."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.label",
+      "text": {
+        "de": "Verpackungen exportieren",
+        "es": "Exportar envases",
+        "fr": "Exporter les emballages",
+        "it": "Esporta imballaggi",
+        "nl": "Verpakkingen exporteren",
+        "pt_BR": "Exportar embalagens"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.menu_label",
+      "text": {
+        "de": "Exportformat für Verpackungen",
+        "es": "Formato de exportación de envases",
+        "fr": "Format d’export des emballages",
+        "it": "Formato di esportazione degli imballaggi",
+        "nl": "Exportformaat voor verpakkingen",
+        "pt_BR": "Formato de exportação de embalagens"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.ui.pending",
+      "text": {
+        "de": "Verpackungsexport wird vorbereitet…",
+        "es": "Preparando la exportación de envases…",
+        "fr": "Préparation de l’export des emballages…",
+        "it": "Preparazione dell’esportazione degli imballaggi…",
+        "nl": "Verpakkingsexport wordt voorbereid…",
+        "pt_BR": "Preparando a exportação de embalagens…"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.validation.changed",
+      "text": {
+        "de": "Die Verpackungsliste hat sich geändert und überschreitet jetzt die Exportgrenze. Grenzen Sie die Suche ein und versuchen Sie es erneut.",
+        "es": "La lista de envases ha cambiado y ahora supera el límite de exportación. Acota la búsqueda e inténtalo de nuevo.",
+        "fr": "La liste des emballages a changé et dépasse maintenant la limite d’export. Affinez la recherche et réessayez.",
+        "it": "L’elenco degli imballaggi è cambiato e ora supera il limite di esportazione. Restringi la ricerca e riprova.",
+        "nl": "De verpakkingslijst is gewijzigd en overschrijdt nu de exportlimiet. Verfijn de zoekopdracht en probeer het opnieuw.",
+        "pt_BR": "A lista de embalagens mudou e agora excede o limite de exportação. Refine a busca e tente novamente."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.validation.empty",
+      "text": {
+        "de": "Keine Verpackungen entsprechen den aktuellen Filtern.",
+        "es": "Ningún envase coincide con los filtros actuales.",
+        "fr": "Aucun emballage ne correspond aux filtres actuels.",
+        "it": "Nessun imballaggio corrisponde ai filtri attuali.",
+        "nl": "Geen verpakkingen voldoen aan de huidige filters.",
+        "pt_BR": "Nenhuma embalagem corresponde aos filtros atuais."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.validation.too_many",
+      "text": {
+        "de": "Dieser Export enthält mehr als :limit Verpackungen. Grenzen Sie die Suche ein und versuchen Sie es erneut.",
+        "es": "Esta exportación contiene más de :limit envases. Acota la búsqueda e inténtalo de nuevo.",
+        "fr": "Cet export contient plus de :limit emballages. Affinez la recherche et réessayez.",
+        "it": "Questa esportazione contiene più di :limit imballaggi. Restringi la ricerca e riprova.",
+        "nl": "Deze export bevat meer dan :limit verpakkingen. Verfijn de zoekopdracht en probeer het opnieuw.",
+        "pt_BR": "Esta exportação contém mais de :limit embalagens. Refine a busca e tente novamente."
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "exports.validation.workspace_changed",
+      "text": {
+        "de": "Ihr ausgewählter Arbeitsbereich hat sich geändert. Laden Sie die Verpackungsliste neu und versuchen Sie es erneut.",
+        "es": "Tu espacio de trabajo seleccionado ha cambiado. Actualiza la lista de envases e inténtalo de nuevo.",
+        "fr": "Votre espace de travail sélectionné a changé. Actualisez la liste des emballages et réessayez.",
+        "it": "Lo spazio di lavoro selezionato è cambiato. Aggiorna l’elenco degli imballaggi e riprova.",
+        "nl": "Je geselecteerde werkruimte is gewijzigd. Vernieuw de verpakkingslijst en probeer het opnieuw.",
+        "pt_BR": "Seu espaço de trabalho selecionado mudou. Atualize a lista de embalagens e tente novamente."
       }
     },
     {
@@ -34980,6 +35208,18 @@
     },
     {
       "group": "production_bench",
+      "key": "run_print.internal",
+      "text": {
+        "de": "Intern",
+        "es": "Interno",
+        "fr": "Interne",
+        "it": "Interno",
+        "nl": "Intern",
+        "pt_BR": "Interno"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "run_print.lot",
       "text": {
         "de": "Internes Los",
@@ -35204,6 +35444,18 @@
         "it": "Avviato",
         "nl": "Gestart",
         "pt_BR": "Iniciado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "run_print.supplier",
+      "text": {
+        "de": "Lieferant",
+        "es": "Proveedor",
+        "fr": "Fournisseur",
+        "it": "Fornitore",
+        "nl": "Leverancier",
+        "pt_BR": "Fornecedor"
       }
     },
     {

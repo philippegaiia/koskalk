@@ -74,6 +74,31 @@ return [
             'description' => 'This removes the packaging item from your library.',
         ],
     ],
+    'exports' => [
+        'title' => 'Packaging price book',
+        'sheet_name' => 'Packaging',
+        'filename' => 'packaging-price-book',
+        'columns' => [
+            'unit_price' => 'Unit price',
+        ],
+        'ui' => [
+            'label' => 'Export packaging',
+            'menu_label' => 'Packaging export format',
+            'pending' => 'Preparing packaging export…',
+            'errors' => [
+                'access' => 'Sign in to export packaging.',
+                'forbidden' => 'Your packaging export access changed. Refresh the page and try again.',
+                'invalid' => 'Check the packaging export filters and try again.',
+                'failed' => 'Could not export packaging. Refresh the page and try again.',
+            ],
+        ],
+        'validation' => [
+            'empty' => 'No packaging items match the current filters.',
+            'too_many' => 'This export contains more than :limit packaging items. Narrow the search and try again.',
+            'changed' => 'The packaging list changed and now exceeds the export limit. Narrow the search and try again.',
+            'workspace_changed' => 'Your selected workspace changed. Refresh the packaging list and try again.',
+        ],
+    ],
     'validation' => [
         'remove_from_formulas' => 'Remove this packaging item from every formula before deleting it.',
         'in_use' => 'This packaging item is still in use and cannot be deleted.',

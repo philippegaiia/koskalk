@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BetaInviteAcceptanceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FileExportController;
 use App\Http\Controllers\FormulaShareController;
 use App\Http\Controllers\HelpContentExportDownloadController;
 use App\Http\Controllers\HomeController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\MediaAssetDownloadController;
 use App\Http\Controllers\MediaAssetPickerMutationController;
 use App\Http\Controllers\MediaAssetStatusController;
 use App\Http\Controllers\MediaLibraryController;
+use App\Http\Controllers\PackagingExportController;
 use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProcurementDocumentController;
 use App\Http\Controllers\ProductionBatchController;
@@ -73,6 +75,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/dashboard/formula-outputs/print', [RecipeWorkbenchOutputController::class, 'print'])
         ->middleware('throttle:workspace-prints')
         ->name('recipes.workbench.print');
+    Route::get('/dashboard/file-exports/{fileExport}', [FileExportController::class, 'status'])
+        ->middleware('throttle:120,1')->name('file-exports.status');
+    Route::get('/dashboard/file-exports/{fileExport}/download', [FileExportController::class, 'download'])
+        ->middleware('throttle:30,1')->name('file-exports.download');
+
     Route::post('/dashboard/formula-outputs/export', [RecipeWorkbenchOutputController::class, 'export'])
         ->middleware('throttle:workspace-exports')
         ->name('recipes.workbench.export');
@@ -165,7 +172,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('ingredients.')
         ->group(function (): void {
             Route::get('/', 'index')->name('index');
-            Route::get('/export', IngredientExportController::class)
+            Route::post('/export', IngredientExportController::class)
                 ->middleware('throttle:workspace-exports')
                 ->name('export');
             Route::get('/new', 'create')->name('create');
@@ -185,6 +192,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::get('/', 'index')->name('index');
             Route::get('/new', 'create')->name('create');
+            Route::post('/export', PackagingExportController::class)->middleware('throttle:workspace-exports')->name('export');
             Route::get('/{packagingItem}/media/{path}', [UserMediaController::class, 'packagingItem'])
                 ->where('path', '.*')
                 ->middleware('throttle:120,1')
@@ -200,10 +208,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
             Route::view('/inventory/stock', 'production-bench.inventory-stock')->name('inventory.stock');
-            Route::get('/inventory/materials/export', [InventoryOutputController::class, 'exportMaterials'])
+            Route::post('/inventory/materials/export', [InventoryOutputController::class, 'exportMaterials'])
                 ->middleware('throttle:workspace-exports')
                 ->name('inventory.materials.export');
-            Route::get('/inventory/stock-lots/export', [InventoryOutputController::class, 'exportStockLots'])
+            Route::post('/inventory/stock-lots/export', [InventoryOutputController::class, 'exportStockLots'])
                 ->middleware('throttle:workspace-exports')
                 ->name('inventory.stock-lots.export');
             Route::get('/inventory/count/print', [InventoryOutputController::class, 'printCount'])

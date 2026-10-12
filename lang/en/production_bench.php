@@ -44,6 +44,8 @@ return [
         'consumption' => 'Recorded consumption',
         'lot' => 'Internal lot',
         'supplier_batch' => 'Supplier batch',
+        'internal' => 'Internal',
+        'supplier' => 'Supplier',
         'expiry' => 'Expiry',
         'quantity' => 'Quantity',
         'lot_id' => 'Lot ID :id',

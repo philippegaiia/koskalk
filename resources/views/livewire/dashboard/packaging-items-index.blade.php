@@ -38,11 +38,58 @@
                     @endif
                 </div>
 
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center" aria-label="{{ __('packaging.catalog.filters_label') }}">
+                <div
+                    x-data="listOutputDownload()"
+                    data-export-url="{{ route('packaging-items.export') }}"
+                    data-export-parameters="{{ \Illuminate\Support\Js::encode(['workspace' => $destinationWorkspacePublicId, 'sortField' => $sortField, 'sortDirection' => $sortDirection]) }}"
+                    data-export-livewire-filters='["sortField","sortDirection"]'
+                    data-export-search-parameter="search"
+                    data-export-server-search="{{ $search }}"
+                    data-export-has-results="{{ $items->total() > 0 ? 'true' : 'false' }}"
+                    data-export-filename-fallback="{{ __('packaging.exports.filename') }}.{format}"
+                    data-export-error-access="{{ __('packaging.exports.ui.errors.access') }}"
+                    data-export-error-forbidden="{{ __('packaging.exports.ui.errors.forbidden') }}"
+                    data-export-error-workspace-changed="{{ __('packaging.exports.validation.workspace_changed') }}"
+                    data-export-error-invalid="{{ __('packaging.exports.ui.errors.invalid') }}"
+                    data-export-error-throttled="{{ __('ingredients.exports.ui.errors.throttled') }}"
+                    data-export-error-failed="{{ __('packaging.exports.ui.errors.failed') }}"
+                    class="flex flex-col gap-3 sm:flex-row sm:items-end"
+                    aria-label="{{ __('packaging.catalog.filters_label') }}"
+                    @keydown.escape.window="if (outputMenuOpen) { outputMenuOpen = false; $refs.exportMenuTrigger.focus(); }"
+                >
                     <label class="sk-field min-w-64">
                         <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('packaging.search.label') }}</span>
-                        <input autocomplete="off" wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('packaging.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('packaging.search.aria_label') }}" />
+                        <input data-list-output-search @input="visibleSearch = $event.target.value" autocomplete="off" wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('packaging.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('packaging.search.aria_label') }}" />
                     </label>
+
+                    @if ($destinationWorkspacePublicId)
+                        <div class="flex flex-wrap items-end gap-2">
+                            <div class="relative" @click.outside="outputMenuOpen = false">
+                                <button
+                                    x-ref="exportMenuTrigger"
+                                    type="button"
+                                    aria-haspopup="menu"
+                                    aria-controls="packaging-export-menu"
+                                    :aria-expanded="outputMenuOpen.toString()"
+                                    :aria-disabled="(outputPending || currentResultsAreEmpty()).toString()"
+                                    :disabled="currentResultsAreEmpty()"
+                                    wire:loading.attr="disabled"
+                                    wire:target="sortBy"
+                                    @click="if (toggleMenu()) $nextTick(() => $refs.xlsxExport.focus())"
+                                    class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap"
+                                >
+                                    <x-action-icon name="download" />{{ __('packaging.exports.ui.label') }}<x-action-icon name="chevron-down" />
+                                </button>
+                                <div id="packaging-export-menu" x-show="outputMenuOpen" x-cloak role="menu" aria-label="{{ __('packaging.exports.ui.menu_label') }}" @keydown.escape.stop.prevent="outputMenuOpen = false; $refs.exportMenuTrigger.focus()" class="absolute left-0 top-full z-30 mt-2 min-w-52 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg">
+                                    <button x-ref="xlsxExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="sortBy" @click="outputMenuOpen = false; $nextTick(() => $refs.exportMenuTrigger.focus()); exportList('xlsx')" @keydown.arrow-down.prevent="$refs.csvExport.focus()" @keydown.arrow-up.prevent="$refs.csvExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.exports.ui.xlsx') }}</button>
+                                    <button x-ref="csvExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="sortBy" @click="outputMenuOpen = false; $nextTick(() => $refs.exportMenuTrigger.focus()); exportList('csv')" @keydown.arrow-down.prevent="$refs.xlsxExport.focus()" @keydown.arrow-up.prevent="$refs.xlsxExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.exports.ui.csv') }}</button>
+                                </div>
+                            </div>
+                            <p x-show="currentResultsAreEmpty()" x-cloak class="max-w-64 pb-2 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.exports.validation.empty') }}</p>
+                            <p x-show="outputPending" x-cloak role="status" aria-live="polite" class="pb-2 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.exports.ui.pending') }}</p>
+                            <p x-show="outputError" x-cloak role="alert" class="pb-2 text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
+                        </div>
+                    @endif
                 </div>
             </div>
 

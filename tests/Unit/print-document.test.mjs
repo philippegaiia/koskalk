@@ -126,3 +126,71 @@ test('keeps the print action working in documents without formula section contro
 
     assert.equal(printCalls, 1);
 });
+
+
+test('returns to the open workbench without reloading its unsaved formula', () => {
+    const documentRef = fakeDocument();
+    const link = new FakeTarget('[data-return-to-workbench]');
+    link.href = 'https://koskalk.test/dashboard/recipes/abc#formula';
+    let focusCalls = 0;
+    let closeCalls = 0;
+    let prevented = false;
+    initializePrintDocument(documentRef, {
+        opener: {
+            closed: false,
+            location: { href: 'https://koskalk.test/dashboard/recipes/abc' },
+            focus() { focusCalls += 1; },
+        },
+        close() { closeCalls += 1; },
+    });
+
+    documentRef.dispatch('click', { target: link, preventDefault() { prevented = true; } });
+
+    assert.equal(prevented, true);
+    assert.equal(focusCalls, 1);
+    assert.equal(closeCalls, 1);
+});
+
+for (const [name, opener] of [
+    ['missing', null],
+    ['closed', { closed: true }],
+    ['on another formula', { closed: false, location: { href: 'https://koskalk.test/dashboard/recipes/other' } }],
+    ['on another site', { closed: false, get location() { throw new Error('Cross-origin access'); } }],
+    ['on another new product type', { closed: false, location: { href: 'https://koskalk.test/dashboard/recipes/new?family=cosmetic&type=cream' } }],
+]) {
+    test(`uses the workbench link when the original window is ${name}`, () => {
+        const documentRef = fakeDocument();
+        const link = new FakeTarget('[data-return-to-workbench]');
+        link.href = 'https://koskalk.test/dashboard/recipes/new?family=soap&type=bar-soap#formula';
+        let prevented = false;
+        initializePrintDocument(documentRef, {
+            opener,
+            close() { assert.fail('The print window must stay open for normal navigation'); },
+        });
+
+        documentRef.dispatch('click', { target: link, preventDefault() { prevented = true; } });
+
+        assert.equal(prevented, false);
+    });
+}
+
+test('returns to an unsaved workbench with the same product type regardless of query order', () => {
+    const documentRef = fakeDocument();
+    const link = new FakeTarget('[data-return-to-workbench]');
+    link.href = 'https://koskalk.test/dashboard/recipes/new?family=soap&type=bar-soap#formula';
+    let prevented = false;
+    let focused = false;
+    initializePrintDocument(documentRef, {
+        opener: {
+            closed: false,
+            location: { href: 'https://koskalk.test/dashboard/recipes/new?type=bar-soap&family=soap' },
+            focus() { focused = true; },
+        },
+        close() {},
+    });
+
+    documentRef.dispatch('click', { target: link, preventDefault() { prevented = true; } });
+
+    assert.equal(prevented, true);
+    assert.equal(focused, true);
+});

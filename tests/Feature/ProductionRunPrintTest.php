@@ -7,6 +7,7 @@ use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionRunStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
+use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionFormulaLine;
@@ -19,11 +20,116 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
 use App\Services\Production\ProductionRunPrintDataBuilder;
+use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
+
+it('groups the batch sheet like a formula with reservations beside each material and separate packaging', function (string $locale, string $mass, string $percentage): void {
+    $fixture = ProductionEditingFixture::create();
+    $fixture->owner->update(['number_locale' => $locale]);
+    $run = ProductionRun::factory()->for($fixture->workspace)->create([
+        'recipe_name_snapshot' => 'Grouped soap',
+        'source_formula_version_number' => 15,
+        'formula_context_snapshot' => ['calculation_basis' => 'initial_oils'],
+    ]);
+    $oil = ProductionRequirement::factory()->for($run, 'productionRun')->create([
+        'subject_name_snapshot' => 'Frozen oil',
+        'phase_key_snapshot' => 'saponified_oils',
+        'phase_name_snapshot' => 'Oils',
+    ]);
+    foreach ([
+        ['fragrance', 'Fragrances', 'Fragrance', ProductionFormulaComponent::Ingredient, 1],
+        ['additives', 'Additives', 'Colourant', ProductionFormulaComponent::Ingredient, 2],
+        ['lye_water', 'Lye and liquids', 'Water', ProductionFormulaComponent::Water, 3],
+        ['saponified_oils', 'Oils', 'Frozen oil', ProductionFormulaComponent::Ingredient, 4],
+    ] as [$key, $label, $name, $component, $order]) {
+        ProductionFormulaLine::factory()->for($run, 'productionRun')->create([
+            'ingredient_id' => $name === 'Frozen oil' ? $oil->ingredient_id : null,
+            'component' => $component,
+            'subject_name_snapshot' => $name,
+            'phase_key_snapshot' => $key,
+            'phase_name_snapshot' => $label,
+            'planned_mass_grams' => '123.456789123',
+            'basis_percentage_snapshot' => '10.126789123',
+            'sort_order' => $order,
+        ]);
+    }
+    $box = PackagingItem::factory()->for($fixture->workspace)->create();
+    $packaging = ProductionRequirement::factory()->for($run, 'productionRun')->forPackaging($box)->create([
+        'subject_name_snapshot' => 'Frozen box', 'required_units' => 12,
+    ]);
+    foreach ([$oil, $oil, $packaging] as $index => $requirement) {
+        $lotFactory = StockLot::factory()->for($fixture->workspace);
+        $lot = ($index === 2 ? $lotFactory->forPackaging() : $lotFactory)->create([
+            'internal_lot_code' => 'RESERVED-'.$index,
+            ...($index === 2 ? ['packaging_item_id' => $box->id] : ['ingredient_id' => $oil->ingredient_id]),
+        ]);
+        StockReservation::factory()->for($run, 'productionRun')->for($requirement, 'productionRequirement')->for($lot, 'stockLot')->create([
+            'workspace_id' => $fixture->workspace->id,
+            'quantity' => $index === 2 ? '12' : '61.728394561',
+        ]);
+    }
+    StockReservation::factory()->released()->for($run, 'productionRun')->for($packaging, 'productionRequirement')->for($lot, 'stockLot')->create([
+        'workspace_id' => $fixture->workspace->id, 'quantity' => '999',
+    ]);
+
+    $response = $this->actingAs($fixture->owner)->get(route('production-bench.production.print', ['productionRun' => $run, 'workspace' => $fixture->workspace->public_id]));
+    $document = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    $formula = $document->querySelector('[data-batch-material-section="formula"]');
+    $packagingTable = $document->querySelector('[data-batch-material-section="packaging"]');
+
+    $response->assertDontSee('Source formula version')->assertDontSee('123.456789123')->assertDontSee('10.126789123');
+    expect(collect($formula->querySelectorAll('[data-batch-material-group]'))->map(fn ($row): string => $row->getAttribute('data-batch-material-group'))->all())
+        ->toBe(['saponified_oils', 'lye_water', 'additives', 'fragrance']);
+    expect($formula->querySelector('[data-batch-material-row] [data-batch-lots]')->textContent)->toContain('RESERVED-0', 'RESERVED-1');
+    $internalLot = $formula->querySelector('[data-internal-lot]');
+    $supplierBatch = $formula->querySelector('[data-supplier-batch]');
+    expect($internalLot->textContent)->toBe('Internal: RESERVED-0');
+    expect($internalLot->classList->contains('font-semibold'))->toBeTrue();
+    expect($supplierBatch->textContent)->toContain('Supplier:');
+    expect($supplierBatch->classList->contains('font-semibold'))->toBeFalse();
+    expect($supplierBatch->parentNode)->toBe($internalLot->parentNode);
+    expect($internalLot->parentNode->classList->contains('flex'))->toBeTrue();
+    expect($internalLot->tagName)->toBe('SPAN');
+    expect($supplierBatch->tagName)->toBe('SPAN');
+    expect($formula->textContent)->not->toContain('Frozen box', 'RESERVED-2');
+    expect($formula->querySelector('[data-batch-planned]')->textContent)->toBe($mass);
+    expect($formula->querySelector('[data-batch-percentage]')->textContent)->toBe($percentage);
+    expect($formula->querySelector('[data-actual]')->textContent)->toBe('');
+    expect($packagingTable->textContent)->toContain('Frozen box', 'RESERVED-2');
+    expect($packagingTable->querySelector('[data-batch-lots]')->textContent)->not->toContain('999');
+    expect($packagingTable->querySelector('[data-batch-planned]')->textContent)->toBe('12');
+    expect($packagingTable->querySelector('[data-batch-percentage]'))->toBeNull();
+    expect($packagingTable->querySelector('[data-actual]'))->toBeNull();
+    expect($packagingTable->querySelectorAll('thead th'))->toHaveCount(4);
+    expect($packagingTable->textContent)->toContain('Planned (units)');
+    expect($packagingTable->textContent)->not->toContain('Recorded actual', 'production_bench.');
+    expect($document->querySelectorAll('[data-formula-document-table]'))->toHaveCount(2);
+})->with([
+    'decimal point' => ['en_US', '123.4568', '10.13%'],
+    'decimal comma' => ['fr_FR', '123,4568', '10,13%'],
+]);
+
+it('preserves authored cosmetic phases and legacy ingredient requirements in the printed formula', function (): void {
+    $run = ProductionRun::factory()->create(['formula_context_snapshot' => ['calculation_basis' => 'total_formula']]);
+    foreach (['phase_b', 'phase_a'] as $index => $phase) {
+        ProductionFormulaLine::factory()->for($run, 'productionRun')->create([
+            'phase_key_snapshot' => $phase, 'phase_name_snapshot' => 'Captured '.$phase, 'sort_order' => $index + 1,
+        ]);
+    }
+    ProductionRequirement::factory()->for($run, 'productionRun')->create([
+        'subject_name_snapshot' => 'Legacy ingredient', 'phase_key_snapshot' => 'legacy', 'phase_name_snapshot' => 'Historical phase',
+    ]);
+
+    $data = app(ProductionRunPrintDataBuilder::class)->build($run->fresh());
+
+    expect(array_column($data['sections'], 'key'))->toBe(['phase_b', 'phase_a', 'legacy']);
+    expect($data['sections'][2]['rows'][0]['name'])->toBe('Legacy ingredient');
+    expect($data['sections'][2]['label'])->toBe('Historical phase');
+});
 
 it('prints frozen planned formula and reservations without inventing actual quantities', function (string $basis): void {
     $owner = User::factory()->create();
@@ -56,7 +162,7 @@ it('keeps legacy terminal records independent of current lot identity and missin
     ProductionConsumption::factory()->for($run, 'productionRun')->for($lot, 'stockLot')->create(['subject_name_snapshot' => 'Historic oil']);
     $run->recipe->delete();
     $this->actingAs($owner)->get(route('production-bench.production.print', ['productionRun' => $run, 'workspace' => $workspace->public_id]))
-        ->assertOk()->assertSee('Historic formula')->assertSee('Historic oil')->assertDontSee('DO-NOT-PRINT');
+        ->assertOk()->assertSee('Historic formula')->assertSee('Historic oil')->assertDontSee('DO-NOT-PRINT')->assertDontSee('Lot ID');
     $before = app(ProductionRunPrintDataBuilder::class)->build($run->fresh());
     $lot->update(['internal_lot_code' => 'CHANGED', 'supplier_batch_number' => 'CHANGED']);
     expect(app(ProductionRunPrintDataBuilder::class)->build($run->fresh()))->toBe($before);
@@ -109,6 +215,11 @@ it('freezes manufacturing lot evidence on completion or abort and never rewrites
     $attributes = $run->fresh()->getRawOriginal();
     $response = $this->actingAs($owner)->get(route('production-bench.production.print', ['productionRun' => $run, 'workspace' => $workspace->public_id]));
     $response->assertOk()->assertSee('Original formula')->assertSee('ORIGINAL-LOT')->assertSee('Weighed twice')->assertDontSee('EDITED-')->assertSee('Batch record');
+    $printed = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    expect($printed->querySelector('[data-batch-lots]')->textContent)->toContain('ORIGINAL-LOT', 'SUPPLIER-001', 'Weighed twice');
+    $response->assertDontSee('Expiry')->assertDontSee('2028-01-01');
+    expect($printed->querySelector('[data-actual]')->textContent)->toBe('99.00');
+    expect($printed->querySelectorAll('[data-formula-document-table]'))->toHaveCount(1);
     if ($aborted) {
         $response->assertSee('Mixing stopped')->assertSee('Aborted');
     }

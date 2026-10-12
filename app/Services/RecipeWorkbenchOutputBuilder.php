@@ -153,6 +153,10 @@ class RecipeWorkbenchOutputBuilder
             ? $this->formulaDocumentOptions->resolveSelection($payload['sections'], $availableSections)
             : $this->formulaDocumentOptions->defaultSections($availableSections, (string) ($payload['print_context'] ?? 'formula'));
         $filenameSlug = Str::slug($title) ?: Str::slug($productFamily->slug.'-formula');
+        $returnUrl = $recipe instanceof Recipe
+            ? route('recipes.edit', ['recipe' => $recipe])
+            : route('recipes.create', ['family' => $productFamily->slug, 'type' => $productType?->slug]);
+        $returnTab = (string) ($payload['print_context'] ?? 'formula');
 
         return [
             'workspace' => $workspace,
@@ -164,7 +168,8 @@ class RecipeWorkbenchOutputBuilder
             'availableSections' => $availableSections,
             'selectedSections' => $selectedSections,
             'numberLocale' => NumberLocale::resolve($user->number_locale),
-            'returnUrl' => $recipe instanceof Recipe ? route('recipes.saved', ['recipe' => $recipe]) : null,
+            'returnUrl' => $returnUrl.'#'.($returnTab === 'sheet' ? 'formula' : $returnTab),
+            'returnToWorkbench' => true,
             'filename' => $filenameSlug.'-current-formula-'.now()->format('Y-m-d'),
             'capturedCosting' => $payload['costing'] ?? null,
             'costingProjection' => $costingProjection,

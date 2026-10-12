@@ -837,16 +837,20 @@ it('keeps formula table lines compact with responsive vertical padding', functio
         ->not->toContain('sk-formula-table-row transition motion-safe:will-change-transform');
 });
 
-it('centers costing table row contents beside price inputs', function () {
+it('centers compact costing table row contents beside price inputs', function () {
     $costingTab = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
 
     expect($costingTab)
-        ->toContain('flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"')
-        ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned"')
+        ->toContain('flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"')
+        ->toContain('numeric flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned"')
         ->toContain('x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"')
-        ->toContain('flex items-center bg-white px-3 py-3')
+        ->toContain('flex items-center bg-white px-3 py-2')
+        ->toContain('flex items-center bg-[var(--color-field-muted)] px-4 py-2 font-semibold')
+        ->not->toContain('flex items-center bg-white px-4 py-3')
+        ->not->toContain('flex items-center bg-white px-3 py-3')
+        ->not->toContain('flex items-center bg-[var(--color-field-muted)] px-4 py-3')
         ->toContain('x-text="lineCostForRow(row) === null ? \'\' : format(lineCostForRow(row), 2)"')
-        ->not->toContain('numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
+        ->not->toContain('numeric bg-white px-4 py-2 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
 });
 
 it('keeps currency in the packaging headers and out of the packaging cells', function () {

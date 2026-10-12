@@ -19,7 +19,6 @@
         $selectedSections = $selectedSections ?? ['formula', 'procedure', 'label', 'notes'];
         $availableSections = $availableSections ?? $selectedSections;
         $metadata = array_merge([
-            'version_number' => null,
             'generated_at' => now()->format('Y-m-d H:i'),
         ], $formulaDocument['metadata'] ?? []);
         $numberLocale = \App\Support\NumberLocale::resolve($numberLocale ?? auth()->user()?->number_locale);
@@ -31,7 +30,7 @@
 
     <div class="print-hidden mb-4 flex flex-wrap items-center justify-between gap-3 border border-slate-300 bg-white p-3">
         @if (filled($returnUrl))
-            <a href="{{ $returnUrl }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium">{{ __('formula_documents.actions.back') }}</a>
+            <a href="{{ $returnUrl }}" @if ($returnToWorkbench ?? false) data-return-to-workbench @endif class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium">{{ __('formula_documents.actions.back') }}</a>
         @else
             <span></span>
         @endif
@@ -44,18 +43,9 @@
 
     <article class="document-sheet mx-auto max-w-5xl bg-white p-6 text-slate-900 print:mx-0 print:max-w-none print:p-0">
         <header class="border-b border-slate-400 pb-4">
-            <p class="text-xs font-semibold tracking-[0.12em] text-slate-500 uppercase">{{ __('formula_documents.print.title') }}</p>
-            <h1 class="mt-1 text-2xl font-semibold">{{ $identity['name'] }}</h1>
+            <h1 class="text-2xl font-semibold">{{ $identity['name'] }}</h1>
 
-            <dl class="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-xs sm:grid-cols-4">
-                <div>
-                    <dt class="font-semibold text-slate-600">{{ __('formula_documents.print.source') }}</dt>
-                    <dd class="mt-0.5">{{ __('formula_documents.states.'.($identity['state'] ?? 'current')) }}</dd>
-                </div>
-                <div>
-                    <dt class="font-semibold text-slate-600">{{ __('formula_documents.print.version') }}</dt>
-                    <dd class="mt-0.5">{{ $metadata['version_number'] === null ? '—' : $metadata['version_number'] }}</dd>
-                </div>
+            <dl class="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-xs">
                 <div>
                     <dt class="font-semibold text-slate-600">{{ __('formula_documents.print.'.($formulaDocument['percentage_basis'] === 'oils' ? 'oil_basis_quantity' : 'formula_basis_quantity')) }}</dt>
                     <dd class="numeric mt-0.5">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($formulaDocument['basis_weight'], 2, 4, $numberLocale) }} {{ $formulaDocument['unit'] }}</dd>

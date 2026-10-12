@@ -10,3 +10,6 @@ Inventory tables must grow with their paginator and keep horizontal scrolling at
 
 ## Reuse page access and loaded lots for row controls
 Lot-register rendering must not invoke database-backed Filament action visibility per row. Use the page's canWriteInventory result and eligibility derived from loaded lot records for display; retain fresh action visibility and server-side authorization on mount/submission. Keep query regression coverage at 25 and 100 lots.
+
+## Keep Stock outputs outside expandable filters
+Stock by material and Lot Register output buttons live in the card's top action toolbar, above basic and advanced filters. Keep export/print actions separate from filter toggles, reset controls and chips. The toolbar stacking context must remain above filter dropdowns and sticky table headings; pending/error feedback has its own row.

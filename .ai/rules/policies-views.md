@@ -4,6 +4,7 @@ paths:
   - app/Policies/RecipePolicy.php
   - 'resources/views/**/recipe*.blade.php'
   - 'app/Policies/**'
+  - 'resources/views/**'
 ---
 
 # Policies Views
@@ -16,3 +17,6 @@ User.is_admin controls application administration and Filament admin-panel acces
 
 ## Viewers may export visible workspace data
 Viewer is read-only, not export-restricted: permit downloads and exports of records the Viewer may view. Apply the same selected-workspace and live-membership checks to downloads/exports; this never grants create, edit, delete or lock authority.
+
+## Keep formula printouts neutral and preserve the open workbench
+Formula printouts show the formula name without a Working Formula Sheet eyebrow or Source/Version fields. Browser printing is labelled Print sheet with a hint explaining Save as PDF. Workbench print previews return to their still-open originating window without reloading unsaved edits; their fallback link targets the workbench and source tab. Saved-sheet print previews retain their saved-sheet return destination.

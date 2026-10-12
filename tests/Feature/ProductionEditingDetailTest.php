@@ -3,6 +3,7 @@
 use App\Enums\ProductionRunStatus;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\Models\ProductionLocation;
+use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\Workspace;
@@ -18,6 +19,87 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\ProductionEditingFixture;
 
 uses(RefreshDatabase::class);
+
+it('labels the prominent production identifier and retains its planning reference', function (?string $batchNumber, string $identityLabel, string $identifier): void {
+    $fixture = ProductionEditingFixture::create();
+    $run = ProductionRun::factory()->for($fixture->workspace)->create([
+        'batch_number' => $batchNumber,
+        'batch_number_serial' => $batchNumber ? 6 : null,
+        'batch_number_assigned_at' => $batchNumber ? '2026-10-10 10:00:00' : null,
+        'batch_number_assigned_by_user_id' => $batchNumber ? $fixture->owner->id : null,
+        'status' => ProductionRunStatus::Reserved,
+        'planning_batch_number' => 'T00006',
+        'recipe_name_snapshot' => 'Production soap',
+        'source_formula_version_number' => 15,
+        'planned_for' => '2026-10-12',
+    ]);
+
+    $page = Livewire::actingAs($fixture->owner)->test(ProductionDetail::class, ['productionId' => $run->public_id]);
+    $document = HTMLDocument::createFromString($page->html(), LIBXML_NOERROR);
+    $identity = $document->querySelector('[data-testid="production-main-identity"]');
+
+    expect($identity->querySelector('dt')->textContent)->toBe($identityLabel);
+    expect($identity->querySelector('dd')->textContent)->toBe($identifier);
+    expect($identity->querySelector('dd')->classList->contains('text-2xl'))->toBeTrue();
+    expect($document->querySelector('[data-testid="production-header"] h1')->textContent)->toBe('Production soap');
+    expect($document->querySelector('[data-testid="production-title-row"] [data-testid="production-main-identity"]'))->toBe($identity);
+    expect($document->querySelector('[data-testid="production-header"]')->textContent)->not->toContain('Source formula version');
+    $summary = $document->querySelector('[data-testid="production-summary"]');
+    expect($summary->querySelectorAll('dt'))->toHaveCount($batchNumber ? 4 : 3);
+    expect($summary->querySelector('dd')->textContent)->toBe('2026-10-12');
+    expect($summary->textContent)->toContain('Production date', 'Batch size', 'Expected units');
+    expect($document->querySelector('[data-testid="production-planning-reference"]') !== null)->toBe($batchNumber !== null);
+    $page->assertSee('T00006');
+})->with([
+    'permanent batch' => ['26-0006', 'Batch number', '26-0006'],
+    'planning only' => [null, 'Planning reference', 'T00006'],
+]);
+
+it('uses compact body cells in the production batch materials table', function (): void {
+    $fixture = ProductionEditingFixture::create();
+    $run = ProductionRun::factory()->for($fixture->workspace)->create();
+    ProductionRequirement::factory()->for($run, 'productionRun')->create();
+
+    $page = Livewire::actingAs($fixture->owner)->test(ProductionDetail::class, ['productionId' => $run->public_id]);
+    $document = HTMLDocument::createFromString($page->html(), LIBXML_NOERROR);
+    $cells = $document->querySelectorAll('[data-testid="material-row"] > td');
+
+    expect($cells)->toHaveCount(4);
+    foreach ($cells as $cell) {
+        expect($cell->classList->contains('py-2'))->toBeTrue();
+        expect($cell->classList->contains('py-4'))->toBeFalse();
+    }
+});
+
+it('gives task assignments full width with labelled dates and preserved editing controls', function (ProductionRunStatus $status, ?string $completedAt, string $actionLabel): void {
+    $fixture = ProductionEditingFixture::create();
+    $run = ProductionRun::factory()->for($fixture->workspace)->create(['status' => $status]);
+    ProductionTask::factory()->for($fixture->workspace)->for($run, 'productionRun')->create([
+        'name_snapshot' => 'Soap cutting',
+        'scheduled_for' => '2026-10-12',
+        'completed_at' => $completedAt,
+    ]);
+
+    $page = Livewire::actingAs($fixture->owner)->test(ProductionDetail::class, ['productionId' => $run->public_id]);
+    $document = HTMLDocument::createFromString($page->html(), LIBXML_NOERROR);
+    $controls = $document->querySelector('[data-testid="production-task-controls"]');
+
+    expect($controls->classList->contains('grid-cols-1'))->toBeTrue();
+    expect($controls->classList->contains('sm:grid-cols-2'))->toBeTrue();
+    expect($controls->querySelectorAll('label > select'))->toHaveCount(2);
+    foreach ($controls->querySelectorAll('label > select') as $select) {
+        expect($select->classList->contains('w-full'))->toBeTrue();
+        expect($select->hasAttribute('disabled'))->toBeTrue();
+        expect($select->getAttribute('@change'))->toContain('runCommand(');
+    }
+    expect($controls->textContent)->toContain('Task date', $actionLabel);
+    expect($controls->querySelector('button.sk-btn')->hasAttribute('disabled'))->toBeTrue();
+    $page->assertSee('Soap cutting');
+})->with([
+    'scheduled task with date picker' => [ProductionRunStatus::Scheduled, null, 'Mark complete'],
+    'started task with fixed date' => [ProductionRunStatus::InProduction, null, 'Mark complete'],
+    'completed task with reopen action' => [ProductionRunStatus::Completed, '2026-10-12 10:00:00', 'Reopen task'],
+]);
 
 it('shows the legacy intermediate ingredient selector through the local completion draft', function (): void {
     $fixture = ProductionEditingFixture::create();

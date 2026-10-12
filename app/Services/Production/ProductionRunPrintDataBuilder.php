@@ -29,6 +29,12 @@ final class ProductionRunPrintDataBuilder
             }
 
             return [
+                'requirement_id' => $requirement?->id,
+                'group_key' => $line->component === ProductionFormulaComponent::Ingredient ? ($line->phase_key_snapshot ?? 'formula') : 'lye_water',
+                'group_label' => $line->component === ProductionFormulaComponent::Ingredient
+                    ? ($line->phase_name_snapshot ?? __('production_bench.run_print.formula'))
+                    : __('formula_documents.sections.lye_water'),
+                'is_packaging' => false,
                 'name' => $line->subject_name_snapshot,
                 'code' => $requirement?->material_code_snapshot,
                 'phase' => $line->phase_name_snapshot,
@@ -39,6 +45,10 @@ final class ProductionRunPrintDataBuilder
                 'note' => $line->note_snapshot,
             ];
         })->merge($remaining->map(fn (ProductionRequirement $requirement): array => [
+            'requirement_id' => $requirement->id,
+            'group_key' => $requirement->phase_key_snapshot ?? 'formula',
+            'group_label' => $requirement->phase_name_snapshot ?? __('production_bench.run_print.formula'),
+            'is_packaging' => $requirement->kind === ProductionRequirementKind::Packaging,
             'name' => $requirement->subject_name_snapshot,
             'code' => $requirement->material_code_snapshot,
             'phase' => $requirement->phase_name_snapshot,
@@ -65,6 +75,7 @@ final class ProductionRunPrintDataBuilder
             }
 
             return [
+                'requirement_id' => $row->production_requirement_id,
                 'name' => $row->subject_name_snapshot,
                 'lot_id' => $identity['stock_lot_id'] ?? $row->stock_lot_id,
                 'lot' => $identity['internal_lot_code'] ?? null,
@@ -83,6 +94,7 @@ final class ProductionRunPrintDataBuilder
             ->with(['stockLot', 'productionRequirement'])
             ->orderBy('id')->get()
             ->map(fn (StockReservation $reservation): array => [
+                'requirement_id' => $reservation->production_requirement_id,
                 'name' => $reservation->productionRequirement?->subject_name_snapshot,
                 'lot_id' => $reservation->stock_lot_id,
                 'lot' => $reservation->stockLot?->internal_lot_code,
@@ -94,10 +106,24 @@ final class ProductionRunPrintDataBuilder
                 'note' => null,
             ])->all();
 
+        $lots = collect($record ? $consumption : $reservations)->groupBy('requirement_id');
+        $materials = collect($materials)->map(fn (array $row): array => [
+            ...$row,
+            'lots' => $row['requirement_id'] === null ? [] : $lots->get($row['requirement_id'], collect())->values()->all(),
+        ]);
+        $formulaMaterials = $materials->where('is_packaging', false)->values();
+        $sections = $formulaMaterials->groupBy('group_key');
+        if (($context['calculation_basis'] ?? null) === 'initial_oils') {
+            $order = ['saponified_oils' => 0, 'lye_water' => 1, 'additives' => 2, 'fragrance' => 3];
+            $sections = $sections->sortBy(fn (Collection $rows, string $key): int => $order[$key] ?? 4);
+        }
+
         return [
             'record' => $record,
             'aborted' => $production->status === ProductionRunStatus::Aborted,
             'identifier' => $production->displayIdentifier(),
+            'batch_number' => $production->batch_number,
+            'planning_reference' => $production->planning_batch_number,
             'formula' => $production->recipe_name_snapshot,
             'version' => $production->source_formula_version_number,
             'calculation_basis' => $context['calculation_basis'] ?? null,
@@ -116,8 +142,17 @@ final class ProductionRunPrintDataBuilder
             'procedure_available' => array_key_exists('manufacturing_procedure_html', $context),
             'procedure' => $context['manufacturing_procedure_html'] ?? '',
             'illustrations_omitted' => $context['manufacturing_procedure_illustrations_omitted'] ?? false,
-            'materials' => $materials,
+            'materials' => $formulaMaterials->all(),
+            'sections' => $sections->map(fn (Collection $rows, string $key): array => [
+                'key' => $key,
+                'label' => $rows->first()['group_label'],
+                'rows' => $rows->values()->all(),
+            ])->values()->all(),
+            'packaging' => $materials->where('is_packaging', true)->values()->all(),
             'consumption' => $consumption,
+            'unmatched_consumption' => collect($consumption)
+                ->filter(fn (array $row): bool => $row['requirement_id'] === null || ! $materials->contains('requirement_id', $row['requirement_id']))
+                ->values()->all(),
             'reservations' => $reservations,
         ];
     }

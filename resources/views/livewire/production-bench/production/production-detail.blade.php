@@ -31,24 +31,17 @@
 
             <header class="sk-card space-y-5 p-5 sm:p-6" data-testid="production-header">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <a href="{{ route('production-bench.production.index') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">← {{ __('production_bench.production.back_to_list') }}</a>
-                        <div class="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                            <p class="sk-eyebrow font-mono">{{ $identity['identifier'] }}</p>
-                            @if ($identity['planned_for'])
-                                <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.production_date') }}: <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['planned_for'] }}</span></p>
-                            @endif
-                        </div>
-                        <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $identity['product_name'] }}</h1>
-                            <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
-                        </div>
-                        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-[var(--color-ink-soft)]">
-                            <span>{{ __('production_bench.settings.batch_size') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['basis'] }}</strong></span>
-                            <span>{{ __('production_bench.settings.expected_units') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['expected_units'] }}</strong></span>
-                            @if ($identity['formula_version'])
-                                <span>{{ __('production_bench.production.formula.source_version') }}: <strong class="font-mono font-medium text-[var(--color-ink-strong)]">{{ $identity['formula_version'] }}</strong> <x-contextual-help.trigger topic="production.formula_snapshot" :topics="$contextualHelp['topics']" /></span>
-                            @endif
+                        <div data-testid="production-title-row" class="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-8">
+                            <div data-contextual-help-heading class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                                <h1 class="break-words text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $identity['product_name'] }}</h1>
+                                <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
+                            </div>
+                            <dl class="max-w-full" data-testid="production-main-identity">
+                                <dt class="text-sm text-[var(--color-ink-soft)]">{{ $production->batch_number ? __('production_bench.production.batch_number') : __('production_bench.production.planning_reference') }}</dt>
+                                <dd class="break-all font-mono text-2xl font-semibold tabular-nums text-[var(--color-ink-strong)]">{{ $identity['identifier'] }}</dd>
+                            </dl>
                         </div>
                     </div>
 
@@ -77,6 +70,29 @@
                         @endif
                     </div>
                 </div>
+
+                <dl data-testid="production-summary" class="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[var(--color-line)] pt-4 lg:grid-cols-4">
+                    @if ($identity['planned_for'])
+                        <div class="min-w-0">
+                            <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.production_date') }}</dt>
+                            <dd class="mt-1 break-words font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['planned_for'] }}</dd>
+                        </div>
+                    @endif
+                    <div class="min-w-0">
+                        <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.batch_size') }}</dt>
+                        <dd class="mt-1 break-words font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['basis'] }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                        <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.expected_units') }}</dt>
+                        <dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['expected_units'] }}</dd>
+                    </div>
+                    @if ($production->batch_number && filled($production->planning_batch_number))
+                        <div class="min-w-0" data-testid="production-planning-reference">
+                            <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.planning_reference') }}</dt>
+                            <dd class="mt-1 break-all font-mono text-[var(--color-ink-strong)]">{{ $production->planning_batch_number }}</dd>
+                        </div>
+                    @endif
+                </dl>
 
                 <ol data-testid="production-lifecycle" class="flex flex-wrap items-start gap-2 border-t border-[var(--color-line)] pt-5 sm:flex-nowrap sm:gap-0">
                     @foreach ($productionDetail['lifecycle'] as $step)
@@ -211,7 +227,7 @@
                                     @php $lastGroup = $material['group_key']; @endphp
                                 @endif
                                 <tr data-testid="material-row" data-material-key="{{ $material['key'] }}" class="align-top">
-                                    <td class="px-5 py-4 sm:px-6">
+                                    <td class="px-5 py-2 sm:px-6">
                                         <p class="font-medium text-[var(--color-ink-strong)]">
                                             {{ $material['material_name'] }}
                                             @if ($material['percentage'])
@@ -225,8 +241,8 @@
                                             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $material['note'] }}</p>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap px-5 py-4 text-right font-mono tabular-nums text-[var(--color-ink-strong)] sm:px-6">{{ $material['planned']['quantity'] }} {{ $material['planned']['unit'] }}</td>
-                                    <td class="px-5 py-4 text-[var(--color-ink-soft)] sm:px-6">
+                                    <td class="whitespace-nowrap px-5 py-2 text-right font-mono tabular-nums text-[var(--color-ink-strong)] sm:px-6">{{ $material['planned']['quantity'] }} {{ $material['planned']['unit'] }}</td>
+                                    <td class="px-5 py-2 text-[var(--color-ink-soft)] sm:px-6">
                                         @if ($material['reservation']['tracked'])
                                             <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $material['reservation']['total'] }} {{ $material['planned']['unit'] }}</p>
                                             @if ($material['reservation']['lots'])
@@ -242,7 +258,7 @@
                                             <span class="text-xs">{{ __('production_bench.production.actuals_not_stock_tracked') }}</span>
                                         @endif
                                     </td>
-                                    <td class="min-w-[14rem] px-5 py-4 sm:px-6">
+                                    <td class="min-w-[14rem] px-5 py-2 sm:px-6">
                                         @if ($material['actual']['mode'] === 'hidden')
                                             <span class="text-[var(--color-ink-muted)]">—</span>
                                         @else
@@ -378,19 +394,32 @@
                 @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror
                 <div class="divide-y divide-[var(--color-line)]">
                     @forelse ($production->tasks as $task)
-                        <div class="flex flex-col gap-2 px-5 py-4 sm:px-6">
-                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <select aria-label="{{ __('production_bench.production.choose_department') }}" @change="runCommand('assignTaskDepartment', [{{ $task->id }}, $event.target.value], null)" class="sk-input w-40 py-1.5 text-sm" :disabled="!canWrite || busy || @js($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))" @disabled(! $editingOwnsLease || $mutationLocked)><option value="">{{ __('production_bench.production.choose_department') }}</option>@foreach ($departments as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select>
-                                <select aria-label="{{ __('production_bench.production.choose_employee') }}" @change="runCommand('assignTask', [{{ $task->id }}, $event.target.value], null)" class="sk-input w-40 py-1.5 text-sm" :disabled="!canWrite || busy || @js($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))" @disabled(! $editingOwnsLease || $mutationLocked)><option value="">{{ __('production_bench.production.choose_employee') }}</option>@foreach ($employees as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select>
-                                @if ($task->completed_at === null && ! in_array($production->status->value, ['in_production', 'completed', 'cancelled', 'aborted'], true))
-                                    <div class="w-36">{{ $this->taskDatesForm->getComponent("task_date_{$task->id}") }}</div>
-                                @else
-                                    <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }}</p>
-                                @endif
-                                @if ($task->completed_at) <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.completed_task') }}</span> @endif
+                        <div data-testid="production-task-row" class="space-y-3 px-5 py-4 sm:px-6">
+                            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
+                                @if ($task->completed_at) <span class="text-xs text-[var(--color-success-strong)]">{{ __('production_bench.production.completed_task') }}</span> @endif
+                            </div>
+                            <div data-testid="production-task-controls" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem_auto] xl:items-end">
+                                <label class="min-w-0 space-y-1 text-sm">
+                                    <span class="block font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.production.choose_department') }}</span>
+                                    <select aria-label="{{ __('production_bench.production.choose_department') }}" @change="runCommand('assignTaskDepartment', [{{ $task->id }}, $event.target.value], null)" class="sk-input min-h-11 w-full text-sm" :disabled="!canWrite || busy || @js($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))" @disabled(! $editingOwnsLease || $mutationLocked)><option value="">{{ __('production_bench.production.unassigned') }}</option>@foreach ($departments as $department)<option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select>
+                                </label>
+                                <label class="min-w-0 space-y-1 text-sm">
+                                    <span class="block font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.production.choose_employee') }}</span>
+                                    <select aria-label="{{ __('production_bench.production.choose_employee') }}" @change="runCommand('assignTask', [{{ $task->id }}, $event.target.value], null)" class="sk-input min-h-11 w-full text-sm" :disabled="!canWrite || busy || @js($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))" @disabled(! $editingOwnsLease || $mutationLocked)><option value="">{{ __('production_bench.production.unassigned') }}</option>@foreach ($employees as $employee)<option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>@endforeach</select>
+                                </label>
+                                <div class="min-w-0 space-y-1 text-sm">
+                                    <span class="block font-medium text-[var(--color-ink-soft)]">{{ __('production_bench.production.task_date') }}</span>
+                                    <div class="flex min-h-11 items-center [&>div]:w-full">
+                                        @if ($task->completed_at === null && ! in_array($production->status->value, ['in_production', 'completed', 'cancelled', 'aborted'], true))
+                                            {{ $this->taskDatesForm->getComponent("task_date_{$task->id}") }}
+                                        @else
+                                            <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }}</p>
+                                        @endif
+                                    </div>
+                                </div>
                                 @if (! in_array($production->status->value, ['cancelled', 'aborted'], true))
-                                    <button type="button" @click="runCommand('toggleTask', [{{ $task->id }}], null)"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-ghost py-1.5 text-sm">{{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}</button>
+                                    <button type="button" @click="runCommand('toggleTask', [{{ $task->id }}], null)"  :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-btn sk-btn-outline min-h-11 self-end text-sm xl:whitespace-nowrap">{{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}</button>
                                 @endif
                             </div>
                         </div>

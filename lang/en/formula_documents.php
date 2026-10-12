@@ -160,7 +160,7 @@ return [
         'date_not_recorded' => 'Date not recorded',
     ],
     'print' => [
-        'title' => 'Working Formula Sheet',
+        'title' => 'Formula sheet',
         'batch_number' => 'Trial / batch no.',
         'date' => 'Date',
         'made_by' => 'Made by',
@@ -174,6 +174,7 @@ return [
         'generated_at' => 'Generated',
         'include' => 'Include',
         'print_save_pdf' => 'Print / Save PDF',
+        'pdf_hint' => 'To save a PDF, choose “Save as PDF” or “PDF” in the print dialog.',
         'observations' => 'Observations',
         'result' => 'Result',
         'include_analysis' => 'Include soap analysis',

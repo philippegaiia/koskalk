@@ -513,7 +513,7 @@ it('prints one working formula sheet with optional soap analysis', function () {
     $response = $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('Working Formula Sheet')
+        ->assertSee('Formula sheet')
         ->assertSeeInOrder(['Saponified oils', 'Lye and water', 'Formula additions'])
         ->assertSee('Reference')
         ->assertSee('Date')
@@ -553,10 +553,14 @@ it('shows available formula sections with the working-copy defaults', function (
     $response = $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('Working Formula Sheet')
-        ->assertSee('Source')
-        ->assertSee('<dt class="font-semibold text-slate-600">Version</dt>', false)
-        ->assertSee((string) $publishedVersion->version_number)
+        ->assertSee('Formula sheet')
+        ->assertDontSee('<dt class="font-semibold text-slate-600">Source</dt>', false)
+        ->assertDontSee('<dt class="font-semibold text-slate-600">Version</dt>', false)
+        ->assertSee('Print sheet')
+        ->assertDontSee('Print / Save PDF')
+        ->assertSee('To save a PDF, choose')
+        ->assertViewHas('returnUrl', route('recipes.saved', ['recipe' => $recipe]))
+        ->assertDontSee('data-return-to-workbench', false)
         ->assertSee('Oil basis quantity')
         ->assertSee('Generated')
         ->assertSee('Our family formula.')
@@ -578,6 +582,10 @@ it('shows available formula sections with the working-copy defaults', function (
         ->assertDontSee('name="sections[]" value="composition"', false)
         ->assertDontSee('name="sections[]" value="costing"', false)
         ->assertDontSee('name="sections[]" value="analysis" checked', false);
+
+    $html = new DOMDocument;
+    $html->loadHTML($response->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    expect((new DOMXPath($html))->query('//article/header/p'))->toHaveCount(0);
 
     expect($response->getContent())
         ->toMatch('/<input(?=[^>]*data-formula-section-toggle="formula")(?=[^>]*\bchecked\b)[^>]*>/s')
@@ -810,9 +818,9 @@ it('renders the procedure stored on the selected formula snapshot', function () 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe, 'version' => $historicalVersion]))
         ->assertSuccessful()
-        ->assertSee('Source')
-        ->assertSee(__('formula_documents.states.saved'))
-        ->assertSee((string) $historicalVersion->version_number)
+        ->assertDontSee('<dt class="font-semibold text-slate-600">Source</dt>', false)
+        ->assertDontSee('<dt class="font-semibold text-slate-600">Version</dt>', false)
+        ->assertViewHas('returnUrl', route('recipes.version', ['recipe' => $recipe, 'version' => $historicalVersion]))
         ->assertSee('Original procedure')
         ->assertDontSee('Revised procedure');
 
@@ -1042,7 +1050,7 @@ it('renders compatibility print routes as the working formula sheet', function (
     $this->actingAs($user)
         ->get(route($routeName, ['recipe' => $recipe, 'version' => $savedVersion]))
         ->assertSuccessful()
-        ->assertSee('Working Formula Sheet')
+        ->assertSee('Formula sheet')
         ->assertDontSee('Cost summary');
 })->with([
     'technical route' => 'recipes.print.technical',
@@ -1083,7 +1091,7 @@ it('passes batch context from the saved page to print sheets', function () {
             'units_produced' => 24,
         ]))
         ->assertSuccessful()
-        ->assertSee('Working Formula Sheet')
+        ->assertSee('Formula sheet')
         ->assertSee('1500.00 g');
 });
 
@@ -1559,8 +1567,8 @@ it('keeps the main recipe identity while rendering selected backup content', fun
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful()
-        ->assertSee('<title>Main Formula · Working Formula Sheet', false)
-        ->assertDontSee('<title>Formula A · Working Formula Sheet', false)
+        ->assertSee('<title>Main Formula · Formula sheet', false)
+        ->assertDontSee('<title>Formula A · Formula sheet', false)
         ->assertSee('>Main Formula</h1>', false)
         ->assertDontSee('>Formula A</h1>', false)
         ->assertSee('Olive Oil')
@@ -1569,7 +1577,7 @@ it('keeps the main recipe identity while rendering selected backup content', fun
     $this->actingAs($user)
         ->get(route('recipes.print.costing', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful()
-        ->assertSee('<title>Main Formula · Working Formula Sheet', false)
+        ->assertSee('<title>Main Formula · Formula sheet', false)
         ->assertDontSee('Cost summary');
 
     $workbookResponse = $this->actingAs($user)
@@ -1595,7 +1603,7 @@ it('uses the latest saved formula when sheet outputs do not request a version', 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('<title>Formula B · Working Formula Sheet', false)
+        ->assertSee('<title>Formula B · Formula sheet', false)
         ->assertDontSee('Formula C Draft')
         ->assertSee('Coconut Oil')
         ->assertDontSee('Olive Oil');

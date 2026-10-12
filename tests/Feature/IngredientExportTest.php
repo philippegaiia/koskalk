@@ -5,7 +5,9 @@ use App\Enums\IngredientSubcategory;
 use App\Enums\MassDisplaySystem;
 use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
+use App\Jobs\GenerateFileExport;
 use App\Models\CurrentMaterialPrice;
+use App\Models\FileExport;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
 use App\Models\Plan;
@@ -19,10 +21,39 @@ use App\Services\PriceBasisConverter;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use OpenSpout\Common\Entity\Cell\NumericCell;
 use OpenSpout\Reader\XLSX\Reader;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    Queue::fake();
+    Storage::fake('local');
+});
+
+it('rounds kilogram CSV prices to two decimals and applies the same XLSX display format', function (): void {
+    $actor = User::factory()->create();
+    $workspace = Workspace::factory()->for($actor, 'owner')->create(['mass_display_system' => MassDisplaySystem::Metric]);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Rounded oil', 'is_active' => true]);
+    CurrentMaterialPrice::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+        'price_per_canonical_unit' => '0.005125',
+        'currency' => 'EUR',
+    ]);
+    $parameters = ['workspace' => $workspace->public_id, 'format' => 'csv'];
+
+    $csv = queuedExportDownload($this->actingAs($actor)->postJson(route('ingredients.export'), $parameters));
+    $rows = collect(explode("\n", trim($csv->streamedContent())))->map(fn (string $line): array => str_getcsv($line, escape: ''));
+    $priceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'kg']), $rows[0], true);
+    expect($rows[1][$priceIndex])->toBe('5.13');
+
+    $xlsx = queuedExportDownload($this->postJson(route('ingredients.export'), [...$parameters, 'format' => 'xlsx']));
+    expect(xlsxCellNumberFormat($xlsx->streamedContent(), 'D6'))->toBe('0.00');
+    expect($ingredient->currentPrices()->first()->price_per_canonical_unit)->toBe('0.005125000000');
+});
 
 it('exports every matching public ingredient in sorted order as CSV', function (): void {
     $actor = User::factory()->create();
@@ -72,7 +103,8 @@ it('exports every matching public ingredient in sorted order as CSV', function (
         'sortDirection' => 'asc',
     ]);
 
-    $response = $this->actingAs($actor)->get('/dashboard/ingredients/export?'.$query);
+    $response = $this->actingAs($actor)->postJson('/dashboard/ingredients/export?'.$query);
+    $response = queuedExportDownload($response);
     $response->assertSuccessful()->assertDownload();
 
     $rows = collect(explode("\n", trim($response->streamedContent())))
@@ -92,7 +124,8 @@ it('exports every matching public ingredient in sorted order as CSV', function (
         'sortField' => 'display_name',
         'sortDirection' => 'asc',
     ]);
-    $mineResponse = $this->get('/dashboard/ingredients/export?'.$mineQuery);
+    $mineResponse = $this->postJson('/dashboard/ingredients/export?'.$mineQuery);
+    $mineResponse = queuedExportDownload($mineResponse);
     $mineResponse->assertSuccessful()->assertDownload();
     $mineRows = collect(explode("\n", trim($mineResponse->streamedContent())))
         ->map(fn (string $line): array => str_getcsv($line));
@@ -187,48 +220,51 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
         'sortField' => 'display_name',
         'sortDirection' => 'asc',
     ]);
-    $csvResponse = $this->actingAs($actor)->get('/dashboard/ingredients/export?'.$baseQuery.'&format=csv');
+    $csvResponse = $this->actingAs($actor)->postJson('/dashboard/ingredients/export?'.$baseQuery.'&format=csv');
+    $csvResponse = queuedExportDownload($csvResponse);
     $csvResponse->assertSuccessful()->assertDownload();
     $csvRows = collect(explode("\n", trim($csvResponse->streamedContent())))
         ->map(fn (string $line): array => str_getcsv($line));
     $headers = $csvRows->first();
+    expect($headers)->toBe([
+        __('ingredients.exports.columns.name'),
+        __('ingredients.exports.columns.material_code'),
+        __('ingredients.exports.columns.category'),
+        __('ingredients.exports.columns.price', ['unit' => 'lb']),
+        __('ingredients.exports.columns.price_unit'),
+        __('ingredients.exports.columns.currency'),
+        __('ingredients.exports.columns.recorded_at'),
+        __('ingredients.exports.columns.source_workspace'),
+    ]);
     $priceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'lb']), $headers, true);
     $unitIndex = array_search(__('ingredients.exports.columns.price_unit'), $headers, true);
     $currencyIndex = array_search(__('ingredients.exports.columns.currency'), $headers, true);
     $dateIndex = array_search(__('ingredients.exports.columns.recorded_at'), $headers, true);
     $nameIndex = array_search(__('ingredients.exports.columns.name'), $headers, true);
-    $inciIndex = array_search(__('ingredients.exports.columns.inci_name'), $headers, true);
     $codeIndex = array_search(__('ingredients.exports.columns.material_code'), $headers, true);
     $workspaceIndex = array_search(__('ingredients.exports.columns.source_workspace'), $headers, true);
     $categoryIndex = array_search(__('ingredients.exports.columns.category'), $headers, true);
-    $subcategoryIndex = array_search(__('ingredients.exports.columns.subcategory'), $headers, true);
-    $generatedAtIndex = array_search(__('ingredients.exports.columns.generated_at'), $headers, true);
-    $ownershipFilterIndex = array_search(__('ingredients.exports.columns.ownership_filter'), $headers, true);
-    $searchIndex = array_search(__('ingredients.exports.columns.search_filter'), $headers, true);
     $rowsByName = $csvRows->skip(1)->values()->keyBy(fn (array $row): string => $row[$nameIndex]);
     $pricedRow = $rowsByName->get('Huile d’olive');
     $zeroRow = $rowsByName->get('Zero Oil');
     $unpricedRow = $rowsByName->get('Unpriced Oil');
 
-    expect($pricedRow[$inciIndex])->toBe('OLEA EUROPAEA FRUIT OIL')
-        ->and($pricedRow[$codeIndex])->toBe('OIL-001')
+    expect($pricedRow[$codeIndex])->toBe('OIL-001')
         ->and($pricedRow[$categoryIndex])->toBe((string) IngredientCategory::Lipids->localizedLabel())
-        ->and($pricedRow[$subcategoryIndex])->toBe((string) IngredientSubcategory::VegetableOils->localizedLabel())
-        ->and($pricedRow[$priceIndex])->toBe(app(PriceBasisConverter::class)->fromPerKilogram('5', 'lb'))
+        ->and($pricedRow[$priceIndex])->toBe('2.27')
         ->and($pricedRow[$unitIndex])->toBe('lb')
         ->and($pricedRow[$currencyIndex])->toBe('EUR')
         ->and($pricedRow[$dateIndex])->toBe('2026-03-04')
         ->and($pricedRow[$workspaceIndex])->toBe($workspace->name)
-        ->and($pricedRow[$generatedAtIndex])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/')
-        ->and($pricedRow[$searchIndex])->toBe('')
-        ->and($pricedRow[$ownershipFilterIndex])->toBe(__('ingredients.filters.soapkraft'))
-        ->and($zeroRow[$priceIndex])->toBe('0.000000000')
+        ->and($zeroRow[$priceIndex])->toBe('0.00')
         ->and($zeroRow[$dateIndex])->toBe('2026-05-06')
         ->and($unpricedRow[$priceIndex])->toBe('')
         ->and($unpricedRow[$dateIndex])->toBe('');
 
-    $xlsxResponse = $this->get('/dashboard/ingredients/export?'.$baseQuery.'&format=xlsx');
+    $xlsxResponse = $this->postJson('/dashboard/ingredients/export?'.$baseQuery.'&format=xlsx');
+    $xlsxResponse = queuedExportDownload($xlsxResponse);
     $xlsxResponse->assertSuccessful()->assertDownload();
+    expect(xlsxCellNumberFormat($xlsxResponse->streamedContent(), 'D6'))->toBe('0.00');
     $path = tempnam(sys_get_temp_dir(), 'ingredient-export-test-');
     expect($path)->not->toBeFalse();
 
@@ -244,6 +280,11 @@ it('exports localized names, workspace prices, codes, null and zero distinctly i
 
     $headerIndex = $sheetRows->search(fn ($row): bool => ($row->toArray()[0] ?? null) === __('ingredients.exports.columns.name'));
     $xlsxHeaders = $sheetRows[$headerIndex]->toArray();
+    expect($xlsxHeaders)->toBe($headers)
+        ->and($sheetRows->take($headerIndex)->map(fn ($row): array => $row->toArray())->all())->toBe([
+            [__('ingredients.exports.title')],
+            [__('ingredients.exports.filters.source'), $workspace->name],
+        ]);
     $xlsxPriceIndex = array_search(__('ingredients.exports.columns.price', ['unit' => 'lb']), $xlsxHeaders, true);
     $xlsxCurrencyIndex = array_search(__('ingredients.exports.columns.currency'), $xlsxHeaders, true);
     $xlsxZeroRow = $sheetRows->skip($headerIndex + 1)->first(fn ($row): bool => ($row->toArray()[0] ?? null) === 'Zero Oil');
@@ -278,19 +319,20 @@ it('allows a workspace viewer and rejects revoked or switched workspace context'
         'workspace' => $workspace->public_id,
         'format' => 'csv',
     ]);
-    $viewerResponse = $this->actingAs($member)->get($url);
+    $viewerResponse = $this->actingAs($member)->postJson($url);
+    $viewerResponse = queuedExportDownload($viewerResponse);
     $viewerResponse->assertSuccessful()->assertDownload();
     $viewerResponse->streamedContent();
 
     $membership->delete();
-    $this->getJson($url)->assertForbidden();
+    $this->postJson($url)->assertForbidden();
 
     $actor = User::factory()->create();
     $origin = Workspace::factory()->for($actor, 'owner')->create();
     $selected = Workspace::factory()->for($actor, 'owner')->create();
     DB::table('users')->where('id', $actor->id)->update(['active_workspace_id' => $selected->id]);
 
-    $this->actingAs($actor)->getJson('/dashboard/ingredients/export?'.http_build_query([
+    $this->actingAs($actor)->postJson('/dashboard/ingredients/export?'.http_build_query([
         'workspace' => $origin->public_id,
         'format' => 'csv',
     ]))->assertStatus(409);
@@ -306,7 +348,7 @@ it('rejects empty, over-limit, and changed result sets before returning a partia
         'search' => 'Bounded Oil',
     ];
 
-    $this->actingAs($actor)->getJson('/dashboard/ingredients/export?'.http_build_query($baseQuery))
+    $this->actingAs($actor)->postJson('/dashboard/ingredients/export?'.http_build_query($baseQuery))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('export');
 
@@ -321,7 +363,7 @@ it('rejects empty, over-limit, and changed result sets before returning a partia
 
     config()->set('workspaces.list_output_limits.max_rows', 2);
     $before = glob(sys_get_temp_dir().'/koskalk-export-*') ?: [];
-    $this->getJson('/dashboard/ingredients/export?'.http_build_query($baseQuery))
+    $this->postJson('/dashboard/ingredients/export?'.http_build_query($baseQuery))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('export');
     expect(glob(sys_get_temp_dir().'/koskalk-export-*') ?: [])->toBe($before);
@@ -342,10 +384,12 @@ it('rejects empty, over-limit, and changed result sets before returning a partia
         }
     });
     $before = glob(sys_get_temp_dir().'/koskalk-export-*') ?: [];
-    $changedResponse = $this->getJson('/dashboard/ingredients/export?'.http_build_query($baseQuery));
+    $changedResponse = $this->postJson('/dashboard/ingredients/export?'.http_build_query($baseQuery));
     expect($inserted)->toBeTrue();
-    $changedResponse
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('export');
+    $changedResponse->assertStatus(202);
+    $export = FileExport::query()->latest('id')->firstOrFail();
+    app()->call([new GenerateFileExport($export->id), 'handle']);
+    expect($export->fresh()->status)->toBe('failed');
+    $this->get(route('file-exports.download', $export))->assertNotFound();
     expect(glob(sys_get_temp_dir().'/koskalk-export-*') ?: [])->toBe($before);
 });

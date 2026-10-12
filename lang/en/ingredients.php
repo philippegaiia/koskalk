@@ -451,6 +451,9 @@ return [
             'xlsx' => 'Excel workbook (.xlsx)',
             'csv' => 'CSV file (.csv)',
             'pending' => 'Preparing ingredient export…',
+            'busy' => 'Your workspace has reached its export limit. Try again later.',
+            'background_failed' => 'Could not prepare the export. Please try again.',
+            'too_large' => 'This export is too large. Narrow the filters and try again.',
             'errors' => [
                 'access' => 'Sign in to export ingredients.',
                 'forbidden' => 'Your ingredient export access changed. Refresh the page and try again.',

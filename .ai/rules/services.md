@@ -8,6 +8,7 @@ paths:
   - app/Services/EntitlementService.php
   - 'app/Services/*Exporter.php'
   - 'app/Services/FormulaShare*.php'
+  - app/Services/IngredientFileExporter.php
 ---
 
 # Services
@@ -101,3 +102,9 @@ Sharing accepts an exact Workspace UUID or a trimmed, case-insensitive verified 
 
 ## Label markets fail closed to none, never to EU
 A blank, missing, unknown, retired or out-of-date market code resolves to `RegulatoryRegime::NONE_CODE` for evaluation; never default a payload key to `eu`. EU is not built in: it is checked against its regulatory_regimes row like any market. Keep a saved formula's stored code when its regime is gone so output reports `unavailable` instead of unchecked. Only `pass` may render as a pass; `no_rules`, `not_checked` and `unverified` must not.
+
+## Keep ingredient exports as a reduced price book
+User ingredient CSV/XLSX is a reduced price book. Omit Export generated, Search filter, Ownership filter, Sorted by, Sort direction, Recorded INCI and Subcategory, including XLSX context metadata. Keep Price recorded; preserve the selected workspace, current filters and ordering.
+
+## Apply export precision at the presentation boundary
+Ingredient price-book CSV/XLSX prices per kg/lb show exactly 2 decimals; packaging catalogue unit prices use 2–4. Inventory mass uses 2 decimals and counts 0, chosen per row in mixed tables. Costing workbook kg prices use 2 decimals and other costing values 2–8 to retain small costs. CSV uses canonical decimal-string rounding; XLSX stores original numeric values with display formats. Keep technical formula/composition exports at full precision.

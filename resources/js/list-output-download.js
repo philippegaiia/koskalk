@@ -79,6 +79,7 @@ export function createListOutputDownload(dependencies = {}) {
     const MutationObserver = dependencies.MutationObserver ?? globalThis.MutationObserver;
     let serverResultsObserver = null;
     let root = null;
+    let destroyed = false;
     // Inside an event handler Alpine resolves this.$el to the clicked element,
     // so the component root (which carries the data attributes) is kept from init().
     const outputRoot = (component) => root ?? component.$el;
@@ -93,6 +94,7 @@ export function createListOutputDownload(dependencies = {}) {
         serverParameters: {},
 
         init() {
+            destroyed = false;
             root = this.$el;
             this.visibleSearch = this.searchInput()?.value ?? '';
             this.syncServerResults();
@@ -107,6 +109,7 @@ export function createListOutputDownload(dependencies = {}) {
         },
 
         destroy() {
+            destroyed = true;
             serverResultsObserver?.disconnect();
         },
 
@@ -151,7 +154,7 @@ export function createListOutputDownload(dependencies = {}) {
         },
 
         toggleMenu() {
-            if (this.outputPending || this.currentResultsAreEmpty()) {
+            if (destroyed || this.outputPending || this.currentResultsAreEmpty()) {
                 return false;
             }
 
@@ -208,7 +211,7 @@ export function createListOutputDownload(dependencies = {}) {
         },
 
         async exportList(format) {
-            if (this.outputPending || this.currentResultsAreEmpty()) {
+            if (destroyed || this.outputPending || this.currentResultsAreEmpty()) {
                 return false;
             }
 
@@ -223,10 +226,13 @@ export function createListOutputDownload(dependencies = {}) {
                     origin: window.location.origin,
                     parameters,
                 });
-                const response = await fetch(url, {
-                    method: 'GET',
+                let response = await fetch(url, {
+                    method: 'POST',
                     credentials: 'same-origin',
-                    headers: { Accept: 'application/json' },
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector?.('meta[name="csrf-token"]')?.content ?? '',
+                    },
                 });
 
                 if (! response.ok) {
@@ -240,9 +246,56 @@ export function createListOutputDownload(dependencies = {}) {
                     }));
                 }
 
+                if (response.status === 202) {
+                    let state = await response.json();
+                    const wait = dependencies.wait ?? ((ms) => new Promise((resolve) => schedule(resolve, ms)));
+                    for (let attempt = 0; state.status !== 'ready'; attempt += 1) {
+                        if (state.status === 'failed' || attempt >= 300) {
+                            throw new Error(state.error || outputRoot(this).dataset.exportErrorFailed);
+                        }
+                        await wait(2000);
+                        if (destroyed) {
+                            return false;
+                        }
+                        const statusResponse = await fetch(state.status_url, {
+                            credentials: 'same-origin',
+                            headers: { Accept: 'application/json' },
+                        });
+                        if (! statusResponse.ok) {
+                            throw new Error(await responseError(statusResponse, {
+                                access: outputRoot(this).dataset.exportErrorAccess,
+                                forbidden: outputRoot(this).dataset.exportErrorForbidden,
+                                workspaceChanged: outputRoot(this).dataset.exportErrorWorkspaceChanged,
+                                throttled: outputRoot(this).dataset.exportErrorThrottled,
+                                failed: outputRoot(this).dataset.exportErrorFailed,
+                            }));
+                        }
+                        state = await statusResponse.json();
+                    }
+                    if (destroyed) {
+                        return false;
+                    }
+                    response = await fetch(state.download_url, {
+                        credentials: 'same-origin',
+                        headers: { Accept: 'application/json' },
+                    });
+                    if (! response.ok) {
+                        throw new Error(await responseError(response, {
+                            access: outputRoot(this).dataset.exportErrorAccess,
+                            forbidden: outputRoot(this).dataset.exportErrorForbidden,
+                            workspaceChanged: outputRoot(this).dataset.exportErrorWorkspaceChanged,
+                            failed: outputRoot(this).dataset.exportErrorFailed,
+                        }));
+                    }
+                }
+
                 const fallback = outputRoot(this).dataset.exportFilenameFallback?.replace('{format}', format) ?? `ingredients.${format}`;
                 const filename = filenameFromContentDisposition(response.headers.get('Content-Disposition'), fallback);
-                downloadBlob(await response.blob(), filename, document, URLApi, schedule);
+                const blob = await response.blob();
+                if (destroyed) {
+                    return false;
+                }
+                downloadBlob(blob, filename, document, URLApi, schedule);
 
                 return true;
             } catch (error) {

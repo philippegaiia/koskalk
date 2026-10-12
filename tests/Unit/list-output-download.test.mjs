@@ -84,9 +84,9 @@ test('exports the visible last-keystroke search with the current server filters'
     assert.equal(url.searchParams.get('sortDirection'), 'desc');
     assert.equal(url.searchParams.get('format'), 'csv');
     assert.deepEqual(request.options, {
-        method: 'GET',
+        method: 'POST',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': '' },
     });
     assert.equal(fixture.anchors[0].download, 'ingredient-price-book.csv');
     assert.equal(fixture.anchors[0].clicked, true);
@@ -279,4 +279,99 @@ test('reads the component root after init when Alpine passes the clicked item as
 
     assert.equal(await helper.exportList('xlsx'), true);
     assert.equal(new URL(requests[0]).pathname, '/dashboard/ingredients/export');
+});
+
+test('polls a queued export before downloading and prevents a second concurrent request', async () => {
+    const fixture = outputRoot();
+    fixture.document.querySelector = () => ({ content: 'csrf-token' });
+    const requests = [];
+    let helper;
+    const states = [
+        { status: 'pending', status_url: '/status/export', download_url: null },
+        { status: 'processing', status_url: '/status/export', download_url: null },
+        { status: 'ready', status_url: '/status/export', download_url: '/download/export' },
+    ];
+    helper = createListOutputDownload({
+        ...fixture,
+        window: { location: { origin: 'https://koskalk.test' }, URL: fixture.URL },
+        setTimeout: (fn) => fn(),
+        wait: async () => {
+            assert.equal(helper.outputPending, true);
+            assert.equal(await helper.exportList('csv'), false);
+        },
+        fetch: async (url, options) => {
+            requests.push({ url, options });
+            if (url === '/download/export') {
+                return { ok: true, headers: { get: () => 'attachment; filename="ready.csv"' }, blob: async () => new Blob(['csv']) };
+            }
+            return { ok: true, status: requests.length === 1 ? 202 : 200, json: async () => states.shift() };
+        },
+    });
+    helper.$el = fixture.root;
+    helper.init();
+
+    assert.equal(await helper.exportList('csv'), true);
+    assert.equal(requests[0].options.method, 'POST');
+    assert.equal(requests[0].options.headers['X-CSRF-TOKEN'], 'csrf-token');
+    assert.deepEqual(requests.slice(1).map((request) => request.url), ['/status/export', '/status/export', '/download/export']);
+    assert.equal(fixture.anchors[0].download, 'ready.csv');
+    assert.equal(helper.outputPending, false);
+});
+
+test('shows a background failure and never downloads a partial export', async () => {
+    const fixture = outputRoot();
+    let requests = 0;
+    const helper = createListOutputDownload({
+        ...fixture,
+        window: { location: { origin: 'https://koskalk.test' }, URL: fixture.URL },
+        wait: async () => {},
+        fetch: async () => ({ ok: true, status: ++requests === 1 ? 202 : 200, json: async () => ({
+            status: requests === 1 ? 'pending' : 'failed', status_url: '/status/export', error: 'The export is too large.',
+        }) }),
+    });
+    helper.$el = fixture.root;
+    helper.init();
+    assert.equal(await helper.exportList('csv'), false);
+    assert.equal(helper.outputError, 'The export is too large.');
+    assert.equal(fixture.anchors.length, 0);
+    assert.equal(helper.outputPending, false);
+});
+
+test('stops polling when workspace access changes', async () => {
+    const fixture = outputRoot();
+    let requests = 0;
+    const helper = createListOutputDownload({ ...fixture,
+        window: { location: { origin: 'https://koskalk.test' }, URL: fixture.URL },
+        wait: async () => {},
+        fetch: async () => ++requests === 1
+            ? { ok: true, status: 202, json: async () => ({ status: 'pending', status_url: '/status/export' }) }
+            : { ok: false, status: 409, json: async () => ({}) },
+    });
+    helper.$el = fixture.root;
+    helper.init();
+    assert.equal(await helper.exportList('csv'), false);
+    assert.equal(helper.outputError, 'Workspace changed.');
+    assert.equal(requests, 2);
+    assert.equal(fixture.anchors.length, 0);
+});
+
+test('stops polling when navigation destroys the export component', async () => {
+    const fixture = outputRoot();
+    let requests = 0;
+    const helper = createListOutputDownload({ ...fixture,
+        window: { location: { origin: 'https://koskalk.test' }, URL: fixture.URL },
+        wait: async () => helper.destroy(),
+        fetch: async () => {
+            requests += 1;
+            return { ok: true, status: 202, json: async () => ({ status: 'pending', status_url: '/status/export' }) };
+        },
+    });
+    helper.$el = fixture.root;
+    helper.init();
+
+    assert.equal(await helper.exportList('csv'), false);
+    assert.equal(requests, 1);
+    assert.equal(helper.outputPending, false);
+    assert.equal(helper.outputError, '');
+    assert.equal(fixture.anchors.length, 0);
 });

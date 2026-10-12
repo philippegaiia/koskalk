@@ -40,3 +40,8 @@ Schedule::command('help:recover-jobs')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('exports:prune')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();

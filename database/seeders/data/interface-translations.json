@@ -1236,6 +1236,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "actions.export_short",
+      "text": {
+        "de": "Exportieren",
+        "es": "Exportar",
+        "fr": "Exporter",
+        "it": "Esporta",
+        "nl": "Exporteren",
+        "pt_BR": "Exportar"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "actions.export_xlsx_option",
       "text": {
         "de": "Excel (.xlsx)",
@@ -1280,6 +1292,18 @@
         "it": "Stampa scheda",
         "nl": "Blad afdrukken",
         "pt_BR": "Imprimir ficha"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "actions.print_short",
+      "text": {
+        "de": "Drucken",
+        "es": "Imprimir",
+        "fr": "Imprimer",
+        "it": "Stampa",
+        "nl": "Afdrukken",
+        "pt_BR": "Imprimir"
       }
     },
     {

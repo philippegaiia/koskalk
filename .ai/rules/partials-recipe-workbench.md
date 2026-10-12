@@ -1,6 +1,7 @@
 ---
 paths:
   - 'resources/views/livewire/dashboard/partials/recipe-workbench/**'
+  - resources/views/livewire/dashboard/partials/recipe-workbench/output-actions.blade.php
 ---
 
 # Partials Recipe Workbench
@@ -16,3 +17,6 @@ Keep saving and save status in each tab's bottom action bar. The shared workbenc
 
 ## Keep locked formula settings readable
 Formula settings must remain expandable in read-only states, including locked formulas. Keep the disclosure outside disabled fieldsets; protect the settings fields and formula editing controls with canWriteRecipe. Show nested compliance details automatically when controls are read-only so their disabled disclosure does not conceal saved settings.
+
+## Keep workbench output labels compact
+In the workbench tab row, visible output buttons say only Print and Export (localized), as requested by the owner to leave more space for translated tabs. This is the exception to the general verb-plus-object output label convention. Preserve outline styling, icons, export format menus and active-tab context.

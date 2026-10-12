@@ -10,6 +10,8 @@ return [
         'history' => 'Saved history',
     ],
     'actions' => [
+        'print_short' => 'Print',
+        'export_short' => 'Export',
         'back' => 'Back to formulas',
         'back_to_current' => 'Back to current formula',
         'export_csv' => 'Export CSV',

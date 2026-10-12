@@ -1,11 +1,51 @@
 <?php
 
 use App\Models\InterfaceTranslation;
+use DOM\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
+
+it('keeps workbench output button labels short in English and French', function (string $locale, string $printLabel, string $exportLabel): void {
+    $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'formula_documents')
+        ->whereIn('key', ['actions.print_short', 'actions.export_short']);
+    foreach ($rows as $row) {
+        InterfaceTranslation::query()->create([
+            'group' => $row['group'], 'key' => $row['key'], 'text' => $row['text'],
+        ]);
+    }
+
+    app()->setLocale($locale);
+    $html = view('livewire.dashboard.partials.recipe-workbench.output-actions', [
+        'workbench' => ['output' => []],
+    ])->render();
+    $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
+    $prints = [];
+    $exports = [];
+    foreach ($document->querySelectorAll('button') as $button) {
+        $action = $button->getAttribute('@click') ?? '';
+        if (str_starts_with($action, 'printCurrentFormula')) {
+            $prints[] = $button;
+        }
+        if ($button->getAttribute('x-ref') === 'exportMenuTrigger' || str_starts_with($action, 'exportCurrent')) {
+            $exports[] = $button;
+        }
+    }
+
+    expect($prints)->toHaveCount(4)->and($exports)->toHaveCount(3);
+    foreach ($prints as $button) {
+        expect(trim($button->textContent))->toBe($printLabel);
+    }
+    foreach ($exports as $button) {
+        expect(trim($button->textContent))->toBe($exportLabel);
+    }
+})->with([
+    'English' => ['en', 'Print', 'Export'],
+    'French' => ['fr', 'Imprimer', 'Exporter'],
+]);
 
 it('localizes soap quality metrics and review warnings in every catalogue language', function (): void {
     $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])

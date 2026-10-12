@@ -10,7 +10,7 @@ function outputActionViews(): array
 {
     return [
         'print preview' => ['components/formula-document/print-options.blade.php', ['formula_documents.actions.print_sheet']],
-        'workbench' => ['livewire/dashboard/partials/recipe-workbench/output-actions.blade.php', ['formula_documents.actions.print_sheet', 'formula_documents.actions.export_formula', 'formula_documents.actions.export_costing', 'formula_documents.actions.export_composition']],
+        'workbench' => ['livewire/dashboard/partials/recipe-workbench/output-actions.blade.php', ['formula_documents.actions.print_short', 'formula_documents.actions.export_short']],
         'saved formula sheet' => ['recipes/version.blade.php', ['formula_documents.actions.print_sheet', 'formula_documents.actions.export_formula']],
         'saved sheet labeling' => ['recipes/partials/version-sheet.blade.php', ['formula_documents.actions.export_composition']],
         'ingredients' => ['livewire/dashboard/ingredients-index.blade.php', ['ingredients.exports.ui.label']],

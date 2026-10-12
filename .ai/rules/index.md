@@ -37,7 +37,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | database/migrations/** | .ai/rules/migrations.md |
 | app/{Models,Services}/** | .ai/rules/models-services.md |
 | app/Models/**, app/Models/{ProductArea,ProductCategory,ProductType,IfraProductCategory}.php | .ai/rules/models.md |
-| resources/views/livewire/dashboard/partials/recipe-workbench/** | .ai/rules/partials-recipe-workbench.md |
+| resources/views/livewire/dashboard/partials/recipe-workbench/**, resources/views/livewire/dashboard/partials/recipe-workbench/output-actions.blade.php | .ai/rules/partials-recipe-workbench.md |
 | app/Http/Controllers/RecipeController.php, app/Policies/RecipePolicy.php, resources/views/**/recipe*.blade.php, app/Policies/**, resources/views/** | .ai/rules/policies-views.md |
 | app/Policies/** | .ai/rules/policies.md |
 | app/Livewire/ProductionBench/Production/** | .ai/rules/production-bench-production.md |

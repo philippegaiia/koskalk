@@ -5901,8 +5901,8 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->toContain('qualityApplicability(key)')
         ->toContain('isQualityTendency(key)')
         ->toContain('return this.backendCalculation?.properties?.quality_applicability?.[key]')
-        ->toContain('Process-dependent tendency')
-        ->toContain('Not applicable for this soap context')
+        ->toContain("this.t('qualities.process_dependent')")
+        ->toContain("this.t('qualities.not_applicable')")
         ->and($formulaAnalysis)
         ->not->toContain('sk-quality-pill shrink-0')
         ->not->toContain('Compact interpretation first, deeper chemistry second.')
@@ -6477,6 +6477,17 @@ const source = fs
 eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
 
 const workbench = {
+  t: (key, replacements = {}) => {
+    const text = ({
+      'qualities.process_dependent': 'Process-dependent tendency',
+      'qualities.tendency_value': ':value tendency',
+      'qualities.high_koh': 'High-KOH process context',
+      'qualities.negative_superfat': 'Negative superfat needs pH control',
+    })[key] ?? key;
+    return Object.entries(replacements).reduce(
+      (value, [name, replacement]) => value.replaceAll(`:${name}`, String(replacement)), text,
+    );
+  },
   backendCalculation: {
     properties: {
       quality_applicability: {
@@ -6528,6 +6539,17 @@ const source = fs
 eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
 
 const workbench = {
+  t: (key, replacements = {}) => {
+    const text = ({
+      'qualities.process_dependent': 'Process-dependent tendency',
+      'qualities.tendency_value': ':value tendency',
+      'qualities.high_koh': 'High-KOH process context',
+      'qualities.negative_superfat': 'Negative superfat needs pH control',
+    })[key] ?? key;
+    return Object.entries(replacements).reduce(
+      (value, [name, replacement]) => value.replaceAll(`:${name}`, String(replacement)), text,
+    );
+  },
   backendCalculation: {
     properties: {
       fatty_acid_groups: {},
@@ -6575,6 +6597,17 @@ const source = fs
 eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
 
 const workbench = {
+  t: (key, replacements = {}) => {
+    const text = ({
+      'qualities.process_dependent': 'Process-dependent tendency',
+      'qualities.tendency_value': ':value tendency',
+      'qualities.high_koh': 'High-KOH process context',
+      'qualities.negative_superfat': 'Negative superfat needs pH control',
+    })[key] ?? key;
+    return Object.entries(replacements).reduce(
+      (value, [name, replacement]) => value.replaceAll(`:${name}`, String(replacement)), text,
+    );
+  },
   backendCalculation: {
     properties: {
       fatty_acid_groups: { mu: 72, vs: 4, hs: 12 },

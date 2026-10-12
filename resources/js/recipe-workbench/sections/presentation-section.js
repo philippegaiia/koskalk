@@ -32,7 +32,7 @@ export function createPresentationSection() {
             }
 
             if (this.isQualityTendency(row.key)) {
-                return `${this.format(row.value, 1)} tendency`;
+                return this.t('qualities.tendency_value', { value: this.format(row.value, 1) });
             }
 
             return this.format(row.value, 1);
@@ -120,16 +120,16 @@ export function createPresentationSection() {
 
         qualityTargetLabel(key) {
             if (!this.isQualityApplicable(key)) {
-                return 'Not applicable for this soap context';
+                return this.t('qualities.not_applicable');
             }
 
             if (this.isQualityTendency(key)) {
-                return 'Process-dependent tendency';
+                return this.t('qualities.process_dependent');
             }
 
             const range = this.qualityTargetRangeLabel(key);
 
-            return range ? `Target ${range}` : null;
+            return range ? this.t('qualities.target', { range }) : null;
         },
 
         qualityTargetRangeLabel(key) {
@@ -904,12 +904,12 @@ export function createPresentationSection() {
         qualityLabel(value) {
             const numeric = this.number(value);
 
-            if (numeric < 20) return 'Very low';
-            if (numeric < 40) return 'Low';
-            if (numeric < 60) return 'Moderate';
-            if (numeric < 80) return 'High';
+            if (numeric < 20) return this.t('qualities.very_low');
+            if (numeric < 40) return this.t('qualities.low');
+            if (numeric < 60) return this.t('qualities.moderate');
+            if (numeric < 80) return this.t('qualities.high');
 
-            return 'Very high';
+            return this.t('qualities.very_high');
         },
 
         qualityExplanation(key, value) {
@@ -1027,11 +1027,11 @@ export function createPresentationSection() {
             const quality = this.qualityMetrics();
 
             return [
-                ['Unmolding firmness', 'unmolding_firmness'],
+                [this.t('qualities.metrics.unmolding_firmness'), 'unmolding_firmness'],
                 [this.t('qualities.hardness_four_weeks'), 'cured_hardness'],
-                ['Longevity', 'longevity'],
-                ['Cure speed', 'cure_speed'],
-                ['DOS risk', 'dos_risk'],
+                [this.t('qualities.metrics.longevity'), 'longevity'],
+                [this.t('qualities.metrics.cure_speed'), 'cure_speed'],
+                [this.t('qualities.metrics.dos_risk'), 'dos_risk'],
                 [this.t('qualities.shrinkage_label'), 'shrinkage_risk'],
             ].filter(([, key]) => this.isQualityApplicable(key)).map(([label, key]) => ({
                 label,
@@ -1046,13 +1046,13 @@ export function createPresentationSection() {
             const quality = this.qualityMetrics();
 
             return [
-                ['Cleansing strength', 'cleansing_strength'],
-                ['Mildness', 'mildness'],
-                ['Bubble volume', 'bubble_volume'],
-                ['Creamy lather', 'creamy_lather'],
-                ['Lather stability', 'lather_stability'],
-                ['Conditioning feel', 'conditioning_feel'],
-                ['Slime tendency', 'slime_risk'],
+                [this.t('qualities.metrics.cleansing_strength'), 'cleansing_strength'],
+                [this.t('qualities.metrics.mildness'), 'mildness'],
+                [this.t('qualities.metrics.bubble_volume'), 'bubble_volume'],
+                [this.t('qualities.metrics.creamy_lather'), 'creamy_lather'],
+                [this.t('qualities.metrics.lather_stability'), 'lather_stability'],
+                [this.t('qualities.metrics.conditioning_feel'), 'conditioning_feel'],
+                [this.t('qualities.metrics.slime_risk'), 'slime_risk'],
             ].filter(([, key]) => this.isQualityApplicable(key)).map(([label, key]) => ({
                 label,
                 key,
@@ -1072,32 +1072,32 @@ export function createPresentationSection() {
 
             if (this.isQualityApplicable('cure_speed') && quality.cure_speed < 35) {
                 flags.push({
-                    label: 'Slow cure',
+                    label: this.t('qualities.slow_cure'),
                     helpKey: 'soap.qualities.cure',
-                    explanation: 'This bar likely benefits from a longer cure before it shows its best hardness, feel, and lather.',
+                    explanation: this.t('qualities.slow_cure_help'),
                 });
             }
 
             if (this.isQualityApplicable('dos_risk') && quality.dos_risk >= 35) {
                 flags.push({
-                    label: 'DOS risk',
+                    label: this.t('qualities.metrics.dos_risk'),
                     helpKey: 'soap.qualities.dos',
-                    explanation: 'Higher unsaturation means storage conditions, fresh oils, and antioxidants matter more here.',
+                    explanation: this.t('qualities.dos_help'),
                 });
             }
 
             if (this.isQualityApplicable('slime_risk') && quality.slime_risk >= 35) {
                 flags.push({
-                    label: 'Slime tendency',
+                    label: this.t('qualities.metrics.slime_risk'),
                     helpKey: 'soap.qualities.cure',
-                    explanation: 'High-oleic styles can feel slimy early on, especially before a long cure has finished smoothing them out.',
+                    explanation: this.t('qualities.slime_help'),
                 });
             }
 
             if (this.isQualityScored('cleansing_strength') && quality.cleansing_strength > 40) {
                 flags.push({
-                    label: 'High cleansing',
-                    explanation: 'This should clean strongly, but may feel drying unless balanced carefully with superfat and formula positioning.',
+                    label: this.t('qualities.high_cleansing'),
+                    explanation: this.t('qualities.high_cleansing_help'),
                 });
             }
 
@@ -1110,9 +1110,9 @@ export function createPresentationSection() {
 
             if (this.isQualityApplicable('cure_speed') && this.isQualityApplicable('slime_risk') && mu > 65 && vs < 12 && hs < 20) {
                 flags.push({
-                    label: 'Castile-like',
+                    label: this.t('qualities.castile'),
                     helpKey: 'soap.qualities.cure',
-                    explanation: 'This profile behaves like a high-oleic soap: gentle and slow, often improving dramatically with a long cure.',
+                    explanation: this.t('qualities.castile_help'),
                 });
             }
 
@@ -1123,29 +1123,29 @@ export function createPresentationSection() {
             const warnings = this.backendCalculation?.properties?.warnings ?? [];
             const warningLabels = {
                 high_koh_context_process_dependent: {
-                    label: 'High-KOH process context',
+                    label: this.t('qualities.high_koh'),
                     helpKey: 'soap.qualities.liquid',
-                    explanation: 'High-KOH and liquid soap metrics are process-dependent tendencies, not bar-soap score targets.',
+                    explanation: this.t('qualities.high_koh_help'),
                 },
                 negative_superfat_requires_neutralization_and_ph_control: {
-                    label: 'Negative superfat needs pH control',
+                    label: this.t('qualities.negative_superfat'),
                     helpKey: 'soap.qualities.liquid',
-                    explanation: 'Negative superfat liquid soap requires neutralization strategy and pH control before use.',
+                    explanation: this.t('qualities.negative_superfat_help'),
                 },
                 positive_liquid_superfat_may_cloud_or_separate: {
-                    label: 'Liquid superfat stability',
+                    label: this.t('qualities.liquid_superfat'),
                     helpKey: 'soap.qualities.liquid',
-                    explanation: 'Positive superfat in liquid soap may cloud, thicken unpredictably, or separate.',
+                    explanation: this.t('qualities.liquid_superfat_help'),
                 },
                 high_polyunsaturated_dos_risk: {
-                    label: 'High polyunsaturated DOS risk',
+                    label: this.t('qualities.high_polyunsaturated_dos'),
                     helpKey: 'soap.qualities.dos',
-                    explanation: 'The polyunsaturated fatty-acid level increases DOS sensitivity, so fresh oils and careful storage matter.',
+                    explanation: this.t('qualities.high_polyunsaturated_dos_help'),
                 },
                 very_high_polyunsaturated_dos_risk: {
-                    label: 'Very high DOS risk',
+                    label: this.t('qualities.very_high_dos'),
                     helpKey: 'soap.qualities.dos',
-                    explanation: 'The polyunsaturated fatty-acid level is very high and may need reformulation, antioxidants, or stricter storage controls.',
+                    explanation: this.t('qualities.very_high_dos_help'),
                 },
             };
 

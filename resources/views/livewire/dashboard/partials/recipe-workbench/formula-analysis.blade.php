@@ -33,12 +33,12 @@
             <div class="flex flex-wrap items-center gap-4 sm:justify-end">
                 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="soapQualitiesExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
                     <div class="overflow-hidden">
-                        <div role="tablist" aria-label="Quality metrics view" class="inline-flex items-center gap-2">
+                        <div role="tablist" aria-label="{{ __('workbench.qualities.view_label') }}" class="inline-flex items-center gap-2">
                     <button id="tab-bar-cure" type="button" role="tab" :aria-selected="soapQualityPanel === 'bar_cure'" aria-controls="panel-bar-cure" @click="soapQualityPanel = 'bar_cure'" :class="soapQualityPanel === 'bar_cure' ? 'border-b-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
-                        Bar &amp; cure
+                        {{ __('workbench.qualities.bar_cure') }}
                     </button>
                     <button id="tab-lather-feel" type="button" role="tab" :aria-selected="soapQualityPanel === 'lather_feel'" aria-controls="panel-lather-feel" @click="soapQualityPanel = 'lather_feel'" :class="soapQualityPanel === 'lather_feel' ? 'border-b-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
-                        Lather &amp; feel
+                        {{ __('workbench.qualities.lather_feel') }}
                     </button>
                         </div>
                     </div>
@@ -49,7 +49,7 @@
                     @click="toggleSoapQualities()"
                     :aria-expanded="soapQualitiesExpanded.toString()"
                     aria-controls="soap-quality-content"
-                    :aria-label="soapQualitiesExpanded ? 'Hide Soapkraft qualities' : 'Show Soapkraft qualities'"
+                    :aria-label="soapQualitiesExpanded ? t('qualities.hide') : t('qualities.show')"
                     class="sk-quality-disclosure grid size-9 shrink-0 place-items-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-panel)]/45 text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]/75 hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]"
                 >
                     <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" class="size-4 motion-safe:transition-transform" :class="soapQualitiesExpanded ? 'rotate-180' : ''">

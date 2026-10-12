@@ -7,6 +7,99 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
+it('localizes soap quality metrics and review warnings in every catalogue language', function (): void {
+    $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'workbench')
+        ->filter(fn (array $row): bool => str_starts_with($row['key'], 'qualities.'));
+
+    foreach ($rows as $row) {
+        InterfaceTranslation::query()->create([
+            'group' => $row['group'], 'key' => $row['key'], 'text' => $row['text'],
+        ]);
+    }
+
+    app()->setLocale('fr');
+    $html = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+    expect($html)->toContain('Savon et cure')->toContain('Mousse et sensation')
+        ->toContain(__('workbench.qualities.review_title'))
+        ->not->toContain('Bar &amp; cure')->not->toContain('Lather &amp; feel');
+
+    $translations = [];
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        foreach ($rows as $row) {
+            $translations[$locale][$row['key']] = __("workbench.{$row['key']}", [], $locale);
+        }
+    }
+
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { createPresentationSection } from './resources/js/recipe-workbench/sections/presentation-section.js';
+const translations = JSON.parse(process.argv[1]);
+const warnings = [
+    'high_koh_context_process_dependent',
+    'negative_superfat_requires_neutralization_and_ph_control',
+    'positive_liquid_superfat_may_cloud_or_separate',
+    'high_polyunsaturated_dos_risk',
+    'very_high_polyunsaturated_dos_risk',
+];
+for (const [locale, copy] of Object.entries(translations)) {
+    const requestedKeys = [];
+    const workbench = {
+        t: (key, replacements = {}) => {
+            requestedKeys.push(key);
+            assert.equal(typeof copy[key], 'string', `${locale}: ${key}`);
+            return Object.entries(replacements).reduce(
+                (text, [name, value]) => text.replaceAll(`:${name}`, String(value)), copy[key],
+            );
+        },
+        backendCalculation: { properties: {
+            qualities: {
+                unmolding_firmness: 50, cured_hardness: 50, longevity: 50, cure_speed: 10,
+                dos_risk: 40, slime_risk: 40, shrinkage_risk: 40, cleansing_strength: 50,
+                mildness: 50, bubble_volume: 50, creamy_lather: 50, lather_stability: 50,
+                conditioning_feel: 50,
+            },
+            fatty_acid_groups: { mu: 72, vs: 4, hs: 12 }, warnings,
+        } },
+        number: value => Number(value ?? 0),
+        format: value => String(value),
+    };
+    Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createPresentationSection()));
+    const bars = workbench.barAndCureQualityRows();
+    const lather = workbench.latherAndFeelQualityRows();
+    const flags = workbench.qualityFlags();
+    assert.equal(bars.length, 6);
+    assert.equal(lather.length, 7);
+    assert.equal(flags.length, 11);
+    assert.ok(flags.every(flag => flag.label && flag.explanation));
+    assert.equal(workbench.qualityTargetLabel('unmolding_firmness'), copy['qualities.target'].replace(':range', '45-70'));
+    if (locale === 'fr') {
+        assert.deepEqual(bars.slice(0, 1).map(row => row.label), ['Fermeté au démoulage']);
+        assert.deepEqual(lather.map(row => row.label), [
+            'Pouvoir lavant', 'Douceur', 'Volume de mousse', 'Mousse crémeuse',
+            'Stabilité de la mousse', 'Sensation de douceur', 'Tendance à une texture visqueuse',
+        ]);
+        assert.ok(flags.some(flag => flag.label === 'Cure lente'));
+        assert.ok(flags.some(flag => flag.label === 'Risque de rancissement (DOS)'));
+        assert.equal(workbench.qualityTargetLabel('unmolding_firmness'), 'Cible 45-70');
+    }
+    workbench.backendCalculation.properties.quality_applicability = {
+        cleansing_strength: { applies: true, display: 'tendency' },
+        unmolding_firmness: { applies: false, display: 'hidden' },
+    };
+    assert.equal(workbench.qualityTargetLabel('cleansing_strength'), copy['qualities.process_dependent']);
+    assert.equal(workbench.qualityDisplayValue({ key: 'cleansing_strength', value: 50 }), copy['qualities.tendency_value'].replace(':value', '50'));
+    assert.equal(workbench.qualityTargetLabel('unmolding_firmness'), copy['qualities.not_applicable']);
+    assert.ok(!workbench.barAndCureQualityRows().some(row => row.key === 'unmolding_firmness'));
+    assert.ok(!workbench.qualityFlags().some(flag => flag.label === copy['qualities.high_cleansing']));
+    assert.ok(requestedKeys.includes('qualities.metrics.longevity'));
+}
+JS;
+    $process = new Process(['node', '--input-type=module', '-e', $script, json_encode($translations, JSON_THROW_ON_ERROR)], base_path());
+    $process->mustRun();
+    expect($process->getOutput())->toBe('');
+});
+
 it('localizes soap table headings and calculated summaries in French', function (): void {
     $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
         ->where('group', 'workbench')

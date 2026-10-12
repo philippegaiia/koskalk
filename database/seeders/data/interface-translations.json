@@ -45852,6 +45852,18 @@
     },
     {
       "group": "workbench",
+      "key": "qualities.bar_cure",
+      "text": {
+        "de": "Seifenstück und Reifezeit",
+        "es": "Pastilla y curado",
+        "fr": "Savon et cure",
+        "it": "Saponetta e stagionatura",
+        "nl": "Zeepblok en rijping",
+        "pt_BR": "Barra e cura"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.bar_unavailable",
       "text": {
         "de": "Festigkeit und Reifung von Stückseife lassen sich für diese Laugenmischung nicht abschätzen. Siehe Schaum & Hautgefühl für Formulierungstendenzen.",
@@ -45860,6 +45872,30 @@
         "it": "Le stime di consistenza e stagionatura della saponetta non sono disponibili per questa miscela di alcali. Consulta Schiuma e sensazione per le tendenze della formula.",
         "nl": "Schattingen van stevigheid en rijping van zeepblokken zijn niet beschikbaar voor dit alkalimengsel. Zie Schuim en huidgevoel voor formuleringstendensen.",
         "pt_BR": "As estimativas de firmeza e cura da barra não estão disponíveis para esta mistura de álcalis. Consulte Espuma e sensação para ver tendências da formulação."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.castile",
+      "text": {
+        "de": "Kastilienseifenähnlich",
+        "es": "Similar al jabón de Castilla",
+        "fr": "Profil de type Castille",
+        "it": "Simile al sapone di Castiglia",
+        "nl": "Castille-achtig",
+        "pt_BR": "Semelhante ao sabão de Castela"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.castile_help",
+      "text": {
+        "de": "Dieses Profil ähnelt ölsäurereicher Seife: mild und langsam reifend, oft deutlich besser nach langer Reifung.",
+        "es": "Este perfil se comporta como un jabón rico en ácido oleico: suave y lento, y suele mejorar mucho con un curado largo.",
+        "fr": "Ce profil ressemble à un savon riche en acide oléique : doux et lent à évoluer, il peut nettement s’améliorer avec une longue cure.",
+        "it": "Questo profilo si comporta come un sapone ricco di acido oleico: delicato e lento, spesso migliora molto con una lunga stagionatura.",
+        "nl": "Dit profiel lijkt op zeep met veel oliezuur: mild en langzaam rijpend, vaak sterk verbeterd na lange rijping.",
+        "pt_BR": "Este perfil se comporta como um sabão rico em ácido oleico: suave e lento, geralmente melhora muito com uma cura longa."
       }
     },
     {
@@ -45924,6 +45960,18 @@
     },
     {
       "group": "workbench",
+      "key": "qualities.dos_help",
+      "text": {
+        "de": "Bei höherer Ungesättigtheit sind Lagerbedingungen, frische Öle und Antioxidantien wichtiger.",
+        "es": "Una mayor insaturación hace más importantes el almacenamiento, los aceites frescos y los antioxidantes.",
+        "fr": "Une insaturation plus élevée rend les conditions de stockage, la fraîcheur des huiles et les antioxydants plus importants.",
+        "it": "Una maggiore insaturazione rende più importanti conservazione, oli freschi e antiossidanti.",
+        "nl": "Bij meer onverzadigde vetzuren zijn opslag, verse oliën en antioxidanten belangrijker.",
+        "pt_BR": "Uma maior insaturação torna mais importantes o armazenamento, os óleos frescos e os antioxidantes."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.empty",
       "text": {
         "de": "Öle mit SAP- und Fettsäuredaten hinzufügen, um die Seifeneigenschaften zu berechnen.",
@@ -45948,6 +45996,342 @@
     },
     {
       "group": "workbench",
+      "key": "qualities.hide",
+      "text": {
+        "de": "Soapkraft-Qualitäten ausblenden",
+        "es": "Ocultar cualidades de Soapkraft",
+        "fr": "Masquer les qualités Soapkraft",
+        "it": "Nascondi le qualità Soapkraft",
+        "nl": "Soapkraft-eigenschappen verbergen",
+        "pt_BR": "Ocultar qualidades Soapkraft"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high",
+      "text": {
+        "de": "Hoch",
+        "es": "Alto",
+        "fr": "Élevé",
+        "it": "Alto",
+        "nl": "Hoog",
+        "pt_BR": "Alto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high_cleansing",
+      "text": {
+        "de": "Hohe Reinigungskraft",
+        "es": "Alto poder limpiador",
+        "fr": "Pouvoir lavant élevé",
+        "it": "Elevato potere detergente",
+        "nl": "Hoge reinigingskracht",
+        "pt_BR": "Alto poder de limpeza"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high_cleansing_help",
+      "text": {
+        "de": "Die starke Reinigung kann austrocknend wirken, wenn Überfettung und Verwendungszweck nicht sorgfältig abgestimmt sind.",
+        "es": "Su fuerte limpieza puede resecar si no se equilibran cuidadosamente el sobreengrasado y el uso previsto.",
+        "fr": "Le pouvoir lavant élevé peut être desséchant si le surgraissage et l’usage prévu ne sont pas soigneusement adaptés.",
+        "it": "La forte detersione può seccare se surgrassaggio e uso previsto non sono ben bilanciati.",
+        "nl": "De sterke reiniging kan uitdrogend aanvoelen als overvetting en beoogd gebruik niet zorgvuldig zijn afgestemd.",
+        "pt_BR": "A limpeza intensa pode ressecar se o sobreengorduramento e o uso previsto não forem bem equilibrados."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high_koh",
+      "text": {
+        "de": "Prozesskontext mit hohem KOH-Anteil",
+        "es": "Contexto de proceso con alto KOH",
+        "fr": "Procédé à forte proportion de KOH",
+        "it": "Processo ad alta percentuale di KOH",
+        "nl": "Proces met hoog KOH-aandeel",
+        "pt_BR": "Processo com alta proporção de KOH"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high_koh_help",
+      "text": {
+        "de": "Werte für KOH-reiche und flüssige Seifen sind prozessabhängige Tendenzen, keine Zielwerte für feste Seife.",
+        "es": "Los indicadores de jabones líquidos o con alto KOH son tendencias del proceso, no objetivos de jabón en pastilla.",
+        "fr": "Les indicateurs des savons liquides ou riches en KOH sont des tendances liées au procédé, pas des cibles de savon solide.",
+        "it": "Gli indicatori dei saponi liquidi o ricchi di KOH sono tendenze del processo, non obiettivi per saponette.",
+        "nl": "Waarden voor vloeibare zeep en zeep met veel KOH zijn procesafhankelijke tendensen, geen streefwaarden voor zeepblokken.",
+        "pt_BR": "Indicadores de sabões líquidos ou ricos em KOH são tendências do processo, não metas de sabão em barra."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high_polyunsaturated_dos",
+      "text": {
+        "de": "Hohes DOS-Risiko durch mehrfach ungesättigte Fettsäuren",
+        "es": "Alto riesgo de DOS por poliinsaturados",
+        "fr": "Risque de DOS lié aux polyinsaturés",
+        "it": "Alto rischio DOS da polinsaturi",
+        "nl": "Hoog DOS-risico door meervoudig onverzadigde vetzuren",
+        "pt_BR": "Alto risco de DOS por poli-insaturados"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.high_polyunsaturated_dos_help",
+      "text": {
+        "de": "Mehrfach ungesättigte Fettsäuren erhöhen die DOS-Empfindlichkeit; frische Öle und sorgfältige Lagerung sind wichtig.",
+        "es": "Los ácidos grasos poliinsaturados aumentan la sensibilidad al DOS; importan los aceites frescos y un almacenamiento cuidadoso.",
+        "fr": "La teneur en acides gras polyinsaturés augmente la sensibilité au DOS ; des huiles fraîches et un stockage soigné sont importants.",
+        "it": "Gli acidi grassi polinsaturi aumentano la sensibilità al DOS; sono importanti oli freschi e una conservazione attenta.",
+        "nl": "Meervoudig onverzadigde vetzuren verhogen de DOS-gevoeligheid; verse oliën en zorgvuldige opslag zijn belangrijk.",
+        "pt_BR": "Ácidos graxos poli-insaturados aumentam a sensibilidade ao DOS; óleos frescos e armazenamento cuidadoso são importantes."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.lather_feel",
+      "text": {
+        "de": "Schaum und Hautgefühl",
+        "es": "Espuma y sensación",
+        "fr": "Mousse et sensation",
+        "it": "Schiuma e sensazione",
+        "nl": "Schuim en huidgevoel",
+        "pt_BR": "Espuma e sensação"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.liquid_superfat",
+      "text": {
+        "de": "Stabilität der Überfettung in Flüssigseife",
+        "es": "Estabilidad del sobreengrasado líquido",
+        "fr": "Stabilité du surgraissage en savon liquide",
+        "it": "Stabilità del surgrassaggio nel sapone liquido",
+        "nl": "Stabiliteit van overvetting in vloeibare zeep",
+        "pt_BR": "Estabilidade do sobreengorduramento no sabão líquido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.liquid_superfat_help",
+      "text": {
+        "de": "Positive Überfettung in Flüssigseife kann Trübung, unvorhersehbare Verdickung oder Trennung verursachen.",
+        "es": "El sobreengrasado positivo en jabón líquido puede causar turbidez, espesamiento imprevisible o separación.",
+        "fr": "Un surgraissage positif en savon liquide peut provoquer un trouble, un épaississement imprévisible ou une séparation.",
+        "it": "Il surgrassaggio positivo nel sapone liquido può causare opacità, addensamento imprevedibile o separazione.",
+        "nl": "Positieve overvetting in vloeibare zeep kan troebelheid, onvoorspelbare verdikking of scheiding veroorzaken.",
+        "pt_BR": "O sobreengorduramento positivo no sabão líquido pode causar turvação, espessamento imprevisível ou separação."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.low",
+      "text": {
+        "de": "Niedrig",
+        "es": "Bajo",
+        "fr": "Faible",
+        "it": "Basso",
+        "nl": "Laag",
+        "pt_BR": "Baixo"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.bubble_volume",
+      "text": {
+        "de": "Schaumvolumen",
+        "es": "Volumen de espuma",
+        "fr": "Volume de mousse",
+        "it": "Volume della schiuma",
+        "nl": "Schuimvolume",
+        "pt_BR": "Volume de bolhas"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.cleansing_strength",
+      "text": {
+        "de": "Reinigungskraft",
+        "es": "Poder limpiador",
+        "fr": "Pouvoir lavant",
+        "it": "Potere detergente",
+        "nl": "Reinigingskracht",
+        "pt_BR": "Intensidade de limpeza"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.conditioning_feel",
+      "text": {
+        "de": "Pflegendes Hautgefühl",
+        "es": "Sensación acondicionadora",
+        "fr": "Sensation de douceur",
+        "it": "Sensazione emolliente",
+        "nl": "Verzorgend gevoel",
+        "pt_BR": "Sensação de condicionamento"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.creamy_lather",
+      "text": {
+        "de": "Cremiger Schaum",
+        "es": "Espuma cremosa",
+        "fr": "Mousse crémeuse",
+        "it": "Schiuma cremosa",
+        "nl": "Romig schuim",
+        "pt_BR": "Espuma cremosa"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.cure_speed",
+      "text": {
+        "de": "Reifegeschwindigkeit",
+        "es": "Velocidad de curado",
+        "fr": "Vitesse de cure",
+        "it": "Velocità di stagionatura",
+        "nl": "Rijpingssnelheid",
+        "pt_BR": "Velocidade de cura"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.dos_risk",
+      "text": {
+        "de": "Risiko des Ranzigwerdens (DOS)",
+        "es": "Riesgo de enranciamiento (DOS)",
+        "fr": "Risque de rancissement (DOS)",
+        "it": "Rischio di irrancidimento (DOS)",
+        "nl": "Kans op ranzigheid (DOS)",
+        "pt_BR": "Risco de ranço (DOS)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.lather_stability",
+      "text": {
+        "de": "Schaumstabilität",
+        "es": "Estabilidad de la espuma",
+        "fr": "Stabilité de la mousse",
+        "it": "Stabilità della schiuma",
+        "nl": "Schuimstabiliteit",
+        "pt_BR": "Estabilidade da espuma"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.longevity",
+      "text": {
+        "de": "Ergiebigkeit",
+        "es": "Duración",
+        "fr": "Longévité",
+        "it": "Durata d’uso",
+        "nl": "Gebruiksduur",
+        "pt_BR": "Durabilidade"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.mildness",
+      "text": {
+        "de": "Milde",
+        "es": "Suavidad",
+        "fr": "Douceur",
+        "it": "Delicatezza",
+        "nl": "Mildheid",
+        "pt_BR": "Suavidade"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.slime_risk",
+      "text": {
+        "de": "Neigung zur Schleimbildung",
+        "es": "Tendencia a la textura viscosa",
+        "fr": "Tendance à une texture visqueuse",
+        "it": "Tendenza alla consistenza viscida",
+        "nl": "Neiging tot slijmerigheid",
+        "pt_BR": "Tendência à viscosidade"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.unmolding_firmness",
+      "text": {
+        "de": "Festigkeit beim Ausformen",
+        "es": "Firmeza al desmoldar",
+        "fr": "Fermeté au démoulage",
+        "it": "Compattezza alla sformatura",
+        "nl": "Stevigheid bij ontvormen",
+        "pt_BR": "Firmeza para desenformar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.moderate",
+      "text": {
+        "de": "Mäßig",
+        "es": "Moderado",
+        "fr": "Modéré",
+        "it": "Moderato",
+        "nl": "Matig",
+        "pt_BR": "Moderado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.negative_superfat",
+      "text": {
+        "de": "Negative Überfettung erfordert pH-Kontrolle",
+        "es": "El sobreengrasado negativo requiere control de pH",
+        "fr": "Surgraissage négatif : contrôler le pH",
+        "it": "Il surgrassaggio negativo richiede controllo del pH",
+        "nl": "Negatieve overvetting vereist pH-controle",
+        "pt_BR": "Sobreengorduramento negativo exige controle de pH"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.negative_superfat_help",
+      "text": {
+        "de": "Flüssigseife mit negativer Überfettung benötigt vor Gebrauch eine Neutralisierungsstrategie und pH-Kontrolle.",
+        "es": "El jabón líquido con sobreengrasado negativo requiere una estrategia de neutralización y control de pH antes del uso.",
+        "fr": "Un savon liquide à surgraissage négatif nécessite une stratégie de neutralisation et un contrôle du pH avant utilisation.",
+        "it": "Il sapone liquido con surgrassaggio negativo richiede una strategia di neutralizzazione e controllo del pH prima dell’uso.",
+        "nl": "Vloeibare zeep met negatieve overvetting vereist vóór gebruik een neutralisatiestrategie en pH-controle.",
+        "pt_BR": "Sabão líquido com sobreengorduramento negativo exige estratégia de neutralização e controle de pH antes do uso."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.not_applicable",
+      "text": {
+        "de": "Für diesen Seifenkontext nicht anwendbar",
+        "es": "No aplicable a este contexto de jabón",
+        "fr": "Non applicable à ce type de savon",
+        "it": "Non applicabile a questo tipo di sapone",
+        "nl": "Niet van toepassing op dit type zeep",
+        "pt_BR": "Não aplicável a este tipo de sabão"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.process_dependent",
+      "text": {
+        "de": "Prozessabhängige Tendenz",
+        "es": "Tendencia dependiente del proceso",
+        "fr": "Tendance liée au procédé",
+        "it": "Tendenza dipendente dal processo",
+        "nl": "Procesafhankelijke tendens",
+        "pt_BR": "Tendência dependente do processo"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.review_title",
       "text": {
         "de": "Zu prüfende Punkte",
@@ -45956,6 +46340,18 @@
         "it": "Punti da verificare",
         "nl": "Aandachtspunten",
         "pt_BR": "Pontos a revisar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.show",
+      "text": {
+        "de": "Soapkraft-Qualitäten anzeigen",
+        "es": "Mostrar cualidades de Soapkraft",
+        "fr": "Afficher les qualités Soapkraft",
+        "it": "Mostra le qualità Soapkraft",
+        "nl": "Soapkraft-eigenschappen tonen",
+        "pt_BR": "Mostrar qualidades Soapkraft"
       }
     },
     {
@@ -45992,6 +46388,126 @@
         "it": "Minore tendenza al ritiro visibile. Questo indice non è una percentuale di perdita di dimensioni o peso.",
         "nl": "Lagere neiging tot zichtbare krimp. Deze index is geen percentage van grootte- of gewichtsverlies.",
         "pt_BR": "Menor tendência à retração visível. Este índice não é uma porcentagem de perda de tamanho ou peso."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.slime_help",
+      "text": {
+        "de": "Ölsäurereiche Seifen können anfangs schleimig wirken, besonders vor einer langen Reifezeit.",
+        "es": "Los jabones ricos en ácido oleico pueden sentirse viscosos al principio, sobre todo antes de un curado largo.",
+        "fr": "Les savons riches en acide oléique peuvent sembler visqueux au début, surtout avant une longue cure.",
+        "it": "I saponi ricchi di acido oleico possono risultare viscidi inizialmente, soprattutto prima di una lunga stagionatura.",
+        "nl": "Zeep met veel oliezuur kan aanvankelijk slijmerig aanvoelen, vooral vóór een lange rijping.",
+        "pt_BR": "Sabões ricos em ácido oleico podem parecer viscosos no início, especialmente antes de uma cura longa."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.slow_cure",
+      "text": {
+        "de": "Langsame Reifung",
+        "es": "Curado lento",
+        "fr": "Cure lente",
+        "it": "Stagionatura lenta",
+        "nl": "Langzame rijping",
+        "pt_BR": "Cura lenta"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.slow_cure_help",
+      "text": {
+        "de": "Eine längere Reifezeit kann Härte, Hautgefühl und Schaum dieses Seifenstücks verbessern.",
+        "es": "Un curado más largo puede mejorar la dureza, la sensación y la espuma de esta pastilla.",
+        "fr": "Une cure plus longue peut améliorer la dureté, la sensation et la mousse de ce savon.",
+        "it": "Una stagionatura più lunga può migliorare durezza, sensazione e schiuma di questa saponetta.",
+        "nl": "Een langere rijping kan de hardheid, het huidgevoel en het schuim van dit zeepblok verbeteren.",
+        "pt_BR": "Uma cura mais longa pode melhorar a dureza, a sensação e a espuma desta barra."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.target",
+      "text": {
+        "de": "Zielbereich :range",
+        "es": "Objetivo :range",
+        "fr": "Cible :range",
+        "it": "Obiettivo :range",
+        "nl": "Streefwaarde :range",
+        "pt_BR": "Faixa-alvo :range"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.tendency_value",
+      "text": {
+        "de": ":value Tendenz",
+        "es": ":value tendencia",
+        "fr": ":value (tendance)",
+        "it": ":value tendenza",
+        "nl": ":value tendens",
+        "pt_BR": ":value tendência"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.very_high",
+      "text": {
+        "de": "Sehr hoch",
+        "es": "Muy alto",
+        "fr": "Très élevé",
+        "it": "Molto alto",
+        "nl": "Zeer hoog",
+        "pt_BR": "Muito alto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.very_high_dos",
+      "text": {
+        "de": "Sehr hohes DOS-Risiko",
+        "es": "Riesgo de DOS muy alto",
+        "fr": "Risque de DOS très élevé",
+        "it": "Rischio DOS molto alto",
+        "nl": "Zeer hoog DOS-risico",
+        "pt_BR": "Risco de DOS muito alto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.very_high_dos_help",
+      "text": {
+        "de": "Der Anteil mehrfach ungesättigter Fettsäuren ist sehr hoch; Rezepturanpassung, Antioxidantien oder strengere Lagerkontrollen können nötig sein.",
+        "es": "El nivel de ácidos grasos poliinsaturados es muy alto; puede requerir reformulación, antioxidantes o controles de almacenamiento más estrictos.",
+        "fr": "La teneur en acides gras polyinsaturés est très élevée ; une reformulation, des antioxydants ou un stockage mieux contrôlé peuvent être nécessaires.",
+        "it": "Il livello di acidi grassi polinsaturi è molto alto; possono servire riformulazione, antiossidanti o controlli di conservazione più rigorosi.",
+        "nl": "Het gehalte meervoudig onverzadigde vetzuren is zeer hoog; herformulering, antioxidanten of strengere opslagcontrole kan nodig zijn.",
+        "pt_BR": "O teor de ácidos graxos poli-insaturados é muito alto; pode exigir reformulação, antioxidantes ou controles de armazenamento mais rigorosos."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.very_low",
+      "text": {
+        "de": "Sehr niedrig",
+        "es": "Muy bajo",
+        "fr": "Très faible",
+        "it": "Molto basso",
+        "nl": "Zeer laag",
+        "pt_BR": "Muito baixo"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.view_label",
+      "text": {
+        "de": "Ansicht der Qualitätswerte",
+        "es": "Vista de indicadores de calidad",
+        "fr": "Vue des indicateurs de qualité",
+        "it": "Vista degli indicatori di qualità",
+        "nl": "Weergave van kwaliteitswaarden",
+        "pt_BR": "Visualização dos indicadores de qualidade"
       }
     },
     {

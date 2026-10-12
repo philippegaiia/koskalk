@@ -12,12 +12,25 @@ it('folds a shouting INCI value onto one sentence-case shape', function (): void
         ->and(InciName::display('  Olea   Europaea Fruit Oil '))->toBe('Olea europaea fruit oil');
 });
 
-it('keeps the parenthetical botanical or common name exactly as stored', function (): void {
+it('preserves mixed-case parenthetical botanical or common names', function (): void {
     expect(InciName::display('Oenothera Biennis (Evening Primrose) Oil'))
         ->toBe('Oenothera biennis (Evening Primrose) oil')
         ->and(InciName::display('Aleurites Moluccana (Kukui) Nut Oil'))
         ->toBe('Aleurites moluccana (Kukui) nut oil');
 });
+
+it('formats all-caps parenthetical names without changing identifier tokens', function (string $stored, string $display): void {
+    expect(InciName::display($stored))->toBe($display)
+        ->and(InciName::normalize(InciName::display($stored)))->toBe(InciName::normalize($stored));
+})->with([
+    'sunflower' => ['HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL', 'Helianthus annuus (Sunflower) seed oil'],
+    'shea' => ['BUTYROSPERMUM PARKII (SHEA) SEED BUTTER', 'Butyrospermum parkii (Shea) seed butter'],
+    'coconut' => ['COCOS NUCIFERA (COCONUT) OIL', 'Cocos nucifera (Coconut) oil'],
+    'multiple words' => ['OENOTHERA BIENNIS (EVENING PRIMROSE) OIL', 'Oenothera biennis (Evening Primrose) oil'],
+    'hyphenated name' => ['ROSA CANINA (DOG-ROSE) FRUIT OIL', 'Rosa canina (Dog-Rose) fruit oil'],
+    'identifiers' => ['INGREDIENT (EDTA/TEA PEG-40 CI 77007)', 'Ingredient (EDTA/TEA PEG-40 CI 77007)'],
+    'names and identifiers' => ['INGREDIENT (SUNFLOWER / EDTA)', 'Ingredient (Sunflower / EDTA)'],
+]);
 
 it('keeps identifier tokens that stop being identifiers when lower-cased', function (): void {
     expect(InciName::display('CI 77007'))->toBe('CI 77007')

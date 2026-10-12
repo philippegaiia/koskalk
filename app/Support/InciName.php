@@ -39,12 +39,11 @@ class InciName
      * individual value is defensible. This folds them onto one sentence-case
      * shape.
      *
-     * Two parts keep their stored casing, because there the casing carries
-     * meaning rather than emphasis:
+     * Two parts receive special handling:
      *
-     * - The parenthetical. Per `.ai/rules/ingredient-enrichment.md` it holds the
-     *   botanical or common proper name, so "(Evening Primrose)" must not become
-     *   "(evening primrose)".
+     * - Parenthetical botanical or common names keep their existing mixed case.
+     *   All-caps names become title case, so "(SUNFLOWER)" becomes "(Sunflower)"
+     *   while "(Evening Primrose)" stays intact.
      * - Identifier tokens. "CI 77007" and "PEG-40 Hydrogenated Castor Oil" stop
      *   being identifiers if they are lower-cased, and the cosmetic chemist
      *   reading them relies on that.
@@ -72,7 +71,7 @@ class InciName
             }
 
             if (str_starts_with($segment, '(')) {
-                $parts[] = $segment;
+                $parts[] = self::displayParenthetical($segment);
 
                 continue;
             }
@@ -88,6 +87,19 @@ class InciName
         }
 
         return implode(' ', $parts);
+    }
+
+    private static function displayParenthetical(string $value): string
+    {
+        return (string) preg_replace_callback('/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/u', function (array $matches): string {
+            $token = $matches[0];
+
+            if (self::isIdentifierToken($token) || $token !== mb_strtoupper($token)) {
+                return $token;
+            }
+
+            return mb_convert_case($token, MB_CASE_TITLE);
+        }, $value);
     }
 
     private static function displayToken(string $token, bool $isFirstWord): string

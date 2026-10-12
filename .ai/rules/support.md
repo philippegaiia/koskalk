@@ -11,3 +11,6 @@ Two different jobs, never conflate them. `normalize()` folds to upper case and i
 In `display()`, two parts keep their stored casing because the casing carries meaning: the parenthetical (per .ai/rules/ingredient-enrichment.md it holds the botanical or common proper name, so "(Kukui)" must not become "(kukui)"), and identifier tokens — a digit anywhere marks a token as an identifier ("CI 77007", "PEG-40"), and an all-caps word only counts as an acronym when it is on the known list, so "Tea" in "Black Tea Extract" folds while "TEA" stays triethanolamine.
 
 Stored INCI is inconsistent on purpose: all-caps, title case and already-lower forms coexist, so never assume a shape when reading `inci_name`.
+
+## Normalize shouting parenthetical names for display
+The owner revised the earlier preserve-parenthetical-casing rule: display() converts all-caps common/botanical name words inside parentheses to title case, e.g. (SUNFLOWER) → (Sunflower). Preserve existing mixed-case names and genuine identifier tokens (EDTA, TEA, PEG-40, CI numbers), including slash-separated identifiers. Keep normalize() and stored/canonical INCI untouched; this is presentation only.

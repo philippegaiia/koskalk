@@ -5954,6 +5954,7 @@ const workbench = {
   t: (key, replacements = {}) => {
     const translation = ({
       'settings.water': 'Water',
+      'soap.naoh': 'Lye (NaOH)',
       'settings.lye_liquid_selected_singular': 'Water + 1 selected liquid',
       'settings.lye_liquid_water_free_plural': ':count selected liquids · no water',
       'settings.lye_liquid_water_free_singular': '1 selected liquid · no water',

@@ -186,7 +186,7 @@ export function createFormulaSection() {
                 return `Lye ${this.format(this.waterValue, 1)}%`;
             }
 
-            return `${this.format(this.waterValue, 1)}% oils`;
+            return this.t('soap.percent_of_oils', { amount: this.format(this.waterValue, 1) });
         },
 
         get formulaSetupLabelSummary() {
@@ -217,7 +217,7 @@ export function createFormulaSection() {
                 {
                     id: 'formula-entry',
                     label: this.isCosmeticFormula ? this.t('cosmetic.entry_label') : 'Entry',
-                    value: this.editMode === 'weight' ? this.t('common.weight') : (this.isCosmeticFormula ? this.t('common.formula_percent') : '% oils'),
+                    value: this.editMode === 'weight' ? this.t('common.weight') : (this.isCosmeticFormula ? this.t('common.formula_percent') : this.t('settings.soap_percentage_entry_label')),
                     tone: 'neutral',
                 },
             ];
@@ -420,25 +420,25 @@ export function createFormulaSection() {
                 if (this.lyeType === 'naoh') {
                     cards.push({
                         id: 'naoh-to-weigh',
-                        label: 'Lye (NaOH)',
+                        label: this.t('soap.naoh'),
                         value: backendLye.selected?.naoh_weight ?? 0,
                     });
                 } else if (this.lyeType === 'koh') {
                     cards.push({
                         id: 'koh-to-weigh',
-                        label: this.kohPurity === 90 ? 'Potash (KOH 90%)' : 'Potash (KOH)',
+                        label: this.t(this.kohPurity === 90 ? 'soap.koh_90' : 'soap.koh'),
                         value: backendLye.selected?.koh_to_weigh ?? 0,
                     });
                 } else {
                     cards.push(
                         {
                             id: 'dual-naoh-to-weigh',
-                            label: 'Lye (NaOH)',
+                            label: this.t('soap.naoh'),
                             value: backendLye.selected?.naoh_weight ?? 0,
                         },
                         {
                             id: 'dual-koh-to-weigh',
-                            label: this.kohPurity === 90 ? 'Potash (KOH 90%)' : 'Potash (KOH)',
+                            label: this.t(this.kohPurity === 90 ? 'soap.koh_90' : 'soap.koh'),
                             value: backendLye.selected?.koh_to_weigh ?? 0,
                         },
                     );
@@ -454,25 +454,25 @@ export function createFormulaSection() {
             if (this.lyeType === 'naoh') {
                 cards.push({
                     id: 'naoh-to-weigh',
-                    label: 'Lye (NaOH)',
+                    label: this.t('soap.naoh'),
                     value: lye.selected_naoh_weight,
                 });
             } else if (this.lyeType === 'koh') {
                 cards.push({
                     id: 'koh-to-weigh',
-                    label: this.kohPurity === 90 ? 'Potash (KOH 90%)' : 'Potash (KOH)',
+                    label: this.t(this.kohPurity === 90 ? 'soap.koh_90' : 'soap.koh'),
                     value: lye.koh_to_weigh,
                 });
             } else {
                 cards.push(
                     {
                         id: 'dual-naoh-to-weigh',
-                        label: 'Lye (NaOH)',
+                        label: this.t('soap.naoh'),
                         value: lye.selected_naoh_weight,
                     },
                     {
                         id: 'dual-koh-to-weigh',
-                        label: this.kohPurity === 90 ? 'Potash (KOH 90%)' : 'Potash (KOH)',
+                        label: this.t(this.kohPurity === 90 ? 'soap.koh_90' : 'soap.koh'),
                         value: lye.koh_to_weigh,
                     },
                 );

@@ -46980,6 +46980,114 @@
     },
     {
       "group": "workbench",
+      "key": "soap.additives_total",
+      "text": {
+        "de": "Zusätze (% der Öle)",
+        "es": "Aditivos (% de aceites)",
+        "fr": "Additifs (% des huiles)",
+        "it": "Additivi (% degli oli)",
+        "nl": "Toevoegingen (% van de oliën)",
+        "pt_BR": "Aditivos (% dos óleos)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.cured_weight",
+      "text": {
+        "de": "Gewicht nach der Reifezeit",
+        "es": "Peso después del curado",
+        "fr": "Poids après cure",
+        "it": "Peso dopo la stagionatura",
+        "nl": "Gewicht na rijping",
+        "pt_BR": "Peso após a cura"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.glycerine",
+      "text": {
+        "de": "Gebildetes Glycerin",
+        "es": "Glicerina producida",
+        "fr": "Glycérine produite",
+        "it": "Glicerina prodotta",
+        "nl": "Gevormde glycerine",
+        "pt_BR": "Glicerina produzida"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.koh",
+      "text": {
+        "de": "Kalilauge (KOH)",
+        "es": "Potasa (KOH)",
+        "fr": "Potasse (KOH)",
+        "it": "Potassa (KOH)",
+        "nl": "Kaliloog (KOH)",
+        "pt_BR": "Potassa (KOH)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.koh_90",
+      "text": {
+        "de": "Kalilauge (KOH 90%)",
+        "es": "Potasa (KOH 90%)",
+        "fr": "Potasse (KOH 90%)",
+        "it": "Potassa (KOH 90%)",
+        "nl": "Kaliloog (KOH 90%)",
+        "pt_BR": "Potassa (KOH 90%)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.naoh",
+      "text": {
+        "de": "Natronlauge (NaOH)",
+        "es": "Sosa (NaOH)",
+        "fr": "Soude (NaOH)",
+        "it": "Soda caustica (NaOH)",
+        "nl": "Natronloog (NaOH)",
+        "pt_BR": "Soda cáustica (NaOH)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.percent_of_oils",
+      "text": {
+        "de": ":amount% der Öle",
+        "es": ":amount% de los aceites",
+        "fr": ":amount% des huiles",
+        "it": ":amount% degli oli",
+        "nl": ":amount% van de oliën",
+        "pt_BR": ":amount% dos óleos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.weight_with_unit",
+      "text": {
+        "de": "Gewicht (:unit)",
+        "es": "Peso (:unit)",
+        "fr": "Poids (:unit)",
+        "it": "Peso (:unit)",
+        "nl": "Gewicht (:unit)",
+        "pt_BR": "Peso (:unit)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "soap.wet_weight",
+      "text": {
+        "de": "Nassgewicht",
+        "es": "Peso húmedo",
+        "fr": "Poids humide",
+        "it": "Peso umido",
+        "nl": "Nat gewicht",
+        "pt_BR": "Peso úmido"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "status.add_percentage",
       "text": {
         "de": ":amount% hinzufügen",

@@ -3,8 +3,91 @@
 use App\Models\InterfaceTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
+
+it('localizes soap table headings and calculated summaries in French', function (): void {
+    $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'workbench')
+        ->filter(fn (array $row): bool => str_starts_with($row['key'], 'soap.') || $row['key'] === 'settings.soap_percentage_entry_label');
+
+    foreach ($rows as $row) {
+        InterfaceTranslation::query()->create([
+            'group' => $row['group'],
+            'key' => $row['key'],
+            'text' => $row['text'],
+        ]);
+    }
+
+    app()->setLocale('fr');
+
+    foreach (['reaction-core', 'post-reaction'] as $partial) {
+        $html = view("livewire.dashboard.partials.recipe-workbench.{$partial}")->render();
+
+        expect($html)->toContain('% des huiles')
+            ->toContain("t('soap.weight_with_unit', { unit: oilUnit })")
+            ->not->toContain('>% oils<')
+            ->not->toContain('`Weight (${oilUnit})`');
+    }
+
+    $translations = $rows->mapWithKeys(fn (array $row): array => [$row['key'] => __("workbench.{$row['key']}")])->all();
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+register('data:text/javascript,' + encodeURIComponent(`
+    export async function resolve(specifier, context, nextResolve) {
+        if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+            try { return await nextResolve(specifier, context); }
+            catch { return nextResolve(specifier + '.js', context); }
+        }
+        return nextResolve(specifier, context);
+    }
+`), import.meta.url);
+const { createFormulaSection } = await import('./resources/js/recipe-workbench/sections/formula-section.js');
+const { createPresentationSection } = await import('./resources/js/recipe-workbench/sections/presentation-section.js');
+const translations = JSON.parse(process.argv[1]);
+const t = (key, replacements = {}) => Object.entries(replacements).reduce(
+    (text, [name, value]) => text.replaceAll(`:${name}`, String(value)), translations[key] ?? key,
+);
+assert.equal(t('soap.weight_with_unit', { unit: 'kg' }), 'Poids (kg)');
+assert.equal(t('soap.weight_with_unit', { unit: 'lb' }), 'Poids (lb)');
+assert.equal(t('soap.percent_of_oils', { amount: '2,5' }), '2,5% des huiles');
+const presentation = createPresentationSection();
+const totals = Object.getOwnPropertyDescriptor(presentation, 'totalSummaryCards').get.call({
+    t, isCosmeticFormula: false, oilUnit: 'kg',
+    backendCalculation: { lye: { selected: { glycerine_weight: 0.098 } } },
+    finalBatchWeight: () => 1.424, curedBatchWeight: () => 1.267,
+    calculatedMassDecimals: () => 3, totalAdditionPercentage: () => 2.5,
+    format: (value, places) => Number(value).toFixed(places).replace('.', ','),
+});
+assert.deepEqual(totals.map(card => card.label), [
+    'Additifs (% des huiles)', 'Glycérine produite', 'Poids humide', 'Poids après cure',
+]);
+assert.equal(totals[0].value, '2,5%');
+const formula = createFormulaSection();
+const lyeCards = Object.getOwnPropertyDescriptor(formula, 'lyeSummaryCards').get;
+for (const backendCalculation of [null, { lye: { selected: { naoh_weight: 0.127, koh_to_weigh: 0.2 } } }]) {
+    const context = {
+        t, backendCalculation, lyeType: 'naoh', kohPurity: 100,
+        lyeLiquidSummaryCards: () => [],
+        lyeBreakdown: () => ({ selected_naoh_weight: 0.127, koh_to_weigh: 0.2 }),
+    };
+    assert.equal(lyeCards.call(context)[0].label, 'Soude (NaOH)');
+    context.lyeType = 'koh';
+    assert.equal(lyeCards.call(context)[0].label, 'Potasse (KOH)');
+    context.kohPurity = 90;
+    assert.equal(lyeCards.call(context)[0].label, 'Potasse (KOH 90%)');
+    context.lyeType = 'dual';
+    assert.deepEqual(lyeCards.call(context).map(card => card.label), ['Soude (NaOH)', 'Potasse (KOH 90%)']);
+}
+JS;
+
+    $process = new Process(['node', '--input-type=module', '-e', $script, json_encode($translations, JSON_THROW_ON_ERROR)], base_path());
+    $process->mustRun();
+
+    expect($process->getOutput())->toBe('');
+});
 
 it('uses the approved product and formula terminology on the soap workbench', function () {
     $workbench = [

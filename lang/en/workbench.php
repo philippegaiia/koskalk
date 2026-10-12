@@ -259,6 +259,17 @@ return [
         'empty_oil' => 'Drop an oil here to use it as an additive.',
         'batch_totals' => 'Batch totals',
     ],
+    'soap' => [
+        'weight_with_unit' => 'Weight (:unit)',
+        'percent_of_oils' => ':amount% of oils',
+        'naoh' => 'Lye (NaOH)',
+        'koh' => 'Potash (KOH)',
+        'koh_90' => 'Potash (KOH 90%)',
+        'additives_total' => 'Additives (% oils)',
+        'glycerine' => 'Produced glycerine',
+        'wet_weight' => 'Wet weight',
+        'cured_weight' => 'Weight after cure',
+    ],
     'packaging' => [
         'plan' => [
             'title' => 'Packaging plan',

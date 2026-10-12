@@ -326,22 +326,22 @@ export function createPresentationSection() {
             return [
                 {
                     id: 'additives-total',
-                    label: 'Additives (% oils)',
+                    label: this.t('soap.additives_total'),
                     value: `${this.format(this.totalAdditionPercentage(), 1)}%`,
                 },
                 {
                     id: 'produced-glycerine',
-                    label: 'Produced glycerine',
+                    label: this.t('soap.glycerine'),
                     value: `${this.format(producedGlycerineWeight, this.calculatedMassDecimals(producedGlycerineWeight))} ${this.oilUnit}`,
                 },
                 {
                     id: 'wet-weight',
-                    label: 'Wet weight',
+                    label: this.t('soap.wet_weight'),
                     value: `${this.format(wetWeight, this.calculatedMassDecimals(wetWeight))} ${this.oilUnit}`,
                 },
                 {
                     id: 'cured-weight',
-                    label: 'Weight after cure',
+                    label: this.t('soap.cured_weight'),
                     value: `${this.format(curedWeight, this.calculatedMassDecimals(curedWeight))} ${this.oilUnit}`,
                 },
             ];

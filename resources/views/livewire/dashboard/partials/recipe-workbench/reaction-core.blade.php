@@ -14,8 +14,8 @@
 	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.75rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.oil') }}</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]">% oils</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]">{{ __('workbench.settings.soap_percentage_entry_label') }}</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-center text-[var(--color-ink-strong)]" x-text="t('soap.weight_with_unit', { unit: oilUnit })"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
  </div>
 
@@ -116,18 +116,18 @@
  </div>
  <div class="col-span-full row-start-3 grid grid-cols-2 gap-3 lg:contents">
 		 <div class="flex flex-col gap-2 bg-white sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
-	 <span class="sk-eyebrow text-center lg:hidden">% oils</span>
+	 <span class="sk-eyebrow text-center lg:hidden">{{ __('workbench.settings.soap_percentage_entry_label') }}</span>
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" data-workbench-amount-input="percentage" :aria-label="'Percentage of oils for ' + row.name" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" data-workbench-amount-input="percentage" :aria-label="t('cosmetic.percentage_for', { ingredient: row.name })" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
 		 <div class="flex flex-col gap-2 bg-white sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
-	 <span class="sk-eyebrow text-center lg:hidden" x-text="`Weight (${oilUnit})`"></span>
+	 <span class="sk-eyebrow text-center lg:hidden" x-text="t('soap.weight_with_unit', { unit: oilUnit })"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="syncFormattedInput($el, rowWeight(row), oilWeightDecimals(rowWeight(row)))" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), oilWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" data-workbench-amount-input="weight" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-effect="syncFormattedInput($el, rowWeight(row), oilWeightDecimals(rowWeight(row)))" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), oilWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" data-workbench-amount-input="weight" :aria-label="t('cosmetic.weight_for', { ingredient: row.name })" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), oilWeightDecimals(rowWeight(row)))}`"></span>

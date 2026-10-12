@@ -881,7 +881,7 @@ it('describes soap post-reaction percentages as oil-basis percentages', function
     $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
 
     expect($postReaction)
-        ->toContain('% of oils')
+        ->toContain('soap.percent_of_oils')
         ->toContain('% oils')
         ->not->toContain('% of base')
         ->not->toContain('% base')
@@ -889,10 +889,10 @@ it('describes soap post-reaction percentages as oil-basis percentages', function
         ->toContain('% of oils')
         ->not->toContain('% of base')
         ->and($formulaSectionSource)
-        ->toContain("'% oils'")
+        ->toContain("this.t('settings.soap_percentage_entry_label')")
         ->not->toContain("'% base'")
         ->and($presentationSectionSource)
-        ->toContain('Additives (% oils)')
+        ->toContain("this.t('soap.additives_total')")
         ->not->toContain('Additives (% base)')
         ->and($workbenchViewSource)
         ->toContain('@dragover.window="autoScrollDuringRowDrag($event)"');

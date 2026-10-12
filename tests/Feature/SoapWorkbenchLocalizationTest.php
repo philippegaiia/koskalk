@@ -8,6 +8,21 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
+it('shows labeling gaps in one neutral review list', function (): void {
+    $html = view('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')->render();
+    $renderedTemplates = preg_replace('/<\/?template\b[^>]*>/', '', $html);
+    $document = HTMLDocument::createFromString($renderedTemplates, LIBXML_NOERROR);
+    $panels = $document->querySelectorAll('[data-labeling-review]');
+
+    expect($panels)->toHaveCount(1);
+    $panel = $panels->item(0);
+    expect($panel->getAttribute('role'))->toBe('alert')
+        ->and($panel->textContent)->toContain('Points to review')
+        ->and($panel->outerHTML)->not->toContain('--color-warning')
+        ->and($panel->querySelectorAll('ul'))->toHaveCount(1)
+        ->and($panel->querySelector('li')->getAttribute('x-text'))->toBe('warning');
+});
+
 it('keeps workbench output button labels short in English and French', function (string $locale, string $printLabel, string $exportLabel): void {
     $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
         ->where('group', 'formula_documents')

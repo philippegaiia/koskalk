@@ -19,6 +19,32 @@ use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
+it('formats stored uppercase botanical names throughout soap labeling previews', function (): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $stored = 'HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL';
+    $display = 'Helianthus annuus (Sunflower) seed oil';
+    $oil = makeSoapOilIngredient([
+        'display_name' => 'Sunflower Oil',
+        'inci_name' => $stored,
+        'soap_inci_naoh_name' => null,
+        'soap_inci_koh_name' => null,
+    ]);
+    $payload = soapDraftPayloadWithFragrance($oil, $oil);
+    $payload['phase_items']['fragrance'] = [];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue();
+    foreach ($result['labeling']['list_variants'] as $variant) {
+        $row = collect($variant['ingredient_rows'])->firstWhere('label', $stored);
+        expect($row['display_label'])->toBe($display)
+            ->and($variant['display_final_label_text'])->toContain($display)
+            ->not->toContain('(SUNFLOWER)');
+    }
+    expect($oil->fresh()->inci_name)->toBe($stored);
+});
+
 it('keeps the soap preview available when an ingredient has no inci name', function () {
     ProductFamily::factory()->create([
         'slug' => 'soap',

@@ -183,10 +183,13 @@
  </div>
 
  <template x-if="labelingWarnings.length > 0">
- <div class="mt-4 space-y-2" role="alert">
+ <div data-labeling-review class="mt-4 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3" role="alert">
+ <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('workbench.qualities.review_title') }}</p>
+ <ul class="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6 text-[var(--color-ink-soft)]">
  <template x-for="warning in labelingWarnings" :key="warning">
- <div class="rounded-[1.25rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]" x-text="warning"></div>
+ <li x-text="warning"></li>
  </template>
+ </ul>
  </div>
  </template>
 

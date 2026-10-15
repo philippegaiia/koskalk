@@ -22,6 +22,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
         $translationLocales = Ingredient::translationLocaleCandidates();
         $isCosmetic = $productFamily?->slug === 'cosmetic'
             || $productFamily?->calculation_basis === 'total_formula';
+        $isLiquidSoap = $productFamily?->usesLiquidSoapPasteBench() ?? false;
         $defaultPricesByIngredient = $user instanceof User
             ? CurrentMaterialPrice::query()
                 ->where('workspace_id', $user->company()?->id)
@@ -52,11 +53,16 @@ class RecipeWorkbenchIngredientCatalogBuilder
             ))
             ->get()
             ->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
-            ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient, $translationLocales): array {
+            ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient, $translationLocales, $isLiquidSoap): array {
                 $category = $ingredient->category;
                 $subcategory = $ingredient->subcategory;
                 $sapProfile = $ingredient->sapProfile;
                 $availablePhases = $ingredient->availableWorkbenchPhases();
+                $liquidSoapNeutralizer = $isLiquidSoap ? $ingredient->liquidSoapNeutralizer() : null;
+
+                if ($liquidSoapNeutralizer !== null) {
+                    $availablePhases[] = 'neutralization';
+                }
                 $defaultPrice = $defaultPricesByIngredient->get($ingredient->id);
 
                 return [
@@ -92,6 +98,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
                     'can_add_to_saponified_oils' => in_array('saponified_oils', $availablePhases, true),
                     'can_add_to_additives' => in_array('additives', $availablePhases, true),
                     'can_add_to_fragrance' => in_array('fragrance', $availablePhases, true),
+                    'liquid_soap_neutralizer' => $liquidSoapNeutralizer?->value,
                     'default_price_per_kg' => $defaultPrice?->price_per_canonical_unit === null
                         ? null
                         : (float) bcmul($defaultPrice->price_per_canonical_unit, '1000', 12),

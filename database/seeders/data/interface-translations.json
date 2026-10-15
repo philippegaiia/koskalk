@@ -44352,6 +44352,534 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.add",
+      "text": {
+        "de": "Zugabe (:unit)",
+        "es": "Añadir (:unit)",
+        "fr": "Ajouter (:unit)",
+        "it": "Aggiungere (:unit)",
+        "nl": "Toevoegen (:unit)",
+        "pt_BR": "Adicionar (:unit)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.anhydrous",
+      "text": {
+        "de": "Wasserfreie Seife",
+        "es": "Jabón anhidro",
+        "fr": "Savon anhydre",
+        "it": "Sapone anidro",
+        "nl": "Watervrije zeep",
+        "pt_BR": "Sabão anidro"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.additions_weight",
+      "text": {
+        "de": "Zugaben",
+        "es": "Adiciones",
+        "fr": "Ajouts",
+        "it": "Aggiunte",
+        "nl": "Toevoegingen",
+        "pt_BR": "Adições"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.free_koh_weight",
+      "text": {
+        "de": "Freies KOH",
+        "es": "KOH libre",
+        "fr": "Potasse libre",
+        "it": "KOH libero",
+        "nl": "Vrije KOH",
+        "pt_BR": "KOH livre"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.glycerine_weight",
+      "text": {
+        "de": "Glycerin",
+        "es": "Glicerina",
+        "fr": "Glycérine",
+        "it": "Glicerina",
+        "nl": "Glycerine",
+        "pt_BR": "Glicerina"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.koh_impurity_weight",
+      "text": {
+        "de": "KOH-Verunreinigungen",
+        "es": "Impurezas del KOH",
+        "fr": "Impuretés de la potasse",
+        "it": "Impurità del KOH",
+        "nl": "KOH-onzuiverheden",
+        "pt_BR": "Impurezas do KOH"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.neutralization_salt_weight",
+      "text": {
+        "de": "Neutralisationssalz",
+        "es": "Sal de neutralización",
+        "fr": "Sel de neutralisation",
+        "it": "Sale di neutralizzazione",
+        "nl": "Neutralisatiezout",
+        "pt_BR": "Sal de neutralização"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.soap_salt_weight",
+      "text": {
+        "de": "Seife",
+        "es": "Jabón",
+        "fr": "Savon",
+        "it": "Sapone",
+        "nl": "Zeep",
+        "pt_BR": "Sabão"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.unreacted_lipids_weight",
+      "text": {
+        "de": "Unverseifte Öle",
+        "es": "Aceites sin saponificar",
+        "fr": "Huiles non saponifiées",
+        "it": "Oli non saponificati",
+        "nl": "Onverzeepte oliën",
+        "pt_BR": "Óleos não saponificados"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.water_weight",
+      "text": {
+        "de": "Wasser",
+        "es": "Agua",
+        "fr": "Eau",
+        "it": "Acqua",
+        "nl": "Water",
+        "pt_BR": "Água"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.composition",
+      "text": {
+        "de": "Endzusammensetzung",
+        "es": "Composición final",
+        "fr": "Composition finale",
+        "it": "Composizione finale",
+        "nl": "Eindsamenstelling",
+        "pt_BR": "Composição final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.final_batch",
+      "text": {
+        "de": "Endcharge: :amount :unit",
+        "es": "Lote final: :amount :unit",
+        "fr": "Lot final : :amount :unit",
+        "it": "Lotto finale: :amount :unit",
+        "nl": "Eindbatch: :amount :unit",
+        "pt_BR": "Lote final: :amount :unit"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.final_dilution",
+      "text": {
+        "de": "Endverdünnung",
+        "es": "Dilución final",
+        "fr": "Dilution finale",
+        "it": "Diluizione finale",
+        "nl": "Eindverdunning",
+        "pt_BR": "Diluição final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.final_dilution_help",
+      "text": {
+        "de": "Wasserfreie Seife in der fertigen Flüssigseife.",
+        "es": "Jabón anhidro en el jabón líquido terminado.",
+        "fr": "Savon anhydre dans le savon liquide fini.",
+        "it": "Sapone anidro nel sapone liquido finito.",
+        "nl": "Watervrije zeep in de afgewerkte vloeibare zeep.",
+        "pt_BR": "Sabão anidro no sabonete líquido pronto."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.first_dilution",
+      "text": {
+        "de": "Erste Verdünnung",
+        "es": "Primera dilución",
+        "fr": "Première dilution",
+        "it": "Prima diluizione",
+        "nl": "Eerste verdunning",
+        "pt_BR": "Primeira diluição"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.first_dilution_help",
+      "text": {
+        "de": "Wasserfreie Seife nach der ersten Verdünnung, meist 30–40 %.",
+        "es": "Jabón anhidro tras la primera dilución, normalmente 30–40 %.",
+        "fr": "Savon anhydre après la première dilution, en général 30–40 %.",
+        "it": "Sapone anidro dopo la prima diluizione, di solito 30–40%.",
+        "nl": "Watervrije zeep na de eerste verdunning, meestal 30–40%.",
+        "pt_BR": "Sabão anidro após a primeira diluição, geralmente 30–40%."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.help",
+      "text": {
+        "de": "Paste, erste Verdünnung, Neutralisation, dann Endverdünnung. Konzentrationen beziehen sich auf wasserfreie Seife: die Öle plus das umgesetzte KOH.",
+        "es": "Pasta, primera dilución, neutralización y dilución final. Las concentraciones son de jabón anhidro: los aceites más el KOH que reaccionó.",
+        "fr": "Pâte, première dilution, neutralisation, puis dilution finale. Les concentrations portent sur le savon anhydre : les huiles plus la potasse qui a réagi.",
+        "it": "Pasta, prima diluizione, neutralizzazione, poi diluizione finale. Le concentrazioni sono di sapone anidro: gli oli più il KOH che ha reagito.",
+        "nl": "Pasta, eerste verdunning, neutralisatie, dan eindverdunning. Concentraties gelden voor watervrije zeep: de oliën plus de KOH die heeft gereageerd.",
+        "pt_BR": "Pasta, primeira diluição, neutralização e diluição final. As concentrações são de sabão anidro: os óleos mais o KOH que reagiu."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.neutralizer",
+      "text": {
+        "de": "Neutralisationsmittel",
+        "es": "Neutralizante",
+        "fr": "Neutralisant",
+        "it": "Neutralizzante",
+        "nl": "Neutralisatiemiddel",
+        "pt_BR": "Neutralizante"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.neutralizer_amount",
+      "text": {
+        "de": "Menge (:unit)",
+        "es": "Cantidad (:unit)",
+        "fr": "Quantité (:unit)",
+        "it": "Quantità (:unit)",
+        "nl": "Hoeveelheid (:unit)",
+        "pt_BR": "Quantidade (:unit)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.neutralizer_none",
+      "text": {
+        "de": "Kein Neutralisationsmittel",
+        "es": "Sin neutralizante",
+        "fr": "Aucun neutralisant",
+        "it": "Nessun neutralizzante",
+        "nl": "Geen neutralisatiemiddel",
+        "pt_BR": "Sem neutralizante"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.no_free_koh",
+      "text": {
+        "de": "Kein freies KOH zu neutralisieren.",
+        "es": "No hay KOH libre que neutralizar.",
+        "fr": "Aucune potasse libre à neutraliser.",
+        "it": "Nessun KOH libero da neutralizzare.",
+        "nl": "Geen vrije KOH om te neutraliseren.",
+        "pt_BR": "Não há KOH livre para neutralizar."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.no_neutralizers",
+      "text": {
+        "de": "Im Katalog ist noch kein Neutralisationsmittel verfügbar.",
+        "es": "Aún no hay ningún neutralizante en el catálogo.",
+        "fr": "Aucun neutralisant n’est encore disponible dans le catalogue.",
+        "it": "Nel catalogo non è ancora disponibile alcun neutralizzante.",
+        "nl": "Er is nog geen neutralisatiemiddel in de catalogus.",
+        "pt_BR": "Ainda não há neutralizante disponível no catálogo."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.recommended",
+      "text": {
+        "de": "Empfohlen: :amount :unit",
+        "es": "Recomendado: :amount :unit",
+        "fr": "Recommandé : :amount :unit",
+        "it": "Consigliato: :amount :unit",
+        "nl": "Aanbevolen: :amount :unit",
+        "pt_BR": "Recomendado: :amount :unit"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.running_total",
+      "text": {
+        "de": "Gesamt (:unit)",
+        "es": "Total (:unit)",
+        "fr": "Total (:unit)",
+        "it": "Totale (:unit)",
+        "nl": "Totaal (:unit)",
+        "pt_BR": "Total (:unit)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.solution_strength",
+      "text": {
+        "de": "Neutralisationslösung",
+        "es": "Solución neutralizante",
+        "fr": "Solution neutralisante",
+        "it": "Soluzione neutralizzante",
+        "nl": "Neutralisatieoplossing",
+        "pt_BR": "Solução neutralizante"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.solution_strength_help",
+      "text": {
+        "de": "Säure in ihrer wässrigen Lösung. Fettsäuren werden immer unverdünnt zugegeben.",
+        "es": "Ácido en su solución acuosa. Los ácidos grasos se añaden siempre puros.",
+        "fr": "Acide dans sa solution aqueuse. Les acides gras sont toujours ajoutés purs.",
+        "it": "Acido nella sua soluzione acquosa. Gli acidi grassi si aggiungono sempre puri.",
+        "nl": "Zuur in de wateroplossing. Vetzuren worden altijd puur toegevoegd.",
+        "pt_BR": "Ácido na sua solução aquosa. Ácidos graxos são sempre adicionados puros."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.stage",
+      "text": {
+        "de": "Stufe",
+        "es": "Etapa",
+        "fr": "Étape",
+        "it": "Fase",
+        "nl": "Stap",
+        "pt_BR": "Etapa"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.stages.final_dilution",
+      "text": {
+        "de": "Endverdünnung",
+        "es": "Dilución final",
+        "fr": "Dilution finale",
+        "it": "Diluizione finale",
+        "nl": "Eindverdunning",
+        "pt_BR": "Diluição final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.stages.first_dilution",
+      "text": {
+        "de": "Erste Verdünnung",
+        "es": "Primera dilución",
+        "fr": "Première dilution",
+        "it": "Prima diluizione",
+        "nl": "Eerste verdunning",
+        "pt_BR": "Primeira diluição"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.stages.neutralization",
+      "text": {
+        "de": "Neutralisation",
+        "es": "Neutralización",
+        "fr": "Neutralisation",
+        "it": "Neutralizzazione",
+        "nl": "Neutralisatie",
+        "pt_BR": "Neutralização"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.stages.paste",
+      "text": {
+        "de": "Paste",
+        "es": "Pasta",
+        "fr": "Pâte",
+        "it": "Pasta",
+        "nl": "Pasta",
+        "pt_BR": "Pasta"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.stages_label",
+      "text": {
+        "de": "Stufen der Flüssigseife",
+        "es": "Etapas del jabón líquido",
+        "fr": "Étapes du savon liquide",
+        "it": "Fasi del sapone liquido",
+        "nl": "Stappen vloeibare zeep",
+        "pt_BR": "Etapas do sabonete líquido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.status.already_below_target",
+      "text": {
+        "de": "Die Paste liegt bereits unter dieser Konzentration, daher wird kein Wasser zugegeben.",
+        "es": "La pasta ya está por debajo de esta concentración, así que no se añade agua.",
+        "fr": "La pâte est déjà sous cette concentration, aucune eau n’est donc ajoutée.",
+        "it": "La pasta è già sotto questa concentrazione, quindi non si aggiunge acqua.",
+        "nl": "De pasta zit al onder deze concentratie, dus er wordt geen water toegevoegd.",
+        "pt_BR": "A pasta já está abaixo desta concentração, então nenhuma água é adicionada."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.status.target_exceeded",
+      "text": {
+        "de": "Die Zugaben verdünnen bereits über dieses Ziel hinaus, daher wird kein Wasser zugegeben.",
+        "es": "Las adiciones ya diluyen por encima de este objetivo, así que no se añade agua.",
+        "fr": "Les ajouts diluent déjà au-delà de cet objectif, aucune eau n’est donc ajoutée.",
+        "it": "Le aggiunte diluiscono già oltre questo obiettivo, quindi non si aggiunge acqua.",
+        "nl": "De toevoegingen verdunnen al voorbij dit doel, dus er wordt geen water toegevoegd.",
+        "pt_BR": "As adições já diluem além desta meta, então nenhuma água é adicionada."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.status.unsupported",
+      "text": {
+        "de": "Nicht berechnet: Die Säure übersteigt den Bedarf des freien KOH.",
+        "es": "Sin calcular: el ácido supera lo que necesita el KOH libre.",
+        "fr": "Non calculé : l’acide dépasse ce que demande la potasse libre.",
+        "it": "Non calcolato: l’acido supera quanto serve al KOH libero.",
+        "nl": "Niet berekend: het zuur is meer dan de vrije KOH nodig heeft.",
+        "pt_BR": "Não calculado: o ácido excede o que o KOH livre precisa."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.title",
+      "text": {
+        "de": "Flüssigseifen-Prozess",
+        "es": "Proceso de jabón líquido",
+        "fr": "Procédé du savon liquide",
+        "it": "Processo del sapone liquido",
+        "nl": "Proces vloeibare zeep",
+        "pt_BR": "Processo do sabonete líquido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.use_recommended",
+      "text": {
+        "de": "Empfehlung übernehmen",
+        "es": "Usar lo recomendado",
+        "fr": "Utiliser la recommandation",
+        "it": "Usa il consigliato",
+        "nl": "Aanbeveling gebruiken",
+        "pt_BR": "Usar o recomendado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.waiting",
+      "text": {
+        "de": "Der Prozess erscheint, sobald die Paste berechnet ist.",
+        "es": "El proceso aparece cuando se calcula la pasta.",
+        "fr": "Le procédé s’affiche une fois la pâte calculée.",
+        "it": "Il processo compare quando la pasta è calcolata.",
+        "nl": "Het proces verschijnt zodra de pasta is berekend.",
+        "pt_BR": "O processo aparece quando a pasta é calculada."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.excess_acid_splits_soap",
+      "text": {
+        "de": "Mehr Säure, als das freie KOH braucht: Die überschüssige Säure spaltet Seife in Fettsäuren zurück und kann die Charge trüben.",
+        "es": "Más ácido del que necesita el KOH libre: el exceso vuelve a convertir jabón en ácidos grasos y puede enturbiar el lote.",
+        "fr": "Plus d’acide que n’en demande la potasse libre : l’excès redécompose le savon en acides gras et peut troubler le lot.",
+        "it": "Più acido di quanto serve al KOH libero: l’eccesso riconverte il sapone in acidi grassi e può intorbidire il lotto.",
+        "nl": "Meer zuur dan de vrije KOH nodig heeft: het teveel splitst zeep terug in vetzuren en kan de batch troebel maken.",
+        "pt_BR": "Mais ácido do que o KOH livre precisa: o excesso volta a transformar sabão em ácidos graxos e pode turvar o lote."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.excess_fatty_acid_raises_superfat",
+      "text": {
+        "de": "Mehr Fettsäure, als das freie KOH braucht: Der Überschuss bleibt unverseift und erhöht Überfettung und Trübung.",
+        "es": "Más ácido graso del que necesita el KOH libre: el exceso queda sin saponificar y aumenta el sobreengrasado y la opacidad.",
+        "fr": "Plus d’acide gras que n’en demande la potasse libre : l’excès reste non saponifié et augmente le surgras et l’opacité.",
+        "it": "Più acido grasso di quanto serve al KOH libero: l’eccesso resta non saponificato e aumenta sovragrassaggio e opacità.",
+        "nl": "Meer vetzuur dan de vrije KOH nodig heeft: het teveel blijft onverzeept en verhoogt de overvetting en troebelheid.",
+        "pt_BR": "Mais ácido graxo do que o KOH livre precisa: o excesso fica sem saponificar e aumenta a superengorduragem e a opacidade."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.free_koh_remains",
+      "text": {
+        "de": "Nach diesem Neutralisationsmittel bleibt freies KOH übrig. Vor dem Verdünnen testen und anpassen.",
+        "es": "Queda KOH libre tras este neutralizante. Prueba y ajusta antes de diluir.",
+        "fr": "De la potasse libre reste après ce neutralisant. Testez et ajustez avant de diluer.",
+        "it": "Dopo questo neutralizzante resta KOH libero. Verifica e regola prima di diluire.",
+        "nl": "Na dit neutralisatiemiddel blijft vrije KOH over. Test en stel bij voor het verdunnen.",
+        "pt_BR": "Resta KOH livre após este neutralizante. Teste e ajuste antes de diluir."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.neutralizer_amount_is_theoretical",
+      "text": {
+        "de": "Theoretische Menge. Ein Teil des freien KOH wird beim Kochen und durch die Luft verbraucht. Einen Teil zugeben, mischen, testen (Phenolphthalein oder pH), dann anpassen.",
+        "es": "Cantidad teórica. Parte del KOH libre se consume durante la cocción y con el aire. Añade una parte, mezcla, prueba (fenolftaleína o pH) y ajusta.",
+        "fr": "Quantité théorique. Une partie de la potasse libre est consommée pendant la cuisson et par l’air. Ajoutez-en une partie, mélangez, testez (phénolphtaléine ou pH), puis ajustez.",
+        "it": "Quantità teorica. Parte del KOH libero si consuma durante la cottura e con l’aria. Aggiungine una parte, mescola, verifica (fenolftaleina o pH), poi regola.",
+        "nl": "Theoretische hoeveelheid. Een deel van de vrije KOH wordt tijdens het koken en door de lucht verbruikt. Voeg een deel toe, meng, test (fenolftaleïne of pH) en stel bij.",
+        "pt_BR": "Quantidade teórica. Parte do KOH livre é consumida no cozimento e pelo ar. Adicione uma parte, misture, teste (fenolftaleína ou pH) e ajuste."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.weighed_paste",
+      "text": {
+        "de": "Gewogene Paste",
+        "es": "Pasta pesada",
+        "fr": "Pâte pesée",
+        "it": "Pasta pesata",
+        "nl": "Gewogen pasta",
+        "pt_BR": "Pasta pesada"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.weighed_paste_help",
+      "text": {
+        "de": "Optional, nur für diese Charge: die gekochte Paste auf der Waage. Wird nicht mit der Formel gespeichert.",
+        "es": "Opcional, solo para este lote: la pasta cocida en la balanza. No se guarda con la fórmula.",
+        "fr": "Facultatif, pour ce lot seulement : la pâte cuite sur la balance. Non enregistré avec la formule.",
+        "it": "Facoltativo, solo per questo lotto: la pasta cotta sulla bilancia. Non viene salvato con la formula.",
+        "nl": "Optioneel, alleen voor deze batch: de gekookte pasta op de weegschaal. Wordt niet met de formule opgeslagen.",
+        "pt_BR": "Opcional, só para este lote: a pasta cozida na balança. Não é salvo com a fórmula."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "messages.formula_item_limit",
       "text": {
         "de": "Diese Rezeptur enthält :count Zutatenzeilen, der aktuelle Plan erlaubt jedoch nur :limit. Entfernen Sie Zutatenzeilen oder ändern Sie den Plan, bevor Sie speichern.",

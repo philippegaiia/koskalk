@@ -137,9 +137,13 @@
 	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-lye-type" class="sk-eyebrow">{{ __('workbench.common.lye_type') }} <x-contextual-help.trigger topic="soap.alkali_and_purity" :topics="$contextualHelp['topics'] ?? []" /></p>
 	 <div role="radiogroup" aria-label="Lye type" class="mt-3 flex flex-wrap gap-2">
+ @unless ($isLiquidSoapWorkbench ?? false)
 	 <button type="button" role="radio" :aria-checked="lyeType === 'naoh'" @click="lyeType = 'naoh'" :class="lyeType === 'naoh' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">NaOH</button>
+ @endunless
 	 <button type="button" role="radio" :aria-checked="lyeType === 'koh'" @click="lyeType = 'koh'" :class="lyeType === 'koh' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">KOH</button>
+ @unless ($isLiquidSoapWorkbench ?? false)
 	 <button type="button" role="radio" :aria-checked="lyeType === 'dual'" @click="lyeType = 'dual'" :class="lyeType === 'dual' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-full border px-4 py-2.5 text-xs font-medium transition-colors">{{ __('workbench.common.dual_lye') }}</button>
+ @endunless
 	 </div>
 	 <template x-if="lyeType === 'dual'">
 	 <div class="mt-3 sk-inset p-3">

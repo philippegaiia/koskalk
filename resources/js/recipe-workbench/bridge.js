@@ -25,7 +25,16 @@ export function saveErrorMessages(response) {
  */
 export async function refreshCalculationPreview(workbench) {
     try {
-        const response = await workbench.$wire.previewCalculation(serializeDraft(workbench));
+        const draft = serializeDraft(workbench);
+        const measuredPasteWeight = workbench.liquidProcess?.measuredPasteWeight;
+
+        // The weighed paste belongs to this batch only: it reaches the preview,
+        // never the saved formula or its dirty signature.
+        if (draft.liquid_process && measuredPasteWeight !== '' && measuredPasteWeight !== null && measuredPasteWeight !== undefined) {
+            draft.liquid_process = { ...draft.liquid_process, measured_paste_weight: measuredPasteWeight };
+        }
+
+        const response = await workbench.$wire.previewCalculation(draft);
 
         if (response?.ok) {
             workbench.backendCalculation = response.calculation ?? null;

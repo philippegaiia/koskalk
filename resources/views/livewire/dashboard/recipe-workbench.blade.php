@@ -1,5 +1,6 @@
 @php
     $isCosmeticWorkbench = ($workbench['productFamily']['slug'] ?? 'soap') === 'cosmetic';
+    $isLiquidSoapWorkbench = ($workbench['productFamily']['soap_process'] ?? null) === 'liquid_paste';
     $isPublicCalculator = request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false);
     $isCalculatorRoute = request()->routeIs('calculator');
     $contextualHelp = $workbench['contextualHelp'] ?? ['topics' => [], 'tabs' => []];

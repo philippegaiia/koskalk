@@ -361,6 +361,10 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
                 this.$watch(key, () => this.scheduleCalculationPreview());
             });
 
+            if (this.isLiquidSoapFormula) {
+                this.$watch('liquidProcess', () => this.scheduleCalculationPreview());
+            }
+
             this.$watch('phaseItems', () => {
                 this.reconcileCostingPrices();
                 this.schedulePhaseItemPreviews();
@@ -1427,6 +1431,92 @@ function createLiquidSoapSection(payload) {
 
         get liquidProcessPreview() {
             return this.backendCalculation?.liquid_process ?? null;
+        },
+
+        get liquidProcessIsReady() {
+            return this.liquidProcessPreview !== null && this.liquidProcessPreview.status !== 'invalid';
+        },
+
+        get liquidNeutralizerOptions() {
+            return (this.ingredients ?? []).filter((ingredient) => Boolean(ingredient.liquid_soap_neutralizer));
+        },
+
+        get liquidNeutralizerRow() {
+            return this.phaseItems?.neutralization?.[0] ?? null;
+        },
+
+        get liquidNeutralizerType() {
+            const row = this.liquidNeutralizerRow;
+
+            return row === null
+                ? null
+                : (this.liquidNeutralizerOptions.find((ingredient) => ingredient.id === row.ingredient_id)?.liquid_soap_neutralizer ?? null);
+        },
+
+        /** Replaces the formula's single neutralizer through the shared row methods. */
+        chooseLiquidNeutralizer(ingredientId) {
+            (this.phaseItems?.neutralization ?? []).map((row) => row.id).forEach((rowId) => {
+                this.removeIngredient('neutralization', rowId);
+            });
+
+            const ingredient = this.liquidNeutralizerOptions.find((option) => String(option.id) === String(ingredientId));
+
+            if (ingredient) {
+                this.addIngredient(ingredient, 'neutralization', false);
+            }
+        },
+
+        liquidNeutralizerWeight() {
+            return this.liquidNeutralizerRow === null ? 0 : this.rowWeight(this.liquidNeutralizerRow);
+        },
+
+        /** Neutralizer rows are stored as % of oils like every soap addition. */
+        setLiquidNeutralizerWeight(value) {
+            const row = this.liquidNeutralizerRow;
+            const oilWeight = this.number(this.oilWeight);
+            const weight = Math.max(0, this.number(value));
+
+            if (row === null) {
+                return;
+            }
+
+            row.percentage = oilWeight > 0 ? (weight / oilWeight) * 100 : 0;
+        },
+
+        useRecommendedLiquidNeutralizer() {
+            const recommended = this.liquidProcessPreview?.neutralizer?.recommended_weight;
+
+            if (recommended !== undefined && recommended !== null) {
+                this.setLiquidNeutralizerWeight(recommended);
+            }
+        },
+
+        liquidStageRows() {
+            const process = this.liquidProcessPreview;
+
+            if (!this.liquidProcessIsReady) {
+                return [];
+            }
+
+            return [
+                { key: 'paste', add: null, mass: process.paste.weight, anhydrous: process.paste.anhydrous_percentage, status: 'ok' },
+                { key: 'first_dilution', add: process.stages.first_dilution.add_weight, mass: process.stages.first_dilution.mass, anhydrous: process.stages.first_dilution.anhydrous_percentage, status: process.stages.first_dilution.status },
+                { key: 'neutralization', add: process.stages.neutralization.add_weight, mass: process.stages.neutralization.mass, anhydrous: process.stages.neutralization.anhydrous_percentage, status: 'ok' },
+                { key: 'final_dilution', add: process.stages.final_dilution.add_weight, mass: process.stages.final_dilution.mass, anhydrous: process.stages.final_dilution.anhydrous_percentage, status: process.stages.final_dilution.status },
+            ];
+        },
+
+        liquidCompositionRows() {
+            const composition = this.liquidProcessPreview?.composition;
+            const shares = this.liquidProcessPreview?.composition_percentages;
+
+            if (!composition || !shares) {
+                return [];
+            }
+
+            return Object.keys(composition)
+                .filter((key) => this.number(composition[key]) > 0)
+                .map((key) => ({ key, weight: composition[key], share: shares[key] }));
         },
     };
 }

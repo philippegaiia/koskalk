@@ -1,5 +1,6 @@
 @php
     $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
+    $isLiquidSoapWorkbench = $isLiquidSoapWorkbench ?? false;
     $isPublicCalculator = $isPublicCalculator ?? false;
     $canEditRecipe = $canEditRecipe ?? true;
 @endphp
@@ -35,6 +36,9 @@
  @include('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')
  @else
  @include('livewire.dashboard.partials.recipe-workbench.reaction-core')
+ @if ($isLiquidSoapWorkbench)
+ @include('livewire.dashboard.partials.recipe-workbench.liquid-soap-process')
+ @endif
  @include('livewire.dashboard.partials.recipe-workbench.post-reaction')
  <div class="@5xl/workbench:hidden">
  @include('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')

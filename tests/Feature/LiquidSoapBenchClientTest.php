@@ -114,3 +114,90 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('replaces the single neutralizer and stores its weight as a share of the oils', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = createRecipeWorkbench({
+    productFamily: liquidFamily,
+    numberLocaleOptions: { en_US: '1,234.56' },
+    ingredients: [
+        { id: 7, name: 'Citric acid', category: 'ph_adjusters_buffers', available_phases: ['additives', 'neutralization'], liquid_soap_neutralizer: 'citric_acid_anhydrous' },
+        { id: 8, name: 'Lactic acid', category: 'ph_adjusters_buffers', available_phases: ['additives', 'neutralization'], liquid_soap_neutralizer: 'lactic_acid' },
+        { id: 9, name: 'Kaolin', category: 'minerals_salts_powders', available_phases: ['additives'] },
+    ],
+});
+workbench.phaseItems.neutralization = [];
+workbench.oilWeight = 1000;
+
+assert.deepEqual(workbench.liquidNeutralizerOptions.map((option) => option.id), [7, 8]);
+
+workbench.chooseLiquidNeutralizer('7');
+workbench.setLiquidNeutralizerWeight('6.5');
+assert.equal(workbench.phaseItems.neutralization.length, 1);
+assert.equal(workbench.liquidNeutralizerType, 'citric_acid_anhydrous');
+assert.equal(workbench.liquidNeutralizerRow.percentage, 0.65);
+assert.equal(Math.round(workbench.liquidNeutralizerWeight() * 10000) / 10000, 6.5);
+
+workbench.chooseLiquidNeutralizer('8');
+assert.equal(workbench.phaseItems.neutralization.length, 1);
+assert.equal(workbench.liquidNeutralizerRow.ingredient_id, 8);
+
+workbench.backendCalculation = { liquid_process: { status: 'ok', neutralizer: { recommended_weight: '9.1514' } } };
+workbench.useRecommendedLiquidNeutralizer();
+assert.equal(Math.round(workbench.liquidNeutralizerWeight() * 10000) / 10000, 9.1514);
+
+workbench.chooseLiquidNeutralizer('');
+assert.equal(workbench.phaseItems.neutralization.length, 0);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('lists the process stages from the server preview and hides them while invalid', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.backendCalculation = { liquid_process: {
+    status: 'ok',
+    paste: { weight: '1720.6730', anhydrous_percentage: '69.1590' },
+    stages: {
+        first_dilution: { add_weight: '1679.3270', mass: '3400.0000', anhydrous_percentage: '35.0000', status: 'ok' },
+        neutralization: { add_weight: '32.5310', mass: '3432.5310', anhydrous_percentage: '34.6683' },
+        final_dilution: { add_weight: '1327.4690', mass: '4760.0000', anhydrous_percentage: '25.0000', status: 'target_exceeded' },
+    },
+    composition: { soap_salt_weight: '1086.0423', free_koh_weight: '0.0000', water_weight: '3600.0000' },
+    composition_percentages: { soap_salt_weight: '22.8160', free_koh_weight: '0.0000', water_weight: '75.6303' },
+} };
+
+assert.deepEqual(workbench.liquidStageRows().map((stage) => [stage.key, stage.mass, stage.status]), [
+    ['paste', '1720.6730', 'ok'],
+    ['first_dilution', '3400.0000', 'ok'],
+    ['neutralization', '3432.5310', 'ok'],
+    ['final_dilution', '4760.0000', 'target_exceeded'],
+]);
+assert.deepEqual(workbench.liquidCompositionRows().map((row) => row.key), ['soap_salt_weight', 'water_weight']);
+
+workbench.backendCalculation = { liquid_process: { status: 'invalid', message: 'nope' } };
+assert.equal(workbench.liquidProcessIsReady, false);
+assert.deepEqual(workbench.liquidStageRows(), []);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('sends the weighed paste with the preview request only', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const { refreshCalculationPreview } = await import('./resources/js/recipe-workbench/bridge.js');
+const workbench = bench(liquidFamily);
+let sentDraft = null;
+workbench.$wire = { previewCalculation: async (draft) => { sentDraft = draft; return { ok: true, calculation: null }; } };
+workbench.syncIngredientListVariantSelection = () => {};
+workbench.liquidProcess.measuredPasteWeight = '1680';
+
+await refreshCalculationPreview(workbench);
+
+assert.equal(sentDraft.liquid_process.measured_paste_weight, '1680');
+assert.equal(Object.hasOwn(serializeDraft(workbench).liquid_process, 'measured_paste_weight'), false);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

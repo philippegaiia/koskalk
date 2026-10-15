@@ -74,6 +74,11 @@ dataset('parity formulas', [
     ]],
 ]);
 
+/*
+ * Covers formulas without saponifiable Additives. The browser preview ignores
+ * post-reaction oils, so with a negative superfat and such oils its interim
+ * glycerine is lower than the engine's until the server result replaces it.
+ */
 it('computes the same lye, water and glycerine in the browser preview and the soap engine', function (array $settings): void {
     $oilWeight = 800;
     $oilRows = [

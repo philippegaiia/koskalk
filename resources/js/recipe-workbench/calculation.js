@@ -200,7 +200,8 @@ export function lyeBreakdown(state) {
     const selectedKohWeight = kohAdjusted * kohRatio;
     const selectedTotalActiveLye = selectedNaohWeight + selectedKohWeight;
     const currentWaterWeight = waterWeightFor(state, selectedTotalActiveLye);
-    // Lye beyond full saponification (negative superfat) reacts with nothing and releases no glycerine.
+    // Interim estimate: excess lye from a negative superfat is assumed to release no glycerine. The engine lets it
+    // react with saponifiable Additives, so with those present this reads low until the server result arrives.
     const reactingShare = Math.min(1, superfatMultiplier);
     const kohToWeigh = selectedKohWeight > 0 && state.kohPurity === 90 ? selectedKohWeight / 0.9 : selectedKohWeight;
 

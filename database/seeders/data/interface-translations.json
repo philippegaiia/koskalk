@@ -44834,12 +44834,12 @@
       "group": "workbench",
       "key": "liquid.warnings.free_koh_remains",
       "text": {
-        "de": "Nach diesem Neutralisationsmittel bleibt freies KOH übrig. Vor dem Verdünnen testen und anpassen.",
-        "es": "Queda KOH libre tras este neutralizante. Prueba y ajusta antes de diluir.",
-        "fr": "De la potasse libre reste après ce neutralisant. Testez et ajustez avant de diluer.",
-        "it": "Dopo questo neutralizzante resta KOH libero. Verifica e regola prima di diluire.",
-        "nl": "Na dit neutralisatiemiddel blijft vrije KOH over. Test en stel bij voor het verdunnen.",
-        "pt_BR": "Resta KOH livre após este neutralizante. Teste e ajuste antes de diluir."
+        "de": "In der Paste bleibt freies KOH. Neutralisieren oder vor dem Verdünnen testen und anpassen.",
+        "es": "Queda KOH libre en la pasta. Neutralízalo, o prueba y ajusta antes de diluir.",
+        "fr": "De la potasse libre reste dans la pâte. Neutralisez-la, ou testez et ajustez avant de diluer.",
+        "it": "Nella pasta resta KOH libero. Neutralizzalo, oppure verifica e regola prima di diluire.",
+        "nl": "Er blijft vrije KOH in de pasta. Neutraliseer die, of test en stel bij voor het verdunnen.",
+        "pt_BR": "Resta KOH livre na pasta. Neutralize-o, ou teste e ajuste antes de diluir."
       }
     },
     {

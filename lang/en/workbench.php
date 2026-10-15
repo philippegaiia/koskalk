@@ -641,7 +641,7 @@ return [
         ],
         'warnings' => [
             'neutralizer_amount_is_theoretical' => 'Theoretical amount. Part of the free KOH is used up during the cook and by air. Add part of it, mix, test (phenolphthalein or pH), then adjust.',
-            'free_koh_remains' => 'Free KOH remains after this neutralizer. Test and adjust before diluting.',
+            'free_koh_remains' => 'Free KOH remains in the paste. Neutralize it, or test and adjust before diluting.',
             'excess_acid_splits_soap' => 'More acid than the free KOH needs: the extra acid splits soap back into fatty acids and can cloud the batch.',
             'excess_fatty_acid_raises_superfat' => 'More fatty acid than the free KOH needs: the extra stays unsaponified, raising superfat and opacity.',
         ],

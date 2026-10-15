@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\IngredientLabelMarket;
+use App\Enums\LiquidSoapNeutralizer;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\RegulatoryRegime;
@@ -644,7 +645,7 @@ class InciGenerationService
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
                 $bilingual ? 'Water/Eau' : 'Water',
-                $this->freshWaterWeight($soapCalculation),
+                $this->bottledWaterWeight($soapCalculation),
             );
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
@@ -659,7 +660,7 @@ class InciGenerationService
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
                 $bilingual ? 'Potassium hydroxide/Hydroxyde de potassium' : 'Potassium hydroxide',
-                (float) data_get($soapCalculation, 'lye.excess.koh_weight', 0),
+                $this->freeKohWeight($soapCalculation),
             );
         }
 
@@ -739,7 +740,7 @@ class InciGenerationService
             $this->appendPlainLanguageRow(
                 $rowsByLabel,
                 $bilingual ? 'Water/Eau' : 'Water',
-                $this->freshWaterWeight($soapCalculation),
+                $this->addedWaterWeight($soapCalculation),
             );
             $this->appendPlainLanguageRow(
                 $rowsByLabel,
@@ -1138,6 +1139,20 @@ class InciGenerationService
             ];
         }
 
+        $liquidProcess = $this->liquidProcess($soapCalculation);
+
+        if ($liquidProcess !== null) {
+            return [
+                'label' => 'Current batch basis',
+                'note' => 'Percentages use the finished liquid soap: paste, dilution water, neutralizer and additions.',
+                'formula_weight' => round((float) $liquidProcess['final_weight'], 5),
+                'threshold_percent' => $thresholdPercent,
+                'cured_weight' => null,
+                'residual_water_weight' => null,
+                'residual_water_percentage' => null,
+            ];
+        }
+
         $waterWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0);
         $naohWeight = (float) data_get($soapCalculation, 'lye.selected.naoh_weight', 0);
         $kohToWeigh = (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0);
@@ -1420,6 +1435,16 @@ class InciGenerationService
                 'kind' => $context['phase_key'] === 'lye_water' ? 'lye_liquid' : $labelState['kind'],
                 'warning' => $labelState['warning'],
             ]];
+        }
+
+        $neutralizerContributions = $this->neutralizerContributions(
+            $context,
+            $soapCalculation,
+            (string) $declarationRuleState['market_code'],
+        );
+
+        if ($neutralizerContributions !== null) {
+            return $neutralizerContributions;
         }
 
         if (
@@ -2153,10 +2178,10 @@ class InciGenerationService
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
             'AQUA',
-            $this->freshWaterWeight($soapCalculation),
+            $this->bottledWaterWeight($soapCalculation),
             'water',
             'Lye water',
-            $this->freshWaterWeight($soapCalculation),
+            $this->bottledWaterWeight($soapCalculation),
         );
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
@@ -2175,7 +2200,7 @@ class InciGenerationService
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
             'POTASSIUM HYDROXIDE',
-            (float) data_get($soapCalculation, 'lye.excess.koh_weight', 0),
+            $this->freeKohWeight($soapCalculation),
             'lye',
             'Excess lye',
         );
@@ -2197,10 +2222,10 @@ class InciGenerationService
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
             'AQUA',
-            $this->freshWaterWeight($soapCalculation),
+            $this->addedWaterWeight($soapCalculation),
             'water',
             'Lye water',
-            $this->freshWaterWeight($soapCalculation),
+            $this->addedWaterWeight($soapCalculation),
         );
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
@@ -2216,6 +2241,107 @@ class InciGenerationService
             'lye',
             'Lye',
         );
+    }
+
+    /**
+     * The liquid soap paste process when it was calculated; null for bar soap
+     * and for liquid settings that could not be made.
+     *
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<string, mixed>|null
+     */
+    private function liquidProcess(?array $soapCalculation): ?array
+    {
+        $process = $soapCalculation['liquid_process'] ?? null;
+
+        return is_array($process) && ($process['status'] ?? null) === 'ok' ? $process : null;
+    }
+
+    /**
+     * Water in the finished product. A liquid soap also holds its dilution
+     * water, the neutralizer solution water and the water the neutralization
+     * forms; lye-liquid substitutions keep their own rows.
+     *
+     * @param  array<string, mixed>  $soapCalculation
+     */
+    private function bottledWaterWeight(array $soapCalculation): float
+    {
+        $process = $this->liquidProcess($soapCalculation);
+
+        if ($process === null) {
+            return $this->freshWaterWeight($soapCalculation);
+        }
+
+        $substitutedLiquidWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0) - $this->freshWaterWeight($soapCalculation);
+
+        return max(0.0, (float) data_get($process, 'composition.water_weight', 0) - $substitutedLiquidWeight);
+    }
+
+    /**
+     * Water as weighed in: for a liquid soap, the alkali solution water plus
+     * both dilutions and the neutralizer solution water.
+     *
+     * @param  array<string, mixed>  $soapCalculation
+     */
+    private function addedWaterWeight(array $soapCalculation): float
+    {
+        $process = $this->liquidProcess($soapCalculation);
+        $freshWaterWeight = $this->freshWaterWeight($soapCalculation);
+
+        if ($process === null) {
+            return $freshWaterWeight;
+        }
+
+        $neutralizerSolutionWater = is_array($process['neutralizer'] ?? null)
+            ? (float) $process['neutralizer']['solution_weight'] - (float) $process['neutralizer']['weight']
+            : 0.0;
+
+        return $freshWaterWeight
+            + (float) data_get($process, 'stages.first_dilution.add_weight', 0)
+            + (float) data_get($process, 'stages.final_dilution.add_weight', 0)
+            + max(0.0, $neutralizerSolutionWater);
+    }
+
+    /**
+     * KOH left free in the product: after neutralization for a liquid soap.
+     *
+     * @param  array<string, mixed>  $soapCalculation
+     */
+    private function freeKohWeight(array $soapCalculation): float
+    {
+        $process = $this->liquidProcess($soapCalculation);
+
+        return $process === null
+            ? (float) data_get($soapCalculation, 'lye.excess.koh_weight', 0)
+            : (float) data_get($process, 'composition.free_koh_weight', 0);
+    }
+
+    /**
+     * What a liquid soap neutralizer becomes in the product: its potassium
+     * salt, or for a fatty acid its potassium soap plus any unreacted acid.
+     *
+     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<int, array{label: string|null, weight: float, kind: string, warning: string|null}>|null
+     */
+    private function neutralizerContributions(array $context, ?array $soapCalculation, string $marketCode): ?array
+    {
+        $summary = $this->liquidProcess($soapCalculation)['neutralizer'] ?? null;
+        $type = is_array($summary) ? LiquidSoapNeutralizer::tryFrom((string) $summary['type']) : null;
+
+        if ($context['phase_key'] !== 'neutralization' || $type === null) {
+            return null;
+        }
+
+        $incorporated = $this->incorporatedIngredientLabel($context, $marketCode);
+        $productLabel = $type->formsSoap()
+            ? ($context['ingredient'] instanceof Ingredient ? $this->soapLabel($context['ingredient'], 'koh') : null) ?? $incorporated['label']
+            : $type->saltInciName();
+
+        return collect([
+            ['label' => $productLabel, 'weight' => (float) $summary['product_weight'], 'kind' => 'derived', 'warning' => $incorporated['warning']],
+            ['label' => $incorporated['label'], 'weight' => (float) $summary['excess_fatty_acid_weight'], 'kind' => 'theoretical_superfat', 'warning' => $incorporated['warning']],
+        ])->filter(fn (array $contribution): bool => $contribution['weight'] > 0)->values()->all();
     }
 
     /** @param array<string, mixed> $soapCalculation */

@@ -61,6 +61,19 @@ enum LiquidSoapNeutralizer: string
             ->all();
     }
 
+    /**
+     * INCI name of the potassium salt the acid becomes; a fatty acid becomes
+     * soap and takes its own saponified name instead.
+     */
+    public function saltInciName(): ?string
+    {
+        return match ($this) {
+            self::CitricAcidAnhydrous, self::CitricAcidMonohydrate => 'POTASSIUM CITRATE',
+            self::LacticAcid => 'POTASSIUM LACTATE',
+            self::FattyAcid => null,
+        };
+    }
+
     public function formsSoap(): bool
     {
         return $this === self::FattyAcid;

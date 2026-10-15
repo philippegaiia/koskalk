@@ -387,6 +387,8 @@ class LiquidSoapProcessCalculator
                 'solution_weight' => $this->round($solutionWeight),
                 'neutralized_koh_weight' => $this->round($neutralizedKohWeight),
                 'excess_acid_weight' => $this->round($excessAcidWeight),
+                'product_weight' => $this->round($productWeight),
+                'excess_fatty_acid_weight' => $this->round($formsSoap ? $excessAcidWeight : '0'),
             ],
         ];
     }

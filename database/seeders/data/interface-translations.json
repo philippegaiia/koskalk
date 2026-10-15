@@ -46824,14 +46824,26 @@
     },
     {
       "group": "workbench",
-      "key": "settings.effective_superfat_note",
+      "key": "settings.effective_superfat_note_absorbed",
       "text": {
-        "de": "Theoretische Schätzung, einschließlich verseifbarer Öle in den Rezepturzusätzen.",
-        "es": "Estimación teórica, que incluye los aceites saponificables de las adiciones a la fórmula.",
-        "fr": "Estimation théorique, incluant les huiles saponifiables des ajouts à la formule.",
-        "it": "Stima teorica, che include gli oli saponificabili delle aggiunte alla formula.",
-        "nl": "Theoretische schatting, inclusief verzeepbare oliën in de formuletoevoegingen.",
-        "pt_BR": "Estimativa teórica, incluindo os óleos saponificáveis das adições à fórmula."
+        "de": "Die überschüssige Lauge reagiert mit den nach der Reaktion zugegebenen Ölen. Diese Öle werden teilweise verseift und zählen nicht mehr zur Überfettung.",
+        "es": "El álcali en exceso reacciona con los aceites añadidos después de la reacción. Esos aceites se saponifican en parte y ya no cuentan como sobreengrasado.",
+        "fr": "L’excès de soude réagit avec les huiles ajoutées après la réaction. Ces huiles sont en partie saponifiées et ne comptent plus comme surgraissage.",
+        "it": "L’alcali in eccesso reagisce con gli oli aggiunti dopo la reazione. Questi oli sono in parte saponificati e non contano più come superfat.",
+        "nl": "De overtollige loog reageert met de oliën die na de reactie zijn toegevoegd. Die oliën worden deels verzeept en tellen niet meer mee als overvetting.",
+        "pt_BR": "O excesso de álcali reage com os óleos adicionados após a reação. Esses óleos ficam parcialmente saponificados e deixam de contar como sobreengorduramento."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.effective_superfat_note_kept",
+      "text": {
+        "de": "Ihre Laugen-Überfettung plus die nach der Reaktion zugegebenen Öle. Diese Öle bleiben unverseift und werden auf dem Etikett wie zugegeben aufgeführt.",
+        "es": "Su sobreengrasado de álcali más los aceites añadidos después de la reacción. Esos aceites no se saponifican y figuran en la etiqueta tal como se añadieron.",
+        "fr": "Votre surgraissage de soude plus les huiles ajoutées après la réaction. Ces huiles restent non saponifiées et figurent sur l’étiquette telles qu’ajoutées.",
+        "it": "Il vostro superfat dell’alcali più gli oli aggiunti dopo la reazione. Questi oli restano non saponificati e figurano in etichetta così come aggiunti.",
+        "nl": "Uw loog-overvetting plus de oliën die na de reactie zijn toegevoegd. Die oliën blijven onverzeept en staan op het etiket zoals toegevoegd.",
+        "pt_BR": "Seu sobreengorduramento de álcali mais os óleos adicionados após a reação. Esses óleos permanecem não saponificados e aparecem no rótulo como adicionados."
       }
     },
     {

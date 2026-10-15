@@ -142,7 +142,8 @@ return [
     'settings' => [
         'title' => 'Formula settings',
         'effective_superfat' => 'Effective superfat',
-        'effective_superfat_note' => 'Theoretical estimate, including saponifiable oils in Formula additions.',
+        'effective_superfat_note_kept' => 'Your lye superfat plus the oils added after the reaction. Those oils stay unsaponified and are listed on the label as added.',
+        'effective_superfat_note_absorbed' => 'The excess lye reacts with the oils added after the reaction. Those oils are partly saponified and no longer count as superfat.',
         'post_reaction_oils_not_counted' => 'Not counted in the effective superfat: :ingredients. Only oils with verified saponification data from the platform catalogue, or your copies of them, are counted.',
         'superfat_low_margin' => 'Low safety margin',
         'superfat_excess_lye' => 'Excess lye',

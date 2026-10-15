@@ -195,7 +195,8 @@
 	 <p role="status" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
 	 <span class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.settings.effective_superfat') }}</span>
 	 <span class="numeric font-semibold" :class="superfatStatus === 'excess_lye' ? 'text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]')" x-text="`${format(effectiveSuperfat, 1)}%`"></span>
-	 <span>· {{ __('workbench.settings.effective_superfat_note') }}</span>
+	 <span x-show="number(superfat) >= 0">· {{ __('workbench.settings.effective_superfat_note_kept') }}</span>
+	 <span x-show="number(superfat) < 0">· {{ __('workbench.settings.effective_superfat_note_absorbed') }}</span>
 	 <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" />
 	 </p>
 	 </template>

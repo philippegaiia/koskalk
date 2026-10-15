@@ -10,7 +10,6 @@ use App\Models\Workspace;
 use App\Services\ProductionEditingService;
 use Dom\Element;
 use Dom\HTMLDocument;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -208,7 +207,7 @@ it('refreshes only through a coherent explicit reload and rejects a foreign task
     $page->call('acceptProductionReload', $page->get('editingPendingReload.id'))->assertSet('editingExpectedRevisions', [$run->id => 1])
         ->assertSet('editingPresentation.'.$run->id.'.attributes.notes', 'Changed');
     $page->call('beginEditing');
-    expect(fn () => $page->call('toggleTask', $task->id))->toThrow(ModelNotFoundException::class);
+    $page->call('toggleTask', $task->id)->assertNotFound();
     expect($task->fresh()->completed_at)->toBeNull();
 });
 

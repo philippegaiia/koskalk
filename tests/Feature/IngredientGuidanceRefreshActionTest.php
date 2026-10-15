@@ -25,7 +25,6 @@ use App\Services\IngredientTranslationSourceFingerprint;
 use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Actions\Testing\TestAction;
 use Filament\Actions\ViewAction;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Validation\ValidationException;
@@ -145,8 +144,8 @@ it('hides update translations without saved English and keeps workspace ingredie
     Livewire::test(EditIngredient::class, ['record' => $withoutEnglish->public_id])
         ->assertActionDoesNotExist(TestAction::make('updateTranslations')->schemaComponent('guidance-media::section'));
 
-    expect(fn () => Livewire::test(EditIngredient::class, ['record' => $workspaceIngredient->public_id]))
-        ->toThrow(ModelNotFoundException::class);
+    Livewire::test(EditIngredient::class, ['record' => $workspaceIngredient->public_id])
+        ->assertNotFound();
 });
 
 it('does not offer guidance translation when only localized identity names are missing', function (): void {

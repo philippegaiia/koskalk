@@ -30,7 +30,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceProductionEntitlement;
 use Filament\Forms\Components\DatePicker;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -430,9 +429,9 @@ it('refuses to open the index scheduling modal for another workspace production'
     $fixture = productionCreateFixture();
     $foreign = ProductionRun::factory()->create(['status' => ProductionRunStatus::Draft]);
 
-    expect(fn () => Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->mountAction('scheduleDraft', ['productionId' => $foreign->id]))
-        ->toThrow(ModelNotFoundException::class);
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->mountAction('scheduleDraft', ['productionId' => $foreign->id])
+        ->assertNotFound();
 
     expect($foreign->fresh()->status)->toBe(ProductionRunStatus::Draft);
 });

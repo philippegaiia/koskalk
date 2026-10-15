@@ -13,7 +13,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -102,8 +101,9 @@ it('scopes production location lists and edits to the current workspace', functi
         ->assertSeeHtml('wire:click="edit(\''.$local->public_id.'\')"')
         ->assertDontSeeHtml('wire:click="edit('.$local->id.')"');
 
-    expect(fn () => $component->call('edit', $foreign->public_id))
-        ->toThrow(ModelNotFoundException::class);
+    $component->call('edit', $foreign->public_id)
+        ->assertNotFound()
+        ->assertSet('editingLocationPublicId', null);
 });
 
 it('rejects direct production manager writes while the feature is disabled', function (): void {

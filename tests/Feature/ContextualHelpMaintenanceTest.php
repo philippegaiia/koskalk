@@ -10,7 +10,6 @@ use App\Models\HelpTopicRevision;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\ContextualHelp\HelpContentManifest;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -124,7 +123,7 @@ it('queues manual backups and retries only failed backups', function (): void {
     $failed = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed, 'error_message' => 'Remote verification failed.']);
     $page->call('retryExport', $failed->public_id)->assertHasNoErrors();
     Queue::assertPushed(ExportHelpContent::class, fn (ExportHelpContent $job): bool => $job->exportId === $failed->id);
-    expect(fn () => $page->call('retryExport', $pending->public_id))->toThrow(ModelNotFoundException::class);
+    $page->call('retryExport', $pending->public_id)->assertNotFound();
 });
 
 it('rechecks administrator access on later mutation requests', function (): void {
@@ -264,7 +263,7 @@ it('does not retry or regenerate a removed failed backup', function (): void {
     Queue::fake();
     $export = HelpContentExport::factory()->create(['status' => HelpContentExportStatus::Failed, 'removed_at' => now()]);
 
-    expect(fn () => Livewire::test(HelpContentMaintenance::class)->call('retryExport', $export->public_id))->toThrow(ModelNotFoundException::class);
+    Livewire::test(HelpContentMaintenance::class)->call('retryExport', $export->public_id)->assertNotFound();
     app()->call([new ExportHelpContent($export->id), 'handle']);
 
     Queue::assertNothingPushed();

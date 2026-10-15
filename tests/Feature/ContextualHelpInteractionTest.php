@@ -100,7 +100,7 @@ it('adds contextual links to existing quality states without creating new warnin
 import assert from 'node:assert/strict';
 import { createPresentationSection } from './resources/js/recipe-workbench/sections/presentation-section.js';
 const presentation = createPresentationSection();
-const context = { qualityFlags:presentation.qualityFlags, backendCalculationWarningFlags:presentation.backendCalculationWarningFlags, qualityMetrics:()=>({cure_speed:34,dos_risk:35}), isQualityApplicable:k=>['cure_speed','dos_risk'].includes(k),isQualityScored:()=>false };
+const context = { t:(key)=>key, qualityFlags:presentation.qualityFlags, backendCalculationWarningFlags:presentation.backendCalculationWarningFlags, qualityMetrics:()=>({cure_speed:34,dos_risk:35}), isQualityApplicable:k=>['cure_speed','dos_risk'].includes(k),isQualityScored:()=>false };
 assert.deepEqual(context.qualityFlags().map(f=>f.helpKey), ['soap.qualities.cure','soap.qualities.dos']);
 context.qualityMetrics=()=>({cure_speed:35,dos_risk:34}); assert.deepEqual(context.qualityFlags(),[]);
 context.backendCalculation={properties:{warnings:['high_koh_context_process_dependent','high_polyunsaturated_dos_risk']}};

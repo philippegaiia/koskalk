@@ -45,7 +45,7 @@ it('keeps compact formula output actions beside the tabs and outside the edit lo
         ->and($actions)->toContain("exportCurrentFormula('xlsx')")
         ->and($actions)->toContain("exportCurrentFormula('xlsx', 'composition')")
         ->and($actions)->toContain("exportCurrentFormula('csv')")
-        ->and($actions)->toContain("__('formula_documents.actions.export_composition')")
+        ->and($actions)->toContain("__('formula_documents.actions.export_short')")
         ->and($actions)->toContain('@keydown.escape.stop.prevent')
         ->and($actions)->toContain('$refs.exportMenuTrigger.focus()')
         ->and($actions)->toContain(':disabled="outputPending"')

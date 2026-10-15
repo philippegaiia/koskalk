@@ -108,3 +108,6 @@ User ingredient CSV/XLSX is a reduced price book. Omit Export generated, Search 
 
 ## Apply export precision at the presentation boundary
 Ingredient price-book CSV/XLSX prices per kg/lb show exactly 2 decimals; packaging catalogue unit prices use 2–4. Inventory mass uses 2 decimals and counts 0, chosen per row in mixed tables. Costing workbook kg prices use 2 decimals and other costing values 2–8 to retain small costs. CSV uses canonical decimal-string rounding; XLSX stores original numeric values with display formats. Keep technical formula/composition exports at full precision.
+
+## Oils added after the reaction stay as added at non-negative superfat
+Product decision (soapmaker convention): with a superfat of zero or more, saponifiable oils in the Additives phase take no lye; the saponified oils keep the lye superfat, and labels list the added oils at their full weight. Only a negative superfat lets the excess lye react with them, shared proportionally across all saponifiable oils. Effective superfat still reports the free share across all oils. Do not reintroduce lye sharing for positive superfat without a new product decision.

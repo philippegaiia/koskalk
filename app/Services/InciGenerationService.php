@@ -1503,15 +1503,16 @@ class InciGenerationService
     }
 
     /**
-     * Oils added after the reaction take part of the lye, so every
-     * saponifiable oil, main or added, keeps the same free share.
+     * A negative superfat leaves lye for the oils added after the reaction,
+     * so every saponifiable oil, main or added, keeps the same free share.
+     * With a non-negative superfat those oils stay as added.
      *
      * @param  array<string, mixed>|null  $soapCalculation
      */
     private function sharesLyeWithPostReactionOils(?array $soapCalculation): bool
     {
         return is_array($soapCalculation)
-            && (float) data_get($soapCalculation, 'lye.post_reaction_oils_weight', 0) > 0;
+            && (float) data_get($soapCalculation, 'lye.post_reaction_saponified_fraction', 0) > 0;
     }
 
     /**

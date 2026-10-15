@@ -135,7 +135,7 @@ it('saponifies no more than the whole oil when superfat is negative', function (
         ->and($neutral['lye']['excess'])->toBe(['naoh_weight' => 0.0, 'koh_weight' => 0.0]);
 });
 
-it('shares the lye proportionally between main and post-reaction oils', function () {
+it('shares excess lye with post-reaction oils only below zero superfat', function () {
     $service = new SoapCalculationService;
     $neutral = $service->calculate([soapTestOil()], ['superfat' => 0, 'lye_type' => 'naoh']);
 
@@ -154,7 +154,8 @@ it('shares the lye proportionally between main and post-reaction oils', function
         ['weight' => 100, 'koh_sap_value' => 0.2],
     ]);
 
-    expect($positive['lye']['saponified_fraction'])->toBe(0.86363636)
+    expect($positive['lye']['saponified_fraction'])->toBe(0.95)
+        ->and($positive['lye']['post_reaction_saponified_fraction'])->toBe(0.0)
         ->and($positive['lye']['excess'])->toBe(['naoh_weight' => 0.0, 'koh_weight' => 0.0])
         ->and($positive['lye']['selected']['glycerine_weight'])
         ->toEqualWithDelta($neutral['lye']['selected']['glycerine_weight'] * 0.95, 0.0002);

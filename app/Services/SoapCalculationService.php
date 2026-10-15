@@ -219,7 +219,7 @@ class SoapCalculationService
                     'koh_weight' => $this->roundValue($saponification['free_koh_weight']),
                 ],
                 'saponified_fraction' => round($saponification['fraction'], 8),
-                'post_reaction_saponified_fraction' => $postReactionKohTheoretical > 0 ? round($saponification['fraction'], 8) : 0.0,
+                'post_reaction_saponified_fraction' => round($saponification['post_reaction_fraction'], 8),
                 'superfat_percentage' => $this->roundValue($superfat),
                 'effective_superfat_percentage' => $this->roundValue($effectiveSuperfat),
                 'post_reaction_oils_weight' => $this->roundValue($postReactionOilsWeight),
@@ -329,14 +329,15 @@ class SoapCalculationService
     }
 
     /**
-     * Lye is not selective: it reacts with every saponifiable oil in the
-     * formula, including oils added after the reaction, in the same
-     * proportion. Every oil therefore keeps the same free share, which is the
-     * effective superfat, and only lye beyond what all oils can absorb stays
-     * free. Without post-reaction oils and with a non-negative superfat the
-     * historical calculation is kept unchanged (glycerine_weight null).
+     * Soapmaker convention: with a non-negative superfat the lye is consumed
+     * by the saponified oils, so oils added after the reaction stay as added
+     * and the historical calculation is kept (glycerine_weight null). Only a
+     * negative superfat leaves lye to react with those oils; it is then shared
+     * by every saponifiable oil in the same proportion, so each keeps the same
+     * free share (the effective superfat), and only lye beyond what all oils
+     * can absorb stays free.
      *
-     * @return array{fraction: float, glycerine_weight: float|null, free_naoh_weight: float, free_koh_weight: float}
+     * @return array{fraction: float, post_reaction_fraction: float, glycerine_weight: float|null, free_naoh_weight: float, free_koh_weight: float}
      */
     private function saponificationShare(
         string $lyeType,
@@ -347,14 +348,20 @@ class SoapCalculationService
         float $naohAdjusted,
         float $kohAdjusted,
     ): array {
+        if ($superfat >= 0) {
+            return [
+                'fraction' => $kohTheoretical > 0 ? 1 - ($superfat / 100) : 0.0,
+                'post_reaction_fraction' => 0.0,
+                'glycerine_weight' => null,
+                'free_naoh_weight' => 0.0,
+                'free_koh_weight' => 0.0,
+            ];
+        }
+
         $totalKohTheoretical = $kohTheoretical + max(0.0, $postReactionKohTheoretical);
         $fraction = $totalKohTheoretical > 0
             ? min(1.0, (1 - ($superfat / 100)) * $kohTheoretical / $totalKohTheoretical)
             : 0.0;
-
-        if ($postReactionKohTheoretical <= 0 && $superfat >= 0) {
-            return ['fraction' => $fraction, 'glycerine_weight' => null, 'free_naoh_weight' => 0.0, 'free_koh_weight' => 0.0];
-        }
 
         $kohRatio = $this->kohRatio($lyeType, $dualLyeKohPercentage);
         $reactingKohEquivalent = $totalKohTheoretical * $fraction;
@@ -363,6 +370,7 @@ class SoapCalculationService
 
         return [
             'fraction' => $fraction,
+            'post_reaction_fraction' => $postReactionKohTheoretical > 0 ? $fraction : 0.0,
             'glycerine_weight' => ($reactingNaoh * self::GLYCERINE_FROM_NAOH_RATIO) + ($reactingKoh * self::GLYCERINE_FROM_KOH_RATIO),
             'free_naoh_weight' => max(0.0, ($naohAdjusted * (1 - $kohRatio)) - $reactingNaoh),
             'free_koh_weight' => max(0.0, ($kohAdjusted * $kohRatio) - $reactingKoh),

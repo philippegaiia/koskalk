@@ -1556,8 +1556,52 @@ it('saponifies part of the oils added after the reaction instead of listing free
         ->and($plainList)->not->toContain('Sodium hydroxide');
 })->with([
     'negative superfat' => [-5.0, 0.95454545],
-    'positive superfat' => [5.0, 0.86363636],
 ]);
+
+it('keeps oils added after the reaction as added when the superfat is positive', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $oil->update(['soap_inci_naoh_name' => 'SODIUM OLIVATE']);
+    $shea = makeCarrierOilIngredient();
+    $shea->update([
+        'display_name' => 'Shea Butter',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+        'soap_inci_naoh_name' => 'SODIUM SHEABUTTERATE',
+    ]);
+
+    foreach ([$oil, $shea] as $ingredient) {
+        IngredientSapProfile::factory()->create([
+            'ingredient_id' => $ingredient->id,
+            'koh_sap_value' => 0.188,
+        ]);
+    }
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['regulatory_regime'] = 'none';
+    $payload['superfat'] = 5;
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $shea->id, 'percentage' => 10, 'weight' => 100, 'note' => null],
+    ];
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $variant = collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $rows = collect($variant['ingredient_rows'])->keyBy('label');
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['post_reaction_saponified_fraction'])->toBe(0.0)
+        ->and($result['calculation']['lye']['effective_superfat_percentage'])->toBe(13.6364)
+        ->and($rows)->not->toHaveKey('SODIUM SHEABUTTERATE')
+        ->and($rows['BUTYROSPERMUM PARKII BUTTER']['weight'])->toEqualWithDelta(100.0, 0.001)
+        ->and($rows['OLEA EUROPAEA FRUIT OIL']['weight'])->toEqualWithDelta(50.0, 0.001)
+        ->and(round($rows->sum('weight'), 2))->toBe(round($result['labeling']['basis']['formula_weight'], 2));
+});
 
 it('counts saponifiable oils inside compound additions for both the lye and the labels', function () {
     ProductFamily::factory()->create([

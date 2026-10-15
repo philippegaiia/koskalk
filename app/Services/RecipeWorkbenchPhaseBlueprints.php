@@ -29,7 +29,32 @@ class RecipeWorkbenchPhaseBlueprints
             ];
         }
 
-        return [
+        return $this->soapPhases($productFamily?->usesLiquidSoapPasteBench() ?? false);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function find(string $key): ?array
+    {
+        return $this->indexedPhaseBlueprints()[$key] ?? null;
+    }
+
+    public function isCosmeticFamily(?ProductFamily $productFamily): bool
+    {
+        return $productFamily?->slug === 'cosmetic'
+            || $productFamily?->calculation_basis === 'total_formula';
+    }
+
+    /**
+     * Soap phases in bench order. Liquid soap paste families add a
+     * neutralization phase after the alkali solution; bar soap never has it.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function soapPhases(bool $withNeutralization): array
+    {
+        $phases = [
             [
                 'key' => 'saponified_oils',
                 'name' => 'Saponified Oils',
@@ -63,20 +88,21 @@ class RecipeWorkbenchPhaseBlueprints
                 'is_system' => true,
             ],
         ];
-    }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    public function find(string $key): ?array
-    {
-        return $this->indexedPhaseBlueprints()[$key] ?? null;
-    }
+        if (! $withNeutralization) {
+            return $phases;
+        }
 
-    public function isCosmeticFamily(?ProductFamily $productFamily): bool
-    {
-        return $productFamily?->slug === 'cosmetic'
-            || $productFamily?->calculation_basis === 'total_formula';
+        array_splice($phases, 2, 0, [[
+            'key' => 'neutralization',
+            'name' => 'Neutralization',
+            'phase_group' => 'post_reaction',
+            'phase_type' => 'post_reaction',
+            'description' => 'The acid that neutralizes free KOH left in a liquid soap paste.',
+            'is_system' => true,
+        ]]);
+
+        return $phases;
     }
 
     /**
@@ -88,6 +114,6 @@ class RecipeWorkbenchPhaseBlueprints
             return $this->indexedPhaseBlueprints;
         }
 
-        return $this->indexedPhaseBlueprints = array_column($this->all(), null, 'key');
+        return $this->indexedPhaseBlueprints = array_column($this->soapPhases(withNeutralization: true), null, 'key');
     }
 }

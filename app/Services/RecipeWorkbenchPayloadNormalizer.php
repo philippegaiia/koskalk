@@ -30,6 +30,7 @@ class RecipeWorkbenchPayloadNormalizer
         private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
         private readonly ProductClassificationService $productClassificationService,
         private readonly ProductTypeIfraOptionsBuilder $productTypeIfraOptionsBuilder,
+        private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator,
     ) {}
 
     /**
@@ -88,7 +89,7 @@ class RecipeWorkbenchPayloadNormalizer
         }
 
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
-        $phasePayload = $this->phasePayload($payload);
+        $phasePayload = $this->phasePayload($payload, $productFamily);
         $massUnit = $this->normalizeMassUnit($payload['oil_unit'] ?? 'g');
         $kohPurityPercentage = $this->kohPurityPercentage($payload['koh_purity_percentage'] ?? 90);
         $payload['koh_purity_percentage'] = $kohPurityPercentage;
@@ -117,6 +118,9 @@ class RecipeWorkbenchPayloadNormalizer
         }
 
         $lyeLiquidItems = $this->normalizeLyeLiquidItems($payload, $normalizedRecipe);
+        $liquidProcess = $productFamily?->usesLiquidSoapPasteBench()
+            ? $this->normalizeLiquidProcess($payload, $normalizedRecipe)
+            : null;
 
         $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
             ->map(function (array $phase) use ($lyeLiquidItems): array {
@@ -183,6 +187,7 @@ class RecipeWorkbenchPayloadNormalizer
                 'oil_unit' => $massUnit->value,
                 'mass_grams' => $this->massConverter->toGrams($normalizedRecipe['oil_weight'], $massUnit),
                 'totals' => $normalizedRecipe['totals'],
+                ...($liquidProcess === null ? [] : ['liquid_process' => $liquidProcess]),
             ],
             'phases' => array_map(function (array $phase): array {
                 $phaseBlueprint = $this->recipeWorkbenchPhaseBlueprints->find($phase['key']);
@@ -523,7 +528,7 @@ class RecipeWorkbenchPayloadNormalizer
      * @param  array<string, mixed>  $payload
      * @return array<int, array<string, mixed>>
      */
-    private function phasePayload(array $payload): array
+    private function phasePayload(array $payload, ?ProductFamily $productFamily = null): array
     {
         $phaseItems = $payload['phase_items'] ?? [];
 
@@ -544,7 +549,56 @@ class RecipeWorkbenchPayloadNormalizer
                     ];
                 }, is_array($rows) ? $rows : []),
             ];
-        }, $this->recipeWorkbenchPhaseBlueprints->all());
+        }, $this->recipeWorkbenchPhaseBlueprints->all($productFamily));
+    }
+
+    /**
+     * Liquid soap paste settings for a KOH-only paste and its single
+     * neutralizer row, which must be a platform material marked as a liquid
+     * soap neutralizer.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $normalizedRecipe
+     * @return array{first_dilution_percentage: string, final_dilution_percentage: string, neutralizer_solution_percentage: string}
+     */
+    private function normalizeLiquidProcess(array $payload, array $normalizedRecipe): array
+    {
+        if (($payload['lye_type'] ?? 'naoh') !== 'koh') {
+            throw ValidationException::withMessages([
+                'lye_type' => 'A liquid soap paste uses KOH as its only alkali.',
+            ]);
+        }
+
+        try {
+            $settings = $this->liquidSoapProcessCalculator->normalizeSettings(
+                is_array($payload['liquid_process'] ?? null) ? $payload['liquid_process'] : [],
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['liquid_process' => $exception->getMessage()]);
+        }
+
+        $neutralizerIds = collect(collect($normalizedRecipe['phases'])->firstWhere('key', 'neutralization')['items'] ?? [])
+            ->pluck('ingredient_id')
+            ->filter()
+            ->values();
+
+        if ($neutralizerIds->count() > 1) {
+            throw ValidationException::withMessages([
+                'neutralization' => 'A liquid soap formula uses one neutralizer.',
+            ]);
+        }
+
+        $neutralizer = $neutralizerIds->isEmpty()
+            ? null
+            : Ingredient::query()->with('sapProfile')->find($neutralizerIds->first());
+
+        if ($neutralizerIds->isNotEmpty() && $neutralizer?->liquidSoapNeutralizer() === null) {
+            throw ValidationException::withMessages([
+                'neutralization' => 'Choose a platform neutralizer such as citric acid, lactic acid or stearic acid.',
+            ]);
+        }
+
+        return $settings;
     }
 
     /**

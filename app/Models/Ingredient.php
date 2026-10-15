@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\OriginalFilename;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Enums\LiquidSoapNeutralizer;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
@@ -47,6 +48,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'workspace_id',
     'visibility',
     'is_soap_saponification_trusted',
+    'liquid_soap_neutralizer',
     'requires_aromatic_compliance',
     'requires_admin_review',
     'is_active',
@@ -363,6 +365,28 @@ class Ingredient extends Model
             && $this->sapProfile?->koh_sap_value !== null;
     }
 
+    /**
+     * The neutralizer kind the liquid soap bench may use this material as.
+     * Only platform materials qualify, and a fatty acid also needs trusted
+     * soap chemistry because its KOH SAP sets how much KOH it takes up.
+     */
+    public function liquidSoapNeutralizer(): ?LiquidSoapNeutralizer
+    {
+        $neutralizer = $this->liquid_soap_neutralizer;
+
+        $isPlatform = $this->owner_type === null && $this->owner_id === null && $this->workspace_id === null;
+
+        if (! $neutralizer instanceof LiquidSoapNeutralizer || ! $isPlatform) {
+            return null;
+        }
+
+        if ($neutralizer->formsSoap() && ! $this->canDriveSoapSaponification()) {
+            return null;
+        }
+
+        return $neutralizer;
+    }
+
     public function isPublicCatalog(): bool
     {
         return $this->visibility === Visibility::Public || $this->owner_type === null;
@@ -463,6 +487,7 @@ class Ingredient extends Model
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
             'is_soap_saponification_trusted' => 'bool',
+            'liquid_soap_neutralizer' => LiquidSoapNeutralizer::class,
             'requires_aromatic_compliance' => 'bool',
             'requires_admin_review' => 'bool',
             'is_active' => 'bool',

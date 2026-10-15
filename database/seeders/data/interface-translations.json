@@ -6648,6 +6648,30 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.admin.classification.liquid_soap_neutralizer",
+      "text": {
+        "de": "Neutralisationsmittel für Flüssigseife",
+        "es": "Neutralizante para jabón líquido",
+        "fr": "Neutralisant pour savon liquide",
+        "it": "Neutralizzante per sapone liquido",
+        "nl": "Neutralisatiemiddel voor vloeibare zeep",
+        "pt_BR": "Neutralizante para sabonete líquido"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.admin.classification.liquid_soap_neutralizer_helper",
+      "text": {
+        "de": "Erlaubt der Flüssigseifen-Werkbank, dieses Plattformmaterial zur Neutralisation von freiem KOH anzubieten. Eine Fettsäure braucht zusätzlich vertrauenswürdige Seifenchemie.",
+        "es": "Permite que el banco de jabón líquido ofrezca este material de la plataforma para neutralizar el KOH libre. Un ácido graso también necesita química de jabón verificada.",
+        "fr": "Permet à l’atelier savon liquide de proposer cette matière de la plateforme pour neutraliser la potasse libre. Un acide gras exige aussi une chimie saponifiante vérifiée.",
+        "it": "Consente al banco del sapone liquido di proporre questo materiale della piattaforma per neutralizzare il KOH libero. Un acido grasso richiede anche una chimica di saponificazione verificata.",
+        "nl": "Laat de werkbank voor vloeibare zeep dit platformmateriaal aanbieden om vrije KOH te neutraliseren. Een vetzuur heeft ook geverifieerde zeepchemie nodig.",
+        "pt_BR": "Permite que a bancada de sabonete líquido ofereça este material da plataforma para neutralizar o KOH livre. Um ácido graxo também precisa de química de saponificação verificada."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.admin.classification.needs_review",
       "text": {
         "de": "Prüfung erforderlich",
@@ -14264,6 +14288,54 @@
         "it": "{0} Nessun ingrediente privato|{1} :used ingrediente privato|[2,*] :used ingredienti privati",
         "nl": "{0} Geen privé-ingrediënten|{1} :used privé-ingrediënt|[2,*] :used privé-ingrediënten",
         "pt_BR": "{0} Nenhum ingrediente privado|{1} :used ingrediente privado|[2,*] :used ingredientes privados"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "liquid_soap_neutralizers.citric_acid_anhydrous",
+      "text": {
+        "de": "Zitronensäure (wasserfrei)",
+        "es": "Ácido cítrico (anhidro)",
+        "fr": "Acide citrique (anhydre)",
+        "it": "Acido citrico (anidro)",
+        "nl": "Citroenzuur (watervrij)",
+        "pt_BR": "Ácido cítrico (anidro)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "liquid_soap_neutralizers.citric_acid_monohydrate",
+      "text": {
+        "de": "Zitronensäure (Monohydrat)",
+        "es": "Ácido cítrico (monohidrato)",
+        "fr": "Acide citrique (monohydraté)",
+        "it": "Acido citrico (monoidrato)",
+        "nl": "Citroenzuur (monohydraat)",
+        "pt_BR": "Ácido cítrico (mono-hidratado)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "liquid_soap_neutralizers.fatty_acid",
+      "text": {
+        "de": "Fettsäure (Stearinsäure o. Ä.)",
+        "es": "Ácido graso (ácido esteárico o similar)",
+        "fr": "Acide gras (acide stéarique ou similaire)",
+        "it": "Acido grasso (acido stearico o simile)",
+        "nl": "Vetzuur (stearinezuur of vergelijkbaar)",
+        "pt_BR": "Ácido graxo (ácido esteárico ou similar)"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "liquid_soap_neutralizers.lactic_acid",
+      "text": {
+        "de": "Milchsäure",
+        "es": "Ácido láctico",
+        "fr": "Acide lactique",
+        "it": "Acido lattico",
+        "nl": "Melkzuur",
+        "pt_BR": "Ácido lático"
       }
     },
     {

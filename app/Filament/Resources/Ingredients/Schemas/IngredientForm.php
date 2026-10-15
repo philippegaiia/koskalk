@@ -6,6 +6,7 @@ use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\IngredientTranslationOrigin;
+use App\Enums\LiquidSoapNeutralizer;
 use App\Filament\Resources\IngredientEnrichmentBatches\IngredientEnrichmentBatchResource;
 use App\Filament\Resources\Ingredients\Pages\CreateIngredient;
 use App\Filament\Resources\Ingredients\Pages\EditIngredient;
@@ -109,6 +110,12 @@ class IngredientForm
                             ->live()
                             ->required(fn (Get $get): bool => ! static::isCategory($get('category'), IngredientCategory::Other))
                             ->helperText(__('ingredients.editor.admin.classification.subcategory_helper')),
+                        Select::make('liquid_soap_neutralizer')
+                            ->label(__('ingredients.editor.admin.classification.liquid_soap_neutralizer'))
+                            ->options(LiquidSoapNeutralizer::options())
+                            ->placeholder('—')
+                            ->helperText(__('ingredients.editor.admin.classification.liquid_soap_neutralizer_helper'))
+                            ->rules([Rule::enum(LiquidSoapNeutralizer::class)]),
                         TextInput::make('current_version.unit')
                             ->label(__('ingredients.editor.admin.identity.unit'))
                             ->maxLength(64),

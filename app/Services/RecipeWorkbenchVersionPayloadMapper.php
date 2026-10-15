@@ -101,6 +101,13 @@ class RecipeWorkbenchVersionPayloadMapper
             'waterValue' => (float) ($waterSettings['value'] ?? 38),
             'superfat' => (float) ($calculationContext['superfat'] ?? 5),
             'curedWaterPercentage' => SoapSap::curedWaterPercentage($calculationContext['cured_water_percentage'] ?? null),
+            ...(is_array($calculationContext['liquid_process'] ?? null) ? [
+                'liquidProcess' => [
+                    'firstDilutionPercentage' => (float) ($calculationContext['liquid_process']['first_dilution_percentage'] ?? LiquidSoapProcessCalculator::DEFAULT_FIRST_DILUTION_PERCENTAGE),
+                    'finalDilutionPercentage' => (float) ($calculationContext['liquid_process']['final_dilution_percentage'] ?? 0),
+                    'neutralizerSolutionPercentage' => (float) ($calculationContext['liquid_process']['neutralizer_solution_percentage'] ?? 100),
+                ],
+            ] : []),
             'ifraCategorySelectionMode' => $version->ifra_category_selection_mode?->value ?? 'automatic',
             'ifraAmendmentId' => $version->ifra_amendment_id,
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,

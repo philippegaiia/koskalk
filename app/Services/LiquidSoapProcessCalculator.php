@@ -98,6 +98,29 @@ class LiquidSoapProcessCalculator
     }
 
     /**
+     * Process settings saved with a liquid soap formula, as canonical decimal
+     * strings. Batch measurements such as the weighed paste are not part of
+     * the formula and are passed to calculate() instead.
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array{first_dilution_percentage: string, final_dilution_percentage: string, neutralizer_solution_percentage: string}
+     */
+    public function normalizeSettings(array $settings): array
+    {
+        [$firstPercentage, $finalPercentage] = $this->dilutionTargets($settings);
+
+        return [
+            'first_dilution_percentage' => $this->canonical($firstPercentage),
+            'final_dilution_percentage' => $this->canonical($finalPercentage),
+            'neutralizer_solution_percentage' => $this->canonical($this->percentage(
+                $settings['neutralizer_solution_percentage'] ?? '100',
+                'Neutralizer solution',
+                allowHundred: true,
+            )),
+        ];
+    }
+
+    /**
      * @param  array<string, float|int|string>  $paste  Output of pasteComposition().
      * @param  array{
      *     final_dilution_percentage: float|int|string,
@@ -115,12 +138,7 @@ class LiquidSoapProcessCalculator
      */
     public function calculate(array $paste, array $process): array
     {
-        $firstPercentage = $this->percentage($process['first_dilution_percentage'] ?? self::DEFAULT_FIRST_DILUTION_PERCENTAGE, 'First dilution');
-        $finalPercentage = $this->percentage($process['final_dilution_percentage'] ?? null, 'Final dilution');
-
-        if (bccomp($finalPercentage, $firstPercentage, self::SCALE) > 0) {
-            throw new InvalidArgumentException('The final dilution must not be more concentrated than the first dilution.');
-        }
+        [$firstPercentage, $finalPercentage] = $this->dilutionTargets($process);
 
         $additionsWeight = $this->nonNegative($process['additions_weight'] ?? 0, 'Additions weight');
 
@@ -248,6 +266,27 @@ class LiquidSoapProcessCalculator
                 $composition,
             ),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array{0: string, 1: string}
+     */
+    private function dilutionTargets(array $settings): array
+    {
+        $firstPercentage = $this->percentage($settings['first_dilution_percentage'] ?? self::DEFAULT_FIRST_DILUTION_PERCENTAGE, 'First dilution');
+        $finalPercentage = $this->percentage($settings['final_dilution_percentage'] ?? null, 'Final dilution');
+
+        if (bccomp($finalPercentage, $firstPercentage, self::SCALE) > 0) {
+            throw new InvalidArgumentException('The final dilution must not be more concentrated than the first dilution.');
+        }
+
+        return [$firstPercentage, $finalPercentage];
+    }
+
+    private function canonical(string $decimal): string
+    {
+        return str_contains($decimal, '.') ? rtrim(rtrim($decimal, '0'), '.') : $decimal;
     }
 
     /**

@@ -73,6 +73,13 @@ class RecipeWorkbenchDraftPayloadMapper
             'product_reference' => $draft['productReference'] ?? null,
             'nominal_content_value' => $draft['nominalContentValue'] ?? null,
             'nominal_content_unit' => $draft['nominalContentUnit'] ?? null,
+            ...(is_array($draft['liquidProcess'] ?? null) ? [
+                'liquid_process' => [
+                    'first_dilution_percentage' => $draft['liquidProcess']['firstDilutionPercentage'] ?? null,
+                    'final_dilution_percentage' => $draft['liquidProcess']['finalDilutionPercentage'] ?? null,
+                    'neutralizer_solution_percentage' => $draft['liquidProcess']['neutralizerSolutionPercentage'] ?? null,
+                ],
+            ] : []),
         ];
     }
 

@@ -957,6 +957,8 @@ return [
                 'category_helper' => 'Choose the material family. Specialist functions, soap trust, and aromatic compliance are managed separately.',
                 'subcategory_helper' => 'Optional refinement that keeps beginner-friendly names alongside professional classification.',
                 'soap_trusted_helper' => 'Requires a verified KOH SAP value. The material category does not control this capability.',
+                'liquid_soap_neutralizer' => 'Liquid soap neutralizer',
+                'liquid_soap_neutralizer_helper' => 'Lets the liquid soap bench offer this platform material to neutralize free KOH. A fatty acid also needs trusted soap chemistry.',
                 'aromatic_compliance_helper' => 'Keep allergen and IFRA data active even if the ingredient is temporarily classified as Other.',
                 'needs_review' => 'Needs review',
                 'needs_review_helper' => 'Keep this enabled when the imported category, soap trust, or compliance status still needs confirmation.',
@@ -1175,5 +1177,11 @@ return [
             'translation_write_intent_locale_required' => 'A locale is required for each translation write intent.',
             'translation_write_intent_locale_string' => 'Each translation write intent locale must be text.',
         ],
+    ],
+    'liquid_soap_neutralizers' => [
+        'citric_acid_anhydrous' => 'Citric acid (anhydrous)',
+        'citric_acid_monohydrate' => 'Citric acid (monohydrate)',
+        'lactic_acid' => 'Lactic acid',
+        'fatty_acid' => 'Fatty acid (stearic acid or similar)',
     ],
 ];

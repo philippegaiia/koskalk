@@ -46,6 +46,21 @@ enum LiquidSoapNeutralizer: string
         };
     }
 
+    public function label(): string
+    {
+        return __('ingredients.liquid_soap_neutralizers.'.$this->value);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $neutralizer): array => [$neutralizer->value => $neutralizer->label()])
+            ->all();
+    }
+
     public function formsSoap(): bool
     {
         return $this === self::FattyAcid;

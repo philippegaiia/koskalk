@@ -29,6 +29,7 @@ class InciGenerationService
         private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
         private readonly IngredientDeclarationNameResolver $ingredientDeclarationNameResolver,
         private readonly SoapCalculationService $soapCalculationService,
+        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
     ) {}
 
     /**
@@ -2292,14 +2293,7 @@ class InciGenerationService
             return $freshWaterWeight;
         }
 
-        $neutralizerSolutionWater = is_array($process['neutralizer'] ?? null)
-            ? (float) $process['neutralizer']['solution_weight'] - (float) $process['neutralizer']['weight']
-            : 0.0;
-
-        return $freshWaterWeight
-            + (float) data_get($process, 'stages.first_dilution.add_weight', 0)
-            + (float) data_get($process, 'stages.final_dilution.add_weight', 0)
-            + max(0.0, $neutralizerSolutionWater);
+        return $freshWaterWeight + (float) $this->liquidSoapFormulaProcessor->addedDilutionWaterWeight($process);
     }
 
     /**

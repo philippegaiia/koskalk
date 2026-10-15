@@ -49,7 +49,9 @@ class RecipeWorkbenchViewDataBuilder
         $outputWorkspace = $user?->company();
         $massDisplaySystem = $outputWorkspace?->mass_display_system ?? MassDisplaySystem::Metric;
 
-        $helpScope = $this->helpTopics->forSurface($productFamily->slug, $user instanceof User);
+        // Liquid soap shares the soap help topics: alkali, water, superfat, additions.
+        $helpSurface = $productFamily->usesSoapCalculation() ? 'soap' : $productFamily->slug;
+        $helpScope = $this->helpTopics->forSurface($helpSurface, $user instanceof User);
         $helpContent = $this->helpResolver->resolve($helpScope['keys'], app()->getLocale());
         $helpTabs = array_map(fn (array $keys): array => array_values(array_intersect($keys, array_keys($helpContent))), $helpScope['index']);
         $output = $outputWorkspace === null ? null : [

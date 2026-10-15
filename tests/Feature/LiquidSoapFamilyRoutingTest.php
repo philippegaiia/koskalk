@@ -12,7 +12,9 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\WorkbenchHelpTopics;
 use App\Services\RecipeWorkbenchService;
+use App\Services\RecipeWorkbenchViewDataBuilder;
 use Database\Seeders\ProductFamilySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -145,4 +147,14 @@ it('shows each family bench to administrators without letting them change it', f
         ->assertHasNoFormErrors();
 
     expect($soap->refresh()->soap_process)->toBe(SoapProcess::Bar);
+});
+
+it('gives the liquid soap bench the soap help topics', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+
+    $viewData = app(RecipeWorkbenchViewDataBuilder::class)->build($family, null, null);
+    $soapScope = app(WorkbenchHelpTopics::class)->forSurface('soap', false);
+
+    expect($soapScope['keys'])->toContain('soap.superfat')
+        ->and($viewData['contextualHelp']['tabs'])->toBe(array_map(fn (array $keys): array => [], $soapScope['index']));
 });

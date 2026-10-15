@@ -730,7 +730,7 @@ class RecipeVersionCostingSynchronizer
 
         $productFamily = $recipe?->productFamily()->withoutGlobalScopes()->first();
 
-        return $productFamily?->slug === 'soap';
+        return $productFamily?->usesSoapCalculation() ?? false;
     }
 
     private function derivedIngredientDefaultPricePerKg(RecipeVersion $recipeVersion, Ingredient $ingredient): ?float

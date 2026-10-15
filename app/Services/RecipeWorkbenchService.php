@@ -467,7 +467,7 @@ class RecipeWorkbenchService
      */
     private function validatePreviewableSoapCalculation(ProductFamily $productFamily, array $payload, User $user): void
     {
-        if ($productFamily->slug !== 'soap') {
+        if (! $productFamily->usesSoapCalculation()) {
             return;
         }
 

@@ -328,7 +328,8 @@ export function createCostingSection(payload) {
 
             const waterIngredient = this.costingWaterIngredient;
             const scaleRatio = this.costingScaleRatio();
-            const weight = convertCostingMass(this.lyeLiquidWaterWeight(), this.oilUnit, this.costingBaseOilUnit)
+            const liquidSoapWaterWeight = typeof this.liquidDilutionWaterWeight === 'function' ? this.liquidDilutionWaterWeight() : 0;
+            const weight = convertCostingMass(this.lyeLiquidWaterWeight() + liquidSoapWaterWeight, this.oilUnit, this.costingBaseOilUnit)
                 * scaleRatio;
 
             if (!waterIngredient || !(weight > 0)) {

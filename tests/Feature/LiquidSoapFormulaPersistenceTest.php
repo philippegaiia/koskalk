@@ -339,3 +339,14 @@ it('rejects a liquid soap formula made with an alkali other than KOH', function 
     expect(fn () => app(RecipeWorkbenchService::class)->save($user, $family, $payload))
         ->toThrow(fn (ValidationException $exception) => expect($exception->errors()['lye_type'][0] ?? null)->toBe('A liquid soap paste uses KOH as its only alkali.'));
 })->with(['naoh', 'dual']);
+
+it('checks a liquid soap formula against the liquid superfat floor before saving', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $payload = liquidSoapFormulaPayload(liquidSoapPersistenceOil(), $productType, ['superfat' => -25]);
+
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $family, $payload))
+        ->toThrow(InvalidArgumentException::class, 'Liquid soap superfat cannot be below -20% with KOH 90%.')
+        ->and(Recipe::withoutGlobalScopes()->count())->toBe(0);
+});

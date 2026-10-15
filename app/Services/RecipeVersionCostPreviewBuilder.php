@@ -25,6 +25,7 @@ class RecipeVersionCostPreviewBuilder
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
+        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
     ) {}
 
     /**
@@ -547,6 +548,13 @@ class RecipeVersionCostPreviewBuilder
         $totalLiquidWeight = data_get($calculation, 'lye.water.weight', 0);
         $allocation = $this->lyeLiquidAllocationService->allocateFresh($totalLiquidWeight, $substitutions);
         $waterWeight = $this->decimal($allocation['water_weight'] ?? 0) ?? '0';
+        $liquidProcess = data_get($calculation, 'liquid_process');
+
+        // A liquid soap also buys the water of its dilutions and neutralizer solution.
+        if (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok') {
+            $waterWeight = bcadd($waterWeight, $this->liquidSoapFormulaProcessor->addedDilutionWaterWeight($liquidProcess), 18);
+        }
+
         if (bccomp($waterWeight, '0', 18) > 0) {
             $waterCostingItem = $costing->items->first(fn (RecipeVersionCostingItem $item): bool => $item->phase_key === 'implicit_water');
             $waterIngredient = $waterCostingItem?->ingredient ?? $this->plainWaterIngredient();
@@ -676,7 +684,7 @@ class RecipeVersionCostPreviewBuilder
     {
         $recipe = Recipe::query()->withoutGlobalScopes()->find($version->recipe_id);
 
-        return $recipe?->productFamily()->withoutGlobalScopes()->value('slug') === 'soap';
+        return $recipe?->productFamily()->withoutGlobalScopes()->first()?->usesSoapCalculation() ?? false;
     }
 
     /** @param array<string, mixed> $preview

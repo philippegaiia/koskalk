@@ -85,6 +85,26 @@ class LiquidSoapFormulaProcessor
     }
 
     /**
+     * Water added after the paste: both dilutions and the neutralizer
+     * solution water, from a calculated process.
+     *
+     * @param  array<string, mixed>  $liquidProcess  Process result with status ok.
+     */
+    public function addedDilutionWaterWeight(array $liquidProcess): string
+    {
+        $neutralizer = $liquidProcess['neutralizer'] ?? null;
+        $solutionWater = is_array($neutralizer)
+            ? bcsub((string) $neutralizer['solution_weight'], (string) $neutralizer['weight'], 18)
+            : '0';
+
+        return bcadd(
+            bcadd((string) data_get($liquidProcess, 'stages.first_dilution.add_weight', '0'), (string) data_get($liquidProcess, 'stages.final_dilution.add_weight', '0'), 18),
+            bccomp($solutionWater, '0', 18) > 0 ? $solutionWater : '0',
+            18,
+        );
+    }
+
+    /**
      * An addition row's weight: its % of the final batch when the bench sent
      * one and the final batch is known, otherwise the given weight.
      *

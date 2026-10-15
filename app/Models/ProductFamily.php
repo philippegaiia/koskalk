@@ -48,6 +48,15 @@ class ProductFamily extends Model
     }
 
     /**
+     * Soap behaviour (alkali costing, save checks, soap help) has always keyed
+     * on the soap family; liquid soap paste families share it.
+     */
+    public function usesSoapCalculation(): bool
+    {
+        return $this->slug === 'soap' || $this->usesLiquidSoapPasteBench();
+    }
+
+    /**
      * A liquid soap paste family opens its formula view only once active,
      * so the bench stays hidden until it is released.
      */

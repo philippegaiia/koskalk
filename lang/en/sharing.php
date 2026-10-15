@@ -97,6 +97,8 @@ return [
         'editing_mode' => 'Editing preference', 'oil_weight' => 'Formulation input mass', 'oil_unit' => 'Input mass unit',
         'lye_type' => 'Alkali', 'koh_purity_percentage' => 'KOH purity (%)', 'dual_lye_koh_percentage' => 'KOH share (%)', 'superfat' => 'Superfat (%)',
         'dilution_mode' => 'Dilution setting', 'dilution_value' => 'Dilution value', 'ifra_selection_mode' => 'IFRA selection',
+        'first_dilution_percentage' => 'First dilution (% anhydrous soap)', 'final_dilution_percentage' => 'Final dilution (% anhydrous soap)',
+        'neutralizer_solution_percentage' => 'Neutralizer solution (%)',
     ],
     'values' => [
         'saponify_in_formula' => 'Saponify in Formula', 'blend_only' => 'Blend only', 'rinse_off' => 'Rinse-off', 'leave_on' => 'Leave-on',

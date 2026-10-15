@@ -76,6 +76,7 @@ class FormulaShareRecipeImporter
             'water_mode' => $formula['water_settings']['mode'] ?? 'percent_of_oils', 'water_value' => $formula['water_settings']['value'] ?? 38,
             'phases' => $phases, 'phase_items' => $items, 'manufacturing_instructions' => $procedure,
             'packaging_items' => [], 'production_output_type' => ProductionOutputType::FinishedProduct->value,
+            ...(isset($context['liquid_process']) ? ['liquid_process' => $context['liquid_process']] : []),
         ];
         $saved = $this->workbench->publish($actor, $family, $payload, prepareFormulation: fn (array $normalized): array => $this->preserveQuantities($normalized, $items, $context));
         $recipe = Recipe::withoutGlobalScopes()->findOrFail($saved->recipe_id);
@@ -99,6 +100,11 @@ class FormulaShareRecipeImporter
     private function preserveQuantities(array $normalized, array $items, array $context): array
     {
         if (! is_string($context['oil_weight']) || preg_match('/^\d+\.\d{9}$/D', $context['oil_weight']) !== 1 || bccomp($context['oil_weight'], '0', 9) <= 0) {
+            $this->invalid();
+        }
+        // Every shared phase must be published; a phase the family does not
+        // have would otherwise be dropped with its rows.
+        if (array_diff(array_keys($items), array_column($normalized['phases'], 'key')) !== []) {
             $this->invalid();
         }
         $weightTotal = '0';

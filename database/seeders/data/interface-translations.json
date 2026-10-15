@@ -40500,6 +40500,30 @@
     },
     {
       "group": "sharing",
+      "key": "settings.final_dilution_percentage",
+      "text": {
+        "de": "Endverdünnung (% wasserfreie Seife)",
+        "es": "Dilución final (% de jabón anhidro)",
+        "fr": "Dilution finale (% de savon anhydre)",
+        "it": "Diluizione finale (% di sapone anidro)",
+        "nl": "Eindverdunning (% watervrije zeep)",
+        "pt_BR": "Diluição final (% de sabão anidro)"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.first_dilution_percentage",
+      "text": {
+        "de": "Erste Verdünnung (% wasserfreie Seife)",
+        "es": "Primera dilución (% de jabón anhidro)",
+        "fr": "Première dilution (% de savon anhydre)",
+        "it": "Prima diluizione (% di sapone anidro)",
+        "nl": "Eerste verdunning (% watervrije zeep)",
+        "pt_BR": "Primeira diluição (% de sabão anidro)"
+      }
+    },
+    {
+      "group": "sharing",
       "key": "settings.ifra_selection_mode",
       "text": {
         "de": "IFRA-Auswahl",
@@ -40544,6 +40568,18 @@
         "it": "Modalità di produzione",
         "nl": "Productiemodus",
         "pt_BR": "Modo de fabricação"
+      }
+    },
+    {
+      "group": "sharing",
+      "key": "settings.neutralizer_solution_percentage",
+      "text": {
+        "de": "Neutralisationslösung (%)",
+        "es": "Solución neutralizante (%)",
+        "fr": "Solution neutralisante (%)",
+        "it": "Soluzione neutralizzante (%)",
+        "nl": "Neutralisatieoplossing (%)",
+        "pt_BR": "Solução neutralizante (%)"
       }
     },
     {

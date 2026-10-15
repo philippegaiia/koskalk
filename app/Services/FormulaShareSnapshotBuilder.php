@@ -35,6 +35,7 @@ class FormulaShareSnapshotBuilder
         private readonly IngredientShareFingerprint $fingerprint,
         private readonly CanonicalSoapAlkaliResolver $alkalis,
         private readonly FormulaSharePhaseValidator $phases,
+        private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator,
     ) {}
 
     /** @param array<string, mixed> $options @return array<string, mixed> */
@@ -153,7 +154,8 @@ class FormulaShareSnapshotBuilder
         $formula['canonical_alkalis'] = array_map(fn (int $id): string => $graph['source_keys'][$id], $canonical);
         $formula['phases'] = [];
         foreach ($phases as $index => $phase) {
-            if (! is_string($phase->slug) || $phase->slug === '' || $phases->where('slug', $phase->slug)->count() !== 1) {
+            if (! is_string($phase->slug) || $phase->slug === '' || $phases->where('slug', $phase->slug)->count() !== 1
+                || ($phase->slug === 'neutralization' && ! $family->usesLiquidSoapPasteBench())) {
                 $this->invalid('formula');
             }
             $formula['phases'][] = [
@@ -232,6 +234,9 @@ class FormulaShareSnapshotBuilder
                 $this->invalid('settings');
             }
             $water = ['mode' => $storedWater['mode'], 'value' => $this->number($storedWater['value'] ?? null, 9)];
+            if ($family->usesLiquidSoapPasteBench()) {
+                $calculation['liquid_process'] = $this->liquidProcessSettings($context['liquid_process'] ?? null);
+            }
         }
         $regime = null;
         if ($version->regulatory_regime !== RegulatoryRegime::NONE_CODE) {
@@ -266,6 +271,25 @@ class FormulaShareSnapshotBuilder
                 'mapping' => $mapping === null ? null : ['id' => $mapping->id, 'product_type_id' => $mapping->product_type_id]],
             'water_settings' => $water, 'calculation_context' => $calculation,
         ];
+    }
+
+    /**
+     * A liquid soap paste formula's dilution and neutralizer settings, which
+     * it cannot be calculated without.
+     *
+     * @return array{first_dilution_percentage: string, final_dilution_percentage: string, neutralizer_solution_percentage: string}
+     */
+    private function liquidProcessSettings(mixed $settings): array
+    {
+        if (! is_array($settings)) {
+            $this->invalid('settings');
+        }
+
+        try {
+            return $this->liquidSoapProcessCalculator->normalizeSettings($settings);
+        } catch (InvalidArgumentException) {
+            $this->invalid('settings');
+        }
     }
 
     private function number(mixed $value, int $scale): string

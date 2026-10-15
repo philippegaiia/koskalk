@@ -33,6 +33,7 @@ class FormulaSharePresenter
         $context = $formula['calculation_context'] ?? [];
         $settings = Arr::only($formula, ['batch_size', 'batch_unit', 'manufacturing_mode', 'exposure_mode']);
         $settings += Arr::only($context, ['editing_mode', 'oil_weight', 'oil_unit', 'lye_type', 'koh_purity_percentage', 'dual_lye_koh_percentage', 'superfat']);
+        $settings += Arr::only(is_array($context['liquid_process'] ?? null) ? $context['liquid_process'] : [], ['first_dilution_percentage', 'final_dilution_percentage', 'neutralizer_solution_percentage']);
         $settings += [
             'product_family' => data_get($snapshot, 'product.family.slug'),
             'product_type' => data_get($snapshot, 'product.type.slug'),

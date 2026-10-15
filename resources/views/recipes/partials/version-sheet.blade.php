@@ -12,6 +12,7 @@
     </section>
 
     <x-formula-document.table :document="$formulaDocument" />
+    <x-formula-document.liquid-process :document="$formulaDocument" />
     <x-formula-document.results :document="$formulaDocument" />
 
     <x-ingredient-source-legend :show="collect($formulaDocument['sections'])->contains(fn (array $section): bool => collect($section['rows'] ?? [])->contains(fn (array $row): bool => (bool) ($row['is_user_owned'] ?? false)))" />

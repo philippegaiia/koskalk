@@ -128,7 +128,7 @@ class RecipeCompositionExportDataBuilder
                 'exposure_mode' => data_get($draft, 'exposureMode'),
             ],
             'warnings' => $warnings,
-            'assumption_note' => $isSoap
+            'assumption_note' => $isSoap && is_array($document['soap_output'] ?? null)
                 ? __('formula_documents.composition.retained_liquid_assumption', [
                     'percentage' => SoapSap::curedWaterPercentage(data_get($document, 'soap_output.residual_water_percentage')),
                 ])

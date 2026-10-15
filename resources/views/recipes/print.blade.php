@@ -67,6 +67,7 @@
         <section data-formula-section="formula" @if (! in_array('formula', $selectedSections, true)) hidden @endif class="mt-4">
             <x-formula-document.settings :document="$formulaDocument" />
             <x-formula-document.table :document="$formulaDocument" :number-locale="$numberLocale" class="mt-3" />
+            <x-formula-document.liquid-process :document="$formulaDocument" :number-locale="$numberLocale" class="mt-3" />
             <x-formula-document.results :document="$formulaDocument" class="mt-3" />
             <x-ingredient-source-legend :show="collect($formulaDocument['sections'])->contains(fn (array $section): bool => collect($section['rows'] ?? [])->contains(fn (array $row): bool => (bool) ($row['is_user_owned'] ?? false)))" />
         </section>

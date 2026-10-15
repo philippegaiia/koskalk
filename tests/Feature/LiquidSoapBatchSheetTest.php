@@ -1,0 +1,145 @@
+<?php
+
+use App\Enums\IngredientCategory;
+use App\Enums\LiquidSoapNeutralizer;
+use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
+use App\Models\ProductFamily;
+use App\Models\ProductType;
+use App\Models\Recipe;
+use App\Models\User;
+use App\Services\FormulaDocumentBuilder;
+use App\Services\RecipeWorkbenchService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\Process\Process;
+
+uses(RefreshDatabase::class);
+
+/**
+ * Saved reference liquid soap: 1000 g oil at -3% superfat, citric acid as a
+ * 20% solution, 2% lavender of a 4760 g batch.
+ *
+ * @return array<string, mixed>
+ */
+function liquidSoapBatchSheetDocument(array $overrides = []): array
+{
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $oil = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'display_name' => 'Olive Oil', 'is_soap_saponification_trusted' => true, 'is_active' => true]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $oil->id, 'koh_sap_value' => 0.19]);
+    $citricAcid = Ingredient::factory()->create(['category' => IngredientCategory::PhAdjustersBuffers, 'display_name' => 'Citric Acid', 'owner_type' => null, 'owner_id' => null, 'is_active' => true, 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous]);
+    $lavender = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'display_name' => 'Lavender Oil', 'is_active' => true]);
+    $service = app(RecipeWorkbenchService::class);
+    $version = $service->save($user, $family, array_replace_recursive([
+        'name' => 'Liquid castile',
+        'product_type_id' => $productType->id,
+        'oil_unit' => 'g',
+        'oil_weight' => 1000,
+        'manufacturing_mode' => 'saponify_in_formula',
+        'exposure_mode' => 'rinse_off',
+        'regulatory_regime' => 'none',
+        'editing_mode' => 'percentage',
+        'lye_type' => 'koh',
+        'koh_purity_percentage' => 90,
+        'dual_lye_koh_percentage' => 40,
+        'water_mode' => 'lye_concentration',
+        'water_value' => 28,
+        'superfat' => -3,
+        'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
+        'phase_items' => [
+            'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
+            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65062, 'weight' => 6.5062, 'note' => null]],
+            'additives' => [],
+            'fragrance' => [['ingredient_id' => $lavender->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+        ],
+    ], $overrides));
+    $snapshot = $service->currentVersionSnapshot(Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id));
+
+    return app(FormulaDocumentBuilder::class)->build($snapshot, ['calculation_basis' => 'initial_oils']);
+}
+
+it('lays out the liquid soap batch sheet in process order with what to add at each step', function () {
+    $document = liquidSoapBatchSheetDocument();
+    $steps = collect($document['liquid_process']['steps'])->keyBy('key');
+
+    expect($steps->keys()->all())->toBe(['paste', 'first_dilution', 'neutralization', 'final_dilution'])
+        ->and($steps['paste']['add'])->toBeNull()
+        ->and($steps['paste']['mass'])->toBe(1720.673)
+        ->and($steps['first_dilution']['add'])->toBe(1679.327)
+        ->and($steps['first_dilution']['mass'])->toBe(3400.0)
+        ->and($steps['neutralization']['add'])->toBe(32.531)
+        ->and($steps['neutralization']['instruction'])->toBe('Add Citric Acid as a 20% solution. Theoretical amount: add part of it, mix, test, then adjust.')
+        ->and($steps['final_dilution']['mass'])->toBe(4760.0)
+        ->and($steps['final_dilution']['anhydrous_percentage'])->toBe(25.0)
+        ->and($document['liquid_process']['neutralizer'])->toMatchArray(['name' => 'Citric Acid', 'weight' => 6.5062, 'solution_weight' => 32.531])
+        ->and($document['liquid_process']['additions'])->toBe([['name' => 'Lavender Oil', 'weight' => 95.2, 'final_percentage' => 2.0]]);
+});
+
+it('reports the final batch instead of a wet and cured bar on a liquid soap sheet', function () {
+    $document = liquidSoapBatchSheetDocument();
+
+    expect(collect($document['results'])->pluck('value', 'label')->all())->toBe([
+        'Final batch' => 4760.0,
+        'Anhydrous soap' => 25.0,
+        'Produced glycerine' => 103.9577,
+        'Formula additions' => 95.2,
+    ])
+        ->and($document['soap_output'])->toBeNull();
+});
+
+it('prints the liquid soap steps in process order', function () {
+    $document = liquidSoapBatchSheetDocument();
+
+    $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
+        ->assertSeeInOrder(['Liquid soap process', 'Paste', 'First dilution', 'Neutralization', 'Acid: 6.51 g (theoretical 6.51 g)', 'Final dilution', 'Lavender Oil', '95.20 g · 2.00%']);
+});
+
+it('prints nothing for formulas without a liquid soap process', function () {
+    $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => ['unit' => 'g', 'liquid_process' => null]])
+        ->assertDontSee('Liquid soap process');
+});
+
+it('sends the weighed paste with a printed or exported batch', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+global.window = { location: { hash: '' }, localStorage: { getItem: () => null, setItem: () => {} } };
+global.document = { addEventListener() {}, removeEventListener() {}, querySelector: () => null };
+Object.defineProperty(global, 'navigator', { value: { languages: ['en-US'], language: 'en-US', maxTouchPoints: 0 }, configurable: true });
+
+const { createRecipeWorkbench } = await import('./resources/js/recipe-workbench/component.js');
+const { captureRecipeWorkbenchOutput } = await import('./resources/js/recipe-workbench/outputs.js');
+const workbench = createRecipeWorkbench({ productFamily: { slug: 'liquid-soap', soap_process: 'liquid_paste' }, numberLocaleOptions: { en_US: '1,234.56' } });
+workbench.liquidProcess.measuredPasteWeight = '1680';
+
+const payload = await captureRecipeWorkbenchOutput(workbench, { workspace: 'w', productFamily: 'liquid-soap' });
+
+assert.equal(payload.draft.liquid_process.measured_paste_weight, '1680');
+assert.equal(payload.draft.liquid_process.final_dilution_percentage, 25);
+JS;
+
+    $process = Process::fromShellCommandline('node --input-type=module -e '.escapeshellarg($script), base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

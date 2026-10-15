@@ -43,6 +43,13 @@ export async function captureRecipeWorkbenchOutput(state, config, options = {}) 
     }
 
     const draft = serializeDraft(state);
+    const measuredPasteWeight = state.liquidProcess?.measuredPasteWeight;
+
+    // A weighed paste belongs to the batch being printed, not to the formula.
+    if (draft.liquid_process && measuredPasteWeight !== '' && measuredPasteWeight !== null && measuredPasteWeight !== undefined) {
+        draft.liquid_process = { ...draft.liquid_process, measured_paste_weight: measuredPasteWeight };
+    }
+
     const payload = {
         workspace: config?.workspace ?? null,
         recipe: config?.recipe ?? null,

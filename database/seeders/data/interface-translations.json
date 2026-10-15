@@ -3432,6 +3432,234 @@
     },
     {
       "group": "formula_documents",
+      "key": "liquid.additions",
+      "text": {
+        "de": "Zugaben (Gewicht · % der Endcharge)",
+        "es": "Adiciones (peso · % del lote final)",
+        "fr": "Ajouts (poids · % du lot final)",
+        "it": "Aggiunte (peso · % del lotto finale)",
+        "nl": "Toevoegingen (gewicht · % van de eindbatch)",
+        "pt_BR": "Adições (peso · % do lote final)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.columns.add",
+      "text": {
+        "de": "Zugabe (:unit)",
+        "es": "Añadir (:unit)",
+        "fr": "Ajouter (:unit)",
+        "it": "Aggiungere (:unit)",
+        "nl": "Toevoegen (:unit)",
+        "pt_BR": "Adicionar (:unit)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.columns.anhydrous",
+      "text": {
+        "de": "Wasserfreie Seife",
+        "es": "Jabón anhidro",
+        "fr": "Savon anhydre",
+        "it": "Sapone anidro",
+        "nl": "Watervrije zeep",
+        "pt_BR": "Sabão anidro"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.columns.step",
+      "text": {
+        "de": "Schritt",
+        "es": "Paso",
+        "fr": "Étape",
+        "it": "Passaggio",
+        "nl": "Stap",
+        "pt_BR": "Etapa"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.columns.total",
+      "text": {
+        "de": "Gesamt (:unit)",
+        "es": "Total (:unit)",
+        "fr": "Total (:unit)",
+        "it": "Totale (:unit)",
+        "nl": "Totaal (:unit)",
+        "pt_BR": "Total (:unit)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.final_dilution",
+      "text": {
+        "de": "Die Zugaben, dann Wasser bis :target % wasserfreie Seife zugeben.",
+        "es": "Añadir las adiciones y luego agua hasta :target % de jabón anhidro.",
+        "fr": "Ajouter les ajouts, puis l’eau jusqu’à :target % de savon anhydre.",
+        "it": "Aggiungere le aggiunte, poi acqua fino al :target% di sapone anidro.",
+        "nl": "Voeg de toevoegingen toe en daarna water tot :target% watervrije zeep.",
+        "pt_BR": "Adicionar as adições e depois água até :target% de sabão anidro."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.first_dilution",
+      "text": {
+        "de": "Wasser zugeben, bis die Paste :target % wasserfreie Seife enthält.",
+        "es": "Añadir agua hasta llevar la pasta a :target % de jabón anhidro.",
+        "fr": "Ajouter l’eau pour amener la pâte à :target % de savon anhydre.",
+        "it": "Aggiungere acqua fino a portare la pasta al :target% di sapone anidro.",
+        "nl": "Voeg water toe tot de pasta :target% watervrije zeep bevat.",
+        "pt_BR": "Adicionar água até a pasta ter :target% de sabão anidro."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.neutralization_missing",
+      "text": {
+        "de": "Freies KOH bleibt und kein Neutralisationsmittel ist festgelegt: vor dem Verdünnen testen und anpassen.",
+        "es": "Queda KOH libre y no hay neutralizante: prueba y ajusta antes de diluir.",
+        "fr": "De la potasse libre reste et aucun neutralisant n’est prévu : tester et ajuster avant de diluer.",
+        "it": "Resta KOH libero e non è previsto alcun neutralizzante: verifica e regola prima di diluire.",
+        "nl": "Er blijft vrije KOH over en er is geen neutralisatiemiddel: test en stel bij voor het verdunnen.",
+        "pt_BR": "Resta KOH livre e não há neutralizante: teste e ajuste antes de diluir."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.neutralization_neat",
+      "text": {
+        "de": ":acid in die Paste einschmelzen. Theoretische Menge: einen Teil zugeben, mischen, testen, dann anpassen.",
+        "es": "Fundir :acid en la pasta. Cantidad teórica: añade una parte, mezcla, prueba y ajusta.",
+        "fr": "Faire fondre :acid dans la pâte. Quantité théorique : en ajouter une partie, mélanger, tester, puis ajuster.",
+        "it": "Fondere :acid nella pasta. Quantità teorica: aggiungine una parte, mescola, verifica, poi regola.",
+        "nl": "Smelt :acid in de pasta. Theoretische hoeveelheid: voeg een deel toe, meng, test en stel bij.",
+        "pt_BR": "Derreter :acid na pasta. Quantidade teórica: adicione uma parte, misture, teste e ajuste."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.neutralization_solution",
+      "text": {
+        "de": ":acid als :strength-%-ige Lösung zugeben. Theoretische Menge: einen Teil zugeben, mischen, testen, dann anpassen.",
+        "es": "Añadir :acid en solución al :strength %. Cantidad teórica: añade una parte, mezcla, prueba y ajusta.",
+        "fr": "Ajouter :acid en solution à :strength %. Quantité théorique : en ajouter une partie, mélanger, tester, puis ajuster.",
+        "it": "Aggiungere :acid in soluzione al :strength%. Quantità teorica: aggiungine una parte, mescola, verifica, poi regola.",
+        "nl": "Voeg :acid toe als :strength%-oplossing. Theoretische hoeveelheid: voeg een deel toe, meng, test en stel bij.",
+        "pt_BR": "Adicionar :acid em solução a :strength%. Quantidade teórica: adicione uma parte, misture, teste e ajuste."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.no_free_koh",
+      "text": {
+        "de": "Kein freies KOH zu neutralisieren.",
+        "es": "No hay KOH libre que neutralizar.",
+        "fr": "Aucune potasse libre à neutraliser.",
+        "it": "Nessun KOH libero da neutralizzare.",
+        "nl": "Geen vrije KOH om te neutraliseren.",
+        "pt_BR": "Não há KOH livre para neutralizar."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.paste",
+      "text": {
+        "de": "Die Öle mit der Laugenlösung zu einer Paste kochen.",
+        "es": "Cocer los aceites con la solución alcalina hasta formar una pasta.",
+        "fr": "Cuire les huiles avec la solution alcaline jusqu’à obtenir une pâte.",
+        "it": "Cuocere gli oli con la soluzione alcalina fino a ottenere una pasta.",
+        "nl": "Kook de oliën met de loogoplossing tot een pasta.",
+        "pt_BR": "Cozinhar os óleos com a solução alcalina até formar uma pasta."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.neutralizer_amounts",
+      "text": {
+        "de": "Säure: :acid :unit (theoretisch :recommended :unit)",
+        "es": "Ácido: :acid :unit (teórico :recommended :unit)",
+        "fr": "Acide : :acid :unit (théorique :recommended :unit)",
+        "it": "Acido: :acid :unit (teorico :recommended :unit)",
+        "nl": "Zuur: :acid :unit (theoretisch :recommended :unit)",
+        "pt_BR": "Ácido: :acid :unit (teórico :recommended :unit)"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.steps.final_dilution",
+      "text": {
+        "de": "Endverdünnung",
+        "es": "Dilución final",
+        "fr": "Dilution finale",
+        "it": "Diluizione finale",
+        "nl": "Eindverdunning",
+        "pt_BR": "Diluição final"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.steps.first_dilution",
+      "text": {
+        "de": "Erste Verdünnung",
+        "es": "Primera dilución",
+        "fr": "Première dilution",
+        "it": "Prima diluizione",
+        "nl": "Eerste verdunning",
+        "pt_BR": "Primeira diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.steps.neutralization",
+      "text": {
+        "de": "Neutralisation",
+        "es": "Neutralización",
+        "fr": "Neutralisation",
+        "it": "Neutralizzazione",
+        "nl": "Neutralisatie",
+        "pt_BR": "Neutralização"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.steps.paste",
+      "text": {
+        "de": "Paste",
+        "es": "Pasta",
+        "fr": "Pâte",
+        "it": "Pasta",
+        "nl": "Pasta",
+        "pt_BR": "Pasta"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.title",
+      "text": {
+        "de": "Flüssigseifen-Prozess",
+        "es": "Proceso de jabón líquido",
+        "fr": "Procédé du savon liquide",
+        "it": "Processo del sapone liquido",
+        "nl": "Proces vloeibare zeep",
+        "pt_BR": "Processo do sabonete líquido"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.weighed_paste",
+      "text": {
+        "de": "Gewogene Paste (theoretisch :theoretical :unit)",
+        "es": "Pasta pesada (teórico :theoretical :unit)",
+        "fr": "Pâte pesée (théorique :theoretical :unit)",
+        "it": "Pasta pesata (teorica :theoretical :unit)",
+        "nl": "Gewogen pasta (theoretisch :theoretical :unit)",
+        "pt_BR": "Pasta pesada (teórico :theoretical :unit)"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "output.access_required",
       "text": {
         "de": "Melde dich an, um diese Rezeptur zu drucken oder zu exportieren.",
@@ -3852,6 +4080,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "results.anhydrous_soap",
+      "text": {
+        "de": "Wasserfreie Seife",
+        "es": "Jabón anhidro",
+        "fr": "Savon anhydre",
+        "it": "Sapone anidro",
+        "nl": "Watervrije zeep",
+        "pt_BR": "Sabão anidro"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "results.batch_quantity",
       "text": {
         "de": "Gesamtmenge der Charge",
@@ -3872,6 +4112,18 @@
         "it": "Peso stimato dopo la stagionatura",
         "nl": "Geschat gewicht na rijping",
         "pt_BR": "Peso estimado após a cura"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "results.final_batch",
+      "text": {
+        "de": "Endcharge",
+        "es": "Lote final",
+        "fr": "Lot final",
+        "it": "Lotto finale",
+        "nl": "Eindbatch",
+        "pt_BR": "Lote final"
       }
     },
     {

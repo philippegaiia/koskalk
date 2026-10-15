@@ -118,6 +118,8 @@ return [
     ],
     'results' => [
         'additions' => 'Formula additions',
+        'anhydrous_soap' => 'Anhydrous soap',
+        'final_batch' => 'Final batch',
         'batch_quantity' => 'Total batch quantity',
         'cured_weight' => 'Estimated weight after cure',
         'formula_total' => 'Formula total',
@@ -332,5 +334,32 @@ return [
         'soap_output' => 'Soap output',
         'calculated_output' => 'Calculated output',
         'role' => 'Role',
+    ],
+    'liquid' => [
+        'title' => 'Liquid soap process',
+        'columns' => [
+            'step' => 'Step',
+            'add' => 'Add (:unit)',
+            'total' => 'Total (:unit)',
+            'anhydrous' => 'Anhydrous soap',
+        ],
+        'steps' => [
+            'paste' => 'Paste',
+            'first_dilution' => 'First dilution',
+            'neutralization' => 'Neutralization',
+            'final_dilution' => 'Final dilution',
+        ],
+        'instructions' => [
+            'paste' => 'Cook the oils with the alkali solution into a paste.',
+            'first_dilution' => 'Add water to bring the paste to :target% anhydrous soap.',
+            'neutralization_solution' => 'Add :acid as a :strength% solution. Theoretical amount: add part of it, mix, test, then adjust.',
+            'neutralization_neat' => 'Melt :acid into the paste. Theoretical amount: add part of it, mix, test, then adjust.',
+            'neutralization_missing' => 'Free KOH remains and no neutralizer is set: test and adjust before diluting.',
+            'no_free_koh' => 'No free KOH to neutralize.',
+            'final_dilution' => 'Add the additions, then water up to :target% anhydrous soap.',
+        ],
+        'neutralizer_amounts' => 'Acid: :acid :unit (theoretical :recommended :unit)',
+        'weighed_paste' => 'Weighed paste (theoretical :theoretical :unit)',
+        'additions' => 'Additions (weight · % of final batch)',
     ],
 ];

@@ -40,3 +40,9 @@ Save/publish of an existing formula applies the returned snapshot and revisions 
 
 ## Release formula reservations only on confirmed departure
 Release through the authenticated token-checked HTTP endpoint using fetch keepalive on livewire:navigating, pagehide and component teardown; do not rely on a destroyed Livewire component. Never release on cancellable livewire:navigate, beforeunload, blur or visibility changes. Stop queued renewals/writes after departure and release late acquired responses too. Browser-cache restoration checks revisions before resuming the former holder; waiting observers still choose Resume editing. Retain 15-second polling and the 90-second expiry fallback.
+
+## Grow sections opportunistically; each section writes only its own state
+Do not undertake a standalone refactor of the merged Alpine object. Move catalog, drag-and-drop or persistence code out of component.js into its own section file only when a feature already needs to change that code. A section may read other sections' state but writes only its own keys; cross-section changes go through a method owned by the section that holds the state.
+
+## Keep the calculation preview a debounced server round trip
+After formula edits, the browser computes row weights and percentages locally; lye amounts, qualities, labeling and restrictions come from a debounced previewCalculation request (at most one in flight), with browser lye math only as the interim value. Do not move those server results into the browser speculatively. If slow connections become a reported problem, render the browser-side quality numbers first and confirm them with the server response.

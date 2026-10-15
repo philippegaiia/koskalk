@@ -22,3 +22,6 @@ A shell with LANG=C (or no locale) leaves PHP's intl default locale empty, so Sy
 
 ## Create the EU regime for EU behaviour
 EU label behaviour requires an active `eu` regulatory_regimes row with the allergen rules the test relies on; a regime with no allergen rules declares nothing. Without the row, `eu` reports `unavailable`. Create it with RegulatoryRegime/RegulatoryRegimeAllergen factories in the test.
+
+## Replace workbench source-text assertions when touching a feature
+Workbench tests that read JS or Blade source and assert exact strings break on renames and prove no behaviour. Do not add new ones. When a change touches a workbench feature, replace that feature's source-text assertions with behavioural tests (run the module under node, or call the Livewire/service layer) in the same change. No dedicated cleanup pass; TypeScript conversion of the pure calculation modules waits until they are covered this way.

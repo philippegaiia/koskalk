@@ -87,8 +87,13 @@ class ProductionRequirementBuilder
                 $this->assertMaterialWorkspace($ingredient, (int) $version->workspace_id, 'ingredient');
 
                 $percentage = $this->decimal((string) $item->percentage);
-                $requiredMass = $phase->slug === 'lye_water'
-                    ? $this->scaledLyeLiquidMass($version, (string) $item->weight, $basisQuantityGrams)
+                // Lye liquids and a liquid soap neutralizer scale from their
+                // saved weight: a neutralizer dose sits at most at the free KOH,
+                // which its independently rounded percentage could overshoot.
+                $scalesFromSavedWeight = $phase->slug === 'lye_water'
+                    || ($phase->slug === 'neutralization' && $item->weight !== null && bccomp($this->decimal((string) $item->weight), '0', self::GuardScale) > 0);
+                $requiredMass = $scalesFromSavedWeight
+                    ? $this->roundStorage($this->scaledSavedMass($version, (string) $item->weight, $basisQuantityGrams))
                     : $this->roundStorage(
                         bcdiv(
                             bcmul($basisQuantityGrams, $percentage, self::GuardScale),
@@ -112,7 +117,7 @@ class ProductionRequirementBuilder
                     'subject_name_snapshot' => $ingredient->display_name,
                     'phase_key_snapshot' => $phase->slug,
                     'phase_name_snapshot' => $phase->name,
-                    'percentage_snapshot' => $phase->slug === 'lye_water'
+                    'percentage_snapshot' => $scalesFromSavedWeight
                         ? $this->roundStorage(bcdiv(bcmul($requiredMass, '100', self::GuardScale), $basisQuantityGrams, self::GuardScale))
                         : $this->roundStorage($percentage),
                     'components_per_unit_snapshot' => null,
@@ -166,7 +171,10 @@ class ProductionRequirementBuilder
         return $requirements;
     }
 
-    private function scaledLyeLiquidMass(RecipeVersion $version, string $savedWeight, string $basisQuantityGrams): string
+    /**
+     * The basis mass the formula's row weights were saved for, in grams.
+     */
+    public function savedBasisGrams(RecipeVersion $version): string
     {
         $referenceBasisGrams = (string) ($version->batch_mass_grams
             ?? $this->massConverter->toGrams((string) $version->batch_size, $version->batch_unit ?: 'g'));
@@ -177,14 +185,22 @@ class ProductionRequirementBuilder
             ]);
         }
 
+        return $referenceBasisGrams;
+    }
+
+    /**
+     * A saved row weight scaled from the formula's saved basis to the
+     * production basis, unrounded, in grams.
+     */
+    private function scaledSavedMass(RecipeVersion $version, string $savedWeight, string $basisQuantityGrams): string
+    {
+        $referenceBasisGrams = $this->savedBasisGrams($version);
         $savedWeightGrams = (string) $this->massConverter->toGrams($savedWeight, $version->batch_unit ?: 'g');
 
-        return $this->roundStorage(
-            bcdiv(
-                bcmul($savedWeightGrams, $basisQuantityGrams, self::GuardScale),
-                $referenceBasisGrams,
-                self::GuardScale,
-            ),
+        return bcdiv(
+            bcmul($savedWeightGrams, $basisQuantityGrams, self::GuardScale),
+            $referenceBasisGrams,
+            self::GuardScale,
         );
     }
 

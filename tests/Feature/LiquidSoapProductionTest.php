@@ -29,7 +29,7 @@ uses(RefreshDatabase::class);
  *
  * @return array{owner: User, workspace: Workspace, production: ProductionRun}
  */
-function liquidSoapProduction(): array
+function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062): array
 {
     Ingredient::factory()->create(['catalog_key' => 'CH3', 'category' => IngredientCategory::SoapmakingAlkalis, 'subcategory' => IngredientSubcategory::PotassiumHydroxide, 'display_name' => 'Potassium hydroxide', 'is_active' => true]);
     $owner = User::factory()->create();
@@ -38,7 +38,7 @@ function liquidSoapProduction(): array
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
     $oil = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'display_name' => 'Olive Oil', 'is_soap_saponification_trusted' => true, 'is_active' => true]);
-    IngredientSapProfile::factory()->create(['ingredient_id' => $oil->id, 'koh_sap_value' => 0.19]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $oil->id, 'koh_sap_value' => $kohSapValue]);
     $citricAcid = Ingredient::factory()->create(['category' => IngredientCategory::PhAdjustersBuffers, 'display_name' => 'Citric Acid', 'owner_type' => null, 'owner_id' => null, 'is_active' => true, 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous]);
     $lavender = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'display_name' => 'Lavender Oil', 'is_active' => true]);
     $version = app(RecipeWorkbenchService::class)->publish($owner, $family, [
@@ -59,7 +59,7 @@ function liquidSoapProduction(): array
         'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
         'phase_items' => [
             'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
-            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65062, 'weight' => 6.5062, 'note' => null]],
+            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => $citricAcidWeight / 10, 'weight' => $citricAcidWeight, 'note' => null]],
             'additives' => [],
             'fragrance' => [['ingredient_id' => $lavender->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
         ],
@@ -85,11 +85,11 @@ it('plans the neutralizer, every dilution water and the process steps of a liqui
     $requirements = $production->requirements->mapWithKeys(fn ($requirement): array => [$requirement->phase_key_snapshot.':'.$requirement->subject_name_snapshot => (float) $requirement->required_mass_grams]);
     $context = $production->formula_context_snapshot;
 
-    expect($requirements->only(['neutralization:Citric Acid', 'fragrance:Lavender Oil'])->all())->toEqualWithDelta(['neutralization:Citric Acid' => 13.0124, 'fragrance:Lavender Oil' => 190.4], 0.001)
+    expect($requirements->only(['neutralization:Citric Acid', 'fragrance:Lavender Oil'])->all())->toEqualWithDelta(['neutralization:Citric Acid' => 13.0124, 'fragrance:Lavender Oil' => 190.4], 0.00001)
         ->and($requirements->keys()->all())->toContain('lye_water:Potassium hydroxide (KOH 90%)')
         ->and($water->keys()->all())->toBe(['lye_water', 'first_dilution', 'neutralization', 'final_dilution'])
         ->and($water['first_dilution'])->toEqualWithDelta(3358.654, 0.001)
-        ->and($water['neutralization'])->toEqualWithDelta(52.048, 0.001)
+        ->and($water['neutralization'])->toEqualWithDelta(52.0496, 0.0001)
         ->and($context['soap_process'])->toBe('liquid_paste')
         ->and((float) $context['liquid_process']['final_percentage'])->toEqualWithDelta(476.0, 0.0001)
         ->and($context['liquid_process']['neutralizer']['name'])->toBe('Citric Acid')
@@ -98,6 +98,18 @@ it('plans the neutralizer, every dilution water and the process steps of a liqui
         ->and($lines->sum(fn ($line): float => (float) $line->planned_mass_grams))->toEqualWithDelta(9520.0, 0.01)
         ->and(app(ProductionOutputReconciliation::class)->forProduction($production->forceFill(['actual_output_mass_grams' => '9500'])))
         ->toMatchArray(['unit' => 'g', 'planned' => '9520']);
+});
+
+it('plans a neutralizer saved at its theoretical amount from its saved weight', function (): void {
+    // 6.8486 g is stored as 0.6849% of the oils: scaling that rounded share to
+    // 2000 g would give 13.698 g, more than the 13.6972 g the free KOH takes.
+    $production = liquidSoapProduction(kohSapValue: 0.20, citricAcidWeight: 6.8486)['production'];
+    $acid = $production->requirements->firstWhere('phase_key_snapshot', 'neutralization');
+    $acidLine = $production->formulaLines->firstWhere('phase_key_snapshot', 'neutralization');
+
+    expect($acid->required_mass_grams)->toBe('13.697200000')
+        ->and($acidLine->planned_mass_grams)->toBe('13.697200000')
+        ->and($production->formula_context_snapshot['liquid_process']['neutralizer']['percentage'])->toBe('0.684860000');
 });
 
 it('lists a liquid soap production in process order on the production page', function (): void {

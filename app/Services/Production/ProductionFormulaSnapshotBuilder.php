@@ -25,6 +25,7 @@ class ProductionFormulaSnapshotBuilder
         private readonly RecipeWorkbenchService $workbenchService,
         private readonly MassConverter $massConverter,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
+        private readonly ProductionRequirementBuilder $requirementBuilder,
     ) {}
 
     /**
@@ -69,12 +70,22 @@ class ProductionFormulaSnapshotBuilder
                 ->all();
         }
 
-        // The liquid soap process reads the neutralizer and additions weights,
-        // so they must rescale from percentages like the oils do.
+        // The liquid soap process reads the neutralizer and additions weights.
+        // Additions rescale from percentages like the oils and their material
+        // requirements; the neutralizer scales from its saved weight like its
+        // requirement, because its rounded percentage can exceed the free KOH.
         $isLiquidSoap = $recipe->productFamily?->usesLiquidSoapPasteBench() ?? false;
 
         if ($isLiquidSoap) {
-            foreach (['neutralization', 'additives', 'fragrance'] as $phaseKey) {
+            if (isset($draft['phaseItems']['neutralization'])) {
+                $savedBasisGrams = $this->requirementBuilder->savedBasisGrams($version);
+                $draft['phaseItems']['neutralization'] = collect($draft['phaseItems']['neutralization'])
+                    ->map(fn (array $row): array => [...$row, 'weight' => $this->scaledRowWeight($row['weight'] ?? 0, $basisQuantityGrams, $savedBasisGrams)])
+                    ->values()
+                    ->all();
+            }
+
+            foreach (['additives', 'fragrance'] as $phaseKey) {
                 if (isset($draft['phaseItems'][$phaseKey])) {
                     $draft['phaseItems'][$phaseKey] = collect($draft['phaseItems'][$phaseKey])
                         ->map(fn (array $row): array => [...$row, 'weight' => 0])
@@ -234,6 +245,16 @@ class ProductionFormulaSnapshotBuilder
         }
 
         return $lines;
+    }
+
+    /**
+     * A saved row weight, in the draft's unit, scaled to the production basis.
+     */
+    private function scaledRowWeight(mixed $weight, string $basisQuantityGrams, string $savedBasisGrams): string
+    {
+        $weight = NumberLocale::normalizeDecimalString(is_float($weight) ? sprintf('%.12F', $weight) : (string) $weight) ?? '0';
+
+        return bcdiv(bcmul($weight, $basisQuantityGrams, self::GuardScale), $savedBasisGrams, self::GuardScale);
     }
 
     /**

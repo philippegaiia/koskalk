@@ -393,7 +393,10 @@ class LiquidSoapProcessCalculator
         ];
     }
 
-    private function recommendedWeight(string $freeKohWeight, LiquidSoapNeutralizer $neutralizer, float|int|string|null $kohSapValue = null): string
+    /**
+     * Acid that exactly neutralizes the given free KOH, unrounded.
+     */
+    public function recommendedWeight(string $freeKohWeight, LiquidSoapNeutralizer $neutralizer, float|int|string|null $kohSapValue = null): string
     {
         return bcdiv($freeKohWeight, $this->kohCapacity($neutralizer, $kohSapValue), self::SCALE);
     }

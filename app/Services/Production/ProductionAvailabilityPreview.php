@@ -88,7 +88,8 @@ class ProductionAvailabilityPreview
                 basisQuantityGrams: $basisQuantityGrams,
                 requirements: $requirements,
             );
-            $requirements = $requirements->concat(
+            // A liquid soap's neutralizer dose may be settled by the calculation.
+            $requirements = $formulaSnapshot['requirements']->concat(
                 $this->calculatedRequirementBuilder->build(
                     formulaLines: $formulaSnapshot['lines'],
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,

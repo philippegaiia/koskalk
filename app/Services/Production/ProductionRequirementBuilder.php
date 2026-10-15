@@ -6,6 +6,7 @@ use App\Enums\ProductionBasisKind;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Services\MassConverter;
 use Illuminate\Support\Collection;
@@ -87,20 +88,12 @@ class ProductionRequirementBuilder
                 $this->assertMaterialWorkspace($ingredient, (int) $version->workspace_id, 'ingredient');
 
                 $percentage = $this->decimal((string) $item->percentage);
-                // Lye liquids and a liquid soap neutralizer scale from their
-                // saved weight: a neutralizer dose sits at most at the free KOH,
-                // which its independently rounded percentage could overshoot.
-                $scalesFromSavedWeight = $phase->slug === 'lye_water'
-                    || ($phase->slug === 'neutralization' && $item->weight !== null && bccomp($this->decimal((string) $item->weight), '0', self::GuardScale) > 0);
-                $requiredMass = $scalesFromSavedWeight
-                    ? $this->roundStorage($this->scaledSavedMass($version, (string) $item->weight, $basisQuantityGrams))
-                    : $this->roundStorage(
-                        bcdiv(
-                            bcmul($basisQuantityGrams, $percentage, self::GuardScale),
-                            '100',
-                            self::GuardScale,
-                        ),
-                    );
+                $scalesFromSavedWeight = in_array($phase->slug, ['lye_water', 'neutralization'], true);
+                $requiredMass = $this->roundStorage(match ($phase->slug) {
+                    'lye_water' => $this->scaledSavedMass($version, (string) $item->weight, $basisQuantityGrams),
+                    'neutralization' => $this->neutralizerDose($version, $item, $basisQuantityGrams)['mass_grams'],
+                    default => bcdiv(bcmul($basisQuantityGrams, $percentage, self::GuardScale), '100', self::GuardScale),
+                });
 
                 if (bccomp($requiredMass, '0', self::StorageScale) <= 0) {
                     continue;
@@ -169,6 +162,35 @@ class ProductionRequirementBuilder
         }
 
         return $requirements;
+    }
+
+    /**
+     * A liquid soap neutralizer's dose at the production basis, from whichever
+     * saved quantity is more precise: its weight (four decimals in the batch
+     * unit) or its percentage of the oils (four decimals). The tolerance is
+     * how far above the theoretical amount a dose accepted at save can land:
+     * that quantity's storage rounding plus the calculator's own rounding,
+     * both scaled to the production basis.
+     *
+     * @return array{mass_grams: string, tolerance_grams: string}
+     */
+    public function neutralizerDose(RecipeVersion $version, RecipeItem $item, string $basisQuantityGrams): array
+    {
+        $savedBasisGrams = $this->savedBasisGrams($version);
+        $unit = $version->batch_unit ?: 'g';
+        $lastDecimalGrams = (string) $this->massConverter->toGrams('0.00005', $unit);
+        $scale = fn (string $grams): string => bcdiv(bcmul($grams, $basisQuantityGrams, self::GuardScale), $savedBasisGrams, self::GuardScale);
+        $weightRounding = $scale($lastDecimalGrams);
+        $percentageRounding = bcdiv(bcmul('0.00005', $basisQuantityGrams, self::GuardScale), '100', self::GuardScale);
+        $weight = $item->weight === null ? '0' : $this->decimal((string) $item->weight);
+        $useWeight = bccomp($weight, '0', self::GuardScale) > 0 && bccomp($weightRounding, $percentageRounding, self::GuardScale) < 0;
+
+        return [
+            'mass_grams' => $useWeight
+                ? $this->scaledSavedMass($version, $weight, $basisQuantityGrams)
+                : bcdiv(bcmul($basisQuantityGrams, $this->decimal((string) $item->percentage), self::GuardScale), '100', self::GuardScale),
+            'tolerance_grams' => bcadd($useWeight ? $weightRounding : $percentageRounding, $scale($lastDecimalGrams), self::GuardScale),
+        ];
     }
 
     /**

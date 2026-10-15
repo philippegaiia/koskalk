@@ -5,8 +5,11 @@ namespace App\Services\Production;
 use App\Enums\ProductionFormulaComponent;
 use App\Models\Ingredient;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Services\CanonicalSoapAlkaliResolver;
+use App\Services\LiquidSoapFormulaProcessor;
+use App\Services\LiquidSoapProcessCalculator;
 use App\Services\MassConverter;
 use App\Services\RecipeWorkbenchService;
 use App\Support\NumberLocale;
@@ -26,6 +29,8 @@ class ProductionFormulaSnapshotBuilder
         private readonly MassConverter $massConverter,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
+        private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator,
     ) {}
 
     /**
@@ -39,7 +44,7 @@ class ProductionFormulaSnapshotBuilder
      * neutralizer solution, and their process steps as shares of the basis.
      *
      * @param  Collection<int, array<string, mixed>>  $requirements
-     * @return array{context: array<string, mixed>, lines: Collection<int, array<string, mixed>>}
+     * @return array{context: array<string, mixed>, lines: Collection<int, array<string, mixed>>, requirements: Collection<int, array<string, mixed>>}
      */
     public function build(
         Recipe $recipe,
@@ -72,18 +77,17 @@ class ProductionFormulaSnapshotBuilder
 
         // The liquid soap process reads the neutralizer and additions weights.
         // Additions rescale from percentages like the oils and their material
-        // requirements; the neutralizer scales from its saved weight like its
-        // requirement, because its rounded percentage can exceed the free KOH.
+        // requirements; the neutralizer takes its requirement's dose.
         $isLiquidSoap = $recipe->productFamily?->usesLiquidSoapPasteBench() ?? false;
+        $unit = $draft['oilUnit'] ?? 'g';
+        $neutralizerRequirement = null;
 
         if ($isLiquidSoap) {
-            if (isset($draft['phaseItems']['neutralization'])) {
-                $savedBasisGrams = $this->requirementBuilder->savedBasisGrams($version);
-                $draft['phaseItems']['neutralization'] = collect($draft['phaseItems']['neutralization'])
-                    ->map(fn (array $row): array => [...$row, 'weight' => $this->scaledRowWeight($row['weight'] ?? 0, $basisQuantityGrams, $savedBasisGrams)])
-                    ->values()
-                    ->all();
-            }
+            $neutralizerRequirement = $requirements->first(fn (array $requirement): bool => ($requirement['kind'] ?? null) === 'ingredient'
+                && ($requirement['phase_key_snapshot'] ?? null) === 'neutralization');
+            $draft = $this->withNeutralizerWeight($draft, $neutralizerRequirement === null
+                ? '0'
+                : $this->massConverter->fromGrams((string) $neutralizerRequirement['required_mass_grams'], $unit));
 
             foreach (['additives', 'fragrance'] as $phaseKey) {
                 if (isset($draft['phaseItems'][$phaseKey])) {
@@ -97,6 +101,25 @@ class ProductionFormulaSnapshotBuilder
 
         $recomputed = $this->workbenchService->snapshotFromPersistedWorkbenchDraft($draft);
         $calculation = $recomputed['calculation'] ?? null;
+
+        // A dose saved at the theoretical amount can land just above the free
+        // KOH once its storage rounding is scaled up. Within that rounding the
+        // batch takes the theoretical amount, for the calculation and the
+        // material requirement alike; a larger excess is still refused.
+        if ($isLiquidSoap && $neutralizerRequirement !== null && data_get($calculation, 'liquid_process.status') === 'acid_exceeds_free_koh') {
+            $theoreticalWeight = $this->theoreticalNeutralizerWeight($version, $neutralizerRequirement, $draft, $calculation['liquid_process'], $unit, $basisQuantityGrams);
+
+            if ($theoreticalWeight !== null) {
+                $draft = $this->withNeutralizerWeight($draft, $theoreticalWeight);
+                $recomputed = $this->workbenchService->snapshotFromPersistedWorkbenchDraft($draft);
+                $calculation = $recomputed['calculation'] ?? null;
+                $mass = $this->roundStorage($this->massConverter->toGrams($theoreticalWeight, $unit));
+                $requirements = $requirements->map(fn (array $requirement): array => $requirement === $neutralizerRequirement
+                    ? [...$requirement, 'required_mass_grams' => $mass, 'percentage_snapshot' => $this->percentageOf($mass, $basisQuantityGrams)]
+                    : $requirement);
+            }
+        }
+
         $isSoap = ($draft['manufacturingMode'] ?? null) === 'saponify_in_formula'
             || ($draft['phaseItems']['saponified_oils'] ?? []) !== [];
 
@@ -133,7 +156,6 @@ class ProductionFormulaSnapshotBuilder
 
         if ($isLiquidSoap) {
             $liquidProcess = $this->liquidProcess($calculation);
-            $unit = $draft['oilUnit'] ?? 'g';
             $lines = $lines->merge($this->liquidWaterLines($liquidProcess, $unit, $basisQuantityGrams, ((int) $lines->max('sort_order')) + 1));
             $liquidContext = [
                 'soap_process' => 'liquid_paste',
@@ -144,6 +166,7 @@ class ProductionFormulaSnapshotBuilder
         return [
             'context' => [...$this->context($recipe, $isSoap, $draft), ...$liquidContext, ...$this->procedureSnapshot($version->manufacturing_instructions)],
             'lines' => $lines,
+            'requirements' => $requirements,
         ];
     }
 
@@ -248,13 +271,55 @@ class ProductionFormulaSnapshotBuilder
     }
 
     /**
-     * A saved row weight, in the draft's unit, scaled to the production basis.
+     * The draft with its neutralizer row weighing the given amount.
+     *
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
      */
-    private function scaledRowWeight(mixed $weight, string $basisQuantityGrams, string $savedBasisGrams): string
+    private function withNeutralizerWeight(array $draft, string $weight): array
     {
-        $weight = NumberLocale::normalizeDecimalString(is_float($weight) ? sprintf('%.12F', $weight) : (string) $weight) ?? '0';
+        if (isset($draft['phaseItems']['neutralization'])) {
+            $draft['phaseItems']['neutralization'] = collect($draft['phaseItems']['neutralization'])
+                ->map(fn (array $row): array => [...$row, 'weight' => $weight])
+                ->values()
+                ->all();
+        }
 
-        return bcdiv(bcmul($weight, $basisQuantityGrams, self::GuardScale), $savedBasisGrams, self::GuardScale);
+        return $draft;
+    }
+
+    /**
+     * The theoretical neutralizer amount, in the draft's unit, when the
+     * planned dose exceeds it by no more than the saved dose's rounding;
+     * null when the excess is larger.
+     *
+     * @param  array<string, mixed>  $neutralizerRequirement
+     * @param  array<string, mixed>  $draft
+     * @param  array<string, mixed>  $process
+     */
+    private function theoreticalNeutralizerWeight(RecipeVersion $version, array $neutralizerRequirement, array $draft, array $process, string $unit, string $basisQuantityGrams): ?string
+    {
+        $item = RecipeItem::withoutGlobalScopes()->find($neutralizerRequirement['recipe_item_id'] ?? null);
+        $row = collect($draft['phaseItems']['neutralization'] ?? [])->first(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null));
+        $neutralizer = is_array($row) ? $this->liquidSoapFormulaProcessor->neutralizer($row, []) : null;
+
+        if (! $item instanceof RecipeItem || $neutralizer === null) {
+            return null;
+        }
+
+        $tolerance = $this->requirementBuilder->neutralizerDose($version, $item, $basisQuantityGrams)['tolerance_grams'];
+        $excess = $this->massConverter->toGrams((string) data_get($process, 'neutralizer.excess_acid_weight', '0'), $unit);
+
+        // The reported excess is rounded to four decimals in the draft's unit.
+        if (bccomp($excess, bcadd($tolerance, $this->massConverter->toGrams('0.00005', $unit), self::GuardScale), self::GuardScale) > 0) {
+            return null;
+        }
+
+        return $this->liquidSoapProcessCalculator->recommendedWeight(
+            (string) data_get($process, 'paste_composition.free_koh_weight', '0'),
+            $neutralizer['type'],
+            $neutralizer['koh_sap_value'],
+        );
     }
 
     /**

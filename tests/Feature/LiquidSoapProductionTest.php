@@ -11,6 +11,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductType;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
@@ -20,6 +21,7 @@ use App\Services\Production\ProductionRunPrintDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -29,8 +31,9 @@ uses(RefreshDatabase::class);
  *
  * @return array{owner: User, workspace: Workspace, production: ProductionRun}
  */
-function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062): array
+function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062, string $unit = 'g', string $basis = '2000', ?float $oilWeight = null): array
 {
+    $oilWeight ??= $unit === 'kg' ? 1 : 1000;
     Ingredient::factory()->create(['catalog_key' => 'CH3', 'category' => IngredientCategory::SoapmakingAlkalis, 'subcategory' => IngredientSubcategory::PotassiumHydroxide, 'display_name' => 'Potassium hydroxide', 'is_active' => true]);
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -44,8 +47,8 @@ function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight
     $version = app(RecipeWorkbenchService::class)->publish($owner, $family, [
         'name' => 'Liquid castile',
         'product_type_id' => $productType->id,
-        'oil_unit' => 'g',
-        'oil_weight' => 1000,
+        'oil_unit' => $unit,
+        'oil_weight' => $oilWeight,
         'manufacturing_mode' => 'saponify_in_formula',
         'exposure_mode' => 'rinse_off',
         'regulatory_regime' => 'none',
@@ -58,8 +61,8 @@ function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight
         'superfat' => -3,
         'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
         'phase_items' => [
-            'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
-            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => $citricAcidWeight / 10, 'weight' => $citricAcidWeight, 'note' => null]],
+            'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => $oilWeight, 'note' => null]],
+            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => $citricAcidWeight * 100 / $oilWeight, 'weight' => $citricAcidWeight, 'note' => null]],
             'additives' => [],
             'fragrance' => [['ingredient_id' => $lavender->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
         ],
@@ -69,8 +72,8 @@ function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight
         actor: $owner,
         workspace: $workspace,
         recipe: Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id),
-        basisInputValue: '2000',
-        basisInputUnit: 'g',
+        basisInputValue: $basis,
+        basisInputUnit: $unit,
         expectedUnits: 19,
         idempotencyKey: 'liquid-castile',
     );
@@ -110,6 +113,41 @@ it('plans a neutralizer saved at its theoretical amount from its saved weight', 
     expect($acid->required_mass_grams)->toBe('13.697200000')
         ->and($acidLine->planned_mass_grams)->toBe('13.697200000')
         ->and($production->formula_context_snapshot['liquid_process']['neutralizer']['percentage'])->toBe('0.684860000');
+});
+
+it('plans a neutralizer from its most precise saved quantity', function (): void {
+    // 0.00719103 kg is stored as 0.0072 kg but 0.7191% of the oils: at 10 kg
+    // the weight would give 72 g, more than the 71.9103 g the free KOH takes.
+    $production = liquidSoapProduction(kohSapValue: 0.21, citricAcidWeight: 0.00719103, unit: 'kg', basis: '10')['production'];
+
+    expect($production->requirements->firstWhere('phase_key_snapshot', 'neutralization')->required_mass_grams)->toBe('71.910000000')
+        ->and($production->formulaLines->firstWhere('phase_key_snapshot', 'neutralization')->planned_mass_grams)->toBe('71.910000000');
+});
+
+it('plans the theoretical neutralizer amount when only the saved rounding exceeds it', function (): void {
+    // Authored at 10 g oils, the theoretical 0.0684864 g is stored as 0.6849%
+    // of the oils: at 10 kg that overshoots the free KOH by 0.0036 g, which
+    // the batch absorbs by taking the theoretical amount.
+    $production = liquidSoapProduction(kohSapValue: 0.20, citricAcidWeight: 0.0684864, basis: '10000', oilWeight: 10)['production'];
+
+    expect($production->requirements->firstWhere('phase_key_snapshot', 'neutralization')->required_mass_grams)->toBe('68.486389950')
+        ->and($production->formulaLines->firstWhere('phase_key_snapshot', 'neutralization')->planned_mass_grams)->toBe('68.486389950');
+});
+
+it('refuses a neutralizer that exceeds the free KOH beyond its saved rounding', function (): void {
+    ['owner' => $owner, 'workspace' => $workspace, 'production' => $production] = liquidSoapProduction(kohSapValue: 0.20, citricAcidWeight: 6.8486);
+    RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $production->recipe_version_id)->where('ingredient_id', $production->requirements->firstWhere('phase_key_snapshot', 'neutralization')->ingredient_id)
+        ->update(['weight' => '6.8600', 'percentage' => '0.6860']);
+
+    expect(fn () => app(CreateProductionDraft::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        recipe: Recipe::withoutGlobalScopes()->findOrFail($production->recipe_id),
+        basisInputValue: '2000',
+        basisInputUnit: 'g',
+        expectedUnits: 19,
+        idempotencyKey: 'over-neutralized',
+    ))->toThrow(ValidationException::class, __('production_bench.production.validation.formula_recalculation_failed'));
 });
 
 it('lists a liquid soap production in process order on the production page', function (): void {

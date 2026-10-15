@@ -4,6 +4,7 @@ use App\Actions\FormulaSharing\AcceptFormulaShare;
 use App\Actions\FormulaSharing\SendFormulaShare;
 use App\Enums\IngredientCategory;
 use App\Enums\LiquidSoapNeutralizer;
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\Plan;
 use App\Models\ProductFamily;
@@ -17,6 +18,7 @@ use App\Models\UserEntitlement;
 use App\Models\Workspace;
 use App\Services\FormulaSharePreview;
 use App\Services\FormulaShareSnapshotBuilder;
+use App\Services\IngredientShareProjector;
 use App\Services\RecipeWorkbenchService;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -118,6 +120,16 @@ it('asks for a fresh preview when the neutralizer chemistry changed after it', f
         ->toThrow(ValidationException::class);
     expect(collect(app(FormulaSharePreview::class)->build($recipient->owner, $share, [])['ingredients'])->firstWhere('name', 'Citric Acid')['warning'])
         ->toBe('platform_changed');
+});
+
+it('fingerprints the neutralizer type of platform neutralizers only', function (): void {
+    ['citricAcid' => $citricAcid] = sharedLiquidSoap();
+    $workspace = Workspace::factory()->create();
+    $privateCopy = Ingredient::factory()->create(['workspace_id' => $workspace->id, 'owner_type' => OwnerType::Workspace, 'owner_id' => $workspace->id, 'display_name' => 'Citric Acid copy', 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous]);
+    $projector = app(IngredientShareProjector::class);
+
+    expect($projector->project($citricAcid)['technical']['liquid_soap_neutralizer'])->toBe('citric_acid_anhydrous')
+        ->and($projector->project($privateCopy)['technical'])->not->toHaveKey('liquid_soap_neutralizer');
 });
 
 it('shows the liquid soap process settings in the offer', function (): void {

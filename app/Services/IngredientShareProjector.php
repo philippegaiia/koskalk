@@ -61,8 +61,10 @@ class IngredientShareProjector
                 'unit' => $ingredient->unit,
                 'is_soap_saponification_trusted' => $ingredient->is_soap_saponification_trusted,
                 'requires_aromatic_compliance' => $ingredient->requires_aromatic_compliance,
-                // Only neutralizers carry the key, so every other fingerprint stays as it was.
-                ...($ingredient->liquid_soap_neutralizer === null ? [] : ['liquid_soap_neutralizer' => $ingredient->liquid_soap_neutralizer->value]),
+                // Only effective (platform) neutralizers carry the key, so private
+                // copies, which imports never mark, and every other fingerprint
+                // stay as they were.
+                ...($ingredient->liquidSoapNeutralizer() === null ? [] : ['liquid_soap_neutralizer' => $ingredient->liquidSoapNeutralizer()->value]),
                 'identifiers' => $ingredient->identifiers->map(fn (Model $row): array => ['scheme' => $row->scheme->value, 'value' => $row->value, 'is_primary' => $row->is_primary])->all(),
                 'sap_profile' => $sap === null ? null : [
                     'koh_sap_value' => $sap->koh_sap_value,

@@ -115,6 +115,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $this->creationWorkspaceId = $user->company(fresh: true)?->id;
             $this->hasCreationWorkspaceContext = true;
         }
+        abort_if($recipe?->productFamily?->usesLiquidSoapPasteBench() ?? false, 404);
+
         $this->productFamilySlug = $recipe?->productFamily?->slug ?? $productFamilySlug;
         $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
 

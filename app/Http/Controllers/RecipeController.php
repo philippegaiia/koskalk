@@ -101,6 +101,8 @@ class RecipeController extends Controller
             ->where('slug', $productFamilySlug)
             ->firstOrFail();
 
+        abort_if($productFamily->usesLiquidSoapPasteBench(), 404);
+
         if ($productTypeSlug === '') {
             return redirect()->route('recipes.choose-type', [
                 'entry' => $productFamily->slug === 'cosmetic' ? 'cosmetics' : 'soap',
@@ -125,6 +127,8 @@ class RecipeController extends Controller
     public function edit(string $recipe, CurrentAppUserResolver $currentAppUserResolver): View
     {
         $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+
+        abort_if($recipe->productFamily?->usesLiquidSoapPasteBench() ?? false, 404);
 
         return view('recipes.workbench', [
             'recipe' => $recipe,

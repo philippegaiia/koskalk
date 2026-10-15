@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProductFamilies\Schemas;
 
+use App\Enums\SoapProcess;
 use App\Models\ProductFamily;
 use App\SoapSap;
 use Filament\Forms\Components\TextInput;
@@ -20,6 +21,13 @@ class ProductFamilyForm
                             ->disabled()
                             ->dehydrated(false),
                         TextInput::make('slug')
+                            ->disabled()
+                            ->dehydrated(false),
+                        TextInput::make('soap_process')
+                            ->label('Bench')
+                            ->formatStateUsing(fn (SoapProcess|string|null $state): ?string => ($state instanceof SoapProcess ? $state : SoapProcess::tryFrom((string) $state))?->label())
+                            ->placeholder('Cosmetic workbench')
+                            ->helperText('Set by the platform. Changing it would move every formula of this family to another bench.')
                             ->disabled()
                             ->dehydrated(false),
                     ])

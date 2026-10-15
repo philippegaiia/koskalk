@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SoapProcess;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
@@ -24,10 +25,17 @@ class RecipeWorkbenchContextResolver
         return $this->productFamily('soap');
     }
 
+    /**
+     * Families that open in the soap or cosmetic workbench. Liquid soap paste
+     * families have their own bench and are never resolved here.
+     */
     public function productFamily(string $slug): ProductFamily
     {
         return ProductFamily::query()
             ->where('slug', $slug)
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNull('soap_process')
+                ->orWhere('soap_process', '!=', SoapProcess::LiquidPaste->value))
             ->firstOrFail();
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SoapProcess;
 use App\SoapSap;
 use Database\Factories\ProductFamilyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     'name',
     'slug',
     'calculation_basis',
+    'soap_process',
     'cured_water_percentage',
     'is_active',
     'description',
@@ -36,9 +38,19 @@ class ProductFamily extends Model
         return SoapSap::curedWaterPercentage($this->cured_water_percentage);
     }
 
+    /**
+     * Liquid soap paste families open their own bench, never the soap or
+     * cosmetic workbench.
+     */
+    public function usesLiquidSoapPasteBench(): bool
+    {
+        return $this->soap_process === SoapProcess::LiquidPaste;
+    }
+
     protected function casts(): array
     {
         return [
+            'soap_process' => SoapProcess::class,
             'is_active' => 'bool',
             'cured_water_percentage' => 'decimal:2',
         ];

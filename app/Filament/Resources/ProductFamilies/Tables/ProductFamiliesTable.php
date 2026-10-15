@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProductFamilies\Tables;
 
+use App\Enums\SoapProcess;
 use App\Models\ProductFamily;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
@@ -20,6 +21,10 @@ class ProductFamiliesTable
                     ->description(fn (ProductFamily $record): string => $record->slug),
                 TextColumn::make('calculation_basis')
                     ->label('Calculation basis'),
+                TextColumn::make('soap_process')
+                    ->label('Bench')
+                    ->formatStateUsing(fn (SoapProcess|string|null $state): ?string => ($state instanceof SoapProcess ? $state : SoapProcess::tryFrom((string) $state))?->label())
+                    ->placeholder('Cosmetic workbench'),
                 TextColumn::make('cured_water_percentage')
                     ->label('Residual water')
                     ->state(fn (ProductFamily $record): ?string => $record->slug === 'soap'

@@ -200,6 +200,8 @@ export function lyeBreakdown(state) {
     const selectedKohWeight = kohAdjusted * kohRatio;
     const selectedTotalActiveLye = selectedNaohWeight + selectedKohWeight;
     const currentWaterWeight = waterWeightFor(state, selectedTotalActiveLye);
+    // Lye beyond full saponification (negative superfat) reacts with nothing and releases no glycerine.
+    const reactingShare = Math.min(1, superfatMultiplier);
     const kohToWeigh = selectedKohWeight > 0 && state.kohPurity === 90 ? selectedKohWeight / 0.9 : selectedKohWeight;
 
     return {
@@ -212,7 +214,8 @@ export function lyeBreakdown(state) {
         koh_to_weigh: kohToWeigh,
         selected_total_active_lye: selectedTotalActiveLye,
         water_weight: currentWaterWeight,
-        glycerine_weight: (selectedNaohWeight * GLYCERINE_FROM_NAOH_RATIO) + (selectedKohWeight * GLYCERINE_FROM_KOH_RATIO),
+        glycerine_weight: (totals.naoh_theoretical * reactingShare * naohRatio * GLYCERINE_FROM_NAOH_RATIO)
+            + (totals.koh_theoretical * reactingShare * kohRatio * GLYCERINE_FROM_KOH_RATIO),
         fatty_acids: totals.fatty_acids,
     };
 }

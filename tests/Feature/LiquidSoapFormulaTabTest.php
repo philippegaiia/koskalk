@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /**
- * @return array{section: bool, additions_share_label: bool, lye_buttons: array<int, string>}
+ * @return array{section: bool, additions_share_label: bool, batch_totals: bool, lye_buttons: array<int, string>}
  */
 function liquidSoapFormulaTabMarkup(string $html): array
 {
@@ -24,6 +24,7 @@ function liquidSoapFormulaTabMarkup(string $html): array
     return [
         'section' => $document->getElementById('liquid-soap-process') !== null,
         'additions_share_label' => str_contains((string) $document->getElementById('post-reaction-phases')?->textContent, __('workbench.liquid.final_share_label')),
+        'batch_totals' => collect($xpath->query('//p[contains(@class, "sk-eyebrow")]'))->contains(fn (DOMElement $heading): bool => trim($heading->textContent) === __('workbench.additions.batch_totals')),
         'lye_buttons' => $lyeGroup === null
             ? []
             : collect($xpath->query('.//button[@role="radio"]', $lyeGroup))->map(fn (DOMElement $button): string => trim($button->textContent))->values()->all(),
@@ -63,6 +64,7 @@ it('shows the liquid soap process with KOH as the only alkali on the liquid benc
     expect(liquidSoapFormulaTabMarkup($response->getContent()))->toBe([
         'section' => true,
         'additions_share_label' => true,
+        'batch_totals' => false,
         'lye_buttons' => ['KOH'],
     ]);
 });
@@ -78,6 +80,7 @@ it('keeps the bar soap bench without the liquid process and with every alkali', 
     expect(liquidSoapFormulaTabMarkup($response->getContent()))->toBe([
         'section' => false,
         'additions_share_label' => false,
+        'batch_totals' => true,
         'lye_buttons' => ['NaOH', 'KOH', 'Dual lye'],
     ]);
 });

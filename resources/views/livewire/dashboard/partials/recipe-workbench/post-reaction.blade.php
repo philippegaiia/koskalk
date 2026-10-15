@@ -203,6 +203,8 @@
  </div>
  </div>
 
+ {{-- Bar soap totals (wet and cured weight) do not describe a diluted liquid soap; its process section shows the final batch. --}}
+ @unless ($isLiquidSoapWorkbench ?? false)
  <div class="sk-card sk-tone-summary overflow-hidden">
  <div class="sk-section-header sk-section-header-formula border-b px-5 py-4">
  <p class="sk-eyebrow">{{ __('workbench.additions.batch_totals') }}</p>
@@ -217,6 +219,8 @@
  </template>
  </div>
  </div>
+ @endunless
+
 
  <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
  <div class="rounded-[1.5rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]" role="alert">

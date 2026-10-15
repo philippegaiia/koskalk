@@ -53,13 +53,10 @@ If `subscription.created` is missing, new subscriptions will never be recorded l
 Use a reverse proxy to expose your local app to Paddle:
 
 ```bash
-
 # Using Expose
-
 expose share http://your-app.test
 
 # Using Ngrok
-
 ngrok http 80
 ```
 

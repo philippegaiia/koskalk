@@ -24,6 +24,7 @@
         "laravel-best-practices",
         "testing-best-practices",
         "tailwindcss-development",
+        "filament-development",
         "medialibrary-development",
         "truss-schema",
         "debug-using-debugbar"

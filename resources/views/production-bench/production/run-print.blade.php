@@ -96,6 +96,9 @@
                 </section>
             @endif
         @endforeach
+        @if ($document['liquid_process'] !== null)
+            <x-formula-document.liquid-process data-formula-section :document="['unit' => 'g', 'liquid_process' => $document['liquid_process']]" :number-locale="$numberLocale" />
+        @endif
         @if ($document['unmatched_consumption'] !== [])
             <section data-formula-section>
                 <h2 class="mb-2 text-sm font-semibold uppercase">{{ __('production_bench.run_print.consumption') }}</h2>

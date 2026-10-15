@@ -30108,6 +30108,30 @@
     },
     {
       "group": "production_bench",
+      "key": "production.formula.final_dilution_phase",
+      "text": {
+        "de": "Endverdünnung",
+        "es": "Dilución final",
+        "fr": "Dilution finale",
+        "it": "Diluizione finale",
+        "nl": "Eindverdunning",
+        "pt_BR": "Diluição final"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.formula.first_dilution_phase",
+      "text": {
+        "de": "Erste Verdünnung",
+        "es": "Primera dilución",
+        "fr": "Première dilution",
+        "it": "Prima diluizione",
+        "nl": "Eerste verdunning",
+        "pt_BR": "Primeira diluição"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.formula.lye_water_phase",
       "text": {
         "de": "Lauge-Wasser",
@@ -30116,6 +30140,30 @@
         "it": "Fase liscivia-acqua",
         "nl": "Loog-waterfase",
         "pt_BR": "Água com soda cáustica"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.formula.neutralization_phase",
+      "text": {
+        "de": "Neutralisation",
+        "es": "Neutralización",
+        "fr": "Neutralisation",
+        "it": "Neutralizzazione",
+        "nl": "Neutralisatie",
+        "pt_BR": "Neutralização"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.formula.neutralizer_solution_water",
+      "text": {
+        "de": "Wasser (Neutralisationslösung)",
+        "es": "Agua (solución neutralizante)",
+        "fr": "Eau (solution neutralisante)",
+        "it": "Acqua (soluzione neutralizzante)",
+        "nl": "Water (neutralisatieoplossing)",
+        "pt_BR": "Água (solução neutralizante)"
       }
     },
     {

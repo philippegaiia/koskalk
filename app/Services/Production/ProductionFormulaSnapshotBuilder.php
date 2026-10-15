@@ -33,7 +33,9 @@ class ProductionFormulaSnapshotBuilder
      * Ingredient requirements become formula lines in their existing order.
      * For soap formulas, the saved Workbench draft is rescaled to the requested
      * canonical basis so the established calculator recomputes NaOH, KOH, and
-     * water; calculated lines are appended in the lye-water phase.
+     * water; calculated lines are appended in the lye-water phase. Liquid soap
+     * paste formulas also get a water line for each dilution and for the
+     * neutralizer solution, and their process steps as shares of the basis.
      *
      * @param  Collection<int, array<string, mixed>>  $requirements
      * @return array{context: array<string, mixed>, lines: Collection<int, array<string, mixed>>}
@@ -65,6 +67,21 @@ class ProductionFormulaSnapshotBuilder
                 ->map(fn (array $row): array => [...$row, 'weight' => 0])
                 ->values()
                 ->all();
+        }
+
+        // The liquid soap process reads the neutralizer and additions weights,
+        // so they must rescale from percentages like the oils do.
+        $isLiquidSoap = $recipe->productFamily?->usesLiquidSoapPasteBench() ?? false;
+
+        if ($isLiquidSoap) {
+            foreach (['neutralization', 'additives', 'fragrance'] as $phaseKey) {
+                if (isset($draft['phaseItems'][$phaseKey])) {
+                    $draft['phaseItems'][$phaseKey] = collect($draft['phaseItems'][$phaseKey])
+                        ->map(fn (array $row): array => [...$row, 'weight' => 0])
+                        ->values()
+                        ->all();
+                }
+            }
         }
 
         $recomputed = $this->workbenchService->snapshotFromPersistedWorkbenchDraft($draft);
@@ -101,8 +118,20 @@ class ProductionFormulaSnapshotBuilder
             $lines = $lines->merge($this->calculatedLines($draft, $calculation, $basisQuantityGrams, $sortOrder));
         }
 
+        $liquidContext = [];
+
+        if ($isLiquidSoap) {
+            $liquidProcess = $this->liquidProcess($calculation);
+            $unit = $draft['oilUnit'] ?? 'g';
+            $lines = $lines->merge($this->liquidWaterLines($liquidProcess, $unit, $basisQuantityGrams, ((int) $lines->max('sort_order')) + 1));
+            $liquidContext = [
+                'soap_process' => 'liquid_paste',
+                'liquid_process' => $this->liquidProcessContext($liquidProcess, $unit, $basisQuantityGrams, $requirements),
+            ];
+        }
+
         return [
-            'context' => [...$this->context($recipe, $isSoap, $draft), ...$this->procedureSnapshot($version->manufacturing_instructions)],
+            'context' => [...$this->context($recipe, $isSoap, $draft), ...$liquidContext, ...$this->procedureSnapshot($version->manufacturing_instructions)],
             'lines' => $lines,
         ];
     }
@@ -205,6 +234,112 @@ class ProductionFormulaSnapshotBuilder
         }
 
         return $lines;
+    }
+
+    /**
+     * The recomputed liquid soap process, which must be fully calculated.
+     *
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    private function liquidProcess(?array $calculation): array
+    {
+        $process = is_array($calculation) ? ($calculation['liquid_process'] ?? null) : null;
+
+        if (! is_array($process) || ($process['status'] ?? null) !== 'ok') {
+            throw ValidationException::withMessages([
+                'recipe' => __('production_bench.production.validation.formula_recalculation_failed'),
+            ]);
+        }
+
+        return $process;
+    }
+
+    /**
+     * Water added after the paste: the first dilution, the water of the
+     * neutralizer solution and the final dilution, each in its process phase.
+     *
+     * @param  array<string, mixed>  $process
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function liquidWaterLines(array $process, string $unit, string $basisQuantityGrams, int $sortOrder): Collection
+    {
+        $neutralizer = is_array($process['neutralizer'] ?? null) ? $process['neutralizer'] : null;
+        $candidates = [
+            ['phase' => 'first_dilution', 'name' => 'water', 'weight' => data_get($process, 'stages.first_dilution.add_weight', '0')],
+            ['phase' => 'neutralization', 'name' => 'neutralizer_solution_water', 'weight' => $neutralizer === null
+                ? '0'
+                : bcsub((string) $neutralizer['solution_weight'], (string) $neutralizer['weight'], self::GuardScale)],
+            ['phase' => 'final_dilution', 'name' => 'water', 'weight' => data_get($process, 'stages.final_dilution.add_weight', '0')],
+        ];
+        $lines = collect();
+
+        foreach ($candidates as $candidate) {
+            if (bccomp((string) $candidate['weight'], '0', self::GuardScale) <= 0) {
+                continue;
+            }
+
+            $mass = $this->roundStorage($this->massConverter->toGrams((string) $candidate['weight'], $unit));
+
+            $lines->push([
+                'ingredient_id' => null,
+                'recipe_item_id' => null,
+                'component' => ProductionFormulaComponent::Water,
+                'subject_name_snapshot' => __('production_bench.production.formula.'.$candidate['name']),
+                'phase_key_snapshot' => $candidate['phase'],
+                'phase_name_snapshot' => __('production_bench.production.formula.'.$candidate['phase'].'_phase'),
+                'basis_percentage_snapshot' => $this->percentageOf($mass, $basisQuantityGrams),
+                'planned_mass_grams' => $mass,
+                'note_snapshot' => null,
+                'sort_order' => $sortOrder++,
+            ]);
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Process steps with every weight stored as a % of the basis, so a
+     * rescaled production still prints the steps of its own batch.
+     *
+     * @param  array<string, mixed>  $process
+     * @param  Collection<int, array<string, mixed>>  $requirements
+     * @return array<string, mixed>
+     */
+    private function liquidProcessContext(array $process, string $unit, string $basisQuantityGrams, Collection $requirements): array
+    {
+        $share = fn (mixed $weight): ?string => $weight === null
+            ? null
+            : $this->percentageOf($this->massConverter->toGrams((string) $weight, $unit), $basisQuantityGrams);
+        $stage = fn (array $values): array => [
+            'add_percentage' => $share($values['add_weight'] ?? null),
+            'mass_percentage' => $share($values['mass'] ?? $values['weight'] ?? null),
+            'anhydrous_percentage' => (string) $values['anhydrous_percentage'],
+            'target_percentage' => isset($values['target_percentage']) ? (string) $values['target_percentage'] : null,
+        ];
+        $neutralizer = is_array($process['neutralizer'] ?? null) ? $process['neutralizer'] : null;
+
+        return [
+            'anhydrous_soap_percentage' => $share($process['anhydrous_soap_weight']),
+            'final_percentage' => $share($process['final_weight']),
+            'final_anhydrous_percentage' => (string) $process['final_anhydrous_percentage'],
+            'free_koh_percentage' => $share(data_get($process, 'paste_composition.free_koh_weight', '0')),
+            'stages' => [
+                'paste' => $stage($process['paste']),
+                'first_dilution' => $stage($process['stages']['first_dilution']),
+                'neutralization' => $stage($process['stages']['neutralization']),
+                'final_dilution' => $stage($process['stages']['final_dilution']),
+            ],
+            'neutralizer' => $neutralizer === null ? null : [
+                'type' => $neutralizer['type'],
+                'name' => $requirements->firstWhere('phase_key_snapshot', 'neutralization')['subject_name_snapshot'] ?? '',
+                'solution_percentage' => (string) $neutralizer['solution_percentage'],
+                'percentage' => $share($neutralizer['weight']),
+                'solution_percentage_of_basis' => $share($neutralizer['solution_weight']),
+                'recommended_percentage' => $share($neutralizer['recommended_weight']),
+            ],
+            'warnings' => array_values($process['warnings'] ?? []),
+        ];
     }
 
     /**

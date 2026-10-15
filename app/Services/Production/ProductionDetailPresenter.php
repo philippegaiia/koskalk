@@ -217,6 +217,15 @@ class ProductionDetailPresenter
         }
 
         $materials = collect($materials);
+
+        // A liquid soap lists its materials in process order, so each
+        // dilution and the neutralizer solution water sit in their own step.
+        if (is_array($production->formula_context_snapshot['liquid_process'] ?? null)) {
+            $order = ['saponified_oils' => 0, 'lye_water' => 1, 'first_dilution' => 2, 'neutralization' => 3, 'additives' => 4, 'fragrance' => 5, 'final_dilution' => 6, 'packaging' => 8];
+
+            return $materials->sortBy(fn (array $material): int => $order[$material['group_key']] ?? 7)->values()->all();
+        }
+
         $firstLyeWaterIndex = $materials->search(
             fn (array $material): bool => $material['group_key'] === 'lye_water',
         );

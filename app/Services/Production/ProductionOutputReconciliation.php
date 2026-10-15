@@ -16,7 +16,7 @@ class ProductionOutputReconciliation
             || $production->outputLot?->unit_kind === StockUnitKind::Mass;
         $unit = $isIntermediate ? 'g' : 'unit';
         $planned = $isIntermediate
-            ? (string) $production->basis_quantity_grams
+            ? $this->plannedOutputMass($production)
             : (string) $production->expected_units;
         $actual = $isIntermediate
             ? $production->actual_output_mass_grams
@@ -47,6 +47,19 @@ class ProductionOutputReconciliation
             'variance' => $this->canonical($variance),
             'variance_percentage' => $variancePercentage,
         ];
+    }
+
+    /**
+     * A liquid soap yields its final diluted batch; other formulas plan
+     * their output on the basis mass.
+     */
+    private function plannedOutputMass(ProductionRun $production): string
+    {
+        $finalShare = $production->formula_context_snapshot['liquid_process']['final_percentage'] ?? null;
+
+        return is_string($finalShare)
+            ? bcdiv(bcmul((string) $production->basis_quantity_grams, $finalShare, 18), '100', 9)
+            : (string) $production->basis_quantity_grams;
     }
 
     private function roundDecimal(string $value, int $scale): string

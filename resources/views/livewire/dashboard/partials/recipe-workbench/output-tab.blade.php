@@ -103,7 +103,7 @@
  <h3 id="output-soap-composition-heading" class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.output.soap.composition') }}</h3>
  <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.composition_help') }}</p>
  </div>
- <p class="border-b border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.label_basis_help') }}</p>
+ <p class="border-b border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="t('output.soap.label_basis_help', { percent: curedWaterPercentageLabel })"></p>
  <template x-if="curedSoapIngredientRows.length > 0">
  <div class="overflow-x-auto">
  <table class="w-full min-w-[52rem] table-fixed divide-y divide-[var(--color-line)] text-sm">

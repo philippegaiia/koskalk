@@ -49,6 +49,7 @@ export function draftStateFromDraft(draft, currentState) {
         waterMode: ['percent_of_oils', 'lye_ratio', 'lye_concentration'].includes(draft.waterMode) ? draft.waterMode : currentState.waterMode,
         waterValue: number(draft.waterValue ?? currentState.waterValue),
         superfat: number(draft.superfat ?? currentState.superfat),
+        curedWaterPercentage: number(draft.curedWaterPercentage ?? currentState.curedWaterPercentage),
         ifraCategorySelectionMode: ['automatic', 'manual', 'legacy'].includes(draft.ifraCategorySelectionMode)
             ? draft.ifraCategorySelectionMode
             : currentState.ifraCategorySelectionMode,

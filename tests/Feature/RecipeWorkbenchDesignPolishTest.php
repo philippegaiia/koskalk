@@ -849,7 +849,7 @@ it('centers compact costing table row contents beside price inputs', function ()
         ->not->toContain('flex items-center bg-white px-4 py-3')
         ->not->toContain('flex items-center bg-white px-3 py-3')
         ->not->toContain('flex items-center bg-[var(--color-field-muted)] px-4 py-3')
-        ->toContain('x-text="lineCostForRow(row) === null ? \'\' : format(lineCostForRow(row), 2)"')
+        ->toContain('x-text="costingLineCostLabel(row)"')
         ->not->toContain('numeric bg-white px-4 py-2 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
 });
 
@@ -1626,7 +1626,7 @@ it('uses the cured soap basis for soap output percentages', function () {
         ->not->toContain('format(curedSoapResidualWaterWeight')
         ->not->toContain('numeric mt-3 text-xl')
         ->and($outputTab)
-        ->toContain("__('workbench.output.soap.label_basis_help')")
+        ->toContain("t('output.soap.label_basis_help', { percent: curedWaterPercentageLabel })")
         ->not->toContain('This view normalizes the selected acceptable ingredient list')
         ->not->toContain('11% residual water</span>')
         ->not->toContain('Dry soap output')

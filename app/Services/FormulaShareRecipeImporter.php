@@ -10,6 +10,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
+use App\SoapSap;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -71,6 +72,7 @@ class FormulaShareRecipeImporter
             'ifra_category_selection_mode' => $formula['ifra']['selection_mode'], 'ifra_product_category_id' => $formula['ifra']['category']['id'] ?? null,
             'lye_type' => $context['lye_type'] ?? 'naoh', 'koh_purity_percentage' => $context['koh_purity_percentage'] ?? 90,
             'dual_lye_koh_percentage' => $context['dual_lye_koh_percentage'] ?? 40, 'superfat' => $context['superfat'] ?? 5,
+            'cured_water_percentage' => $context['cured_water_percentage'] ?? SoapSap::DEFAULT_CURED_WATER_PERCENTAGE,
             'water_mode' => $formula['water_settings']['mode'] ?? 'percent_of_oils', 'water_value' => $formula['water_settings']['value'] ?? 38,
             'phases' => $phases, 'phase_items' => $items, 'manufacturing_instructions' => $procedure,
             'packaging_items' => [], 'production_output_type' => ProductionOutputType::FinishedProduct->value,

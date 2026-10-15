@@ -170,7 +170,7 @@
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
  <div class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col px-3 py-2.5">
  <p class="sk-eyebrow" x-text="card.label"></p>
- <p class="numeric mt-2 whitespace-nowrap text-xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
+ <p class="numeric mt-2 whitespace-nowrap text-xl font-semibold text-[var(--color-ink-strong)]" x-text="formatLyeSummaryCardValue(card)"></p>
  </div>
  </template>
  </div>

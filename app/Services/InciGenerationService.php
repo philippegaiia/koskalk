@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
+use App\SoapSap;
 use App\Support\InciName;
 use App\Support\NumberLocale;
 use Illuminate\Support\Str;
@@ -650,6 +651,16 @@ class InciGenerationService
                 $bilingual ? 'Glycerin/Glycérine' : 'Glycerin',
                 (float) data_get($soapCalculation, 'lye.selected.glycerine_weight', 0),
             );
+            $this->appendPlainLanguageRow(
+                $restRowsByLabel,
+                $bilingual ? 'Sodium hydroxide/Hydroxyde de sodium' : 'Sodium hydroxide',
+                (float) data_get($soapCalculation, 'lye.excess.naoh_weight', 0),
+            );
+            $this->appendPlainLanguageRow(
+                $restRowsByLabel,
+                $bilingual ? 'Potassium hydroxide/Hydroxyde de potassium' : 'Potassium hydroxide',
+                (float) data_get($soapCalculation, 'lye.excess.koh_weight', 0),
+            );
         }
 
         $labels = [];
@@ -1087,7 +1098,8 @@ class InciGenerationService
      *     formula_weight: float,
      *     threshold_percent: float,
      *     cured_weight: float|null,
-     *     residual_water_weight: float|null
+     *     residual_water_weight: float|null,
+     *     residual_water_percentage: float|null
      * }
      */
     private function basisState(array $payload, array $rowContexts, ?array $soapCalculation, float $thresholdPercent): array
@@ -1110,6 +1122,7 @@ class InciGenerationService
                 'threshold_percent' => $thresholdPercent,
                 'cured_weight' => null,
                 'residual_water_weight' => null,
+                'residual_water_percentage' => null,
             ];
         }
 
@@ -1121,6 +1134,7 @@ class InciGenerationService
                 'threshold_percent' => $thresholdPercent,
                 'cured_weight' => null,
                 'residual_water_weight' => null,
+                'residual_water_percentage' => null,
             ];
         }
 
@@ -1129,15 +1143,17 @@ class InciGenerationService
         $kohToWeigh = (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0);
         $formulaWeight = round($phaseWeight + $waterWeight + $naohWeight + $kohToWeigh, 5);
         $nonWaterWeight = max(0.0, $formulaWeight - $waterWeight);
-        $curedWeight = $nonWaterWeight > 0 ? round($nonWaterWeight / 0.89, 5) : null;
+        $curedWaterPercentage = SoapSap::curedWaterPercentage($payload['cured_water_percentage'] ?? null);
+        $curedWeight = $nonWaterWeight > 0 ? round(SoapSap::curedWeight($nonWaterWeight, $curedWaterPercentage), 5) : null;
 
         return [
             'label' => 'Current batch basis',
-            'note' => 'Percentages use the live batch basis from oils, lye, water, and post-reaction additions. Cured-soap output percentages use the retained non-water mass with 11% residual water.',
+            'note' => 'Percentages use the live batch basis from oils, lye, water, and post-reaction additions. Cured-soap output percentages use the retained non-water mass with '.$this->formatPercentage($curedWaterPercentage).'% residual water.',
             'formula_weight' => $formulaWeight,
             'threshold_percent' => $thresholdPercent,
             'cured_weight' => $curedWeight,
-            'residual_water_weight' => $curedWeight === null ? null : round($curedWeight * 0.11, 5),
+            'residual_water_weight' => $curedWeight === null ? null : round($curedWeight * ($curedWaterPercentage / 100), 5),
+            'residual_water_percentage' => $curedWaterPercentage,
         ];
     }
 
@@ -1452,6 +1468,31 @@ class InciGenerationService
             $declarationRuleState,
             (string) $declarationRuleState['market_code'],
         );
+        $postReactionShare = ($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'saponify_in_formula'
+            ? $this->postReactionSaponifiedShare($context, $soapCalculation)
+            : 0.0;
+
+        if ($postReactionShare > 0) {
+            // Label convention: oils added to the soap keep their oil INCI even
+            // when the alkali saponifies part of them. Their mass still includes
+            // the bound alkali, minus the glycerine listed separately, so the
+            // list stays in mass balance.
+            $saponifiedWeight = $context['weight'] * $postReactionShare;
+            $soapSaltWeights = $this->soapSaltWeights(
+                [...$context, 'weight' => $saponifiedWeight],
+                $payload,
+                $soapCalculation,
+                $saponifiedWeight,
+                fullySaponified: true,
+            );
+
+            return [[
+                'label' => $labelState['label'],
+                'weight' => $soapSaltWeights['total'] + ($context['weight'] - $saponifiedWeight),
+                'kind' => $labelState['kind'],
+                'warning' => $labelState['warning'],
+            ]];
+        }
 
         return [[
             'label' => $labelState['label'],
@@ -1459,6 +1500,41 @@ class InciGenerationService
             'kind' => $context['phase_key'] === 'lye_water' ? 'lye_liquid' : $labelState['kind'],
             'warning' => $labelState['warning'],
         ]];
+    }
+
+    /**
+     * Oils added after the reaction take part of the lye, so every
+     * saponifiable oil, main or added, keeps the same free share.
+     *
+     * @param  array<string, mixed>|null  $soapCalculation
+     */
+    private function sharesLyeWithPostReactionOils(?array $soapCalculation): bool
+    {
+        return is_array($soapCalculation)
+            && (float) data_get($soapCalculation, 'lye.post_reaction_oils_weight', 0) > 0;
+    }
+
+    /**
+     * Share of an oil added after the reaction that the lye
+     * saponifies. Only trusted saponifiable oils in the additions phase take
+     * part, matching the oils the soap calculation counted.
+     *
+     * @param  array{phase_key: string, weight: float, ingredient: Ingredient|null}  $context
+     * @param  array<string, mixed>|null  $soapCalculation
+     */
+    private function postReactionSaponifiedShare(array $context, ?array $soapCalculation): float
+    {
+        $ingredient = $context['ingredient'] ?? null;
+
+        if ($context['phase_key'] !== 'additives'
+            || ! is_array($soapCalculation)
+            || ! $ingredient instanceof Ingredient
+            || ! $ingredient->canDriveSoapSaponification()
+            || (float) $ingredient->sapProfile?->koh_sap_value <= 0) {
+            return 0.0;
+        }
+
+        return max(0.0, min(1.0, (float) data_get($soapCalculation, 'lye.post_reaction_saponified_fraction', 0)));
     }
 
     /**
@@ -1543,6 +1619,7 @@ class InciGenerationService
         array $payload,
         ?array $soapCalculation,
         float $saponifiedWeight,
+        bool $fullySaponified = false,
     ): array {
         $ingredient = $context['ingredient'];
         $kohSapValue = $ingredient instanceof Ingredient
@@ -1567,7 +1644,11 @@ class InciGenerationService
             $context['weight'],
             (float) $kohSapValue,
             [
-                'superfat' => data_get($soapCalculation, 'lye.superfat_percentage', $payload['superfat'] ?? 5),
+                'superfat' => match (true) {
+                    $fullySaponified => 0,
+                    $this->sharesLyeWithPostReactionOils($soapCalculation) => 100 * (1 - (float) data_get($soapCalculation, 'lye.saponified_fraction', 1)),
+                    default => data_get($soapCalculation, 'lye.superfat_percentage', $payload['superfat'] ?? 5),
+                },
                 'lye_type' => data_get($soapCalculation, 'lye.selected.type', $payload['lye_type'] ?? 'naoh'),
                 'dual_lye_koh_percentage' => data_get(
                     $soapCalculation,
@@ -1789,7 +1870,9 @@ class InciGenerationService
             }
 
             $fallbackState = $this->resolveIngredientDeclarationWithWarning($ingredient, $marketCode);
-            $fallbackLabel = $fallbackState['label'];
+            // Like other preview rows, a missing INCI falls back to the display
+            // name so the saponified mass never drops out of the list.
+            $fallbackLabel = $fallbackState['label'] ?? $this->normalizePrintedLabel($ingredient->display_name);
 
             if ($fallbackState['warning'] === null && $fallbackLabel !== null) {
                 $fallbackWarning = "{$ingredientName} is missing soap-specific INCI output, so the preview is falling back to its regular ingredient label.";
@@ -2081,6 +2164,20 @@ class InciGenerationService
             'derived',
             'Saponification',
         );
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'SODIUM HYDROXIDE',
+            (float) data_get($soapCalculation, 'lye.excess.naoh_weight', 0),
+            'lye',
+            'Excess lye',
+        );
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'POTASSIUM HYDROXIDE',
+            (float) data_get($soapCalculation, 'lye.excess.koh_weight', 0),
+            'lye',
+            'Excess lye',
+        );
     }
 
     /**
@@ -2181,6 +2278,10 @@ class InciGenerationService
      */
     private function superfatRatio(array $payload, ?array $soapCalculation): float
     {
+        if ($this->sharesLyeWithPostReactionOils($soapCalculation)) {
+            return max(0.0, min(0.99999, 1 - (float) data_get($soapCalculation, 'lye.saponified_fraction', 1)));
+        }
+
         $superfatPercentage = is_array($soapCalculation)
             ? (float) data_get($soapCalculation, 'lye.superfat_percentage', $payload['superfat'] ?? 0)
             : (float) ($payload['superfat'] ?? 0);
@@ -2342,5 +2443,10 @@ class InciGenerationService
     private function isParfumLabel(string $value): bool
     {
         return in_array($this->normalizeLabel($value), ['PARFUM', 'FRAGRANCE', 'PERFUME'], true);
+    }
+
+    private function formatPercentage(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 }

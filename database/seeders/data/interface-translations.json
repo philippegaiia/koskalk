@@ -45398,12 +45398,12 @@
       "group": "workbench",
       "key": "output.soap.label_basis_help",
       "text": {
-        "de": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "es": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "fr": "Les pourcentages utilisent la base après cure, dont 11 % d’eau résiduelle. Les allergènes sont présentés séparément.",
-        "it": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "nl": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
-        "pt_BR": "Label percentages use the cured basis, including 11% residual water. Allergens are shown separately but are already included in their source oils."
+        "de": "Die Prozentangaben beziehen sich auf die gereifte Seife mit :percent % Restwasser. Allergene werden separat angezeigt, sind aber bereits in ihren Ausgangsölen enthalten.",
+        "es": "Los porcentajes usan la base curada, con un :percent % de agua residual. Los alérgenos se muestran por separado, pero ya están incluidos en sus aceites de origen.",
+        "fr": "Les pourcentages utilisent la base après cure, dont :percent % d’eau résiduelle. Les allergènes sont présentés séparément.",
+        "it": "Le percentuali usano la base stagionata, con il :percent% di acqua residua. Gli allergeni sono indicati a parte, ma sono già inclusi negli oli di origine.",
+        "nl": "De percentages gaan uit van de gerijpte zeep met :percent% restwater. Allergenen worden apart getoond, maar zitten al in hun bronoliën.",
+        "pt_BR": "As porcentagens usam a base curada, com :percent% de água residual. Os alérgenos aparecem separadamente, mas já estão incluídos nos óleos de origem."
       }
     },
     {
@@ -46004,6 +46004,30 @@
         "it": "Aggiungi oli con dati SAP e sugli acidi grassi per calcolare le qualità del sapone.",
         "nl": "Voeg oliën met SAP- en vetzuurgegevens toe om de zeepeigenschappen te berekenen.",
         "pt_BR": "Adicione óleos com valores de SAP e dados de ácidos graxos para calcular as qualidades do sabonete."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.excess_lye",
+      "text": {
+        "de": "Laugenüberschuss",
+        "es": "Exceso de álcali",
+        "fr": "Excès de soude",
+        "it": "Eccesso di alcali",
+        "nl": "Loogoverschot",
+        "pt_BR": "Excesso de álcali"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.excess_lye_help",
+      "text": {
+        "de": "Die Lauge übersteigt, was alle Öle der Formel verseifen können, einschließlich der nach der Reaktion zugegebenen Öle. Die Seife wird ätzend.",
+        "es": "El álcali supera lo que pueden saponificar todos los aceites de la fórmula, incluidos los añadidos después de la reacción. La pastilla será cáustica.",
+        "fr": "La soude dépasse ce que toutes les huiles de la formule peuvent saponifier, y compris celles ajoutées après la réaction. Le savon sera caustique.",
+        "it": "L’alcali supera quanto tutti gli oli della formula possono saponificare, compresi quelli aggiunti dopo la reazione. Il sapone sarà caustico.",
+        "nl": "De loog is meer dan alle oliën in de formule kunnen verzepen, ook de oliën die na de reactie zijn toegevoegd. De zeep wordt bijtend.",
+        "pt_BR": "O álcali excede o que todos os óleos da fórmula conseguem saponificar, incluindo os adicionados após a reação. O sabão ficará cáustico."
       }
     },
     {
@@ -46680,6 +46704,42 @@
     },
     {
       "group": "workbench",
+      "key": "save_error.close",
+      "text": {
+        "de": "Schließen",
+        "es": "Cerrar",
+        "fr": "Fermer",
+        "it": "Chiudi",
+        "nl": "Sluiten",
+        "pt_BR": "Fechar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "save_error.description",
+      "text": {
+        "de": "Beheben Sie Folgendes und speichern Sie erneut.",
+        "es": "Corrige lo siguiente y vuelve a guardar.",
+        "fr": "Corrigez les points suivants, puis enregistrez à nouveau.",
+        "it": "Correggi quanto segue, poi salva di nuovo.",
+        "nl": "Los het volgende op en sla opnieuw op.",
+        "pt_BR": "Corrija o seguinte e salve novamente."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "save_error.title",
+      "text": {
+        "de": "Die Formel konnte nicht gespeichert werden",
+        "es": "No se pudo guardar la fórmula",
+        "fr": "La formule n’a pas pu être enregistrée",
+        "it": "Impossibile salvare la formula",
+        "nl": "De formule kon niet worden opgeslagen",
+        "pt_BR": "Não foi possível salvar a fórmula"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.choose_manufactured_ingredient",
       "text": {
         "de": "Erzeugtes Ingrediens",
@@ -46748,6 +46808,30 @@
         "it": "Modifica impostazioni",
         "nl": "Instellingen bewerken",
         "pt_BR": "Editar configurações"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.effective_superfat",
+      "text": {
+        "de": "Effektive Überfettung",
+        "es": "Sobreengrasado efectivo",
+        "fr": "Surgraissage effectif",
+        "it": "Superfat effettivo",
+        "nl": "Effectieve overvetting",
+        "pt_BR": "Sobreengorduramento efetivo"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.effective_superfat_note",
+      "text": {
+        "de": "Theoretische Schätzung, einschließlich verseifbarer Öle in den Rezepturzusätzen.",
+        "es": "Estimación teórica, que incluye los aceites saponificables de las adiciones a la fórmula.",
+        "fr": "Estimation théorique, incluant les huiles saponifiables des ajouts à la formule.",
+        "it": "Stima teorica, che include gli oli saponificabili delle aggiunte alla formula.",
+        "nl": "Theoretische schatting, inclusief verzeepbare oliën in de formuletoevoegingen.",
+        "pt_BR": "Estimativa teórica, incluindo os óleos saponificáveis das adições à fórmula."
       }
     },
     {
@@ -47232,6 +47316,18 @@
     },
     {
       "group": "workbench",
+      "key": "settings.post_reaction_oils_not_counted",
+      "text": {
+        "de": "Nicht in der effektiven Überfettung berücksichtigt: :ingredients. Berücksichtigt werden nur Öle mit geprüften Verseifungsdaten aus dem Plattformkatalog oder Ihre Kopien davon.",
+        "es": "No se tiene en cuenta en el sobreengrasado efectivo: :ingredients. Solo cuentan los aceites con datos de saponificación verificados del catálogo de la plataforma o tus copias de ellos.",
+        "fr": "Non pris en compte dans le surgraissage effectif : :ingredients. Seules les huiles du catalogue de la plateforme avec des données de saponification vérifiées, ou vos copies de celles-ci, sont prises en compte.",
+        "it": "Non considerato nel superfat effettivo: :ingredients. Contano solo gli oli con dati di saponificazione verificati del catalogo della piattaforma o le tue copie di essi.",
+        "nl": "Niet meegeteld in de effectieve overvetting: :ingredients. Alleen oliën met geverifieerde verzepingsgegevens uit de platformcatalogus, of je kopieën daarvan, tellen mee.",
+        "pt_BR": "Não considerado no sobreengorduramento efetivo: :ingredients. Só contam os óleos com dados de saponificação verificados do catálogo da plataforma ou suas cópias deles."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.product_reference",
       "text": {
         "de": "Produktreferenz",
@@ -47456,6 +47552,102 @@
         "it": "Le quantità degli oli ricalcolano il totale e le percentuali degli oli; le aggiunte restano basate sul totale degli oli.",
         "nl": "Oliehoeveelheden herberekenen het totale oliegewicht en de oliepercentages; toevoegingen blijven gebaseerd op het totale oliegewicht.",
         "pt_BR": "As quantidades de óleo recalculam o total e os percentuais de óleos; as adições continuam baseadas no total de óleos."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.base",
+      "text": {
+        "de": "Basis",
+        "es": "Base",
+        "fr": "Base",
+        "it": "Base",
+        "nl": "Basis",
+        "pt_BR": "Base"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.dual",
+      "text": {
+        "de": "Gemischt :naoh / :koh",
+        "es": "Mixto :naoh / :koh",
+        "fr": "Mixte :naoh / :koh",
+        "it": "Misto :naoh / :koh",
+        "nl": "Gemengd :naoh / :koh",
+        "pt_BR": "Misto :naoh / :koh"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.entry",
+      "text": {
+        "de": "Eingabe",
+        "es": "Entrada",
+        "fr": "Saisie",
+        "it": "Inserimento",
+        "nl": "Invoer",
+        "pt_BR": "Entrada"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.lye",
+      "text": {
+        "de": "Lauge",
+        "es": "Álcali",
+        "fr": "Alcali",
+        "it": "Alcali",
+        "nl": "Loog",
+        "pt_BR": "Álcali"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.lye_concentration",
+      "text": {
+        "de": "Konzentration :value %",
+        "es": "Concentración :value %",
+        "fr": "Concentration :value %",
+        "it": "Concentrazione :value%",
+        "nl": "Concentratie :value%",
+        "pt_BR": "Concentração :value%"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.water_ratio",
+      "text": {
+        "de": "Verhältnis :value:1",
+        "es": "Proporción :value:1",
+        "fr": "Rapport :value:1",
+        "it": "Rapporto :value:1",
+        "nl": "Verhouding :value:1",
+        "pt_BR": "Proporção :value:1"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.superfat_excess_lye",
+      "text": {
+        "de": "Laugenüberschuss",
+        "es": "Exceso de álcali",
+        "fr": "Excès de soude",
+        "it": "Eccesso di alcali",
+        "nl": "Loogoverschot",
+        "pt_BR": "Excesso de álcali"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.superfat_low_margin",
+      "text": {
+        "de": "Geringe Sicherheitsmarge",
+        "es": "Margen de seguridad bajo",
+        "fr": "Marge de sécurité faible",
+        "it": "Margine di sicurezza ridotto",
+        "nl": "Kleine veiligheidsmarge",
+        "pt_BR": "Margem de segurança baixa"
       }
     },
     {
@@ -47892,6 +48084,18 @@
     },
     {
       "group": "workbench",
+      "key": "status.zero_count",
+      "text": {
+        "de": ":count bei 0",
+        "es": ":count en 0",
+        "fr": ":count à 0",
+        "it": ":count a 0",
+        "nl": ":count op 0",
+        "pt_BR": ":count em 0"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "status.zero_detail",
       "text": {
         "de": "Diese Zutaten bleiben in der Rezeptur, bis Mengen eingetragen werden.",
@@ -48068,6 +48272,30 @@
         "it": "Le sostituzioni del liquido di diluizione non possono superare il 100%.",
         "nl": "Vervangende vloeistoffen voor de loogoplossing mogen samen niet meer dan 100% zijn.",
         "pt_BR": "As substituições do líquido de diluição não podem exceder 100%."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.superfat_bar_floor",
+      "text": {
+        "de": "Die Überfettung fester Seife darf nicht unter :floor % liegen.",
+        "es": "El sobreengrasado del jabón en pastilla no puede ser inferior a :floor %.",
+        "fr": "Le surgraissage d’un savon solide ne peut pas être inférieur à :floor %.",
+        "it": "Il superfat del sapone solido non può essere inferiore a :floor%.",
+        "nl": "De overvetting van zeepblokken mag niet lager zijn dan :floor%.",
+        "pt_BR": "O sobreengorduramento do sabão em barra não pode ser inferior a :floor%."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.superfat_liquid_floor",
+      "text": {
+        "de": "Die Überfettung flüssiger Seife darf mit KOH :purity % nicht unter :floor % liegen.",
+        "es": "El sobreengrasado del jabón líquido no puede ser inferior a :floor % con KOH al :purity %.",
+        "fr": "Le surgraissage d’un savon liquide ne peut pas être inférieur à :floor % avec de la KOH à :purity %.",
+        "it": "Il superfat del sapone liquido non può essere inferiore a :floor% con KOH al :purity%.",
+        "nl": "De overvetting van vloeibare zeep mag met KOH :purity% niet lager zijn dan :floor%.",
+        "pt_BR": "O sobreengorduramento do sabão líquido não pode ser inferior a :floor% com KOH a :purity%."
       }
     },
     {

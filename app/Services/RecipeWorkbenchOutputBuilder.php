@@ -12,6 +12,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\SoapSap;
 use App\Support\NumberLocale;
 use App\Support\RichContentAttachmentPaths;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
@@ -671,6 +672,7 @@ class RecipeWorkbenchOutputBuilder
             'water_mode' => $draft['water_mode'],
             'water_value' => (float) $draft['water_value'],
             'superfat' => (float) $draft['superfat'],
+            'cured_water_percentage' => $draft['cured_water_percentage'] ?? null,
             'final_ingredient_list' => $draft['final_ingredient_list'] ?? null,
             'final_ingredient_list_basis_hash' => $draft['final_ingredient_list_basis_hash'] ?? null,
             'final_plain_ingredient_list' => $draft['final_plain_ingredient_list'] ?? null,
@@ -789,6 +791,7 @@ class RecipeWorkbenchOutputBuilder
             'waterMode' => $draft['water_mode'],
             'waterValue' => (float) $draft['water_value'],
             'superfat' => (float) $draft['superfat'],
+            'curedWaterPercentage' => SoapSap::curedWaterPercentage($draft['cured_water_percentage'] ?? null),
             'selectedIfraProductCategoryId' => $draft['ifra_product_category_id'] ?? null,
             'finalIngredientList' => $draft['final_ingredient_list'] ?? null,
             'finalIngredientListBasisHash' => $draft['final_ingredient_list_basis_hash'] ?? null,

@@ -93,3 +93,26 @@ it('retains non lye mass when merged labels contain both lye liquid and additive
         ->and($rows['ROSA DAMASCENA FLOWER WATER']['weight'])->toBe(75.0)
         ->and(collect($output['rows'])->sum('weight'))->toBe(1000.0);
 });
+
+it('replaces source water with the formula residual water percentage', function () {
+    $output = app(SoapCuredOutputBuilder::class)->build(
+        labeling: [
+            'default_variant_key' => 'saponified_with_superfat',
+            'list_variants' => [[
+                'key' => 'saponified_with_superfat',
+                'ingredient_rows' => [
+                    ['label' => 'SODIUM OLIVATE', 'weight' => 900, 'kind' => 'saponified_oil'],
+                    ['label' => 'AQUA', 'weight' => 300, 'kind' => 'ingredient'],
+                ],
+                'final_label_text' => 'SODIUM OLIVATE, AQUA',
+            ]],
+        ],
+        curedWeight: 1000,
+        residualWaterPercentage: 10,
+    );
+
+    $rows = collect($output['rows'])->keyBy('name');
+
+    expect($output['residual_water_percentage'])->toBe(10.0)
+        ->and($rows['AQUA'])->toMatchArray(['percentage' => 10.0, 'weight' => 100.0]);
+});

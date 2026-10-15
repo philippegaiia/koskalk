@@ -114,7 +114,7 @@
                                     <div class="grid gap-0.5 py-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
                                         <div class="text-xs font-medium leading-4 text-[var(--color-ink-strong)]">
                                             <span x-text="flag.label"></span>
-                                            @foreach (['soap.qualities.cure', 'soap.qualities.dos', 'soap.qualities.liquid'] as $stateTopic)
+                                            @foreach (['soap.qualities.cure', 'soap.qualities.dos', 'soap.qualities.liquid', 'soap.superfat'] as $stateTopic)
                                                 <span x-show="flag.helpKey === @js($stateTopic)"><x-contextual-help.trigger :topic="$stateTopic" :topics="$contextualHelp['topics'] ?? []" /></span>
                                             @endforeach
                                         </div>

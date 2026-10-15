@@ -223,7 +223,7 @@ it('does not save through a mounted component after the auth session is gone', f
         ->and(Recipe::withoutGlobalScopes()->where('name', 'Fallback Draft')->exists())->toBeFalse();
 });
 
-it('returns a validation response instead of crashing when saving NaOH soap with negative superfat', function () {
+it('returns a validation response instead of crashing when saving NaOH soap below the superfat floor', function () {
     $user = User::factory()->create();
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -245,15 +245,55 @@ it('returns a validation response instead of crashing when saving NaOH soap with
         recipeWorkbenchLifecyclePayload($oil, [
             'name' => 'Invalid NaOH Negative Superfat',
             'lye_type' => 'naoh',
-            'superfat' => -2,
+            'superfat' => -12,
         ]),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
     );
 
     expect($result['ok'])->toBeFalse()
-        ->and($result['message'])->toBe('Negative superfat is only supported for liquid or high-KOH soap workflows.')
+        ->and($result['message'])->toBe('Bar soap superfat cannot be below -10%.')
         ->and(Recipe::withoutGlobalScopes()->where('name', 'Invalid NaOH Negative Superfat')->exists())->toBeFalse();
+});
+
+it('keeps liquid formulas saved below the current superfat floor readable', function () {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $result = $component->save(
+        recipeWorkbenchLifecyclePayload($oil, [
+            'name' => 'Historical Liquid Soap',
+            'lye_type' => 'koh',
+            'koh_purity_percentage' => 100,
+            'superfat' => -8,
+        ]),
+        app(RecipeWorkbenchService::class),
+        app(RecipeContentUpdater::class),
+    );
+
+    expect($result['ok'])->toBeTrue($result['message'] ?? '');
+
+    $recipe = Recipe::withoutGlobalScopes()->where('name', 'Historical Liquid Soap')->firstOrFail();
+    $version = $recipe->currentVersion()->withoutGlobalScopes()->firstOrFail();
+    $version->forceFill(['calculation_context' => [...$version->calculation_context, 'superfat' => -22]])->saveQuietly();
+
+    $snapshot = app(RecipeWorkbenchService::class)->currentVersionSnapshot($recipe->refresh());
+
+    expect($snapshot['draft']['superfat'])->toBe(-22.0)
+        ->and($snapshot['calculation']['lye']['superfat_percentage'])->toBe(-22.0);
 });
 
 it('replaces the working draft with the selected saved version using the same workbench payload shape', function () {

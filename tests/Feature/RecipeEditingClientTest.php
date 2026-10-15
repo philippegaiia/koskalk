@@ -200,7 +200,7 @@ let poll;
 globalThis.setInterval = callback => { poll = callback; return 1; };
 globalThis.clearInterval = () => {};
 const serializeDraft = workbench => ({ name: workbench.formulaName });
-const bridge = fs.readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8').replace(/^import[^;]+;\n/gm, '').replaceAll('export async function', 'async function');
+const bridge = fs.readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8').replace(/^import[^;]+;\n/gm, '').replace(/export (async )?function /g, '$1function ');
 eval(`${bridge}\nglobalThis.persistWorkbench = persistWorkbench;`);
 const persistWorkbench = globalThis.persistWorkbench;
 const source = fs.readFileSync('resources/js/recipe-workbench/component.js', 'utf8').replace(/^import[\s\S]*?;\n/gm, '').replaceAll('export function', 'function');

@@ -8,6 +8,7 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
+use App\SoapSap;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
 
@@ -339,7 +340,9 @@ class RecipeVersionViewDataBuilder
         };
         $wetWeight = $oilWeight + $additionWeight + $waterWeight + $lyeToWeigh;
         $nonWaterWeight = max(0, $wetWeight - $waterWeight);
-        $curedWeight = $wetWeight > 0 ? $nonWaterWeight / (1 - 0.11) : 0.0;
+        $curedWeight = $wetWeight > 0
+            ? SoapSap::curedWeight($nonWaterWeight, SoapSap::curedWaterPercentage($draft['curedWaterPercentage'] ?? null))
+            : 0.0;
 
         return [
             [

@@ -2,6 +2,23 @@ import { serializeCosting, serializeDraft } from './payload';
 import { draftSignature } from './draft-signature';
 
 /**
+ * Editing-lease conflicts already have their own recovery banner, so only the
+ * remaining reasons are listed in the save error dialog.
+ */
+export function saveErrorMessages(response) {
+    const errors = response?.errors;
+
+    if (errors && typeof errors === 'object') {
+        return Object.entries(errors)
+            .filter(([key]) => key !== 'editing_lease')
+            .flatMap(([, messages]) => (Array.isArray(messages) ? messages : [messages]))
+            .filter((message) => typeof message === 'string' && message !== '');
+    }
+
+    return response?.message ? [response.message] : [];
+}
+
+/**
  * Preview calls are best-effort for incomplete drafts, but validation failures
  * returned by the server are surfaced so reachable controls do not silently
  * remove calculated outputs.
@@ -56,6 +73,7 @@ export async function persistWorkbench(workbench, method) {
         if (!response?.ok) {
             workbench.saveStatus = 'error';
             workbench.saveMessage = response?.message ?? 'The formula could not be saved.';
+            workbench.saveErrorMessages = saveErrorMessages(response);
 
             return response;
         }
@@ -99,6 +117,7 @@ export async function persistWorkbench(workbench, method) {
     } catch (error) {
         workbench.saveStatus = 'error';
         workbench.saveMessage = 'The formula could not be saved.';
+        workbench.saveErrorMessages = [workbench.saveMessage];
 
         return { ok: false, message: workbench.saveMessage };
     } finally {

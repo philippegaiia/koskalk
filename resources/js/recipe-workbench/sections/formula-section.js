@@ -111,6 +111,12 @@ export function createFormulaSection() {
             return this.lyeLiquidTotalWeight() * (this.lyeLiquidWaterPercentage() / 100);
         },
 
+        formatLyeLiquidMass(value) {
+            return this.isCalculationRejected
+                ? '—'
+                : this.format(value, this.calculatedMassDecimals(value));
+        },
+
         lyeLiquidSelectionSummary() {
             if (this.lyeLiquidRows.length === 0) {
                 return this.t('settings.lye_liquid_water_only');
@@ -171,7 +177,10 @@ export function createFormulaSection() {
             }
 
             if (this.lyeType === 'dual') {
-                return `Dual ${this.format(this.dualNaohPercentage, 0)} / ${this.format(this.dualKohPercentage, 0)}`;
+                return this.t('settings.summary.dual', {
+                    naoh: this.format(this.dualNaohPercentage, 0),
+                    koh: this.format(this.dualKohPercentage, 0),
+                });
             }
 
             return 'NaOH';
@@ -179,11 +188,11 @@ export function createFormulaSection() {
 
         get waterModeSummaryLabel() {
             if (this.waterMode === 'lye_ratio') {
-                return `Ratio ${this.format(this.waterValue, 2)}:1`;
+                return this.t('settings.summary.water_ratio', { value: this.format(this.waterValue, 2) });
             }
 
             if (this.waterMode === 'lye_concentration') {
-                return `Lye ${this.format(this.waterValue, 1)}%`;
+                return this.t('settings.summary.lye_concentration', { value: this.format(this.waterValue, 1) });
             }
 
             return this.t('soap.percent_of_oils', { amount: this.format(this.waterValue, 1) });
@@ -210,13 +219,13 @@ export function createFormulaSection() {
                 },
                 {
                     id: 'formula-weight',
-                    label: this.isCosmeticFormula ? this.t('common.total_batch') : 'Base',
+                    label: this.isCosmeticFormula ? this.t('common.total_batch') : this.t('settings.summary.base'),
                     value: `${this.format(this.oilWeight, this.oilUnit === 'g' ? 0 : 2)} ${this.oilUnit}`,
                     tone: 'neutral',
                 },
                 {
                     id: 'formula-entry',
-                    label: this.isCosmeticFormula ? this.t('cosmetic.entry_label') : 'Entry',
+                    label: this.isCosmeticFormula ? this.t('cosmetic.entry_label') : this.t('settings.summary.entry'),
                     value: this.editMode === 'weight' ? this.t('common.weight') : (this.isCosmeticFormula ? this.t('common.formula_percent') : this.t('settings.soap_percentage_entry_label')),
                     tone: 'neutral',
                 },
@@ -229,7 +238,7 @@ export function createFormulaSection() {
                     0,
                     {
                         id: 'formula-lye',
-                        label: 'Lye',
+                        label: this.t('settings.summary.lye'),
                         value: this.lyeTypeSummaryLabel,
                         tone: 'chemistry',
                     },
@@ -241,9 +250,9 @@ export function createFormulaSection() {
                     },
                     {
                         id: 'formula-superfat',
-                        label: 'Superfat',
+                        label: this.t('common.superfat'),
                         value: `${this.format(this.superfat, 1)}%`,
-                        tone: this.superfat < 0 ? 'danger' : 'chemistry',
+                        tone: { excess_lye: 'danger', low_margin: 'warning' }[this.superfatStatus] ?? 'chemistry',
                     },
                 );
             }
@@ -296,6 +305,16 @@ export function createFormulaSection() {
         },
 
         get lyeWaterDiagnostic() {
+            if (this.isCalculationRejected) {
+                return {
+                    id: 'lye-water',
+                    label: this.t('status.lye_water'),
+                    value: '—',
+                    detail: this.calculationPreviewMessage,
+                    tone: 'danger',
+                };
+            }
+
             const waterWeight = this.lyeLiquidTotalWeight();
             const lyeWeight = this.totalLyeToWeigh();
             const hasResolvedWeights = this.oilWeightTotal() > 0 && lyeWeight > 0;
@@ -320,7 +339,7 @@ export function createFormulaSection() {
             return {
                 id: 'zero-quantity',
                 label: this.t('status.missing_quantities'),
-                value: zeroRows.length > 0 ? `${zeroRows.length} at 0` : this.t('status.none'),
+                value: zeroRows.length > 0 ? this.t('status.zero_count', { count: zeroRows.length }) : this.t('status.none'),
                 detail: zeroRows.length > 0
                     ? this.t('status.zero_detail')
                     : this.t(
@@ -412,6 +431,42 @@ export function createFormulaSection() {
             return 100 - this.number(this.dualKohPercentage);
         },
 
+        /**
+         * The server refused these soap settings, so locally estimated lye and
+         * batch masses must not be shown as usable amounts.
+         */
+        get isCalculationRejected() {
+            return !this.isCosmeticFormula
+                && this.backendCalculation === null
+                && Boolean(this.calculationPreviewMessage);
+        },
+
+        get superfatStatus() {
+            const status = this.backendCalculation?.lye?.superfat_status ?? null;
+
+            if (status) {
+                return status;
+            }
+
+            return this.number(this.superfat) < 0 ? 'excess_lye' : 'normal';
+        },
+
+        get uncountedPostReactionOils() {
+            const names = this.backendCalculation?.lye?.uncounted_post_reaction_oils;
+
+            return Array.isArray(names) ? names : [];
+        },
+
+        get effectiveSuperfat() {
+            const lye = this.backendCalculation?.lye ?? null;
+
+            if (!lye || this.number(lye.post_reaction_oils_weight) <= 0) {
+                return null;
+            }
+
+            return this.number(lye.effective_superfat_percentage);
+        },
+
         get lyeSummaryCards() {
             const backendLye = this.backendCalculation?.lye ?? null;
             const cards = [];
@@ -480,7 +535,9 @@ export function createFormulaSection() {
 
             cards.push(...this.lyeLiquidSummaryCards());
 
-            return cards;
+            return this.isCalculationRejected
+                ? cards.map((card) => ({ ...card, value: null }))
+                : cards;
         },
 
         totalLyeToWeigh() {
@@ -488,9 +545,13 @@ export function createFormulaSection() {
         },
 
         formatLyeSummaryCardValue(card) {
+            if (card?.value === null) {
+                return '—';
+            }
+
             const value = this.number(card?.value ?? 0);
 
-            return this.format(value, this.calculatedMassDecimals(value));
+            return `${this.format(value, this.calculatedMassDecimals(value))} ${this.oilUnit}`;
         },
 
         formatPercentageTotal(value) {
@@ -606,27 +667,6 @@ export function createFormulaSection() {
 
         lyeBreakdown() {
             return buildLyeBreakdown(this);
-        },
-
-        waterWeightFor(selectedLyeWeight) {
-            const oilWeight = this.oilWeightTotal();
-            const waterValue = this.number(this.waterValue);
-
-            if (this.waterMode === 'lye_ratio') {
-                return selectedLyeWeight * waterValue;
-            }
-
-            if (this.waterMode === 'lye_concentration') {
-                if (waterValue <= 0 || waterValue >= 100) {
-                    return 0;
-                }
-
-                const concentration = waterValue / 100;
-
-                return (selectedLyeWeight / concentration) - selectedLyeWeight;
-            }
-
-            return oilWeight * (waterValue / 100);
         },
 
         averageFattyAcidProfile() {

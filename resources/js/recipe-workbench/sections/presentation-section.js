@@ -320,8 +320,12 @@ export function createPresentationSection() {
 
             const producedGlycerineWeight = this.backendCalculation?.lye?.selected?.glycerine_weight
                 ?? this.lyeBreakdown().glycerine_weight;
-            const wetWeight = this.finalBatchWeight();
-            const curedWeight = this.curedBatchWeight();
+            const serverBasis = this.labelingBasis?.cured_weight == null ? null : this.labelingBasis;
+            const wetWeight = serverBasis ? this.number(serverBasis.formula_weight) : this.finalBatchWeight();
+            const curedWeight = serverBasis ? this.number(serverBasis.cured_weight) : this.curedBatchWeight();
+            const calculatedMass = (value) => (this.isCalculationRejected
+                ? '—'
+                : `${this.format(value, this.calculatedMassDecimals(value))} ${this.oilUnit}`);
 
             return [
                 {
@@ -332,17 +336,17 @@ export function createPresentationSection() {
                 {
                     id: 'produced-glycerine',
                     label: this.t('soap.glycerine'),
-                    value: `${this.format(producedGlycerineWeight, this.calculatedMassDecimals(producedGlycerineWeight))} ${this.oilUnit}`,
+                    value: calculatedMass(producedGlycerineWeight),
                 },
                 {
                     id: 'wet-weight',
                     label: this.t('soap.wet_weight'),
-                    value: `${this.format(wetWeight, this.calculatedMassDecimals(wetWeight))} ${this.oilUnit}`,
+                    value: calculatedMass(wetWeight),
                 },
                 {
                     id: 'cured-weight',
                     label: this.t('soap.cured_weight'),
-                    value: `${this.format(curedWeight, this.calculatedMassDecimals(curedWeight))} ${this.oilUnit}`,
+                    value: calculatedMass(curedWeight),
                 },
             ];
         },
@@ -592,6 +596,13 @@ export function createPresentationSection() {
             return this.number(this.labelingBasis?.cured_weight ?? this.curedBatchWeight());
         },
 
+        get curedWaterPercentageLabel() {
+            const value = this.number(this.curedWaterPercentage);
+            const decimals = Number.isInteger(value) ? 0 : (Number.isInteger(value * 10) ? 1 : 2);
+
+            return this.format(value, decimals);
+        },
+
         get curedSoapResidualWaterWeight() {
             if (this.isCosmeticFormula) {
                 return 0;
@@ -599,7 +610,7 @@ export function createPresentationSection() {
 
             return this.number(
                 this.labelingBasis?.residual_water_weight
-                ?? (this.curedSoapOutputBasisWeight * 0.11),
+                ?? (this.curedSoapOutputBasisWeight * (this.number(this.curedWaterPercentage) / 100)),
             );
         },
 
@@ -1126,6 +1137,11 @@ export function createPresentationSection() {
                     label: this.t('qualities.high_koh'),
                     helpKey: 'soap.qualities.liquid',
                     explanation: this.t('qualities.high_koh_help'),
+                },
+                effective_superfat_leaves_excess_lye: {
+                    label: this.t('qualities.excess_lye'),
+                    helpKey: 'soap.superfat',
+                    explanation: this.t('qualities.excess_lye_help'),
                 },
                 negative_superfat_requires_neutralization_and_ph_control: {
                     label: this.t('qualities.negative_superfat'),

@@ -9,6 +9,7 @@ use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\RegulatoryRegime;
+use App\SoapSap;
 
 class RecipeWorkbenchVersionPayloadMapper
 {
@@ -99,6 +100,7 @@ class RecipeWorkbenchVersionPayloadMapper
                 : 'percent_of_oils',
             'waterValue' => (float) ($waterSettings['value'] ?? 38),
             'superfat' => (float) ($calculationContext['superfat'] ?? 5),
+            'curedWaterPercentage' => SoapSap::curedWaterPercentage($calculationContext['cured_water_percentage'] ?? null),
             'ifraCategorySelectionMode' => $version->ifra_category_selection_mode?->value ?? 'automatic',
             'ifraAmendmentId' => $version->ifra_amendment_id,
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,

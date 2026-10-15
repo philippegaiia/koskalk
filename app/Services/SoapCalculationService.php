@@ -17,6 +17,21 @@ class SoapCalculationService
 
     private const GLYCERINE_FROM_KOH_RATIO = 92.09382 / 168.3168;
 
+    /** Lowest lye discount accepted for bar and hybrid soap. */
+    private const BAR_SUPERFAT_FLOOR = -10.0;
+
+    /** Lowest lye discount accepted for liquid soap made with KOH 90%. */
+    private const LIQUID_KOH_90_SUPERFAT_FLOOR = -20.0;
+
+    /** Lowest lye discount accepted for liquid soap made with KOH 100%. */
+    private const LIQUID_KOH_100_SUPERFAT_FLOOR = -10.0;
+
+    /** Lowest lye discount accepted before the authoring floors existed; saved versions stay readable down to it. */
+    private const HISTORICAL_SUPERFAT_FLOOR = -25.0;
+
+    /** Effective superfat up to this value leaves a thin safety margin against SAP variation. */
+    private const LOW_SUPERFAT_MARGIN = 2.0;
+
     /** @var array<string, float>|null */
     private ?array $iodineFactorsCache = null;
 
@@ -33,8 +48,10 @@ class SoapCalculationService
      *     dual_lye_koh_percentage?: float|int|string,
      *     koh_purity_percentage?: float|int|string,
      *     water_mode?: 'percent_of_oils'|'lye_ratio'|'lye_concentration',
-     *     water_value?: float|int|string
+     *     water_value?: float|int|string,
+     *     enforce_superfat_floors?: bool
      * }  $settings
+     * @param  array<int, array{weight: float|int|string, koh_sap_value?: float|int|string|null}>  $postReactionOils
      * @return array{
      *     totals: array{oils_weight: float},
      *     lye: array{
@@ -57,7 +74,13 @@ class SoapCalculationService
      *             total_active_lye_weight: float,
      *             glycerine_weight: float
      *         },
-     *         superfat_percentage: float
+     *         excess: array{naoh_weight: float, koh_weight: float},
+     *         saponified_fraction: float,
+     *         post_reaction_saponified_fraction: float,
+     *         superfat_percentage: float,
+     *         effective_superfat_percentage: float,
+     *         post_reaction_oils_weight: float,
+     *         superfat_status: 'excess_lye'|'low_margin'|'normal'
      *     },
      *     properties: array{
      *         fatty_acid_profile: array<string, float>,
@@ -66,8 +89,12 @@ class SoapCalculationService
      *         qualities: array<string, float>
      *     }
      * }
+     *
+     * Post-reaction oils are saponifiable oils added outside the saponified
+     * oil phase. They do not change the lye amount, but they consume part of
+     * it, so they lower the effective superfat of the whole formula.
      */
-    public function calculate(array $oils, array $settings = []): array
+    public function calculate(array $oils, array $settings = [], array $postReactionOils = []): array
     {
         if ($oils === []) {
             throw new InvalidArgumentException('At least one oil is required for soap calculation.');
@@ -81,7 +108,12 @@ class SoapCalculationService
         $kohPurityPercentage = $this->normalizeNumericValue($settings['koh_purity_percentage'] ?? 100, 'KOH purity percentage');
         $soapContext = $this->deriveSoapContext($lyeType, $dualLyeKohPercentage);
 
-        $this->validateSuperfatForContext($superfat, $soapContext);
+        $this->validateSuperfatForContext(
+            $superfat,
+            $soapContext,
+            $kohPurityPercentage,
+            (bool) ($settings['enforce_superfat_floors'] ?? true),
+        );
 
         $oilsWeight = 0.0;
         $naohTheoretical = 0.0;
@@ -109,6 +141,22 @@ class SoapCalculationService
             }
         }
 
+        $postReactionOilsWeight = 0.0;
+        $postReactionKohTheoretical = 0.0;
+
+        foreach ($postReactionOils as $oil) {
+            $weight = $this->normalizeNumericValue($oil['weight'] ?? 0, 'post-reaction oil weight');
+            $kohSapValue = SoapSap::normalizeKohSapInput($this->normalizeNumericValue($oil['koh_sap_value'] ?? 0, 'KOH SAP value'));
+
+            if ($weight <= 0 || $kohSapValue <= 0) {
+                continue;
+            }
+
+            $postReactionOilsWeight += $weight;
+            $postReactionKohTheoretical += $weight * $kohSapValue;
+        }
+
+        $effectiveSuperfat = $this->effectiveSuperfat($superfat, $kohTheoretical, $postReactionKohTheoretical);
         $naohAdjusted = $naohTheoretical * (1 - ($superfat / 100));
         $kohAdjusted = $kohTheoretical * (1 - ($superfat / 100));
         $selectedLye = $this->selectedLyeProfile(
@@ -118,6 +166,19 @@ class SoapCalculationService
             $dualLyeKohPercentage,
             $kohPurityPercentage,
         );
+        $saponification = $this->saponificationShare(
+            $lyeType,
+            $dualLyeKohPercentage,
+            $superfat,
+            $kohTheoretical,
+            $postReactionKohTheoretical,
+            $naohAdjusted,
+            $kohAdjusted,
+        );
+
+        if ($saponification['glycerine_weight'] !== null) {
+            $selectedLye['glycerine_weight'] = $this->roundValue($saponification['glycerine_weight']);
+        }
         $waterWeight = $this->calculateWaterWeight($waterMode, $waterValue, $oilsWeight, $selectedLye['total_active_lye_weight']);
         $waterProcessModifiers = $this->calculateWaterProcessModifiers($waterWeight, $oilsWeight, $selectedLye['total_active_lye_weight']);
 
@@ -126,7 +187,7 @@ class SoapCalculationService
         $superfatEffects = $this->calculateSuperfatEffects($fattyAcidProfile, $fattyAcidGroups, $superfat);
         $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical, $superfat, $superfatEffects, $waterProcessModifiers, $soapContext);
         $qualityApplicability = $this->deriveQualityApplicability($qualities, $soapContext, $superfat);
-        $warnings = $this->buildSoapWarnings($qualities, $fattyAcidGroups, $superfat, $soapContext);
+        $warnings = $this->buildSoapWarnings($qualities, $fattyAcidGroups, $superfat, $soapContext, $effectiveSuperfat);
 
         return [
             'totals' => [
@@ -153,7 +214,16 @@ class SoapCalculationService
                     'koh_adjusted' => $this->roundValue($kohAdjusted * self::GLYCERINE_FROM_KOH_RATIO),
                 ],
                 'selected' => $selectedLye,
+                'excess' => [
+                    'naoh_weight' => $this->roundValue($saponification['free_naoh_weight']),
+                    'koh_weight' => $this->roundValue($saponification['free_koh_weight']),
+                ],
+                'saponified_fraction' => round($saponification['fraction'], 8),
+                'post_reaction_saponified_fraction' => $postReactionKohTheoretical > 0 ? round($saponification['fraction'], 8) : 0.0,
                 'superfat_percentage' => $this->roundValue($superfat),
+                'effective_superfat_percentage' => $this->roundValue($effectiveSuperfat),
+                'post_reaction_oils_weight' => $this->roundValue($postReactionOilsWeight),
+                'superfat_status' => $this->superfatStatus($effectiveSuperfat),
             ],
             'soap_context' => $soapContext,
             'properties' => [
@@ -171,9 +241,11 @@ class SoapCalculationService
     /**
      * Calculate the theoretical cured-soap mass attributable to one oil.
      *
-     * The saponified oil portion gains its selected active lye mass and loses
-     * the glycerine produced by that same lye reaction. The result can then
-     * be assigned to the oil's soap-specific INCI output.
+     * The saponified oil portion gains the active lye mass that reacts with it
+     * and loses the glycerine produced by that reaction. A negative superfat
+     * saponifies the whole oil; the lye beyond that stays free and is reported
+     * as excess rather than as extra soap. The result can then be assigned to
+     * the oil's soap-specific INCI output.
      *
      * @param  array{
      *     superfat?: float|int|string,
@@ -189,7 +261,9 @@ class SoapCalculationService
      *     glycerine_weight: float,
      *     naoh_soap_salt_weight: float,
      *     koh_soap_salt_weight: float,
-     *     soap_salt_weight: float
+     *     soap_salt_weight: float,
+     *     excess_naoh_weight: float,
+     *     excess_koh_weight: float
      * }
      */
     public function calculateOilReactionProducts(float $oilWeight, float $kohSapValue, array $settings = []): array
@@ -204,7 +278,8 @@ class SoapCalculationService
         $kohPurityPercentage = $this->normalizeNumericValue($settings['koh_purity_percentage'] ?? 100, 'KOH purity percentage');
         $soapContext = $this->deriveSoapContext($lyeType, $dualLyeKohPercentage);
 
-        $this->validateSuperfatForContext($superfat, $soapContext);
+        // The formula-level calculation already applied the authoring floors.
+        $this->validateSuperfatForContext($superfat, $soapContext, $kohPurityPercentage, false);
 
         $normalizedKohSapValue = SoapSap::normalizeKohSapInput($kohSapValue);
         $naohSapValue = SoapSap::deriveNaohFromKoh($normalizedKohSapValue);
@@ -218,20 +293,25 @@ class SoapCalculationService
             $dualLyeKohPercentage,
             $kohPurityPercentage,
         );
-        $kohRatio = match ($lyeType) {
-            'naoh' => 0.0,
-            'koh' => 1.0,
-            'dual' => $dualLyeKohPercentage / 100,
-        };
+        $kohRatio = $this->kohRatio($lyeType, $dualLyeKohPercentage);
         $naohRatio = 1 - $kohRatio;
-        $saponifiedWeight = $oilWeight * $superfatMultiplier;
-        $naohGlycerineWeight = $selectedLye['naoh_weight'] * self::GLYCERINE_FROM_NAOH_RATIO;
-        $kohGlycerineWeight = $selectedLye['koh_weight'] * self::GLYCERINE_FROM_KOH_RATIO;
+        $saponifiedWeight = $oilWeight * min(1.0, $superfatMultiplier);
+        $reactingLye = $superfat < 0
+            ? $this->reactingLye(
+                $lyeType,
+                $dualLyeKohPercentage,
+                $oilWeight * $naohSapValue,
+                $oilWeight * $normalizedKohSapValue,
+                $superfat,
+            )
+            : ['naoh_weight' => $selectedLye['naoh_weight'], 'koh_weight' => $selectedLye['koh_weight']];
+        $naohGlycerineWeight = $reactingLye['naoh_weight'] * self::GLYCERINE_FROM_NAOH_RATIO;
+        $kohGlycerineWeight = $reactingLye['koh_weight'] * self::GLYCERINE_FROM_KOH_RATIO;
         $naohSoapSaltWeight = ($saponifiedWeight * $naohRatio)
-            + $selectedLye['naoh_weight']
+            + $reactingLye['naoh_weight']
             - $naohGlycerineWeight;
         $kohSoapSaltWeight = ($saponifiedWeight * $kohRatio)
-            + $selectedLye['koh_weight']
+            + $reactingLye['koh_weight']
             - $kohGlycerineWeight;
 
         return [
@@ -243,6 +323,84 @@ class SoapCalculationService
             'naoh_soap_salt_weight' => $this->roundValue($naohSoapSaltWeight),
             'koh_soap_salt_weight' => $this->roundValue($kohSoapSaltWeight),
             'soap_salt_weight' => $this->roundValue($naohSoapSaltWeight + $kohSoapSaltWeight),
+            'excess_naoh_weight' => $this->roundValue($superfat < 0 ? max(0.0, $naohAdjusted * $naohRatio - $reactingLye['naoh_weight']) : 0.0),
+            'excess_koh_weight' => $this->roundValue($superfat < 0 ? max(0.0, $kohAdjusted * $kohRatio - $reactingLye['koh_weight']) : 0.0),
+        ];
+    }
+
+    /**
+     * Lye is not selective: it reacts with every saponifiable oil in the
+     * formula, including oils added after the reaction, in the same
+     * proportion. Every oil therefore keeps the same free share, which is the
+     * effective superfat, and only lye beyond what all oils can absorb stays
+     * free. Without post-reaction oils and with a non-negative superfat the
+     * historical calculation is kept unchanged (glycerine_weight null).
+     *
+     * @return array{fraction: float, glycerine_weight: float|null, free_naoh_weight: float, free_koh_weight: float}
+     */
+    private function saponificationShare(
+        string $lyeType,
+        float $dualLyeKohPercentage,
+        float $superfat,
+        float $kohTheoretical,
+        float $postReactionKohTheoretical,
+        float $naohAdjusted,
+        float $kohAdjusted,
+    ): array {
+        $totalKohTheoretical = $kohTheoretical + max(0.0, $postReactionKohTheoretical);
+        $fraction = $totalKohTheoretical > 0
+            ? min(1.0, (1 - ($superfat / 100)) * $kohTheoretical / $totalKohTheoretical)
+            : 0.0;
+
+        if ($postReactionKohTheoretical <= 0 && $superfat >= 0) {
+            return ['fraction' => $fraction, 'glycerine_weight' => null, 'free_naoh_weight' => 0.0, 'free_koh_weight' => 0.0];
+        }
+
+        $kohRatio = $this->kohRatio($lyeType, $dualLyeKohPercentage);
+        $reactingKohEquivalent = $totalKohTheoretical * $fraction;
+        $reactingNaoh = $reactingKohEquivalent * SoapSap::NAOH_FROM_KOH_RATIO * (1 - $kohRatio);
+        $reactingKoh = $reactingKohEquivalent * $kohRatio;
+
+        return [
+            'fraction' => $fraction,
+            'glycerine_weight' => ($reactingNaoh * self::GLYCERINE_FROM_NAOH_RATIO) + ($reactingKoh * self::GLYCERINE_FROM_KOH_RATIO),
+            'free_naoh_weight' => max(0.0, ($naohAdjusted * (1 - $kohRatio)) - $reactingNaoh),
+            'free_koh_weight' => max(0.0, ($kohAdjusted * $kohRatio) - $reactingKoh),
+        ];
+    }
+
+    private function kohRatio(string $lyeType, float $dualLyeKohPercentage): float
+    {
+        return match ($lyeType) {
+            'koh' => 1.0,
+            'dual' => $dualLyeKohPercentage / 100,
+            default => 0.0,
+        };
+    }
+
+    /**
+     * Lye that actually reacts: never more than the oils can saponify, even
+     * when a negative superfat adds lye beyond full saponification.
+     *
+     * @return array{naoh_weight: float, koh_weight: float, glycerine_weight: float}
+     */
+    private function reactingLye(
+        string $lyeType,
+        float $dualLyeKohPercentage,
+        float $naohTheoretical,
+        float $kohTheoretical,
+        float $superfat,
+    ): array {
+        $kohRatio = $this->kohRatio($lyeType, $dualLyeKohPercentage);
+        $reactingShare = min(1.0, 1 - ($superfat / 100));
+        $naohWeight = $naohTheoretical * $reactingShare * (1 - $kohRatio);
+        $kohWeight = $kohTheoretical * $reactingShare * $kohRatio;
+
+        return [
+            'naoh_weight' => $naohWeight,
+            'koh_weight' => $kohWeight,
+            'glycerine_weight' => ($naohWeight * self::GLYCERINE_FROM_NAOH_RATIO)
+                + ($kohWeight * self::GLYCERINE_FROM_KOH_RATIO),
         ];
     }
 
@@ -288,19 +446,76 @@ class SoapCalculationService
     /**
      * @param  array<string, mixed>  $soapContext
      */
-    private function validateSuperfatForContext(float $superfat, array $soapContext): void
-    {
+    private function validateSuperfatForContext(
+        float $superfat,
+        array $soapContext,
+        float $kohPurityPercentage,
+        bool $enforceAuthoringFloors = true,
+    ): void {
         if ($superfat >= 100) {
             throw new InvalidArgumentException('The superfat percentage must be below 100.');
         }
 
-        if ($superfat < 0 && ! $this->isLiquidOrHighKohContext($soapContext)) {
-            throw new InvalidArgumentException('Negative superfat is only supported for liquid or high-KOH soap workflows.');
+        if (! $enforceAuthoringFloors) {
+            if ($superfat < self::HISTORICAL_SUPERFAT_FLOOR) {
+                throw new InvalidArgumentException('The superfat percentage must not be below -25%.');
+            }
+
+            return;
         }
 
-        if ($superfat < -25) {
-            throw new InvalidArgumentException('Liquid soap negative superfat must not be below -25%.');
+        if (! $this->isLiquidOrHighKohContext($soapContext)) {
+            if ($superfat < self::BAR_SUPERFAT_FLOOR) {
+                throw new InvalidArgumentException(__('workbench.validation.superfat_bar_floor', [
+                    'floor' => $this->formatFloor(self::BAR_SUPERFAT_FLOOR),
+                ]));
+            }
+
+            return;
         }
+
+        $floor = $kohPurityPercentage < 100
+            ? self::LIQUID_KOH_90_SUPERFAT_FLOOR
+            : self::LIQUID_KOH_100_SUPERFAT_FLOOR;
+
+        if ($superfat < $floor) {
+            throw new InvalidArgumentException(__('workbench.validation.superfat_liquid_floor', [
+                'floor' => $this->formatFloor($floor),
+                'purity' => $this->formatFloor($kohPurityPercentage),
+            ]));
+        }
+    }
+
+    private function formatFloor(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Express the lye discount against every saponifiable oil in the formula,
+     * including oils added after the reaction.
+     */
+    private function effectiveSuperfat(float $superfat, float $kohTheoretical, float $postReactionKohTheoretical): float
+    {
+        $totalKohTheoretical = $kohTheoretical + $postReactionKohTheoretical;
+
+        if ($postReactionKohTheoretical <= 0 || $totalKohTheoretical <= 0) {
+            return $superfat;
+        }
+
+        return 100 * (1 - ((1 - ($superfat / 100)) * $kohTheoretical / $totalKohTheoretical));
+    }
+
+    /**
+     * @return 'excess_lye'|'low_margin'|'normal'
+     */
+    private function superfatStatus(float $effectiveSuperfat): string
+    {
+        return match (true) {
+            $effectiveSuperfat < 0 => 'excess_lye',
+            $effectiveSuperfat <= self::LOW_SUPERFAT_MARGIN => 'low_margin',
+            default => 'normal',
+        };
     }
 
     /**
@@ -380,12 +595,16 @@ class SoapCalculationService
      * @param  array<string, mixed>  $soapContext
      * @return array<int, string>
      */
-    private function buildSoapWarnings(array $qualities, array $fattyAcidGroups, float $superfat, array $soapContext): array
+    private function buildSoapWarnings(array $qualities, array $fattyAcidGroups, float $superfat, array $soapContext, float $effectiveSuperfat): array
     {
         $warnings = [];
 
         if ($this->isLiquidOrHighKohContext($soapContext)) {
             $warnings[] = 'high_koh_context_process_dependent';
+        }
+
+        if (! $this->isLiquidOrHighKohContext($soapContext) && $effectiveSuperfat < 0) {
+            $warnings[] = 'effective_superfat_leaves_excess_lye';
         }
 
         if ($this->isLiquidOrHighKohContext($soapContext) && $superfat < 0) {

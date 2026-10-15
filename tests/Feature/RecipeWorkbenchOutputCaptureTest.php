@@ -358,7 +358,7 @@ JS], base_path());
     expect($costingTab)
         ->toContain('packagingCostPerFinishedUnitForRow(row) === null ? \'\' : format(packagingCostPerFinishedUnitForRow(row), 2)')
         ->toContain('t(\'costing.summary.prices_required\')')
-        ->toContain('lineCostForRow(row) === null ? \'\' : format(lineCostForRow(row), 2)')
+        ->toContain('x-text="costingLineCostLabel(row)"')
         ->toContain('x-show="hasUnpricedCostingRows"')
         ->toContain('t(\'costing.summary.partial_totals\')');
 });

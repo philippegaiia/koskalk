@@ -258,6 +258,7 @@ export function createCostingSection(payload) {
                 weight,
                 weightUnit: this.costingBaseOilUnit,
                 defaultPricePerKg: ingredient?.default_price_per_kg ?? null,
+                calculated: phaseKey === 'lye_water',
             };
         },
 
@@ -309,6 +310,7 @@ export function createCostingSection(payload) {
                         weight,
                         weightUnit: this.costingBaseOilUnit,
                         defaultPricePerKg: ingredient.default_price_per_kg ?? null,
+                        calculated: true,
                     };
                 })
                 .filter(Boolean);
@@ -345,6 +347,7 @@ export function createCostingSection(payload) {
                 weight,
                 weightUnit: this.costingBaseOilUnit,
                 defaultPricePerKg: waterIngredient.default_price_per_kg ?? null,
+                calculated: true,
             }];
         },
 
@@ -488,7 +491,33 @@ export function createCostingSection(payload) {
             return convertCostingMass(nonNegativeNumber(weight), unit, 'kg');
         },
 
+        /**
+         * Lye and dilution-liquid quantities come from the soap calculation;
+         * when the server rejects the settings they are not usable amounts.
+         */
+        costingRowIsMasked(row) {
+            return Boolean(row?.calculated) && this.isCalculationRejected;
+        },
+
+        costingRowWeightLabel(row) {
+            return this.costingRowIsMasked(row) ? '—' : this.format(row.weight, 2);
+        },
+
+        costingLineCostLabel(row) {
+            if (this.costingRowIsMasked(row)) {
+                return '—';
+            }
+
+            const lineCost = this.lineCostForRow(row);
+
+            return lineCost === null ? '' : this.format(lineCost, 2);
+        },
+
         lineCostForRow(row) {
+            if (this.costingRowIsMasked(row)) {
+                return null;
+            }
+
             const price = this.costingPriceForRow(row);
 
             if (!this.hasKnownCostingPrice(price)) {
@@ -511,6 +540,10 @@ export function createCostingSection(payload) {
         },
 
         get ingredientCostTotal() {
+            if (this.costingFormulaRows.some((row) => this.costingRowIsMasked(row))) {
+                return null;
+            }
+
             return this.costingFormulaRows.reduce((total, row) => {
                 const lineCost = this.lineCostForRow(row);
 
@@ -576,7 +609,7 @@ export function createCostingSection(payload) {
         },
 
         get totalBatchCost() {
-            if (this.packagingCostTotal === null) {
+            if (this.ingredientCostTotal === null || this.packagingCostTotal === null) {
                 return null;
             }
 

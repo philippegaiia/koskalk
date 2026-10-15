@@ -179,11 +179,29 @@
 	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
 	 <p id="setting-superfat" class="sk-eyebrow">{{ __('workbench.common.superfat') }} <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" /></p>
 	 <div class="mt-3 flex items-center justify-between gap-3 text-sm">
-	 <span aria-hidden="true"></span>
-	 <span :class="superfat < 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]'" class="numeric font-semibold" x-text="`${format(superfat, 1)}%`"></span>
+	 <span>
+	 <template x-if="superfatStatus === 'excess_lye'">
+	 <span role="status" class="text-xs font-medium text-[var(--color-danger-strong)]">{{ __('workbench.settings.superfat_excess_lye') }}</span>
+	 </template>
+	 <template x-if="superfatStatus === 'low_margin'">
+	 <span role="status" class="text-xs font-medium text-[var(--color-warning-strong)]">{{ __('workbench.settings.superfat_low_margin') }}</span>
+	 </template>
+	 </span>
+	 <span :class="superfatStatus === 'excess_lye' ? 'text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]')" class="numeric font-semibold" x-text="`${format(superfat, 1)}%`"></span>
 	 </div>
-	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-[var(--color-danger)]' : 'accent-[var(--color-active)]'" class="mt-3 w-full" />
-	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="number(superfat) < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
+	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfatStatus === 'excess_lye' ? 'accent-[var(--color-danger)]' : (superfatStatus === 'low_margin' ? 'accent-[var(--color-warning)]' : 'accent-[var(--color-active)]')" class="mt-3 w-full" />
+	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfatStatus === 'excess_lye' ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'border-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]')" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
+	 <template x-if="effectiveSuperfat !== null">
+	 <p role="status" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+	 <span class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.settings.effective_superfat') }}</span>
+	 <span class="numeric font-semibold" :class="superfatStatus === 'excess_lye' ? 'text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]')" x-text="`${format(effectiveSuperfat, 1)}%`"></span>
+	 <span>· {{ __('workbench.settings.effective_superfat_note') }}</span>
+	 <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" />
+	 </p>
+	 </template>
+	 <template x-if="uncountedPostReactionOils.length > 0">
+	 <p role="status" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="t('settings.post_reaction_oils_not_counted', { ingredients: uncountedPostReactionOils.join(', ') })"></p>
+	 </template>
 	 </div>
 	 </div>
 
@@ -282,9 +300,9 @@
 	 <div><p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p><p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p></div>
 	 <label class="flex items-center gap-2"><span class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_percentage_short') }}</span><input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" :style="decimalAlignmentStyle(row.percentage)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('settings.lye_liquid_percentage_for', { ingredient: row.name })" class="numeric sk-decimal-aligned w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm" /></label>
 	 <span class="flex items-center gap-2 text-sm text-[var(--color-ink-soft)]">
-	 <span class="sr-only" x-text="t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row))), unit: oilUnit })"></span>
+	 <span class="sr-only" x-text="t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: formatLyeLiquidMass(lyeLiquidWeight(row)), unit: oilUnit })"></span>
 	 <span aria-hidden="true" class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_fresh_weight_mobile') }}</span>
-	 <span aria-hidden="true" class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(lyeLiquidWeight(row))" x-text="format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row)))"></span>
+	 <span aria-hidden="true" class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(lyeLiquidWeight(row))" x-text="formatLyeLiquidMass(lyeLiquidWeight(row))"></span>
 	 <span aria-hidden="true" class="sm:hidden" x-text="oilUnit"></span>
 	 </span>
 	 <button type="button" @click="removeIngredient('lye_water', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('settings.lye_liquid_remove', { ingredient: row.name })"><x-action-icon name="close" /></button>
@@ -293,7 +311,7 @@
 	 </div>
 	 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-2.5 text-xs">
 	 <span :class="lyeLiquidCompositionIsValid ? 'text-[var(--color-ink-soft)]' : 'text-[var(--color-danger-strong)]'" x-text="lyeLiquidCompositionIsValid ? t('settings.lye_liquid_replaced', { percentage: format(lyeLiquidPercentageTotal(), 2) }) : t('settings.lye_liquid_exceeds')"></span>
-	 <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="t('settings.lye_liquid_water_summary', { percentage: format(lyeLiquidWaterPercentage(), 2), weight: format(lyeLiquidWaterWeight(), calculatedMassDecimals(lyeLiquidWaterWeight())), unit: oilUnit })"></span>
+	 <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="t('settings.lye_liquid_water_summary', { percentage: format(lyeLiquidWaterPercentage(), 2), weight: formatLyeLiquidMass(lyeLiquidWaterWeight()), unit: oilUnit })"></span>
 	 </div>
 	 </div>
 	 </div>

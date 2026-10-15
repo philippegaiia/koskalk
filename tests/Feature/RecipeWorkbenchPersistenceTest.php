@@ -1403,7 +1403,7 @@ it('reuses one preview bundle when calculation and labeling refresh together', f
     ]);
 });
 
-it('returns a visible validation response for NaOH negative superfat previews', function () {
+it('returns a visible validation response for NaOH superfat previews below the floor', function () {
     ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -1421,18 +1421,286 @@ it('returns a visible validation response for NaOH negative superfat previews', 
 
     $payload = workbenchSoapDraftPayload($ingredient, oilWeight: 1000);
     $payload['lye_type'] = 'naoh';
-    $payload['superfat'] = -5;
+    $payload['superfat'] = -12;
 
     $calculationResult = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
     $labelingResult = $component->previewLabeling($payload, app(RecipeWorkbenchService::class));
 
     expect($calculationResult['ok'])->toBeFalse()
-        ->and($calculationResult['message'])->toBe('Negative superfat is only supported for liquid or high-KOH soap workflows.')
+        ->and($calculationResult['message'])->toBe('Bar soap superfat cannot be below -10%.')
         ->and($calculationResult['calculation'])->toBeNull()
         ->and($calculationResult['labeling'])->toBeNull()
         ->and($labelingResult['ok'])->toBeFalse()
-        ->and($labelingResult['message'])->toBe('Negative superfat is only supported for liquid or high-KOH soap workflows.')
+        ->and($labelingResult['message'])->toBe('Bar soap superfat cannot be below -10%.')
         ->and($labelingResult['labeling'])->toBeNull();
+});
+
+it('previews effective superfat from saponifiable oils added after the reaction', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $addedOil = makeCarrierOilIngredient();
+    $untrustedAddition = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => false,
+        'is_active' => true,
+    ]);
+
+    foreach ([$oil, $addedOil, $untrustedAddition] as $ingredient) {
+        IngredientSapProfile::factory()->create([
+            'ingredient_id' => $ingredient->id,
+            'koh_sap_value' => 0.188,
+        ]);
+    }
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['superfat'] = -5;
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $addedOil->id, 'percentage' => 10, 'weight' => 100, 'note' => null],
+        ['ingredient_id' => $untrustedAddition->id, 'percentage' => 10, 'weight' => 100, 'note' => null],
+    ];
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['superfat_percentage'])->toBe(-5.0)
+        ->and($result['calculation']['lye']['post_reaction_oils_weight'])->toBe(100.0)
+        ->and($result['calculation']['lye']['effective_superfat_percentage'])->toBe(4.5455)
+        ->and($result['calculation']['lye']['superfat_status'])->toBe('normal');
+});
+
+it('keeps the saponified ingredient list in mass balance with negative superfat', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $oil->update(['soap_inci_naoh_name' => 'SODIUM OLIVATE']);
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['regulatory_regime'] = 'none';
+    $payload['superfat'] = -5;
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $variant = collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $rows = collect($variant['ingredient_rows'])->keyBy('label');
+
+    expect($result['ok'])->toBeTrue()
+        ->and($rows)->toHaveKey('SODIUM HYDROXIDE')
+        ->and($rows['SODIUM HYDROXIDE']['weight'])->toBe($result['calculation']['lye']['excess']['naoh_weight'])
+        ->and(round($rows->sum('weight'), 2))->toBe(round($result['labeling']['basis']['formula_weight'], 2));
+});
+
+it('saponifies part of the oils added after the reaction instead of listing free lye', function (float $superfat, float $fraction) {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $oil->update(['soap_inci_naoh_name' => 'SODIUM OLIVATE']);
+    $shea = makeCarrierOilIngredient();
+    $shea->update([
+        'display_name' => 'Shea Butter',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+        'soap_inci_naoh_name' => 'SODIUM SHEABUTTERATE',
+    ]);
+
+    foreach ([$oil, $shea] as $ingredient) {
+        IngredientSapProfile::factory()->create([
+            'ingredient_id' => $ingredient->id,
+            'koh_sap_value' => 0.188,
+        ]);
+    }
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['regulatory_regime'] = 'none';
+    $payload['superfat'] = $superfat;
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $shea->id, 'percentage' => 10, 'weight' => 100, 'note' => null],
+    ];
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $variant = collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $rows = collect($variant['ingredient_rows'])->keyBy('label');
+    $plainList = $result['labeling']['plain_language_list']['final_label_text'];
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['post_reaction_saponified_fraction'])->toBe($fraction)
+        ->and($result['calculation']['lye']['excess'])->toBe(['naoh_weight' => 0.0, 'koh_weight' => 0.0])
+        ->and($rows)->not->toHaveKey('SODIUM HYDROXIDE')
+        ->and($rows)->not->toHaveKey('SODIUM SHEABUTTERATE')
+        ->and($rows['BUTYROSPERMUM PARKII BUTTER']['weight'])->toBeGreaterThan(100 * (1 - $fraction))
+        ->and($rows['OLEA EUROPAEA FRUIT OIL']['weight'])->toEqualWithDelta(1000 * (1 - $fraction), 0.001)
+        ->and(round($rows->sum('weight'), 2))->toBe(round($result['labeling']['basis']['formula_weight'], 2))
+        ->and($plainList)->toStartWith('Saponified Oils of (Olive)')
+        ->and($plainList)->toContain('Shea Butter')
+        ->and($plainList)->not->toContain('Sodium hydroxide');
+})->with([
+    'negative superfat' => [-5.0, 0.95454545],
+    'positive superfat' => [5.0, 0.86363636],
+]);
+
+it('counts saponifiable oils inside compound additions for both the lye and the labels', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $oil->update(['soap_inci_naoh_name' => 'SODIUM OLIVATE']);
+    $shea = makeCarrierOilIngredient();
+    $shea->update([
+        'display_name' => 'Shea Butter',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+        'soap_inci_naoh_name' => 'SODIUM SHEABUTTERATE',
+    ]);
+    $clay = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Kaolin',
+        'inci_name' => 'KAOLIN',
+        'is_soap_saponification_trusted' => false,
+        'is_active' => true,
+    ]);
+    $blend = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Shea Clay Blend',
+        'inci_name' => 'SHEA CLAY BLEND',
+        'is_soap_saponification_trusted' => false,
+        'is_active' => true,
+    ]);
+    $blend->components()->create(['component_ingredient_id' => $shea->id, 'percentage_in_parent' => '50', 'sort_order' => 1]);
+    $blend->components()->create(['component_ingredient_id' => $clay->id, 'percentage_in_parent' => '50', 'sort_order' => 2]);
+
+    foreach ([$oil, $shea] as $ingredient) {
+        IngredientSapProfile::factory()->create([
+            'ingredient_id' => $ingredient->id,
+            'koh_sap_value' => 0.188,
+        ]);
+    }
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['regulatory_regime'] = 'none';
+    $payload['superfat'] = -5;
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $blend->id, 'percentage' => 8, 'weight' => 80, 'note' => null],
+    ];
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $variant = collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $rows = collect($variant['ingredient_rows'])->keyBy('label');
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['post_reaction_oils_weight'])->toBe(40.0)
+        ->and($result['calculation']['lye']['excess']['naoh_weight'])->toEqualWithDelta((50 - 40) * 0.188 * 0.713, 0.0002)
+        ->and($result['calculation']['lye']['post_reaction_saponified_fraction'])->toBe(1.0)
+        ->and($rows)->not->toHaveKey('SODIUM SHEABUTTERATE')
+        ->and($rows['BUTYROSPERMUM PARKII BUTTER']['weight'])->toBeGreaterThan(40)
+        ->and($rows['SODIUM HYDROXIDE']['weight'])->toBe($result['calculation']['lye']['excess']['naoh_weight'])
+        ->and(round($rows->sum('weight'), 2))->toBe(round($result['labeling']['basis']['formula_weight'], 2));
+});
+
+it('names oils in the additions that are not counted for lack of saponification data', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $bacuri = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Bacuri Butter',
+        'is_soap_saponification_trusted' => false,
+        'is_active' => true,
+    ]);
+    $clay = Ingredient::factory()->create([
+        'category' => IngredientCategory::MineralsSaltsPowders,
+        'display_name' => 'Kaolin',
+        'is_active' => true,
+    ]);
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $bacuri->id, 'percentage' => 5, 'weight' => 50, 'note' => null],
+        ['ingredient_id' => $clay->id, 'percentage' => 1, 'weight' => 10, 'note' => null],
+    ];
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['uncounted_post_reaction_oils'])->toBe(['Bacuri Butter'])
+        ->and($result['calculation']['lye']['post_reaction_oils_weight'])->toBe(0.0);
+});
+
+it('keeps the saponified share of an added oil without any INCI name in the list', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oil = makeCarrierOilIngredient();
+    $oil->update(['soap_inci_naoh_name' => 'SODIUM OLIVATE']);
+    $bacuri = makeCarrierOilIngredient();
+    $bacuri->update([
+        'display_name' => 'Bacuri Butter',
+        'inci_name' => null,
+        'soap_inci_naoh_name' => null,
+    ]);
+
+    foreach ([$oil, $bacuri] as $ingredient) {
+        IngredientSapProfile::factory()->create([
+            'ingredient_id' => $ingredient->id,
+            'koh_sap_value' => 0.19,
+        ]);
+    }
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($oil, oilWeight: 1000);
+    $payload['regulatory_regime'] = 'none';
+    $payload['superfat'] = 0;
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $bacuri->id, 'percentage' => 6, 'weight' => 60, 'note' => null],
+    ];
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $variant = collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $rows = collect($variant['ingredient_rows']);
+
+    expect($result['ok'])->toBeTrue()
+        ->and($rows->where('label', 'BACURI BUTTER')->sum('weight'))->toBeGreaterThan(50)
+        ->and(round($rows->sum('weight'), 2))->toBe(round($result['labeling']['basis']['formula_weight'], 2))
+        ->and(round($rows->sum('percent_of_formula'), 1))->toBe(100.0);
 });
 
 it('does not re-render the workbench when refreshing the calculation preview', function () {
@@ -2230,7 +2498,7 @@ import { draftSignature } from './resources/js/recipe-workbench/draft-signature.
 const source = fs
     .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
     .replace(/^import[\s\S]*?;\n/gm, '')
-    .replace(/export async function /g, 'async function ');
+    .replace(/export (async )?function /g, '$1function ');
 const serializeDraft = () => ({});
 const serializeCosting = () => ({});
 
@@ -3134,7 +3402,7 @@ const state = {
 const bridgeSource = fs
   .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace(/export async function /g, 'async function ');
+  .replace(/export (async )?function /g, '$1function ');
 
 const costingSource = fs
   .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
@@ -5147,7 +5415,7 @@ const state = {
 const bridgeSource = fs
   .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace(/export async function /g, 'async function ');
+  .replace(/export (async )?function /g, '$1function ');
 
 const costingSource = fs
   .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')

@@ -12,6 +12,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
+use App\SoapSap;
 use App\Support\NumberLocale;
 use Closure;
 use Illuminate\Support\Str;
@@ -175,6 +176,9 @@ class RecipeWorkbenchPayloadNormalizer
                 'koh_purity_percentage' => $kohPurityPercentage,
                 'dual_lye_koh_percentage' => $this->boundedPercentage($payload['dual_lye_koh_percentage'] ?? 40),
                 'superfat' => (float) ($payload['superfat'] ?? 5),
+                'cured_water_percentage' => SoapSap::curedWaterPercentage(
+                    $payload['cured_water_percentage'] ?? $productFamily?->curedWaterPercentage(),
+                ),
                 'oil_weight' => $normalizedRecipe['oil_weight'],
                 'oil_unit' => $massUnit->value,
                 'mass_grams' => $this->massConverter->toGrams($normalizedRecipe['oil_weight'], $massUnit),

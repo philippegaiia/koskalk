@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\SoapSap;
 use App\Support\NumberLocale;
 
 class RecipeCompositionExportDataBuilder
@@ -129,7 +130,7 @@ class RecipeCompositionExportDataBuilder
             'warnings' => $warnings,
             'assumption_note' => $isSoap
                 ? __('formula_documents.composition.retained_liquid_assumption', [
-                    'percentage' => LyeLiquidAllocationService::CURED_RESIDUAL_PERCENTAGE,
+                    'percentage' => SoapSap::curedWaterPercentage(data_get($document, 'soap_output.residual_water_percentage')),
                 ])
                 : null,
             'review_note' => __('formula_documents.composition.review_note'),

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\IfraCategorySelectionMode;
+use App\SoapSap;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -42,6 +43,7 @@ class RecipeWorkbenchOutputRequest extends FormRequest
             'draft.water_mode' => ['required', Rule::in(['percent_of_oils', 'lye_ratio', 'lye_concentration'])],
             'draft.water_value' => ['required', 'numeric', 'min:0', 'max:500'],
             'draft.superfat' => ['required', 'numeric', 'between:-25,99.999999'],
+            'draft.cured_water_percentage' => ['nullable', 'numeric', 'between:0,'.SoapSap::MAX_CURED_WATER_PERCENTAGE],
             'draft.ifra_category_selection_mode' => ['nullable', Rule::enum(IfraCategorySelectionMode::class)],
             'draft.ifra_product_category_id' => ['nullable', 'integer', 'min:1'],
             'draft.final_ingredient_list' => ['nullable', 'string', 'max:10000'],

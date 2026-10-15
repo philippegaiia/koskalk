@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\SoapSap;
 use App\Support\NumberLocale;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -16,7 +17,7 @@ class SoapCuredOutputBuilder
      * @param  array<string, mixed>  $labeling
      * @return array{basis_weight: float, residual_water_percentage: float, rows: array<int, array<string, mixed>>, inci: string}
      */
-    public function build(array $labeling, string|int|float $curedWeight): array
+    public function build(array $labeling, string|int|float $curedWeight, float $residualWaterPercentage = SoapSap::DEFAULT_CURED_WATER_PERCENTAGE): array
     {
         $normalizedCuredWeight = $this->decimal($curedWeight);
         $variantKey = (string) Arr::get($labeling, 'default_variant_key', '');
@@ -29,7 +30,7 @@ class SoapCuredOutputBuilder
             fn (string $total, array $row): string => bcadd($total, $this->lyeLiquidWeight($row), 18),
             '0',
         );
-        $residualWeights = $this->residualWeights($ingredientRows, $normalizedCuredWeight, $freshLiquidWeight);
+        $residualWeights = $this->residualWeights($ingredientRows, $normalizedCuredWeight, $freshLiquidWeight, $residualWaterPercentage);
 
         $rows = $ingredientRows
             ->values()
@@ -60,7 +61,7 @@ class SoapCuredOutputBuilder
 
         return [
             'basis_weight' => (float) $this->roundMass($normalizedCuredWeight),
-            'residual_water_percentage' => LyeLiquidAllocationService::CURED_RESIDUAL_PERCENTAGE,
+            'residual_water_percentage' => $residualWaterPercentage,
             'rows' => $rows,
             'inci' => (string) ($variant['final_label_text'] ?? $labeling['print_ingredient_list_text'] ?? ''),
         ];
@@ -87,7 +88,7 @@ class SoapCuredOutputBuilder
      * @param  Collection<int, array<string, mixed>>  $ingredientRows
      * @return array<int, string>
      */
-    private function residualWeights(Collection $ingredientRows, string $curedWeight, string $freshLiquidWeight): array
+    private function residualWeights(Collection $ingredientRows, string $curedWeight, string $freshLiquidWeight, float $residualWaterPercentage): array
     {
         if (bccomp($freshLiquidWeight, '0', 18) <= 0) {
             return [];
@@ -105,7 +106,7 @@ class SoapCuredOutputBuilder
             ])
             ->filter(fn (array $row): bool => bccomp($row['percentage'], '0', 12) > 0)
             ->all();
-        $allocation = $this->lyeLiquidAllocationService->allocateCuredResidual($curedWeight, $substitutions);
+        $allocation = $this->lyeLiquidAllocationService->allocateCuredResidual($curedWeight, $substitutions, $residualWaterPercentage);
 
         return collect($allocation['substitutions'])
             ->mapWithKeys(fn (array $row): array => [

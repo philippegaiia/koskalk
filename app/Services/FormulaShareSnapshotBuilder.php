@@ -18,6 +18,7 @@ use App\Models\RecipeVersion;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\Models\Workspace;
+use App\SoapSap;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -222,6 +223,10 @@ class FormulaShareSnapshotBuilder
             if ((float) $calculation['dual_lye_koh_percentage'] < 0 || (float) $calculation['dual_lye_koh_percentage'] > 100) {
                 $this->invalid('settings');
             }
+            $calculation['cured_water_percentage'] = $this->number(
+                SoapSap::curedWaterPercentage($context['cured_water_percentage'] ?? null),
+                9,
+            );
             $storedWater = $version->water_settings;
             if (! is_array($storedWater) || ! in_array($storedWater['mode'] ?? null, ['percent_of_oils', 'lye_ratio', 'lye_concentration'], true)) {
                 $this->invalid('settings');

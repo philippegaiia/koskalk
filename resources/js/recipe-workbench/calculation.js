@@ -1,5 +1,14 @@
 import { nonNegativeNumber, number, roundTo } from './utils';
 
+/** Mirrors SoapSap::NAOH_FROM_KOH_RATIO; keep both in step. */
+const NAOH_FROM_KOH_RATIO = 0.713;
+
+/** Glycerine released per gram of NaOH; mirrors SoapCalculationService. */
+const GLYCERINE_FROM_NAOH_RATIO = 92.09382 / 119.9922;
+
+/** Glycerine released per gram of KOH; mirrors SoapCalculationService. */
+const GLYCERINE_FROM_KOH_RATIO = 92.09382 / 168.3168;
+
 export function rowWeightForOilWeight(oilWeight, row) {
     return nonNegativeNumber(oilWeight) * (nonNegativeNumber(row.percentage) / 100);
 }
@@ -164,7 +173,7 @@ export function lyeBreakdown(state) {
     const totals = state.oilRows.reduce((carry, row) => {
         const currentRowWeight = rowWeight(state, row);
         const kohSap = normalizeSapValue(row.koh_sap_value);
-        const naohSap = kohSap * 0.713;
+        const naohSap = kohSap * NAOH_FROM_KOH_RATIO;
 
         carry.naoh_theoretical += currentRowWeight * naohSap;
         carry.koh_theoretical += currentRowWeight * kohSap;
@@ -203,7 +212,7 @@ export function lyeBreakdown(state) {
         koh_to_weigh: kohToWeigh,
         selected_total_active_lye: selectedTotalActiveLye,
         water_weight: currentWaterWeight,
-        glycerine_weight: (selectedNaohWeight * (92.09382 / 119.9922)) + (selectedKohWeight * (92.09382 / 168.3168)),
+        glycerine_weight: (selectedNaohWeight * GLYCERINE_FROM_NAOH_RATIO) + (selectedKohWeight * GLYCERINE_FROM_KOH_RATIO),
         fatty_acids: totals.fatty_acids,
     };
 }
@@ -252,7 +261,7 @@ export function curedBatchWeight(state) {
     const wetWeight = finalBatchWeight(state);
     const waterWeight = state.backendCalculation?.lye?.water?.weight ?? lyeBreakdown(state).water_weight;
     const nonWaterWeight = Math.max(0, wetWeight - waterWeight);
-    const curedWaterFraction = 0.11;
+    const curedWaterFraction = number(state.curedWaterPercentage) / 100;
 
     return nonWaterWeight / (1 - curedWaterFraction);
 }

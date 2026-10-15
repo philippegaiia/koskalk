@@ -70,6 +70,7 @@ class RecipeWorkbenchViewDataBuilder
                 'slug' => $productFamily->slug,
                 'calculation_basis' => $productFamily->calculation_basis,
             ],
+            'curedWaterPercentage' => $productFamily->curedWaterPercentage(),
             'productType' => $this->productTypeData($productType),
             'productTypes' => $this->productTypes($productFamily, $productType),
             'recipe' => $this->recipeData($recipe, $user),

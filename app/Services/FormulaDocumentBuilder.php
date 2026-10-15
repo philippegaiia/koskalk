@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RegulatoryRegime;
+use App\SoapSap;
 use App\Support\NumberLocale;
 use Illuminate\Support\Arr;
 
@@ -36,6 +37,7 @@ class FormulaDocumentBuilder
             'soap_output' => $isCosmetic ? null : $this->soapCuredOutputBuilder->build(
                 $labeling,
                 $this->curedWeight($snapshot, $basisWeight),
+                $this->curedWaterPercentage($snapshot),
             ),
             'soap_analysis' => $isCosmetic ? null : [
                 'qualities' => $this->qualityRows($snapshot),
@@ -310,7 +312,15 @@ class FormulaDocumentBuilder
         $wetWeight = $basisWeight + $additionWeight + $waterWeight + $lyeWeight;
         $nonWaterWeight = max(0, $wetWeight - $waterWeight);
 
-        return $wetWeight > 0 ? round($nonWaterWeight / 0.89, 4) : 0.0;
+        return $wetWeight > 0
+            ? round(SoapSap::curedWeight($nonWaterWeight, $this->curedWaterPercentage($snapshot)), 4)
+            : 0.0;
+    }
+
+    /** @param array<string, mixed> $snapshot */
+    private function curedWaterPercentage(array $snapshot): float
+    {
+        return SoapSap::curedWaterPercentage(data_get($snapshot, 'draft.curedWaterPercentage'));
     }
 
     /** @return array<int, array{key: string, label: string, value: float, range: string, status: string}> */

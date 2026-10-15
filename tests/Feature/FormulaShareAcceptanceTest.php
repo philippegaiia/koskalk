@@ -8,6 +8,7 @@ use App\Enums\OwnerType;
 use App\Models\FormulaShare;
 use App\Models\Ingredient;
 use App\Models\IngredientShareMapping;
+use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersionCosting;
@@ -27,6 +28,7 @@ beforeEach(function (): void {
 
 it('accepts a normal published offer as an independent saved and working Product without inherited review or costing', function (string $familySlug): void {
     extract(FormulaSharingFixtures::offer($familySlug));
+    ProductFamily::query()->where('slug', $familySlug)->update(['cured_water_percentage' => 12]);
     $receiver = $recipient->owner;
     $this->actingAs($receiver);
     $preview = app(FormulaSharePreview::class)->build($receiver, $share, []);
@@ -56,7 +58,8 @@ it('accepts a normal published offer as an independent saved and working Product
             ->and($saved->items->pluck('percentage')->all())->toBe(['70.1234', '29.8766']);
     } else {
         expect($saved->calculation_context['lye_type'])->toBe('dual')->and($saved->calculation_context['koh_purity_percentage'])->toBe(90)
-            ->and($saved->calculation_context['dual_lye_koh_percentage'])->toBe(40);
+            ->and($saved->calculation_context['dual_lye_koh_percentage'])->toBe(40)
+            ->and((float) $saved->calculation_context['cured_water_percentage'])->toBe(10.5);
     }
 })->with(['soap', 'cosmetic']);
 

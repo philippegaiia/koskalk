@@ -52,7 +52,7 @@ final class FormulaSharingFixtures
         $payload = [
             'name' => 'Received Product', 'product_type_id' => $type->id, 'oil_weight' => '1000.125', 'oil_unit' => 'g',
             'manufacturing_mode' => $familySlug === 'soap' ? 'saponify_in_formula' : 'blend_only', 'exposure_mode' => 'rinse_off', 'regulatory_regime' => $regulatoryRegime,
-            'editing_mode' => 'percentage', 'lye_type' => 'dual', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'superfat' => 5, 'water_mode' => 'percent_of_oils', 'water_value' => 38,
+            'editing_mode' => 'percentage', 'lye_type' => 'dual', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'superfat' => 5, 'water_mode' => 'percent_of_oils', 'water_value' => 38, 'cured_water_percentage' => 10.5,
             'production_output_type' => ProductionOutputType::FinishedProduct->value, 'packaging_items' => [],
             'manufacturing_instructions' => '<p>Mix &amp; rest.</p>',
             'phases' => $familySlug === 'soap' ? [] : [['key' => 'phase_a', 'name' => 'Phase A'], ['key' => 'phase_b', 'name' => 'Phase B']],

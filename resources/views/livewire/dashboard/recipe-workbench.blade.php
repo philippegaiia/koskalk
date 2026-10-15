@@ -73,6 +73,8 @@
  <fieldset @if (! $canEditRecipe) disabled @endif :disabled="!canAdjustCosting || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canAdjustCosting ? 'opacity-75' : ''" class="space-y-6 transition" data-costing-controls>
  @include('livewire.dashboard.partials.recipe-workbench.costing-tab')
  </fieldset>
+
+ @include('livewire.dashboard.partials.recipe-workbench.save-error-modal')
  @endunless
 
  <x-filament-actions::modals />

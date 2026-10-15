@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
+use App\SoapSap;
 use App\Support\NumberLocale;
 use InvalidArgumentException;
 
 class LyeLiquidAllocationService
 {
-    public const CURED_RESIDUAL_PERCENTAGE = 11.0;
-
     /** @param array<int, array<string, mixed>> $substitutions */
     public function allocateFresh(string|int|float $totalLiquidWeight, array $substitutions): array
     {
@@ -16,8 +15,11 @@ class LyeLiquidAllocationService
     }
 
     /** @param array<int, array<string, mixed>> $substitutions */
-    public function allocateCuredResidual(string|int|float $curedSoapWeight, array $substitutions): array
-    {
+    public function allocateCuredResidual(
+        string|int|float $curedSoapWeight,
+        array $substitutions,
+        float $residualWaterPercentage = SoapSap::DEFAULT_CURED_WATER_PERCENTAGE,
+    ): array {
         $normalizedCuredSoapWeight = $this->decimal($curedSoapWeight);
 
         if ($normalizedCuredSoapWeight === null || bccomp($normalizedCuredSoapWeight, '0', 18) < 0) {
@@ -25,7 +27,7 @@ class LyeLiquidAllocationService
         }
 
         return $this->allocate(
-            bcmul($normalizedCuredSoapWeight, '0.11', 18),
+            bcmul($normalizedCuredSoapWeight, bcdiv($this->decimal($residualWaterPercentage) ?? '0', '100', 18), 18),
             $substitutions,
         );
     }

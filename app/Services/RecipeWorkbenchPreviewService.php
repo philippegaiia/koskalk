@@ -16,6 +16,8 @@ class RecipeWorkbenchPreviewService
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
         private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
+        private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator,
+        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
     ) {}
 
     /**
@@ -108,6 +110,58 @@ class RecipeWorkbenchPreviewService
         );
 
         return $calculation;
+    }
+
+    /**
+     * Liquid soap paste process for a KOH paste calculation: stages,
+     * neutralizer, composition, and each addition as weight and % of the
+     * final batch. Additions sent with a final_percentage take their weight
+     * from it.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $calculation  Output of previewSoapCalculation().
+     * @return array<string, mixed>
+     */
+    public function previewLiquidSoapProcess(array $payload, array $calculation): array
+    {
+        $paste = $this->liquidSoapProcessCalculator->pasteComposition($calculation);
+        $liquidProcess = is_array($payload['liquid_process'] ?? null) ? $payload['liquid_process'] : [];
+        $neutralizerRow = collect($payload['phase_items']['neutralization'] ?? [])
+            ->first(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null));
+        $neutralizer = $this->liquidSoapFormulaProcessor->neutralizer(
+            is_array($neutralizerRow) ? [...$neutralizerRow, 'weight' => $this->previewRowWeight($neutralizerRow, $payload)] : null,
+            $liquidProcess,
+        );
+        $finalBatchWeight = $this->liquidSoapFormulaProcessor->finalBatchWeight($paste, $liquidProcess, $neutralizer);
+
+        $additions = collect(['additives', 'fragrance'])
+            ->flatMap(fn (string $phaseKey): array => collect($payload['phase_items'][$phaseKey] ?? [])
+                ->filter(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null))
+                ->map(fn (array $row): array => [
+                    'id' => $row['id'] ?? null,
+                    'phase_key' => $phaseKey,
+                    'ingredient_id' => (int) $row['ingredient_id'],
+                    'weight' => $this->liquidSoapFormulaProcessor->additionWeight($row, $finalBatchWeight, $this->previewRowWeight($row, $payload)),
+                ])
+                ->values()
+                ->all())
+            ->values();
+        $additionsWeight = $additions->reduce(fn (string $total, array $addition): string => bcadd($total, $addition['weight'], 18), '0');
+
+        return [
+            ...$this->liquidSoapFormulaProcessor->process($paste, $liquidProcess, $neutralizer, $additionsWeight),
+            'paste_composition' => $paste,
+            'target_final_weight' => $finalBatchWeight === null ? null : $this->fourDecimals($finalBatchWeight),
+            'additions' => $additions
+                ->map(fn (array $addition): array => [
+                    ...$addition,
+                    'weight' => $this->fourDecimals($addition['weight']),
+                    'final_percentage' => $finalBatchWeight === null || bccomp($finalBatchWeight, '0', 18) <= 0
+                        ? null
+                        : $this->fourDecimals(bcdiv(bcmul($addition['weight'], '100', 18), $finalBatchWeight, 18)),
+                ])
+                ->all(),
+        ];
     }
 
     /**
@@ -302,5 +356,10 @@ class RecipeWorkbenchPreviewService
         }
 
         return $oilWeight * ($percentage / 100);
+    }
+
+    private function fourDecimals(string $value): string
+    {
+        return bcadd(bcadd($value, '0.00005', 18), '0', 4);
     }
 }

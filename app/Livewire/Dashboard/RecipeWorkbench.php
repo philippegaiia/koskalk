@@ -1018,7 +1018,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         try {
-            $calculation = $recipeWorkbenchService->previewSoapCalculation($draft, $this->currentUser());
+            $calculation = array_key_exists('liquid_process', $draft)
+                ? $recipeWorkbenchService->previewSoapCalculation($draft, $this->currentUser(), $this->productFamily())
+                : $recipeWorkbenchService->previewSoapCalculation($draft, $this->currentUser());
 
             return $this->previewResponses[$draftHash] = [
                 'ok' => true,

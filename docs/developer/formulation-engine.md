@@ -26,6 +26,20 @@ Current responsibilities:
 - benchmark quality behavior against archetypes like castile, high-coconut, balanced palm/olive/coconut, and high-shea profiles before further UI expansion
 - model lather as separate behaviors: soluble lauric/myristic fats create quick bubbles, hard palmitic/stearic fats give body and persistent foam, and ricinoleic/castor improves lather quality/stability in a capped useful range around 4-10%
 
+### `LiquidSoapProcessCalculator`
+
+Paste-method liquid soap for the planned dedicated liquid-soap paste bench, selected by product family and separate from the soap bench; not yet wired (see `docs/superpowers/plans/2026-10-15-liquid-soap-paste-calculator.md`). Masses use bcmath on decimal strings, returned at four decimals; every input must be a finite decimal:
+
+- `pasteComposition()` reads a KOH-only `SoapCalculationService::calculate()` result (no post-reaction oils) into the paste parts
+- concentrations use **anhydrous soap** = soap salts + released glycerine + unsaponified lipids (= lipids + reacted KOH); free KOH, KOH flake impurities (not counted as water), water, acids and their salts stay outside it
+- stages: paste (theoretical, or a measured cooked weight that accounts for evaporation), first dilution (default 35%), optional neutralization, final dilution to the user's percentage after additions
+- a stage never returns negative water: it reports `already_below_target` or `target_exceeded` with the concentration reached
+- neutralizers (`LiquidSoapNeutralizer`): citric acid anhydrous/monohydrate and lactic acid form potassium salts; a fatty acid such as stearic acid forms more soap from its own KOH SAP value and raises the basis
+- recommended acid weights are theoretical; the result uses the amount actually added and reports remaining free KOH
+- acid beyond the free KOH is not modelled (it splits soap): the result is `acid_exceeds_free_koh`, the final dilution `unsupported`, and no composition is returned
+- a measured paste weight below the oils and KOH weighed in is rejected
+- composition is returned in grams and as % of the final batch
+
 ### `RecipeNormalizationService`
 
 Current responsibilities:

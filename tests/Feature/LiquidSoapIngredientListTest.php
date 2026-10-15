@@ -5,6 +5,7 @@ use App\Enums\LiquidSoapNeutralizer;
 use App\Models\Allergen;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientComponent;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
@@ -177,4 +178,35 @@ it('judges fragrance allergens against the finished liquid soap batch', function
     expect($row['percent_of_formula'])->toEqualWithDelta(0.3 * 100 / 4760, 0.00005)
         ->and($row['exceeds_threshold'])->toBeFalse()
         ->and($row['included_in_inci'])->toBeFalse();
+});
+
+it('labels additions with the weight the process sized from the final batch', function () {
+    $formula = liquidSoapLabelFormula();
+    $lavender = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'is_active' => true,
+    ]);
+    $formula['payload']['liquid_process']['final_dilution_percentage'] = 20;
+    // Weighed for the 25% batch before the target changed to 20%.
+    $formula['payload']['phase_items']['fragrance'] = [['id' => 'lavender', 'ingredient_id' => $lavender->id, 'percentage' => 4.76, 'weight' => 47.6, 'final_percentage' => 1]];
+
+    $weights = liquidSoapLabelWeights(liquidSoapLabeling($formula), 'incorporated_ingredients');
+
+    expect($weights['LAVANDULA ANGUSTIFOLIA OIL'])->toBe(59.5);
+});
+
+it('shares a compound neutralizer product between its components', function () {
+    $formula = liquidSoapLabelFormula(LiquidSoapNeutralizer::FattyAcid);
+    $blend = $formula['neutralizer'];
+    $palmitic = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'inci_name' => 'PALMITIC ACID', 'soap_inci_koh_name' => 'POTASSIUM PALMITATE', 'is_active' => true]);
+    $stearic = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'inci_name' => 'STEARIC ACID', 'soap_inci_koh_name' => 'POTASSIUM STEARATE', 'is_active' => true]);
+    $blend->update(['inci_name' => 'STEARIC ACID, PALMITIC ACID']);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $stearic->id, 'percentage_in_parent' => 50, 'sort_order' => 1]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $palmitic->id, 'percentage_in_parent' => 50, 'sort_order' => 2]);
+
+    $weights = liquidSoapLabelWeights(liquidSoapLabeling($formula), 'saponified_with_superfat');
+
+    expect($weights['POTASSIUM STEARATE'])->toBe(16.39)
+        ->and($weights['POTASSIUM PALMITATE'])->toBe(16.39);
 });

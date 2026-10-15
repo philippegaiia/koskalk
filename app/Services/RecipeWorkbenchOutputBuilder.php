@@ -38,6 +38,7 @@ class RecipeWorkbenchOutputBuilder
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly RecipeRichContentAttachmentProvider $attachmentProvider,
         private readonly MassConverter $massConverter,
+        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
     ) {}
 
     /**
@@ -83,7 +84,16 @@ class RecipeWorkbenchOutputBuilder
         }
 
         try {
-            $calculation = $isSoap ? $this->previewService->previewSoapCalculation($previewPayload, $user) : null;
+            $calculation = match (true) {
+                ! $isSoap => null,
+                $productFamily->usesLiquidSoapPasteBench() => $this->previewService->previewLiquidSoapCalculation($previewPayload, $user),
+                default => $this->previewService->previewSoapCalculation($previewPayload, $user),
+            };
+            $liquidProcess = $calculation['liquid_process'] ?? null;
+
+            if (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok') {
+                $phaseItems = $this->liquidSoapFormulaProcessor->withAdditionWeights($phaseItems, $liquidProcess, $oilWeight);
+            }
 
             if ($isSoap && $calculation === null) {
                 throw ValidationException::withMessages([
@@ -298,6 +308,11 @@ class RecipeWorkbenchOutputBuilder
             ->all();
         $allocation = $this->lyeLiquidAllocationService->allocateFresh(data_get($calculation, 'lye.water.weight', 0), $substitutions);
         $waterWeight = $this->decimal($allocation['water_weight'] ?? 0, 'costing');
+        $liquidProcess = data_get($calculation, 'liquid_process');
+
+        if (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok') {
+            $waterWeight = bcadd($waterWeight, $this->liquidSoapFormulaProcessor->addedDilutionWaterWeight($liquidProcess), 18);
+        }
         $waterPriceRow = collect($costing['items'] ?? [])
             ->first(fn (mixed $row): bool => is_array($row) && ($row['phase_key'] ?? null) === 'implicit_water');
         $waterIngredient = is_array($waterPriceRow) ? $ingredients->get((int) ($waterPriceRow['ingredient_id'] ?? 0)) : null;
@@ -648,6 +663,7 @@ class RecipeWorkbenchOutputBuilder
             'percentage' => (float) $percentage,
             'weight' => (float) $weight,
             'note' => $row['note'] ?? null,
+            ...(is_numeric($row['final_percentage'] ?? null) ? ['final_percentage' => (float) $row['final_percentage']] : []),
         ];
     }
 
@@ -677,12 +693,14 @@ class RecipeWorkbenchOutputBuilder
             'final_ingredient_list_basis_hash' => $draft['final_ingredient_list_basis_hash'] ?? null,
             'final_plain_ingredient_list' => $draft['final_plain_ingredient_list'] ?? null,
             'final_plain_ingredient_list_basis_hash' => $draft['final_plain_ingredient_list_basis_hash'] ?? null,
+            ...(is_array($draft['liquid_process'] ?? null) ? ['liquid_process' => $draft['liquid_process']] : []),
             'phase_items' => collect($phaseItems)->map(fn (array $rows): array => array_map(
                 fn (array $row): array => [
                     'ingredient_id' => $row['ingredient_id'],
                     'percentage' => $row['percentage'],
                     'weight' => $row['weight'],
                     'note' => $row['note'],
+                    ...(array_key_exists('final_percentage', $row) ? ['final_percentage' => $row['final_percentage']] : []),
                 ],
                 $rows,
             ))->all(),

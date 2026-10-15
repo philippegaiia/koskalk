@@ -85,6 +85,46 @@ class LiquidSoapFormulaProcessor
     }
 
     /**
+     * Additive and fragrance rows carrying the weights the process sized,
+     * in the order the process read them, with their % of oils to match.
+     *
+     * @param  array<string, mixed>  $phaseItems
+     * @param  array<string, mixed>  $liquidProcess  Process result with status ok.
+     * @return array<string, mixed>
+     */
+    public function withAdditionWeights(array $phaseItems, array $liquidProcess, float|int|string $oilWeight): array
+    {
+        $weights = collect($liquidProcess['additions'] ?? [])->groupBy('phase_key')->map(fn ($additions) => $additions->pluck('weight')->values());
+        $oilWeight = (float) $oilWeight;
+
+        foreach (['additives', 'fragrance'] as $phaseKey) {
+            if (! is_array($phaseItems[$phaseKey] ?? null)) {
+                continue;
+            }
+
+            $phaseWeights = $weights->get($phaseKey, collect());
+            $position = 0;
+
+            foreach ($phaseItems[$phaseKey] as $index => $row) {
+                if (! is_array($row) || ! is_numeric($row['ingredient_id'] ?? null)) {
+                    continue;
+                }
+
+                $weight = $phaseWeights->get($position++);
+
+                if ($weight === null) {
+                    continue;
+                }
+
+                $phaseItems[$phaseKey][$index]['weight'] = (float) $weight;
+                $phaseItems[$phaseKey][$index]['percentage'] = $oilWeight > 0 ? (float) $weight * 100 / $oilWeight : 0.0;
+            }
+        }
+
+        return $phaseItems;
+    }
+
+    /**
      * Water added after the paste: both dilutions and the neutralizer
      * solution water, from a calculated process.
      *

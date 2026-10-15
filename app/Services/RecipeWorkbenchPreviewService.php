@@ -225,10 +225,31 @@ class RecipeWorkbenchPreviewService
      */
     public function previewInci(array $payload, ?array $calculation = null): array
     {
-        return $this->inciGenerationService->generate(
-            $payload,
-            $calculation ?? $this->previewSoapCalculation($payload),
-        );
+        $calculation ??= $this->previewSoapCalculation($payload);
+
+        return $this->inciGenerationService->generate($this->withLiquidAdditionWeights($payload, $calculation), $calculation);
+    }
+
+    /**
+     * Liquid soap additions weigh what the process sized from the final
+     * batch, so labels and restrictions read the same weights.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    private function withLiquidAdditionWeights(array $payload, ?array $calculation): array
+    {
+        $process = $calculation['liquid_process'] ?? null;
+
+        if (! is_array($process) || ($process['status'] ?? null) !== 'ok' || ! is_array($payload['phase_items'] ?? null)) {
+            return $payload;
+        }
+
+        return [
+            ...$payload,
+            'phase_items' => $this->liquidSoapFormulaProcessor->withAdditionWeights($payload['phase_items'], $process, $payload['oil_weight'] ?? 0),
+        ];
     }
 
     /**
@@ -262,10 +283,9 @@ class RecipeWorkbenchPreviewService
      */
     public function previewRestrictions(array $payload, ?array $calculation = null): array
     {
-        return $this->substanceComplianceService->evaluate(
-            $payload,
-            $calculation ?? $this->previewSoapCalculation($payload),
-        );
+        $calculation ??= $this->previewSoapCalculation($payload);
+
+        return $this->substanceComplianceService->evaluate($this->withLiquidAdditionWeights($payload, $calculation), $calculation);
     }
 
     /**

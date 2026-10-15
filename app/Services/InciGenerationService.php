@@ -2328,13 +2328,16 @@ class InciGenerationService
         }
 
         $incorporated = $this->incorporatedIngredientLabel($context, $marketCode);
+        // A compound neutralizer is expanded into components: each takes its
+        // share of the product, not the whole of it.
+        $share = (float) $summary['weight'] > 0 ? (float) $context['weight'] / (float) $summary['weight'] : 0.0;
         $productLabel = $type->formsSoap()
             ? ($context['ingredient'] instanceof Ingredient ? $this->soapLabel($context['ingredient'], 'koh') : null) ?? $incorporated['label']
             : $type->saltInciName();
 
         return collect([
-            ['label' => $productLabel, 'weight' => (float) $summary['product_weight'], 'kind' => 'derived', 'warning' => $incorporated['warning']],
-            ['label' => $incorporated['label'], 'weight' => (float) $summary['excess_fatty_acid_weight'], 'kind' => 'theoretical_superfat', 'warning' => $incorporated['warning']],
+            ['label' => $productLabel, 'weight' => (float) $summary['product_weight'] * $share, 'kind' => 'derived', 'warning' => $incorporated['warning']],
+            ['label' => $incorporated['label'], 'weight' => (float) $summary['excess_fatty_acid_weight'] * $share, 'kind' => 'theoretical_superfat', 'warning' => $incorporated['warning']],
         ])->filter(fn (array $contribution): bool => $contribution['weight'] > 0)->values()->all();
     }
 

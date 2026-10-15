@@ -10,6 +10,7 @@ use App\Enums\PackagingCategory;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -706,8 +707,10 @@ class RecipeVersionCostingSynchronizer
             ->firstWhere('slug', 'lye_water')
             ?->items
             ->sum(fn ($item): float => max(0.0, (float) $item->percentage));
+        $dilutesWithWater = $this->productFamilyFor($recipeVersion)?->usesLiquidSoapPasteBench() ?? false;
 
-        if (100.0 - min(100.0, $explicitLiquidShare) <= 0.0) {
+        // A liquid soap is diluted with plain water whatever its alkali solution uses.
+        if (! $dilutesWithWater && 100.0 - min(100.0, $explicitLiquidShare) <= 0.0) {
             return collect();
         }
 
@@ -726,11 +729,14 @@ class RecipeVersionCostingSynchronizer
 
     private function isSoapVersion(RecipeVersion $recipeVersion): bool
     {
+        return $this->productFamilyFor($recipeVersion)?->usesSoapCalculation() ?? false;
+    }
+
+    private function productFamilyFor(RecipeVersion $recipeVersion): ?ProductFamily
+    {
         $recipe = Recipe::query()->withoutGlobalScopes()->find($recipeVersion->recipe_id);
 
-        $productFamily = $recipe?->productFamily()->withoutGlobalScopes()->first();
-
-        return $productFamily?->usesSoapCalculation() ?? false;
+        return $recipe?->productFamily()->withoutGlobalScopes()->first();
     }
 
     private function derivedIngredientDefaultPricePerKg(RecipeVersion $recipeVersion, Ingredient $ingredient): ?float

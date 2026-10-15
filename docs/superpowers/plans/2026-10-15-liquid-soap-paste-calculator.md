@@ -153,7 +153,7 @@ Stearic 28.90 g reacts with 5.70 g KOH, forming 1.83 g water. A' = 1190 + 28.90 
 
 ## Later phases (planned once Phase 1 is settled)
 
-1. **Regression baseline first:** characterisation tests for the existing soap bench (phases, defaults, preview payload, save/load round-trip, outputs) across NaOH, KOH and dual lye, so later steps prove it is untouched.
+1. **Regression baseline first (done: `tests/Feature/SoapBenchBaselineTest.php`; existing workbench suites cover outputs and save/restore lifecycles):** characterisation tests for the existing soap bench (phases, defaults, preview payload, save/load round-trip, outputs) across NaOH, KOH and dual lye, so later steps prove it is untouched.
 2. **Routing and persistence:** bench attribute on product families (`soap_process`: `bar` | `liquid_paste`, not a new `calculation_basis`), admin-set; a `liquid-soap` family routes to the dedicated bench; lye type never routes. Process inputs in `recipe_versions.calculation_context`; neutralization kept out of the engine's post-reaction oils; acid value for non-fatty-acid neutralizers as admin-only platform data. Philippe adds citric acid and stearic acid to the platform catalog.
 3. **Dedicated bench:** its own Livewire component, page and Alpine module; reuses the shared ingredient picker and alkali controls; 28% alkali concentration default. Preview payload with the process; additions entered as % of final mass; Alpine mirror with a PHP/JS parity test.
 4. **Bench UI:** one process table (stage, setting, add, running mass, anhydrous %), with recommended vs actual neutralizer side by side, a measured paste weight field, and inline status for `already_below_target`, `target_exceeded` and `unsupported`.

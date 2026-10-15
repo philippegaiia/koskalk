@@ -40860,6 +40860,18 @@
     },
     {
       "group": "sharing",
+      "key": "technical.liquid_soap_neutralizer",
+      "text": {
+        "de": "Neutralisationsmittel für Flüssigseife",
+        "es": "Neutralizante para jabón líquido",
+        "fr": "Neutralisant pour savon liquide",
+        "it": "Neutralizzante per sapone liquido",
+        "nl": "Neutralisatiemiddel voor vloeibare zeep",
+        "pt_BR": "Neutralizante para sabão líquido"
+      }
+    },
+    {
+      "group": "sharing",
       "key": "technical.market_labels",
       "text": {
         "de": "Marktkennzeichnungen",

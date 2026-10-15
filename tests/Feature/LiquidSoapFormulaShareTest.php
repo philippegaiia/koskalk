@@ -105,6 +105,21 @@ it('round trips a liquid soap with its neutralizer and process settings', functi
         ->and($receivedProcess['neutralizer']['weight'])->toBe($sourceProcess['neutralizer']['weight']);
 });
 
+it('asks for a fresh preview when the neutralizer chemistry changed after it', function (): void {
+    ['owner' => $owner, 'recipient' => $recipient, 'recipe' => $recipe, 'citricAcid' => $citricAcid] = sharedLiquidSoap();
+    $builder = app(FormulaShareSnapshotBuilder::class);
+    $snapshot = $builder->build($owner, $recipe, []);
+    $share = app(SendFormulaShare::class)->handle($owner, $recipe, $recipient, [], $builder->previewHash($snapshot, $recipient), (string) Str::uuid());
+    $preview = app(FormulaSharePreview::class)->build($recipient->owner, $share, []);
+
+    $citricAcid->forceFill(['liquid_soap_neutralizer' => LiquidSoapNeutralizer::LacticAcid])->save();
+
+    expect(fn () => app(AcceptFormulaShare::class)->handle($recipient->owner, $share, [], $preview['expected_hash']))
+        ->toThrow(ValidationException::class);
+    expect(collect(app(FormulaSharePreview::class)->build($recipient->owner, $share, [])['ingredients'])->firstWhere('name', 'Citric Acid')['warning'])
+        ->toBe('platform_changed');
+});
+
 it('shows the liquid soap process settings in the offer', function (): void {
     ['owner' => $owner, 'recipe' => $recipe] = sharedLiquidSoap();
 

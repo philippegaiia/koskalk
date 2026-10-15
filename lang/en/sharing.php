@@ -109,7 +109,7 @@ return [
     'technical' => [
         'category' => 'Category', 'is_blend' => 'Blend', 'is_essential_oil' => 'Essential oil', 'sap_profile' => 'Saponification profile',
         'fatty_acids' => 'Fatty acid profile', 'components' => 'Blend components', 'allergens' => 'Allergens', 'substances' => 'Substances',
-        'ifra_certificates' => 'IFRA certificates and limits', 'market_labels' => 'Market labels',
+        'ifra_certificates' => 'IFRA certificates and limits', 'market_labels' => 'Market labels', 'liquid_soap_neutralizer' => 'Liquid soap neutralizer',
     ],
     'validation' => [
         'confirm' => 'Review a fresh preview and confirm it before continuing.',

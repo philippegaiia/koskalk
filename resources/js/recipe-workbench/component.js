@@ -1462,7 +1462,7 @@ function createPersistenceSection() {
                 this.calculationPreviewTimer = null;
                 this.isPreviewingCalculation = true;
                 this.refreshCalculationPreview(resetBaseline);
-            }, 120);
+            }, 500);
         },
 
         async refreshCalculationPreview(resetBaseline = false) {

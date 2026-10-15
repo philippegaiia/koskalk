@@ -44520,6 +44520,42 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.final_share_for",
+      "text": {
+        "de": "% der Endcharge für :ingredient",
+        "es": "% del lote final de :ingredient",
+        "fr": "% du lot final pour :ingredient",
+        "it": "% del lotto finale per :ingredient",
+        "nl": "% van de eindbatch voor :ingredient",
+        "pt_BR": "% do lote final para :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.final_share_label",
+      "text": {
+        "de": "% der Charge",
+        "es": "% del lote",
+        "fr": "% du lot",
+        "it": "% del lotto",
+        "nl": "% van de batch",
+        "pt_BR": "% do lote"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.final_share_total",
+      "text": {
+        "de": ":amount % der Endcharge",
+        "es": ":amount % del lote final",
+        "fr": ":amount % du lot final",
+        "it": ":amount% del lotto finale",
+        "nl": ":amount% van de eindbatch",
+        "pt_BR": ":amount% do lote final"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "liquid.first_dilution",
       "text": {
         "de": "Erste Verdünnung",

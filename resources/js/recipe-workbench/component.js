@@ -1506,6 +1506,58 @@ function createLiquidSoapSection(payload) {
             ];
         },
 
+        liquidPreviewAddition(row) {
+            return (this.liquidProcessPreview?.additions ?? []).find((addition) => addition.id === row.id) ?? null;
+        },
+
+        /** % of the final batch: typed this session, else as the server reports it. */
+        liquidAdditionShare(row) {
+            if (row.final_percentage !== undefined && row.final_percentage !== null) {
+                return this.number(row.final_percentage);
+            }
+
+            return this.number(this.liquidPreviewAddition(row)?.final_percentage);
+        },
+
+        liquidAdditionWeight(row) {
+            const target = this.number(this.liquidProcessPreview?.target_final_weight);
+
+            if (row.final_percentage !== undefined && row.final_percentage !== null && target > 0) {
+                return (this.number(row.final_percentage) * target) / 100;
+            }
+
+            const previewAddition = this.liquidPreviewAddition(row);
+
+            return previewAddition ? this.number(previewAddition.weight) : this.rowWeight(row);
+        },
+
+        /**
+         * Keeps the typed share and an interim % of oils for local readouts;
+         * the server sizes the weight from the share at preview and save.
+         */
+        setLiquidAdditionShare(row, value) {
+            const share = Math.max(0, this.number(value));
+            const target = this.number(this.liquidProcessPreview?.target_final_weight);
+            const oilWeight = this.number(this.oilWeight);
+
+            row.final_percentage = share;
+
+            if (target > 0 && oilWeight > 0) {
+                row.percentage = (share * target) / oilWeight;
+            }
+        },
+
+        /** A typed weight replaces any typed share, so the server keeps the weight. */
+        setLiquidAdditionWeight(row, value) {
+            row.final_percentage = null;
+            this.updatePercentageFromWeight(row, value);
+        },
+
+        liquidAdditionShareTotal() {
+            return [...(this.additiveRows ?? []), ...(this.fragranceRows ?? [])]
+                .reduce((total, row) => total + this.liquidAdditionShare(row), 0);
+        },
+
         liquidCompositionRows() {
             const composition = this.liquidProcessPreview?.composition;
             const shares = this.liquidProcessPreview?.composition_percentages;

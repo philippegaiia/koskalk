@@ -23,6 +23,11 @@ export function serializeRow(state, row, phaseKey = null) {
             ? serializedDilutionLiquidWeight(state, row)
             : rowWeight(state, row),
         note: row.note ?? null,
+        // Liquid soap additions typed as % of the final batch; the server
+        // turns them into weights. Rows loaded from a save never carry it.
+        ...(row.final_percentage === undefined || row.final_percentage === null
+            ? {}
+            : { final_percentage: nonNegativeNumber(row.final_percentage) }),
     };
 }
 

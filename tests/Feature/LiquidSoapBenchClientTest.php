@@ -201,3 +201,39 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('sizes additions typed as a share of the final batch and sends only typed shares', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.oilWeight = 1000;
+workbench.phaseItems.additives = [{ id: 'clay', ingredient_id: 9, name: 'Clay', percentage: 5 }];
+workbench.phaseItems.fragrance = [{ id: 'lavender', ingredient_id: 10, name: 'Lavender', percentage: 0 }];
+workbench.backendCalculation = { liquid_process: {
+    status: 'ok',
+    target_final_weight: '4760.0000',
+    additions: [{ id: 'clay', weight: '50.0000', final_percentage: '1.0504' }],
+} };
+
+const lavender = workbench.phaseItems.fragrance[0];
+const clay = workbench.phaseItems.additives[0];
+workbench.setLiquidAdditionShare(lavender, '2');
+
+assert.equal(workbench.liquidAdditionShare(lavender), 2);
+assert.equal(Math.round(workbench.liquidAdditionWeight(lavender) * 10000) / 10000, 95.2);
+assert.equal(Math.round(lavender.percentage * 10000) / 10000, 9.52);
+assert.equal(workbench.liquidAdditionShare(clay), 1.0504);
+assert.equal(workbench.liquidAdditionWeight(clay), 50);
+assert.equal(Math.round(workbench.liquidAdditionShareTotal() * 10000) / 10000, 3.0504);
+
+const rows = serializeDraft(workbench).phase_items;
+assert.equal(rows.fragrance[0].final_percentage, 2);
+assert.equal(Object.hasOwn(rows.additives[0], 'final_percentage'), false);
+
+workbench.setLiquidAdditionWeight(lavender, '80');
+assert.equal(lavender.final_percentage, null);
+assert.equal(Object.hasOwn(serializeDraft(workbench).phase_items.fragrance[0], 'final_percentage'), false);
+assert.equal(lavender.percentage, 8);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

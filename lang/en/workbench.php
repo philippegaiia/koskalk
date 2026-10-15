@@ -605,6 +605,9 @@ return [
         'negative_superfat_warning' => 'A negative superfat leaves excess lye. This can cause irritation or burns unless the product is correctly neutralized and tested. Continue?',
     ],
     'liquid' => [
+        'final_share_label' => '% of batch',
+        'final_share_for' => '% of the final batch for :ingredient',
+        'final_share_total' => ':amount% of the final batch',
         'title' => 'Liquid soap process',
         'help' => 'Paste, first dilution, neutralization, then final dilution. Concentrations are anhydrous soap: the oils plus the KOH that reacted.',
         'first_dilution' => 'First dilution',

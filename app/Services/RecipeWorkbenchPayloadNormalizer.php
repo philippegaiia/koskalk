@@ -643,22 +643,24 @@ class RecipeWorkbenchPayloadNormalizer
         }
 
         $oilWeight = (string) $normalizedRecipe['oil_weight'];
+        $normalizedPhases = collect($normalizedRecipe['phases'])->keyBy('key');
         $phasePayload = collect($phasePayload)
-            ->map(function (array $phase) use ($payload, $finalBatchWeight, $oilWeight): array {
+            ->map(function (array $phase) use ($payload, $finalBatchWeight, $oilWeight, $normalizedPhases): array {
                 if (! in_array($phase['key'], ['additives', 'fragrance'], true)) {
                     return $phase;
                 }
 
                 $rawRows = array_values(is_array($payload['phase_items'][$phase['key']] ?? null) ? $payload['phase_items'][$phase['key']] : []);
+                $normalizedItems = $normalizedPhases->get($phase['key'])['items'] ?? [];
 
                 return [
                     ...$phase,
                     'items' => collect($phase['items'])
-                        ->map(function (array $item, int $index) use ($rawRows, $finalBatchWeight, $oilWeight): array {
+                        ->map(function (array $item, int $index) use ($rawRows, $finalBatchWeight, $oilWeight, $normalizedItems): array {
                             $weight = $this->liquidSoapFormulaProcessor->additionWeight(
                                 is_array($rawRows[$index] ?? null) ? $rawRows[$index] : [],
                                 $finalBatchWeight,
-                                $item['weight'],
+                                $normalizedItems[$index]['weight'] ?? $item['weight'],
                             );
 
                             return [

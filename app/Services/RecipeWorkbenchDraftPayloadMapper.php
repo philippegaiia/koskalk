@@ -32,6 +32,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'final_plain_ingredient_list' => $draft['finalPlainIngredientList'] ?? null,
             'final_plain_ingredient_list_basis_hash' => $draft['finalPlainIngredientListBasisHash'] ?? null,
             'phase_items' => $draft['phaseItems'] ?? [],
+            ...$this->liquidProcessPayload($draft),
         ];
     }
 
@@ -73,13 +74,26 @@ class RecipeWorkbenchDraftPayloadMapper
             'product_reference' => $draft['productReference'] ?? null,
             'nominal_content_value' => $draft['nominalContentValue'] ?? null,
             'nominal_content_unit' => $draft['nominalContentUnit'] ?? null,
-            ...(is_array($draft['liquidProcess'] ?? null) ? [
-                'liquid_process' => [
-                    'first_dilution_percentage' => $draft['liquidProcess']['firstDilutionPercentage'] ?? null,
-                    'final_dilution_percentage' => $draft['liquidProcess']['finalDilutionPercentage'] ?? null,
-                    'neutralizer_solution_percentage' => $draft['liquidProcess']['neutralizerSolutionPercentage'] ?? null,
-                ],
-            ] : []),
+            ...$this->liquidProcessPayload($draft),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{liquid_process?: array<string, mixed>}
+     */
+    private function liquidProcessPayload(array $draft): array
+    {
+        if (! is_array($draft['liquidProcess'] ?? null)) {
+            return [];
+        }
+
+        return [
+            'liquid_process' => [
+                'first_dilution_percentage' => $draft['liquidProcess']['firstDilutionPercentage'] ?? null,
+                'final_dilution_percentage' => $draft['liquidProcess']['finalDilutionPercentage'] ?? null,
+                'neutralizer_solution_percentage' => $draft['liquidProcess']['neutralizerSolutionPercentage'] ?? null,
+            ],
         ];
     }
 

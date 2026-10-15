@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\User;
+use InvalidArgumentException;
 
 class RecipeWorkbenchPreviewService
 {
@@ -21,6 +22,9 @@ class RecipeWorkbenchPreviewService
     ) {}
 
     /**
+     * Without post-reaction oils, saponifiable additions take no lye: the
+     * liquid soap paste is neutralized before anything is added to it.
+     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>|null
      */
@@ -29,6 +33,7 @@ class RecipeWorkbenchPreviewService
         ?User $user = null,
         bool $validateLyeIngredients = true,
         bool $enforceSuperfatFloors = true,
+        bool $includePostReactionOils = true,
     ): ?array {
         $rawLyeLiquidRows = data_get($payload, 'phase_items.lye_water', []);
         $rawLyeLiquidRows = is_array($rawLyeLiquidRows) ? $rawLyeLiquidRows : [];
@@ -88,7 +93,7 @@ class RecipeWorkbenchPreviewService
         }
 
         $additionContexts = $this->additionContexts($payload);
-        $postReactionOils = $this->postReactionOils($additionContexts);
+        $postReactionOils = $includePostReactionOils ? $this->postReactionOils($additionContexts) : [];
 
         $calculation = $this->soapCalculationService->calculate($oils, [
             'superfat' => (float) ($payload['superfat'] ?? 5),
@@ -113,10 +118,46 @@ class RecipeWorkbenchPreviewService
     }
 
     /**
+     * Paste-only calculation of a liquid soap formula with its process under
+     * liquid_process. Settings that cannot be made report there as invalid
+     * while the paste numbers stay available.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|null
+     */
+    public function previewLiquidSoapCalculation(
+        array $payload,
+        ?User $user = null,
+        bool $validateLyeIngredients = true,
+        bool $enforceSuperfatFloors = true,
+    ): ?array {
+        $calculation = $this->previewSoapCalculation(
+            $payload,
+            $user,
+            $validateLyeIngredients,
+            $enforceSuperfatFloors,
+            includePostReactionOils: false,
+        );
+
+        if ($calculation === null) {
+            return null;
+        }
+
+        try {
+            $calculation['liquid_process'] = $this->previewLiquidSoapProcess($payload, $calculation);
+        } catch (InvalidArgumentException $exception) {
+            $calculation['liquid_process'] = ['status' => 'invalid', 'message' => $exception->getMessage()];
+        }
+
+        return $calculation;
+    }
+
+    /**
      * Liquid soap paste process for a KOH paste calculation: stages,
-     * neutralizer, composition, and each addition as weight and % of the
-     * final batch. Additions sent with a final_percentage take their weight
-     * from it.
+     * neutralizer, composition, and each addition as weight and achieved %
+     * of the final batch. Additions sent with a final_percentage take their
+     * weight from it, as a share of the target batch, and report it back as
+     * requested_final_percentage.
      *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $calculation  Output of previewSoapCalculation().
@@ -142,23 +183,27 @@ class RecipeWorkbenchPreviewService
                     'phase_key' => $phaseKey,
                     'ingredient_id' => (int) $row['ingredient_id'],
                     'weight' => $this->liquidSoapFormulaProcessor->additionWeight($row, $finalBatchWeight, $this->previewRowWeight($row, $payload)),
+                    'requested_final_percentage' => is_numeric($row['final_percentage'] ?? null) ? (float) $row['final_percentage'] : null,
                 ])
                 ->values()
                 ->all())
             ->values();
         $additionsWeight = $additions->reduce(fn (string $total, array $addition): string => bcadd($total, $addition['weight'], 18), '0');
 
+        $process = $this->liquidSoapFormulaProcessor->process($paste, $liquidProcess, $neutralizer, $additionsWeight);
+        $achievedFinalWeight = $process['final_weight'];
+
         return [
-            ...$this->liquidSoapFormulaProcessor->process($paste, $liquidProcess, $neutralizer, $additionsWeight),
+            ...$process,
             'paste_composition' => $paste,
             'target_final_weight' => $finalBatchWeight === null ? null : $this->fourDecimals($finalBatchWeight),
             'additions' => $additions
                 ->map(fn (array $addition): array => [
                     ...$addition,
                     'weight' => $this->fourDecimals($addition['weight']),
-                    'final_percentage' => $finalBatchWeight === null || bccomp($finalBatchWeight, '0', 18) <= 0
+                    'final_percentage' => $achievedFinalWeight === null || bccomp($achievedFinalWeight, '0', 4) <= 0
                         ? null
-                        : $this->fourDecimals(bcdiv(bcmul($addition['weight'], '100', 18), $finalBatchWeight, 18)),
+                        : $this->fourDecimals(bcdiv(bcmul($addition['weight'], '100', 18), $achievedFinalWeight, 18)),
                 ])
                 ->all(),
         ];
@@ -265,11 +310,18 @@ class RecipeWorkbenchPreviewService
         $previewPayload = $this->recipeWorkbenchDraftPayloadMapper->toPreviewPayload($draft);
         // Saved versions are read with the rules they were saved under, so
         // tighter authoring floors never make an existing formula unreadable.
-        $calculation = $this->previewSoapCalculation(
-            $previewPayload,
-            validateLyeIngredients: $validateLyeIngredients,
-            enforceSuperfatFloors: $validateLyeIngredients,
-        );
+        // Only liquid soap paste versions are saved with liquid settings.
+        $calculation = is_array($previewPayload['liquid_process'] ?? null)
+            ? $this->previewLiquidSoapCalculation(
+                $previewPayload,
+                validateLyeIngredients: $validateLyeIngredients,
+                enforceSuperfatFloors: $validateLyeIngredients,
+            )
+            : $this->previewSoapCalculation(
+                $previewPayload,
+                validateLyeIngredients: $validateLyeIngredients,
+                enforceSuperfatFloors: $validateLyeIngredients,
+            );
 
         return [
             'draft' => $draft,

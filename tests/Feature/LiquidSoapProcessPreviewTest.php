@@ -127,6 +127,8 @@ it('turns additions entered as a share of the final batch into weights', functio
 
     expect($additions['lavender']['weight'])->toBe('95.2000')
         ->and($additions['lavender']['final_percentage'])->toBe('2.0000')
+        ->and($additions['lavender']['requested_final_percentage'])->toBe(2.0)
+        ->and($additions['clay']['requested_final_percentage'])->toBeNull()
         ->and($additions['clay']['weight'])->toBe('50.0000')
         ->and($additions['clay']['final_percentage'])->toBe('1.0504')
         ->and($process['stages']['final_dilution']['additions_weight'])->toBe('145.2000')
@@ -190,4 +192,135 @@ it('rejects saving more neutralizer than the free KOH needs', function () {
 
     expect(fn () => app(RecipeWorkbenchService::class)->save($user, $family, $payload))
         ->toThrow(fn (ValidationException $exception) => expect($exception->errors()['neutralization'][0] ?? null)->toContain('more than the free KOH needs'));
+});
+
+function liquidSoapPreviewSaponifiableAdditive(): Ingredient
+{
+    $butter = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
+        'is_active' => true,
+    ]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $butter->id, 'koh_sap_value' => 0.19]);
+
+    return $butter;
+}
+
+it('keeps saponifiable additions from absorbing the free KOH of a liquid soap paste', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $citricAcid = liquidSoapPreviewCitricAcid();
+    $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'phase_items' => [
+            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65, 'weight' => 6.5, 'note' => null]],
+            'additives' => [['ingredient_id' => liquidSoapPreviewSaponifiableAdditive()->id, 'percentage' => 5, 'weight' => 50, 'note' => null]],
+        ],
+    ]);
+
+    $calculation = app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, null, $family);
+
+    expect($calculation['lye']['excess']['koh_weight'])->toBe(5.7)
+        ->and($calculation['lye']['post_reaction_oils_weight'])->toBe(0.0)
+        ->and($calculation['liquid_process']['status'])->toBe('ok')
+        ->and($calculation['liquid_process']['neutralizer']['excess_acid_weight'])->toBe('0.0000');
+});
+
+it('saves the same neutralizer dose the preview accepts beside saponifiable additions', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'phase_items' => [
+            'neutralization' => [['ingredient_id' => liquidSoapPreviewCitricAcid()->id, 'percentage' => 0.65, 'weight' => 6.5, 'note' => null]],
+            'additives' => [['ingredient_id' => liquidSoapPreviewSaponifiableAdditive()->id, 'percentage' => 5, 'weight' => 50, 'note' => null]],
+        ],
+    ]);
+
+    $version = app(RecipeWorkbenchService::class)->save($user, $family, $payload);
+
+    expect(RecipeVersion::withoutGlobalScopes()->findOrFail($version->id)->calculation_context['liquid_process']['final_dilution_percentage'])->toBe('25');
+});
+
+it('keeps the weights of other additions when one is entered as a share of the final batch', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $clay = Ingredient::factory()->create(['category' => IngredientCategory::MineralsSaltsPowders, 'is_active' => true]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $service = app(RecipeWorkbenchService::class);
+
+    $version = $service->save($user, $family, liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'phase_items' => [
+            'additives' => [['ingredient_id' => $clay->id, 'percentage' => 5, 'weight' => 0, 'note' => null]],
+            'fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+        ],
+    ]));
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $phaseItems = $service->versionPayload($recipe, $version->id)['phaseItems'];
+
+    expect((float) $phaseItems['additives'][0]['weight'])->toBe(50.0)
+        ->and((float) $phaseItems['additives'][0]['percentage'])->toBe(5.0)
+        ->and((float) $phaseItems['fragrance'][0]['weight'])->toBe(95.2);
+});
+
+it('reports each addition as a share of the batch actually reached', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $clay = Ingredient::factory()->create(['category' => IngredientCategory::MineralsSaltsPowders, 'is_active' => true]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+
+    $process = app(RecipeWorkbenchService::class)->previewSoapCalculation(liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'phase_items' => [
+            'additives' => [['id' => 'clay', 'ingredient_id' => $clay->id, 'percentage' => 140, 'weight' => 1400]],
+            'fragrance' => [['id' => 'lavender', 'ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2]],
+        ],
+    ]), null, $family)['liquid_process'];
+
+    $additions = collect($process['additions'])->keyBy('id');
+
+    expect($process['stages']['final_dilution']['status'])->toBe('target_exceeded')
+        ->and($process['target_final_weight'])->toBe('4760.0000')
+        ->and($process['final_weight'])->toBe('4895.2000')
+        ->and($additions['clay']['final_percentage'])->toBe('28.5994')
+        ->and($additions['clay']['requested_final_percentage'])->toBeNull()
+        ->and($additions['lavender']['weight'])->toBe('95.2000')
+        ->and($additions['lavender']['final_percentage'])->toBe('1.9448')
+        ->and($additions['lavender']['requested_final_percentage'])->toBe(2.0);
+});
+
+it('returns the liquid soap process in the snapshots of saved and published versions', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $oil = liquidSoapPreviewOil();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draft = $service->save($user, $family, liquidSoapPreviewPayload($oil, ['product_type_id' => $productType->id]));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draft->recipe_id);
+    $service->saveAsNewVersion($user, $family, liquidSoapPreviewPayload($oil, ['product_type_id' => $productType->id]), $recipe);
+    $published = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->latest('version_number')->firstOrFail();
+
+    $currentSnapshot = $service->currentVersionSnapshot($recipe->fresh());
+    $publishedSnapshot = $service->versionSnapshot($recipe->fresh(), $published->id);
+
+    expect($currentSnapshot['calculation']['liquid_process']['status'])->toBe('ok')
+        ->and($currentSnapshot['calculation']['liquid_process']['final_weight'])->toBe('4760.0000')
+        ->and($publishedSnapshot['calculation']['liquid_process']['final_weight'])->toBe('4760.0000');
+});
+
+it('keeps bar soap snapshots free of liquid soap results', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $service = app(RecipeWorkbenchService::class);
+
+    $version = $service->save($user, $family, liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'superfat' => 5,
+    ]));
+
+    $snapshot = $service->currentVersionSnapshot(Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id));
+
+    expect($snapshot['calculation'])->not->toHaveKey('liquid_process');
 });

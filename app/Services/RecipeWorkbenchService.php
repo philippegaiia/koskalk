@@ -36,28 +36,17 @@ class RecipeWorkbenchService
     ) {}
 
     /**
-     * Liquid soap paste families also get their process under
-     * liquid_process; settings that cannot be made report there as invalid
-     * while the paste numbers stay available.
+     * Liquid soap paste families get the paste-only calculation with their
+     * process under liquid_process.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>|null
      */
     public function previewSoapCalculation(array $payload, ?User $user = null, ?ProductFamily $productFamily = null): ?array
     {
-        $calculation = $this->recipeWorkbenchPreviewService->previewSoapCalculation($payload, $user);
-
-        if ($calculation === null || ! ($productFamily?->usesLiquidSoapPasteBench() ?? false)) {
-            return $calculation;
-        }
-
-        try {
-            $calculation['liquid_process'] = $this->recipeWorkbenchPreviewService->previewLiquidSoapProcess($payload, $calculation);
-        } catch (InvalidArgumentException $exception) {
-            $calculation['liquid_process'] = ['status' => 'invalid', 'message' => $exception->getMessage()];
-        }
-
-        return $calculation;
+        return ($productFamily?->usesLiquidSoapPasteBench() ?? false)
+            ? $this->recipeWorkbenchPreviewService->previewLiquidSoapCalculation($payload, $user)
+            : $this->recipeWorkbenchPreviewService->previewSoapCalculation($payload, $user);
     }
 
     /**

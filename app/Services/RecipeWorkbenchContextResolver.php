@@ -26,8 +26,8 @@ class RecipeWorkbenchContextResolver
     }
 
     /**
-     * Families that open in the soap or cosmetic workbench. Liquid soap paste
-     * families have their own bench and are never resolved here.
+     * Families that open in the workbench. A liquid soap paste family opens
+     * its own formula view only once it is active.
      */
     public function productFamily(string $slug): ProductFamily
     {
@@ -35,7 +35,8 @@ class RecipeWorkbenchContextResolver
             ->where('slug', $slug)
             ->where(fn (Builder $query): Builder => $query
                 ->whereNull('soap_process')
-                ->orWhere('soap_process', '!=', SoapProcess::LiquidPaste->value))
+                ->orWhere('soap_process', '!=', SoapProcess::LiquidPaste->value)
+                ->orWhere('is_active', true))
             ->firstOrFail();
     }
 

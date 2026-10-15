@@ -26,6 +26,18 @@ export function serializeRow(state, row, phaseKey = null) {
     };
 }
 
+/**
+ * Saved liquid soap process settings. The weighed paste is a batch
+ * measurement, never part of the formula, so it is left out.
+ */
+export function serializeLiquidProcess(liquidProcess) {
+    return {
+        first_dilution_percentage: number(liquidProcess.firstDilutionPercentage),
+        final_dilution_percentage: number(liquidProcess.finalDilutionPercentage),
+        neutralizer_solution_percentage: number(liquidProcess.neutralizerSolutionPercentage),
+    };
+}
+
 export function serializeDraft(state) {
     const phaseItems = Object.fromEntries(
         Object.entries(state.phaseItems ?? {}).map(([phaseKey, rows]) => [
@@ -82,6 +94,7 @@ export function serializeDraft(state) {
         nominal_content_unit: state.nominalContentValue === '' || state.nominalContentValue === null || state.nominalContentValue === undefined
             ? null
             : state.nominalContentUnit || null,
+        ...(state.liquidProcess ? { liquid_process: serializeLiquidProcess(state.liquidProcess) } : {}),
     };
 }
 

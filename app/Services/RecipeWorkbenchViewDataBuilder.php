@@ -69,6 +69,7 @@ class RecipeWorkbenchViewDataBuilder
                 'name' => $productFamily->name,
                 'slug' => $productFamily->slug,
                 'calculation_basis' => $productFamily->calculation_basis,
+                'soap_process' => $productFamily->soap_process?->value,
             ],
             'curedWaterPercentage' => $productFamily->curedWaterPercentage(),
             'productType' => $this->productTypeData($productType),

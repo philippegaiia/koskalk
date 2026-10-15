@@ -47,6 +47,15 @@ class ProductFamily extends Model
         return $this->soap_process === SoapProcess::LiquidPaste;
     }
 
+    /**
+     * A liquid soap paste family opens its formula view only once active,
+     * so the bench stays hidden until it is released.
+     */
+    public function opensInWorkbench(): bool
+    {
+        return ! $this->usesLiquidSoapPasteBench() || $this->is_active;
+    }
+
     protected function casts(): array
     {
         return [

@@ -43584,6 +43584,18 @@
     },
     {
       "group": "workbench",
+      "key": "header.new_liquid_soap",
+      "text": {
+        "de": "Neue Flüssigseife",
+        "es": "Jabón líquido nuevo",
+        "fr": "Nouveau savon liquide",
+        "it": "Nuovo sapone liquido",
+        "nl": "Nieuwe vloeibare zeep",
+        "pt_BR": "Novo sabonete líquido"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "header.new_product",
       "text": {
         "de": "Neues Produkt",

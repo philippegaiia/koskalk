@@ -41,6 +41,7 @@ return [
         'current_product' => 'Current product',
         'new_soap' => 'New soap',
         'new_cosmetic' => 'New cosmetic product',
+        'new_liquid_soap' => 'New liquid soap',
     ],
     'tabs' => [
         'aria_label' => 'Product sections',

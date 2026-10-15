@@ -44,28 +44,34 @@ it('does not reopen or reshape the liquid soap family when seeding again', funct
         ->name->toBe('Liquid Soap Paste');
 });
 
-it('does not open a new liquid soap formula in the soap workbench', function () {
-    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+it('keeps a new liquid soap formula closed until its family is active', function (bool $active, int $status) {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create(['is_active' => $active]);
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
 
     $this->actingAs(User::factory()->create())
         ->get(route('recipes.create', ['family' => 'liquid-soap', 'type' => $productType->slug]))
-        ->assertNotFound();
-});
+        ->assertStatus($status);
+})->with([
+    'inactive family' => [false, 404],
+    'active family' => [true, 200],
+]);
 
-it('does not open a saved liquid soap formula in the soap workbench', function () {
+it('keeps a saved liquid soap formula closed until its family is active', function (bool $active, int $status) {
     $workspace = Workspace::factory()->create();
-    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create(['is_active' => $active]);
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
 
     $this->actingAs($workspace->owner)
         ->get(route('recipes.edit', $recipe))
-        ->assertNotFound();
-});
+        ->assertStatus($status);
+})->with([
+    'inactive family' => [false, 404],
+    'active family' => [true, 200],
+]);
 
-it('refuses to mount the soap workbench for a liquid soap family', function (string $source) {
+it('refuses to mount the workbench for an inactive liquid soap family', function (string $source) {
     $workspace = Workspace::factory()->create();
-    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create(['is_active' => false]);
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'product_family_id' => $family->id]);
     $this->actingAs($workspace->owner);
 
@@ -75,6 +81,15 @@ it('refuses to mount the soap workbench for a liquid soap family', function (str
 
     Livewire::test(RecipeWorkbench::class, $parameters)->assertStatus(404);
 })->with(['saved formula', 'family slug']);
+
+it('tells the browser an active liquid soap family uses the liquid paste process', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $this->actingAs(User::factory()->create());
+
+    $component = Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => $family->slug]);
+
+    expect($component->html())->toContain('liquid_paste');
+});
 
 it('keeps a KOH formula of the soap family on the soap workbench', function () {
     $user = User::factory()->create();

@@ -19,6 +19,26 @@ function phaseItemsFromDraft(draft, phaseOrder) {
     return nextPhaseItems;
 }
 
+/**
+ * Liquid soap process settings from a saved draft, keeping the weighed paste
+ * the user already typed for the batch on screen. Bar soap and cosmetic
+ * formulas stay null.
+ */
+export function liquidProcessFromDraft(draft, currentLiquidProcess) {
+    if (currentLiquidProcess === null || currentLiquidProcess === undefined) {
+        return null;
+    }
+
+    const saved = draft?.liquidProcess ?? {};
+
+    return {
+        firstDilutionPercentage: number(saved.firstDilutionPercentage ?? currentLiquidProcess.firstDilutionPercentage),
+        finalDilutionPercentage: number(saved.finalDilutionPercentage ?? currentLiquidProcess.finalDilutionPercentage),
+        neutralizerSolutionPercentage: number(saved.neutralizerSolutionPercentage ?? currentLiquidProcess.neutralizerSolutionPercentage),
+        measuredPasteWeight: currentLiquidProcess.measuredPasteWeight ?? '',
+    };
+}
+
 export function draftStateFromDraft(draft, currentState) {
     if (!draft) {
         return null;
@@ -84,6 +104,7 @@ export function draftStateFromDraft(draft, currentState) {
             ? ''
             : number(draft.nominalContentValue),
         nominalContentUnit: draft.nominalContentUnit ?? currentState.nominalContentUnit ?? 'g',
+        liquidProcess: liquidProcessFromDraft(draft, currentState.liquidProcess),
     };
 
     if (Object.hasOwn(draft, 'selectedIfraProductCategoryId')) {

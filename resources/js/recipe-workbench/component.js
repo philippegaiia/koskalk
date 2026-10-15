@@ -153,6 +153,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
     const initialDraft = payload.savedDraft ?? initialSnapshot?.draft ?? null;
     const productFamilySlug = payload.productFamily?.slug ?? 'soap';
     const isCosmeticFormula = productFamilySlug === 'cosmetic';
+    const isLiquidSoapFormula = payload.productFamily?.soap_process === 'liquid_paste';
     const phaseOrder = Array.isArray(payload.phases) && payload.phases.length > 0
         ? payload.phases
         : defaultPhaseBlueprints(productFamilySlug);
@@ -190,7 +191,9 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         isFormulaLocked: Boolean(payload.recipe?.is_locked ?? false),
         formulaName: isCosmeticFormula
             ? (payload.translations?.header?.new_cosmetic ?? 'New cosmetic product')
-            : (payload.translations?.header?.new_soap ?? 'New soap'),
+            : (isLiquidSoapFormula
+                ? (payload.translations?.header?.new_liquid_soap ?? 'New liquid soap')
+                : (payload.translations?.header?.new_soap ?? 'New soap')),
         oilUnit: initialMassUnit,
         oilWeight: convertWorkbenchMass(defaultMassGrams, 'g', initialMassUnit),
         manufacturingMode: isCosmeticFormula ? 'blend_only' : 'saponify_in_formula',
@@ -198,12 +201,12 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         regulatoryRegime: payload.defaultRegulatoryRegime ?? 'none',
         savedRegulatoryRegime: null,
         editMode: 'percentage',
-        lyeType: 'naoh',
+        lyeType: isLiquidSoapFormula ? 'koh' : 'naoh',
         kohPurity: 90,
         dualKohPercentage: 40,
         waterMode: isCosmeticFormula ? 'percent_of_oils' : 'lye_concentration',
-        waterValue: isCosmeticFormula ? 38 : 30,
-        superfat: 5,
+        waterValue: isCosmeticFormula ? 38 : (isLiquidSoapFormula ? 28 : 30),
+        superfat: isLiquidSoapFormula ? 0 : 5,
         curedWaterPercentage: payload.curedWaterPercentage ?? 11,
         search: '',
         activeCategory: isCosmeticFormula ? 'all' : 'lipids',
@@ -1399,6 +1402,35 @@ function createCatalogSection() {
  * This section keeps draft/snapshot translation and every Livewire-backed flow
  * in one place so save, preview, and comparison behavior stay consistent.
  */
+/** Starting process for a new liquid soap formula; the user adjusts each. */
+const LIQUID_PROCESS_DEFAULTS = Object.freeze({
+    firstDilutionPercentage: 35,
+    finalDilutionPercentage: 25,
+    neutralizerSolutionPercentage: 20,
+    measuredPasteWeight: '',
+});
+
+/**
+ * Liquid soap paste state. Bar soap and cosmetic formulas keep
+ * liquidProcess null, so their payloads and dirty checks are unchanged.
+ * Serialization lives in payload.js and hydration in snapshot.js.
+ */
+function createLiquidSoapSection(payload) {
+    const isLiquidSoapFormula = payload.productFamily?.soap_process === 'liquid_paste';
+
+    return {
+        liquidProcess: isLiquidSoapFormula ? { ...LIQUID_PROCESS_DEFAULTS } : null,
+
+        get isLiquidSoapFormula() {
+            return isLiquidSoapFormula;
+        },
+
+        get liquidProcessPreview() {
+            return this.backendCalculation?.liquid_process ?? null;
+        },
+    };
+}
+
 function createPersistenceSection() {
     return {
         schedulePhaseItemPreviews() {
@@ -1641,6 +1673,7 @@ export function createRecipeWorkbench(payload, createRegistry = null) {
         createCostingSection(payload),
         createVersionSection(payload),
         createPresentationSection(),
+        createLiquidSoapSection(payload),
     ].forEach((section) => defineSection(component, section));
 
     if (typeof createRecipeWorkbenchOutputSection === 'function') {

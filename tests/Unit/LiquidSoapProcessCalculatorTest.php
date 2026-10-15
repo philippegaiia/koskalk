@@ -345,3 +345,26 @@ it('reads floats in scientific notation at their exact decimal value', function 
     'tiny value' => [0.00005, '0.0001'],
     'large value' => [1.5e3, '1500.0000'],
 ]);
+
+it('reads floats the same way under a decimal-comma process locale', function () {
+    $previousLocale = setlocale(LC_NUMERIC, '0');
+    $commaLocale = setlocale(LC_NUMERIC, 'fr_FR.UTF-8', 'fr_FR.utf8', 'de_DE.UTF-8', 'de_DE.utf8', 'fr_FR', 'de_DE');
+
+    if ($commaLocale === false || sprintf('%.1f', 1.5) !== '1,5') {
+        setlocale(LC_NUMERIC, $previousLocale);
+        $this->markTestSkipped('No decimal-comma locale is installed.');
+    }
+
+    try {
+        $result = app(LiquidSoapProcessCalculator::class)->calculate(liquidSoapPaste(0), [
+            'first_dilution_percentage' => '35.1',
+            'final_dilution_percentage' => 35.1,
+            'additions_weight' => 1.5e3,
+        ]);
+    } finally {
+        setlocale(LC_NUMERIC, $previousLocale);
+    }
+
+    expect($result['stages']['final_dilution']['target_percentage'])->toBe('35.1000')
+        ->and($result['composition']['additions_weight'])->toBe('1500.0000');
+});

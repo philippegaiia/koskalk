@@ -27,6 +27,9 @@ class LiquidSoapProcessCalculator
 
     private const OUTPUT_SCALE = 4;
 
+    /** Most decimals PHP's sprintf() writes for a float. */
+    private const MAX_FLOAT_DECIMALS = 53;
+
     /**
      * Read the paste out of a soap calculation made without post-reaction oils.
      *
@@ -431,8 +434,8 @@ class LiquidSoapProcessCalculator
     /**
      * Finite decimal string from user or engine input. Floats become the
      * shortest decimal that reads back as the same float, so 35.1 stays
-     * "35.1" rather than carrying binary noise, and tiny values are expanded
-     * from scientific notation instead of collapsing to zero.
+     * "35.1" rather than carrying binary noise, tiny values never collapse
+     * to zero, and the result does not depend on the process locale.
      */
     private function decimal(mixed $value, string $label): string
     {
@@ -449,29 +452,21 @@ class LiquidSoapProcessCalculator
         return $decimal;
     }
 
+    /**
+     * Uses %F, which ignores the process locale, unlike %G or %f that would
+     * write "35,1" under a decimal-comma LC_NUMERIC.
+     */
     private function floatToDecimal(float $value): string
     {
-        for ($precision = 1; $precision <= 17; $precision++) {
-            $shortest = sprintf("%.{$precision}G", $value);
+        for ($decimals = 0; $decimals < self::MAX_FLOAT_DECIMALS; $decimals++) {
+            $decimal = sprintf("%.{$decimals}F", $value);
 
-            if ((float) $shortest === $value) {
-                break;
+            if ((float) $decimal === $value) {
+                return $decimal;
             }
         }
 
-        if (preg_match('/^(-?)(\d+)(?:\.(\d+))?E([+-]\d+)$/', $shortest, $parts) !== 1) {
-            return $shortest;
-        }
-
-        [, $sign, $whole, $fraction, $exponent] = $parts;
-        $mantissa = "{$whole}.{$fraction}";
-        $exponent = (int) $exponent;
-        $scale = max(0, strlen($fraction) - $exponent);
-        $magnitude = $exponent >= 0
-            ? bcmul($mantissa, bcpow('10', (string) $exponent), $scale)
-            : bcdiv($mantissa, bcpow('10', (string) -$exponent), $scale);
-
-        return $sign.$magnitude;
+        return sprintf('%.'.self::MAX_FLOAT_DECIMALS.'F', $value);
     }
 
     private function massAtPercentage(string $weight, string $percentage): string

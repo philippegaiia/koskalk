@@ -100,6 +100,7 @@ class FormulaDocumentBuilder
 
         return [
             'anhydrous_soap_weight' => (float) $process['anhydrous_soap_weight'],
+            'final_anhydrous_soap_weight' => (float) $process['final_anhydrous_soap_weight'],
             'final_weight' => (float) $process['final_weight'],
             'paste' => [
                 'theoretical_weight' => (float) $process['paste']['theoretical_weight'],
@@ -169,9 +170,15 @@ class FormulaDocumentBuilder
     private function liquidResults(array $snapshot, array $process): array
     {
         $unit = (string) data_get($snapshot, 'draft.oilUnit', 'g');
+        $pasteAnhydrousSoapWeight = round((float) $process['anhydrous_soap_weight'], 4);
+        $finalAnhydrousSoapWeight = round((float) $process['final_anhydrous_soap_weight'], 4);
 
         return [
             ['label' => __('formula_documents.results.final_batch'), 'value' => round((float) $process['final_weight'], 4), 'unit' => $unit],
+            ...($finalAnhydrousSoapWeight === $pasteAnhydrousSoapWeight ? [] : [
+                ['label' => __('formula_documents.results.paste_anhydrous_soap_weight'), 'value' => $pasteAnhydrousSoapWeight, 'unit' => $unit],
+            ]),
+            ['label' => __('formula_documents.results.anhydrous_soap_weight'), 'value' => $finalAnhydrousSoapWeight, 'unit' => $unit],
             ['label' => __('formula_documents.results.anhydrous_soap'), 'value' => round((float) $process['final_anhydrous_percentage'], 4), 'unit' => '%'],
             ['label' => __('formula_documents.results.glycerine'), 'value' => round((float) data_get($process, 'composition.glycerine_weight', 0), 4), 'unit' => $unit],
             ['label' => __('formula_documents.results.additions'), 'value' => round((float) data_get($process, 'composition.additions_weight', 0), 4), 'unit' => $unit],

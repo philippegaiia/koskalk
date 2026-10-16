@@ -115,7 +115,10 @@
  <section aria-labelledby="liquid-composition-heading">
  <div class="flex items-baseline justify-between gap-3">
  <p id="liquid-composition-heading" class="sk-eyebrow">{{ __('workbench.liquid.composition') }}</p>
+ <div class="text-right">
  <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]" x-text="t('liquid.final_batch', { amount: format(liquidProcessPreview.final_weight, calculatedMassDecimals(liquidProcessPreview.final_weight)), unit: oilUnit })"></p>
+ <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]" x-text="liquidAnhydrousSoapLabel()"></p>
+ </div>
  </div>
  <div class="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
  <template x-for="component in liquidCompositionRows()" :key="component.key">

@@ -119,6 +119,8 @@ return [
     'results' => [
         'additions' => 'Formula additions',
         'anhydrous_soap' => 'Anhydrous soap',
+        'anhydrous_soap_weight' => 'Anhydrous soap weight',
+        'paste_anhydrous_soap_weight' => 'Anhydrous soap from the paste',
         'final_batch' => 'Final batch',
         'batch_quantity' => 'Total batch quantity',
         'cured_weight' => 'Estimated weight after cure',
@@ -359,6 +361,8 @@ return [
             'final_dilution' => 'Add the additions, then water up to :target% anhydrous soap.',
         ],
         'neutralizer_amounts' => 'Acid: :acid :unit (theoretical :recommended :unit)',
+        'anhydrous_soap_weight' => 'Anhydrous soap: :amount :unit',
+        'neutralized_anhydrous_soap_weight' => 'Anhydrous soap after neutralization: :amount :unit',
         'weighed_paste' => 'Weighed paste (theoretical :theoretical :unit)',
         'additions' => 'Additions (weight · % of final batch)',
     ],

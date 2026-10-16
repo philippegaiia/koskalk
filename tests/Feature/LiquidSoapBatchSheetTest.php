@@ -81,6 +81,7 @@ it('reports the final batch instead of a wet and cured bar on a liquid soap shee
 
     expect(collect($document['results'])->pluck('value', 'label')->all())->toBe([
         'Final batch' => 4760.0,
+        'Anhydrous soap weight' => 1190.0,
         'Anhydrous soap' => 25.0,
         'Produced glycerine' => 103.9577,
         'Formula additions' => 95.2,
@@ -92,7 +93,26 @@ it('prints the liquid soap steps in process order', function () {
     $document = liquidSoapBatchSheetDocument();
 
     $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
-        ->assertSeeInOrder(['Liquid soap process', 'Paste', 'First dilution', 'Neutralization', 'Acid: 6.51 g (theoretical 6.51 g)', 'Final dilution', 'Lavender Oil', '95.20 g · 2.00%']);
+        ->assertSeeInOrder(['Liquid soap process', 'Paste', 'Anhydrous soap: 1,190.00 g', 'First dilution', 'Neutralization', 'Acid: 6.51 g (theoretical 6.51 g)', 'Final dilution', 'Lavender Oil', '95.20 g · 2.00%']);
+});
+
+it('reports the soap a fatty acid neutralizer adds to the anhydrous soap weight', function () {
+    $stearicAcid = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'display_name' => 'Stearic Acid', 'owner_type' => null, 'owner_id' => null, 'is_soap_saponification_trusted' => true, 'is_active' => true, 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::FattyAcid]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $stearicAcid->id, 'koh_sap_value' => 0.1972]);
+
+    $document = liquidSoapBatchSheetDocument([
+        'phase_items' => ['neutralization' => [['ingredient_id' => $stearicAcid->id, 'percentage' => 2.89047, 'weight' => 28.9047, 'note' => null]]],
+    ]);
+    $results = collect($document['results'])->pluck('value', 'label');
+
+    expect($results->only(['Anhydrous soap from the paste', 'Anhydrous soap weight'])->all())->toBe([
+        'Anhydrous soap from the paste' => 1190.0,
+        // The acid and the free KOH it takes up, less the water they release.
+        'Anhydrous soap weight' => 1222.7745,
+    ]);
+
+    $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
+        ->assertSeeInOrder(['Paste', 'Anhydrous soap: 1,190.00 g', 'Neutralization', 'Anhydrous soap after neutralization: 1,222.77 g', 'Final dilution']);
 });
 
 it('prints nothing for formulas without a liquid soap process', function () {

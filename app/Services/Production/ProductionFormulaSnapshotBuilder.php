@@ -421,6 +421,7 @@ class ProductionFormulaSnapshotBuilder
 
         return [
             'anhydrous_soap_percentage' => $share($process['anhydrous_soap_weight']),
+            'final_anhydrous_soap_percentage' => $share($process['final_anhydrous_soap_weight']),
             'final_percentage' => $share($process['final_weight']),
             'final_anhydrous_percentage' => (string) $process['final_anhydrous_percentage'],
             'free_koh_percentage' => $share(data_get($process, 'paste_composition.free_koh_weight', '0')),

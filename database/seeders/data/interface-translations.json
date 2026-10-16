@@ -3444,6 +3444,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "liquid.anhydrous_soap_weight",
+      "text": {
+        "de": "Wasserfreie Seife: :amount :unit",
+        "es": "Jabón anhidro: :amount :unit",
+        "fr": "Savon anhydre : :amount :unit",
+        "it": "Sapone anidro: :amount :unit",
+        "nl": "Watervrije zeep: :amount :unit",
+        "pt_BR": "Sabão anidro: :amount :unit"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "liquid.columns.add",
       "text": {
         "de": "Zugabe (:unit)",
@@ -3572,6 +3584,18 @@
         "it": "Cuocere gli oli con la soluzione alcalina fino a ottenere una pasta.",
         "nl": "Kook de oliën met de loogoplossing tot een pasta.",
         "pt_BR": "Cozinhar os óleos com a solução alcalina até formar uma pasta."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.neutralized_anhydrous_soap_weight",
+      "text": {
+        "de": "Wasserfreie Seife nach der Neutralisation: :amount :unit",
+        "es": "Jabón anhidro tras la neutralización: :amount :unit",
+        "fr": "Savon anhydre après neutralisation : :amount :unit",
+        "it": "Sapone anidro dopo la neutralizzazione: :amount :unit",
+        "nl": "Watervrije zeep na neutralisatie: :amount :unit",
+        "pt_BR": "Sabão anidro após a neutralização: :amount :unit"
       }
     },
     {
@@ -4092,6 +4116,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "results.anhydrous_soap_weight",
+      "text": {
+        "de": "Gewicht der wasserfreien Seife",
+        "es": "Peso del jabón anhidro",
+        "fr": "Poids de savon anhydre",
+        "it": "Peso del sapone anidro",
+        "nl": "Gewicht watervrije zeep",
+        "pt_BR": "Peso do sabão anidro"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "results.batch_quantity",
       "text": {
         "de": "Gesamtmenge der Charge",
@@ -4148,6 +4184,18 @@
         "it": "Glicerina prodotta",
         "nl": "Gevormde glycerine",
         "pt_BR": "Glicerina produzida"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "results.paste_anhydrous_soap_weight",
+      "text": {
+        "de": "Wasserfreie Seife aus der Paste",
+        "es": "Jabón anhidro de la pasta",
+        "fr": "Savon anhydre de la pâte",
+        "it": "Sapone anidro dalla pasta",
+        "nl": "Watervrije zeep uit de pasta",
+        "pt_BR": "Sabão anidro da pasta"
       }
     },
     {
@@ -44744,6 +44792,30 @@
         "it": "Sapone anidro",
         "nl": "Watervrije zeep",
         "pt_BR": "Sabão anidro"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.anhydrous_soap_weight",
+      "text": {
+        "de": "Wasserfreie Seife: :amount :unit",
+        "es": "Jabón anhidro: :amount :unit",
+        "fr": "Savon anhydre : :amount :unit",
+        "it": "Sapone anidro: :amount :unit",
+        "nl": "Watervrije zeep: :amount :unit",
+        "pt_BR": "Sabão anidro: :amount :unit"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.anhydrous_soap_weight_neutralized",
+      "text": {
+        "de": "Wasserfreie Seife: :paste :unit aus der Paste, :final :unit nach der Neutralisation",
+        "es": "Jabón anhidro: :paste :unit de la pasta, :final :unit tras la neutralización",
+        "fr": "Savon anhydre : :paste :unit dans la pâte, :final :unit après neutralisation",
+        "it": "Sapone anidro: :paste :unit dalla pasta, :final :unit dopo la neutralizzazione",
+        "nl": "Watervrije zeep: :paste :unit uit de pasta, :final :unit na neutralisatie",
+        "pt_BR": "Sabão anidro: :paste :unit da pasta, :final :unit após a neutralização"
       }
     },
     {

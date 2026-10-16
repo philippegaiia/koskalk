@@ -177,7 +177,7 @@ it('prints the liquid soap batch sheet with its process steps sized to the batch
 
     $response->assertOk()->assertSeeInOrder([
         'Liquid soap process',
-        'Paste',
+        'Paste', 'Anhydrous soap: 2,380.00 g',
         'First dilution', 'Add water to bring the paste to 35.0% anhydrous soap.', '3,358.65', '6,800.00',
         'Neutralization', 'Add Citric Acid as a 20% solution.', 'Acid: 13.01 g (theoretical 13.01 g)', '65.06',
         'Final dilution', '9,520.00', '25.0%',
@@ -199,5 +199,7 @@ it('sizes the printed liquid soap steps to a rescaled batch', function (): void 
         'neutralization' => 1716.2655,
         'final_dilution' => 2380.0,
     ], 0.001)
-        ->and($process['neutralizer']['weight'])->toEqualWithDelta(3.2531, 0.0001);
+        ->and($process['neutralizer']['weight'])->toEqualWithDelta(3.2531, 0.0001)
+        ->and($process['anhydrous_soap_weight'])->toEqualWithDelta(595.0, 0.0001)
+        ->and($process['final_anhydrous_soap_weight'])->toEqualWithDelta(595.0, 0.0001);
 });

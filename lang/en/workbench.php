@@ -650,6 +650,8 @@ return [
         ],
         'composition' => 'Final composition',
         'final_batch' => 'Final batch: :amount :unit',
+        'anhydrous_soap_weight' => 'Anhydrous soap: :amount :unit',
+        'anhydrous_soap_weight_neutralized' => 'Anhydrous soap: :paste :unit from the paste, :final :unit after neutralization',
         'components' => [
             'soap_salt_weight' => 'Soap',
             'glycerine_weight' => 'Glycerine',

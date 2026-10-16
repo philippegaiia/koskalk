@@ -8,6 +8,9 @@
     $percent = fn (float $value): string => $numberLocale === null
         ? number_format($value, 1)
         : \App\Support\NumberLocale::formatDecimal($value, 1, $numberLocale);
+    $soapGained = is_array($process)
+        && ($process['final_anhydrous_soap_weight'] ?? null) !== null
+        && round($process['final_anhydrous_soap_weight'], 4) !== round((float) $process['anhydrous_soap_weight'], 4);
 @endphp
 
 @if (is_array($process))
@@ -39,6 +42,16 @@
                                             'recommended' => $mass($process['neutralizer']['recommended_weight']),
                                             'unit' => $document['unit'],
                                         ]) }}
+                                    </p>
+                                @endif
+                                @if ($step['key'] === 'paste' && $process['anhydrous_soap_weight'] !== null)
+                                    <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
+                                        {{ __('formula_documents.liquid.anhydrous_soap_weight', ['amount' => $mass($process['anhydrous_soap_weight']), 'unit' => $document['unit']]) }}
+                                    </p>
+                                @endif
+                                @if ($step['key'] === 'neutralization' && $soapGained)
+                                    <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
+                                        {{ __('formula_documents.liquid.neutralized_anhydrous_soap_weight', ['amount' => $mass($process['final_anhydrous_soap_weight']), 'unit' => $document['unit']]) }}
                                     </p>
                                 @endif
                                 @if ($step['key'] === 'paste' && $process['paste']['is_weighed'])

@@ -206,6 +206,7 @@ final class ProductionRunPrintDataBuilder
 
         return [
             'anhydrous_soap_weight' => $grams($process['anhydrous_soap_percentage']),
+            'final_anhydrous_soap_weight' => $grams($process['final_anhydrous_soap_percentage'] ?? null),
             'final_weight' => $finalWeight,
             'paste' => ['theoretical_weight' => $grams($stage('paste')['mass_percentage']), 'weight' => $grams($stage('paste')['mass_percentage']), 'is_weighed' => false],
             'steps' => [

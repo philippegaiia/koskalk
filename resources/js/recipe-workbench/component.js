@@ -1573,6 +1573,24 @@ function createLiquidSoapSection(payload) {
                 .reduce((total, row) => total + this.liquidAdditionShare(row), 0);
         },
 
+        /**
+         * Anhydrous soap weight from the server preview: the paste's, and the
+         * larger weight after a fatty acid neutralizer turned free KOH into soap.
+         */
+        liquidAnhydrousSoapLabel() {
+            if (!this.liquidProcessIsReady) {
+                return '';
+            }
+
+            const paste = this.liquidProcessPreview.anhydrous_soap_weight;
+            const final = this.liquidProcessPreview.final_anhydrous_soap_weight ?? paste;
+            const mass = (value) => this.format(value, this.calculatedMassDecimals(value));
+
+            return this.number(final) === this.number(paste)
+                ? this.t('liquid.anhydrous_soap_weight', { amount: mass(paste), unit: this.oilUnit })
+                : this.t('liquid.anhydrous_soap_weight_neutralized', { paste: mass(paste), final: mass(final), unit: this.oilUnit });
+        },
+
         liquidCompositionRows() {
             const composition = this.liquidProcessPreview?.composition;
             const shares = this.liquidProcessPreview?.composition_percentages;

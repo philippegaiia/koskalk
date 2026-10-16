@@ -237,3 +237,26 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('shows the anhydrous soap weight from the server preview, and the soap a fatty acid adds', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = createRecipeWorkbench({
+    productFamily: liquidFamily,
+    numberLocaleOptions: { en_US: '1,234.56' },
+    translations: { liquid: {
+        anhydrous_soap_weight: 'Anhydrous soap: :amount :unit',
+        anhydrous_soap_weight_neutralized: 'Anhydrous soap: :paste :unit from the paste, :final :unit after neutralization',
+    } },
+});
+workbench.backendCalculation = { liquid_process: { status: 'ok', anhydrous_soap_weight: '1190.0000', final_anhydrous_soap_weight: '1190.0000' } };
+assert.equal(workbench.liquidAnhydrousSoapLabel(), 'Anhydrous soap: 1190 g');
+
+workbench.backendCalculation = { liquid_process: { status: 'ok', anhydrous_soap_weight: '1190.0000', final_anhydrous_soap_weight: '1222.7745' } };
+assert.equal(workbench.liquidAnhydrousSoapLabel(), 'Anhydrous soap: 1190 g from the paste, 1223 g after neutralization');
+
+workbench.backendCalculation = { liquid_process: { status: 'invalid', message: 'nope' } };
+assert.equal(workbench.liquidAnhydrousSoapLabel(), '');
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

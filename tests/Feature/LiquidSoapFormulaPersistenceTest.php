@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\LiquidSoapNeutralizer;
 use App\Enums\OwnerType;
 use App\Filament\Resources\Ingredients\Pages\EditIngredient;
@@ -93,6 +94,28 @@ it('lets administrators mark a platform material as a liquid soap neutralizer', 
         ->assertHasNoFormErrors();
 
     expect($ingredient->refresh()->liquid_soap_neutralizer)->toBe(LiquidSoapNeutralizer::CitricAcidAnhydrous);
+});
+
+it('lets administrators record the soap chemistry of a fatty acid neutralizer', function () {
+    $stearicAcid = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'category' => IngredientCategory::FattyDerivatives,
+        'subcategory' => IngredientSubcategory::FattyAcids,
+    ]);
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(EditIngredient::class, ['record' => $stearicAcid->public_id])
+        ->fillForm([
+            'liquid_soap_neutralizer' => LiquidSoapNeutralizer::FattyAcid->value,
+            'is_soap_saponification_trusted' => true,
+            'sap_profile.koh_sap_value' => '0.1972',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($stearicAcid->refresh()->sapProfile->koh_sap_value)->toBe('0.197200')
+        ->and($stearicAcid->liquidSoapNeutralizer())->toBe(LiquidSoapNeutralizer::FattyAcid);
 });
 
 it('offers a material as a neutralizer only when it is a platform material', function () {

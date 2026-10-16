@@ -91,7 +91,7 @@ class RecipeController extends Controller
         ]);
     }
 
-    public function create(Request $request): View|RedirectResponse
+    public function create(Request $request, ProductCreationCatalog $productCreationCatalog): View|RedirectResponse
     {
         $this->authorize('create', Recipe::class);
 
@@ -104,8 +104,11 @@ class RecipeController extends Controller
         abort_unless($productFamily->opensInWorkbench(), 404);
 
         if ($productTypeSlug === '') {
+            $entry = collect($productCreationCatalog->entries())
+                ->search(fn (array $entryData): bool => $entryData['family'] === $productFamily->slug);
+
             return redirect()->route('recipes.choose-type', [
-                'entry' => $productFamily->slug === 'cosmetic' ? 'cosmetics' : 'soap',
+                'entry' => $entry === false ? 'soap' : $entry,
             ]);
         }
 

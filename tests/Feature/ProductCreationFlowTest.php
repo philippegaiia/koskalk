@@ -133,6 +133,43 @@ it('opens the Workbench only after a compatible Product Type is selected', funct
         ->assertNotFound();
 });
 
+it('offers liquid soap as a Product choice only while its family is active', function (): void {
+    productCreationFixture();
+    $liquidSoap = ProductFamily::factory()->liquidSoapPaste()->create();
+    $bodyWash = ProductType::factory()->create([
+        'product_family_id' => $liquidSoap->id,
+        'product_category_id' => ProductCategory::query()->where('slug', 'body-cleansing')->sole()->id,
+        'name' => 'Liquid soap / body wash',
+        'slug' => 'liquid-soap-body-wash',
+    ]);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('recipes.start'))
+        ->assertSuccessful()
+        ->assertSeeTextInOrder(['All', 'Soap', 'Liquid soap', 'Cosmetics', 'Home'])
+        ->assertSee(route('recipes.create', ['family' => 'liquid-soap', 'type' => $bodyWash->slug]));
+    $this->actingAs($user)
+        ->get(route('recipes.choose-type', ['entry' => 'liquid-soap']))
+        ->assertSuccessful()
+        ->assertSee('Liquid soap / body wash')
+        ->assertDontSee('Bar soap / cleansing bar');
+    $this->actingAs($user)
+        ->get(route('recipes.create', ['family' => 'liquid-soap']))
+        ->assertRedirect(route('recipes.choose-type', ['entry' => 'liquid-soap']));
+
+    $liquidSoap->update(['is_active' => false]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.start.guided'))
+        ->assertSuccessful()
+        ->assertDontSee(route('recipes.choose-type', ['entry' => 'liquid-soap', 'guided' => 1]));
+    $this->actingAs($user)
+        ->get(route('recipes.choose-type', ['entry' => 'liquid-soap']))
+        ->assertNotFound();
+    expect(array_keys(app(ProductCreationCatalog::class)->entries()))->toBe(['soap', 'cosmetics', 'home']);
+});
+
 /**
  * @return array{faceCream: ProductType}
  */

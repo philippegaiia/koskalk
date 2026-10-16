@@ -16,16 +16,27 @@ class ProductCreationCatalog
     /** @var array<string, array{family: string, area: string|null}> */
     private const ENTRIES = [
         'soap' => ['family' => 'soap', 'area' => null],
+        'liquid-soap' => ['family' => 'liquid-soap', 'area' => null],
         'cosmetics' => ['family' => 'cosmetic', 'area' => 'personal-care'],
         'home' => ['family' => 'cosmetic', 'area' => 'home-household'],
     ];
 
     /**
+     * Entries whose Product family is active, so a family still being
+     * built, such as liquid soap before launch, offers no choice.
+     *
      * @return array<string, array{family: string, area: string|null, name: string, description: string}>
      */
     public function entries(): array
     {
+        $activeFamilies = ProductFamily::query()
+            ->whereIn('slug', array_column(self::ENTRIES, 'family'))
+            ->where('is_active', true)
+            ->pluck('slug')
+            ->all();
+
         return collect(self::ENTRIES)
+            ->filter(fn (array $configuration): bool => in_array($configuration['family'], $activeFamilies, true))
             ->map(fn (array $configuration, string $entry): array => [
                 ...$configuration,
                 'name' => __("products.creation.entries.{$entry}.name"),

@@ -35,6 +35,10 @@ return [
                 'name' => 'Soap',
                 'description' => 'Oils + lye',
             ],
+            'liquid-soap' => [
+                'name' => 'Liquid soap',
+                'description' => 'KOH paste, diluted and neutralized',
+            ],
             'cosmetics' => [
                 'name' => 'Cosmetics',
                 'description' => 'Skin, hair, melt-and-pour and syndets',

@@ -38244,6 +38244,30 @@
     },
     {
       "group": "products",
+      "key": "creation.entries.liquid-soap.description",
+      "text": {
+        "de": "KOH-Paste, verdünnt und neutralisiert",
+        "es": "Pasta de KOH, diluida y neutralizada",
+        "fr": "Pâte de KOH, diluée et neutralisée",
+        "it": "Pasta di KOH, diluita e neutralizzata",
+        "nl": "KOH-pasta, verdund en geneutraliseerd",
+        "pt_BR": "Pasta de KOH, diluída e neutralizada"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.liquid-soap.name",
+      "text": {
+        "de": "Flüssigseife",
+        "es": "Jabón líquido",
+        "fr": "Savon liquide",
+        "it": "Sapone liquido",
+        "nl": "Vloeibare zeep",
+        "pt_BR": "Sabão líquido"
+      }
+    },
+    {
+      "group": "products",
       "key": "creation.entries.soap.description",
       "text": {
         "de": "Öle + Lauge",

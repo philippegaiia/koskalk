@@ -1524,6 +1524,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "analysis.level",
+      "text": {
+        "de": "Niveau",
+        "es": "Nivel",
+        "fr": "Niveau",
+        "it": "Livello",
+        "nl": "Niveau",
+        "pt_BR": "Nível"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "analysis.percentage",
       "text": {
         "de": "Prozent",

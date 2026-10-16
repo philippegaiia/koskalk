@@ -44,10 +44,19 @@ class FormulaDocumentBuilder
                 $this->curedWeight($snapshot, $basisWeight),
                 $this->curedWaterPercentage($snapshot),
             ),
-            'soap_analysis' => $isCosmetic ? null : [
-                'qualities' => $this->qualityRows($snapshot),
-                'fatty_acids' => $this->fattyAcidRows($snapshot),
-            ],
+            'soap_analysis' => match (true) {
+                $isCosmetic => null,
+                $this->isLiquidSoap($snapshot) => [
+                    'quality_display' => 'levels',
+                    'qualities' => $this->liquidQualityRows($snapshot),
+                    'fatty_acids' => $this->fattyAcidRows($snapshot),
+                ],
+                default => [
+                    'quality_display' => 'ranges',
+                    'qualities' => $this->qualityRows($snapshot),
+                    'fatty_acids' => $this->fattyAcidRows($snapshot),
+                ],
+            },
             'label_text' => (string) data_get($snapshot, 'labeling.print_ingredient_list_text', ''),
             'warnings' => array_values(Arr::wrap(data_get($snapshot, 'labeling.warnings', []))),
         ];
@@ -501,6 +510,58 @@ class FormulaDocumentBuilder
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Only the liquid soap calculation carries a liquid process, valid or not.
+     *
+     * @param  array<string, mixed>  $snapshot
+     */
+    private function isLiquidSoap(array $snapshot): bool
+    {
+        return is_array(data_get($snapshot, 'calculation.liquid_process'));
+    }
+
+    /**
+     * Liquid soap lists the bench's four fatty-acid tendencies with a level and
+     * no bar-soap target: the cook, dilution and neutralization decide the
+     * finished soap.
+     *
+     * @param  array<string, mixed>  $snapshot
+     * @return array<int, array{key: string, label: string, value: float, level: string}>
+     */
+    private function liquidQualityRows(array $snapshot): array
+    {
+        $qualities = Arr::wrap(data_get($snapshot, 'calculation.properties.qualities', []));
+        $applicability = Arr::wrap(data_get($snapshot, 'calculation.properties.quality_applicability', []));
+
+        return collect(['dilution_ease', 'bubble_volume', 'creamy_lather', 'lather_stability'])
+            ->filter(fn (string $key): bool => array_key_exists($key, $qualities)
+                && data_get($applicability, "{$key}.applies") !== false)
+            ->map(function (string $key) use ($qualities): array {
+                $value = (float) $qualities[$key];
+
+                return [
+                    'key' => $key,
+                    'label' => __("formula_documents.analysis.quality_metrics.{$key}"),
+                    'value' => $value,
+                    'level' => $this->qualityLevel($value),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /** The same 20-point bands as the bench's quality level. */
+    private function qualityLevel(float $value): string
+    {
+        return match (true) {
+            $value < 20 => __('workbench.qualities.very_low'),
+            $value < 40 => __('workbench.qualities.low'),
+            $value < 60 => __('workbench.qualities.moderate'),
+            $value < 80 => __('workbench.qualities.high'),
+            default => __('workbench.qualities.very_high'),
+        };
     }
 
     /** @return array<int, array{key: string, label: string, value: float, contribution: string}> */

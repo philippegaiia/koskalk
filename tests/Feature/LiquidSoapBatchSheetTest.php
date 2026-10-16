@@ -89,6 +89,47 @@ it('reports the final batch instead of a wet and cured bar on a liquid soap shee
         ->and($document['soap_output'])->toBeNull();
 });
 
+it('lists the liquid soap tendencies with a level and no bar soap ranges', function () {
+    $document = liquidSoapBatchSheetDocument();
+    $qualities = $document['soap_analysis']['qualities'];
+
+    expect($document['soap_analysis']['quality_display'])->toBe('levels')
+        ->and(collect($qualities)->pluck('key')->all())->toBe(['dilution_ease', 'bubble_volume', 'creamy_lather', 'lather_stability'])
+        ->and(collect($qualities)->every(fn (array $row): bool => ! array_key_exists('range', $row) && ! array_key_exists('status', $row)))->toBeTrue()
+        ->and(collect($qualities)->pluck('level', 'label')->all())->toBe([
+            'Dilution ease' => 'Low',
+            'Bubble volume' => 'Very low',
+            'Creamy lather' => 'Very low',
+            'Lather stability' => 'Very low',
+        ]);
+
+    $this->blade('<x-formula-document.soap-analysis :analysis="$analysis" number-locale="en" />', ['analysis' => $document['soap_analysis']])
+        ->assertSeeInOrder(['Tendencies from the fatty-acid profile', 'Level', 'Dilution ease', 'Low', 'Lather stability', 'Very low'])
+        ->assertDontSee('Suggested range')
+        ->assertDontSee('Unmolding firmness');
+});
+
+it('leaves out a liquid soap tendency the calculation marks not applicable', function () {
+    $snapshot = [
+        'draft' => ['oilWeight' => 1000, 'oilUnit' => 'g', 'phaseItems' => []],
+        'calculation' => [
+            'liquid_process' => ['status' => 'invalid', 'message' => 'Missing neutralizer'],
+            'properties' => [
+                'qualities' => ['dilution_ease' => 85, 'bubble_volume' => 20, 'creamy_lather' => 39.9, 'lather_stability' => 60, 'cured_hardness' => 30],
+                'quality_applicability' => ['bubble_volume' => ['applies' => false]],
+            ],
+        ],
+    ];
+
+    $document = app(FormulaDocumentBuilder::class)->build($snapshot, ['calculation_basis' => 'initial_oils']);
+
+    expect(collect($document['soap_analysis']['qualities'])->pluck('level', 'key')->all())->toBe([
+        'dilution_ease' => 'Very high',
+        'creamy_lather' => 'Low',
+        'lather_stability' => 'High',
+    ]);
+});
+
 it('prints the liquid soap steps in process order', function () {
     $document = liquidSoapBatchSheetDocument();
 

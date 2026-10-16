@@ -101,6 +101,31 @@ it('normalizes equivalent draft and saved snapshots to identical formula values'
         ->and($draft['soap_output'])->toBe($saved['soap_output']);
 });
 
+it('judges bar soap qualities against the bar soap ranges', function () {
+    $snapshot = soapFormulaDocumentSnapshot();
+    $snapshot['calculation']['properties']['qualities'] = [
+        'cured_hardness' => 30,
+        'cleansing_strength' => 25,
+        'conditioning_feel' => 80,
+        'hardness' => 42,
+    ];
+    $snapshot['calculation']['properties']['quality_applicability'] = ['conditioning_feel' => ['applies' => false]];
+
+    $document = app(FormulaDocumentBuilder::class)->build($snapshot, ['calculation_basis' => 'oil_weight']);
+
+    expect($document['soap_analysis']['quality_display'])->toBe('ranges')
+        ->and($document['soap_analysis']['qualities'])->toBe([
+            ['key' => 'cured_hardness', 'label' => 'Cured hardness', 'value' => 30.0, 'range' => '45–70', 'status' => 'Below suggested range'],
+            ['key' => 'cleansing_strength', 'label' => 'Cleansing strength', 'value' => 25.0, 'range' => '18–40', 'status' => 'Within suggested range'],
+            ['key' => 'conditioning_feel', 'label' => 'Conditioning feel', 'value' => 80.0, 'range' => '35–65', 'status' => 'Above suggested range'],
+            ['key' => 'hardness', 'label' => 'Hardness', 'value' => 42.0, 'range' => '—', 'status' => 'Reference only'],
+        ]);
+
+    $this->blade('<x-formula-document.soap-analysis :analysis="$analysis" number-locale="en" />', ['analysis' => $document['soap_analysis']])
+        ->assertSeeInOrder(['Suggested range', 'Status', 'Cured hardness', '45–70', 'Below suggested range'])
+        ->assertDontSee('Level');
+});
+
 function soapFormulaDocumentSnapshot(): array
 {
     return [

@@ -248,6 +248,7 @@ return [
         'above_range' => 'Above suggested range',
         'below_range' => 'Below suggested range',
         'in_range' => 'Within suggested range',
+        'level' => 'Level',
         'reference_only' => 'Reference only',
         'contributions' => [
             'cleansing_bubbles' => 'Cleansing and bubbles',

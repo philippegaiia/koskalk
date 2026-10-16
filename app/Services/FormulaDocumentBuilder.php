@@ -489,7 +489,10 @@ class FormulaDocumentBuilder
             'ins' => [136, 165],
         ];
 
+        // Dilution ease is a liquid soap tendency, also computed for high KOH
+        // bar soap, where it has no meaning.
         return collect(data_get($snapshot, 'calculation.properties.qualities', []))
+            ->except('dilution_ease')
             ->map(function (mixed $rawValue, string $key) use ($ranges): array {
                 $value = (float) $rawValue;
                 $range = $ranges[$key] ?? null;

@@ -126,6 +126,15 @@ it('judges bar soap qualities against the bar soap ranges', function () {
         ->assertDontSee('Level');
 });
 
+it('keeps the liquid soap dilution tendency off a high KOH bar soap sheet', function () {
+    $snapshot = soapFormulaDocumentSnapshot();
+    $snapshot['calculation']['properties']['qualities'] = ['cleansing_strength' => 25, 'dilution_ease' => 60];
+
+    $document = app(FormulaDocumentBuilder::class)->build($snapshot, ['calculation_basis' => 'oil_weight']);
+
+    expect(collect($document['soap_analysis']['qualities'])->pluck('key')->all())->toBe(['cleansing_strength']);
+});
+
 function soapFormulaDocumentSnapshot(): array
 {
     return [

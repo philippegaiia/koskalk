@@ -273,6 +273,7 @@ return [
             'bubble_volume' => 'Bubble volume',
             'creamy_lather' => 'Creamy lather',
             'lather_stability' => 'Lather stability',
+            'dilution_ease' => 'Dilution ease',
             'conditioning_feel' => 'Conditioning feel',
             'dos_risk' => 'DOS risk',
             'slime_risk' => 'Slime risk',

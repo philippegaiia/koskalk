@@ -26,11 +26,12 @@
             <div>
                 <p class="sk-eyebrow">{{ __('workbench.headings.soap_qualities') }} <x-contextual-help.trigger topic="soap.qualities" :topics="$contextualHelp['topics'] ?? []" /></p>
                 <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">
-                    {{ __('workbench.qualities.disclaimer') }}
+                    {{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.qualities.liquid_disclaimer') : __('workbench.qualities.disclaimer') }}
                 </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-4 sm:justify-end">
+                @unless ($isLiquidSoapWorkbench ?? false)
                 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="soapQualitiesExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
                     <div class="overflow-hidden">
                         <div role="tablist" aria-label="{{ __('workbench.qualities.view_label') }}" class="inline-flex items-center gap-2">
@@ -43,6 +44,7 @@
                         </div>
                     </div>
                 </div>
+                @endunless
 
                 <button
                     type="button"
@@ -63,6 +65,22 @@
             <div class="overflow-hidden">
             <template x-if="hasQualityMetricsData">
                 <div class="space-y-4 px-5 py-5">
+                    @if ($isLiquidSoapWorkbench ?? false)
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <template x-for="row in liquidQualityRows()" :key="row.key">
+                            <div class="rounded-lg border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
+                                <span class="sk-eyebrow block text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                <div class="mt-2 flex items-baseline justify-between gap-2">
+                                    <span class="numeric text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></span>
+                                    <span class="text-xs font-medium text-[var(--color-ink-soft)]" x-text="row.level"></span>
+                                </div>
+                                <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
+                                    <div role="progressbar" :aria-valuenow="Math.round(row.value)" aria-valuemin="0" aria-valuemax="100" :aria-label="row.label" :aria-valuetext="`${format(row.value, 1)}, ${row.level}`" class="relative h-full rounded-full" :style="qualityBarStyle(row.value, 'var(--color-reference-heading)')"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    @else
                     <div id="panel-bar-cure" x-show="soapQualityPanel === 'bar_cure'" role="tabpanel" aria-labelledby="tab-bar-cure" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <template x-if="barAndCureQualityRows().length === 0">
                             <p>{{ __('workbench.qualities.bar_unavailable') }}</p>
@@ -105,6 +123,8 @@
                             </div>
                         </template>
                     </div>
+
+                    @endif
 
                     <template x-if="qualityFlags().length > 0">
                         <section aria-label="{{ __('workbench.qualities.review_title') }}" class="border-t border-[var(--color-line)] pt-3">

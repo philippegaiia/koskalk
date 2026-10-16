@@ -1680,6 +1680,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "analysis.quality_metrics.dilution_ease",
+      "text": {
+        "de": "Verdünnbarkeit",
+        "es": "Facilidad de dilución",
+        "fr": "Facilité de dilution",
+        "it": "Facilità di diluizione",
+        "nl": "Verdunbaarheid",
+        "pt_BR": "Facilidade de diluição"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "analysis.quality_metrics.dos_risk",
       "text": {
         "de": "Risiko des Ranzigwerdens (DOS)",
@@ -44796,26 +44808,26 @@
     },
     {
       "group": "workbench",
-      "key": "liquid.anhydrous_soap_weight",
+      "key": "liquid.anhydrous_from_paste",
       "text": {
-        "de": "Wasserfreie Seife: :amount :unit",
-        "es": "Jabón anhidro: :amount :unit",
-        "fr": "Savon anhydre : :amount :unit",
-        "it": "Sapone anidro: :amount :unit",
-        "nl": "Watervrije zeep: :amount :unit",
-        "pt_BR": "Sabão anidro: :amount :unit"
+        "de": ":amount :unit aus der Paste",
+        "es": ":amount :unit de la pasta",
+        "fr": ":amount :unit issus de la pâte",
+        "it": ":amount :unit dalla pasta",
+        "nl": ":amount :unit uit de pasta",
+        "pt_BR": ":amount :unit da pasta"
       }
     },
     {
       "group": "workbench",
-      "key": "liquid.anhydrous_soap_weight_neutralized",
+      "key": "liquid.anhydrous_parts",
       "text": {
-        "de": "Wasserfreie Seife: :paste :unit aus der Paste, :final :unit nach der Neutralisation",
-        "es": "Jabón anhidro: :paste :unit de la pasta, :final :unit tras la neutralización",
-        "fr": "Savon anhydre : :paste :unit dans la pâte, :final :unit après neutralisation",
-        "it": "Sapone anidro: :paste :unit dalla pasta, :final :unit dopo la neutralizzazione",
-        "nl": "Watervrije zeep: :paste :unit uit de pasta, :final :unit na neutralisatie",
-        "pt_BR": "Sabão anidro: :paste :unit da pasta, :final :unit após a neutralização"
+        "de": "Seife, Glycerin und unverseifte Öle.",
+        "es": "Jabón, glicerina y aceites sin saponificar.",
+        "fr": "Savon, glycérine et huiles non saponifiées.",
+        "it": "Sapone, glicerina e oli non saponificati.",
+        "nl": "Zeep, glycerine en onverzeepte oliën.",
+        "pt_BR": "Sabão, glicerina e óleos não saponificados."
       }
     },
     {
@@ -47244,6 +47256,18 @@
     },
     {
       "group": "workbench",
+      "key": "qualities.liquid_disclaimer",
+      "text": {
+        "de": "Tendenzen aus dem Fettsäureprofil. Kochen, Verdünnen und Neutralisieren verändern die fertige Seife.",
+        "es": "Tendencias según el perfil de ácidos grasos. La cocción, la dilución y la neutralización cambian el jabón final.",
+        "fr": "Tendances issues du profil en acides gras. La cuisson, la dilution et la neutralisation modifient le savon fini.",
+        "it": "Tendenze dal profilo degli acidi grassi. Cottura, diluizione e neutralizzazione cambiano il sapone finito.",
+        "nl": "Tendensen uit het vetzuurprofiel. Koken, verdunnen en neutraliseren veranderen de uiteindelijke zeep.",
+        "pt_BR": "Tendências do perfil de ácidos graxos. O cozimento, a diluição e a neutralização mudam o sabão final."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "qualities.liquid_superfat",
       "text": {
         "de": "Stabilität der Überfettung in Flüssigseife",
@@ -47336,6 +47360,18 @@
         "it": "Velocità di stagionatura",
         "nl": "Rijpingssnelheid",
         "pt_BR": "Velocidade de cura"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "qualities.metrics.dilution_ease",
+      "text": {
+        "de": "Verdünnbarkeit",
+        "es": "Facilidad de dilución",
+        "fr": "Facilité de dilution",
+        "it": "Facilità di diluizione",
+        "nl": "Verdunbaarheid",
+        "pt_BR": "Facilidade de diluição"
       }
     },
     {

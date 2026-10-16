@@ -230,6 +230,20 @@ it('warns for positive liquid soap superfat above practical separation threshold
         ->and($result['properties']['warnings'])->toContain('positive_liquid_superfat_may_cloud_or_separate');
 });
 
+it('rates how easily a liquid soap paste dilutes from its fatty acids', function () {
+    $dilutionEase = fn (array $fattyAcids, string $lyeType = 'koh'): ?float => (new SoapCalculationService)->calculate([
+        [...soapTestOil(), 'fatty_acid_profile' => $fattyAcids],
+    ], ['superfat' => 0, 'lye_type' => $lyeType])['properties']['qualities']['dilution_ease'] ?? null;
+    $coconut = ['caprylic' => 7, 'capric' => 7, 'lauric' => 48, 'myristic' => 19, 'palmitic' => 9, 'stearic' => 3, 'oleic' => 6, 'linoleic' => 1];
+    $olive = ['palmitic' => 13, 'stearic' => 3, 'oleic' => 71, 'linoleic' => 10, 'linolenic' => 1];
+    $oliveWithCastor = ['palmitic' => 12, 'stearic' => 3, 'oleic' => 67, 'linoleic' => 9, 'ricinoleic' => 9];
+
+    expect($dilutionEase($coconut))->toBe(87.65)
+        ->and($dilutionEase($olive))->toBe(13.1)
+        ->and($dilutionEase($oliveWithCastor))->toBeGreaterThan($dilutionEase($olive))
+        ->and($dilutionEase($olive, 'naoh'))->toBeNull();
+});
+
 function soapTestOil(): array
 {
     return [

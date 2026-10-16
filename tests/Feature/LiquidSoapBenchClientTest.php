@@ -238,24 +238,53 @@ JS);
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
-it('shows the anhydrous soap weight from the server preview, and the soap a fatty acid adds', function () {
+it('heads the final composition with the anhydrous soap and lists the parts in reading order', function () {
     $process = runLiquidSoapBenchScript(<<<'JS'
-const workbench = createRecipeWorkbench({
-    productFamily: liquidFamily,
-    numberLocaleOptions: { en_US: '1,234.56' },
-    translations: { liquid: {
-        anhydrous_soap_weight: 'Anhydrous soap: :amount :unit',
-        anhydrous_soap_weight_neutralized: 'Anhydrous soap: :paste :unit from the paste, :final :unit after neutralization',
-    } },
-});
-workbench.backendCalculation = { liquid_process: { status: 'ok', anhydrous_soap_weight: '1190.0000', final_anhydrous_soap_weight: '1190.0000' } };
-assert.equal(workbench.liquidAnhydrousSoapLabel(), 'Anhydrous soap: 1190 g');
+const workbench = bench(liquidFamily);
+workbench.backendCalculation = { liquid_process: {
+    status: 'ok',
+    anhydrous_soap_weight: '12.0290',
+    final_anhydrous_soap_weight: '13.1960',
+    final_anhydrous_percentage: '20.0000',
+    composition: { soap_salt_weight: '12.0860', glycerine_weight: '1.1100', unreacted_lipids_weight: '0.0000', free_koh_weight: '0.0000', koh_impurity_weight: '0.2480', neutralization_salt_weight: '0.0000', additions_weight: '3.2990', water_weight: '49.2390' },
+    composition_percentages: { soap_salt_weight: '18.3', glycerine_weight: '1.7', unreacted_lipids_weight: '0', free_koh_weight: '0', koh_impurity_weight: '0.4', neutralization_salt_weight: '0', additions_weight: '5.0', water_weight: '74.6' },
+} };
 
-workbench.backendCalculation = { liquid_process: { status: 'ok', anhydrous_soap_weight: '1190.0000', final_anhydrous_soap_weight: '1222.7745' } };
-assert.equal(workbench.liquidAnhydrousSoapLabel(), 'Anhydrous soap: 1190 g from the paste, 1223 g after neutralization');
+assert.deepEqual(workbench.liquidAnhydrousSoap(), { percentage: '20.0000', weight: '13.1960', pasteWeight: '12.0290' });
+assert.deepEqual(workbench.liquidCompositionRows().map((row) => row.key), ['soap_salt_weight', 'glycerine_weight', 'additions_weight', 'water_weight', 'koh_impurity_weight']);
+
+workbench.backendCalculation.liquid_process.final_anhydrous_soap_weight = '12.0290';
+assert.equal(workbench.liquidAnhydrousSoap().pasteWeight, null);
 
 workbench.backendCalculation = { liquid_process: { status: 'invalid', message: 'nope' } };
-assert.equal(workbench.liquidAnhydrousSoapLabel(), '');
+assert.equal(workbench.liquidAnhydrousSoap(), null);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('shows liquid soap qualities as one row and leaves out the notes the process section covers', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const properties = {
+    qualities: { dilution_ease: 33.6, bubble_volume: 31.3, creamy_lather: 30.7, lather_stability: 28.9, cleansing_strength: 20 },
+    quality_applicability: { cleansing_strength: { applies: false, display: 'not_applicable' }, bubble_volume: { applies: true, display: 'tendency' } },
+    warnings: ['high_koh_context_process_dependent', 'negative_superfat_requires_neutralization_and_ph_control', 'high_polyunsaturated_dos_risk'],
+};
+const liquid = bench(liquidFamily);
+liquid.backendCalculation = { properties };
+
+assert.deepEqual(liquid.liquidQualityRows().map((row) => [row.key, row.value]), [
+    ['dilution_ease', 33.6],
+    ['bubble_volume', 31.3],
+    ['creamy_lather', 30.7],
+    ['lather_stability', 28.9],
+]);
+assert.equal(liquid.liquidQualityRows()[0].level, 'qualities.low');
+assert.deepEqual(liquid.qualityFlags().map((flag) => flag.label), ['qualities.high_polyunsaturated_dos']);
+
+const highKohBar = bench(barFamily);
+highKohBar.backendCalculation = { properties };
+assert.equal(highKohBar.qualityFlags().length, 3);
 JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());

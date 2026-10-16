@@ -1073,6 +1073,24 @@ export function createPresentationSection() {
             }));
         },
 
+        /**
+         * Liquid soap shows one row of fatty-acid tendencies with a level,
+         * no bar-soap targets: the cook, dilution and neutralization decide
+         * the finished soap.
+         */
+        liquidQualityRows() {
+            const quality = this.qualityMetrics();
+
+            return ['dilution_ease', 'bubble_volume', 'creamy_lather', 'lather_stability']
+                .filter((key) => quality[key] !== undefined && this.isQualityApplicable(key))
+                .map((key) => ({
+                    key,
+                    label: this.t(`qualities.metrics.${key}`),
+                    value: quality[key],
+                    level: this.qualityLabel(quality[key]),
+                }));
+        },
+
         qualityFlags() {
             const quality = this.qualityMetrics();
             const groups = this.backendCalculation?.properties?.fatty_acid_groups ?? {};
@@ -1165,7 +1183,11 @@ export function createPresentationSection() {
                 },
             };
 
+            // The liquid soap process section already handles neutralization and says the values are tendencies.
+            const liquidProcessWarnings = ['high_koh_context_process_dependent', 'negative_superfat_requires_neutralization_and_ph_control'];
+
             return warnings
+                .filter((warning) => !(this.isLiquidSoapFormula && liquidProcessWarnings.includes(warning)))
                 .map((warning) => warningLabels[warning] ?? null)
                 .filter((warning) => warning !== null);
         },

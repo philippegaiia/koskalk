@@ -1574,23 +1574,25 @@ function createLiquidSoapSection(payload) {
         },
 
         /**
-         * Anhydrous soap weight from the server preview: the paste's, and the
-         * larger weight after a fatty acid neutralizer turned free KOH into soap.
+         * Anhydrous soap of the final batch from the server preview, with the
+         * paste's own weight when a fatty acid neutralizer turned free KOH into soap.
          */
-        liquidAnhydrousSoapLabel() {
+        liquidAnhydrousSoap() {
             if (!this.liquidProcessIsReady) {
-                return '';
+                return null;
             }
 
-            const paste = this.liquidProcessPreview.anhydrous_soap_weight;
-            const final = this.liquidProcessPreview.final_anhydrous_soap_weight ?? paste;
-            const mass = (value) => this.format(value, this.calculatedMassDecimals(value));
+            const process = this.liquidProcessPreview;
+            const finalWeight = process.final_anhydrous_soap_weight ?? process.anhydrous_soap_weight;
 
-            return this.number(final) === this.number(paste)
-                ? this.t('liquid.anhydrous_soap_weight', { amount: mass(paste), unit: this.oilUnit })
-                : this.t('liquid.anhydrous_soap_weight_neutralized', { paste: mass(paste), final: mass(final), unit: this.oilUnit });
+            return {
+                percentage: process.final_anhydrous_percentage,
+                weight: finalWeight,
+                pasteWeight: this.number(finalWeight) === this.number(process.anhydrous_soap_weight) ? null : process.anhydrous_soap_weight,
+            };
         },
 
+        /** Final composition in reading order: the anhydrous soap parts, additions, water, then the small remainders. */
         liquidCompositionRows() {
             const composition = this.liquidProcessPreview?.composition;
             const shares = this.liquidProcessPreview?.composition_percentages;
@@ -1599,12 +1601,34 @@ function createLiquidSoapSection(payload) {
                 return [];
             }
 
-            return Object.keys(composition)
+            return LIQUID_COMPOSITION_ORDER
                 .filter((key) => this.number(composition[key]) > 0)
-                .map((key) => ({ key, weight: composition[key], share: shares[key] }));
+                .map((key) => ({ key, weight: composition[key], share: shares[key], color: LIQUID_COMPOSITION_COLORS[key] }));
         },
     };
 }
+
+const LIQUID_COMPOSITION_ORDER = [
+    'soap_salt_weight',
+    'glycerine_weight',
+    'unreacted_lipids_weight',
+    'additions_weight',
+    'water_weight',
+    'free_koh_weight',
+    'koh_impurity_weight',
+    'neutralization_salt_weight',
+];
+
+const LIQUID_COMPOSITION_COLORS = {
+    soap_salt_weight: 'var(--color-chemistry)',
+    glycerine_weight: 'var(--color-amber-light)',
+    unreacted_lipids_weight: 'var(--color-amber)',
+    additions_weight: 'var(--color-sage)',
+    water_weight: 'var(--color-line-strong)',
+    free_koh_weight: 'var(--color-reference-heading)',
+    koh_impurity_weight: 'var(--color-reference-heading)',
+    neutralization_salt_weight: 'var(--color-reference-heading)',
+};
 
 function createPersistenceSection() {
     return {

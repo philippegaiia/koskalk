@@ -115,19 +115,37 @@
  <section aria-labelledby="liquid-composition-heading">
  <div class="flex items-baseline justify-between gap-3">
  <p id="liquid-composition-heading" class="sk-eyebrow">{{ __('workbench.liquid.composition') }}</p>
- <div class="text-right">
  <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]" x-text="t('liquid.final_batch', { amount: format(liquidProcessPreview.final_weight, calculatedMassDecimals(liquidProcessPreview.final_weight)), unit: oilUnit })"></p>
- <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]" x-text="liquidAnhydrousSoapLabel()"></p>
  </div>
- </div>
- <div class="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
+ <div class="mt-3 flex h-3 w-full gap-px overflow-hidden rounded-full bg-[var(--color-field-muted)]" aria-hidden="true">
  <template x-for="component in liquidCompositionRows()" :key="component.key">
- <div class="sk-inset flex min-w-0 flex-col px-3 py-2.5">
- <p class="sk-eyebrow" x-text="t(`liquid.components.${component.key}`)"></p>
- <p class="numeric mt-2 text-lg font-semibold text-[var(--color-ink-strong)]" x-text="`${format(component.share, 1)}%`"></p>
- <p class="numeric text-xs text-[var(--color-ink-soft)]" x-text="`${format(component.weight, calculatedMassDecimals(component.weight))} ${oilUnit}`"></p>
+ <div class="h-full" :style="`width: ${number(component.share)}%; background: ${component.color}`"></div>
+ </template>
+ </div>
+ <div class="mt-4 grid gap-4 @3xl/workbench:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+ <div class="sk-inset px-4 py-3">
+ <p class="sk-eyebrow">{{ __('workbench.liquid.anhydrous') }}</p>
+ <p class="numeric mt-2 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="`${format(liquidAnhydrousSoap().percentage, 1)}%`"></p>
+ <p class="numeric mt-1.5 text-sm text-[var(--color-ink-strong)]" x-text="`${format(liquidAnhydrousSoap().weight, calculatedMassDecimals(liquidAnhydrousSoap().weight))} ${oilUnit}`"></p>
+ <template x-if="liquidAnhydrousSoap().pasteWeight !== null">
+ <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]" x-text="t('liquid.anhydrous_from_paste', { amount: format(liquidAnhydrousSoap().pasteWeight, calculatedMassDecimals(liquidAnhydrousSoap().pasteWeight)), unit: oilUnit })"></p>
+ </template>
+ <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.anhydrous_parts') }}</p>
+ </div>
+ <dl class="grid content-start gap-x-6 sm:grid-cols-2">
+ <template x-for="component in liquidCompositionRows()" :key="component.key">
+ <div class="flex items-baseline justify-between gap-3 border-b border-[var(--color-line)] py-2 text-sm">
+ <dt class="flex min-w-0 items-center gap-2 text-[var(--color-ink-strong)]">
+ <span class="size-2.5 shrink-0 rounded-sm" :style="`background: ${component.color}`" aria-hidden="true"></span>
+ <span class="truncate" x-text="t(`liquid.components.${component.key}`)"></span>
+ </dt>
+ <dd class="numeric shrink-0 text-right">
+ <span class="font-semibold text-[var(--color-ink-strong)]" x-text="`${format(component.share, 1)}%`"></span>
+ <span class="ml-2 text-xs text-[var(--color-ink-soft)]" x-text="`${format(component.weight, calculatedMassDecimals(component.weight))} ${oilUnit}`"></span>
+ </dd>
  </div>
  </template>
+ </dl>
  </div>
  </section>
  </template>

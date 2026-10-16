@@ -782,6 +782,9 @@ class SoapCalculationService
             'bubble_volume' => $this->roundValue(max(0.0, min(100.0, 8 + (1.15 * $lauricMyristic) + (0.55 * $caprylicCapric) + (0.85 * $ricinoleicSupport) - (0.06 * $highHsSolubilityDrag) - (0.80 * $ricinoleicExcess) - $superfatLatherPenalty + $kohLatherSupport))),
             'creamy_lather' => $this->roundValue(max(0.0, min(100.0, 4 + (0.95 * $hs) + (0.18 * $stearic) + (0.75 * $ricinoleicSupport) + (0.16 * $mu) - (0.10 * $vs) - (0.35 * $superfatLatherPenalty) - (0.35 * $ricinoleicExcess)))),
             'lather_stability' => $this->roundValue(max(0.0, min(100.0, 8 + (0.75 * $hs) + (0.20 * $solubleBubbleFats) + (1.40 * $ricinoleicSupport) - (0.45 * $ricinoleicExcess) - $superfatLatherPenalty))),
+            ...($this->isLiquidOrHighKohContext($soapContext) ? [
+                'dilution_ease' => $this->roundValue($this->dilutionEase($vs, $hs, $mu, $pu, $sp)),
+            ] : []),
             'conditioning_feel' => $this->roundValue(max(0.0, min(100.0, (0.35 * $mu) + (0.15 * min($pu, 15.0)) + (0.15 * $sp) - (0.45 * $cleansingStrength) + (0.20 * $superfatSoftening) + 35))),
             'dos_risk' => $this->roundValue($this->calculateDosRisk($pu, $superfat, $iodine)),
             'slime_risk' => $this->roundValue(max(0.0, min(100.0, ((0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (0.25 * $superfatSoftening) + $castileSlimeModifier) * (1.0 - (0.75 * $kohRatio))))),
@@ -790,6 +793,17 @@ class SoapCalculationService
             'iodine' => $this->roundValue($iodine),
             'ins' => $this->roundValue($ins),
         ];
+    }
+
+    /**
+     * How readily a potassium soap paste dissolves in water. Short-chain
+     * (C6-C14) and ricinoleic soaps dissolve readily; palmitic and stearic
+     * soaps dissolve poorly and slow the dilution; oleic and polyunsaturated
+     * soaps sit in between.
+     */
+    private function dilutionEase(float $vs, float $hs, float $mu, float $pu, float $sp): float
+    {
+        return max(0.0, min(100.0, 20 + $vs + (1.2 * $sp) + (0.15 * ($mu + $pu)) - (1.2 * $hs)));
     }
 
     /**

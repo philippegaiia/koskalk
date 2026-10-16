@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /**
- * @return array{section: bool, additions_share_label: bool, batch_totals: bool, lye_buttons: array<int, string>}
+ * @return array{section: bool, additions_share_label: bool, batch_totals: bool, lye_buttons: array<int, string>, quality_tabs: bool, liquid_quality_note: bool}
  */
 function liquidSoapFormulaTabMarkup(string $html): array
 {
@@ -28,6 +28,8 @@ function liquidSoapFormulaTabMarkup(string $html): array
         'lye_buttons' => $lyeGroup === null
             ? []
             : collect($xpath->query('.//button[@role="radio"]', $lyeGroup))->map(fn (DOMElement $button): string => trim($button->textContent))->values()->all(),
+        'quality_tabs' => $document->getElementById('tab-bar-cure') !== null,
+        'liquid_quality_note' => str_contains($document->textContent, __('workbench.qualities.liquid_disclaimer')),
     ];
 }
 
@@ -53,7 +55,7 @@ it('offers platform neutralizers in the neutralization phase only on liquid soap
     'bar soap family' => [false, null, false],
 ]);
 
-it('shows the liquid soap process with KOH as the only alkali on the liquid bench', function () {
+it('shows the liquid soap process, KOH only and untabbed qualities on the liquid bench', function () {
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
 
@@ -66,6 +68,8 @@ it('shows the liquid soap process with KOH as the only alkali on the liquid benc
         'additions_share_label' => true,
         'batch_totals' => false,
         'lye_buttons' => ['KOH'],
+        'quality_tabs' => false,
+        'liquid_quality_note' => true,
     ]);
 });
 
@@ -82,5 +86,7 @@ it('keeps the bar soap bench without the liquid process and with every alkali', 
         'additions_share_label' => false,
         'batch_totals' => true,
         'lye_buttons' => ['NaOH', 'KOH', 'Dual lye'],
+        'quality_tabs' => true,
+        'liquid_quality_note' => false,
     ]);
 });

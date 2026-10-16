@@ -134,6 +134,17 @@ it('plans the theoretical neutralizer amount when only the saved rounding exceed
         ->and($production->formulaLines->firstWhere('phase_key_snapshot', 'neutralization')->planned_mass_grams)->toBe('68.486389950');
 });
 
+it('plans the theoretical neutralizer amount when the saved free KOH was rounded up', function (): void {
+    // At 10 g oils the free KOH of 0.0600501 g is reported as 0.0601 g, so
+    // the recommended 0.0686 g sits 0.0000564 g above what it truly takes;
+    // at 10 kg that is 0.0564 g, still within the saved rounding.
+    $production = liquidSoapProduction(kohSapValue: 0.200167, citricAcidWeight: 0.0686, basis: '10000', oilWeight: 10)['production'];
+    $acid = $production->requirements->firstWhere('phase_key_snapshot', 'neutralization');
+
+    expect((float) $acid->required_mass_grams)->toEqualWithDelta(68.5436, 0.0001)
+        ->and($production->formulaLines->firstWhere('phase_key_snapshot', 'neutralization')->planned_mass_grams)->toBe($acid->required_mass_grams);
+});
+
 it('refuses a neutralizer that exceeds the free KOH beyond its saved rounding', function (): void {
     ['owner' => $owner, 'workspace' => $workspace, 'production' => $production] = liquidSoapProduction(kohSapValue: 0.20, citricAcidWeight: 6.8486);
     RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $production->recipe_version_id)->where('ingredient_id', $production->requirements->firstWhere('phase_key_snapshot', 'neutralization')->ingredient_id)

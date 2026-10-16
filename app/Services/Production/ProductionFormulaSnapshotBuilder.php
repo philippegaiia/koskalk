@@ -290,8 +290,9 @@ class ProductionFormulaSnapshotBuilder
 
     /**
      * The theoretical neutralizer amount, in the draft's unit, when the
-     * planned dose exceeds it by no more than the saved dose's rounding;
-     * null when the excess is larger.
+     * planned dose exceeds it by no more than the rounding it was saved
+     * under: the dose's storage, the calculator's and the free KOH's, scaled
+     * to the batch; null when the excess is larger.
      *
      * @param  array<string, mixed>  $neutralizerRequirement
      * @param  array<string, mixed>  $draft
@@ -307,11 +308,24 @@ class ProductionFormulaSnapshotBuilder
             return null;
         }
 
-        $tolerance = $this->requirementBuilder->neutralizerDose($version, $item, $basisQuantityGrams)['tolerance_grams'];
+        $lastDecimal = $this->massConverter->toGrams('0.00005', $unit);
+        // Free KOH is reported to four decimals in the draft's unit, so the
+        // amount recommended when the dose was saved, and the one here, may
+        // each sit that rounding's worth of acid above the true amount.
+        $freeKohRounding = bcmul(
+            $this->liquidSoapProcessCalculator->recommendedWeight($lastDecimal, $neutralizer['type'], $neutralizer['koh_sap_value']),
+            bcadd(bcdiv($basisQuantityGrams, $this->requirementBuilder->savedBasisGrams($version), self::GuardScale), '1', self::GuardScale),
+            self::GuardScale,
+        );
+        $tolerance = bcadd(
+            bcadd($this->requirementBuilder->neutralizerDose($version, $item, $basisQuantityGrams)['tolerance_grams'], $freeKohRounding, self::GuardScale),
+            // The reported excess is itself rounded to four decimals.
+            $lastDecimal,
+            self::GuardScale,
+        );
         $excess = $this->massConverter->toGrams((string) data_get($process, 'neutralizer.excess_acid_weight', '0'), $unit);
 
-        // The reported excess is rounded to four decimals in the draft's unit.
-        if (bccomp($excess, bcadd($tolerance, $this->massConverter->toGrams('0.00005', $unit), self::GuardScale), self::GuardScale) > 0) {
+        if (bccomp($excess, $tolerance, self::GuardScale) > 0) {
             return null;
         }
 

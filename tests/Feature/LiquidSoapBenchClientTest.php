@@ -294,13 +294,14 @@ it('lists a liquid soap label composition on the finished batch, without residua
     $process = runLiquidSoapBenchScript(<<<'JS'
 const liquid = bench(liquidFamily);
 liquid.backendCalculation = { liquid_process: { status: 'ok', final_weight: '100.0000', composition: { koh_impurity_weight: '0.4000' } } };
+// The server counts the KOH flakes' non-KOH share in AQUA.
 liquid.backendLabeling = {
     basis: { formula_weight: 100, cured_weight: null, residual_water_weight: null },
     default_variant_key: 'saponified_with_superfat',
     list_variants: [{
         key: 'saponified_with_superfat',
         ingredient_rows: [
-            { label: 'AQUA', kind: 'water', weight: 72, percent_of_formula: 72, lye_liquid_weight: 72, source_ingredients: ['Lye and dilution water'] },
+            { label: 'AQUA', kind: 'water', weight: 72.4, percent_of_formula: 72.4, lye_liquid_weight: 72.4, source_ingredients: ['Lye and dilution water'] },
             { label: 'POTASSIUM OLIVATE', kind: 'saponified_oil', weight: 23.6, percent_of_formula: 23.6, lye_liquid_weight: 0, source_ingredients: ['Olive Oil'] },
             { label: 'GLYCERIN', kind: 'derived', weight: 4, percent_of_formula: 4, lye_liquid_weight: 0, source_ingredients: ['Saponification'] },
         ],
@@ -312,9 +313,9 @@ const rows = liquid.curedSoapIngredientRows;
 const water = rows.find((row) => row.label === 'AQUA');
 
 assert.equal(liquid.curedSoapOutputBasisWeight, 100);
-assert.equal(water.percent_of_cured_basis, 72);
+assert.ok(Math.abs(water.percent_of_cured_basis - 72.4) < 1e-9);
 assert.equal(liquid.outputRowKindLabel(water), 'Water');
-assert.ok(rows.some((row) => row.kind === 'koh_impurities' && Math.abs(row.percent_of_cured_basis - 0.4) < 1e-9));
+assert.equal(rows.length, 3);
 assert.ok(Math.abs(liquid.curedSoapIngredientTotalPercent - 100) < 1e-9);
 
 const bar = bench(barFamily);

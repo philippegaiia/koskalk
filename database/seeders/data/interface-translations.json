@@ -46704,18 +46704,6 @@
     },
     {
       "group": "workbench",
-      "key": "output.soap.koh_impurities",
-      "text": {
-        "de": "Rest der KOH-Schuppen (Wasser, Karbonat)",
-        "es": "Resto de las escamas de KOH (agua, carbonato)",
-        "fr": "Reste des paillettes de KOH (eau, carbonate)",
-        "it": "Resto delle scaglie di KOH (acqua, carbonato)",
-        "nl": "Rest van de KOH-schilfers (water, carbonaat)",
-        "pt_BR": "Restante das escamas de KOH (água, carbonato)"
-      }
-    },
-    {
-      "group": "workbench",
       "key": "output.soap.label_basis",
       "text": {
         "de": "Label basis",
@@ -46820,18 +46808,6 @@
         "it": "Lotto finito",
         "nl": "Afgewerkte batch",
         "pt_BR": "Lote pronto"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "output.soap.not_declared",
-      "text": {
-        "de": "Nicht deklariert",
-        "es": "No declarado",
-        "fr": "Non déclaré",
-        "it": "Non dichiarato",
-        "nl": "Niet aangegeven",
-        "pt_BR": "Não declarado"
       }
     },
     {

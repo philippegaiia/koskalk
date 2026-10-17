@@ -665,7 +665,7 @@ export function createPresentationSection() {
                 ?? [];
 
             if (this.isLiquidSoapFormula) {
-                return this.liquidSoapOutputRows(variant, ingredientRows, curedBasisWeight);
+                return this.liquidSoapOutputRows(ingredientRows, curedBasisWeight);
             }
 
             const freshLyeLiquidWeight = ingredientRows
@@ -704,25 +704,12 @@ export function createPresentationSection() {
         /**
          * The liquid soap label rows as they sit in the finished batch. The
          * water is the water in the bottle, so nothing is swapped for residual
-         * water. In the saponified list, the KOH flakes' non-KOH share (water
-         * and carbonate) is shown as its own undeclared row so the batch adds
-         * up to 100%.
+         * water.
          */
-        liquidSoapOutputRows(variant, ingredientRows, basisWeight) {
-            const kohImpurityWeight = variant?.key === 'incorporated_ingredients'
-                ? 0
-                : this.number(this.backendCalculation?.liquid_process?.composition?.koh_impurity_weight);
-            const rows = ingredientRows
+        liquidSoapOutputRows(ingredientRows, basisWeight) {
+            return ingredientRows
                 .map((row) => ({ ...row, adjusted_weight: this.number(row.weight) }))
-                .concat(kohImpurityWeight > 0 ? [{
-                    label: this.t('output.soap.koh_impurities'),
-                    kind: 'koh_impurities',
-                    adjusted_weight: kohImpurityWeight,
-                    source_ingredients: [],
-                }] : [])
-                .filter((row) => row.adjusted_weight > 0);
-
-            return rows
+                .filter((row) => row.adjusted_weight > 0)
                 .map((row) => ({
                     ...row,
                     percent_of_cured_basis: basisWeight > 0 ? (row.adjusted_weight / basisWeight) * 100 : 0,
@@ -791,10 +778,6 @@ export function createPresentationSection() {
         outputRowKindLabel(row) {
             if (row?.label === 'AQUA') {
                 return this.isLiquidSoapFormula ? 'Water' : 'Residual water';
-            }
-
-            if (row?.kind === 'koh_impurities') {
-                return this.t('output.soap.not_declared');
             }
 
             if (row?.kind === 'mixed_saponified_superfat') {

@@ -2271,8 +2271,9 @@ class InciGenerationService
 
     /**
      * Water in the finished product. A liquid soap also holds its dilution
-     * water, the neutralizer solution water and the water the neutralization
-     * forms; lye-liquid substitutions keep their own rows.
+     * water, the neutralizer solution water, the water the neutralization
+     * forms and the KOH flakes' non-KOH share; lye-liquid substitutions keep
+     * their own rows.
      *
      * @param  array<string, mixed>  $soapCalculation
      */
@@ -2286,7 +2287,10 @@ class InciGenerationService
 
         $substitutedLiquidWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0) - $this->freshWaterWeight($soapCalculation);
 
-        return max(0.0, (float) data_get($process, 'composition.water_weight', 0) - $substitutedLiquidWeight);
+        // The KOH flakes' non-KOH share is mostly water, so it is labelled as AQUA.
+        return max(0.0, (float) data_get($process, 'composition.water_weight', 0)
+            + (float) data_get($process, 'composition.koh_impurity_weight', 0)
+            - $substitutedLiquidWeight);
     }
 
     /**

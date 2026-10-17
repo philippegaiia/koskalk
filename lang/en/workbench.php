@@ -470,8 +470,6 @@ return [
             'liquid_composition_help' => 'Ingredient rows as they sit in the finished batch, with common ingredient names below the INCI names.',
             'liquid_label_basis_help' => 'Label percentages use the finished batch: paste, dilution water, neutralizer and additions. Allergens are shown separately but are already included in their source oils.',
             'liquid_total_basis' => 'Finished batch',
-            'koh_impurities' => 'KOH flake balance (water, carbonate)',
-            'not_declared' => 'Not declared',
         ],
         'allergens' => [
             'title' => 'Declared allergens',

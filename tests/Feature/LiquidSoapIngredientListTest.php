@@ -131,7 +131,8 @@ it('lists what is in the bottle in the saponified list, with potassium citrate f
     expect(array_keys($weights))->toBe(['AQUA', 'POTASSIUM OLIVATE', 'GLYCERIN', 'POTASSIUM CITRATE'])
         ->and($weights['POTASSIUM CITRATE'])->toBe(10.38)
         ->and($weights['GLYCERIN'])->toBe(103.96)
-        ->and(array_sum($weights) + 21.74)->toEqualWithDelta(4760.0, 0.05);
+        // The KOH flakes' non-KOH share (mostly water) is part of AQUA.
+        ->and(array_sum($weights))->toEqualWithDelta(4760.0, 0.05);
 });
 
 it('lists what was weighed in the incorporated list, with citric acid and all added water', function () {
@@ -225,7 +226,7 @@ it('lists a dilution liquid at its process weight and keeps it out of AQUA', fun
     $incorporated = liquidSoapLabelWeights($labeling, 'incorporated_ingredients');
 
     expect($saponified['LAVANDULA ANGUSTIFOLIA FLOWER WATER'])->toBe($hydrosolWeight)
-        ->and(array_sum($saponified) + 21.74)->toEqualWithDelta(4760.0, 0.05)
+        ->and(array_sum($saponified))->toEqualWithDelta(4760.0, 0.05)
         ->and($incorporated['LAVANDULA ANGUSTIFOLIA FLOWER WATER'])->toBe($hydrosolWeight)
         ->and($incorporated['AQUA'])->toEqualWithDelta(503.2286 + 1679.327 + 26.0248 + 1327.469 - 1327.469 * 0.3, 0.02)
         ->and(array_sum($incorporated))->toEqualWithDelta(4760.0, 0.05);

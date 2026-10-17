@@ -9,6 +9,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Services\FormulaDocumentBuilder;
+use App\Services\RecipeCompositionExportDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\Process\Process;
@@ -22,6 +23,14 @@ uses(RefreshDatabase::class);
  * @return array<string, mixed>
  */
 function liquidSoapBatchSheetDocument(array $overrides = []): array
+{
+    return liquidSoapBatchSheet($overrides)['document'];
+}
+
+/**
+ * @return array{snapshot: array<string, mixed>, document: array<string, mixed>}
+ */
+function liquidSoapBatchSheet(array $overrides = []): array
 {
     $user = User::factory()->create();
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
@@ -56,7 +65,7 @@ function liquidSoapBatchSheetDocument(array $overrides = []): array
     ], $overrides));
     $snapshot = $service->currentVersionSnapshot(Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id));
 
-    return app(FormulaDocumentBuilder::class)->build($snapshot, ['calculation_basis' => 'initial_oils']);
+    return ['snapshot' => $snapshot, 'document' => app(FormulaDocumentBuilder::class)->build($snapshot, ['calculation_basis' => 'initial_oils'])];
 }
 
 it('lays out the liquid soap batch sheet in process order with what to add at each step', function () {
@@ -214,4 +223,16 @@ it('lists the water and dilution liquids a step adds', function () {
         ->toContain(' g water + ')
         ->toContain(' g Lavender hydrosol up to 25.0% anhydrous soap.')
         ->and($steps['first_dilution']['instruction'])->toBe('Add water to bring the paste to 35.0% anhydrous soap.');
+});
+
+it('exports dilution liquids, the neutralizer and all added water as raw materials', function () {
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
+    ['snapshot' => $snapshot, 'document' => $document] = liquidSoapBatchSheet(['phase_items' => ['final_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]]]]);
+    $finalAdd = (float) data_get($snapshot, 'calculation.liquid_process.stages.final_dilution.add_weight');
+
+    $rows = collect(app(RecipeCompositionExportDataBuilder::class)->build($snapshot, $document)['incorporated']['raw_material_rows']);
+
+    expect($rows->firstWhere('ingredient_id', $hydrosol->id)['quantity'])->toEqualWithDelta($finalAdd * 0.3, 0.001)
+        ->and($rows->firstWhere('name', 'Citric Acid')['quantity'])->toEqualWithDelta(6.506, 0.001)
+        ->and($rows->sum('quantity'))->toEqualWithDelta(4760.0, 0.01);
 });

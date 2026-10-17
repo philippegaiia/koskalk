@@ -10,6 +10,7 @@ class RecipeCompositionExportDataBuilder
     public function __construct(
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly RecipeCompositionIngredientIdentityResolver $ingredientIdentityResolver,
+        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
     ) {}
 
     /**
@@ -147,11 +148,27 @@ class RecipeCompositionExportDataBuilder
         $draft = $snapshot['draft'] ?? [];
         $phaseItems = is_array($draft['phaseItems'] ?? null) ? $draft['phaseItems'] : [];
         $rows = [];
+        $liquidProcess = data_get($snapshot, 'calculation.liquid_process');
+        $liquidProcess = is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok' ? $liquidProcess : null;
 
-        foreach (['saponified_oils' => 'oil', 'additives' => 'additive', 'fragrance' => 'fragrance'] as $phaseKey => $role) {
+        // A liquid soap's dilution liquids weigh what the process gave them.
+        if ($liquidProcess !== null) {
+            $phaseItems = $this->liquidSoapFormulaProcessor->withDilutionLiquidWeights($phaseItems, $liquidProcess, $draft['oilWeight'] ?? 0);
+        }
+
+        $rawPhases = [
+            'saponified_oils' => 'oil',
+            'neutralization' => 'additive',
+            'additives' => 'additive',
+            'fragrance' => 'fragrance',
+            'first_dilution' => 'dilution_substitution',
+            'final_dilution' => 'dilution_substitution',
+        ];
+
+        foreach ($rawPhases as $phaseKey => $role) {
             foreach (($phaseItems[$phaseKey] ?? []) as $row) {
                 if (is_array($row)) {
-                    $weight = $useExplicitRowWeights
+                    $weight = $useExplicitRowWeights || in_array($phaseKey, RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES, true)
                         ? $this->decimal($row['weight'] ?? 0)
                         : bcmul(
                             $this->decimal($draft['oilWeight'] ?? 0),
@@ -226,6 +243,11 @@ class RecipeCompositionExportDataBuilder
             ])->all(),
         );
         $plainWaterWeight = $this->decimal($allocation['water_weight'] ?? 0);
+
+        // A liquid soap also weighs in the plain water of its dilutions and neutralizer solution.
+        if ($liquidProcess !== null) {
+            $plainWaterWeight = bcadd($plainWaterWeight, $this->liquidSoapFormulaProcessor->addedDilutionWaterWeight($liquidProcess), 18);
+        }
 
         if (bccomp($plainWaterWeight, '0', 18) > 0) {
             $waterIdentity = is_array(data_get($snapshot, 'calculation.lye.identities.water'))

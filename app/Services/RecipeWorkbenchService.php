@@ -491,6 +491,16 @@ class RecipeWorkbenchService
                 : [],
             $user,
         );
+
+        foreach (RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES as $phaseKey) {
+            $dilutionPhase = collect($payload['phases'] ?? [])->first(
+                fn (mixed $phase): bool => is_array($phase) && ($phase['key'] ?? null) === $phaseKey,
+            );
+
+            if (is_array($dilutionPhase) && is_array($dilutionPhase['items'] ?? null)) {
+                $this->lyeLiquidIngredientValidator->validate($dilutionPhase['items'], $user, "phase_items.{$phaseKey}");
+            }
+        }
     }
 
     /**

@@ -119,27 +119,35 @@ class RecipeWorkbenchPayloadNormalizer
         }
 
         $liquidProcess = null;
+        $dilutionItems = [];
 
         if ($productFamily?->usesLiquidSoapPasteBench()) {
             ['settings' => $liquidProcess, 'final_batch_weight' => $finalBatchWeight] = $this->normalizeLiquidProcess($payload, $normalizedRecipe);
             $normalizedRecipe = $this->withAdditionsFromFinalBatch($payload, $phasePayload, $normalizedRecipe, $editingMode, $finalBatchWeight);
+            $dilutionItems = $this->normalizeDilutionLiquidItems($payload, $normalizedRecipe, $liquidProcess);
         }
 
         $lyeLiquidItems = $this->normalizeLyeLiquidItems($payload, $normalizedRecipe);
 
         $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
-            ->map(function (array $phase) use ($lyeLiquidItems): array {
-                if ($phase['key'] !== 'lye_water') {
+            ->map(function (array $phase) use ($lyeLiquidItems, $dilutionItems): array {
+                $items = match (true) {
+                    $phase['key'] === 'lye_water' => $lyeLiquidItems,
+                    array_key_exists($phase['key'], $dilutionItems) => $dilutionItems[$phase['key']],
+                    default => null,
+                };
+
+                if ($items === null) {
                     return $phase;
                 }
 
                 return [
                     ...$phase,
-                    'items' => $lyeLiquidItems,
+                    'items' => $items,
                     'totals' => [
                         'percentage_of_oils' => 0.0,
                         'weight' => (float) $this->roundMass(
-                            collect($lyeLiquidItems)->reduce(
+                            collect($items)->reduce(
                                 fn (string $total, array $item): string => bcadd(
                                     $total,
                                     NumberLocale::normalizeDecimalString($item['weight'] ?? null) ?? '0',
@@ -538,7 +546,7 @@ class RecipeWorkbenchPayloadNormalizer
         $phaseItems = $payload['phase_items'] ?? [];
 
         return array_map(function (array $phase) use ($phaseItems): array {
-            $rows = $phase['key'] === 'lye_water'
+            $rows = in_array($phase['key'], ['lye_water', ...RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES], true)
                 ? []
                 : ($phaseItems[$phase['key']] ?? []);
 
@@ -716,6 +724,48 @@ class RecipeWorkbenchPayloadNormalizer
                 'weight' => (float) $row['weight'],
                 'note' => $row['note'] ?? null,
             ])
+            ->all();
+    }
+
+    /**
+     * Liquid soap dilution liquids: rows stored as a % of their step's water
+     * with the weight the saved process gives them.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $normalizedRecipe
+     * @param  array<string, string>  $settings
+     * @return array<string, list<array{ingredient_id: int|null, percentage: float, weight: float, note: mixed}>>
+     */
+    private function normalizeDilutionLiquidItems(array $payload, array $normalizedRecipe, array $settings): array
+    {
+        $phases = collect($normalizedRecipe['phases'])->keyBy('key');
+        $neutralizerRow = collect($phases->get('neutralization')['items'] ?? [])->first(fn (array $item): bool => $item['ingredient_id'] !== null);
+        $additionsWeight = collect(['additives', 'fragrance'])
+            ->flatMap(fn (string $key): array => $phases->get($key)['items'] ?? [])
+            ->reduce(fn (string $total, array $item): string => bcadd($total, NumberLocale::normalizeDecimalString(sprintf('%.12F', (float) ($item['weight'] ?? 0))) ?? '0', 18), '0');
+        $process = $this->liquidSoapFormulaProcessor->process(
+            $this->liquidSoapProcessCalculator->pasteComposition($this->soapCalculation($payload, $normalizedRecipe)),
+            $settings,
+            $this->liquidSoapFormulaProcessor->neutralizer($neutralizerRow, $settings),
+            $additionsWeight,
+        );
+
+        return collect($this->liquidSoapFormulaProcessor->dilutionLiquids($process, $payload['phase_items'] ?? []))
+            ->map(function (array $step, string $phaseKey) use ($payload): array {
+                $notes = collect($payload['phase_items'][$phaseKey] ?? [])
+                    ->filter(fn (mixed $row): bool => is_array($row) && trim((string) ($row['percentage'] ?? '')) !== '' && (float) $row['percentage'] > 0)
+                    ->values();
+
+                return collect($step['liquids'])
+                    ->values()
+                    ->map(fn (array $liquid, int $index): array => [
+                        'ingredient_id' => $this->ingredientId($liquid['ingredient_id'] ?? null),
+                        'percentage' => $liquid['percentage'],
+                        'weight' => $liquid['weight'],
+                        'note' => $notes->get($index)['note'] ?? null,
+                    ])
+                    ->all();
+            })
             ->all();
     }
 

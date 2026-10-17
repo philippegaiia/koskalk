@@ -267,7 +267,7 @@ class RecipeVersionCostPreviewBuilder
         $formulaBasisGrams = $this->massConverter->toGrams($formulaBasis, $formulaUnit);
         $costingBasisGrams = $this->massConverter->toGrams($costingBasis, $costingUnit);
         $isDerived = (bool) ($row['is_derived'] ?? false);
-        $usesFormulaWeight = ($phaseKey === 'lye_water' || $isDerived) && bccomp($formulaBasisGrams, '0', 18) > 0;
+        $usesFormulaWeight = ($this->costsStoredWeight($phaseKey) || $isDerived) && bccomp($formulaBasisGrams, '0', 18) > 0;
         $quantityGrams = $usesFormulaWeight
             ? bcmul(
                 $this->massConverter->toGrams($formulaWeight, $formulaUnit),
@@ -277,7 +277,7 @@ class RecipeVersionCostPreviewBuilder
             : bcdiv(bcmul($costingBasisGrams, $percentage, 18), '100', 18);
         $quantity = $this->massConverter->fromGrams($quantityGrams, $costingUnit);
         $percentageBasis = $family === 'soap' ? 'oils' : 'formula';
-        $displayPercentage = ($phaseKey === 'lye_water' || $isDerived) && bccomp($costingBasisGrams, '0', 18) > 0
+        $displayPercentage = ($this->costsStoredWeight($phaseKey) || $isDerived) && bccomp($costingBasisGrams, '0', 18) > 0
             ? bcmul(bcdiv($quantityGrams, $costingBasisGrams, 18), '100', 18)
             : $percentage;
         $hasPrice = array_key_exists($lotKey, $pricesByIdentity);
@@ -782,6 +782,12 @@ class RecipeVersionCostPreviewBuilder
         ];
     }
 
+    /** Rows whose percentage is not a % of oils: they cost their stored weight. */
+    private function costsStoredWeight(string $phaseKey): bool
+    {
+        return in_array($phaseKey, ['lye_water', ...RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES], true);
+    }
+
     public function lotKey(int $ingredientId, string $phaseKey, int $position): string
     {
         return implode(':', [$ingredientId, $phaseKey, $position]);
@@ -792,6 +798,8 @@ class RecipeVersionCostPreviewBuilder
         return match ($phase->slug) {
             'saponified_oils' => 'Saponified oils',
             'lye_water' => __('workbench.costing.phases.lye_liquid'),
+            'first_dilution' => __('workbench.costing.phases.first_dilution'),
+            'final_dilution' => __('workbench.costing.phases.final_dilution'),
             'additives' => 'Additives',
             'fragrance' => 'Fragrance and aromatics',
             default => $phase->name,

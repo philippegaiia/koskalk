@@ -1506,7 +1506,7 @@ function createLiquidSoapSection(payload) {
             ];
         },
 
-        /** Dilution and neutralizer-solution water from the server preview. */
+        /** Plain dilution and neutralizer-solution water from the server preview. */
         liquidDilutionWaterWeight() {
             if (!this.liquidProcessIsReady) {
                 return 0;
@@ -1516,9 +1516,13 @@ function createLiquidSoapSection(payload) {
             const neutralizer = process.neutralizer;
             const solutionWater = neutralizer ? this.number(neutralizer.solution_weight) - this.number(neutralizer.weight) : 0;
 
-            return this.number(process.stages.first_dilution.add_weight)
-                + this.number(process.stages.final_dilution.add_weight)
-                + Math.max(0, solutionWater);
+            const stepWater = (key) => {
+                const split = process.dilution_liquids?.[key];
+
+                return split ? this.number(split.water_weight) : this.number(process.stages[key].add_weight);
+            };
+
+            return stepWater('first_dilution') + stepWater('final_dilution') + Math.max(0, solutionWater);
         },
 
         liquidPreviewAddition(row) {

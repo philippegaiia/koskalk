@@ -399,6 +399,8 @@ return [
             'unit_price_for' => 'Unit price for :item',
         ],
         'phases' => [
+            'first_dilution' => 'First dilution',
+            'final_dilution' => 'Final dilution',
             'saponification' => 'Saponification',
             'alkali' => 'Alkali',
             'lye_liquid' => 'Dilution liquids',

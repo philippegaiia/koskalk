@@ -326,3 +326,23 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('prices liquid soap dilution liquids from the preview and keeps them out of the water row', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const liquid = bench(liquidFamily);
+liquid.oilUnit = 'g';
+liquid.oilWeight = 1000;
+liquid.phaseItems.final_dilution = [{ id: 'h1', ingredient_id: 7, name: 'Lavender hydrosol', percentage: 30 }];
+liquid.backendCalculation = { liquid_process: {
+    status: 'ok',
+    stages: { first_dilution: { add_weight: '100' }, neutralization: { add_weight: '0' }, final_dilution: { add_weight: '200' } },
+    neutralizer: null,
+    dilution_liquids: { first_dilution: { water_weight: 100, liquids: [] }, final_dilution: { water_weight: 140, liquids: [{ id: 'h1', ingredient_id: 7, percentage: 30, weight: 60 }] } },
+} };
+
+assert.equal(liquid.costingWeightForRow('final_dilution', liquid.phaseItems.final_dilution[0]), 60);
+assert.equal(liquid.liquidDilutionWaterWeight(), 240);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

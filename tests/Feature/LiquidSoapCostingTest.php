@@ -19,7 +19,7 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
-it('prices the dilution and neutralizer solution water of a saved liquid soap with the plain water', function () {
+it('prices the dilution and neutralizer solution water of a saved liquid soap with the plain water', function (bool $withHydrosol) {
     $user = User::factory()->create();
     Ingredient::factory()->create([
         'catalog_key' => 'CH3',
@@ -54,6 +54,7 @@ it('prices the dilution and neutralizer solution water of a saved liquid soap wi
         'is_active' => true,
         'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous,
     ]);
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
     $version = app(RecipeWorkbenchService::class)->save($user, $family, [
@@ -77,6 +78,7 @@ it('prices the dilution and neutralizer solution water of a saved liquid soap wi
             'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65062, 'weight' => 6.5062, 'note' => null]],
             'additives' => [],
             'fragrance' => [],
+            'final_dilution' => $withHydrosol ? [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]] : [],
         ],
     ]);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
@@ -96,11 +98,14 @@ it('prices the dilution and neutralizer solution water of a saved liquid soap wi
     $waterRow = $rows->firstWhere('phase_key', 'implicit_water');
     $neutralizerRow = $rows->firstWhere('phase_key', 'neutralization');
 
+    $hydrosolWeight = $withHydrosol ? round(1327.469 * 0.3, 4) : 0.0;
+
     expect($waterRow['ingredient_id'])->toBe($water->id)
-        ->and($waterRow['quantity'])->toEqualWithDelta(503.2286 + 1679.327 + 1327.469 + 26.0248, 0.001)
+        ->and($waterRow['quantity'])->toEqualWithDelta(503.2286 + 1679.327 + 1327.469 + 26.0248 - $hydrosolWeight, 0.001)
         ->and($neutralizerRow['ingredient_id'])->toBe($citricAcid->id)
-        ->and($neutralizerRow['quantity'])->toEqualWithDelta(6.506, 0.001);
-});
+        ->and($neutralizerRow['quantity'])->toEqualWithDelta(6.506, 0.001)
+        ->and((float) ($rows->firstWhere('ingredient_id', $hydrosol->id)['quantity'] ?? 0))->toEqualWithDelta($hydrosolWeight, 0.001);
+})->with(['water only' => false, 'with a hydrosol in the final dilution' => true]);
 
 it('adds the liquid soap dilution water to the workbench plain-water costing row only on liquid formulas', function () {
     $script = <<<'JS'

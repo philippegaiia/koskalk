@@ -10,6 +10,8 @@ import { MASS_UNITS, convertMass, convertMassPrice } from '../mass';
 const SYSTEM_PHASE_TRANSLATION_KEYS = {
     saponified_oils: 'costing.phases.saponification',
     lye_water: 'costing.phases.lye_liquid',
+    first_dilution: 'costing.phases.first_dilution',
+    final_dilution: 'costing.phases.final_dilution',
     additives: 'costing.phases.additions',
     fragrance: 'costing.phases.fragrance',
 };
@@ -258,7 +260,7 @@ export function createCostingSection(payload) {
                 weight,
                 weightUnit: this.costingBaseOilUnit,
                 defaultPricePerKg: ingredient?.default_price_per_kg ?? null,
-                calculated: phaseKey === 'lye_water',
+                calculated: ['lye_water', 'first_dilution', 'final_dilution'].includes(phaseKey),
             };
         },
 
@@ -394,6 +396,10 @@ export function createCostingSection(payload) {
         },
 
         costingWeightForRow(phaseKey, row) {
+            if (phaseKey === 'first_dilution' || phaseKey === 'final_dilution') {
+                return this.costingDilutionLiquidWeight(phaseKey, row);
+            }
+
             if (phaseKey !== 'lye_water') {
                 return rowWeightForOilWeight(this.costingBaseOilWeight, row);
             }
@@ -417,6 +423,20 @@ export function createCostingSection(payload) {
                 * (this.costingBaseOilWeight / formulaOilWeight);
 
             return scaledLyeLiquidWeight * (nonNegativeNumber(row.percentage) / 100);
+        },
+
+        /** A liquid soap dilution liquid weighs what the server preview gave it, scaled to the costing batch. */
+        costingDilutionLiquidWeight(phaseKey, row) {
+            const liquid = (this.liquidProcessPreview?.dilution_liquids?.[phaseKey]?.liquids ?? [])
+                .find((candidate) => candidate.id === row.id || Number(candidate.ingredient_id) === Number(row.ingredient_id));
+            const formulaOilWeight = convertCostingMass(this.oilWeight, this.oilUnit, this.costingBaseOilUnit);
+
+            if (!liquid || formulaOilWeight <= 0) {
+                return 0;
+            }
+
+            return convertCostingMass(nonNegativeNumber(liquid.weight), this.oilUnit, this.costingBaseOilUnit)
+                * (this.costingBaseOilWeight / formulaOilWeight);
         },
 
         costingPriceForRow(row) {

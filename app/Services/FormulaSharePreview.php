@@ -88,8 +88,9 @@ class FormulaSharePreview
         $resolution = $this->resolver->resolve($destination, $snapshot['ingredients'], $decisions);
         if (data_get($snapshot, 'formula.manufacturing_mode') === 'saponify_in_formula') {
             foreach ($snapshot['formula']['phases'] as $phase) {
-                if ($phase['slug'] === 'lye_water') {
-                    $this->dilutionLiquids->assertMaximumRows($phase['items']);
+                if (in_array($phase['slug'], ['lye_water', ...RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES], true)) {
+                    $field = "phase_items.{$phase['slug']}";
+                    $this->dilutionLiquids->assertMaximumRows($phase['items'], $field);
                     $localRows = [];
                     foreach ($phase['items'] as $item) {
                         $row = $resolution['nodes'][$item['ingredient_key']];
@@ -99,7 +100,7 @@ class FormulaSharePreview
                             throw ValidationException::withMessages(['decisions' => __('workbench.validation.lye_liquid_alkali')]);
                         }
                     }
-                    $this->dilutionLiquids->validate($localRows, $actor);
+                    $this->dilutionLiquids->validate($localRows, $actor, $field);
                 }
                 if ($phase['slug'] !== 'saponified_oils') {
                     continue;

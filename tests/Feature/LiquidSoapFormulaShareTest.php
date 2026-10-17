@@ -38,7 +38,7 @@ beforeEach(function (): void {
  *
  * @return array{owner: User, recipient: Workspace, recipe: Recipe, citricAcid: Ingredient}
  */
-function sharedLiquidSoap(): array
+function sharedLiquidSoap(array $finalDilution = []): array
 {
     $owner = User::factory()->create();
     Workspace::factory()->for($owner, 'owner')->create();
@@ -65,6 +65,7 @@ function sharedLiquidSoap(): array
             'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65062, 'weight' => 6.5062, 'note' => null]],
             'additives' => [],
             'fragrance' => [['ingredient_id' => $lavender->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+            'final_dilution' => $finalDilution,
         ],
         'packaging_items' => [],
     ]);
@@ -130,6 +131,21 @@ it('fingerprints the neutralizer type of platform neutralizers only', function (
 
     expect($projector->project($citricAcid)['technical']['liquid_soap_neutralizer'])->toBe('citric_acid_anhydrous')
         ->and($projector->project($privateCopy)['technical'])->not->toHaveKey('liquid_soap_neutralizer');
+});
+
+it('round trips liquid soap dilution liquids', function (): void {
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
+    ['owner' => $owner, 'recipient' => $recipient, 'recipe' => $recipe] = sharedLiquidSoap([['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]]);
+
+    $liquidRow = fn (RecipeVersion $version): RecipeItem => RecipeItem::withoutGlobalScopes()
+        ->where('recipe_phase_id', RecipePhase::withoutGlobalScopes()->where('recipe_version_id', $version->id)->where('slug', 'final_dilution')->sole()->id)
+        ->sole();
+    $source = $liquidRow(savedLiquidSoapVersion($recipe));
+    $copy = $liquidRow(savedLiquidSoapVersion(sendAndAcceptLiquidSoap($owner, $recipe, $recipient)));
+
+    expect($copy->ingredient_id)->toBe($hydrosol->id)
+        ->and($copy->percentage)->toBe('30.0000')
+        ->and($copy->weight)->toBe($source->weight);
 });
 
 it('shows the liquid soap process settings in the offer', function (): void {

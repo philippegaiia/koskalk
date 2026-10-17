@@ -111,7 +111,9 @@ class FormulaShareRecipeImporter
         $percentageTotal = '0';
         $oilPercentage = '0';
         foreach ($normalized['phases'] as &$phase) {
-            if ($phase['key'] === 'lye_water' && ($context['calculation_basis'] ?? null) !== 'total_formula') {
+            // Lye liquids and liquid soap dilution liquids are a % of their own
+            // liquid, not of the oils; publication sizes them from the process.
+            if (in_array($phase['key'], ['lye_water', ...RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES], true) && ($context['calculation_basis'] ?? null) !== 'total_formula') {
                 continue;
             }
             $stored = $items[$phase['key']] ?? [];

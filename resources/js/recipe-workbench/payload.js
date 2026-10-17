@@ -21,7 +21,8 @@ export function serializeRow(state, row, phaseKey = null) {
         percentage: nonNegativeNumber(row.percentage),
         weight: phaseKey === 'lye_water'
             ? serializedDilutionLiquidWeight(state, row)
-            : rowWeight(state, row),
+            // Liquid soap dilution liquids are sized by the server from their step's water.
+            : (phaseKey === 'first_dilution' || phaseKey === 'final_dilution' ? 0 : rowWeight(state, row)),
         note: row.note ?? null,
         // Liquid soap additions typed as % of the final batch; the server
         // turns them into weights. Rows loaded from a save never carry it.

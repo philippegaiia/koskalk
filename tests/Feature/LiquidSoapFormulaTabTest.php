@@ -30,6 +30,7 @@ function liquidSoapFormulaTabMarkup(string $html): array
             : collect($xpath->query('.//button[@role="radio"]', $lyeGroup))->map(fn (DOMElement $button): string => trim($button->textContent))->values()->all(),
         'quality_tabs' => $document->getElementById('tab-bar-cure') !== null,
         'liquid_quality_note' => str_contains($document->textContent, __('workbench.qualities.liquid_disclaimer')),
+        'dilution_liquids' => $document->getElementById('liquid-final_dilution-liquids-heading') !== null,
         'output_heading' => trim(preg_replace('/\s+/', ' ', (string) $document->getElementById('output-soap-heading')?->firstChild?->textContent)),
     ];
 }
@@ -71,6 +72,7 @@ it('shows the liquid soap process, KOH only and untabbed qualities on the liquid
         'lye_buttons' => ['KOH'],
         'quality_tabs' => false,
         'liquid_quality_note' => true,
+        'dilution_liquids' => true,
         'output_heading' => 'Finished liquid soap output',
     ]);
 });
@@ -90,6 +92,7 @@ it('keeps the bar soap bench without the liquid process and with every alkali', 
         'lye_buttons' => ['NaOH', 'KOH', 'Dual lye'],
         'quality_tabs' => true,
         'liquid_quality_note' => false,
+        'dilution_liquids' => false,
         'output_heading' => 'Cured soap output',
     ]);
 });

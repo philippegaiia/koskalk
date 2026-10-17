@@ -1466,6 +1466,37 @@ function createLiquidSoapSection(payload) {
             }
         },
 
+        dilutionLiquidRows(phaseKey) {
+            return this.phaseItems?.[phaseKey] ?? [];
+        },
+
+        dilutionLiquidShareTotal(phaseKey) {
+            return this.dilutionLiquidRows(phaseKey).reduce((total, row) => total + Math.max(0, this.number(row.percentage)), 0);
+        },
+
+        /** Adds a non-alkali liquid to a dilution step, up to four per step. */
+        addDilutionLiquid(phaseKey, ingredientId) {
+            const ingredient = (this.ingredients ?? []).find((candidate) => Number(candidate.id) === Number(ingredientId));
+
+            if (!ingredient || ingredient.category === 'soapmaking_alkalis' || this.dilutionLiquidRows(phaseKey).length >= 4) {
+                return;
+            }
+
+            this.addIngredient(ingredient, phaseKey, false);
+        },
+
+        /** A dilution liquid's weight from the server preview, 0 until it arrives. */
+        dilutionLiquidWeight(phaseKey, row) {
+            const liquid = (this.liquidProcessPreview?.dilution_liquids?.[phaseKey]?.liquids ?? [])
+                .find((candidate) => candidate.id === row.id || Number(candidate.ingredient_id) === Number(row.ingredient_id));
+
+            return liquid ? this.number(liquid.weight) : 0;
+        },
+
+        dilutionWaterWeight(phaseKey) {
+            return this.number(this.liquidProcessPreview?.dilution_liquids?.[phaseKey]?.water_weight);
+        },
+
         liquidNeutralizerWeight() {
             return this.liquidNeutralizerRow === null ? 0 : this.rowWeight(this.liquidNeutralizerRow);
         },
@@ -1618,6 +1649,7 @@ const LIQUID_COMPOSITION_ORDER = [
     'unreacted_lipids_weight',
     'additions_weight',
     'water_weight',
+    'dilution_liquids_weight',
     'free_koh_weight',
     'koh_impurity_weight',
     'neutralization_salt_weight',
@@ -1629,6 +1661,7 @@ const LIQUID_COMPOSITION_COLORS = {
     unreacted_lipids_weight: 'var(--color-amber)',
     additions_weight: 'var(--color-sage)',
     water_weight: 'var(--color-line-strong)',
+    dilution_liquids_weight: 'var(--color-info)',
     free_koh_weight: 'var(--color-reference-heading)',
     koh_impurity_weight: 'var(--color-reference-heading)',
     neutralization_salt_weight: 'var(--color-reference-heading)',

@@ -1,3 +1,16 @@
+@php
+    $dilutionLiquidOptions = collect($workbench['ingredients'] ?? [])
+        ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis')
+        ->map(fn (array $ingredient): array => [
+            'id' => $ingredient['id'],
+            'label' => $ingredient['name'],
+            'description' => $ingredient['inci_name'] ?? null,
+            'searchText' => implode(' ', array_filter([$ingredient['name'], $ingredient['inci_name'] ?? null])),
+        ])
+        ->values()
+        ->all();
+@endphp
+
 <section id="liquid-soap-process" class="overflow-hidden sk-card sk-phase-craft sk-tone-summary" aria-labelledby="liquid-soap-process-heading">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <h3 id="liquid-soap-process-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.title') }}</h3>
@@ -38,6 +51,42 @@
  </div>
  <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.weighed_paste_help') }}</span>
  </label>
+ </div>
+
+ <div class="grid grid-cols-1 gap-4 @5xl/workbench:grid-cols-2">
+ @foreach (['first_dilution', 'final_dilution'] as $dilutionStep)
+ <section class="sk-inset space-y-3 p-4" aria-labelledby="liquid-{{ $dilutionStep }}-liquids-heading">
+ <div class="flex flex-wrap items-baseline justify-between gap-3">
+ <p id="liquid-{{ $dilutionStep }}-liquids-heading" class="sk-eyebrow">{{ __('workbench.liquid.dilution_liquids.'.$dilutionStep) }}</p>
+ <p class="numeric text-xs text-[var(--color-ink-soft)]" x-text="t('liquid.dilution_liquids.water_left', { percentage: format(Math.max(0, 100 - dilutionLiquidShareTotal('{{ $dilutionStep }}')), 2), weight: format(dilutionWaterWeight('{{ $dilutionStep }}'), calculatedMassDecimals(dilutionWaterWeight('{{ $dilutionStep }}'))), unit: oilUnit })"></p>
+ </div>
+ <template x-for="row in dilutionLiquidRows('{{ $dilutionStep }}')" :key="row.id">
+ <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_7rem_2.5rem] sm:items-center">
+ <p class="min-w-0 truncate font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <label class="flex items-center gap-2">
+ <input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('liquid.dilution_liquids.share_for', { ingredient: row.name })" class="sk-input numeric" />
+ <span class="text-sm text-[var(--color-ink-soft)]">%</span>
+ </label>
+ <span class="numeric text-right text-sm text-[var(--color-ink-strong)]" x-text="`${format(dilutionLiquidWeight('{{ $dilutionStep }}', row), calculatedMassDecimals(dilutionLiquidWeight('{{ $dilutionStep }}', row)))} ${oilUnit}`"></span>
+ <button type="button" @click="removeIngredient('{{ $dilutionStep }}', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('liquid.dilution_liquids.remove', { ingredient: row.name })"><x-action-icon name="close" /></button>
+ </div>
+ </template>
+ <div x-show="dilutionLiquidRows('{{ $dilutionStep }}').length < 4">
+ <x-search-combobox
+ id="liquid-{{ $dilutionStep }}-liquid-search"
+ :inline-options="true"
+ class="sk-combobox-reference"
+ :label="__('workbench.liquid.dilution_liquids.add')"
+ :options="$dilutionLiquidOptions"
+ :placeholder="__('workbench.liquid.dilution_liquids.search')"
+ x-on:search-combobox-selected="addDilutionLiquid('{{ $dilutionStep }}', $event.detail.id)"
+ />
+ </div>
+ <template x-if="dilutionLiquidShareTotal('{{ $dilutionStep }}') > 100.00001">
+ <p role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ __('workbench.liquid.dilution_liquids.exceeds') }}</p>
+ </template>
+ </section>
+ @endforeach
  </div>
 
  <div class="sk-inset space-y-3 p-4">

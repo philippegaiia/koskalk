@@ -346,3 +346,33 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('adds dilution liquids to a step and sends them as a share of its water', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const liquid = bench(liquidFamily);
+liquid.ingredients = [
+    { id: 7, name: 'Lavender hydrosol', category: 'water_solvents_carriers', available_phases: ['additives'] },
+    { id: 9, name: 'KOH', category: 'soapmaking_alkalis', available_phases: [] },
+];
+liquid.phaseItems.final_dilution = liquid.phaseItems.final_dilution ?? [];
+liquid.addDilutionLiquid('final_dilution', 7);
+liquid.addDilutionLiquid('final_dilution', 9);
+liquid.phaseItems.final_dilution[0].percentage = 30;
+
+assert.equal(liquid.dilutionLiquidRows('final_dilution').length, 1);
+assert.equal(liquid.dilutionLiquidShareTotal('final_dilution'), 30);
+assert.deepEqual(
+    serializeDraft(liquid).phase_items.final_dilution.map(({ ingredient_id, percentage, weight }) => ({ ingredient_id, percentage, weight })),
+    [{ ingredient_id: 7, percentage: 30, weight: 0 }],
+);
+
+liquid.backendCalculation = { liquid_process: { status: 'ok', dilution_liquids: { final_dilution: { water_weight: 140, liquids: [{ id: liquid.phaseItems.final_dilution[0].id, ingredient_id: 7, percentage: 30, weight: 60 }] } } } };
+assert.equal(liquid.dilutionLiquidWeight('final_dilution', liquid.phaseItems.final_dilution[0]), 60);
+assert.equal(liquid.dilutionWaterWeight('final_dilution'), 140);
+
+const bar = bench(barFamily);
+assert.equal(Object.hasOwn(serializeDraft(bar).phase_items, 'final_dilution'), false);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

@@ -209,7 +209,7 @@ export function targetPhaseForCategory(category) {
 export function resolveTargetPhase(ingredient, requestedPhase = null) {
     const availablePhases = Array.isArray(ingredient.available_phases) ? ingredient.available_phases : [];
 
-    if (requestedPhase === 'lye_water') {
+    if (['lye_water', 'first_dilution', 'final_dilution'].includes(requestedPhase)) {
         return requestedPhase;
     }
 

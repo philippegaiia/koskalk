@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class RecipeWorkbenchPreviewService
@@ -38,6 +39,11 @@ class RecipeWorkbenchPreviewService
         $rawLyeLiquidRows = data_get($payload, 'phase_items.lye_water', []);
         $rawLyeLiquidRows = is_array($rawLyeLiquidRows) ? $rawLyeLiquidRows : [];
         $this->lyeLiquidIngredientValidator->assertMaximumRows($rawLyeLiquidRows);
+
+        foreach (RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES as $phaseKey) {
+            $rows = data_get($payload, "phase_items.{$phaseKey}", []);
+            $this->lyeLiquidIngredientValidator->assertMaximumRows(is_array($rows) ? $rows : [], "phase_items.{$phaseKey}");
+        }
 
         if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') !== 'saponify_in_formula') {
             return null;
@@ -147,6 +153,8 @@ class RecipeWorkbenchPreviewService
             $calculation['liquid_process'] = $this->previewLiquidSoapProcess($payload, $calculation);
         } catch (InvalidArgumentException $exception) {
             $calculation['liquid_process'] = ['status' => 'invalid', 'message' => $exception->getMessage()];
+        } catch (ValidationException $exception) {
+            $calculation['liquid_process'] = ['status' => 'invalid', 'message' => (string) collect($exception->errors())->flatten()->first()];
         }
 
         return $calculation;
@@ -192,10 +200,18 @@ class RecipeWorkbenchPreviewService
 
         $process = $this->liquidSoapFormulaProcessor->process($paste, $liquidProcess, $neutralizer, $additionsWeight);
         $achievedFinalWeight = $process['final_weight'];
+        $dilutionLiquids = $process['status'] === 'ok'
+            ? $this->liquidSoapFormulaProcessor->dilutionLiquids($process, $payload['phase_items'] ?? [])
+            : null;
+
+        if ($dilutionLiquids !== null) {
+            $process = $this->withDilutionLiquids($process, $dilutionLiquids);
+        }
 
         return [
             ...$process,
             'paste_composition' => $paste,
+            'dilution_liquids' => $dilutionLiquids,
             'target_final_weight' => $finalBatchWeight === null ? null : $this->fourDecimals($finalBatchWeight),
             'additions' => $additions
                 ->map(fn (array $addition): array => [
@@ -428,6 +444,38 @@ class RecipeWorkbenchPreviewService
         }
 
         return $oilWeight * ($percentage / 100);
+    }
+
+    /**
+     * The final composition with the dilution liquids out of the water, and
+     * a warning for each step whose liquids end up unused.
+     *
+     * @param  array<string, mixed>  $process  Process result with status ok.
+     * @param  array<string, array{water_weight: float, liquids: list<array<string, mixed>>}>  $dilutionLiquids
+     * @return array<string, mixed>
+     */
+    private function withDilutionLiquids(array $process, array $dilutionLiquids): array
+    {
+        $liquidsWeight = collect($dilutionLiquids)
+            ->flatMap(fn (array $step): array => $step['liquids'])
+            ->reduce(fn (string $total, array $liquid): string => bcadd($total, (string) $liquid['weight'], 18), '0');
+        $finalWeight = (string) $process['final_weight'];
+        $share = fn (string $weight): string => bccomp($finalWeight, '0', 18) > 0
+            ? $this->fourDecimals(bcdiv(bcmul($weight, '100', 18), $finalWeight, 18))
+            : '0.0000';
+
+        $process['composition']['water_weight'] = $this->fourDecimals(bcsub((string) $process['composition']['water_weight'], $liquidsWeight, 18));
+        $process['composition']['dilution_liquids_weight'] = $this->fourDecimals($liquidsWeight);
+        $process['composition_percentages']['water_weight'] = $share($process['composition']['water_weight']);
+        $process['composition_percentages']['dilution_liquids_weight'] = $share($liquidsWeight);
+
+        foreach (RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES as $phaseKey) {
+            if ($dilutionLiquids[$phaseKey]['liquids'] !== [] && bccomp((string) data_get($process, "stages.{$phaseKey}.add_weight", '0'), '0', 4) <= 0) {
+                $process['warnings'][] = "dilution_liquid_unused_{$phaseKey}";
+            }
+        }
+
+        return $process;
     }
 
     private function fourDecimals(string $value): string

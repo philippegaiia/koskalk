@@ -324,3 +324,50 @@ it('keeps bar soap snapshots free of liquid soap results', function () {
 
     expect($snapshot['calculation'])->not->toHaveKey('liquid_process');
 });
+
+it('previews each dilution liquid as part of its step water', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $citricAcid = liquidSoapPreviewCitricAcid();
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
+
+    $process = app(RecipeWorkbenchService::class)->previewSoapCalculation(liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'phase_items' => [
+            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65062, 'weight' => 0, 'note' => null]],
+            'final_dilution' => [['id' => 'h1', 'ingredient_id' => $hydrosol->id, 'percentage' => 30]],
+        ],
+    ]), null, $family)['liquid_process'];
+
+    $finalAdd = (float) $process['stages']['final_dilution']['add_weight'];
+    $liquid = $process['dilution_liquids']['final_dilution']['liquids'][0];
+
+    expect($liquid['ingredient_id'])->toBe($hydrosol->id)
+        ->and($liquid['weight'])->toEqualWithDelta($finalAdd * 0.3, 0.0001)
+        ->and($process['dilution_liquids']['final_dilution']['water_weight'] + $liquid['weight'])->toEqualWithDelta($finalAdd, 0.0001)
+        ->and((float) $process['composition']['dilution_liquids_weight'])->toEqualWithDelta($liquid['weight'], 0.0001)
+        ->and((float) $process['final_weight'])->toEqualWithDelta(4760.0, 0.0001);
+});
+
+it('warns when a step with liquids adds nothing', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'is_active' => true]);
+
+    $process = app(RecipeWorkbenchService::class)->previewSoapCalculation(liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'liquid_process' => ['first_dilution_percentage' => 80],
+        'phase_items' => ['first_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 50]]],
+    ]), null, $family)['liquid_process'];
+
+    expect($process['warnings'])->toContain('dilution_liquid_unused_first_dilution');
+});
+
+it('reports dilution liquids above all of a step water without losing the paste', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'is_active' => true]);
+    $milk = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'is_active' => true]);
+
+    $calculation = app(RecipeWorkbenchService::class)->previewSoapCalculation(liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'phase_items' => ['final_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 60], ['ingredient_id' => $milk->id, 'percentage' => 50]]],
+    ]), null, $family);
+
+    expect($calculation['liquid_process']['status'])->toBe('invalid')
+        ->and($calculation['lye']['excess']['koh_weight'])->toBe(5.7);
+});

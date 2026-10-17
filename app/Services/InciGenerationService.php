@@ -106,7 +106,7 @@ class InciGenerationService
     public function generate(array $payload, ?array $soapCalculation = null): array
     {
         $rowContexts = $this->ingredientFormulaContextResolver->resolve(
-            $this->withResolvedDilutionLiquidWeights($this->withResolvedLyeLiquidWeights($payload, $soapCalculation), $soapCalculation),
+            $this->withResolvedLyeLiquidWeights($payload, $soapCalculation),
             [
                 'allergenEntries.allergen',
                 'marketLabels',
@@ -2403,38 +2403,6 @@ class InciGenerationService
                 ];
             })
             ->all();
-
-        return $payload;
-    }
-
-    /**
-     * Liquid soap dilution liquids weigh what the process gave them.
-     *
-     * @param  array<string, mixed>  $payload
-     * @param  array<string, mixed>|null  $soapCalculation
-     * @return array<string, mixed>
-     */
-    private function withResolvedDilutionLiquidWeights(array $payload, ?array $soapCalculation): array
-    {
-        $split = $this->liquidProcess($soapCalculation)['dilution_liquids'] ?? null;
-
-        if (! is_array($split)) {
-            return $payload;
-        }
-
-        foreach (RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES as $phaseKey) {
-            $weights = collect($split[$phaseKey]['liquids'] ?? [])->pluck('weight')->values();
-            $position = 0;
-            $payload['phase_items'][$phaseKey] = collect($payload['phase_items'][$phaseKey] ?? [])
-                ->map(function (mixed $row) use ($weights, &$position): mixed {
-                    if (! is_array($row) || ! is_numeric($row['ingredient_id'] ?? null) || (float) ($row['percentage'] ?? 0) <= 0) {
-                        return $row;
-                    }
-
-                    return [...$row, 'weight' => (float) ($weights->get($position++) ?? 0)];
-                })
-                ->all();
-        }
 
         return $payload;
     }

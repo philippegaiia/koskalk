@@ -7,9 +7,12 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
 use App\Models\IngredientSapProfile;
+use App\Models\IngredientSubstanceEntry;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
+use App\Models\RegulatoryRegimeSubstanceRule;
+use App\Models\Substance;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -226,4 +229,38 @@ it('lists a dilution liquid at its process weight and keeps it out of AQUA', fun
         ->and($incorporated['LAVANDULA ANGUSTIFOLIA FLOWER WATER'])->toBe($hydrosolWeight)
         ->and($incorporated['AQUA'])->toEqualWithDelta(503.2286 + 1679.327 + 26.0248 + 1327.469 - 1327.469 * 0.3, 0.02)
         ->and(array_sum($incorporated))->toEqualWithDelta(4760.0, 0.05);
+});
+
+it('leaves out a dilution liquid whose step adds no water', function () {
+    $formula = liquidSoapLabelFormula();
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'inci_name' => 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', 'is_active' => true]);
+    $formula['payload']['liquid_process']['first_dilution_percentage'] = 80;
+    $formula['payload']['phase_items']['first_dilution'] = [['ingredient_id' => $hydrosol->id, 'percentage' => 50, 'weight' => 0]];
+    $labeling = liquidSoapLabeling($formula);
+
+    foreach (['saponified_with_superfat', 'incorporated_ingredients'] as $variant) {
+        expect(liquidSoapLabelWeights($labeling, $variant))->not->toHaveKey('LAVANDULA ANGUSTIFOLIA FLOWER WATER');
+    }
+
+    expect(array_sum(liquidSoapLabelWeights($labeling, 'incorporated_ingredients')))->toEqualWithDelta($labeling['basis']['formula_weight'], 0.05);
+});
+
+it('checks restricted constituents of a dilution liquid against the finished batch', function () {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['regulatory_regime'] = 'eu';
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Mint hydrosol', 'is_active' => true]);
+    $constituent = Substance::factory()->create(['name' => 'Pulegone', 'entity_type' => 'constituent']);
+    $regime = RegulatoryRegime::factory()->create(['code' => 'eu', 'market_code' => 'eu', 'status' => 'active']);
+    IngredientSubstanceEntry::factory()->for($hydrosol, 'ingredient')->for($constituent, 'substance')->create(['concentration_percent' => 30, 'concentration_source' => 'supplier']);
+    RegulatoryRegimeSubstanceRule::factory()->for($regime, 'regulatoryRegime')->for($constituent, 'substance')->create(['rule_type' => 'restricted', 'rinse_off_max_percent' => 5, 'leave_on_max_percent' => 1, 'is_active' => true]);
+    $formula['payload']['phase_items']['final_dilution'] = [['ingredient_id' => $hydrosol->id, 'percentage' => 100, 'weight' => 0]];
+
+    $service = app(RecipeWorkbenchService::class);
+    $calculation = $service->previewSoapCalculation($formula['payload'], null, $formula['family']);
+    $restrictions = $service->previewRestrictions($formula['payload'], $calculation);
+    $row = collect($restrictions['rows'])->firstWhere('substance_name', 'Pulegone');
+
+    expect($restrictions['basis']['formula_weight'])->toBe(4760.0)
+        ->and($row['percent_of_formula'])->toEqualWithDelta(1327.469 * 0.3 / 4760 * 100, 0.001)
+        ->and($row['status'])->toBe('over_limit');
 });

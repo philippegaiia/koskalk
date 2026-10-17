@@ -463,6 +463,18 @@ class SubstanceComplianceService
             ];
         }
 
+        $liquidProcess = $soapCalculation['liquid_process'] ?? null;
+
+        // A liquid soap is checked on its finished batch: paste, dilutions,
+        // neutralizer and additions.
+        if (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok') {
+            return [
+                'label' => 'Current batch basis',
+                'note' => 'Restrictions use the finished liquid soap: paste, dilution liquids, neutralizer and additions.',
+                'formula_weight' => round((float) $liquidProcess['final_weight'], 5),
+            ];
+        }
+
         $waterWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0);
         $naohWeight = (float) data_get($soapCalculation, 'lye.selected.naoh_weight', 0);
         $kohToWeigh = (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0);

@@ -264,7 +264,11 @@ class RecipeWorkbenchPreviewService
 
         return [
             ...$payload,
-            'phase_items' => $this->liquidSoapFormulaProcessor->withAdditionWeights($payload['phase_items'], $process, $payload['oil_weight'] ?? 0),
+            'phase_items' => $this->liquidSoapFormulaProcessor->withDilutionLiquidWeights(
+                $this->liquidSoapFormulaProcessor->withAdditionWeights($payload['phase_items'], $process, $payload['oil_weight'] ?? 0),
+                $process,
+                $payload['oil_weight'] ?? 0,
+            ),
         ];
     }
 

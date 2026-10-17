@@ -173,6 +173,47 @@ class LiquidSoapFormulaProcessor
     }
 
     /**
+     * Dilution liquid rows carrying the weight their step gave them; rows the
+     * process left out, or whose step adds nothing, weigh 0. With an oil
+     * weight, their percentage becomes a % of oils so every consumer that
+     * reads soap rows that way sees the same amount; without one, it stays
+     * the % of the step water.
+     *
+     * @param  array<string, mixed>  $phaseItems
+     * @param  array<string, mixed>  $liquidProcess  Process result with status ok.
+     * @return array<string, mixed>
+     */
+    public function withDilutionLiquidWeights(array $phaseItems, array $liquidProcess, float|int|string|null $oilWeight = null): array
+    {
+        $oilWeight = $oilWeight === null ? null : (float) $oilWeight;
+
+        foreach (RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES as $phaseKey) {
+            if (! is_array($phaseItems[$phaseKey] ?? null)) {
+                continue;
+            }
+
+            $weights = collect(data_get($liquidProcess, "dilution_liquids.{$phaseKey}.liquids", []))->pluck('weight')->values();
+            $position = 0;
+
+            foreach ($phaseItems[$phaseKey] as $index => $row) {
+                if (! is_array($row) || ! is_numeric($row['ingredient_id'] ?? null)) {
+                    continue;
+                }
+
+                // The same rows the allocation keeps: a share above zero.
+                $weight = (float) ($row['percentage'] ?? 0) > 0 ? (float) ($weights->get($position++) ?? 0) : 0.0;
+                $phaseItems[$phaseKey][$index]['weight'] = $weight;
+
+                if ($oilWeight !== null) {
+                    $phaseItems[$phaseKey][$index]['percentage'] = $oilWeight > 0 ? $weight * 100 / $oilWeight : 0.0;
+                }
+            }
+        }
+
+        return $phaseItems;
+    }
+
+    /**
      * Plain water added after the paste: both dilutions minus their liquids,
      * and the neutralizer solution water.
      *

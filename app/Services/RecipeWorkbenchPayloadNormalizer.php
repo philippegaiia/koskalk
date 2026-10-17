@@ -647,7 +647,7 @@ class RecipeWorkbenchPayloadNormalizer
                 ->contains(fn (mixed $row): bool => is_array($row) && ($row['final_percentage'] ?? null) !== null));
 
         if (! $sentFinalPercentages) {
-            return $normalizedRecipe;
+            return $this->withAdditionShares($payload, $normalizedRecipe, $finalBatchWeight);
         }
 
         $oilWeight = (string) $normalizedRecipe['oil_weight'];
@@ -682,11 +682,50 @@ class RecipeWorkbenchPayloadNormalizer
             })
             ->all();
 
-        return $this->recipeNormalizationService->normalizeSoapRecipe(
+        return $this->withAdditionShares($payload, $this->recipeNormalizationService->normalizeSoapRecipe(
             $phasePayload,
             $normalizedRecipe['oil_weight'],
             $editingMode,
-        );
+        ), $finalBatchWeight);
+    }
+
+    /**
+     * Each liquid soap addition keeps its share of the finished batch: the
+     * share it was sent with, or the share its weight makes of the batch.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $normalizedRecipe
+     * @return array<string, mixed>
+     */
+    private function withAdditionShares(array $payload, array $normalizedRecipe, string $finalBatchWeight): array
+    {
+        $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
+            ->map(function (array $phase) use ($payload, $finalBatchWeight): array {
+                if (! in_array($phase['key'], ['additives', 'fragrance'], true)) {
+                    return $phase;
+                }
+
+                $rawRows = array_values(is_array($payload['phase_items'][$phase['key']] ?? null) ? $payload['phase_items'][$phase['key']] : []);
+
+                return [
+                    ...$phase,
+                    'items' => collect($phase['items'])
+                        ->map(function (array $item, int $index) use ($rawRows, $finalBatchWeight): array {
+                            $sentShare = $rawRows[$index]['final_percentage'] ?? null;
+                            $share = is_numeric($sentShare)
+                                ? (float) $sentShare
+                                : (bccomp($finalBatchWeight, '0', 18) > 0
+                                    ? (float) bcdiv(bcmul(NumberLocale::normalizeDecimalString(sprintf('%.12F', (float) ($item['weight'] ?? 0))) ?? '0', '100', 18), $finalBatchWeight, 18)
+                                    : null);
+
+                            return [...$item, 'final_percentage' => $share === null ? null : round($share, 4)];
+                        })
+                        ->all(),
+                ];
+            })
+            ->all();
+
+        return $normalizedRecipe;
     }
 
     /**

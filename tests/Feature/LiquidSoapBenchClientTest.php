@@ -228,11 +228,13 @@ assert.equal(Math.round(workbench.liquidAdditionShareTotal() * 10000) / 10000, 3
 const rows = serializeDraft(workbench).phase_items;
 assert.equal(rows.fragrance[0].final_percentage, 2);
 assert.equal(Object.hasOwn(rows.additives[0], 'final_percentage'), false);
+assert.equal(typeof workbench.setLiquidAdditionWeight, 'undefined');
 
-workbench.setLiquidAdditionWeight(lavender, '80');
-assert.equal(lavender.final_percentage, null);
-assert.equal(Object.hasOwn(serializeDraft(workbench).phase_items.fragrance[0], 'final_percentage'), false);
-assert.equal(lavender.percentage, 8);
+// A share saved with the formula comes back on the row and is sent again.
+const saved = draftStateFromDraft({ phases: workbench.phaseOrder, phaseItems: { fragrance: [{ id: 'lavender', ingredient_id: 10, name: 'Lavender', percentage: 9.52, weight: 95.2, final_percentage: 2 }] } }, workbench);
+Object.assign(workbench, saved);
+assert.equal(workbench.liquidAdditionShare(workbench.phaseItems.fragrance[0]), 2);
+assert.equal(serializeDraft(workbench).phase_items.fragrance[0].final_percentage, 2);
 JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());

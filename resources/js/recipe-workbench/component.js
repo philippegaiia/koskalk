@@ -1597,12 +1597,6 @@ function createLiquidSoapSection(payload) {
             }
         },
 
-        /** A typed weight replaces any typed share, so the server keeps the weight. */
-        setLiquidAdditionWeight(row, value) {
-            row.final_percentage = null;
-            this.updatePercentageFromWeight(row, value);
-        },
-
         liquidAdditionShareTotal() {
             return [...(this.additiveRows ?? []), ...(this.fragranceRows ?? [])]
                 .reduce((total, row) => total + this.liquidAdditionShare(row), 0);

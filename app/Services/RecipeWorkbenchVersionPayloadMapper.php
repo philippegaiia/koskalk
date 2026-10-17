@@ -187,6 +187,8 @@ class RecipeWorkbenchVersionPayloadMapper
                 ?? [],
             'percentage' => (float) $item->percentage,
             'weight' => (float) $item->weight,
+            // A liquid soap addition's saved share of the finished batch.
+            ...($item->final_percentage === null ? [] : ['final_percentage' => (float) $item->final_percentage]),
             'note' => $item->note,
         ];
     }

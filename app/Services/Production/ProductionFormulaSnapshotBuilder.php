@@ -122,10 +122,11 @@ class ProductionFormulaSnapshotBuilder
         }
 
         // Dilution liquids take their share of the water this batch's
-        // recalculated steps add, so requirements and water lines always add
-        // up to the finished batch, even after the oil chemistry changed.
+        // recalculated steps add, and additions their share of the finished
+        // batch, so requirements and water lines always add up to the
+        // finished batch, even after the oil chemistry changed.
         if ($isLiquidSoap && data_get($calculation, 'liquid_process.status') === 'ok') {
-            $requirements = $this->withRecalculatedDilutionLiquids($requirements, $calculation['liquid_process'], $unit, $basisQuantityGrams);
+            $requirements = $this->withRecalculatedLiquidSoapRows($requirements, $calculation['liquid_process'], $unit, $basisQuantityGrams);
         }
 
         $isSoap = ($draft['manufacturingMode'] ?? null) === 'saponify_in_formula'
@@ -279,31 +280,32 @@ class ProductionFormulaSnapshotBuilder
     }
 
     /**
-     * Dilution liquid requirements sized from the recalculated process; a
-     * liquid the batch no longer uses is dropped.
+     * Dilution liquid and addition requirements sized from the recalculated
+     * process; a dilution liquid the batch no longer uses is dropped.
      *
      * @param  Collection<int, array<string, mixed>>  $requirements
      * @param  array<string, mixed>  $process
      * @return Collection<int, array<string, mixed>>
      */
-    private function withRecalculatedDilutionLiquids(Collection $requirements, array $process, string $unit, string $basisQuantityGrams): Collection
+    private function withRecalculatedLiquidSoapRows(Collection $requirements, array $process, string $unit, string $basisQuantityGrams): Collection
     {
         $remaining = collect(RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES)
             ->mapWithKeys(fn (string $phaseKey): array => [$phaseKey => collect(data_get($process, "dilution_liquids.{$phaseKey}.liquids", []))->values()->all()])
+            ->merge(collect($process['additions'] ?? [])->groupBy('phase_key')->map(fn (Collection $additions): array => $additions->values()->all()))
             ->all();
 
         return $requirements
             ->map(function (array $requirement) use (&$remaining, $unit, $basisQuantityGrams): ?array {
                 $phaseKey = $requirement['phase_key_snapshot'] ?? null;
 
-                if (($requirement['kind'] ?? null) !== 'ingredient' || ! in_array($phaseKey, RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES, true)) {
+                if (($requirement['kind'] ?? null) !== 'ingredient' || ! array_key_exists((string) $phaseKey, $remaining)) {
                     return $requirement;
                 }
 
-                $index = collect($remaining[$phaseKey])->search(fn (array $liquid): bool => (int) $liquid['ingredient_id'] === (int) $requirement['ingredient_id']);
+                $index = collect($remaining[$phaseKey])->search(fn (array $row): bool => (int) $row['ingredient_id'] === (int) $requirement['ingredient_id']);
 
                 if ($index === false) {
-                    return null;
+                    return in_array($phaseKey, RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES, true) ? null : $requirement;
                 }
 
                 $weight = (string) $remaining[$phaseKey][$index]['weight'];

@@ -191,8 +191,12 @@ it('reallocates dilution liquids to the water the batch now takes', function ():
     $liquid = $production->requirements->firstWhere('ingredient_id', $hydrosol->id);
     $finalWater = $production->formulaLines->first(fn ($line): bool => $line->component === ProductionFormulaComponent::Water && $line->phase_key_snapshot === 'final_dilution');
 
+    $lavender = $production->requirements->firstWhere('phase_key_snapshot', 'fragrance');
+
     expect($finalWater)->not->toBeNull()
         ->and((float) $liquid->required_mass_grams)->toEqualWithDelta((float) $finalWater->planned_mass_grams * 30 / 70, 0.01)
+        // The fragrance stays at its 2% of the finished batch.
+        ->and((float) $lavender->required_mass_grams)->toEqualWithDelta($finalWeight * 0.02, 0.01)
         ->and($production->formulaLines->sum(fn ($line): float => (float) $line->planned_mass_grams))->toEqualWithDelta($finalWeight, 0.01);
 });
 

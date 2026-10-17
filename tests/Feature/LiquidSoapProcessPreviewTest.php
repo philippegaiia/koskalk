@@ -371,3 +371,55 @@ it('reports dilution liquids above all of a step water without losing the paste'
     expect($calculation['liquid_process']['status'])->toBe('invalid')
         ->and($calculation['lye']['excess']['koh_weight'])->toBe(5.7);
 });
+
+it('keeps an addition at its share of the finished batch when the final dilution changes', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $clay = Ingredient::factory()->create(['category' => IngredientCategory::MineralsSaltsPowders, 'is_active' => true]);
+    $service = app(RecipeWorkbenchService::class);
+    $oil = liquidSoapPreviewOil();
+
+    $version = $service->save($user, $family, liquidSoapPreviewPayload($oil, [
+        'product_type_id' => $productType->id,
+        'phase_items' => [
+            'additives' => [['ingredient_id' => $clay->id, 'percentage' => 5, 'weight' => 50, 'note' => null]],
+            'fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+        ],
+    ]));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $saved = $service->versionPayload($recipe, $version->id)['phaseItems'];
+
+    // A weight sent without a share is kept and its share of the batch saved.
+    expect($saved['fragrance'][0]['final_percentage'])->toBe(2.0)
+        ->and($saved['additives'][0]['final_percentage'])->toBe(round(50 * 100 / 4760, 4));
+
+    $resaved = $service->save($user, $family, liquidSoapPreviewPayload($oil, [
+        'product_type_id' => $productType->id,
+        'liquid_process' => ['final_dilution_percentage' => 20],
+        'phase_items' => ['additives' => $saved['additives'], 'fragrance' => $saved['fragrance']],
+    ]), $recipe);
+    $rows = $service->versionPayload($recipe, $resaved->id)['phaseItems'];
+
+    expect($rows['fragrance'][0]['final_percentage'])->toBe(2.0)
+        ->and((float) $rows['fragrance'][0]['weight'])->toEqualWithDelta(5950 * 0.02, 0.001)
+        ->and($rows['additives'][0]['final_percentage'])->toBe(round(50 * 100 / 4760, 4));
+});
+
+it('leaves bar soap rows without a share of the finished batch', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->create(['slug' => 'soap']);
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $service = app(RecipeWorkbenchService::class);
+
+    $version = $service->save($user, $family, liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'superfat' => 5,
+        'phase_items' => ['fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 2, 'weight' => 20, 'note' => null]]],
+    ]));
+
+    expect($service->versionPayload(Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id), $version->id)['phaseItems']['fragrance'][0])
+        ->not->toHaveKey('final_percentage');
+});

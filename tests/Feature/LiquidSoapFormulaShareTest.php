@@ -105,7 +105,8 @@ it('round trips a liquid soap with its neutralizer and process settings', functi
         ->toBe([['ingredient_id' => $citricAcid->id, 'percentage' => '0.6506']])
         ->and($receivedProcess['status'])->toBe('ok')
         ->and($receivedProcess['final_weight'])->toBe($sourceProcess['final_weight'])
-        ->and($receivedProcess['neutralizer']['weight'])->toBe($sourceProcess['neutralizer']['weight']);
+        ->and($receivedProcess['neutralizer']['weight'])->toBe($sourceProcess['neutralizer']['weight'])
+        ->and(RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $copy->id)->whereNotNull('final_percentage')->pluck('final_percentage')->all())->toBe(['2.0000']);
 });
 
 it('asks for a fresh preview when the neutralizer chemistry changed after it', function (): void {

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'position',
     'percentage',
     'weight',
+    'final_percentage',
     'note',
 ])]
 class RecipeItem extends Model
@@ -59,6 +60,7 @@ class RecipeItem extends Model
             'visibility' => Visibility::class,
             'percentage' => 'decimal:4',
             'weight' => 'decimal:4',
+            'final_percentage' => 'decimal:4',
         ];
     }
 }

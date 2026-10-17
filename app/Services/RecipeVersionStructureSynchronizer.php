@@ -49,6 +49,7 @@ class RecipeVersionStructureSynchronizer
                     'position' => $itemIndex + 1,
                     'percentage' => $itemPayload['percentage'],
                     'weight' => $itemPayload['weight'],
+                    'final_percentage' => $itemPayload['final_percentage'] ?? null,
                     'note' => $itemPayload['note'],
                 ]);
 

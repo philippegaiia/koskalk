@@ -31,7 +31,7 @@ uses(RefreshDatabase::class);
  *
  * @return array{owner: User, workspace: Workspace, production: ProductionRun}
  */
-function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062, string $unit = 'g', string $basis = '2000', ?float $oilWeight = null): array
+function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062, string $unit = 'g', string $basis = '2000', ?float $oilWeight = null, array $finalDilutionLiquids = []): array
 {
     $oilWeight ??= $unit === 'kg' ? 1 : 1000;
     Ingredient::factory()->create(['catalog_key' => 'CH3', 'category' => IngredientCategory::SoapmakingAlkalis, 'subcategory' => IngredientSubcategory::PotassiumHydroxide, 'display_name' => 'Potassium hydroxide', 'is_active' => true]);
@@ -65,6 +65,7 @@ function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight
             'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => $citricAcidWeight * 100 / $oilWeight, 'weight' => $citricAcidWeight, 'note' => null]],
             'additives' => [],
             'fragrance' => [['ingredient_id' => $lavender->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+            'final_dilution' => $finalDilutionLiquids,
         ],
     ]);
 
@@ -159,6 +160,19 @@ it('refuses a neutralizer that exceeds the free KOH beyond its saved rounding', 
         expectedUnits: 19,
         idempotencyKey: 'over-neutralized',
     ))->toThrow(ValidationException::class, __('production_bench.production.validation.formula_recalculation_failed'));
+});
+
+it('plans dilution liquids as materials and leaves only plain water in the dilution line', function (): void {
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
+    $production = liquidSoapProduction(finalDilutionLiquids: [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]])['production'];
+    $liquid = $production->requirements->firstWhere('ingredient_id', $hydrosol->id);
+    $liquidLine = $production->formulaLines->firstWhere('ingredient_id', $hydrosol->id);
+    $finalWater = $production->formulaLines->first(fn ($line): bool => $line->component === ProductionFormulaComponent::Water && $line->phase_key_snapshot === 'final_dilution');
+
+    expect($liquid->phase_key_snapshot)->toBe('final_dilution')
+        ->and($liquidLine->planned_mass_grams)->toBe($liquid->required_mass_grams)
+        ->and((float) $liquid->required_mass_grams)->toEqualWithDelta((float) $finalWater->planned_mass_grams * 30 / 70, 0.01)
+        ->and($production->formulaLines->sum(fn ($line): float => (float) $line->planned_mass_grams))->toEqualWithDelta(9520.0, 0.01);
 });
 
 it('lists a liquid soap production in process order on the production page', function (): void {

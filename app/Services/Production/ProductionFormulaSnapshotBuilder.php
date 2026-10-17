@@ -156,7 +156,7 @@ class ProductionFormulaSnapshotBuilder
 
         if ($isLiquidSoap) {
             $liquidProcess = $this->liquidProcess($calculation);
-            $lines = $lines->merge($this->liquidWaterLines($liquidProcess, $unit, $basisQuantityGrams, ((int) $lines->max('sort_order')) + 1));
+            $lines = $lines->merge($this->liquidWaterLines($liquidProcess, $unit, $basisQuantityGrams, ((int) $lines->max('sort_order')) + 1, $requirements));
             $liquidContext = [
                 'soap_process' => 'liquid_paste',
                 'liquid_process' => $this->liquidProcessContext($liquidProcess, $unit, $basisQuantityGrams, $requirements),
@@ -356,30 +356,41 @@ class ProductionFormulaSnapshotBuilder
     }
 
     /**
-     * Water added after the paste: the first dilution, the water of the
-     * neutralizer solution and the final dilution, each in its process phase.
+     * Plain water added after the paste: the first dilution, the water of the
+     * neutralizer solution and the final dilution, each in its process phase
+     * and without the dilution liquids planned as materials.
      *
      * @param  array<string, mixed>  $process
      * @return Collection<int, array<string, mixed>>
      */
-    private function liquidWaterLines(array $process, string $unit, string $basisQuantityGrams, int $sortOrder): Collection
+    private function liquidWaterLines(array $process, string $unit, string $basisQuantityGrams, int $sortOrder, Collection $requirements): Collection
     {
+        // Dilution liquids are planned materials; only the plain water is a line here.
+        $liquidGrams = fn (string $phaseKey): string => $requirements
+            ->filter(fn (array $requirement): bool => ($requirement['kind'] ?? null) === 'ingredient' && ($requirement['phase_key_snapshot'] ?? null) === $phaseKey)
+            ->reduce(fn (string $total, array $requirement): string => bcadd($total, (string) $requirement['required_mass_grams'], self::GuardScale), '0');
+        $stepWater = fn (string $phaseKey): string => bcsub(
+            $this->massConverter->toGrams((string) (data_get($process, "stages.{$phaseKey}.add_weight") ?? '0'), $unit),
+            $liquidGrams($phaseKey),
+            self::GuardScale,
+        );
         $neutralizer = is_array($process['neutralizer'] ?? null) ? $process['neutralizer'] : null;
+        $neutralizerWater = $neutralizer === null
+            ? '0'
+            : bcsub((string) $neutralizer['solution_weight'], (string) $neutralizer['weight'], self::GuardScale);
         $candidates = [
-            ['phase' => 'first_dilution', 'name' => 'water', 'weight' => data_get($process, 'stages.first_dilution.add_weight', '0')],
-            ['phase' => 'neutralization', 'name' => 'neutralizer_solution_water', 'weight' => $neutralizer === null
-                ? '0'
-                : bcsub((string) $neutralizer['solution_weight'], (string) $neutralizer['weight'], self::GuardScale)],
-            ['phase' => 'final_dilution', 'name' => 'water', 'weight' => data_get($process, 'stages.final_dilution.add_weight', '0')],
+            ['phase' => 'first_dilution', 'name' => 'water', 'grams' => $stepWater('first_dilution')],
+            ['phase' => 'neutralization', 'name' => 'neutralizer_solution_water', 'grams' => $this->massConverter->toGrams($neutralizerWater, $unit)],
+            ['phase' => 'final_dilution', 'name' => 'water', 'grams' => $stepWater('final_dilution')],
         ];
         $lines = collect();
 
         foreach ($candidates as $candidate) {
-            if (bccomp((string) $candidate['weight'], '0', self::GuardScale) <= 0) {
+            if (bccomp($candidate['grams'], '0', self::GuardScale) <= 0) {
                 continue;
             }
 
-            $mass = $this->roundStorage($this->massConverter->toGrams((string) $candidate['weight'], $unit));
+            $mass = $this->roundStorage($candidate['grams']);
 
             $lines->push([
                 'ingredient_id' => null,

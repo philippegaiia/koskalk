@@ -9,6 +9,7 @@ use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Services\MassConverter;
+use App\Services\RecipeWorkbenchPhaseBlueprints;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -88,10 +89,12 @@ class ProductionRequirementBuilder
                 $this->assertMaterialWorkspace($ingredient, (int) $version->workspace_id, 'ingredient');
 
                 $percentage = $this->decimal((string) $item->percentage);
-                $scalesFromSavedWeight = in_array($phase->slug, ['lye_water', 'neutralization'], true);
-                $requiredMass = $this->roundStorage(match ($phase->slug) {
-                    'lye_water' => $this->scaledSavedMass($version, (string) $item->weight, $basisQuantityGrams),
-                    'neutralization' => $this->neutralizerDose($version, $item, $basisQuantityGrams)['mass_grams'],
+                // Lye liquids and liquid soap dilution liquids are a % of their
+                // own liquid, not of the oils, so they scale from saved weight.
+                $scalesFromSavedWeight = in_array($phase->slug, ['lye_water', 'neutralization', ...RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES], true);
+                $requiredMass = $this->roundStorage(match (true) {
+                    $phase->slug === 'neutralization' => $this->neutralizerDose($version, $item, $basisQuantityGrams)['mass_grams'],
+                    $scalesFromSavedWeight => $this->scaledSavedMass($version, (string) $item->weight, $basisQuantityGrams),
                     default => bcdiv(bcmul($basisQuantityGrams, $percentage, self::GuardScale), '100', self::GuardScale),
                 });
 

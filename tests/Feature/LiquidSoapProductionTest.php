@@ -31,7 +31,7 @@ uses(RefreshDatabase::class);
  *
  * @return array{owner: User, workspace: Workspace, production: ProductionRun}
  */
-function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062, string $unit = 'g', string $basis = '2000', ?float $oilWeight = null, array $finalDilutionLiquids = []): array
+function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight = 6.5062, string $unit = 'g', string $basis = '2000', ?float $oilWeight = null, array $finalDilutionLiquids = [], ?Closure $beforePlanning = null): array
 {
     $oilWeight ??= $unit === 'kg' ? 1 : 1000;
     Ingredient::factory()->create(['catalog_key' => 'CH3', 'category' => IngredientCategory::SoapmakingAlkalis, 'subcategory' => IngredientSubcategory::PotassiumHydroxide, 'display_name' => 'Potassium hydroxide', 'is_active' => true]);
@@ -68,6 +68,10 @@ function liquidSoapProduction(float $kohSapValue = 0.19, float $citricAcidWeight
             'final_dilution' => $finalDilutionLiquids,
         ],
     ]);
+
+    if ($beforePlanning !== null) {
+        $beforePlanning();
+    }
 
     $production = app(CreateProductionDraft::class)->handle(
         actor: $owner,
@@ -173,6 +177,23 @@ it('plans dilution liquids as materials and leaves only plain water in the dilut
         ->and($liquidLine->planned_mass_grams)->toBe($liquid->required_mass_grams)
         ->and((float) $liquid->required_mass_grams)->toEqualWithDelta((float) $finalWater->planned_mass_grams * 30 / 70, 0.01)
         ->and($production->formulaLines->sum(fn ($line): float => (float) $line->planned_mass_grams))->toEqualWithDelta(9520.0, 0.01);
+});
+
+it('reallocates dilution liquids to the water the batch now takes', function (): void {
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
+    // A small citric acid dose stays below the free KOH once the oil takes less KOH.
+    $production = liquidSoapProduction(
+        citricAcidWeight: 1.0,
+        finalDilutionLiquids: [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]],
+        beforePlanning: fn () => IngredientSapProfile::query()->update(['koh_sap_value' => 0.10]),
+    )['production'];
+    $finalWeight = 2000 * (float) $production->formula_context_snapshot['liquid_process']['final_percentage'] / 100;
+    $liquid = $production->requirements->firstWhere('ingredient_id', $hydrosol->id);
+    $finalWater = $production->formulaLines->first(fn ($line): bool => $line->component === ProductionFormulaComponent::Water && $line->phase_key_snapshot === 'final_dilution');
+
+    expect($finalWater)->not->toBeNull()
+        ->and((float) $liquid->required_mass_grams)->toEqualWithDelta((float) $finalWater->planned_mass_grams * 30 / 70, 0.01)
+        ->and($production->formulaLines->sum(fn ($line): float => (float) $line->planned_mass_grams))->toEqualWithDelta($finalWeight, 0.01);
 });
 
 it('lists a liquid soap production in process order on the production page', function (): void {

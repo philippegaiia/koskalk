@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Bath bomb</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="28" cy="38" r="18" fill="#92CCD0"/>
+  <path fill="none" stroke-width="2" d="M10 36c8 4 28 4 36 0"/>
+  <g fill="#08294B" stroke="none"><circle cx="22" cy="46" r="1.6"/><circle cx="34" cy="48" r="1.6"/><circle cx="28" cy="27" r="1.6"/><circle cx="38" cy="30" r="1.6"/><circle cx="18" cy="30" r="1.6"/></g>
+  <path fill="#FFFFFF" d="m50 8 5 5-5 5-5-5Z"/>
+  <path fill="#FFFFFF" d="m55 23 3.5 3.5L55 30l-3.5-3.5Z"/>
+  </g>
+</svg>

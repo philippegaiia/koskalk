@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Mask bowl</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" d="m30 32 22-24"/>
+  <path fill="#08294B" stroke="none" d="m26 30 4-5 6 5-4 5Z"/>
+  <path fill="#FFFFFF" d="M6 36h52c0 12-11 20-26 20S6 48 6 36Z"/>
+  <ellipse cx="32" cy="36" rx="26" ry="5.5" fill="#99B27C"/>
+  </g>
+</svg>

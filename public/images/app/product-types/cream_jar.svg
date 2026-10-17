@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Cream jar</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="10" y="17" width="44" height="11" rx="3" fill="#D8A456"/>
+  <path fill="none" stroke-width="2" d="M17 18v9M24 18v9M31 18v9M38 18v9M45 18v9"/>
+  <path fill="#FFFFFF" d="M12 28h40v20c0 6-4 10-10 10H22c-6 0-10-4-10-10Z"/>
+  <path fill="#F1D489" stroke="none" d="M12 35h40v12H12Z"/>
+  <path fill="none" d="M12 35h40M12 47h40M12 28h40v20c0 6-4 10-10 10H22c-6 0-10-4-10-10Z"/>
+  </g>
+</svg>

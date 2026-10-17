@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Squeeze tube</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M14 8h36l-6 38H20Z"/>
+  <path fill="#99B27C" stroke="none" d="M16.2 22h31.6l-1.9 12H18.1Z"/>
+  <path fill="none" d="M16.2 22h31.6M18.1 34h27.8M14 8h36l-6 38H20Z"/>
+  <path fill="none" stroke-width="2" d="M20 8v4M26 8v4M32 8v4M38 8v4M44 8v4"/>
+  <rect x="22" y="46" width="20" height="12" rx="2" fill="#08294B" stroke="none"/>
+  </g>
+</svg>

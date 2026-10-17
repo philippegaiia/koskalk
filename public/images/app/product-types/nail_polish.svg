@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Nail polish</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="26" y="6" width="12" height="18" rx="2" fill="#08294B" stroke="none"/>
+  <rect x="24" y="24" width="16" height="5" rx="1" fill="#FFFFFF"/>
+  <path fill="#FFFFFF" d="M19 29h26c3 0 5 2 5 5v17c0 4-3 7-7 7H21c-4 0-7-3-7-7V34c0-3 2-5 5-5Z"/>
+  <path fill="#D8A456" stroke="none" d="M14 40c12-4 24 4 36 0v11c0 4-3 7-7 7H21c-4 0-7-3-7-7Z"/>
+  <path fill="none" d="M19 29h26c3 0 5 2 5 5v17c0 4-3 7-7 7H21c-4 0-7-3-7-7V34c0-3 2-5 5-5Z"/>
+  </g>
+</svg>

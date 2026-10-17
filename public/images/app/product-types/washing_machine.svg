@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Washing machine</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="10" y="6" width="44" height="52" rx="6" fill="#FFFFFF"/>
+  <path fill="none" d="M10 17h44M17 11.5h12"/>
+  <circle cx="46" cy="11.5" r="2.5" fill="#08294B" stroke="none"/>
+  <circle cx="32" cy="37" r="14" fill="#E7C689"/>
+  <circle cx="32" cy="37" r="9.5" fill="#92CCD0"/>
+  <path fill="none" stroke-width="2" d="M26 35c2-3 5-4 8-3"/>
+  </g>
+</svg>

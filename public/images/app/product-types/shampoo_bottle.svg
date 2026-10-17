@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Shampoo bottle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#08294B" stroke="none" d="M23 15V9c0-2 1-3 3-3h12c2 0 3 1 3 3v6Z"/>
+  <path fill="#FFFFFF" d="M20 15h24c4 0 6 3 6 7v30c0 4-2 6-6 6H20c-4 0-6-2-6-6V22c0-4 2-7 6-7Z"/>
+  <path fill="#99B27C" stroke="none" d="M14 29h36v16H14Z"/>
+  <path fill="none" d="M14 29h36M14 45h36M20 15h24c4 0 6 3 6 7v30c0 4-2 6-6 6H20c-4 0-6-2-6-6V22c0-4 2-7 6-7Z"/>
+  </g>
+</svg>

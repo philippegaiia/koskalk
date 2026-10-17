@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Sun care</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="48" cy="15" r="7" fill="#F2B20C"/>
+  <path fill="none" stroke-width="2.4" d="M48 3v3M48 24v3M36 15h3M57 15h3M39.5 6.5l2 2M54.5 21.5l2 2M39.5 23.5l2-2M54.5 8.5l2-2"/>
+  <rect x="15" y="14" width="14" height="8" rx="2" fill="#08294B" stroke="none"/>
+  <path fill="#FFFFFF" d="M13 22h18c3 0 5 2 5 5v26c0 3-2 5-5 5H13c-3 0-5-2-5-5V27c0-3 2-5 5-5Z"/>
+  <path fill="#F1D489" stroke="none" d="M8 32h28v14H8Z"/>
+  <path fill="none" d="M8 32h28M8 46h28M13 22h18c3 0 5 2 5 5v26c0 3-2 5-5 5H13c-3 0-5-2-5-5V27c0-3 2-5 5-5Z"/>
+  </g>
+</svg>

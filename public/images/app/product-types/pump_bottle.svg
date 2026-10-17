@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Pump bottle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" d="M38 9h7c3 0 4 2 4 4v1M32 13v8"/>
+  <rect x="23" y="6" width="16" height="7" rx="2" fill="#08294B" stroke="none"/>
+  <rect x="24" y="21" width="16" height="6" rx="2" fill="#FFFFFF"/>
+  <path fill="#FFFFFF" d="M23 27h18c5 0 8 3 8 8v15c0 5-3 8-8 8H23c-5 0-8-3-8-8V35c0-5 3-8 8-8Z"/>
+  <path fill="#92CCD0" stroke="none" d="M15 42c12-4 22 4 34 0v8c0 5-3 8-8 8H23c-5 0-8-3-8-8Z"/>
+  <path fill="none" d="M23 27h18c5 0 8 3 8 8v15c0 5-3 8-8 8H23c-5 0-8-3-8-8V35c0-5 3-8 8-8Z"/>
+  </g>
+</svg>

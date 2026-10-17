@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Incense</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" stroke-width="2" d="M44 15c-4-3 0-6 3-8s2-5-1-6"/>
+  <path fill="none" d="m18 50 23-31"/>
+  <circle cx="42" cy="17.5" r="2.6" fill="#F2B20C"/>
+  <path fill="#D8A456" d="M4 48h56c-2 5-6 8-11 8H15c-5 0-9-3-11-8Z"/>
+  </g>
+</svg>

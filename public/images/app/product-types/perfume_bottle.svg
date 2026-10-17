@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Perfume bottle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#D8A456" d="M24 6h16l3 8H21Z"/>
+  <rect x="27" y="14" width="10" height="6" fill="#08294B" stroke="none"/>
+  <path fill="#FFFFFF" d="M18 20h28l6 8v20l-6 8H18l-6-8V28Z"/>
+  <path fill="#F1D489" stroke="none" d="M12 37c13-3 27 3 40 0v11l-6 8H18l-6-8Z"/>
+  <path fill="none" d="M18 20h28l6 8v20l-6 8H18l-6-8V28Z"/>
+  <path fill="none" stroke-width="2" d="M19 28v18"/>
+  </g>
+</svg>

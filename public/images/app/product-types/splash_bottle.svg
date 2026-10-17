@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Splash bottle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="25" y="5" width="14" height="10" rx="2" fill="#08294B" stroke="none"/>
+  <rect x="28" y="15" width="8" height="4" fill="#FFFFFF"/>
+  <path fill="#FFFFFF" d="M19 19h26c4 0 6 2 6 6v27c0 4-2 6-6 6H19c-4 0-6-2-6-6V25c0-4 2-6 6-6Z"/>
+  <path fill="#92CCD0" stroke="none" d="M13 36c13-3 25 3 38 0v16c0 4-2 6-6 6H19c-4 0-6-2-6-6Z"/>
+  <path fill="none" d="M19 19h26c4 0 6 2 6 6v27c0 4-2 6-6 6H19c-4 0-6-2-6-6V25c0-4 2-6 6-6Z"/>
+  <path fill="none" stroke-width="2" d="M19 25v8"/>
+  </g>
+</svg>

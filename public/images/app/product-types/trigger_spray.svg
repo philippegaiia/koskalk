@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Trigger spray</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" stroke-width="3.6" d="M22 15c0 5-2 9-6 12"/>
+  <path fill="#08294B" stroke="none" d="M10 6h26c4 0 6 2 6 5v6H24l-3-5H10Z"/>
+  <path fill="#FFFFFF" d="M26 17h12v5H26Z"/>
+  <path fill="#FFFFFF" d="M26 22h12c6 2 10 7 10 13v19c0 2-2 4-4 4H24c-2 0-4-2-4-4V32c0-6 2-9 6-10Z"/>
+  <path fill="#92CCD0" stroke="none" d="M20 38c9-3 19 3 28 0v16c0 2-2 4-4 4H24c-2 0-4-2-4-4Z"/>
+  <path fill="none" d="M26 22h12c6 2 10 7 10 13v19c0 2-2 4-4 4H24c-2 0-4-2-4-4V32c0-6 2-9 6-10Z"/>
+  <g fill="#08294B" stroke="none"><circle cx="6" cy="6" r="1.4"/><circle cx="4" cy="10" r="1.4"/><circle cx="6" cy="14" r="1.4"/></g>
+  </g>
+</svg>

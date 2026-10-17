@@ -185,7 +185,7 @@
                         'soap' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
                         default => 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]',
                     };
-                    $fallbackLabel = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($categoryLabel, 0, 4));
+                    $illustrationUrl = ($recipe->productType?->illustration() ?? \App\Enums\ProductTypeIllustration::Sparkle)->url();
                 @endphp
 
                 <article
@@ -203,10 +203,10 @@
                         @if ($thumbnailUrl)
                             <img src="{{ $thumbnailUrl }}" alt="{{ $recipe->name }}" class="h-full w-full object-contain" />
                         @else
-                            <div class="grid h-full w-full place-items-center">
-                                <div class="text-center">
-                                    <p class="text-lg font-semibold tracking-[0.18em]">{{ $fallbackLabel }}</p>
-                                    <p class="mt-1 text-sm font-medium">{{ $categoryLabel }}</p>
+                            <div class="grid h-full w-full place-items-center px-4">
+                                <div class="flex flex-col items-center text-center">
+                                    <img src="{{ $illustrationUrl }}" alt="" class="size-20" data-product-type-illustration />
+                                    <p class="mt-3 text-sm font-medium text-balance">{{ $categoryLabel }}</p>
                                 </div>
                             </div>
                         @endif

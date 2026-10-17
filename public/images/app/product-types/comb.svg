@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Comb and oil</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" d="M10 36v16M15 36v16M20 36v16M25 36v16M30 36v16M35 36v16M40 36v16M45 36v16"/>
+  <rect x="6" y="26" width="44" height="10" rx="3" fill="#D8A456"/>
+  <path fill="#F2B20C" d="M50 6c-3 4-5 7-5 10a5 5 0 0 0 10 0c0-3-2-6-5-10Z"/>
+  </g>
+</svg>

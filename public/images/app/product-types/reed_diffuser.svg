@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Reed diffuser</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" d="M30 27 16 4M32 27V2M34 27 48 4"/>
+  <rect x="24" y="26" width="16" height="5" rx="1" fill="#08294B" stroke="none"/>
+  <path fill="#FFFFFF" d="M25 31v1c-6 2-11 6-11 12v6c0 5 3 8 8 8h20c5 0 8-3 8-8v-6c0-6-5-10-11-12v-1Z"/>
+  <path fill="#D8A456" stroke="none" d="M14 45c12-3 24 3 36 0v5c0 5-3 8-8 8H22c-5 0-8-3-8-8Z"/>
+  <path fill="none" d="M25 31v1c-6 2-11 6-11 12v6c0 5 3 8 8 8h20c5 0 8-3 8-8v-6c0-6-5-10-11-12v-1Z"/>
+  </g>
+</svg>

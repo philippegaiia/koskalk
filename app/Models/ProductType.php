@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
+use App\Enums\ProductTypeIllustration;
 use App\Models\Concerns\HasLocalizedCatalogContent;
 use App\Services\MediaStorage;
 use Database\Factories\ProductTypeFactory;
@@ -54,6 +55,19 @@ class ProductType extends Model
     public function fallbackImageUrl(): ?string
     {
         return MediaStorage::publicUrl($this->fallback_image_path);
+    }
+
+    /**
+     * Reads the category and area through their relations, so callers listing
+     * many types should eager-load productCategory.productArea.
+     */
+    public function illustration(): ProductTypeIllustration
+    {
+        return ProductTypeIllustration::resolve(
+            $this->slug,
+            $this->productCategory?->slug,
+            $this->productCategory?->productArea?->slug,
+        );
     }
 
     protected function casts(): array

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Toothbrush</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="4" y="42" width="54" height="7" rx="3.5" fill="#92CCD0"/>
+  <rect x="36" y="31" width="20" height="11" rx="1.5" fill="#FFFFFF"/>
+  <path fill="none" stroke-width="2" d="M41 31v11M46 31v11M51 31v11"/>
+  <path fill="#FFFFFF" d="M35 29c1-5 5-7 9-5 4-3 10-2 12 2 1 2 0 4-2 4H37c-2 0-3 0-2-1Z"/>
+  <path fill="none" stroke="#92CCD0" stroke-width="2.4" d="M40 26.5c3 1 8 1 12-1"/>
+  </g>
+</svg>

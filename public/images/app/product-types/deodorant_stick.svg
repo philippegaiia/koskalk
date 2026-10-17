@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Deodorant stick</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#08294B" stroke="none" d="M20 18v-8c0-3 2-4 5-4h14c3 0 5 1 5 4v8Z"/>
+  <rect x="20" y="18" width="24" height="40" rx="3" fill="#FFFFFF"/>
+  <path fill="#F1D489" stroke="none" d="M20 27h24v18H20Z"/>
+  <path fill="none" d="M20 27h24M20 45h24"/>
+  <rect x="20" y="18" width="24" height="40" rx="3" fill="none"/>
+  </g>
+</svg>

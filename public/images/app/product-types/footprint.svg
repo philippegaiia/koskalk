@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Foot care</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#F1D489" d="M30 58c-7 0-10-5-9-12 1-6 4-9 4-15 0-6 3-11 9-11 7 0 10 5 9 11-1 7-5 9-5 16 0 7-2 11-8 11Z"/>
+  <g fill="#F1D489"><circle cx="40" cy="11" r="4.5"/><circle cx="31.5" cy="9" r="3.4"/><circle cx="24.5" cy="11" r="3"/><circle cx="19" cy="15.5" r="2.6"/><circle cx="15.5" cy="21" r="2.2"/></g>
+  </g>
+</svg>

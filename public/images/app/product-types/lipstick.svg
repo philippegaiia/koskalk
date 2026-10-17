@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Lip product</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#D8A456" d="M26 26V12l12-6v20Z"/>
+  <rect x="24" y="26" width="16" height="7" rx="1" fill="#E7C689"/>
+  <rect x="21" y="33" width="22" height="25" rx="3" fill="#FFFFFF"/>
+  <path fill="none" d="M21 43h22"/>
+  </g>
+</svg>

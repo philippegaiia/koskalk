@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Dropper bottle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#08294B" stroke="none" d="M27 16V9c0-4 10-4 10 0v7Z"/>
+  <rect x="24" y="16" width="16" height="7" rx="2" fill="#D8A456"/>
+  <path fill="#FFFFFF" d="M26 23v3c-5 2-9 5-9 11v13c0 5 3 8 8 8h14c5 0 8-3 8-8V37c0-6-4-9-9-11v-3Z"/>
+  <path fill="#D8A456" stroke="none" d="M17 42c10-3 20 3 30 0v8c0 5-3 8-8 8H25c-5 0-8-3-8-8Z"/>
+  <path fill="none" d="M26 23v3c-5 2-9 5-9 11v13c0 5 3 8 8 8h14c5 0 8-3 8-8V37c0-6-4-9-9-11v-3Z"/>
+  <path fill="none" stroke-width="2" d="M32 23v24"/>
+  </g>
+</svg>

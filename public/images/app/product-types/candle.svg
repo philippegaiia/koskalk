@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Candle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#F2B20C" d="M32 25c-5-3-6-9 0-17 6 8 5 14 0 17Z"/>
+  <path fill="none" d="M32 25v7"/>
+  <path fill="#FFFFFF" d="M14 28h36v24c0 4-2 6-6 6H20c-4 0-6-2-6-6Z"/>
+  <path fill="#F1D489" stroke="none" d="M14 34h36v18c0 4-2 6-6 6H20c-4 0-6-2-6-6Z"/>
+  <path fill="none" d="M14 34h36M14 28h36v24c0 4-2 6-6 6H20c-4 0-6-2-6-6Z"/>
+  </g>
+</svg>

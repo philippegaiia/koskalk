@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Massage candle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#F2B20C" d="M32 25c-4-3-5-8 0-14 5 6 4 11 0 14Z"/>
+  <path fill="none" d="M32 25v7"/>
+  <path fill="#FFFFFF" d="M11 33 3 30l7 9Z"/>
+  <path fill="#FFFFFF" d="M8 36h48v13c0 5-3 8-8 8H16c-5 0-8-3-8-8Z"/>
+  <ellipse cx="32" cy="36" rx="24" ry="5.5" fill="#F2B20C"/>
+  </g>
+</svg>

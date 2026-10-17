@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Shaving brush</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M20 30c-5-12 1-24 12-24s17 12 12 24Z"/>
+  <path fill="none" stroke-width="2" d="M27 16c2-2 8-2 10 0M24 23c4-1 12-1 16 0"/>
+  <rect x="19" y="30" width="26" height="6" rx="2" fill="#08294B" stroke="none"/>
+  <path fill="#D8A456" d="M22 36h20c0 6-4 8-4 13 0 4 3 5 3 7H23c0-2 3-3 3-7 0-5-4-7-4-13Z"/>
+  </g>
+</svg>

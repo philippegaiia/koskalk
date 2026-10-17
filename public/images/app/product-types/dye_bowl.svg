@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Dye bowl</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="none" d="m38 26 18-18"/>
+  <path fill="#08294B" stroke="none" d="m31 27 6-6 4 4-6 6Z"/>
+  <path fill="#FFFFFF" d="M6 34h48c0 12-10 21-24 21S6 46 6 34Z"/>
+  <ellipse cx="30" cy="34" rx="24" ry="5.5" fill="#D8A456"/>
+  </g>
+</svg>

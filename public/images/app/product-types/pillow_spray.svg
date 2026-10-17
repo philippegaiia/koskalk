@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Pillow spray</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M6 34c0-6 2-8 6-8 7 1 33 1 40 0 4 0 6 2 6 8v12c0 6-2 8-6 8-7-1-33-1-40 0-4 0-6-2-6-8Z"/>
+  <path fill="none" stroke-width="2" d="M12 31c8 1.5 32 1.5 40 0"/>
+  <rect x="44" y="4" width="8" height="5" rx="1" fill="#08294B" stroke="none"/>
+  <rect x="42" y="9" width="12" height="17" rx="2.5" fill="#92CCD0"/>
+  <g fill="#08294B" stroke="none"><circle cx="39" cy="6" r="1.4"/><circle cx="35" cy="3.5" r="1.4"/><circle cx="35" cy="9" r="1.4"/><circle cx="31" cy="6" r="1.4"/></g>
+  </g>
+</svg>

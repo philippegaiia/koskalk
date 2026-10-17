@@ -30,8 +30,9 @@
                                     wire:navigate
                                     class="group rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4 transition-colors hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                 >
-                                    <span class="flex items-start justify-between gap-4">
-                                        <span>
+                                    <span class="flex items-start gap-4">
+                                        <img src="{{ $productType['illustration_url'] }}" alt="" class="size-12 shrink-0 object-contain" data-product-type-illustration>
+                                        <span class="min-w-0 flex-1">
                                             <span class="block font-semibold text-[var(--color-ink-strong)]">{{ $productType['name'] }}</span>
                                             <span class="mt-1.5 block text-sm leading-6 text-[var(--color-ink-soft)]">
                                                 {{ $productType['description'] ?: __('products.creation.selector.fallback_description') }}

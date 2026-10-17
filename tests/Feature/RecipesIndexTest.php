@@ -356,6 +356,28 @@ it('uses Product Type as the card label and a concise legacy fallback', function
         ->assertDontSee('<span class="sk-badge sk-badge-neutral">Cosmetic</span>', false);
 });
 
+it('draws each Product without an image from its Product Type', function (): void {
+    $fixture = recipesIndexTaxonomyFixture();
+
+    Recipe::factory()->create([
+        'product_family_id' => $fixture['cosmeticFamily']->id,
+        'product_type_id' => null,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $fixture['user']->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Legacy Product',
+        'slug' => 'legacy-product',
+    ]);
+
+    $this->actingAs($fixture['user'])
+        ->get(route('recipes.index'))
+        ->assertSuccessful()
+        ->assertSee('images/app/product-types/shampoo_bottle.svg', false)
+        ->assertSee('images/app/product-types/candle.svg', false)
+        ->assertSee('images/app/product-types/cream_jar.svg', false)
+        ->assertSee('images/app/product-types/sparkle.svg', false);
+});
+
 it('uses the product type fallback image when the recipe has no uploaded image', function () {
     Storage::fake(MediaStorage::publicDisk());
 
@@ -387,6 +409,7 @@ it('uses the product type fallback image when the recipe has no uploaded image',
         ->get(route('recipes.index'))
         ->assertSuccessful()
         ->assertSee('product-types/fallback-images/cream-lotion.webp', false)
+        ->assertDontSee('images/app/product-types/cream_jar.svg', false)
         ->assertSee('Cream / lotion');
 });
 

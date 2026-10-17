@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Conditioner bottle</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M19 6h26c3 0 4 2 4 4l-5 36c0 2-2 4-4 4H24c-2 0-4-2-4-4l-5-36c0-2 1-4 4-4Z"/>
+  <path fill="#F1D489" stroke="none" d="M17 30c10-3 20 3 30 0l-3 16c0 2-2 4-4 4H24c-2 0-4-2-4-4Z"/>
+  <path fill="none" d="M19 6h26c3 0 4 2 4 4l-5 36c0 2-2 4-4 4H24c-2 0-4-2-4-4l-5-36c0-2 1-4 4-4Z"/>
+  <path fill="#08294B" stroke="none" d="M22 50h20v6c0 1-1 2-2 2H24c-1 0-2-1-2-2Z"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Dishwasher tablet</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFFFFF" d="M10 26v19l20 9V35Z"/>
+  <path fill="#FFFFFF" d="M30 35v19l24-9V26Z"/>
+  <path fill="#92CCD0" stroke="none" d="m10 36 20 9v9l-20-9ZM30 45l24-9v9l-24 9Z"/>
+  <path fill="none" d="M10 26v19l20 9V35ZM30 35v19l24-9V26"/>
+  <path fill="#FFFFFF" d="m10 26 24-9 20 9-24 9Z"/>
+  <ellipse cx="32" cy="26" rx="6" ry="3" fill="#D8A456"/>
+  </g>
+</svg>

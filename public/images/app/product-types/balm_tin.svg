@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Balm tin</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <ellipse cx="40" cy="24" rx="18" ry="14" fill="#D8A456"/>
+  <ellipse cx="40" cy="24" rx="13" ry="9.5" fill="none" stroke-width="2"/>
+  <path fill="#FFFFFF" d="M6 40v8c0 5 11 8 24 8s24-3 24-8v-8c0 4-11 7-24 7S6 44 6 40Z"/>
+  <ellipse cx="30" cy="40" rx="24" ry="7" fill="#F1D489"/>
+  </g>
+</svg>

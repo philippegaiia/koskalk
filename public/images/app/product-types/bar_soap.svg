@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Bar soap</title>
+  <g stroke="#08294B" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#F1D489" d="M4 30v11l26 11V40Z"/>
+  <path fill="#E7C689" d="M30 40v12l30-12V29Z"/>
+  <path fill="#FFFFFF" d="m4 30 30-11 26 10-30 11Z"/>
+  <ellipse cx="32" cy="29.5" rx="11" ry="4" fill="none" stroke-width="2"/>
+  </g>
+</svg>

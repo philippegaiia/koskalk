@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ProductTypeIllustration;
 use App\Models\ProductArea;
 use App\Models\ProductCategory;
 use App\Models\ProductFamily;
@@ -46,7 +47,7 @@ class ProductCreationCatalog
     }
 
     /**
-     * @return array<int, array{entry: string, family: string, entry_name: string, area_name: string, category_name: string, id: int, name: string, slug: string, description: string|null, search_text: string}>
+     * @return array<int, array{entry: string, family: string, entry_name: string, area_name: string, category_name: string, id: int, name: string, slug: string, description: string|null, illustration_url: string, search_text: string}>
      */
     public function types(): array
     {
@@ -87,7 +88,7 @@ class ProductCreationCatalog
     }
 
     /**
-     * @return array<int, array{id: int, name: string, slug: string, categories: array<int, array{id: int, name: string, slug: string, product_types: array<int, array{id: int, name: string, slug: string, description: string|null}>}>}>
+     * @return array<int, array{id: int, name: string, slug: string, categories: array<int, array{id: int, name: string, slug: string, product_types: array<int, array{id: int, name: string, slug: string, description: string|null, illustration_url: string}>}>}>
      */
     public function groupedTypes(string $entry): array
     {
@@ -160,6 +161,8 @@ class ProductCreationCatalog
                                 'name' => $productType->localizedName(),
                                 'slug' => $productType->slug,
                                 'description' => $productType->localizedDescription(),
+                                'illustration_url' => $productType->fallbackImageUrl()
+                                    ?? ProductTypeIllustration::resolve($productType->slug, $category->slug, $area->slug)->url(),
                             ])
                             ->all(),
                     ])

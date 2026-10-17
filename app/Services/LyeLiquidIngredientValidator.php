@@ -15,14 +15,14 @@ class LyeLiquidIngredientValidator
     /**
      * @param  array<int, mixed>  $rows
      */
-    public function assertMaximumRows(array $rows): void
+    public function assertMaximumRows(array $rows, string $field = 'phase_items.lye_water'): void
     {
         if (count($rows) <= self::MAX_ROWS) {
             return;
         }
 
         throw ValidationException::withMessages([
-            'phase_items.lye_water' => __('workbench.validation.lye_liquid_max_rows', [
+            $field => __('workbench.validation.lye_liquid_max_rows', [
                 'max' => self::MAX_ROWS,
             ]),
         ]);
@@ -32,9 +32,9 @@ class LyeLiquidIngredientValidator
      * @param  array<int, mixed>  $rows
      * @return array<int, array<string, mixed>>
      */
-    public function validate(array $rows, ?User $user = null): array
+    public function validate(array $rows, ?User $user = null, string $field = 'phase_items.lye_water'): array
     {
-        $normalizedRows = collect($this->normalizeRows($rows));
+        $normalizedRows = collect($this->normalizeRows($rows, $field));
         $ingredientIds = $normalizedRows
             ->filter(fn (array $row): bool => $row['percentage'] !== null
                 && bccomp($row['percentage'], '0', 12) > 0)
@@ -52,7 +52,7 @@ class LyeLiquidIngredientValidator
                 ->keyBy('id');
 
         return $normalizedRows
-            ->map(function (array $row) use ($ingredients): array {
+            ->map(function (array $row) use ($ingredients, $field): array {
                 if ($row['percentage'] === null || bccomp($row['percentage'], '0', 12) < 0) {
                     return $row;
                 }
@@ -61,13 +61,13 @@ class LyeLiquidIngredientValidator
 
                 if (! $ingredient instanceof Ingredient) {
                     throw ValidationException::withMessages([
-                        'phase_items.lye_water' => __('workbench.validation.lye_liquid_ingredient'),
+                        $field => __('workbench.validation.lye_liquid_ingredient'),
                     ]);
                 }
 
                 if ($ingredient->category === IngredientCategory::SoapmakingAlkalis) {
                     throw ValidationException::withMessages([
-                        'phase_items.lye_water' => __('workbench.validation.lye_liquid_alkali'),
+                        $field => __('workbench.validation.lye_liquid_alkali'),
                     ]);
                 }
 
@@ -80,9 +80,9 @@ class LyeLiquidIngredientValidator
      * @param  array<int, mixed>  $rows
      * @return array<int, array<string, mixed>>
      */
-    public function normalizeRows(array $rows): array
+    public function normalizeRows(array $rows, string $field = 'phase_items.lye_water'): array
     {
-        $this->assertMaximumRows($rows);
+        $this->assertMaximumRows($rows, $field);
 
         $normalizedRows = collect($rows)
             ->filter(fn (mixed $row): bool => is_array($row))

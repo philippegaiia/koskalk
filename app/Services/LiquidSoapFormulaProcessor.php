@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LiquidSoapNeutralizer;
 use App\Models\Ingredient;
 use App\Support\NumberLocale;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
@@ -14,7 +15,11 @@ use InvalidArgumentException;
  */
 class LiquidSoapFormulaProcessor
 {
-    public function __construct(private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator) {}
+    public function __construct(
+        private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator,
+        private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
+        private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
+    ) {}
 
     /**
      * Calculator input for the formula's neutralizer row, or null without one.
@@ -125,8 +130,51 @@ class LiquidSoapFormulaProcessor
     }
 
     /**
-     * Water added after the paste: both dilutions and the neutralizer
-     * solution water, from a calculated process.
+     * Each dilution step's added mass split into its liquids (rows as % of
+     * that step's water) and the plain water left. A step that adds nothing
+     * gives its liquids 0 g.
+     *
+     * @param  array<string, mixed>  $process  Process result with status ok.
+     * @param  array<string, mixed>  $phaseItems  Rows keyed by phase.
+     * @return array<string, array{water_weight: float, liquids: list<array<string, mixed>>}>
+     */
+    public function dilutionLiquids(array $process, array $phaseItems): array
+    {
+        return collect(RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES)
+            ->mapWithKeys(function (string $phaseKey) use ($process, $phaseItems): array {
+                $field = "phase_items.{$phaseKey}";
+                $rows = $this->lyeLiquidIngredientValidator->normalizeRows(
+                    collect($phaseItems[$phaseKey] ?? [])->values()->all(),
+                    $field,
+                );
+
+                try {
+                    $allocation = $this->lyeLiquidAllocationService->allocateFresh(
+                        (string) data_get($process, "stages.{$phaseKey}.add_weight", '0'),
+                        $rows,
+                    );
+                } catch (InvalidArgumentException $exception) {
+                    throw ValidationException::withMessages([$field => $exception->getMessage()]);
+                }
+
+                return [$phaseKey => [
+                    'water_weight' => $allocation['water_weight'],
+                    'liquids' => collect($allocation['substitutions'])
+                        ->map(fn (array $row): array => [
+                            ...collect($row)->only(['id', 'ingredient_id'])->all(),
+                            'percentage' => (float) $row['percentage'],
+                            'weight' => (float) $row['weight'],
+                        ])
+                        ->values()
+                        ->all(),
+                ]];
+            })
+            ->all();
+    }
+
+    /**
+     * Plain water added after the paste: both dilutions minus their liquids,
+     * and the neutralizer solution water.
      *
      * @param  array<string, mixed>  $liquidProcess  Process result with status ok.
      */
@@ -136,12 +184,16 @@ class LiquidSoapFormulaProcessor
         $solutionWater = is_array($neutralizer)
             ? bcsub((string) $neutralizer['solution_weight'], (string) $neutralizer['weight'], 18)
             : '0';
+        $dilutionWater = collect(RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES)
+            ->reduce(function (string $total, string $phaseKey) use ($liquidProcess): string {
+                $added = (string) data_get($liquidProcess, "stages.{$phaseKey}.add_weight", '0');
+                $liquids = collect(data_get($liquidProcess, "dilution_liquids.{$phaseKey}.liquids", []))
+                    ->reduce(fn (string $sum, array $liquid): string => bcadd($sum, (string) $liquid['weight'], 18), '0');
 
-        return bcadd(
-            bcadd((string) data_get($liquidProcess, 'stages.first_dilution.add_weight', '0'), (string) data_get($liquidProcess, 'stages.final_dilution.add_weight', '0'), 18),
-            bccomp($solutionWater, '0', 18) > 0 ? $solutionWater : '0',
-            18,
-        );
+                return bcadd($total, bcsub($added === '' ? '0' : $added, $liquids, 18), 18);
+            }, '0');
+
+        return bcadd($dilutionWater, bccomp($solutionWater, '0', 18) > 0 ? $solutionWater : '0', 18);
     }
 
     /**

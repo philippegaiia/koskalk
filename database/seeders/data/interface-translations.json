@@ -3540,6 +3540,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "liquid.instructions.final_dilution_with_liquids",
+      "text": {
+        "de": "Die Zusätze hinzufügen, dann :liquids bis :target % wasserfreie Seife.",
+        "es": "Añadir las adiciones y después :liquids hasta un :target % de jabón anhidro.",
+        "fr": "Ajouter les ajouts, puis :liquids jusqu’à :target % de savon anhydre.",
+        "it": "Aggiungere le aggiunte, poi :liquids fino al :target% di sapone anidro.",
+        "nl": "Voeg de toevoegingen toe, daarna :liquids tot :target% watervrije zeep.",
+        "pt_BR": "Adicione as adições e depois :liquids até :target% de sabão anidro."
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "liquid.instructions.first_dilution",
       "text": {
         "de": "Wasser zugeben, bis die Paste :target % wasserfreie Seife enthält.",
@@ -3548,6 +3560,18 @@
         "it": "Aggiungere acqua fino a portare la pasta al :target% di sapone anidro.",
         "nl": "Voeg water toe tot de pasta :target% watervrije zeep bevat.",
         "pt_BR": "Adicionar água até a pasta ter :target% de sabão anidro."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.instructions.first_dilution_with_liquids",
+      "text": {
+        "de": ":liquids hinzufügen, um die Paste auf :target % wasserfreie Seife zu bringen.",
+        "es": "Añadir :liquids para llevar la pasta a un :target % de jabón anhidro.",
+        "fr": "Ajouter :liquids pour amener la pâte à :target % de savon anhydre.",
+        "it": "Aggiungere :liquids per portare la pasta al :target% di sapone anidro.",
+        "nl": "Voeg :liquids toe om de pasta op :target% watervrije zeep te brengen.",
+        "pt_BR": "Adicione :liquids para levar a pasta a :target% de sabão anidro."
       }
     },
     {
@@ -3692,6 +3716,18 @@
         "it": "Processo del sapone liquido",
         "nl": "Proces vloeibare zeep",
         "pt_BR": "Processo do sabonete líquido"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "liquid.water",
+      "text": {
+        "de": "Wasser",
+        "es": "agua",
+        "fr": "eau",
+        "it": "acqua",
+        "nl": "water",
+        "pt_BR": "água"
       }
     },
     {
@@ -43260,6 +43296,30 @@
     },
     {
       "group": "workbench",
+      "key": "costing.phases.final_dilution",
+      "text": {
+        "de": "Endverdünnung",
+        "es": "Dilución final",
+        "fr": "Dilution finale",
+        "it": "Diluizione finale",
+        "nl": "Eindverdunning",
+        "pt_BR": "Diluição final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.phases.first_dilution",
+      "text": {
+        "de": "Erste Verdünnung",
+        "es": "Primera dilución",
+        "fr": "Première dilution",
+        "it": "Prima diluizione",
+        "nl": "Eerste verdunning",
+        "pt_BR": "Primeira diluição"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.phases.fragrance",
       "text": {
         "de": "Duft- und Aromastoffe",
@@ -44856,6 +44916,18 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.components.dilution_liquids_weight",
+      "text": {
+        "de": "Verdünnungsflüssigkeiten",
+        "es": "Líquidos de dilución",
+        "fr": "Liquides de dilution",
+        "it": "Liquidi di diluizione",
+        "nl": "Verdunningsvloeistoffen",
+        "pt_BR": "Líquidos de diluição"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "liquid.components.free_koh_weight",
       "text": {
         "de": "Freies KOH",
@@ -44948,6 +45020,102 @@
         "it": "Composizione finale",
         "nl": "Eindsamenstelling",
         "pt_BR": "Composição final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.add",
+      "text": {
+        "de": "Flüssigkeit hinzufügen",
+        "es": "Añadir un líquido",
+        "fr": "Ajouter un liquide",
+        "it": "Aggiungi un liquido",
+        "nl": "Vloeistof toevoegen",
+        "pt_BR": "Adicionar um líquido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.exceeds",
+      "text": {
+        "de": "Die Flüssigkeiten ersetzen mehr als das gesamte Wasser dieses Schritts.",
+        "es": "Los líquidos sustituyen más que toda el agua de este paso.",
+        "fr": "Les liquides remplacent plus que toute l’eau de cette étape.",
+        "it": "I liquidi sostituiscono più di tutta l’acqua di questo passaggio.",
+        "nl": "De vloeistoffen vervangen meer dan al het water van deze stap.",
+        "pt_BR": "Os líquidos substituem mais do que toda a água desta etapa."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.final_dilution",
+      "text": {
+        "de": "Flüssigkeiten der Endverdünnung",
+        "es": "Líquidos de la dilución final",
+        "fr": "Liquides de la dilution finale",
+        "it": "Liquidi della diluizione finale",
+        "nl": "Vloeistoffen van de eindverdunning",
+        "pt_BR": "Líquidos da diluição final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.first_dilution",
+      "text": {
+        "de": "Flüssigkeiten der ersten Verdünnung",
+        "es": "Líquidos de la primera dilución",
+        "fr": "Liquides de la première dilution",
+        "it": "Liquidi della prima diluizione",
+        "nl": "Vloeistoffen van de eerste verdunning",
+        "pt_BR": "Líquidos da primeira diluição"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.remove",
+      "text": {
+        "de": ":ingredient entfernen",
+        "es": "Quitar :ingredient",
+        "fr": "Retirer :ingredient",
+        "it": "Rimuovi :ingredient",
+        "nl": ":ingredient verwijderen",
+        "pt_BR": "Remover :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.search",
+      "text": {
+        "de": "Hydrolate, Milch, Säfte suchen…",
+        "es": "Buscar hidrolatos, leches, zumos…",
+        "fr": "Rechercher hydrolats, laits, jus…",
+        "it": "Cerca idrolati, latti, succhi…",
+        "nl": "Zoek hydrolaten, melk, sappen…",
+        "pt_BR": "Buscar hidrolatos, leites, sucos…"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.share_for",
+      "text": {
+        "de": "Anteil am Wasser des Schritts für :ingredient",
+        "es": "Parte del agua del paso para :ingredient",
+        "fr": "Part de l’eau de l’étape pour :ingredient",
+        "it": "Quota dell’acqua del passaggio per :ingredient",
+        "nl": "Aandeel van het stapwater voor :ingredient",
+        "pt_BR": "Parte da água da etapa para :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.dilution_liquids.water_left",
+      "text": {
+        "de": "Wasser: :percentage % · :weight :unit",
+        "es": "Agua: :percentage % · :weight :unit",
+        "fr": "Eau : :percentage % · :weight :unit",
+        "it": "Acqua: :percentage% · :weight :unit",
+        "nl": "Water: :percentage% · :weight :unit",
+        "pt_BR": "Água: :percentage% · :weight :unit"
       }
     },
     {
@@ -45308,6 +45476,30 @@
         "it": "Il processo compare quando la pasta è calcolata.",
         "nl": "Het proces verschijnt zodra de pasta is berekend.",
         "pt_BR": "O processo aparece quando a pasta é calculada."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.dilution_liquid_unused_final_dilution",
+      "text": {
+        "de": "Die Endverdünnung fügt kein Wasser hinzu, daher werden ihre Flüssigkeiten nicht verwendet.",
+        "es": "La dilución final no añade agua, así que sus líquidos no se usan.",
+        "fr": "La dilution finale n’ajoute pas d’eau, ses liquides ne sont donc pas utilisés.",
+        "it": "La diluizione finale non aggiunge acqua, quindi i suoi liquidi non vengono usati.",
+        "nl": "De eindverdunning voegt geen water toe, dus de vloeistoffen ervan worden niet gebruikt.",
+        "pt_BR": "A diluição final não adiciona água, então seus líquidos não são usados."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.dilution_liquid_unused_first_dilution",
+      "text": {
+        "de": "Die erste Verdünnung fügt kein Wasser hinzu, daher werden ihre Flüssigkeiten nicht verwendet.",
+        "es": "La primera dilución no añade agua, así que sus líquidos no se usan.",
+        "fr": "La première dilution n’ajoute pas d’eau, ses liquides ne sont donc pas utilisés.",
+        "it": "La prima diluizione non aggiunge acqua, quindi i suoi liquidi non vengono usati.",
+        "nl": "De eerste verdunning voegt geen water toe, dus de vloeistoffen ervan worden niet gebruikt.",
+        "pt_BR": "A primeira diluição não adiciona água, então seus líquidos não são usados."
       }
     },
     {

@@ -6,6 +6,9 @@ use App\Models\ProductFamily;
 
 class RecipeWorkbenchPhaseBlueprints
 {
+    /** Liquid soap dilution steps whose rows are a % of that step's water. */
+    public const DILUTION_PHASES = ['first_dilution', 'final_dilution'];
+
     /**
      * @var array<string, array<string, mixed>>|null
      */
@@ -47,8 +50,9 @@ class RecipeWorkbenchPhaseBlueprints
     }
 
     /**
-     * Soap phases in bench order. Liquid soap paste families add a
-     * neutralization phase after the alkali solution; bar soap never has it.
+     * Soap phases in bench order. Liquid soap paste families add the first
+     * dilution and neutralization after the alkali solution and the final
+     * dilution last; bar soap never has them.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -93,14 +97,27 @@ class RecipeWorkbenchPhaseBlueprints
             return $phases;
         }
 
-        array_splice($phases, 2, 0, [[
-            'key' => 'neutralization',
-            'name' => 'Neutralization',
+        $dilution = fn (string $key, string $name, string $description): array => [
+            'key' => $key,
+            'name' => $name,
             'phase_group' => 'post_reaction',
             'phase_type' => 'post_reaction',
-            'description' => 'The acid that neutralizes free KOH left in a liquid soap paste.',
+            'description' => $description,
             'is_system' => true,
-        ]]);
+        ];
+
+        array_splice($phases, 2, 0, [
+            $dilution('first_dilution', 'First dilution', 'Liquids that replace part of the first dilution water of a liquid soap paste.'),
+            [
+                'key' => 'neutralization',
+                'name' => 'Neutralization',
+                'phase_group' => 'post_reaction',
+                'phase_type' => 'post_reaction',
+                'description' => 'The acid that neutralizes free KOH left in a liquid soap paste.',
+                'is_system' => true,
+            ],
+        ]);
+        $phases[] = $dilution('final_dilution', 'Final dilution', 'Liquids that replace part of the final dilution water of a liquid soap.');
 
         return $phases;
     }

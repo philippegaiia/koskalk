@@ -147,7 +147,7 @@ it('adds a neutralization phase after the alkali solution only for liquid soap f
 
     $phases = app(RecipeWorkbenchService::class)->phaseBlueprints($liquidFamily);
 
-    expect(collect($phases)->pluck('key')->all())->toBe(['saponified_oils', 'lye_water', 'neutralization', 'additives', 'fragrance'])
+    expect(collect($phases)->pluck('key')->all())->toBe(['saponified_oils', 'lye_water', 'first_dilution', 'neutralization', 'additives', 'fragrance', 'final_dilution'])
         ->and($phases[2]['phase_type'])->toBe('post_reaction');
 });
 

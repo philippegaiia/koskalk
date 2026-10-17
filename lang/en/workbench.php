@@ -461,6 +461,15 @@ return [
             'label_basis_help' => 'Label percentages use the cured basis, including :percent% residual water. Allergens are shown separately but are already included in their source oils.',
             'cured_bar_basis' => 'Cured basis',
             'residual_water' => 'Residual water',
+            'liquid_title' => 'Finished liquid soap output',
+            'liquid_help' => 'The finished liquid soap used to prepare labels and review declared fragrance components.',
+            'liquid_basis' => 'Finished batch basis',
+            'liquid_composition' => 'Finished liquid soap composition',
+            'liquid_composition_help' => 'Ingredient rows as they sit in the finished batch, with common ingredient names below the INCI names.',
+            'liquid_label_basis_help' => 'Label percentages use the finished batch: paste, dilution water, neutralizer and additions. Allergens are shown separately but are already included in their source oils.',
+            'liquid_total_basis' => 'Finished batch',
+            'koh_impurities' => 'KOH flake balance (water, carbonate)',
+            'not_declared' => 'Not declared',
         ],
         'allergens' => [
             'title' => 'Declared allergens',
@@ -472,7 +481,7 @@ return [
             'title' => 'Ingredient lists', 'help' => 'Choose a list, then copy it or edit a final version.', 'inci' => 'INCI ingredient list', 'copy' => 'Copy list', 'use_generated' => 'Use generated', 'format' => 'Ingredient list format', 'as_added' => 'Ingredients as added', 'saponified' => 'Saponified oils + superfat', 'generated_empty' => 'The generated ingredient list will appear when the formula has enough data.', 'final_inci' => 'Final INCI list', 'clear' => 'Clear', 'outdated' => 'Formula changed after this list was saved.', 'plain' => 'Plain-language ingredient list', 'plain_help' => 'Common names, highest amount first.', 'plain_empty' => 'No plain-language list is available yet.', 'final_plain' => 'Final plain-language list', 'cosmetic_generated_help' => 'Ingredients as added, ordered for the selected label market, with required declarations.', 'soap_as_added_help' => 'Ingredients before saponification, with required allergens.', 'soap_saponified_help' => 'Saponified oil names with the estimated unsaponified oils.',
         ],
         'declarations' => [
-            'title' => 'Declaration details', 'cosmetic_help' => 'Recorded fragrance declarations are listed with their estimated contribution to the formula basis.', 'soap_help' => 'All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.', 'formula_percent' => 'Formula %', 'threshold' => 'Threshold', 'notes' => 'Notes', 'empty' => 'No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.', 'disclaimer' => 'These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market.',
+            'title' => 'Declaration details', 'cosmetic_help' => 'Recorded fragrance declarations are listed with their estimated contribution to the formula basis.', 'soap_help' => 'All recorded fragrance declarations are listed here with their estimated contribution to the cured basis and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.', 'liquid_help' => 'All recorded fragrance declarations are listed here with their estimated contribution to the finished batch and whether they are appended to the selected ingredient list. They are not counted inside the 100% ingredient total because they are already part of their source aromatic ingredients.', 'formula_percent' => 'Formula %', 'threshold' => 'Threshold', 'notes' => 'Notes', 'empty' => 'No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.', 'disclaimer' => 'These details are indicative and informative. Always confirm the final label with a regulatory professional or the competent authority for your market.',
         ],
         'restrictions' => [
             'title' => 'Restrictions', 'substance' => 'Substance', 'rule' => 'Rule', 'limit' => 'Limit', 'empty' => 'No restricted or prohibited substance rules matched the current formula.',

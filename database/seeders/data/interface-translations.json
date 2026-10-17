@@ -45876,6 +45876,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.declarations.liquid_help",
+      "text": {
+        "de": "Alle erfassten Duftstoffdeklarationen werden hier mit ihrem geschätzten Anteil an der fertigen Charge aufgeführt und ob sie an die gewählte Zutatenliste angehängt werden. Sie zählen nicht zur 100-%-Zutatensumme, da sie bereits Teil ihrer aromatischen Ausgangszutaten sind.",
+        "es": "Aquí se listan todas las declaraciones de fragancia registradas con su contribución estimada al lote terminado y si se añaden a la lista de ingredientes seleccionada. No cuentan dentro del 100 % de ingredientes porque ya forman parte de sus ingredientes aromáticos de origen.",
+        "fr": "Toutes les déclarations de parfum enregistrées sont listées ici avec leur contribution estimée au lot fini et l’indication de leur ajout à la liste d’ingrédients choisie. Elles ne comptent pas dans le total de 100 % car elles font déjà partie de leurs ingrédients aromatiques d’origine.",
+        "it": "Qui sono elencate tutte le dichiarazioni di fragranza registrate con il loro contributo stimato al lotto finito e se vengono aggiunte all’elenco ingredienti scelto. Non rientrano nel totale del 100% perché fanno già parte dei loro ingredienti aromatici di origine.",
+        "nl": "Alle vastgelegde geurdeclaraties staan hier met hun geschatte bijdrage aan de afgewerkte batch en of ze aan de gekozen ingrediëntenlijst worden toegevoegd. Ze tellen niet mee in het totaal van 100%, omdat ze al deel uitmaken van hun aromatische broningrediënten.",
+        "pt_BR": "Todas as declarações de fragrância registradas aparecem aqui com sua contribuição estimada para o lote pronto e se são acrescentadas à lista de ingredientes escolhida. Não entram no total de 100% porque já fazem parte de seus ingredientes aromáticos de origem."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.declarations.notes",
       "text": {
         "de": "Notes",
@@ -46500,6 +46512,18 @@
     },
     {
       "group": "workbench",
+      "key": "output.soap.koh_impurities",
+      "text": {
+        "de": "Rest der KOH-Schuppen (Wasser, Karbonat)",
+        "es": "Resto de las escamas de KOH (agua, carbonato)",
+        "fr": "Reste des paillettes de KOH (eau, carbonate)",
+        "it": "Resto delle scaglie di KOH (acqua, carbonato)",
+        "nl": "Rest van de KOH-schilfers (water, carbonaat)",
+        "pt_BR": "Restante das escamas de KOH (água, carbonato)"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "output.soap.label_basis",
       "text": {
         "de": "Label basis",
@@ -46520,6 +46544,102 @@
         "it": "Le percentuali usano la base stagionata, con il :percent% di acqua residua. Gli allergeni sono indicati a parte, ma sono già inclusi negli oli di origine.",
         "nl": "De percentages gaan uit van de gerijpte zeep met :percent% restwater. Allergenen worden apart getoond, maar zitten al in hun bronoliën.",
         "pt_BR": "As porcentagens usam a base curada, com :percent% de água residual. Os alérgenos aparecem separadamente, mas já estão incluídos nos óleos de origem."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_basis",
+      "text": {
+        "de": "Basis: fertige Charge",
+        "es": "Base: lote terminado",
+        "fr": "Base : lot fini",
+        "it": "Base: lotto finito",
+        "nl": "Basis: afgewerkte batch",
+        "pt_BR": "Base: lote pronto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_composition",
+      "text": {
+        "de": "Zusammensetzung der fertigen Flüssigseife",
+        "es": "Composición del jabón líquido terminado",
+        "fr": "Composition du savon liquide fini",
+        "it": "Composizione del sapone liquido finito",
+        "nl": "Samenstelling van de afgewerkte vloeibare zeep",
+        "pt_BR": "Composição do sabão líquido pronto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_composition_help",
+      "text": {
+        "de": "Zutaten so, wie sie in der fertigen Charge vorliegen, mit den gebräuchlichen Namen unter den INCI-Namen.",
+        "es": "Ingredientes tal como quedan en el lote terminado, con los nombres comunes debajo de los nombres INCI.",
+        "fr": "Ingrédients tels qu’ils se trouvent dans le lot fini, avec les noms courants sous les noms INCI.",
+        "it": "Ingredienti così come si trovano nel lotto finito, con i nomi comuni sotto i nomi INCI.",
+        "nl": "Ingrediënten zoals ze in de afgewerkte batch zitten, met de gangbare namen onder de INCI-namen.",
+        "pt_BR": "Ingredientes como ficam no lote pronto, com os nomes comuns abaixo dos nomes INCI."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_help",
+      "text": {
+        "de": "Die fertige Flüssigseife, auf deren Grundlage Etiketten erstellt und deklarierte Duftbestandteile geprüft werden.",
+        "es": "El jabón líquido terminado que sirve para preparar las etiquetas y revisar los componentes de fragancia declarados.",
+        "fr": "Le savon liquide fini qui sert à préparer les étiquettes et à vérifier les composants parfumants déclarés.",
+        "it": "Il sapone liquido finito usato per preparare le etichette e verificare i componenti della fragranza dichiarati.",
+        "nl": "De afgewerkte vloeibare zeep waarmee etiketten worden opgesteld en aangegeven geurcomponenten worden gecontroleerd.",
+        "pt_BR": "O sabão líquido pronto usado para preparar os rótulos e revisar os componentes de fragrância declarados."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_label_basis_help",
+      "text": {
+        "de": "Die Etikettenprozente beziehen sich auf die fertige Charge: Paste, Verdünnungswasser, Neutralisationsmittel und Zusätze. Allergene werden separat angezeigt, sind aber bereits in ihren Ausgangsölen enthalten.",
+        "es": "Los porcentajes de la etiqueta se basan en el lote terminado: pasta, agua de dilución, neutralizante y adiciones. Los alérgenos se muestran aparte, pero ya están incluidos en sus aceites de origen.",
+        "fr": "Les pourcentages de l’étiquette se basent sur le lot fini : pâte, eau de dilution, neutralisant et ajouts. Les allergènes sont affichés à part mais sont déjà inclus dans leurs huiles d’origine.",
+        "it": "Le percentuali in etichetta si basano sul lotto finito: pasta, acqua di diluizione, neutralizzante e aggiunte. Gli allergeni sono mostrati a parte ma sono già inclusi nei loro oli di origine.",
+        "nl": "De etiketpercentages gaan uit van de afgewerkte batch: pasta, verdunningswater, neutralisatiemiddel en toevoegingen. Allergenen worden apart getoond, maar zitten al in hun bronoliën.",
+        "pt_BR": "As porcentagens do rótulo usam o lote pronto: pasta, água de diluição, neutralizante e adições. Os alérgenos aparecem separados, mas já estão incluídos nos óleos de origem."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_title",
+      "text": {
+        "de": "Fertige Flüssigseife",
+        "es": "Jabón líquido terminado",
+        "fr": "Savon liquide fini",
+        "it": "Sapone liquido finito",
+        "nl": "Afgewerkte vloeibare zeep",
+        "pt_BR": "Sabão líquido pronto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.liquid_total_basis",
+      "text": {
+        "de": "Fertige Charge",
+        "es": "Lote terminado",
+        "fr": "Lot fini",
+        "it": "Lotto finito",
+        "nl": "Afgewerkte batch",
+        "pt_BR": "Lote pronto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.not_declared",
+      "text": {
+        "de": "Nicht deklariert",
+        "es": "No declarado",
+        "fr": "Non déclaré",
+        "it": "Non dichiarato",
+        "nl": "Niet aangegeven",
+        "pt_BR": "Não declarado"
       }
     },
     {

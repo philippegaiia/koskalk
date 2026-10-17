@@ -88,26 +88,30 @@
  <section class="sk-card p-5" aria-labelledby="output-soap-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <h2 id="output-soap-heading" class="sk-eyebrow">{{ __('workbench.output.soap.title') }} <x-contextual-help.trigger topic="soap.output_basis" :topics="$contextualHelp['topics'] ?? []" /></h2>
- <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.help') }}</p>
+ <h2 id="output-soap-heading" class="sk-eyebrow">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_title') : __('workbench.output.soap.title') }} <x-contextual-help.trigger topic="soap.output_basis" :topics="$contextualHelp['topics'] ?? []" /></h2>
+ <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_help') : __('workbench.output.soap.help') }}</p>
  </div>
  <div class="flex flex-col items-start gap-3 lg:items-end">
  @include('livewire.dashboard.partials.recipe-workbench.label-market-switcher')
- <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.basis') }}</span>
+ <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_basis') : __('workbench.output.soap.basis') }}</span>
  </div>
  </div>
 
  <div class="mt-4" aria-labelledby="output-soap-composition-heading">
  <div class="overflow-hidden rounded-lg border border-[var(--color-line)] bg-white">
  <div class="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
- <h3 id="output-soap-composition-heading" class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.output.soap.composition') }}</h3>
- <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.composition_help') }}</p>
+ <h3 id="output-soap-composition-heading" class="font-medium text-[var(--color-ink-strong)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_composition') : __('workbench.output.soap.composition') }}</h3>
+ <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_composition_help') : __('workbench.output.soap.composition_help') }}</p>
  </div>
+ @if ($isLiquidSoapWorkbench ?? false)
+ <p class="border-b border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.liquid_label_basis_help') }}</p>
+ @else
  <p class="border-b border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="t('output.soap.label_basis_help', { percent: curedWaterPercentageLabel })"></p>
+ @endif
  <template x-if="curedSoapIngredientRows.length > 0">
  <div class="overflow-x-auto">
  <table class="w-full min-w-[52rem] table-fixed divide-y divide-[var(--color-line)] text-sm">
- <caption class="sr-only">{{ __('workbench.output.soap.composition') }}</caption>
+ <caption class="sr-only">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_composition') : __('workbench.output.soap.composition') }}</caption>
  <colgroup>
  <col class="w-12">
  <col class="w-2/5">
@@ -147,7 +151,7 @@
  <tr class="bg-[var(--color-panel)]">
  <td class="px-4 py-3"></td>
  <td class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
- <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ __('workbench.output.soap.cured_basis') }}</td>
+ <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_total_basis') : __('workbench.output.soap.cured_basis') }}</td>
  <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(curedSoapIngredientTotalPercent)}%`"></span></td>
  <td class="px-4 py-3"></td>
  </tr>

@@ -593,6 +593,11 @@ export function createPresentationSection() {
                 return this.number(this.oilWeight);
             }
 
+            // A liquid soap is not cured: its label basis is the finished batch.
+            if (this.isLiquidSoapFormula) {
+                return this.number(this.labelingBasis?.formula_weight ?? this.backendCalculation?.liquid_process?.final_weight);
+            }
+
             return this.number(this.labelingBasis?.cured_weight ?? this.curedBatchWeight());
         },
 
@@ -604,7 +609,7 @@ export function createPresentationSection() {
         },
 
         get curedSoapResidualWaterWeight() {
-            if (this.isCosmeticFormula) {
+            if (this.isCosmeticFormula || this.isLiquidSoapFormula) {
                 return 0;
             }
 
@@ -653,10 +658,16 @@ export function createPresentationSection() {
 
             const curedBasisWeight = this.curedSoapOutputBasisWeight;
             const residualWaterWeight = this.curedSoapResidualWaterWeight;
-            const ingredientRows = (this.defaultIngredientListVariant ?? this.activeIngredientListVariant)
+            const variant = this.defaultIngredientListVariant ?? this.activeIngredientListVariant;
+            const ingredientRows = variant
                 ?.ingredient_rows
                 ?.filter((row) => row?.kind !== 'lye')
                 ?? [];
+
+            if (this.isLiquidSoapFormula) {
+                return this.liquidSoapOutputRows(variant, ingredientRows, curedBasisWeight);
+            }
+
             const freshLyeLiquidWeight = ingredientRows
                 .reduce((sum, row) => sum + this.lyeLiquidProvenanceWeight(row), 0);
             const rows = ingredientRows
@@ -688,6 +699,37 @@ export function createPresentationSection() {
 
                     return right.adjusted_weight - left.adjusted_weight;
                 });
+        },
+
+        /**
+         * The liquid soap label rows as they sit in the finished batch. The
+         * water is the water in the bottle, so nothing is swapped for residual
+         * water. In the saponified list, the KOH flakes' non-KOH share (water
+         * and carbonate) is shown as its own undeclared row so the batch adds
+         * up to 100%.
+         */
+        liquidSoapOutputRows(variant, ingredientRows, basisWeight) {
+            const kohImpurityWeight = variant?.key === 'incorporated_ingredients'
+                ? 0
+                : this.number(this.backendCalculation?.liquid_process?.composition?.koh_impurity_weight);
+            const rows = ingredientRows
+                .map((row) => ({ ...row, adjusted_weight: this.number(row.weight) }))
+                .concat(kohImpurityWeight > 0 ? [{
+                    label: this.t('output.soap.koh_impurities'),
+                    kind: 'koh_impurities',
+                    adjusted_weight: kohImpurityWeight,
+                    source_ingredients: [],
+                }] : [])
+                .filter((row) => row.adjusted_weight > 0);
+
+            return rows
+                .map((row) => ({
+                    ...row,
+                    percent_of_cured_basis: basisWeight > 0 ? (row.adjusted_weight / basisWeight) * 100 : 0,
+                }))
+                .sort((left, right) => (left.adjusted_weight === right.adjusted_weight
+                    ? left.label.localeCompare(right.label)
+                    : right.adjusted_weight - left.adjusted_weight));
         },
 
         lyeLiquidProvenanceWeight(row) {
@@ -748,7 +790,11 @@ export function createPresentationSection() {
 
         outputRowKindLabel(row) {
             if (row?.label === 'AQUA') {
-                return 'Residual water';
+                return this.isLiquidSoapFormula ? 'Water' : 'Residual water';
+            }
+
+            if (row?.kind === 'koh_impurities') {
+                return this.t('output.soap.not_declared');
             }
 
             if (row?.kind === 'mixed_saponified_superfat') {

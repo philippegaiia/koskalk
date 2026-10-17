@@ -200,7 +200,7 @@
  @if ($isCosmeticWorkbench)
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.output.declarations.cosmetic_help') }}</p>
  @else
- <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.output.declarations.soap_help') }}</p>
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.declarations.liquid_help') : __('workbench.output.declarations.soap_help') }}</p>
  @endif
  </div>
  <button

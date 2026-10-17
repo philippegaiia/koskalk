@@ -2181,7 +2181,7 @@ class InciGenerationService
             'AQUA',
             $this->bottledWaterWeight($soapCalculation),
             'water',
-            'Lye water',
+            $this->waterSource($soapCalculation),
             $this->bottledWaterWeight($soapCalculation),
         );
         $this->appendStandaloneIngredientRow(
@@ -2225,7 +2225,7 @@ class InciGenerationService
             'AQUA',
             $this->addedWaterWeight($soapCalculation),
             'water',
-            'Lye water',
+            $this->waterSource($soapCalculation),
             $this->addedWaterWeight($soapCalculation),
         );
         $this->appendStandaloneIngredientRow(
@@ -2242,6 +2242,17 @@ class InciGenerationService
             'lye',
             'Lye',
         );
+    }
+
+    /**
+     * Where a soap's water comes from: the lye water, or for a liquid soap
+     * also its dilutions and neutralizer solution.
+     *
+     * @param  array<string, mixed>  $soapCalculation
+     */
+    private function waterSource(array $soapCalculation): string
+    {
+        return $this->liquidProcess($soapCalculation) === null ? 'Lye water' : 'Alkali solution and dilution water';
     }
 
     /**

@@ -92,7 +92,10 @@ class RecipeWorkbenchOutputBuilder
             $liquidProcess = $calculation['liquid_process'] ?? null;
 
             if (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok') {
-                $phaseItems = $this->liquidSoapFormulaProcessor->withAdditionWeights($phaseItems, $liquidProcess, $oilWeight);
+                $phaseItems = $this->liquidSoapFormulaProcessor->withDilutionLiquidWeights(
+                    $this->liquidSoapFormulaProcessor->withAdditionWeights($phaseItems, $liquidProcess, $oilWeight),
+                    $liquidProcess,
+                );
             }
 
             if ($isSoap && $calculation === null) {
@@ -624,7 +627,9 @@ class RecipeWorkbenchOutputBuilder
                     ]);
                 }
 
-                if ($phaseKey === 'lye_water') {
+                // Lye liquids and liquid soap dilution liquids are a % of their own
+                // liquid; the calculation gives them their weight.
+                if (in_array($phaseKey, ['lye_water', ...RecipeWorkbenchPhaseBlueprints::DILUTION_PHASES], true)) {
                     $phaseItems[$phaseKey][] = $this->ingredientRow($row, $ingredient, $percentageInput, $weightInput);
 
                     continue;

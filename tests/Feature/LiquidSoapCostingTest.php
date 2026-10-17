@@ -299,3 +299,51 @@ it('exports the dilution water of a liquid soap in its current costing', functio
     expect($data['snapshot']['calculation']['liquid_process']['final_weight'])->toBe('4760.0000')
         ->and((float) $waterRow['quantity'])->toEqualWithDelta(488.5714 + 1700.3175 + 1360.0, 0.001);
 });
+
+it('keeps a dilution liquid at its process weight in the current print and export', function (string $editingMode) {
+    ['user' => $user, 'family' => $family, 'oil' => $oil, 'koh' => $koh, 'water' => $water] = liquidSoapCostingContext();
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'inci_name' => 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', 'owner_type' => null, 'owner_id' => null, 'workspace_id' => null, 'is_active' => true]);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+
+    $data = app(RecipeWorkbenchOutputBuilder::class)->build($user, [
+        'workspace' => $workspace->public_id,
+        'product_family' => $family->slug,
+        'kind' => 'costing',
+        'format' => 'xlsx',
+        'draft' => [
+            'name' => 'Liquid castile', 'oil_unit' => 'g', 'oil_weight' => 1000, 'manufacturing_mode' => 'saponify_in_formula',
+            'exposure_mode' => 'rinse_off', 'regulatory_regime' => 'none', 'product_type_id' => null, 'editing_mode' => $editingMode,
+            'lye_type' => 'koh', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'water_mode' => 'lye_concentration', 'water_value' => 28, 'superfat' => 0,
+            'ifra_category_selection_mode' => 'automatic', 'ifra_product_category_id' => null,
+            'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
+            'phases' => [['key' => 'saponified_oils', 'name' => 'Saponified Oils']],
+            'phase_items' => [
+                'saponified_oils' => [['id' => 'oil', 'ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
+                'neutralization' => [], 'additives' => [], 'fragrance' => [], 'lye_water' => [], 'first_dilution' => [],
+                'final_dilution' => [['id' => 'h1', 'ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]],
+            ],
+            'packaging_items' => [],
+            'production_output_type' => 'finished_product',
+        ],
+        'manufacturing_instructions' => '',
+        'costing' => [
+            'loaded' => true, 'oil_weight_for_costing' => null, 'oil_unit_for_costing' => 'g', 'units_produced' => null, 'currency' => 'EUR',
+            'items' => [
+                ['ingredient_id' => $oil->id, 'phase_key' => 'saponified_oils', 'position' => 1, 'price_per_kg' => 10],
+                ['ingredient_id' => $koh->id, 'phase_key' => 'lye_alkali', 'position' => 1, 'price_per_kg' => 20],
+                ['ingredient_id' => $water->id, 'phase_key' => 'implicit_water', 'position' => 1, 'price_per_kg' => 1],
+                ['ingredient_id' => $hydrosol->id, 'phase_key' => 'final_dilution', 'position' => 1, 'price_per_kg' => 30],
+            ],
+            'packaging_items' => [],
+        ],
+        'print_context' => 'costing',
+    ]);
+    $rows = collect($data['costingProjection']['ingredient_rows']);
+    $incorporated = collect(collect($data['snapshot']['labeling']['list_variants'])->firstWhere('key', 'incorporated_ingredients')['ingredient_rows'])->keyBy('label');
+
+    expect((float) $rows->firstWhere('ingredient_id', $hydrosol->id)['quantity'])->toEqualWithDelta(408.0, 0.001)
+        ->and((float) $rows->firstWhere('phase_key', 'implicit_water')['quantity'])->toEqualWithDelta(488.5714 + 1700.3175 + 952.0, 0.001)
+        ->and($data['snapshot']['draft']['phaseItems']['final_dilution'][0]['ingredient_id'])->toBe($hydrosol->id)
+        ->and((float) $incorporated['LAVANDULA ANGUSTIFOLIA FLOWER WATER']['weight'])->toEqualWithDelta(408.0, 0.001);
+})->with(['percentage' => 'percentage', 'weight' => 'weight']);

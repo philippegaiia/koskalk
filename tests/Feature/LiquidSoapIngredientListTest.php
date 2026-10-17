@@ -210,3 +210,20 @@ it('shares a compound neutralizer product between its components', function () {
     expect($weights['POTASSIUM STEARATE'])->toBe(16.39)
         ->and($weights['POTASSIUM PALMITATE'])->toBe(16.39);
 });
+
+it('lists a dilution liquid at its process weight and keeps it out of AQUA', function () {
+    $formula = liquidSoapLabelFormula();
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'inci_name' => 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', 'is_active' => true]);
+    $formula['payload']['phase_items']['final_dilution'] = [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0]];
+    $labeling = liquidSoapLabeling($formula);
+    $hydrosolWeight = round(1327.469 * 0.3, 2);
+
+    $saponified = liquidSoapLabelWeights($labeling, 'saponified_with_superfat');
+    $incorporated = liquidSoapLabelWeights($labeling, 'incorporated_ingredients');
+
+    expect($saponified['LAVANDULA ANGUSTIFOLIA FLOWER WATER'])->toBe($hydrosolWeight)
+        ->and(array_sum($saponified) + 21.74)->toEqualWithDelta(4760.0, 0.05)
+        ->and($incorporated['LAVANDULA ANGUSTIFOLIA FLOWER WATER'])->toBe($hydrosolWeight)
+        ->and($incorporated['AQUA'])->toEqualWithDelta(503.2286 + 1679.327 + 26.0248 + 1327.469 - 1327.469 * 0.3, 0.02)
+        ->and(array_sum($incorporated))->toEqualWithDelta(4760.0, 0.05);
+});

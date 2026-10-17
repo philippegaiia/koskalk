@@ -100,6 +100,33 @@ class FormulaDocumentBuilder
             ]),
         };
 
+        $unit = (string) data_get($snapshot, 'draft.oilUnit', 'g');
+        $whatToAdd = function (string $phaseKey) use ($process, $snapshot, $locale, $unit): ?string {
+            $split = $process['dilution_liquids'][$phaseKey] ?? null;
+
+            if (! is_array($split) || $split['liquids'] === []) {
+                return null;
+            }
+
+            $names = collect(Arr::wrap(data_get($snapshot, "draft.phaseItems.{$phaseKey}", [])))
+                ->filter(fn (mixed $row): bool => is_array($row) && filled($row['ingredient_id'] ?? null) && (float) ($row['percentage'] ?? 0) > 0)
+                ->values();
+            $mass = fn (float|int|string $value): string => NumberLocale::formatAdaptiveDecimal((float) $value, 2, 4, $locale).' '.$unit;
+
+            return collect($split['liquids'])
+                ->values()
+                ->map(fn (array $liquid, int $index): string => $mass($liquid['weight']).' '.($names->get($index)['name'] ?? ''))
+                ->prepend($mass($split['water_weight']).' '.__('formula_documents.liquid.water'))
+                ->implode(' + ');
+        };
+        $dilutionInstruction = function (string $phaseKey) use ($whatToAdd, $target): string {
+            $liquids = $whatToAdd($phaseKey);
+
+            return $liquids === null
+                ? __("formula_documents.liquid.instructions.{$phaseKey}", ['target' => $target($phaseKey)])
+                : __("formula_documents.liquid.instructions.{$phaseKey}_with_liquids", ['liquids' => $liquids, 'target' => $target($phaseKey)]);
+        };
+
         $draftAdditions = collect(['additives', 'fragrance'])
             ->flatMap(fn (string $phaseKey): array => collect(Arr::wrap(data_get($snapshot, "draft.phaseItems.{$phaseKey}", [])))
                 ->filter(fn (mixed $row): bool => is_array($row) && filled($row['ingredient_id'] ?? null))
@@ -128,7 +155,7 @@ class FormulaDocumentBuilder
                 [
                     'key' => 'first_dilution',
                     'label' => __('formula_documents.liquid.steps.first_dilution'),
-                    'instruction' => __('formula_documents.liquid.instructions.first_dilution', ['target' => $target('first_dilution')]),
+                    'instruction' => $dilutionInstruction('first_dilution'),
                     'add' => (float) $process['stages']['first_dilution']['add_weight'],
                     'mass' => (float) $process['stages']['first_dilution']['mass'],
                     'anhydrous_percentage' => (float) $process['stages']['first_dilution']['anhydrous_percentage'],
@@ -144,7 +171,7 @@ class FormulaDocumentBuilder
                 [
                     'key' => 'final_dilution',
                     'label' => __('formula_documents.liquid.steps.final_dilution'),
-                    'instruction' => __('formula_documents.liquid.instructions.final_dilution', ['target' => $target('final_dilution')]),
+                    'instruction' => $dilutionInstruction('final_dilution'),
                     'add' => (float) $process['stages']['final_dilution']['add_weight'],
                     'mass' => (float) $process['stages']['final_dilution']['mass'],
                     'anhydrous_percentage' => (float) $process['stages']['final_dilution']['anhydrous_percentage'],

@@ -204,3 +204,14 @@ JS;
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('lists the water and dilution liquids a step adds', function () {
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
+    $document = liquidSoapBatchSheetDocument(['phase_items' => ['final_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]]]]);
+    $steps = collect($document['liquid_process']['steps'])->keyBy('key');
+
+    expect($steps['final_dilution']['instruction'])->toStartWith('Add the additions, then ')
+        ->toContain(' g water + ')
+        ->toContain(' g Lavender hydrosol up to 25.0% anhydrous soap.')
+        ->and($steps['first_dilution']['instruction'])->toBe('Add water to bring the paste to 35.0% anhydrous soap.');
+});

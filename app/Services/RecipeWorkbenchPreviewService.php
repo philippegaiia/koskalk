@@ -183,7 +183,7 @@ class RecipeWorkbenchPreviewService
         );
         $finalBatchWeight = $this->liquidSoapFormulaProcessor->finalBatchWeight($paste, $liquidProcess, $neutralizer);
 
-        $additions = collect(['additives', 'fragrance'])
+        $additions = collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
             ->flatMap(fn (string $phaseKey): array => collect($payload['phase_items'][$phaseKey] ?? [])
                 ->filter(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null))
                 ->map(fn (array $row): array => [

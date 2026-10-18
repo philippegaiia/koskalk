@@ -102,7 +102,7 @@ class LiquidSoapFormulaProcessor
         $weights = collect($liquidProcess['additions'] ?? [])->groupBy('phase_key')->map(fn ($additions) => $additions->pluck('weight')->values());
         $oilWeight = (float) $oilWeight;
 
-        foreach (['additives', 'fragrance'] as $phaseKey) {
+        foreach (RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES as $phaseKey) {
             if (! is_array($phaseItems[$phaseKey] ?? null)) {
                 continue;
             }

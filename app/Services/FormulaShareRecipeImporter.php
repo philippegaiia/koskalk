@@ -27,6 +27,8 @@ class FormulaShareRecipeImporter
     ) {}
 
     /**
+     * Publishes an accepted offer as a new Product in the destination Workspace.
+     *
      * Liquid soap additions keep the share of the finished batch the offer
      * carries; offers made before shares were saved carry none, and the share
      * is then inferred from the weight.

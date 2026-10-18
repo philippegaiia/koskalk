@@ -10,6 +10,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostingSynchronizer;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeWorkbenchOutputBuilder;
@@ -380,4 +381,28 @@ it('costs a saved liquid soap addition at its share of the recalculated batch', 
 
     expect((float) collect($preview['ingredient_rows'])->firstWhere('ingredient_id', $fragrance->id)['quantity'])
         ->toEqualWithDelta((float) $snapshot['calculation']['liquid_process']['final_weight'] * 0.02, 0.001);
+});
+
+it('previews a liquid soap batch record with additions at their share of the recalculated batch', function () {
+    ['user' => $user, 'family' => $family, 'productType' => $productType, 'oil' => $oil] = liquidSoapCostingContext();
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $version = app(RecipeWorkbenchService::class)->save($user, $family, [
+        'name' => 'Liquid castile', 'product_type_id' => $productType->id, 'oil_unit' => 'g', 'oil_weight' => 1000,
+        'manufacturing_mode' => 'saponify_in_formula', 'exposure_mode' => 'rinse_off', 'regulatory_regime' => 'none', 'editing_mode' => 'percentage',
+        'lye_type' => 'koh', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'water_mode' => 'lye_concentration', 'water_value' => 28, 'superfat' => 0,
+        'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
+        'phase_items' => [
+            'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
+            'neutralization' => [], 'additives' => [],
+            'fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+        ],
+    ]);
+    IngredientSapProfile::query()->update(['koh_sap_value' => 0.25]);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $finalWeight = (float) app(RecipeWorkbenchService::class)->versionSnapshot($recipe, $version->id)['calculation']['liquid_process']['final_weight'];
+
+    $preview = app(ProductionSnapshotService::class)->preview($recipe, $version->fresh(), $user, ['batch_basis' => 1000]);
+
+    expect((float) collect($preview['ingredient_rows'])->firstWhere('ingredient_id', $fragrance->id)['quantity'])
+        ->toEqualWithDelta($finalWeight * 0.02, 0.001);
 });

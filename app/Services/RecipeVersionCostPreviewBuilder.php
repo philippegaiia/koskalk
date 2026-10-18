@@ -129,6 +129,7 @@ class RecipeVersionCostPreviewBuilder
                 $version,
                 $recipe->productFamily?->calculation_basis === 'total_formula' ? 'cosmetic' : 'soap',
                 $syntheticRows,
+                $snapshot,
             ),
             costing: $transientCosting,
         );
@@ -710,31 +711,55 @@ class RecipeVersionCostPreviewBuilder
         return $preview;
     }
 
-    /** @param list<array<string, mixed>> $syntheticRows
+    /**
+     * A liquid soap version's additions cost the weight their share of the
+     * finished batch gives them in the recalculated snapshot.
+     *
+     * @param  list<array<string, mixed>>  $syntheticRows
+     * @param  array<string, mixed>|null  $snapshot
      * @return array<string, mixed>
      */
-    private function transientFormulaForVersion(RecipeVersion $version, string $family, array $syntheticRows): array
+    private function transientFormulaForVersion(RecipeVersion $version, string $family, array $syntheticRows, ?array $snapshot = null): array
     {
+        $phases = $version->phases
+            ->mapWithKeys(fn (RecipePhase $phase): array => [
+                $phase->slug => [
+                    'label' => $this->phaseName($phase),
+                    'rows' => $phase->items
+                        ->map(fn ($item): array => [
+                            'ingredient_id' => (int) $item->ingredient_id,
+                            'position' => (int) $item->position,
+                            'name' => $item->ingredient?->display_name ?? 'Ingredient',
+                            'percentage' => (string) $item->percentage,
+                            'weight' => (string) $item->weight,
+                        ])
+                        ->all(),
+                ],
+            ])
+            ->all();
+        $liquidProcess = data_get($snapshot, 'calculation.liquid_process');
+
+        if (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok') {
+            $sized = $this->liquidSoapFormulaProcessor->withAdditionWeights(
+                collect($phases)->map(fn (array $phase): array => $phase['rows'])->all(),
+                $liquidProcess,
+                data_get($snapshot, 'draft.oilWeight', $version->batch_size),
+            );
+
+            foreach (RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES as $phaseKey) {
+                if (isset($phases[$phaseKey])) {
+                    $phases[$phaseKey]['rows'] = collect($sized[$phaseKey])
+                        ->map(fn (array $row): array => [...$row, 'percentage' => sprintf('%.12F', $row['percentage']), 'weight' => sprintf('%.12F', $row['weight'])])
+                        ->all();
+                }
+            }
+        }
+
         return [
             'family' => $family,
             'basis_weight' => (string) $version->batch_size,
             'basis_unit' => $version->batch_unit ?: 'g',
-            'phases' => $version->phases
-                ->mapWithKeys(fn (RecipePhase $phase): array => [
-                    $phase->slug => [
-                        'label' => $this->phaseName($phase),
-                        'rows' => $phase->items
-                            ->map(fn ($item): array => [
-                                'ingredient_id' => (int) $item->ingredient_id,
-                                'position' => (int) $item->position,
-                                'name' => $item->ingredient?->display_name ?? 'Ingredient',
-                                'percentage' => (string) $item->percentage,
-                                'weight' => (string) $item->weight,
-                            ])
-                            ->all(),
-                    ],
-                ])
-                ->all(),
+            'phases' => $phases,
             'packaging_items' => $version->packagingItems
                 ->map(fn (RecipeVersionPackagingItem $item): array => [
                     'packaging_item_id' => $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,

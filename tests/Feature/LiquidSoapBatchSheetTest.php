@@ -229,10 +229,13 @@ it('exports dilution liquids, the neutralizer and all added water as raw materia
     $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'display_name' => 'Lavender hydrosol', 'is_active' => true]);
     ['snapshot' => $snapshot, 'document' => $document] = liquidSoapBatchSheet(['phase_items' => ['final_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]]]]);
     $finalAdd = (float) data_get($snapshot, 'calculation.liquid_process.stages.final_dilution.add_weight');
+    // A stale % of oils on the lavender row must not change its exported weight.
+    $snapshot['draft']['phaseItems']['fragrance'][0]['percentage'] = 1;
 
     $rows = collect(app(RecipeCompositionExportDataBuilder::class)->build($snapshot, $document)['incorporated']['raw_material_rows']);
 
     expect($rows->firstWhere('ingredient_id', $hydrosol->id)['quantity'])->toEqualWithDelta($finalAdd * 0.3, 0.001)
         ->and($rows->firstWhere('name', 'Citric Acid')['quantity'])->toEqualWithDelta(6.506, 0.001)
+        ->and($rows->firstWhere('name', 'Lavender Oil')['quantity'])->toEqualWithDelta(95.2, 0.001)
         ->and($rows->sum('quantity'))->toEqualWithDelta(4760.0, 0.01);
 });

@@ -9,6 +9,9 @@ class RecipeWorkbenchPhaseBlueprints
     /** Liquid soap dilution steps whose rows are a % of that step's water. */
     public const DILUTION_PHASES = ['first_dilution', 'final_dilution'];
 
+    /** Additions made after the reaction; on a liquid soap they are a share of the finished batch. */
+    public const ADDITION_PHASES = ['additives', 'fragrance'];
+
     /**
      * @var array<string, array<string, mixed>>|null
      */

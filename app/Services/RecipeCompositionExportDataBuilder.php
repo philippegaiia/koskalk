@@ -151,9 +151,13 @@ class RecipeCompositionExportDataBuilder
         $liquidProcess = data_get($snapshot, 'calculation.liquid_process');
         $liquidProcess = is_array($liquidProcess) && ($liquidProcess['status'] ?? null) === 'ok' ? $liquidProcess : null;
 
-        // A liquid soap's dilution liquids weigh what the process gave them.
+        // A liquid soap's dilution liquids and additions weigh what the process gave them.
         if ($liquidProcess !== null) {
-            $phaseItems = $this->liquidSoapFormulaProcessor->withDilutionLiquidWeights($phaseItems, $liquidProcess, $draft['oilWeight'] ?? 0);
+            $phaseItems = $this->liquidSoapFormulaProcessor->withDilutionLiquidWeights(
+                $this->liquidSoapFormulaProcessor->withAdditionWeights($phaseItems, $liquidProcess, $draft['oilWeight'] ?? 0),
+                $liquidProcess,
+                $draft['oilWeight'] ?? 0,
+            );
         }
 
         $rawPhases = [

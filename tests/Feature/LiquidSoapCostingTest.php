@@ -347,3 +347,37 @@ it('keeps a dilution liquid at its process weight in the current print and expor
         ->and($data['snapshot']['draft']['phaseItems']['final_dilution'][0]['ingredient_id'])->toBe($hydrosol->id)
         ->and((float) $incorporated['LAVANDULA ANGUSTIFOLIA FLOWER WATER']['weight'])->toEqualWithDelta(408.0, 0.001);
 })->with(['percentage' => 'percentage', 'weight' => 'weight']);
+
+it('costs a saved liquid soap addition at its share of the recalculated batch', function () {
+    ['user' => $user, 'family' => $family, 'productType' => $productType, 'oil' => $oil] = liquidSoapCostingContext();
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $version = app(RecipeWorkbenchService::class)->save($user, $family, [
+        'name' => 'Liquid castile', 'product_type_id' => $productType->id, 'oil_unit' => 'g', 'oil_weight' => 1000,
+        'manufacturing_mode' => 'saponify_in_formula', 'exposure_mode' => 'rinse_off', 'regulatory_regime' => 'none', 'editing_mode' => 'percentage',
+        'lye_type' => 'koh', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'water_mode' => 'lye_concentration', 'water_value' => 28, 'superfat' => 0,
+        'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
+        'phase_items' => [
+            'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
+            'neutralization' => [], 'additives' => [],
+            'fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
+        ],
+    ]);
+    IngredientSapProfile::query()->update(['koh_sap_value' => 0.25]);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $snapshot = app(RecipeWorkbenchService::class)->versionSnapshot($recipe, $version->id);
+    $costing = app(RecipeVersionCostingSynchronizer::class)->ensureCosting($version, $user);
+
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromCosting(
+        recipe: $recipe,
+        version: $version->fresh(),
+        costing: $costing->fresh(['items.ingredient', 'packagingItems.packagingItem']),
+        batchBasisValue: '1000',
+        unitsProduced: 1,
+        includeDerivedRows: true,
+        requireCompletePackagingTotal: true,
+        batchBasisUnit: 'g',
+    );
+
+    expect((float) collect($preview['ingredient_rows'])->firstWhere('ingredient_id', $fragrance->id)['quantity'])
+        ->toEqualWithDelta((float) $snapshot['calculation']['liquid_process']['final_weight'] * 0.02, 0.001);
+});

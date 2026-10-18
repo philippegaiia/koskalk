@@ -2285,12 +2285,15 @@ class InciGenerationService
             return $this->freshWaterWeight($soapCalculation);
         }
 
-        $substitutedLiquidWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0) - $this->freshWaterWeight($soapCalculation);
+        $decimal = fn (mixed $value): string => NumberLocale::normalizeDecimalString(is_float($value) ? sprintf('%.12F', $value) : (string) ($value ?? '0')) ?? '0';
+        $substitutedLiquidWeight = bcsub($decimal(data_get($soapCalculation, 'lye.water.weight', 0)), $decimal($this->freshWaterWeight($soapCalculation)), 18);
+        $waterWeight = bcsub(
+            bcadd($decimal(data_get($process, 'composition.water_weight', 0)), $decimal(data_get($process, 'composition.koh_impurity_weight', 0)), 18),
+            $substitutedLiquidWeight,
+            18,
+        );
 
-        // The KOH flakes' non-KOH share is mostly water, so it is labelled as AQUA.
-        return max(0.0, (float) data_get($process, 'composition.water_weight', 0)
-            + (float) data_get($process, 'composition.koh_impurity_weight', 0)
-            - $substitutedLiquidWeight);
+        return bccomp($waterWeight, '0', 18) > 0 ? (float) $waterWeight : 0.0;
     }
 
     /**

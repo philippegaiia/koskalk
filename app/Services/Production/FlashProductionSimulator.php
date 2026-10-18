@@ -35,6 +35,7 @@ class FlashProductionSimulator
     public function __construct(
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
         private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly FlashProductionLimits $limits,
         private readonly ProductionTaskLimits $taskLimits,
@@ -93,6 +94,15 @@ class FlashProductionSimulator
                 expectedUnits: $line['expected_units_per_batch'],
                 recipe: $recipe,
             );
+
+            if ($recipe->productFamily?->usesLiquidSoapPasteBench()) {
+                $batchRequirements = $this->formulaSnapshotBuilder->build(
+                    recipe: $recipe,
+                    version: $version,
+                    basisQuantityGrams: $basisQuantityGrams,
+                    requirements: $batchRequirements,
+                )['requirements'];
+            }
 
             foreach ($batchRequirements as $requirement) {
                 $key = $requirement['ingredient_id'] !== null

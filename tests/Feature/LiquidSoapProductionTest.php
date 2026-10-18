@@ -15,6 +15,7 @@ use App\Models\RecipeItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\FlashProductionSimulator;
 use App\Services\Production\ProductionDetailPresenter;
 use App\Services\Production\ProductionOutputReconciliation;
 use App\Services\Production\ProductionRunPrintDataBuilder;
@@ -208,6 +209,38 @@ it('reallocates dilution liquids to the water the batch now takes', function ():
         ->and((float) $lavender->required_mass_grams)->toEqualWithDelta($finalWeight * 0.02, 0.01)
         ->and($production->formulaLines->sum(fn ($line): float => (float) $line->planned_mass_grams))->toEqualWithDelta($finalWeight, 0.01);
 });
+
+it('simulates liquid soap materials from the same recalculation used to plan production', function (bool $changeChemistry, string $expectedFragrance) {
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'is_active' => true]);
+    ['workspace' => $workspace, 'production' => $production] = liquidSoapProduction(
+        citricAcidWeight: 1.0,
+        finalDilutionLiquids: [['ingredient_id' => $hydrosol->id, 'percentage' => 30, 'weight' => 0, 'note' => null]],
+        beforePlanning: $changeChemistry ? fn () => IngredientSapProfile::query()->update(['koh_sap_value' => 0.10]) : null,
+    );
+    $beforeRuns = $workspace->productionRuns()->count();
+
+    $simulation = app(FlashProductionSimulator::class)->simulate($workspace, [[
+        'recipe_id' => $production->recipe_id,
+        'desired_units' => '20',
+        'expected_units_per_batch' => '19',
+        'basis_input_value' => '2000',
+        'basis_input_unit' => 'g',
+    ]]);
+
+    $requirements = collect($simulation['requirements'])->keyBy('ingredient_id');
+    $fragrance = $production->requirements->firstWhere('phase_key_snapshot', 'fragrance');
+    expect($requirements->get($fragrance->ingredient_id)['required'])->toBe($expectedFragrance)
+        ->and($simulation['totals']['whole_batches'])->toBe(2)
+        ->and($workspace->productionRuns()->count())->toBe($beforeRuns);
+
+    foreach ($production->requirements->whereNotNull('recipe_item_id') as $requirement) {
+        expect($requirements->get($requirement->ingredient_id)['required'])
+            ->toBe(bcmul($requirement->required_mass_grams, '2', 9));
+    }
+})->with([
+    'unchanged oil chemistry' => [false, '380.800000000'],
+    'revised oil chemistry' => [true, '352.000000000'],
+]);
 
 it('lists a liquid soap production in process order on the production page', function (): void {
     $production = liquidSoapProduction()['production'];

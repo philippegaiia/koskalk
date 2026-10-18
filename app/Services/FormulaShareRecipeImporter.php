@@ -56,7 +56,9 @@ class FormulaShareRecipeImporter
                     $this->invalid();
                 }
 
-                return ['ingredient_id' => $ingredientMap[$item['ingredient_key']], 'percentage' => $item['percentage'], 'weight' => $item['weight'], 'note' => $item['note']];
+                // Offers made before shares were saved carry none; the share is then inferred from the weight.
+                return ['ingredient_id' => $ingredientMap[$item['ingredient_key']], 'percentage' => $item['percentage'], 'weight' => $item['weight'], 'note' => $item['note'],
+                    ...(isset($item['final_percentage']) ? ['final_percentage' => $item['final_percentage']] : [])];
             })->all();
         }
         foreach ($formula['canonical_alkalis'] as $key) {

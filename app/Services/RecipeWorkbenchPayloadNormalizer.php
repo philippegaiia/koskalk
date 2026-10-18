@@ -682,11 +682,25 @@ class RecipeWorkbenchPayloadNormalizer
             })
             ->all();
 
-        return $this->withAdditionShares($payload, $this->recipeNormalizationService->normalizeSoapRecipe(
+        // Only the additions are re-sized; every other phase keeps its
+        // quantities as given, including the exact ones an import preserves.
+        $resized = collect($this->recipeNormalizationService->normalizeSoapRecipe(
             $phasePayload,
             $normalizedRecipe['oil_weight'],
             $editingMode,
-        ), $finalBatchWeight);
+        )['phases'])->keyBy('key');
+        $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
+            ->map(fn (array $phase): array => in_array($phase['key'], ['additives', 'fragrance'], true) && $resized->has($phase['key'])
+                ? $resized->get($phase['key'])
+                : $phase)
+            ->all();
+        $normalizedRecipe['totals'] = [
+            ...$normalizedRecipe['totals'],
+            'formula_percentage_of_oils' => collect($normalizedRecipe['phases'])->sum(fn (array $phase): float => (float) ($phase['totals']['percentage_of_oils'] ?? 0)),
+            'formula_weight' => collect($normalizedRecipe['phases'])->sum(fn (array $phase): float => (float) ($phase['totals']['weight'] ?? 0)),
+        ];
+
+        return $this->withAdditionShares($payload, $normalizedRecipe, $finalBatchWeight);
     }
 
     /**

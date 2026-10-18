@@ -6,6 +6,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\LiquidSoapNeutralizer;
 use App\Enums\OwnerType;
 use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
@@ -171,4 +172,13 @@ it('refuses to share a liquid soap saved without its process settings', function
 
     expect(fn () => app(FormulaShareSnapshotBuilder::class)->build($owner, $recipe, []))
         ->toThrow(ValidationException::class, __('sharing.validation.settings'));
+});
+
+it('shares an addition at its saved share of the finished batch after the chemistry changed', function (): void {
+    ['owner' => $owner, 'recipient' => $recipient, 'recipe' => $recipe] = sharedLiquidSoap();
+    IngredientSapProfile::query()->update(['koh_sap_value' => 0.25]);
+
+    $copy = savedLiquidSoapVersion(sendAndAcceptLiquidSoap($owner, $recipe, $recipient));
+
+    expect(RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $copy->id)->whereNotNull('final_percentage')->pluck('final_percentage')->all())->toBe(['2.0000']);
 });

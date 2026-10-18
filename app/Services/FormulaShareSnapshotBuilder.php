@@ -164,7 +164,6 @@ class FormulaShareSnapshotBuilder
                 'items' => $items->where('recipe_phase_id', $phase->id)->values()->map(fn (RecipeItem $item, int $position): array => [
                     'key' => 'p'.($index + 1).'i'.($position + 1), 'ingredient_key' => $graph['source_keys'][$item->ingredient_id],
                     'percentage' => $this->number($item->percentage, 4), 'weight' => $this->number($item->weight, 4),
-                    // A liquid soap addition's saved share of the finished batch.
                     ...($item->final_percentage === null ? [] : ['final_percentage' => $this->number($item->final_percentage, 4)]),
                     'position' => $item->position, 'note' => $options['include_line_notes'] ? $this->sanitizer->plainText($item->note) : null,
                 ])->all(),

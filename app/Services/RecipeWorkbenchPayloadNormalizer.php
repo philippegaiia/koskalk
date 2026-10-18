@@ -694,10 +694,14 @@ class RecipeWorkbenchPayloadNormalizer
                 ? $resized->get($phase['key'])
                 : $phase)
             ->all();
+        $phaseTotal = fn (string $key): float => (float) $this->roundMass(collect($normalizedRecipe['phases'])->reduce(
+            fn (string $total, array $phase): string => bcadd($total, NumberLocale::normalizeDecimalString(sprintf('%.12F', (float) ($phase['totals'][$key] ?? 0))) ?? '0', 18),
+            '0',
+        ));
         $normalizedRecipe['totals'] = [
             ...$normalizedRecipe['totals'],
-            'formula_percentage_of_oils' => collect($normalizedRecipe['phases'])->sum(fn (array $phase): float => (float) ($phase['totals']['percentage_of_oils'] ?? 0)),
-            'formula_weight' => collect($normalizedRecipe['phases'])->sum(fn (array $phase): float => (float) ($phase['totals']['weight'] ?? 0)),
+            'formula_percentage_of_oils' => $phaseTotal('percentage_of_oils'),
+            'formula_weight' => $phaseTotal('weight'),
         ];
 
         return $this->withAdditionShares($payload, $normalizedRecipe, $finalBatchWeight);

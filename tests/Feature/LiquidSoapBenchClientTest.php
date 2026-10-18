@@ -379,3 +379,22 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('costs a liquid soap addition at its share of the finished batch', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const liquid = bench(liquidFamily);
+liquid.oilUnit = 'g';
+liquid.oilWeight = 1000;
+liquid.phaseItems.fragrance = [{ id: 'lavender', ingredient_id: 10, name: 'Lavender', percentage: 9.52, weight: 95.2, final_percentage: 2 }];
+liquid.backendCalculation = { liquid_process: { status: 'ok', target_final_weight: '9520.0000', additions: [] } };
+
+assert.equal(Math.round(liquid.costingWeightForRow('fragrance', liquid.phaseItems.fragrance[0]) * 10000) / 10000, 190.4);
+
+const bar = bench(barFamily);
+bar.oilUnit = 'g';
+bar.oilWeight = 1000;
+assert.equal(bar.costingWeightForRow('fragrance', { id: 'f', ingredient_id: 10, percentage: 2 }), 20);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

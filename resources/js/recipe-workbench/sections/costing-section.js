@@ -400,6 +400,11 @@ export function createCostingSection(payload) {
                 return this.costingDilutionLiquidWeight(phaseKey, row);
             }
 
+            // A liquid soap addition weighs its share of the finished batch.
+            if (this.isLiquidSoapFormula && (phaseKey === 'additives' || phaseKey === 'fragrance')) {
+                return this.costingScaledFormulaWeight(this.liquidAdditionWeight(row));
+            }
+
             if (phaseKey !== 'lye_water') {
                 return rowWeightForOilWeight(this.costingBaseOilWeight, row);
             }
@@ -429,14 +434,17 @@ export function createCostingSection(payload) {
         costingDilutionLiquidWeight(phaseKey, row) {
             const liquid = (this.liquidProcessPreview?.dilution_liquids?.[phaseKey]?.liquids ?? [])
                 .find((candidate) => candidate.id === row.id || Number(candidate.ingredient_id) === Number(row.ingredient_id));
+
+            return liquid ? this.costingScaledFormulaWeight(nonNegativeNumber(liquid.weight)) : 0;
+        },
+
+        /** A formula weight in the formula's unit, scaled to the costing batch. */
+        costingScaledFormulaWeight(weight) {
             const formulaOilWeight = convertCostingMass(this.oilWeight, this.oilUnit, this.costingBaseOilUnit);
 
-            if (!liquid || formulaOilWeight <= 0) {
-                return 0;
-            }
-
-            return convertCostingMass(nonNegativeNumber(liquid.weight), this.oilUnit, this.costingBaseOilUnit)
-                * (this.costingBaseOilWeight / formulaOilWeight);
+            return formulaOilWeight > 0
+                ? convertCostingMass(nonNegativeNumber(weight), this.oilUnit, this.costingBaseOilUnit) * (this.costingBaseOilWeight / formulaOilWeight)
+                : 0;
         },
 
         costingPriceForRow(row) {

@@ -163,6 +163,9 @@ class RecipeWorkbenchVersionPayloadMapper
     }
 
     /**
+     * A liquid soap addition also carries its saved share of the finished
+     * batch as final_percentage.
+     *
      * @return array<string, mixed>
      */
     private function mapItemToWorkbenchRow(RecipeItem $item, ?array $catalogIngredient = null): array
@@ -187,7 +190,6 @@ class RecipeWorkbenchVersionPayloadMapper
                 ?? [],
             'percentage' => (float) $item->percentage,
             'weight' => (float) $item->weight,
-            // A liquid soap addition's saved share of the finished batch.
             ...($item->final_percentage === null ? [] : ['final_percentage' => (float) $item->final_percentage]),
             'note' => $item->note,
         ];

@@ -90,7 +90,7 @@ class ProductionFormulaSnapshotBuilder
                 ? '0'
                 : $this->massConverter->fromGrams((string) $neutralizerRequirement['required_mass_grams'], $unit));
 
-            foreach (['additives', 'fragrance'] as $phaseKey) {
+            foreach (RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES as $phaseKey) {
                 if (isset($draft['phaseItems'][$phaseKey])) {
                     $draft['phaseItems'][$phaseKey] = collect($draft['phaseItems'][$phaseKey])
                         ->map(fn (array $row): array => [...$row, 'weight' => 0])

@@ -628,7 +628,9 @@ class RecipeWorkbenchPayloadNormalizer
 
     /**
      * Additions the liquid soap bench sent as % of the final batch are
-     * stored like every soap addition: a weight and its % of the oils.
+     * stored like every soap addition: a weight and its % of the oils. Only
+     * the additions are re-sized; every other phase keeps its quantities as
+     * given, including the exact ones an import preserves.
      *
      * @param  array<string, mixed>  $payload
      * @param  array<int, array<string, mixed>>  $phasePayload
@@ -642,7 +644,7 @@ class RecipeWorkbenchPayloadNormalizer
         string $editingMode,
         string $finalBatchWeight,
     ): array {
-        $sentFinalPercentages = collect(['additives', 'fragrance'])
+        $sentFinalPercentages = collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
             ->contains(fn (string $phaseKey): bool => collect($payload['phase_items'][$phaseKey] ?? [])
                 ->contains(fn (mixed $row): bool => is_array($row) && ($row['final_percentage'] ?? null) !== null));
 
@@ -654,11 +656,11 @@ class RecipeWorkbenchPayloadNormalizer
         $normalizedPhases = collect($normalizedRecipe['phases'])->keyBy('key');
         $phasePayload = collect($phasePayload)
             ->map(function (array $phase) use ($payload, $finalBatchWeight, $oilWeight, $normalizedPhases): array {
-                if (! in_array($phase['key'], ['additives', 'fragrance'], true)) {
+                if (! in_array($phase['key'], RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES, true)) {
                     return $phase;
                 }
 
-                $rawRows = array_values(is_array($payload['phase_items'][$phase['key']] ?? null) ? $payload['phase_items'][$phase['key']] : []);
+                $rawRows = $this->sentRows($payload, $phase['key']);
                 $normalizedItems = $normalizedPhases->get($phase['key'])['items'] ?? [];
 
                 return [
@@ -682,26 +684,21 @@ class RecipeWorkbenchPayloadNormalizer
             })
             ->all();
 
-        // Only the additions are re-sized; every other phase keeps its
-        // quantities as given, including the exact ones an import preserves.
         $resized = collect($this->recipeNormalizationService->normalizeSoapRecipe(
             $phasePayload,
             $normalizedRecipe['oil_weight'],
             $editingMode,
         )['phases'])->keyBy('key');
         $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
-            ->map(fn (array $phase): array => in_array($phase['key'], ['additives', 'fragrance'], true) && $resized->has($phase['key'])
-                ? $resized->get($phase['key'])
+            ->map(fn (array $phase): array => in_array($phase['key'], RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES, true) && $resized->has($phase['key'])
+                ? [...$resized->get($phase['key']), 'totals' => $this->itemTotals($resized->get($phase['key'])['items'])]
                 : $phase)
             ->all();
-        $phaseTotal = fn (string $key): float => (float) $this->roundMass(collect($normalizedRecipe['phases'])->reduce(
-            fn (string $total, array $phase): string => bcadd($total, NumberLocale::normalizeDecimalString(sprintf('%.12F', (float) ($phase['totals'][$key] ?? 0))) ?? '0', 18),
-            '0',
-        ));
+        $formulaTotals = $this->itemTotals(collect($normalizedRecipe['phases'])->flatMap(fn (array $phase): array => $phase['items'])->all());
         $normalizedRecipe['totals'] = [
             ...$normalizedRecipe['totals'],
-            'formula_percentage_of_oils' => $phaseTotal('percentage_of_oils'),
-            'formula_weight' => $phaseTotal('weight'),
+            'formula_percentage_of_oils' => $formulaTotals['percentage_of_oils'],
+            'formula_weight' => $formulaTotals['weight'],
         ];
 
         return $this->withAdditionShares($payload, $normalizedRecipe, $finalBatchWeight);
@@ -719,11 +716,11 @@ class RecipeWorkbenchPayloadNormalizer
     {
         $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
             ->map(function (array $phase) use ($payload, $finalBatchWeight): array {
-                if (! in_array($phase['key'], ['additives', 'fragrance'], true)) {
+                if (! in_array($phase['key'], RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES, true)) {
                     return $phase;
                 }
 
-                $rawRows = array_values(is_array($payload['phase_items'][$phase['key']] ?? null) ? $payload['phase_items'][$phase['key']] : []);
+                $rawRows = $this->sentRows($payload, $phase['key']);
 
                 return [
                     ...$phase,
@@ -733,7 +730,7 @@ class RecipeWorkbenchPayloadNormalizer
                             $share = is_numeric($sentShare)
                                 ? (float) $sentShare
                                 : (bccomp($finalBatchWeight, '0', 18) > 0
-                                    ? (float) bcdiv(bcmul(NumberLocale::normalizeDecimalString(sprintf('%.12F', (float) ($item['weight'] ?? 0))) ?? '0', '100', 18), $finalBatchWeight, 18)
+                                    ? (float) bcdiv(bcmul($this->decimalString($item['weight'] ?? 0), '100', 18), $finalBatchWeight, 18)
                                     : null);
 
                             return [...$item, 'final_percentage' => $share === null ? null : round($share, 4)];
@@ -785,6 +782,42 @@ class RecipeWorkbenchPayloadNormalizer
     }
 
     /**
+     * The rows the payload sent for a phase, in order.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<mixed>
+     */
+    private function sentRows(array $payload, string $phaseKey): array
+    {
+        return array_values(is_array($payload['phase_items'][$phaseKey] ?? null) ? $payload['phase_items'][$phaseKey] : []);
+    }
+
+    /**
+     * Percentage of oils and weight of the given rows, summed on decimal strings.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array{percentage_of_oils: float, weight: float}
+     */
+    private function itemTotals(array $items): array
+    {
+        $sum = fn (string $key): float => (float) $this->roundMass(collect($items)->reduce(
+            fn (string $total, array $item): string => bcadd($total, $this->decimalString($item[$key] ?? 0), 18),
+            '0',
+        ));
+
+        return ['percentage_of_oils' => $sum('percentage'), 'weight' => $sum('weight')];
+    }
+
+    /**
+     * A row quantity as a canonical decimal string; floats are written out in
+     * fixed notation first so small values never turn into zero.
+     */
+    private function decimalString(mixed $value): string
+    {
+        return NumberLocale::normalizeDecimalString(is_float($value) || is_int($value) ? sprintf('%.12F', $value) : (string) $value) ?? '0';
+    }
+
+    /**
      * Liquid soap dilution liquids: rows stored as a % of their step's water
      * with the weight the saved process gives them.
      *
@@ -799,7 +832,7 @@ class RecipeWorkbenchPayloadNormalizer
         $neutralizerRow = collect($phases->get('neutralization')['items'] ?? [])->first(fn (array $item): bool => $item['ingredient_id'] !== null);
         $additionsWeight = collect(['additives', 'fragrance'])
             ->flatMap(fn (string $key): array => $phases->get($key)['items'] ?? [])
-            ->reduce(fn (string $total, array $item): string => bcadd($total, NumberLocale::normalizeDecimalString(sprintf('%.12F', (float) ($item['weight'] ?? 0))) ?? '0', 18), '0');
+            ->reduce(fn (string $total, array $item): string => bcadd($total, $this->decimalString($item['weight'] ?? 0), 18), '0');
         $process = $this->liquidSoapFormulaProcessor->process(
             $this->liquidSoapProcessCalculator->pasteComposition($this->soapCalculation($payload, $normalizedRecipe)),
             $settings,

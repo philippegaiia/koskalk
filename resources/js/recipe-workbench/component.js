@@ -795,7 +795,9 @@ function createCatalogSection() {
                 return;
             }
 
-            const amountInput = element.querySelector(`[data-workbench-amount-input="${this.editMode}"]`);
+            // Liquid soap additions only have a share input, whatever the editing mode.
+            const amountInput = element.querySelector(`[data-workbench-amount-input="${this.editMode}"]`)
+                ?? element.querySelector(`[data-workbench-amount-input="${this.editMode === 'weight' ? 'percentage' : 'weight'}"]`);
 
             if (!amountInput) {
                 return;

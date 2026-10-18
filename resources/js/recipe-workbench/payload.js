@@ -24,8 +24,8 @@ export function serializeRow(state, row, phaseKey = null) {
             // Liquid soap dilution liquids are sized by the server from their step's water.
             : (phaseKey === 'first_dilution' || phaseKey === 'final_dilution' ? 0 : rowWeight(state, row)),
         note: row.note ?? null,
-        // Liquid soap additions typed as % of the final batch; the server
-        // turns them into weights. Rows loaded from a save never carry it.
+        // Liquid soap additions are a % of the final batch, typed or loaded
+        // from a save; the server turns them into weights.
         ...(row.final_percentage === undefined || row.final_percentage === null
             ? {}
             : { final_percentage: nonNegativeNumber(row.final_percentage) }),

@@ -26,7 +26,13 @@ class FormulaShareRecipeImporter
         private readonly WorkspaceAuthorization $authorization,
     ) {}
 
-    /** @param array<string, int> $ingredientMap */
+    /**
+     * Liquid soap additions keep the share of the finished batch the offer
+     * carries; offers made before shares were saved carry none, and the share
+     * is then inferred from the weight.
+     *
+     * @param  array<string, int>  $ingredientMap
+     */
     public function import(User $actor, Workspace $destination, FormulaShare $share, array $ingredientMap): Recipe
     {
         if (DB::transactionLevel() === 0) {
@@ -56,7 +62,6 @@ class FormulaShareRecipeImporter
                     $this->invalid();
                 }
 
-                // Offers made before shares were saved carry none; the share is then inferred from the weight.
                 return ['ingredient_id' => $ingredientMap[$item['ingredient_key']], 'percentage' => $item['percentage'], 'weight' => $item['weight'], 'note' => $item['note'],
                     ...(isset($item['final_percentage']) ? ['final_percentage' => $item['final_percentage']] : [])];
             })->all();

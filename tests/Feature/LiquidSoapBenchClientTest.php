@@ -228,7 +228,6 @@ assert.equal(Math.round(workbench.liquidAdditionShareTotal() * 10000) / 10000, 3
 const rows = serializeDraft(workbench).phase_items;
 assert.equal(rows.fragrance[0].final_percentage, 2);
 assert.equal(Object.hasOwn(rows.additives[0], 'final_percentage'), false);
-assert.equal(typeof workbench.setLiquidAdditionWeight, 'undefined');
 
 // A share saved with the formula comes back on the row and is sent again.
 const saved = draftStateFromDraft({ phases: workbench.phaseOrder, phaseItems: { fragrance: [{ id: 'lavender', ingredient_id: 10, name: 'Lavender', percentage: 9.52, weight: 95.2, final_percentage: 2 }] } }, workbench);
@@ -394,6 +393,23 @@ const bar = bench(barFamily);
 bar.oilUnit = 'g';
 bar.oilWeight = 1000;
 assert.equal(bar.costingWeightForRow('fragrance', { id: 'f', ingredient_id: 10, percentage: 2 }), 20);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('focuses the share of a new liquid soap addition in weight mode', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const liquid = bench(liquidFamily);
+const focused = [];
+const share = { focus: () => focused.push('share'), select: () => {} };
+liquid.editMode = 'weight';
+liquid.lastAddedIngredientRowId = 'clay';
+liquid.canFocusAddedIngredientAmount = () => true;
+
+liquid.focusAddedIngredientAmount({ querySelector: (selector) => selector === '[data-workbench-amount-input="percentage"]' ? share : null }, 'clay');
+
+assert.deepEqual(focused, ['share']);
 JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());

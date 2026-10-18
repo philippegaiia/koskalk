@@ -454,3 +454,31 @@ it('recovers the share of additions saved before shares were stored', function (
         ->and(RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $bar->id)->whereNotNull('final_percentage')->count())->toBe(0);
     $this->artisan('liquid-soap:backfill-addition-shares --apply')->expectsOutputToContain('Set: 0')->assertSuccessful();
 });
+
+it('recovers a weightless addition from its share of the oils and reports a version it cannot calculate', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $service = app(RecipeWorkbenchService::class);
+    $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'phase_items' => ['fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]]],
+    ]);
+    $weightless = $service->save($user, $family, $payload);
+    $broken = $service->save($user, $family, $payload);
+    RecipeItem::withoutGlobalScopes()->update(['final_percentage' => null]);
+    RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $weightless->id)->update(['weight' => 0]);
+    $context = $broken->calculation_context;
+    unset($context['liquid_process']);
+    $broken->forceFill(['calculation_context' => $context])->save();
+
+    $this->artisan('liquid-soap:backfill-addition-shares --apply')
+        ->expectsOutputToContain('Set: 1; unresolved versions (unchanged): 1')
+        ->assertFailed();
+
+    $fragranceShare = fn (RecipeVersion $version): ?string => RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $version->id)->where('ingredient_id', $fragrance->id)->value('final_percentage');
+
+    expect($fragranceShare($weightless))->toBe('2.0000')
+        ->and($fragranceShare($broken))->toBeNull();
+});

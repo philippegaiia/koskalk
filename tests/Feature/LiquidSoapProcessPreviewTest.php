@@ -7,6 +7,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\RecipeWorkbenchService;
@@ -422,4 +423,34 @@ it('leaves bar soap rows without a share of the finished batch', function () {
 
     expect($service->versionPayload(Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id), $version->id)['phaseItems']['fragrance'][0])
         ->not->toHaveKey('final_percentage');
+});
+
+it('recovers the share of additions saved before shares were stored', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $barFamily = ProductFamily::factory()->create(['slug' => 'soap']);
+    $barType = ProductType::factory()->create(['product_family_id' => $barFamily->id]);
+    $service = app(RecipeWorkbenchService::class);
+    $liquid = $service->save($user, $family, liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'phase_items' => ['fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]]],
+    ]));
+    $bar = $service->save($user, $barFamily, liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $barType->id,
+        'superfat' => 5,
+        'phase_items' => ['fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 2, 'weight' => 20, 'note' => null]]],
+    ]));
+    RecipeItem::withoutGlobalScopes()->update(['final_percentage' => null]);
+    $liquidRow = fn () => RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $liquid->id)->where('ingredient_id', $fragrance->id)->sole();
+
+    $this->artisan('liquid-soap:backfill-addition-shares')->expectsOutputToContain('Would set: 1')->assertSuccessful();
+    expect($liquidRow()->final_percentage)->toBeNull();
+
+    $this->artisan('liquid-soap:backfill-addition-shares --apply')->expectsOutputToContain('Set: 1')->assertSuccessful();
+
+    expect($liquidRow()->final_percentage)->toBe('2.0000')
+        ->and(RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $bar->id)->whereNotNull('final_percentage')->count())->toBe(0);
+    $this->artisan('liquid-soap:backfill-addition-shares --apply')->expectsOutputToContain('Set: 0')->assertSuccessful();
 });

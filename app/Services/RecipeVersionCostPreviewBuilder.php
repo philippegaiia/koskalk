@@ -53,12 +53,16 @@ class RecipeVersionCostPreviewBuilder
         $costing = $this->costingSynchronizer->projectCosting($version, $existingCosting);
         $currency = $costing->currency ?: $user->defaultCurrency();
         $version = $costing->recipeVersion;
+        $snapshot = ($recipe->productFamily?->usesLiquidSoapPasteBench() ?? false)
+            ? $this->recipeWorkbenchService->versionSnapshot($recipe, (int) $version->id)
+            : null;
 
         $preview = $this->buildFromTransientRows(
             formula: $this->transientFormulaForVersion(
                 $version,
                 $recipe->productFamily?->calculation_basis === 'total_formula' ? 'cosmetic' : 'soap',
                 [],
+                $snapshot,
             ),
             costing: $this->transientCostingForProjection(
                 $costing,

@@ -828,7 +828,7 @@ class RecipeWorkbenchPayloadNormalizer
     {
         $phases = collect($normalizedRecipe['phases'])->keyBy('key');
         $neutralizerRow = collect($phases->get('neutralization')['items'] ?? [])->first(fn (array $item): bool => $item['ingredient_id'] !== null);
-        $additionsWeight = collect(['additives', 'fragrance'])
+        $additionsWeight = collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
             ->flatMap(fn (string $key): array => $phases->get($key)['items'] ?? [])
             ->reduce(fn (string $total, array $item): string => bcadd($total, $this->decimalString($item['weight'] ?? 0), 18), '0');
         $process = $this->liquidSoapFormulaProcessor->process(

@@ -127,7 +127,7 @@ class FormulaDocumentBuilder
                 : __("formula_documents.liquid.instructions.{$phaseKey}_with_liquids", ['liquids' => $liquids, 'target' => $target($phaseKey)]);
         };
 
-        $draftAdditions = collect(['additives', 'fragrance'])
+        $draftAdditions = collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
             ->flatMap(fn (string $phaseKey): array => collect(Arr::wrap(data_get($snapshot, "draft.phaseItems.{$phaseKey}", [])))
                 ->filter(fn (mixed $row): bool => is_array($row) && filled($row['ingredient_id'] ?? null))
                 ->values()

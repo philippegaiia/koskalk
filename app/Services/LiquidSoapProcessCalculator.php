@@ -27,14 +27,19 @@ class LiquidSoapProcessCalculator
 
     private const OUTPUT_SCALE = 4;
 
+    private const NEUTRALIZER_TOLERANCE_GRAMS = '0.005';
+
     /** Most decimals PHP's sprintf() writes for a float. */
     private const MAX_FLOAT_DECIMALS = 53;
+
+    public function __construct(private readonly MassConverter $massConverter) {}
 
     /**
      * Read the paste out of a soap calculation made without post-reaction oils.
      *
      * @param  array<string, mixed>  $soapCalculation  Output of SoapCalculationService::calculate().
      * @return array{
+     *     mass_unit: string,
      *     lipids_weight: string,
      *     koh_weight: string,
      *     reacted_koh_weight: string,
@@ -49,7 +54,7 @@ class LiquidSoapProcessCalculator
      *     anhydrous_soap_weight: string
      * }
      */
-    public function pasteComposition(array $soapCalculation): array
+    public function pasteComposition(array $soapCalculation, string $massUnit = 'g'): array
     {
         if (data_get($soapCalculation, 'lye.selected.type') !== 'koh') {
             throw new InvalidArgumentException('Liquid soap paste requires KOH as the only alkali.');
@@ -66,7 +71,7 @@ class LiquidSoapProcessCalculator
         $reactedKohWeight = bcsub($kohWeight, $freeKohWeight, self::SCALE);
         $saponifiedLipidsWeight = bcmul($lipidsWeight, $saponifiedFraction, self::SCALE);
 
-        return array_map($this->round(...), [
+        $composition = array_map($this->round(...), [
             'lipids_weight' => $lipidsWeight,
             'koh_weight' => $kohWeight,
             'reacted_koh_weight' => $reactedKohWeight,
@@ -80,6 +85,8 @@ class LiquidSoapProcessCalculator
             'theoretical_paste_weight' => $this->sum($lipidsWeight, $kohMaterialWeight, $alkaliLiquidWeight),
             'anhydrous_soap_weight' => bcadd($lipidsWeight, $reactedKohWeight, self::SCALE),
         ]);
+
+        return ['mass_unit' => $massUnit, ...$composition];
     }
 
     /**
@@ -159,10 +166,12 @@ class LiquidSoapProcessCalculator
         $firstAdd = $this->max('0', bcsub($firstTarget, $pasteWeight, self::SCALE));
         $firstMass = bcadd($pasteWeight, $firstAdd, self::SCALE);
 
-        $neutralization = $this->neutralization($freeKohWeight, $process['neutralizer'] ?? null);
+        $neutralizer = $process['neutralizer'] ?? null;
+        $tolerance = $this->neutralizerTolerance($neutralizer, $paste['mass_unit'] ?? 'g');
+        $neutralization = $this->neutralization($freeKohWeight, $neutralizer);
         $neutralizedMass = bcadd($firstMass, $neutralization['solution_weight'], self::SCALE);
         $finalAnhydrousSoapWeight = bcadd($anhydrousSoapWeight, $neutralization['anhydrous_soap_gain'], self::SCALE);
-        $isSupported = ! $this->isPositive($neutralization['excess_acid_weight']);
+        $isSupported = bccomp($neutralization['excess_acid_weight'], $tolerance, self::SCALE) <= 0;
 
         $stages = [
             'first_dilution' => [
@@ -196,7 +205,7 @@ class LiquidSoapProcessCalculator
             ])->mapWithKeys(fn (LiquidSoapNeutralizer $neutralizer): array => [
                 $neutralizer->value => $this->round($this->recommendedWeight($freeKohWeight, $neutralizer)),
             ])->all(),
-            'warnings' => $this->warnings($freeKohWeight, $neutralization),
+            'warnings' => $this->warnings($freeKohWeight, $neutralization, $tolerance, $neutralizer),
         ];
 
         if (! $isSupported) {
@@ -233,6 +242,7 @@ class LiquidSoapProcessCalculator
             'free_koh_weight' => $neutralization['residual_koh_weight'],
             'koh_impurity_weight' => bcsub($kohMaterialWeight, $kohWeight, self::SCALE),
             'neutralization_salt_weight' => $neutralization['salt_weight'],
+            'excess_acid_weight' => $neutralization['excess_acid_weight'],
             'additions_weight' => $additionsWeight,
             'water_weight' => $this->sum(
                 $alkaliLiquidWeight,
@@ -420,9 +430,10 @@ class LiquidSoapProcessCalculator
 
     /**
      * @param  array<string, mixed>  $neutralization
+     * @param  array<string, mixed>|null  $neutralizer
      * @return array<int, string>
      */
-    private function warnings(string $freeKohWeight, array $neutralization): array
+    private function warnings(string $freeKohWeight, array $neutralization, string $tolerance, ?array $neutralizer): array
     {
         $warnings = [];
 
@@ -430,19 +441,51 @@ class LiquidSoapProcessCalculator
             $warnings[] = 'neutralizer_amount_is_theoretical';
         }
 
-        if ($this->isPositive($neutralization['residual_koh_weight'])) {
+        $residualAcidEquivalent = $neutralizer === null ? null : $this->recommendedWeight(
+            $neutralization['residual_koh_weight'],
+            $neutralizer['type'] instanceof LiquidSoapNeutralizer ? $neutralizer['type'] : LiquidSoapNeutralizer::from($neutralizer['type']),
+            $neutralizer['koh_sap_value'] ?? null,
+        );
+
+        if ($this->isPositive($neutralization['residual_koh_weight']) && ($residualAcidEquivalent === null || bccomp($residualAcidEquivalent, $tolerance, self::SCALE) > 0)) {
             $warnings[] = 'free_koh_remains';
         }
 
-        if ($this->isPositive($neutralization['excess_acid_weight'])) {
+        if (bccomp($neutralization['excess_acid_weight'], $tolerance, self::SCALE) > 0) {
             $warnings[] = 'excess_acid_splits_soap';
         }
 
-        if ($this->isPositive($neutralization['excess_fatty_acid_weight'])) {
+        if (bccomp($neutralization['excess_fatty_acid_weight'], $tolerance, self::SCALE) > 0) {
             $warnings[] = 'excess_fatty_acid_raises_superfat';
         }
 
         return $warnings;
+    }
+
+    /**
+     * The estimate accepts five milligrams or the rounding of a dose and its
+     * free-KOH input, whichever is larger, expressed in the batch's unit.
+     * Trace excess stays in the mass balance as unreacted acid.
+     *
+     * @param  array<string, mixed>|null  $neutralizer
+     */
+    private function neutralizerTolerance(?array $neutralizer, string $massUnit): string
+    {
+        if ($neutralizer === null) {
+            return '0';
+        }
+
+        $type = $neutralizer['type'] instanceof LiquidSoapNeutralizer
+            ? $neutralizer['type']
+            : LiquidSoapNeutralizer::tryFrom((string) ($neutralizer['type'] ?? ''));
+
+        if ($type === null) {
+            throw new InvalidArgumentException('Unsupported neutralizer.');
+        }
+
+        $rounding = bcadd('0.00005', $this->recommendedWeight('0.00005', $type, $neutralizer['koh_sap_value'] ?? null), self::SCALE);
+
+        return $this->max($this->massConverter->fromGrams(self::NEUTRALIZER_TOLERANCE_GRAMS, $massUnit), $rounding);
     }
 
     private function percentage(mixed $value, string $label, bool $allowHundred = false): string

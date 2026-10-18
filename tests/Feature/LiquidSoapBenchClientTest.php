@@ -143,7 +143,9 @@ assert.equal(workbench.phaseItems.neutralization.length, 1);
 assert.equal(workbench.liquidNeutralizerRow.ingredient_id, 8);
 
 workbench.backendCalculation = { liquid_process: { status: 'ok', neutralizer: { recommended_weight: '9.1514' } } };
-workbench.useRecommendedLiquidNeutralizer();
+workbench.$wire = { previewCalculation: async () => ({ ok: true, calculation: workbench.backendCalculation }) };
+workbench.syncIngredientListVariantSelection = () => {};
+await workbench.useRecommendedLiquidNeutralizer();
 assert.equal(Math.round(workbench.liquidNeutralizerWeight() * 10000) / 10000, 9.1514);
 
 workbench.chooseLiquidNeutralizer('');
@@ -184,6 +186,78 @@ JS);
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
+it('preserves the more precise saved neutralizer dose through reload and batch resizing', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.applyDraft({ oilWeight: 6000, phaseItems: { neutralization: [
+    { id: 'acid', ingredient_id: 7, percentage: 2.3713, weight: 142.2778 },
+] } });
+assert.ok(Math.abs(workbench.liquidNeutralizerWeight() - 142.2778) < 1e-9);
+assert.ok(Math.abs(serializeDraft(workbench).phase_items.neutralization[0].weight - 142.2778) < 1e-9);
+workbench.oilWeight = 12000;
+assert.ok(Math.abs(workbench.liquidNeutralizerWeight() - 284.5556) < 1e-9);
+
+workbench.applyDraft({ oilWeight: 1, oilUnit: 'kg', phaseItems: { neutralization: [
+    { id: 'acid', ingredient_id: 7, percentage: 0.7191, weight: 0.0072 },
+] } });
+assert.ok(Math.abs(workbench.liquidNeutralizerWeight() - 0.007191) < 1e-12);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('discards a preview that belongs to earlier formula inputs', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+let finishPreview;
+workbench.$wire = { previewCalculation: () => new Promise(resolve => { finishPreview = resolve; }) };
+workbench.backendCalculation = { current: true };
+const preview = workbench.refreshCalculationPreview();
+workbench.superfat = -10;
+finishPreview({ ok: true, calculation: { stale: true } });
+await preview;
+assert.deepEqual(workbench.backendCalculation, { current: true });
+clearTimeout(workbench.calculationPreviewTimer);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('uses a fresh recommendation without saving and saves that dose on the next explicit save', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.oilWeight = 6000;
+workbench.superfat = -10;
+workbench.phaseItems.neutralization = [{ id: 'acid', ingredient_id: 7, percentage: 0.7114333333, weight: 42.686 }];
+workbench.backendCalculation = { liquid_process: { neutralizer: { recommended_weight: '42.6860' } } };
+workbench.syncIngredientListVariantSelection = () => {};
+let finishPreview;
+let saved = null;
+workbench.$wire = {
+    previewCalculation: draft => {
+        assert.equal(draft.superfat, -10);
+        return new Promise(resolve => { finishPreview = resolve; });
+    },
+    save: async draft => { saved = draft; return { ok: true }; },
+};
+workbench.flushCostingSave = async () => true;
+workbench.queueRevisionMutation = async action => action();
+workbench.activateSavedRecipeEditing = async () => {};
+const recommendation = workbench.useRecommendedLiquidNeutralizer();
+assert.equal(saved, null);
+const saving = workbench.save();
+assert.equal(saved, null);
+finishPreview({ ok: true, calculation: { liquid_process: { neutralizer: { recommended_weight: '142.2780' } } } });
+await recommendation;
+await saving;
+assert.ok(Math.abs(saved.phase_items.neutralization[0].weight - 142.278) < 1e-9);
+assert.ok(Math.abs(workbench.liquidNeutralizerWeight() - 142.278) < 1e-9);
+clearTimeout(workbench.calculationPreviewTimer);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
 it('sends the weighed paste with the preview request only', function () {
     $process = runLiquidSoapBenchScript(<<<'JS'
 const { refreshCalculationPreview } = await import('./resources/js/recipe-workbench/bridge.js');
@@ -197,6 +271,36 @@ await refreshCalculationPreview(workbench);
 
 assert.equal(sentDraft.liquid_process.measured_paste_weight, '1680');
 assert.equal(Object.hasOwn(serializeDraft(workbench).liquid_process, 'measured_paste_weight'), false);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('keeps a recommendation requested while an earlier save is finishing', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const { persistWorkbench } = await import('./resources/js/recipe-workbench/bridge.js');
+const workbench = bench(liquidFamily);
+workbench.recipeId = 1;
+workbench.oilWeight = 6000;
+workbench.phaseItems.neutralization = [{ id: 'acid', ingredient_id: 7, percentage: 0.7114333333, weight: 42.686 }];
+workbench.syncIngredientListVariantSelection = () => {};
+let finishSave;
+let finishPreview;
+workbench.$wire = {
+    save: () => new Promise(resolve => { finishSave = resolve; }),
+    previewCalculation: () => new Promise(resolve => { finishPreview = resolve; }),
+};
+const saving = persistWorkbench(workbench, 'save');
+const recommendation = workbench.useRecommendedLiquidNeutralizer();
+finishSave({ ok: true, snapshot: { draft: { oilWeight: 6000, phaseItems: { neutralization: [
+    { id: 'saved-acid', ingredient_id: 7, percentage: 0.7114, weight: 42.686 },
+] } } } });
+await saving;
+finishPreview({ ok: true, calculation: { liquid_process: { neutralizer: { recommended_weight: '142.2780' } } } });
+await recommendation;
+assert.ok(Math.abs(workbench.liquidNeutralizerWeight() - 142.278) < 1e-9);
+assert.equal(workbench.hasUnsavedWorkbenchChanges(), true);
+clearTimeout(workbench.calculationPreviewTimer);
 JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());

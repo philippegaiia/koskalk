@@ -107,7 +107,7 @@
  </label>
  </template>
  <template x-if="liquidNeutralizerRow !== null && liquidProcessPreview?.neutralizer">
- <button type="button" @click="useRecommendedLiquidNeutralizer()" class="sk-btn sk-btn-outline min-h-11 whitespace-nowrap">{{ __('workbench.liquid.use_recommended') }}</button>
+ <button type="button" @click="useRecommendedLiquidNeutralizer()" :disabled="isApplyingLiquidNeutralizerRecommendation" class="sk-btn sk-btn-outline min-h-11 whitespace-nowrap">{{ __('workbench.liquid.use_recommended') }}</button>
  </template>
  </div>
 
@@ -186,7 +186,7 @@
  <div class="flex items-baseline justify-between gap-3 border-b border-[var(--color-line)] py-2 text-sm">
  <dt class="flex min-w-0 items-center gap-2 text-[var(--color-ink-strong)]">
  <span class="size-2.5 shrink-0 rounded-sm" :style="`background: ${component.color}`" aria-hidden="true"></span>
- <span class="truncate" x-text="t(`liquid.components.${component.key}`)"></span>
+ <span class="truncate" x-text="t(component.labelKey)"></span>
  </dt>
  <dd class="numeric shrink-0 text-right">
  <span class="font-semibold text-[var(--color-ink-strong)]" x-text="`${format(component.share, 1)}%`"></span>

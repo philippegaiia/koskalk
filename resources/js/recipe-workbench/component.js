@@ -1423,9 +1423,11 @@ const LIQUID_PROCESS_DEFAULTS = Object.freeze({
  */
 function createLiquidSoapSection(payload) {
     const isLiquidSoapFormula = payload.productFamily?.soap_process === 'liquid_paste';
+    let recommendationRequest = null;
 
     return {
         liquidProcess: isLiquidSoapFormula ? { ...LIQUID_PROCESS_DEFAULTS } : null,
+        isApplyingLiquidNeutralizerRecommendation: false,
 
         get isLiquidSoapFormula() {
             return isLiquidSoapFormula;
@@ -1517,11 +1519,30 @@ function createLiquidSoapSection(payload) {
         },
 
         useRecommendedLiquidNeutralizer() {
-            const recommended = this.liquidProcessPreview?.neutralizer?.recommended_weight;
+            const row = this.liquidNeutralizerRow;
+            this.isApplyingLiquidNeutralizerRecommendation = true;
+            const request = (async () => {
+                if (!await this.refreshCalculationPreview() || row !== this.liquidNeutralizerRow) {
+                    return;
+                }
 
-            if (recommended !== undefined && recommended !== null) {
-                this.setLiquidNeutralizerWeight(recommended);
-            }
+                const recommended = this.liquidProcessPreview?.neutralizer?.recommended_weight;
+
+                if (recommended !== undefined && recommended !== null) {
+                    this.setLiquidNeutralizerWeight(recommended);
+                }
+            })();
+            recommendationRequest = request;
+
+            return request.finally(() => {
+                if (recommendationRequest === request) {
+                    this.isApplyingLiquidNeutralizerRecommendation = false;
+                }
+            });
+        },
+
+        async flushLiquidNeutralizerRecommendation() {
+            await recommendationRequest;
         },
 
         liquidStageRows() {
@@ -1634,7 +1655,7 @@ function createLiquidSoapSection(payload) {
 
             return LIQUID_COMPOSITION_ORDER
                 .filter((key) => this.number(composition[key]) > 0)
-                .map((key) => ({ key, weight: composition[key], share: shares[key], color: LIQUID_COMPOSITION_COLORS[key] }));
+                .map((key) => ({ key, labelKey: key === 'excess_acid_weight' ? 'liquid.neutralizer' : `liquid.components.${key}`, weight: composition[key], share: shares[key], color: LIQUID_COMPOSITION_COLORS[key] }));
         },
     };
 }
@@ -1649,9 +1670,11 @@ const LIQUID_COMPOSITION_ORDER = [
     'free_koh_weight',
     'koh_impurity_weight',
     'neutralization_salt_weight',
+    'excess_acid_weight',
 ];
 
 const LIQUID_COMPOSITION_COLORS = {
+    excess_acid_weight: 'var(--color-amber)',
     soap_salt_weight: 'var(--color-chemistry)',
     glycerine_weight: 'var(--color-amber-light)',
     unreacted_lipids_weight: 'var(--color-amber)',
@@ -1664,6 +1687,8 @@ const LIQUID_COMPOSITION_COLORS = {
 };
 
 function createPersistenceSection() {
+    let previewRequest = null;
+
     return {
         schedulePhaseItemPreviews() {
             const nextCalculationSignature = this.currentCalculationPhaseSignature();
@@ -1732,7 +1757,21 @@ function createPersistenceSection() {
         async refreshCalculationPreview(resetBaseline = false) {
             void resetBaseline;
 
-            await refreshWorkbenchCalculationPreview(this);
+            while (previewRequest !== null) {
+                await previewRequest;
+            }
+
+            clearTimeout(this.calculationPreviewTimer);
+            this.calculationPreviewTimer = null;
+            this.calculationPreviewPending = false;
+            this.isPreviewingCalculation = true;
+            previewRequest = refreshWorkbenchCalculationPreview(this);
+
+            try {
+                return await previewRequest;
+            } finally {
+                previewRequest = null;
+            }
         },
 
         scheduleLabelingPreview(resetBaseline = false) {
@@ -1864,6 +1903,10 @@ function createPersistenceSection() {
         },
 
         async persist(method, queueOptions = {}) {
+            if (this.isLiquidSoapFormula) {
+                await this.flushLiquidNeutralizerRecommendation();
+            }
+
             if (!await this.flushCostingSave()) {
                 return;
             }

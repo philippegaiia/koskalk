@@ -45506,12 +45506,12 @@
       "group": "workbench",
       "key": "liquid.warnings.excess_acid_splits_soap",
       "text": {
-        "de": "Mehr Säure, als das freie KOH braucht: Die überschüssige Säure spaltet Seife in Fettsäuren zurück und kann die Charge trüben.",
-        "es": "Más ácido del que necesita el KOH libre: el exceso vuelve a convertir jabón en ácidos grasos y puede enturbiar el lote.",
-        "fr": "Plus d’acide que n’en demande la potasse libre : l’excès redécompose le savon en acides gras et peut troubler le lot.",
-        "it": "Più acido di quanto serve al KOH libero: l’eccesso riconverte il sapone in acidi grassi e può intorbidire il lotto.",
-        "nl": "Meer zuur dan de vrije KOH nodig heeft: het teveel splitst zeep terug in vetzuren en kan de batch troebel maken.",
-        "pt_BR": "Mais ácido do que o KOH livre precisa: o excesso volta a transformar sabão em ácidos graxos e pode turvar o lote."
+        "de": "Über der theoretischen Menge. Die tatsächliche KOH-Reinheit und Säurestärke können von den Annahmen abweichen. Überschüssige Säure kann Seife spalten und die Charge trüben. Diese Menge kann gespeichert werden.",
+        "es": "Por encima de la dosis teórica. La pureza real del KOH y la concentración del ácido pueden diferir de los supuestos. El exceso de ácido puede descomponer el jabón y enturbiar el lote. Puedes guardar esta cantidad.",
+        "fr": "Au-dessus de la dose théorique. La pureté réelle de la potasse et le titre de l’acide peuvent différer des hypothèses. Un excès d’acide peut décomposer le savon et troubler le lot. Vous pouvez enregistrer cette quantité.",
+        "it": "Sopra la dose teorica. La purezza reale del KOH e il titolo dell’acido possono differire dalle ipotesi. Un eccesso di acido può scindere il sapone e intorbidire il lotto. Puoi salvare questa quantità.",
+        "nl": "Boven de theoretische dosering. De werkelijke KOH-zuiverheid en zuursterkte kunnen afwijken van de aannames. Overtollig zuur kan zeep splitsen en de batch troebel maken. Je kunt deze hoeveelheid opslaan.",
+        "pt_BR": "Acima da dose teórica. A pureza real do KOH e a concentração do ácido podem diferir das suposições. O excesso de ácido pode decompor o sabão e turvar o lote. Você pode salvar esta quantidade."
       }
     },
     {
@@ -45542,12 +45542,12 @@
       "group": "workbench",
       "key": "liquid.warnings.neutralizer_amount_is_theoretical",
       "text": {
-        "de": "Theoretische Menge. Ein Teil des freien KOH wird beim Kochen und durch die Luft verbraucht. Einen Teil zugeben, mischen, testen (Phenolphthalein oder pH), dann anpassen.",
-        "es": "Cantidad teórica. Parte del KOH libre se consume durante la cocción y con el aire. Añade una parte, mezcla, prueba (fenolftaleína o pH) y ajusta.",
-        "fr": "Quantité théorique. Une partie de la potasse libre est consommée pendant la cuisson et par l’air. Ajoutez-en une partie, mélangez, testez (phénolphtaléine ou pH), puis ajustez.",
-        "it": "Quantità teorica. Parte del KOH libero si consuma durante la cottura e con l’aria. Aggiungine una parte, mescola, verifica (fenolftaleina o pH), poi regola.",
-        "nl": "Theoretische hoeveelheid. Een deel van de vrije KOH wordt tijdens het koken en door de lucht verbruikt. Voeg een deel toe, meng, test (fenolftaleïne of pH) en stel bij.",
-        "pt_BR": "Quantidade teórica. Parte do KOH livre é consumida no cozimento e pelo ar. Adicione uma parte, misture, teste (fenolftaleína ou pH) e ajuste."
+        "de": "Theoretische Menge auf Basis der nominalen KOH-Reinheit und Neutralisatorstärke. Der tatsächliche Bedarf hängt von den Rohstoffen und dem Kochen ab. Testen und anpassen; die gewählte Menge kann gespeichert werden.",
+        "es": "Dosis teórica basada en la pureza nominal del KOH y la concentración del neutralizante. La necesidad real varía según las materias primas y la cocción. Prueba y ajusta; puedes guardar la cantidad que elijas.",
+        "fr": "Dose théorique fondée sur la pureté nominale de la potasse et le titre du neutralisant. Le besoin réel varie selon les matières premières et la cuisson. Testez et ajustez ; vous pouvez enregistrer la quantité choisie.",
+        "it": "Dose teorica basata sulla purezza nominale del KOH e sul titolo del neutralizzante. Il fabbisogno reale varia con le materie prime e la cottura. Verifica e regola; puoi salvare la quantità scelta.",
+        "nl": "Theoretische dosering op basis van de nominale KOH-zuiverheid en neutralisatorsterkte. De werkelijke behoefte hangt af van de grondstoffen en het koken. Test en stel bij; je kunt de gekozen hoeveelheid opslaan.",
+        "pt_BR": "Dose teórica baseada na pureza nominal do KOH e na concentração do neutralizante. A necessidade real varia com as matérias-primas e o cozimento. Teste e ajuste; você pode salvar a quantidade escolhida."
       }
     },
     {

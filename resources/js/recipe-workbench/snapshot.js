@@ -107,6 +107,16 @@ export function draftStateFromDraft(draft, currentState) {
         liquidProcess: liquidProcessFromDraft(draft, currentState.liquidProcess),
     };
 
+    // Both saved quantities have four decimals. Use the weight when it is
+    // finer than the saved percentage, keeping the dose scalable with oils.
+    if (nextState.liquidProcess && nextState.oilWeight > 100) {
+        nextState.phaseItems.neutralization = (nextState.phaseItems.neutralization ?? []).map(row => (
+            number(row.weight) > 0
+                ? { ...row, percentage: number(row.weight) * 100 / nextState.oilWeight }
+                : row
+        ));
+    }
+
     if (Object.hasOwn(draft, 'selectedIfraProductCategoryId')) {
         nextState.selectedIfraProductCategoryId = draft.selectedIfraProductCategoryId === null || draft.selectedIfraProductCategoryId === undefined
             ? ''

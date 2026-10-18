@@ -34,7 +34,15 @@ export async function refreshCalculationPreview(workbench) {
             draft.liquid_process = { ...draft.liquid_process, measured_paste_weight: measuredPasteWeight };
         }
 
+        const submittedSignature = draftSignature(serializeDraft(workbench));
         const response = await workbench.$wire.previewCalculation(draft);
+
+        if (submittedSignature !== draftSignature(serializeDraft(workbench))
+            || measuredPasteWeight !== workbench.liquidProcess?.measuredPasteWeight) {
+            workbench.calculationPreviewPending = true;
+
+            return false;
+        }
 
         if (response?.ok) {
             workbench.backendCalculation = response.calculation ?? null;
@@ -50,11 +58,15 @@ export async function refreshCalculationPreview(workbench) {
             workbench.backendRestrictions = null;
             workbench.calculationPreviewMessage = response?.message ?? 'The live calculation preview is not available for these inputs.';
         }
+
+        return response?.ok === true;
     } catch (error) {
         workbench.backendCalculation = null;
         workbench.backendLabeling = null;
         workbench.backendRestrictions = null;
         workbench.calculationPreviewMessage = 'The live calculation preview is not available for these inputs.';
+
+        return false;
     } finally {
         workbench.isPreviewingCalculation = false;
         workbench.calculationPreviewTimer = null;
@@ -91,6 +103,7 @@ export async function persistWorkbench(workbench, method) {
         workbench.saveMessage = response.message ?? 'Formula saved.';
 
         const changedDuringSave = draftSignature(serializeDraft(workbench)) !== submittedSignature
+            || workbench.isApplyingLiquidNeutralizerRecommendation === true
             || JSON.stringify(workbench.$wire?.data ?? null) !== submittedContent
             || workbench.costingSaveSeq !== submittedCostingSequence;
 

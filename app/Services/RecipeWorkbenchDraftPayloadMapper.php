@@ -20,6 +20,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'ifra_category_selection_mode' => $draft['ifraCategorySelectionMode'] ?? 'automatic',
             'ifra_product_category_id' => $draft['selectedIfraProductCategoryId'] ?? null,
             'oil_weight' => $draft['oilWeight'] ?? 0,
+            'oil_unit' => $draft['oilUnit'] ?? 'g',
             'lye_type' => $draft['lyeType'] ?? 'naoh',
             'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
             'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,

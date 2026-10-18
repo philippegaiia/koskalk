@@ -173,7 +173,7 @@ class RecipeWorkbenchPreviewService
      */
     public function previewLiquidSoapProcess(array $payload, array $calculation): array
     {
-        $paste = $this->liquidSoapProcessCalculator->pasteComposition($calculation);
+        $paste = $this->liquidSoapProcessCalculator->pasteComposition($calculation, $payload['oil_unit'] ?? 'g');
         $liquidProcess = is_array($payload['liquid_process'] ?? null) ? $payload['liquid_process'] : [];
         $neutralizerRow = collect($payload['phase_items']['neutralization'] ?? [])
             ->first(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null));

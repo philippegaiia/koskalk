@@ -224,6 +224,46 @@ it('keeps extra stearic acid as unsaponified lipid inside the soap basis', funct
         ->and($result['warnings'])->toBe(['neutralizer_amount_is_theoretical', 'excess_fatty_acid_raises_superfat']);
 });
 
+it('accepts only trace neutralizer excess with a unit aware tolerance', function (string $unit, string $dose, string $expectedStatus) {
+    $paste = liquidSoapPaste(-3);
+    $paste['mass_unit'] = $unit;
+    $result = app(LiquidSoapProcessCalculator::class)->calculate($paste, [
+        'final_dilution_percentage' => 25,
+        'neutralizer' => ['type' => 'citric_acid_anhydrous', 'weight' => $dose],
+    ]);
+
+    expect($result['status'])->toBe($expectedStatus);
+
+    if ($expectedStatus === 'ok') {
+        expect($result['warnings'])->not->toContain('excess_acid_splits_soap')
+            ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.0005);
+    }
+})->with([
+    'two milligrams in grams' => ['g', '6.5082', 'ok'],
+    'five milligrams in grams' => ['g', '6.5112', 'ok'],
+    'outside the gram allowance' => ['g', '6.5122', 'acid_exceeds_free_koh'],
+    'rounded kilogram recommendation' => ['kg', '6.5063', 'ok'],
+    'two grams in kilograms is excessive' => ['kg', '6.5082', 'acid_exceeds_free_koh'],
+    'rounded ounce recommendation' => ['oz', '6.5063', 'ok'],
+    'two millipounds is excessive' => ['lb', '6.5082', 'acid_exceeds_free_koh'],
+]);
+
+it('keeps trace dose differences quiet for every neutralizer chemistry', function (string $type, string $dose) {
+    $result = app(LiquidSoapProcessCalculator::class)->calculate(liquidSoapPaste(-3), [
+        'final_dilution_percentage' => 25,
+        'neutralizer' => ['type' => $type, 'weight' => $dose, 'koh_sap_value' => '0.1972'],
+    ]);
+
+    expect($result['status'])->toBe('ok')
+        ->and($result['warnings'])->toBe(['neutralizer_amount_is_theoretical'])
+        ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.0005);
+})->with([
+    'citric just below the recommendation' => ['citric_acid_anhydrous', '6.5042'],
+    'citric monohydrate just above' => ['citric_acid_monohydrate', '7.1183'],
+    'lactic just above' => ['lactic_acid', '9.1533'],
+    'fatty acid just above' => ['fatty_acid', '28.9067'],
+]);
+
 it('adds the evaporated water back when the cooked paste was weighed', function () {
     $result = app(LiquidSoapProcessCalculator::class)->calculate(liquidSoapPaste(0), [
         'final_dilution_percentage' => 25,

@@ -134,7 +134,7 @@ class LiquidSoapFormulaProcessor
      * that step's water) and the plain water left. A step that adds nothing
      * gives its liquids 0 g.
      *
-     * @param  array<string, mixed>  $process  Process result with status ok.
+     * @param  array<string, mixed>  $process  Process result; an uncalculated step keeps its shares with zero derived weights.
      * @param  array<string, mixed>  $phaseItems  Rows keyed by phase.
      * @return array<string, array{water_weight: float, liquids: list<array<string, mixed>>}>
      */
@@ -150,7 +150,7 @@ class LiquidSoapFormulaProcessor
 
                 try {
                     $allocation = $this->lyeLiquidAllocationService->allocateFresh(
-                        (string) data_get($process, "stages.{$phaseKey}.add_weight", '0'),
+                        (string) (data_get($process, "stages.{$phaseKey}.add_weight") ?? '0'),
                         $rows,
                     );
                 } catch (InvalidArgumentException $exception) {

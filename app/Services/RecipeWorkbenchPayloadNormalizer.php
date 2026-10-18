@@ -572,7 +572,7 @@ class RecipeWorkbenchPayloadNormalizer
      *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $normalizedRecipe
-     * @return array{settings: array{first_dilution_percentage: string, final_dilution_percentage: string, neutralizer_solution_percentage: string}, final_batch_weight: string}
+     * @return array{settings: array{first_dilution_percentage: string, final_dilution_percentage: string, neutralizer_solution_percentage: string}, final_batch_weight: string|null}
      */
     private function normalizeLiquidProcess(array $payload, array $normalizedRecipe): array
     {
@@ -611,17 +611,11 @@ class RecipeWorkbenchPayloadNormalizer
             ]);
         }
 
-        $paste = $this->liquidSoapProcessCalculator->pasteComposition($this->soapCalculation($payload, $normalizedRecipe));
+        $paste = $this->liquidSoapProcessCalculator->pasteComposition($this->soapCalculation($payload, $normalizedRecipe), $payload['oil_unit'] ?? 'g');
         $neutralizerRow = collect(collect($normalizedRecipe['phases'])->firstWhere('key', 'neutralization')['items'] ?? [])
             ->first(fn (array $item): bool => $item['ingredient_id'] !== null);
         $neutralizerInput = $this->liquidSoapFormulaProcessor->neutralizer($neutralizerRow, $settings);
         $finalBatchWeight = $this->liquidSoapFormulaProcessor->finalBatchWeight($paste, $settings, $neutralizerInput);
-
-        if ($finalBatchWeight === null) {
-            throw ValidationException::withMessages([
-                'neutralization' => 'The neutralizer is more than the free KOH needs. Acid beyond it splits soap, so reduce it to the recommended amount or below.',
-            ]);
-        }
 
         return ['settings' => $settings, 'final_batch_weight' => $finalBatchWeight];
     }
@@ -642,8 +636,12 @@ class RecipeWorkbenchPayloadNormalizer
         array $phasePayload,
         array $normalizedRecipe,
         string $editingMode,
-        string $finalBatchWeight,
+        ?string $finalBatchWeight,
     ): array {
+        if ($finalBatchWeight === null) {
+            return $this->withAdditionShares($payload, $normalizedRecipe, null);
+        }
+
         $sentFinalPercentages = collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
             ->contains(fn (string $phaseKey): bool => collect($payload['phase_items'][$phaseKey] ?? [])
                 ->contains(fn (mixed $row): bool => is_array($row) && ($row['final_percentage'] ?? null) !== null));
@@ -712,7 +710,7 @@ class RecipeWorkbenchPayloadNormalizer
      * @param  array<string, mixed>  $normalizedRecipe
      * @return array<string, mixed>
      */
-    private function withAdditionShares(array $payload, array $normalizedRecipe, string $finalBatchWeight): array
+    private function withAdditionShares(array $payload, array $normalizedRecipe, ?string $finalBatchWeight): array
     {
         $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
             ->map(function (array $phase) use ($payload, $finalBatchWeight): array {
@@ -729,7 +727,7 @@ class RecipeWorkbenchPayloadNormalizer
                             $sentShare = $rawRows[$index]['final_percentage'] ?? null;
                             $share = is_numeric($sentShare)
                                 ? (float) $sentShare
-                                : (bccomp($finalBatchWeight, '0', 18) > 0
+                                : ($finalBatchWeight !== null && bccomp($finalBatchWeight, '0', 18) > 0
                                     ? (float) bcdiv(bcmul($this->decimalString($item['weight'] ?? 0), '100', 18), $finalBatchWeight, 18)
                                     : null);
 
@@ -834,7 +832,7 @@ class RecipeWorkbenchPayloadNormalizer
             ->flatMap(fn (string $key): array => $phases->get($key)['items'] ?? [])
             ->reduce(fn (string $total, array $item): string => bcadd($total, $this->decimalString($item['weight'] ?? 0), 18), '0');
         $process = $this->liquidSoapFormulaProcessor->process(
-            $this->liquidSoapProcessCalculator->pasteComposition($this->soapCalculation($payload, $normalizedRecipe)),
+            $this->liquidSoapProcessCalculator->pasteComposition($this->soapCalculation($payload, $normalizedRecipe), $payload['oil_unit'] ?? 'g'),
             $settings,
             $this->liquidSoapFormulaProcessor->neutralizer($neutralizerRow, $settings),
             $additionsWeight,

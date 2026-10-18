@@ -12,7 +12,6 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -182,17 +181,123 @@ it('stores additions entered as a share of the final batch as weights and shares
         ->not->toHaveKey('measured_paste_weight');
 });
 
-it('rejects saving more neutralizer than the free KOH needs', function () {
+it('saves the entered neutralizer dose above the theoretical recommendation without changing it', function (string $operation, float $dose) {
     $user = User::factory()->create();
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
     $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
         'product_type_id' => $productType->id,
-        'phase_items' => ['neutralization' => [['ingredient_id' => liquidSoapPreviewCitricAcid()->id, 'percentage' => 1, 'weight' => 10, 'note' => null]]],
+        'phase_items' => ['neutralization' => [['ingredient_id' => liquidSoapPreviewCitricAcid()->id, 'percentage' => $dose / 10, 'weight' => $dose, 'note' => null]]],
     ]);
 
-    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $family, $payload))
-        ->toThrow(fn (ValidationException $exception) => expect($exception->errors()['neutralization'][0] ?? null)->toContain('more than the free KOH needs'));
+    $service = app(RecipeWorkbenchService::class);
+    $version = $service->{$operation}($user, $family, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $snapshot = $service->versionSnapshot($recipe, $version->id);
+
+    expect((float) $snapshot['draft']['phaseItems']['neutralization'][0]['weight'])->toBe($dose)
+        ->and((float) RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $version->id)->where('ingredient_id', $payload['phase_items']['neutralization'][0]['ingredient_id'])->sole()->weight)->toBe($dose)
+        ->and($snapshot['calculation']['liquid_process']['warnings'])->toContain('excess_acid_splits_soap')
+        ->and($snapshot['calculation']['liquid_process']['status'])->toBe('acid_exceeds_free_koh');
+})->with([
+    'save above the estimate' => ['save', 10.0],
+    'publish above the estimate' => ['publish', 10.0],
+    'save well outside any small tolerance' => ['save', 100.0],
+]);
+
+it('preserves addition and dilution shares when saving a dose outside the process model', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $oil = liquidSoapPreviewOil();
+    $acid = liquidSoapPreviewCitricAcid();
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'is_active' => true]);
+    $hydrosol = Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'is_active' => true]);
+    $payload = liquidSoapPreviewPayload($oil, [
+        'product_type_id' => $productType->id,
+        'phase_items' => [
+            'neutralization' => [['ingredient_id' => $acid->id, 'percentage' => 1, 'weight' => 10]],
+            'fragrance' => [['ingredient_id' => $fragrance->id, 'percentage' => 9.52, 'weight' => 95.2, 'final_percentage' => 2]],
+            'first_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 25, 'weight' => 0, 'note' => 'First dilution']],
+            'final_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 50, 'weight' => 0, 'note' => 'Final dilution']],
+        ],
+    ]);
+    $service = app(RecipeWorkbenchService::class);
+    $version = $service->save($user, $family, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $saved = $service->versionPayload($recipe, $version->id);
+
+    expect($saved['phaseItems']['fragrance'][0]['final_percentage'])->toBe(2.0)
+        ->and($saved['phaseItems']['fragrance'][0]['weight'])->toBe(95.2)
+        ->and($saved['phaseItems']['first_dilution'][0]['percentage'])->toBe(25.0)
+        ->and($saved['phaseItems']['final_dilution'][0]['percentage'])->toBe(50.0)
+        ->and($saved['phaseItems']['final_dilution'][0]['note'])->toBe('Final dilution')
+        ->and($saved['liquidProcess']['neutralizerSolutionPercentage'])->toBe(20.0);
+
+    $payload['phase_items'] = $saved['phaseItems'];
+    $resaved = $service->save($user, $family, $payload, $recipe);
+
+    expect($service->versionPayload($recipe, $resaved->id)['phaseItems']['fragrance'][0]['final_percentage'])->toBe(2.0);
+
+    $payload['phase_items']['neutralization'][0] = ['ingredient_id' => $acid->id, 'percentage' => 0.65062, 'weight' => 6.5062];
+    $corrected = $service->save($user, $family, $payload, $recipe);
+    $snapshot = $service->versionSnapshot($recipe, $corrected->id);
+
+    expect($snapshot['calculation']['liquid_process']['status'])->toBe('ok')
+        ->and($snapshot['draft']['phaseItems']['fragrance'][0]['weight'])->toBe(95.2)
+        ->and($snapshot['draft']['phaseItems']['final_dilution'][0]['weight'])->toBeGreaterThan(0);
+});
+
+it('accepts a two milligram neutralizer excess through preview save and reload', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $service = app(RecipeWorkbenchService::class);
+    $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'phase_items' => ['neutralization' => [['ingredient_id' => liquidSoapPreviewCitricAcid()->id, 'percentage' => 0.65082, 'weight' => 6.5082]]],
+    ]);
+
+    $preview = $service->previewSoapCalculation($payload, null, $family)['liquid_process'];
+
+    expect($preview['status'])->toBe('ok')
+        ->and($preview['warnings'])->not->toContain('excess_acid_splits_soap')
+        ->and((float) $preview['neutralizer']['weight'])->toBe(6.5082)
+        ->and((float) array_sum($preview['composition']))->toEqualWithDelta((float) $preview['final_weight'], 0.0005);
+
+    $version = $service->save($user, $family, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $row = $service->versionPayload($recipe, $version->id)['phaseItems']['neutralization'][0];
+
+    expect((float) $row['weight'])->toBe(6.5082)
+        ->and((float) RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $version->id)->where('ingredient_id', $row['ingredient_id'])->sole()->weight)->toBe(6.5082);
+
+    $row['percentage'] = 0.65082;
+    $payload['phase_items']['neutralization'] = [$row];
+    $resaved = $service->save($user, $family, $payload, $recipe);
+
+    expect((float) $service->versionPayload($recipe, $resaved->id)['phaseItems']['neutralization'][0]['weight'])->toBe(6.5082);
+});
+
+it('uses the batch unit for the neutralizer rounding allowance', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'oil_unit' => 'kg',
+        'oil_weight' => 1,
+        'phase_items' => [
+            'saponified_oils' => [['percentage' => 100, 'weight' => 1]],
+            'neutralization' => [['ingredient_id' => liquidSoapPreviewCitricAcid()->id, 'percentage' => 0.66, 'weight' => 0.0066]],
+        ],
+    ]);
+
+    expect(app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, null, $family)['liquid_process']['status'])->toBe('ok');
+
+    $payload['oil_unit'] = 'g';
+    $payload['oil_weight'] = 1000;
+    $payload['phase_items']['saponified_oils'][0]['weight'] = 1000;
+    $payload['phase_items']['neutralization'][0]['weight'] = 6.6;
+
+    expect(app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, null, $family)['liquid_process']['status'])->toBe('acid_exceeds_free_koh');
 });
 
 function liquidSoapPreviewSaponifiableAdditive(): Ingredient

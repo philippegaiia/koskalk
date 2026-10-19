@@ -200,17 +200,11 @@ class RecipeWorkbenchPreviewService
 
         $process = $this->liquidSoapFormulaProcessor->process($paste, $liquidProcess, $neutralizer, $additionsWeight);
         $achievedFinalWeight = $process['final_weight'];
-        $dilutionLiquids = match ($process['status']) {
-            'ok' => $this->liquidSoapFormulaProcessor->dilutionLiquids($process, $payload['phase_items'] ?? []),
-            // Acid beyond the free KOH leaves the final dilution uncalculated,
-            // but the first dilution and its liquids are still known.
-            'acid_exceeds_free_koh' => collect($this->liquidSoapFormulaProcessor->dilutionLiquids($process, $payload['phase_items'] ?? []))
-                ->only('first_dilution')
-                ->all(),
-            default => null,
-        };
+        $dilutionLiquids = $process['status'] === 'ok'
+            ? $this->liquidSoapFormulaProcessor->dilutionLiquids($process, $payload['phase_items'] ?? [])
+            : null;
 
-        if ($process['status'] === 'ok' && $dilutionLiquids !== null) {
+        if ($dilutionLiquids !== null) {
             $process = $this->withDilutionLiquids($process, $dilutionLiquids);
         }
 

@@ -279,6 +279,40 @@ it('accepts a two milligram neutralizer excess through preview save and reload',
     expect((float) $service->versionPayload($recipe, $resaved->id)['phaseItems']['neutralization'][0]['weight'])->toBe(6.5082);
 });
 
+it('changes nothing when a saved neutralizer dose is saved again unedited', function (float $dose) {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    $service = app(RecipeWorkbenchService::class);
+    $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [
+        'product_type_id' => $productType->id,
+        'phase_items' => ['neutralization' => [['ingredient_id' => liquidSoapPreviewCitricAcid()->id, 'percentage' => $dose / 10, 'weight' => $dose]]],
+    ]);
+
+    $first = $service->save($user, $family, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($first->recipe_id);
+    $firstSnapshot = $service->versionSnapshot($recipe, $first->id);
+
+    $payload['phase_items']['neutralization'] = $firstSnapshot['draft']['phaseItems']['neutralization'];
+    $second = $service->save($user, $family, $payload, $recipe);
+    $secondSnapshot = $service->versionSnapshot($recipe, $second->id);
+    $storedDose = fn (RecipeVersion $version): array => RecipeItem::withoutGlobalScopes()
+        ->where('recipe_version_id', $version->id)
+        ->where('ingredient_id', $payload['phase_items']['neutralization'][0]['ingredient_id'])
+        ->sole()
+        ->only(['weight', 'percentage']);
+
+    expect((float) $storedDose($first)['weight'])->toBe($dose)
+        ->and((float) $storedDose($first)['percentage'])->toBe($dose / 10)
+        ->and($storedDose($second))->toBe($storedDose($first))
+        ->and($secondSnapshot['calculation']['liquid_process']['final_weight'])->not->toBeNull()
+        ->and($secondSnapshot['calculation']['liquid_process']['final_weight'])->toBe($firstSnapshot['calculation']['liquid_process']['final_weight'])
+        ->and($secondSnapshot['calculation']['liquid_process']['neutralizer'])->toBe($firstSnapshot['calculation']['liquid_process']['neutralizer']);
+})->with([
+    'below the recommendation' => [3.0],
+    'above the recommendation' => [10.0],
+]);
+
 it('uses the batch unit for the neutralizer rounding allowance', function () {
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $payload = liquidSoapPreviewPayload(liquidSoapPreviewOil(), [

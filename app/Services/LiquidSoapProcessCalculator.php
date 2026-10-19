@@ -178,7 +178,7 @@ class LiquidSoapProcessCalculator
             $freeKohWeight,
             $neutralizer,
             $this->nonNegative($paste['soap_salt_weight'] ?? null, 'Soap salt weight'),
-            $this->nonNegative($paste['reacted_koh_weight'] ?? $paste['koh_weight'] ?? null, 'Reacted KOH weight'),
+            $this->nonNegative($paste['reacted_koh_weight'] ?? null, 'Reacted KOH weight'),
         );
         $neutralizedMass = bcadd($firstMass, $neutralization['solution_weight'], self::SCALE);
         $finalAnhydrousSoapWeight = bcadd($anhydrousSoapWeight, $neutralization['anhydrous_soap_gain'], self::SCALE);

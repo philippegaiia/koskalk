@@ -12,9 +12,15 @@ use InvalidArgumentException;
  * neutralization of free KOH, and a final dilution to a target concentration.
  *
  * Every concentration is expressed on anhydrous soap: soap salts, the
- * glycerine they released and unsaponified lipids, which equals the lipids
- * plus the KOH that reacted. Free KOH, flake impurities, water, acids and
- * their salts are reported beside it, never inside it.
+ * glycerine they released, unsaponified lipids and free fatty acids, which
+ * at the paste stage equals the lipids plus the KOH that reacted. Free KOH, flake impurities,
+ * water, acids and their salts are reported beside it, never inside it.
+ *
+ * Neutralization is a nominal estimate. Acid first neutralizes the free KOH;
+ * citric or lactic acid beyond it converts soap back into free fatty acids
+ * and potassium salt, never more than the soap available, and any acid left
+ * after that is reported as unreacted. Every dose is calculated: the final
+ * dilution is always an estimate under these assumptions.
  *
  * Masses are computed with bcmath on decimal strings and returned rounded to
  * four decimals.
@@ -168,10 +174,14 @@ class LiquidSoapProcessCalculator
 
         $neutralizer = $process['neutralizer'] ?? null;
         $tolerance = $this->neutralizerTolerance($neutralizer, $paste['mass_unit'] ?? 'g');
-        $neutralization = $this->neutralization($freeKohWeight, $neutralizer);
+        $neutralization = $this->neutralization(
+            $freeKohWeight,
+            $neutralizer,
+            $this->nonNegative($paste['soap_salt_weight'] ?? null, 'Soap salt weight'),
+            $this->nonNegative($paste['reacted_koh_weight'] ?? $paste['koh_weight'] ?? null, 'Reacted KOH weight'),
+        );
         $neutralizedMass = bcadd($firstMass, $neutralization['solution_weight'], self::SCALE);
         $finalAnhydrousSoapWeight = bcadd($anhydrousSoapWeight, $neutralization['anhydrous_soap_gain'], self::SCALE);
-        $isSupported = bccomp($neutralization['excess_acid_weight'], $tolerance, self::SCALE) <= 0;
 
         $stages = [
             'first_dilution' => [
@@ -184,12 +194,12 @@ class LiquidSoapProcessCalculator
             'neutralization' => [
                 'add_weight' => $this->round($neutralization['solution_weight']),
                 'mass' => $this->round($neutralizedMass),
-                'anhydrous_percentage' => $isSupported ? $this->percentageOf($finalAnhydrousSoapWeight, $neutralizedMass) : null,
+                'anhydrous_percentage' => $this->percentageOf($finalAnhydrousSoapWeight, $neutralizedMass),
             ],
         ];
 
         $result = [
-            'status' => $isSupported ? 'ok' : 'acid_exceeds_free_koh',
+            'status' => 'ok',
             'anhydrous_soap_weight' => $this->round($anhydrousSoapWeight),
             'paste' => [
                 'theoretical_weight' => $this->round($theoreticalPasteWeight),
@@ -208,37 +218,16 @@ class LiquidSoapProcessCalculator
             'warnings' => $this->warnings($freeKohWeight, $neutralization, $tolerance, $neutralizer),
         ];
 
-        if (! $isSupported) {
-            return [
-                ...$result,
-                'final_anhydrous_soap_weight' => null,
-                'final_weight' => null,
-                'final_anhydrous_percentage' => null,
-                'stages' => [
-                    ...$stages,
-                    'final_dilution' => [
-                        'target_percentage' => $this->round($finalPercentage),
-                        'additions_weight' => $this->round($additionsWeight),
-                        'add_weight' => null,
-                        'mass' => null,
-                        'anhydrous_percentage' => null,
-                        'status' => 'unsupported',
-                    ],
-                ],
-                'composition' => null,
-                'composition_percentages' => null,
-            ];
-        }
-
         $beforeFinalMass = bcadd($neutralizedMass, $additionsWeight, self::SCALE);
         $finalTarget = $this->massAtPercentage($finalAnhydrousSoapWeight, $finalPercentage);
         $finalAdd = $this->max('0', bcsub($finalTarget, $beforeFinalMass, self::SCALE));
         $finalWeight = bcadd($beforeFinalMass, $finalAdd, self::SCALE);
 
         $composition = [
-            'soap_salt_weight' => bcadd($this->nonNegative($paste['soap_salt_weight'] ?? null, 'Soap salt weight'), $neutralization['soap_salt_gain'], self::SCALE),
+            'soap_salt_weight' => bcsub(bcadd($this->nonNegative($paste['soap_salt_weight'] ?? null, 'Soap salt weight'), $neutralization['soap_salt_gain'], self::SCALE), $neutralization['soap_converted_weight'], self::SCALE),
             'glycerine_weight' => $this->nonNegative($paste['glycerine_weight'] ?? null, 'Glycerine weight'),
             'unreacted_lipids_weight' => bcadd($this->nonNegative($paste['unreacted_lipids_weight'] ?? null, 'Unreacted lipids weight'), $neutralization['excess_fatty_acid_weight'], self::SCALE),
+            'free_fatty_acid_weight' => $neutralization['free_fatty_acid_weight'],
             'free_koh_weight' => $neutralization['residual_koh_weight'],
             'koh_impurity_weight' => bcsub($kohMaterialWeight, $kohWeight, self::SCALE),
             'neutralization_salt_weight' => $neutralization['salt_weight'],
@@ -332,13 +321,19 @@ class LiquidSoapProcessCalculator
      *     residual_koh_weight: string,
      *     salt_weight: string,
      *     excess_acid_weight: string,
+     *     acid_above_free_koh_weight: string,
+     *     soap_converted_weight: string,
+     *     free_fatty_acid_weight: string,
      *     summary: array<string, string>|null
      * }
      */
-    private function neutralization(string $freeKohWeight, ?array $neutralizer): array
+    private function neutralization(string $freeKohWeight, ?array $neutralizer, string $soapSaltWeight, string $reactedKohWeight): array
     {
         if ($neutralizer === null) {
             return [
+                'acid_above_free_koh_weight' => '0',
+                'soap_converted_weight' => '0',
+                'free_fatty_acid_weight' => '0',
                 'solution_weight' => '0',
                 'solution_water_weight' => '0',
                 'reaction_water_weight' => '0',
@@ -378,17 +373,43 @@ class LiquidSoapProcessCalculator
         $reactionWaterWeight = bcadd($formedWaterWeight, $hydrateWaterWeight, self::SCALE);
         $productWeight = bcsub(bcadd($reactedAcidWeight, $neutralizedKohWeight, self::SCALE), $reactionWaterWeight, self::SCALE);
         $formsSoap = $type->formsSoap();
+        $acidAboveFreeKohWeight = $excessAcidWeight;
+        $soapConvertedWeight = '0';
+        $freeFattyAcidWeight = '0';
+
+        // Citric or lactic acid beyond the free KOH takes potassium from the
+        // soap: each converted soap molecule becomes a free fatty acid, and
+        // the potassium joins the acid as its salt. The average potassium
+        // soap weight comes from the paste itself (soap salts per KOH reacted).
+        if (! $formsSoap && bccomp($excessAcidWeight, '0', self::SCALE) > 0 && bccomp($reactedKohWeight, '0', self::SCALE) > 0) {
+            $convertedKohEquivalent = $this->min(bcmul($excessAcidWeight, $capacity, self::SCALE), $reactedKohWeight);
+            $convertedMoles = bcdiv($convertedKohEquivalent, LiquidSoapNeutralizer::KOH_MOLAR_MASS, self::SCALE);
+            $potassiumExchanged = bcmul($convertedMoles, LiquidSoapNeutralizer::POTASSIUM_HYDROGEN_MASS_DIFFERENCE, self::SCALE);
+            $acidOnSoapWeight = bcdiv($convertedKohEquivalent, $capacity, self::SCALE);
+            $acidOnSoapHydrateWater = bcmul($acidOnSoapWeight, $type->hydrateWaterFraction(), self::SCALE);
+
+            $soapConvertedWeight = bcdiv(bcmul($convertedKohEquivalent, $soapSaltWeight, self::SCALE), $reactedKohWeight, self::SCALE);
+            $freeFattyAcidWeight = bcsub($soapConvertedWeight, $potassiumExchanged, self::SCALE);
+            $productWeight = $this->sum($productWeight, bcsub($acidOnSoapWeight, $acidOnSoapHydrateWater, self::SCALE), $potassiumExchanged);
+            $reactionWaterWeight = bcadd($reactionWaterWeight, $acidOnSoapHydrateWater, self::SCALE);
+            $excessAcidWeight = $this->max('0', bcsub($excessAcidWeight, $acidOnSoapWeight, self::SCALE));
+        }
 
         return [
             'solution_weight' => $solutionWeight,
             'solution_water_weight' => bcsub($solutionWeight, $acidWeight, self::SCALE),
             'reaction_water_weight' => $reactionWaterWeight,
-            'anhydrous_soap_gain' => $formsSoap ? bcadd($productWeight, $excessAcidWeight, self::SCALE) : '0',
+            'anhydrous_soap_gain' => $formsSoap
+                ? bcadd($productWeight, $excessAcidWeight, self::SCALE)
+                : bcsub($freeFattyAcidWeight, $soapConvertedWeight, self::SCALE),
             'soap_salt_gain' => $formsSoap ? $productWeight : '0',
             'excess_fatty_acid_weight' => $formsSoap ? $excessAcidWeight : '0',
             'residual_koh_weight' => bcsub($freeKohWeight, $neutralizedKohWeight, self::SCALE),
             'salt_weight' => $formsSoap ? '0' : $productWeight,
             'excess_acid_weight' => $formsSoap ? '0' : $excessAcidWeight,
+            'acid_above_free_koh_weight' => $formsSoap ? '0' : $acidAboveFreeKohWeight,
+            'soap_converted_weight' => $soapConvertedWeight,
+            'free_fatty_acid_weight' => $freeFattyAcidWeight,
             'summary' => [
                 'type' => $type->value,
                 'recommended_weight' => $this->round($this->recommendedWeight($freeKohWeight, $type, $kohSapValue)),
@@ -396,7 +417,10 @@ class LiquidSoapProcessCalculator
                 'solution_percentage' => $this->round($solutionPercentage),
                 'solution_weight' => $this->round($solutionWeight),
                 'neutralized_koh_weight' => $this->round($neutralizedKohWeight),
-                'excess_acid_weight' => $this->round($excessAcidWeight),
+                'excess_acid_weight' => $this->round($formsSoap ? '0' : $excessAcidWeight),
+                'acid_above_free_koh_weight' => $this->round($formsSoap ? '0' : $acidAboveFreeKohWeight),
+                'soap_converted_weight' => $this->round($soapConvertedWeight),
+                'free_fatty_acid_weight' => $this->round($freeFattyAcidWeight),
                 'product_weight' => $this->round($productWeight),
                 'excess_fatty_acid_weight' => $this->round($formsSoap ? $excessAcidWeight : '0'),
             ],
@@ -451,8 +475,12 @@ class LiquidSoapProcessCalculator
             $warnings[] = 'free_koh_remains';
         }
 
+        if (bccomp($neutralization['acid_above_free_koh_weight'], $tolerance, self::SCALE) > 0) {
+            $warnings[] = 'excess_acid_converts_soap';
+        }
+
         if (bccomp($neutralization['excess_acid_weight'], $tolerance, self::SCALE) > 0) {
-            $warnings[] = 'excess_acid_splits_soap';
+            $warnings[] = 'acid_exceeds_soap';
         }
 
         if (bccomp($neutralization['excess_fatty_acid_weight'], $tolerance, self::SCALE) > 0) {
@@ -463,9 +491,9 @@ class LiquidSoapProcessCalculator
     }
 
     /**
-     * The estimate accepts five milligrams or the rounding of a dose and its
-     * free-KOH input, whichever is larger, expressed in the batch's unit.
-     * Trace excess stays in the mass balance as unreacted acid.
+     * Warnings stay quiet within five milligrams or the rounding of a dose
+     * and its free-KOH input, whichever is larger, in the batch's unit.
+     * This changes messages only; every dose is modelled and conserved.
      *
      * @param  array<string, mixed>|null  $neutralizer
      */

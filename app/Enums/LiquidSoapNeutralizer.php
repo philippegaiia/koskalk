@@ -19,6 +19,12 @@ enum LiquidSoapNeutralizer: string
 
     public const WATER_MOLAR_MASS = '18.0153';
 
+    /**
+     * Mass a soap loses for each mole an acid converts back to fatty acid:
+     * its potassium (39.0983) is replaced by hydrogen (1.00794).
+     */
+    public const POTASSIUM_HYDROGEN_MASS_DIFFERENCE = '38.09036';
+
     private const SCALE = 18;
 
     /**

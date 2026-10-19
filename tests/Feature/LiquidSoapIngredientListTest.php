@@ -265,3 +265,34 @@ it('checks restricted constituents of a dilution liquid against the finished bat
         ->and($row['percent_of_formula'])->toEqualWithDelta(1327.469 * 0.3 / 4760 * 100, 0.001)
         ->and($row['status'])->toBe('over_limit');
 });
+
+it('reflects acid conversion in the bottled list while keeping the incorporated dose', function () {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 10;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 1;
+    $service = app(RecipeWorkbenchService::class);
+    $calculation = $service->previewSoapCalculation($formula['payload'], null, $formula['family']);
+
+    $labeling = $service->previewInci($formula['payload'], $calculation);
+    $rows = collect(collect($labeling['list_variants'])->firstWhere('key', 'saponified_with_superfat')['ingredient_rows']);
+    $weights = liquidSoapLabelWeights($labeling, 'saponified_with_superfat');
+
+    expect($weights['POTASSIUM OLIVATE'])->toBe(round((float) $calculation['liquid_process']['composition']['soap_salt_weight'], 2))
+        ->and($rows->firstWhere('kind', 'derived_fatty_acids')['weight'])->toEqualWithDelta((float) $calculation['liquid_process']['composition']['free_fatty_acid_weight'], 0.001)
+        ->and($rows->sum('weight'))->toEqualWithDelta($labeling['basis']['formula_weight'], 0.001)
+        ->and($labeling['warnings'])->toContain(__('workbench.liquid.fatty_acid_label_review'))
+        ->and(liquidSoapLabelWeights($labeling, 'incorporated_ingredients')['CITRIC ACID'])->toBe(10.0);
+});
+
+it('keeps unreacted acid in the bottled list after all available soap is converted', function () {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 1000;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 100;
+
+    $labeling = liquidSoapLabeling($formula);
+    $weights = liquidSoapLabelWeights($labeling, 'saponified_with_superfat');
+
+    expect($weights)->not->toHaveKey('POTASSIUM OLIVATE')
+        ->and($weights['CITRIC ACID'])->toBeGreaterThan(0)
+        ->and(array_sum($weights))->toEqualWithDelta($labeling['basis']['formula_weight'], 0.05);
+});

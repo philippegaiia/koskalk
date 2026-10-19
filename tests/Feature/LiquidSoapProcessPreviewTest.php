@@ -197,15 +197,15 @@ it('saves the entered neutralizer dose above the theoretical recommendation with
 
     expect((float) $snapshot['draft']['phaseItems']['neutralization'][0]['weight'])->toBe($dose)
         ->and((float) RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $version->id)->where('ingredient_id', $payload['phase_items']['neutralization'][0]['ingredient_id'])->sole()->weight)->toBe($dose)
-        ->and($snapshot['calculation']['liquid_process']['warnings'])->toContain('excess_acid_splits_soap')
-        ->and($snapshot['calculation']['liquid_process']['status'])->toBe('acid_exceeds_free_koh');
+        ->and($snapshot['calculation']['liquid_process']['warnings'])->toContain('excess_acid_converts_soap')
+        ->and($snapshot['calculation']['liquid_process']['status'])->toBe('ok');
 })->with([
     'save above the estimate' => ['save', 10.0],
     'publish above the estimate' => ['publish', 10.0],
     'save well outside any small tolerance' => ['save', 100.0],
 ]);
 
-it('preserves addition and dilution shares when saving a dose outside the process model', function () {
+it('preserves addition and dilution shares when saving a dose above the theoretical recommendation', function () {
     $user = User::factory()->create();
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
@@ -228,7 +228,7 @@ it('preserves addition and dilution shares when saving a dose outside the proces
     $saved = $service->versionPayload($recipe, $version->id);
 
     expect($saved['phaseItems']['fragrance'][0]['final_percentage'])->toBe(2.0)
-        ->and($saved['phaseItems']['fragrance'][0]['weight'])->toBe(95.2)
+        ->and($saved['phaseItems']['fragrance'][0]['weight'])->toBe(95.0338)
         ->and($saved['phaseItems']['first_dilution'][0]['percentage'])->toBe(25.0)
         ->and($saved['phaseItems']['final_dilution'][0]['percentage'])->toBe(50.0)
         ->and($saved['phaseItems']['final_dilution'][0]['note'])->toBe('Final dilution')
@@ -261,7 +261,7 @@ it('accepts a two milligram neutralizer excess through preview save and reload',
     $preview = $service->previewSoapCalculation($payload, null, $family)['liquid_process'];
 
     expect($preview['status'])->toBe('ok')
-        ->and($preview['warnings'])->not->toContain('excess_acid_splits_soap')
+        ->and($preview['warnings'])->not->toContain('excess_acid_converts_soap')
         ->and((float) $preview['neutralizer']['weight'])->toBe(6.5082)
         ->and((float) array_sum($preview['composition']))->toEqualWithDelta((float) $preview['final_weight'], 0.0005);
 
@@ -297,7 +297,7 @@ it('uses the batch unit for the neutralizer rounding allowance', function () {
     $payload['phase_items']['saponified_oils'][0]['weight'] = 1000;
     $payload['phase_items']['neutralization'][0]['weight'] = 6.6;
 
-    expect(app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, null, $family)['liquid_process']['status'])->toBe('acid_exceeds_free_koh');
+    expect(app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, null, $family)['liquid_process']['status'])->toBe('ok');
 });
 
 function liquidSoapPreviewSaponifiableAdditive(): Ingredient

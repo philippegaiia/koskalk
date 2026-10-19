@@ -5,11 +5,8 @@ namespace App\Services\Production;
 use App\Enums\ProductionFormulaComponent;
 use App\Models\Ingredient;
 use App\Models\Recipe;
-use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Services\CanonicalSoapAlkaliResolver;
-use App\Services\LiquidSoapFormulaProcessor;
-use App\Services\LiquidSoapProcessCalculator;
 use App\Services\MassConverter;
 use App\Services\RecipeWorkbenchPhaseBlueprints;
 use App\Services\RecipeWorkbenchService;
@@ -29,9 +26,6 @@ class ProductionFormulaSnapshotBuilder
         private readonly RecipeWorkbenchService $workbenchService,
         private readonly MassConverter $massConverter,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
-        private readonly ProductionRequirementBuilder $requirementBuilder,
-        private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
-        private readonly LiquidSoapProcessCalculator $liquidSoapProcessCalculator,
     ) {}
 
     /**
@@ -102,25 +96,6 @@ class ProductionFormulaSnapshotBuilder
 
         $recomputed = $this->workbenchService->snapshotFromPersistedWorkbenchDraft($draft);
         $calculation = $recomputed['calculation'] ?? null;
-
-        // A dose saved at the theoretical amount can land just above the free
-        // KOH once its storage rounding is scaled up. Within that rounding the
-        // batch takes the theoretical amount, for the calculation and the
-        // material requirement alike; a larger excess is still refused.
-        if ($isLiquidSoap && $neutralizerRequirement !== null && (data_get($calculation, 'liquid_process.status') === 'acid_exceeds_free_koh'
-            || bccomp((string) data_get($calculation, 'liquid_process.composition.excess_acid_weight', '0'), '0', self::GuardScale) > 0)) {
-            $theoreticalWeight = $this->theoreticalNeutralizerWeight($version, $neutralizerRequirement, $draft, $calculation['liquid_process'], $unit, $basisQuantityGrams, $snapshot['calculation']['liquid_process'] ?? []);
-
-            if ($theoreticalWeight !== null) {
-                $draft = $this->withNeutralizerWeight($draft, $theoreticalWeight);
-                $recomputed = $this->workbenchService->snapshotFromPersistedWorkbenchDraft($draft);
-                $calculation = $recomputed['calculation'] ?? null;
-                $mass = $this->roundStorage($this->massConverter->toGrams($theoreticalWeight, $unit));
-                $requirements = $requirements->map(fn (array $requirement): array => $requirement === $neutralizerRequirement
-                    ? [...$requirement, 'required_mass_grams' => $mass, 'percentage_snapshot' => $this->percentageOf($mass, $basisQuantityGrams)]
-                    : $requirement);
-            }
-        }
 
         // Dilution liquids take their share of the water this batch's
         // recalculated steps add, and additions their share of the finished
@@ -340,61 +315,6 @@ class ProductionFormulaSnapshotBuilder
         }
 
         return $draft;
-    }
-
-    /**
-     * The theoretical neutralizer amount, in the draft's unit, when the
-     * planned dose exceeds it by no more than the rounding it was saved
-     * under: the dose's storage, the calculator's and the free KOH's, scaled
-     * to the batch; null when the excess is larger.
-     *
-     * @param  array<string, mixed>  $neutralizerRequirement
-     * @param  array<string, mixed>  $draft
-     * @param  array<string, mixed>  $process
-     * @param  array<string, mixed>  $savedProcess
-     */
-    private function theoreticalNeutralizerWeight(RecipeVersion $version, array $neutralizerRequirement, array $draft, array $process, string $unit, string $basisQuantityGrams, array $savedProcess): ?string
-    {
-        $item = RecipeItem::withoutGlobalScopes()->find($neutralizerRequirement['recipe_item_id'] ?? null);
-        $row = collect($draft['phaseItems']['neutralization'] ?? [])->first(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null));
-        $neutralizer = is_array($row) ? $this->liquidSoapFormulaProcessor->neutralizer($row, []) : null;
-
-        if (! $item instanceof RecipeItem || $neutralizer === null) {
-            return null;
-        }
-
-        $lastDecimal = $this->massConverter->toGrams('0.00005', $unit);
-        // Free KOH is reported to four decimals in the draft's unit, so the
-        // amount recommended when the dose was saved, and the one here, may
-        // each sit that rounding's worth of acid above the true amount.
-        $freeKohRounding = bcmul(
-            $this->liquidSoapProcessCalculator->recommendedWeight($lastDecimal, $neutralizer['type'], $neutralizer['koh_sap_value']),
-            bcadd(bcdiv($basisQuantityGrams, $this->requirementBuilder->savedBasisGrams($version), self::GuardScale), '1', self::GuardScale),
-            self::GuardScale,
-        );
-        $tolerance = bcadd(
-            bcadd($this->requirementBuilder->neutralizerDose($version, $item, $basisQuantityGrams)['tolerance_grams'], $freeKohRounding, self::GuardScale),
-            // The reported excess is itself rounded to four decimals.
-            $lastDecimal,
-            self::GuardScale,
-        );
-
-        if (($savedProcess['status'] ?? null) === 'ok') {
-            $acceptedExcess = $this->massConverter->toGrams((string) data_get($savedProcess, 'composition.excess_acid_weight', '0'), $unit);
-            $tolerance = bcadd($tolerance, bcdiv(bcmul($acceptedExcess, $basisQuantityGrams, self::GuardScale), $this->requirementBuilder->savedBasisGrams($version), self::GuardScale), self::GuardScale);
-        }
-
-        $excess = $this->massConverter->toGrams((string) data_get($process, 'neutralizer.excess_acid_weight', '0'), $unit);
-
-        if (bccomp($excess, $tolerance, self::GuardScale) > 0) {
-            return null;
-        }
-
-        return $this->liquidSoapProcessCalculator->recommendedWeight(
-            (string) data_get($process, 'paste_composition.free_koh_weight', '0'),
-            $neutralizer['type'],
-            $neutralizer['koh_sap_value'],
-        );
     }
 
     /**

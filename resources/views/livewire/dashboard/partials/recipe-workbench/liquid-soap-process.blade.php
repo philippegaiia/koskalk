@@ -16,6 +16,7 @@
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <h3 id="liquid-soap-process-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.title') }}</h3>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.help') }}</p>
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.estimate') }}</p>
  </div>
 
  <div class="space-y-5 p-5">

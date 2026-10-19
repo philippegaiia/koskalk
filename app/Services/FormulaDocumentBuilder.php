@@ -75,9 +75,8 @@ class FormulaDocumentBuilder
     {
         $process = data_get($snapshot, 'calculation.liquid_process');
 
-        // More acid than the free KOH needs still has a paste, a first
-        // dilution and a neutralization to print; only the final dilution and
-        // composition are left out.
+        // Retain partial sheets captured by the earlier process model, which
+        // left final dilution unknown above the theoretical neutralizer dose.
         return is_array($process) && in_array($process['status'] ?? null, ['ok', 'acid_exceeds_free_koh'], true)
             ? $process
             : null;

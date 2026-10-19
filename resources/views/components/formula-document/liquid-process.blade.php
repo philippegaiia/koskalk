@@ -8,7 +8,7 @@
     $percent = fn (float $value): string => $numberLocale === null
         ? number_format($value, 1)
         : \App\Support\NumberLocale::formatDecimal($value, 1, $numberLocale);
-    $soapGained = is_array($process)
+    $soapBasisChanged = is_array($process)
         && ($process['final_anhydrous_soap_weight'] ?? null) !== null
         && round($process['final_anhydrous_soap_weight'], 4) !== round((float) $process['anhydrous_soap_weight'], 4);
 @endphp
@@ -18,6 +18,7 @@
         <h2 id="formula-document-liquid-process-heading" class="text-xs font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">
             {{ __('formula_documents.liquid.title') }}
         </h2>
+        <p class="text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.estimate') }}</p>
 
         <div class="overflow-x-auto rounded-xl border border-[var(--color-line)] bg-white">
             <table class="min-w-full border-collapse text-sm">
@@ -49,7 +50,7 @@
                                         {{ __('formula_documents.liquid.anhydrous_soap_weight', ['amount' => $mass($process['anhydrous_soap_weight']), 'unit' => $document['unit']]) }}
                                     </p>
                                 @endif
-                                @if ($step['key'] === 'neutralization' && $soapGained)
+                                @if ($step['key'] === 'neutralization' && $soapBasisChanged)
                                     <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
                                         {{ __('formula_documents.liquid.neutralized_anhydrous_soap_weight', ['amount' => $mass($process['final_anhydrous_soap_weight']), 'unit' => $document['unit']]) }}
                                     </p>

@@ -39,7 +39,7 @@ beforeEach(function (): void {
  *
  * @return array{owner: User, recipient: Workspace, recipe: Recipe, citricAcid: Ingredient}
  */
-function sharedLiquidSoap(array $finalDilution = []): array
+function sharedLiquidSoap(array $finalDilution = [], float $neutralizerDose = 6.5062): array
 {
     $owner = User::factory()->create();
     Workspace::factory()->for($owner, 'owner')->create();
@@ -63,7 +63,7 @@ function sharedLiquidSoap(array $finalDilution = []): array
         'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
         'phase_items' => [
             'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
-            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => 0.65062, 'weight' => 6.5062, 'note' => null]],
+            'neutralization' => [['ingredient_id' => $citricAcid->id, 'percentage' => $neutralizerDose / 10, 'weight' => $neutralizerDose, 'note' => null]],
             'additives' => [],
             'fragrance' => [['ingredient_id' => $lavender->id, 'percentage' => 0, 'weight' => 0, 'final_percentage' => 2, 'note' => null]],
             'final_dilution' => $finalDilution,
@@ -89,8 +89,8 @@ function savedLiquidSoapVersion(Recipe $recipe): RecipeVersion
     return RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->latest('version_number')->firstOrFail();
 }
 
-it('round trips a liquid soap with its neutralizer and process settings', function (): void {
-    ['owner' => $owner, 'recipient' => $recipient, 'recipe' => $recipe, 'citricAcid' => $citricAcid] = sharedLiquidSoap();
+it('round trips a liquid soap with its entered neutralizer and process settings', function (float $dose, string $share): void {
+    ['owner' => $owner, 'recipient' => $recipient, 'recipe' => $recipe, 'citricAcid' => $citricAcid] = sharedLiquidSoap(neutralizerDose: $dose);
 
     $received = sendAndAcceptLiquidSoap($owner, $recipe, $recipient);
     $source = savedLiquidSoapVersion($recipe);
@@ -103,12 +103,13 @@ it('round trips a liquid soap with its neutralizer and process settings', functi
     expect($received->workspace_id)->toBe($recipient->id)
         ->and($copy->calculation_context['liquid_process'])->toBe($source->calculation_context['liquid_process'])
         ->and(RecipeItem::withoutGlobalScopes()->where('recipe_phase_id', $neutralization->id)->get(['ingredient_id', 'percentage'])->toArray())
-        ->toBe([['ingredient_id' => $citricAcid->id, 'percentage' => '0.6506']])
+        ->toBe([['ingredient_id' => $citricAcid->id, 'percentage' => $share]])
         ->and($receivedProcess['status'])->toBe('ok')
         ->and($receivedProcess['final_weight'])->toBe($sourceProcess['final_weight'])
         ->and($receivedProcess['neutralizer']['weight'])->toBe($sourceProcess['neutralizer']['weight'])
+        ->and((float) $receivedProcess['neutralizer']['weight'])->toBe($dose)
         ->and(RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $copy->id)->whereNotNull('final_percentage')->pluck('final_percentage')->all())->toBe(['2.0000']);
-});
+})->with(['near recommendation' => [6.5062, '0.6506'], 'above recommendation' => [10.0, '1.0000']]);
 
 it('asks for a fresh preview when the neutralizer chemistry changed after it', function (): void {
     ['owner' => $owner, 'recipient' => $recipient, 'recipe' => $recipe, 'citricAcid' => $citricAcid] = sharedLiquidSoap();

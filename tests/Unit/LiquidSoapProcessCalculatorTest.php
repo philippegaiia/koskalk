@@ -192,24 +192,63 @@ it('reports free KOH left when less acid than recommended is added', function (?
     'part of the citric acid' => [['type' => 'citric_acid_anhydrous', 'weight' => 3], 3.0717],
 ]);
 
-it('withholds the composition and final dilution when acid exceeds the free KOH', function (float $superfat, string $acidWeight, string $excessAcid) {
+it('estimates final dilution and soap conversion above the theoretical dose', function (float $superfat, string $acidWeight) {
     $result = app(LiquidSoapProcessCalculator::class)->calculate(liquidSoapPaste($superfat), [
         'final_dilution_percentage' => 25,
         'neutralizer' => ['type' => 'citric_acid_anhydrous', 'weight' => $acidWeight],
     ]);
 
-    expect($result['status'])->toBe('acid_exceeds_free_koh')
-        ->and((float) $result['neutralizer']['excess_acid_weight'])->toEqualWithDelta((float) $excessAcid, 0.0002)
-        ->and($result['stages']['final_dilution']['status'])->toBe('unsupported')
-        ->and($result['stages']['final_dilution']['add_weight'])->toBeNull()
-        ->and($result['stages']['neutralization']['anhydrous_percentage'])->toBeNull()
-        ->and($result['final_weight'])->toBeNull()
-        ->and($result['composition'])->toBeNull()
-        ->and($result['composition_percentages'])->toBeNull()
-        ->and($result['warnings'])->toContain('excess_acid_splits_soap');
+    expect($result['status'])->toBe('ok')
+        ->and($result['neutralizer']['weight'])->toBe(number_format((float) $acidWeight, 4, '.', ''))
+        ->and((float) $result['composition']['free_fatty_acid_weight'])->toBeGreaterThan(0)
+        ->and($result['composition']['excess_acid_weight'])->toBe('0.0000')
+        ->and($result['final_anhydrous_percentage'])->toBe('25.0000')
+        ->and($result['warnings'])->toContain('excess_acid_converts_soap')
+        ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.0005);
 })->with([
-    'more citric acid than the free KOH needs' => [-3, '10', '3.4938'],
-    'citric acid without free KOH' => [3, '2', '2'],
+    'more citric acid than the free KOH needs' => [-3, '10'],
+    'citric acid without free KOH' => [3, '2'],
+]);
+
+it('caps acid conversion at the available soap and reports the acid left', function () {
+    $result = app(LiquidSoapProcessCalculator::class)->calculate(liquidSoapPaste(-3), [
+        'final_dilution_percentage' => 25,
+        'neutralizer' => ['type' => 'citric_acid_monohydrate', 'weight' => 1000, 'solution_percentage' => 20],
+    ]);
+
+    expect($result['status'])->toBe('ok')
+        ->and($result['composition']['soap_salt_weight'])->toBe('0.0000')
+        ->and((float) $result['composition']['free_fatty_acid_weight'])->toBeGreaterThan(0)
+        ->and((float) $result['composition']['excess_acid_weight'])->toBeGreaterThan(0)
+        ->and($result['warnings'])->toContain('acid_exceeds_soap')
+        ->and($result['stages']['final_dilution']['add_weight'])->toBe('0.0000')
+        ->and($result['stages']['final_dilution']['status'])->toBe('target_exceeded')
+        ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.0005);
+});
+
+it('conserves potassium and mass when one mole of soap becomes fatty acid', function (string $type, string $dose, float $water, float $salt) {
+    $paste = [
+        'lipids_weight' => '943.8944', 'koh_weight' => '56.1056', 'koh_material_weight' => '56.1056',
+        'reacted_koh_weight' => '56.1056', 'free_koh_weight' => '0', 'soap_salt_weight' => '1000',
+        'glycerine_weight' => '0', 'unreacted_lipids_weight' => '0', 'anhydrous_soap_weight' => '1000',
+        'alkali_liquid_weight' => '1000',
+    ];
+
+    $result = app(LiquidSoapProcessCalculator::class)->calculate($paste, [
+        'first_dilution_percentage' => 50, 'final_dilution_percentage' => 25,
+        'neutralizer' => ['type' => $type, 'weight' => $dose],
+    ]);
+
+    expect($result['composition']['soap_salt_weight'])->toBe('0.0000')
+        ->and($result['composition']['free_fatty_acid_weight'])->toBe('961.9096')
+        ->and((float) $result['composition']['neutralization_salt_weight'])->toEqualWithDelta($salt, 0.0001)
+        ->and((float) $result['composition']['water_weight'])->toEqualWithDelta($water, 0.0002)
+        ->and($result['final_weight'])->toBe('3847.6386')
+        ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta(3847.6386, 0.0005);
+})->with([
+    'lactic' => ['lactic_acid', '90.0779', 2757.5607, 128.1683],
+    'citric' => ['citric_acid_anhydrous', '64.041166666666666667', 2783.5974, 102.1315],
+    'citric monohydrate' => ['citric_acid_monohydrate', '70.046266666666666667', 2783.5974, 102.1315],
 ]);
 
 it('keeps extra stearic acid as unsaponified lipid inside the soap basis', function () {
@@ -224,7 +263,7 @@ it('keeps extra stearic acid as unsaponified lipid inside the soap basis', funct
         ->and($result['warnings'])->toBe(['neutralizer_amount_is_theoretical', 'excess_fatty_acid_raises_superfat']);
 });
 
-it('accepts only trace neutralizer excess with a unit aware tolerance', function (string $unit, string $dose, string $expectedStatus) {
+it('keeps trace dose differences quiet without using them as a calculation cutoff', function (string $unit, string $dose, bool $warns) {
     $paste = liquidSoapPaste(-3);
     $paste['mass_unit'] = $unit;
     $result = app(LiquidSoapProcessCalculator::class)->calculate($paste, [
@@ -232,20 +271,17 @@ it('accepts only trace neutralizer excess with a unit aware tolerance', function
         'neutralizer' => ['type' => 'citric_acid_anhydrous', 'weight' => $dose],
     ]);
 
-    expect($result['status'])->toBe($expectedStatus);
-
-    if ($expectedStatus === 'ok') {
-        expect($result['warnings'])->not->toContain('excess_acid_splits_soap')
-            ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.0005);
-    }
+    expect($result['status'])->toBe('ok')
+        ->and(in_array('excess_acid_converts_soap', $result['warnings'], true))->toBe($warns)
+        ->and((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.0005);
 })->with([
-    'two milligrams in grams' => ['g', '6.5082', 'ok'],
-    'five milligrams in grams' => ['g', '6.5112', 'ok'],
-    'outside the gram allowance' => ['g', '6.5122', 'acid_exceeds_free_koh'],
-    'rounded kilogram recommendation' => ['kg', '6.5063', 'ok'],
-    'two grams in kilograms is excessive' => ['kg', '6.5082', 'acid_exceeds_free_koh'],
-    'rounded ounce recommendation' => ['oz', '6.5063', 'ok'],
-    'two millipounds is excessive' => ['lb', '6.5082', 'acid_exceeds_free_koh'],
+    'two milligrams in grams' => ['g', '6.5082', false],
+    'five milligrams in grams' => ['g', '6.5112', false],
+    'outside the quiet gram allowance' => ['g', '6.5122', true],
+    'rounded kilogram recommendation' => ['kg', '6.5063', false],
+    'two grams in kilograms still calculates' => ['kg', '6.5082', true],
+    'rounded ounce recommendation' => ['oz', '6.5063', false],
+    'two millipounds still calculates' => ['lb', '6.5082', true],
 ]);
 
 it('keeps trace dose differences quiet for every neutralizer chemistry', function (string $type, string $dose) {
@@ -316,7 +352,7 @@ it('accounts for every weighed gram in the final composition', function (float $
         $result['stages']['final_dilution']['add_weight'],
     ]);
 
-    // Nine components rounded to four decimals can drift by at most 0.00045 g.
+    // Ten components rounded to four decimals can drift by at most 0.00045 g.
     expect((float) liquidSoapSum($result['composition']))->toEqualWithDelta((float) $result['final_weight'], 0.00045)
         ->and((float) $weighedIn)->toEqualWithDelta((float) $result['final_weight'], 0.0004);
 })->with([
@@ -325,6 +361,9 @@ it('accounts for every weighed gram in the final composition', function (float $
     'citric acid solution' => [-3, ['final_dilution_percentage' => 25, 'neutralizer' => ['type' => 'citric_acid_anhydrous', 'weight' => '6.5', 'solution_percentage' => 20]]],
     'citric acid monohydrate' => [-3, ['final_dilution_percentage' => 25, 'neutralizer' => ['type' => 'citric_acid_monohydrate', 'weight' => '7']]],
     'stearic acid in excess' => [-3, ['final_dilution_percentage' => 25, 'neutralizer' => ['type' => 'fatty_acid', 'weight' => 40, 'koh_sap_value' => '0.1972']]],
+    'excess citric' => [-3, ['final_dilution_percentage' => 25, 'neutralizer' => ['type' => 'citric_acid_anhydrous', 'weight' => '10', 'solution_percentage' => 20]]],
+    'excess monohydrate' => [-3, ['final_dilution_percentage' => 25, 'neutralizer' => ['type' => 'citric_acid_monohydrate', 'weight' => '12']]],
+    'excess lactic' => [-3, ['final_dilution_percentage' => 25, 'neutralizer' => ['type' => 'lactic_acid', 'weight' => '20']]],
     'measured paste' => [-3, ['final_dilution_percentage' => 25, 'measured_paste_weight' => '1680']],
     'target exceeded' => [-3, ['final_dilution_percentage' => 25, 'additions_weight' => 1400]],
 ]);

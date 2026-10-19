@@ -249,14 +249,14 @@ it('keeps a liquid soap sheet when the neutralizer is more than the free KOH nee
 
     expect($document['soap_output'])->toBeNull()
         ->and(collect($document['results'])->pluck('label')->all())->not->toContain(__('formula_documents.results.cured_weight'))
-        ->and($document['liquid_process']['is_complete'])->toBeFalse()
+        ->and($document['liquid_process']['is_complete'])->toBeTrue()
         ->and($document['liquid_process']['neutralizer']['weight'])->toBe(10.0)
-        ->and($document['liquid_process']['warnings'])->toContain(__('workbench.liquid.warnings.excess_acid_splits_soap'))
+        ->and($document['liquid_process']['warnings'])->toContain(__('workbench.liquid.warnings.excess_acid_converts_soap'))
         ->and($steps['first_dilution']['mass'])->toBe(3400.0)
-        ->and($steps['final_dilution']['mass'])->toBeNull();
+        ->and($steps['final_dilution']['mass'])->toEqualWithDelta(4751.6879, 0.0001);
 
     $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
-        ->assertSeeInOrder(['Neutralization', 'Acid: 10.00 g', 'Final dilution', __('workbench.liquid.status.unsupported')]);
+        ->assertSeeInOrder(['Neutralization', 'Acid: 10.00 g', 'Final dilution']);
 });
 
 it('keeps the first dilution liquids on a sheet whose neutralizer exceeds the free KOH', function () {
@@ -275,9 +275,9 @@ it('keeps the first dilution liquids on a sheet whose neutralizer exceeds the fr
     ]);
     $steps = collect($document['liquid_process']['steps'])->keyBy('key');
 
-    expect($document['liquid_process']['is_complete'])->toBeFalse()
+    expect($document['liquid_process']['is_complete'])->toBeTrue()
         ->and($steps['first_dilution']['add'])->toBe(1679.327)
         ->and($steps['first_dilution']['instruction'])->toBe('Add 1259.4953 g water + 419.8317 g Rose Hydrosol to bring the paste to 35.0% anhydrous soap.')
-        ->and($steps['final_dilution']['mass'])->toBeNull()
+        ->and($steps['final_dilution']['mass'])->toEqualWithDelta(4751.6879, 0.0001)
         ->and($steps['final_dilution']['instruction'])->not->toContain('Rose Hydrosol');
 });

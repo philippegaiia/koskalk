@@ -170,12 +170,10 @@ class ProductionRequirementBuilder
     /**
      * A liquid soap neutralizer's dose at the production basis, from whichever
      * saved quantity is more precise: its weight (four decimals in the batch
-     * unit) or its percentage of the oils (four decimals). The tolerance is
-     * how far above the theoretical amount a dose accepted at save can land:
-     * that quantity's storage rounding plus the calculator's own rounding,
-     * both scaled to the production basis.
+     * unit) or its percentage of the oils (four decimals). The selected dose
+     * is scaled as saved, without substituting the theoretical amount.
      *
-     * @return array{mass_grams: string, tolerance_grams: string}
+     * @return array{mass_grams: string}
      */
     public function neutralizerDose(RecipeVersion $version, RecipeItem $item, string $basisQuantityGrams): array
     {
@@ -192,7 +190,6 @@ class ProductionRequirementBuilder
             'mass_grams' => $useWeight
                 ? $this->scaledSavedMass($version, $weight, $basisQuantityGrams)
                 : bcdiv(bcmul($basisQuantityGrams, $this->decimal((string) $item->percentage), self::GuardScale), '100', self::GuardScale),
-            'tolerance_grams' => bcadd($useWeight ? $weightRounding : $percentageRounding, $scale($lastDecimalGrams), self::GuardScale),
         ];
     }
 

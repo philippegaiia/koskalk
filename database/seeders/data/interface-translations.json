@@ -44894,12 +44894,12 @@
       "group": "workbench",
       "key": "liquid.anhydrous_parts",
       "text": {
-        "de": "Seife, Glycerin und unverseifte Öle.",
-        "es": "Jabón, glicerina y aceites sin saponificar.",
-        "fr": "Savon, glycérine et huiles non saponifiées.",
-        "it": "Sapone, glicerina e oli non saponificati.",
-        "nl": "Zeep, glycerine en onverzeepte oliën.",
-        "pt_BR": "Sabão, glicerina e óleos não saponificados."
+        "de": "Seife, Glycerin, unverseifte Öle und freie Fettsäuren; ohne Wasser und Neutralisationssalze.",
+        "es": "Jabón, glicerina, aceites sin saponificar y ácidos grasos libres; excluye agua y sales de neutralización.",
+        "fr": "Savon, glycérine, huiles non saponifiées et acides gras libres ; hors eau et sels de neutralisation.",
+        "it": "Sapone, glicerina, oli non saponificati e acidi grassi liberi; esclusi acqua e sali di neutralizzazione.",
+        "nl": "Zeep, glycerine, onverzeepte oliën en vrije vetzuren; zonder water en neutralisatiezouten.",
+        "pt_BR": "Sabão, glicerina, óleos não saponificados e ácidos graxos livres; exclui água e sais de neutralização."
       }
     },
     {
@@ -44924,6 +44924,18 @@
         "it": "Liquidi di diluizione",
         "nl": "Verdunningsvloeistoffen",
         "pt_BR": "Líquidos de diluição"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.components.free_fatty_acid_weight",
+      "text": {
+        "de": "Freie Fettsäuren",
+        "es": "Ácidos grasos libres",
+        "fr": "Acides gras libres",
+        "it": "Acidi grassi liberi",
+        "nl": "Vrije vetzuren",
+        "pt_BR": "Ácidos graxos livres"
       }
     },
     {
@@ -45128,6 +45140,42 @@
         "it": "Acqua: :percentage% · :weight :unit",
         "nl": "Water: :percentage% · :weight :unit",
         "pt_BR": "Água: :percentage% · :weight :unit"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.estimate",
+      "text": {
+        "de": "Geschätzte Verdünnung und Zusammensetzung auf Basis nominaler Materialgehalte. Der tatsächliche Neutralisationsbedarf und die Klarheit können abweichen.",
+        "es": "Dilución y composición estimadas según las concentraciones nominales. La demanda real de neutralización y la transparencia pueden variar.",
+        "fr": "Dilution et composition estimées selon les teneurs nominales des matières. Le besoin réel de neutralisation et la limpidité peuvent varier.",
+        "it": "Diluizione e composizione stimate in base ai titoli nominali delle materie prime. Il fabbisogno reale di neutralizzazione e la limpidezza possono variare.",
+        "nl": "Geschatte verdunning en samenstelling op basis van nominale materiaalgehalten. De werkelijke neutralisatiebehoefte en helderheid kunnen afwijken.",
+        "pt_BR": "Diluição e composição estimadas com base nos teores nominais dos materiais. A necessidade real de neutralização e a transparência podem variar."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.fatty_acid_label_review",
+      "text": {
+        "de": "Die Säureumwandlung ist geschätzt. Die abgeleiteten Fettsäurezeilen sind beschreibend; prüfen Sie ihre INCI-Namen vor Verwendung dieser Zutatenliste.",
+        "es": "La conversión por ácido es estimada. Las filas de ácidos grasos derivados son descriptivas; verifique sus nombres INCI antes de usar esta lista.",
+        "fr": "La conversion par l’acide est estimée. Les lignes d’acides gras formés sont descriptives ; vérifiez leurs noms INCI avant d’utiliser cette liste.",
+        "it": "La conversione con acido è stimata. Le righe degli acidi grassi derivati sono descrittive; verificarne i nomi INCI prima di usare questo elenco.",
+        "nl": "De omzetting door zuur is geschat. De regels met gevormde vetzuren zijn beschrijvend; controleer de INCI-namen voordat u deze ingrediëntenlijst gebruikt.",
+        "pt_BR": "A conversão por ácido é estimada. As linhas de ácidos graxos formados são descritivas; verifique os nomes INCI antes de usar esta lista."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.fatty_acids_from",
+      "text": {
+        "de": "Fettsäuren aus :ingredient (Namen prüfen)",
+        "es": "Ácidos grasos de :ingredient (revisar nombres)",
+        "fr": "Acides gras issus de :ingredient (noms à vérifier)",
+        "it": "Acidi grassi da :ingredient (nomi da verificare)",
+        "nl": "Vetzuren uit :ingredient (namen controleren)",
+        "pt_BR": "Ácidos graxos de :ingredient (revisar nomes)"
       }
     },
     {
@@ -45492,6 +45540,18 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.warnings.acid_exceeds_soap",
+      "text": {
+        "de": "Die eingegebene Säure übersteigt die geschätzte Kapazität des gesamten freien KOH und der Seife. Nicht umgesetzte Säure bleibt zurück; prüfen Sie Dosis und Einheiten. Speichern ist möglich.",
+        "es": "El ácido introducido supera la capacidad estimada de todo el KOH libre y el jabón. Queda ácido sin reaccionar; revise la dosis y las unidades. Puede guardar esta cantidad.",
+        "fr": "La dose d’acide dépasse la capacité estimée de tout le KOH libre et du savon. De l’acide non réagi subsiste ; vérifiez la dose et les unités. Vous pouvez enregistrer cette quantité.",
+        "it": "L’acido inserito supera la capacità stimata di tutto il KOH libero e del sapone. Rimane acido non reagito; verificare dose e unità. È possibile salvare questa quantità.",
+        "nl": "Het ingevoerde zuur overschrijdt de geschatte capaciteit van alle vrije KOH en zeep. Er blijft ongereageerd zuur over; controleer dosis en eenheden. U kunt deze hoeveelheid opslaan.",
+        "pt_BR": "O ácido informado excede a capacidade estimada de todo o KOH livre e do sabão. Resta ácido não reagido; revise a dose e as unidades. É possível salvar esta quantidade."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "liquid.warnings.dilution_liquid_unused_final_dilution",
       "text": {
         "de": "Die Endverdünnung fügt kein Wasser hinzu, daher werden ihre Flüssigkeiten nicht verwendet.",
@@ -45512,6 +45572,18 @@
         "it": "La prima diluizione non aggiunge acqua, quindi i suoi liquidi non vengono usati.",
         "nl": "De eerste verdunning voegt geen water toe, dus de vloeistoffen ervan worden niet gebruikt.",
         "pt_BR": "A primeira diluição não adiciona água, então seus líquidos não são usados."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "liquid.warnings.excess_acid_converts_soap",
+      "text": {
+        "de": "Über der theoretischen Dosis: Die Schätzung wandelt einen Teil der Seife in freie Fettsäuren und Neutralisationssalz um. Die Klarheit kann sich ändern. Ihre Eingabe bleibt erhalten.",
+        "es": "Por encima de la dosis teórica: la estimación convierte parte del jabón en ácidos grasos libres y sal de neutralización. La transparencia puede cambiar. Se conserva la dosis introducida.",
+        "fr": "Au-dessus de la dose théorique : le calcul estime la conversion d’une partie du savon en acides gras libres et sel de neutralisation. La limpidité peut changer. Votre dose est conservée.",
+        "it": "Oltre la dose teorica: la stima converte parte del sapone in acidi grassi liberi e sale di neutralizzazione. La limpidezza può cambiare. La dose inserita viene mantenuta.",
+        "nl": "Boven de theoretische dosis: de schatting zet een deel van de zeep om in vrije vetzuren en neutralisatiezout. De helderheid kan veranderen. Uw ingevoerde dosis blijft behouden.",
+        "pt_BR": "Acima da dose teórica: a estimativa converte parte do sabão em ácidos graxos livres e sal de neutralização. A transparência pode mudar. A dose informada é mantida."
       }
     },
     {

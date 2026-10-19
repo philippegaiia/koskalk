@@ -548,3 +548,64 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('includes free fatty acids in the displayed final composition', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.backendCalculation = { liquid_process: {
+    status: 'ok', composition: { soap_salt_weight: '90', free_fatty_acid_weight: '5', water_weight: '5' },
+    composition_percentages: { soap_salt_weight: '90', free_fatty_acid_weight: '5', water_weight: '5' },
+} };
+const rows = workbench.liquidCompositionRows();
+assert.deepEqual(rows.map(row => row.key), ['soap_salt_weight', 'free_fatty_acid_weight', 'water_weight']);
+assert.equal(rows.find(row => row.key === 'free_fatty_acid_weight').labelKey, 'liquid.components.free_fatty_acid_weight');
+assert.ok(rows.every(row => row.color));
+assert.equal(rows.reduce((sum, row) => sum + Number(row.share), 0), 100);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('keeps the first saved dose and calculation when an older preview finishes later', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.recipeId = 1;
+workbench.oilWeight = 1000;
+workbench.phaseItems.neutralization = [{ id: 'acid', ingredient_id: 7, percentage: 0.5, weight: 5 }];
+workbench.syncIngredientListVariantSelection = () => {};
+workbench.flushCostingSave = async () => true;
+workbench.queueRevisionMutation = async action => action();
+workbench.activateSavedRecipeEditing = async () => {};
+const saved = [];
+let finishOldPreview;
+const latest = { liquid_process: { status: 'ok', final_weight: '60138.7500', neutralizer: { weight: '199.0000' } } };
+workbench.$wire = {
+    previewCalculation: () => new Promise(resolve => { finishOldPreview = resolve; }),
+    save: async draft => {
+        saved.push(structuredClone(draft));
+        return { ok: true, snapshot: {
+            draft: { oilWeight: workbench.oilWeight, superfat: workbench.superfat, phaseItems: structuredClone(draft.phase_items) },
+            calculation: latest,
+        } };
+    },
+};
+const oldPreview = workbench.refreshCalculationPreview();
+workbench.oilWeight = 10000;
+workbench.superfat = -10;
+workbench.setLiquidNeutralizerWeight('199');
+await workbench.save();
+assert.equal(saved.length, 1);
+assert.equal(saved[0].phase_items.neutralization[0].weight, 199);
+assert.equal(workbench.backendCalculation.liquid_process.final_weight, '60138.7500');
+finishOldPreview({ ok: true, calculation: { liquid_process: { status: 'acid_exceeds_free_koh', final_weight: null } } });
+await oldPreview;
+assert.equal(workbench.backendCalculation.liquid_process.final_weight, '60138.7500');
+assert.equal(workbench.liquidNeutralizerWeight(), 199);
+await workbench.save();
+assert.equal(saved[1].phase_items.neutralization[0].weight, 199);
+assert.equal(workbench.backendCalculation.liquid_process.final_weight, '60138.7500');
+clearTimeout(workbench.calculationPreviewTimer);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

@@ -50,8 +50,8 @@ class LiquidSoapFormulaProcessor
     }
 
     /**
-     * Weight of the finished batch at the final dilution target, or null when
-     * the neutralizer exceeds the free KOH and the result is not modelled.
+     * Estimated finished batch weight at the final dilution target, including
+     * any nominal conversion of soap by excess acid.
      *
      * @param  array<string, string>  $paste  Output of LiquidSoapProcessCalculator::pasteComposition().
      * @param  array<string, mixed>  $liquidProcess

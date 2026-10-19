@@ -11,6 +11,6 @@ class ListUserIngredients extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Anonymous catalog signals only. Account and recipe details remain private.';
+        return 'Read-only catalog review with workspace names and owner email addresses.';
     }
 }

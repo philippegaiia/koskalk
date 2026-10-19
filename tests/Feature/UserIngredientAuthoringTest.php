@@ -10,7 +10,9 @@ use App\Models\FattyAcid;
 use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientFattyAcid;
 use App\Models\IngredientFunction;
+use App\Models\IngredientSapProfile;
 use App\Models\IngredientTranslation;
 use App\Models\Plan;
 use App\Models\ProductionOutputSetting;
@@ -2346,4 +2348,43 @@ it('guards quick blend-component creation against the soapmaking alkalis categor
         ->assertHasErrors(['category']);
 
     expect(Ingredient::query()->where('display_name', 'Quick Potash')->exists())->toBeFalse();
+});
+
+it('keeps blend component names and INCI separate even when INCI contains parentheses', function () {
+    $user = User::factory()->create();
+    $oil = Ingredient::factory()->create(['display_name' => 'High oleic sunflower oil', 'inci_name' => 'HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL', 'is_active' => true]);
+    $this->actingAs($user);
+
+    $editor = Livewire::test(IngredientEditor::class);
+    $option = $editor->instance()->componentIngredientOptions()[$oil->id];
+
+    expect($option)->toBe(['name' => 'High oleic sunflower oil', 'inci_name' => 'HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL']);
+});
+
+it('keeps inherited soap sources out of editable duplicate data without erasing provenance', function () {
+    $user = User::factory()->create();
+    $source = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'is_soap_saponification_trusted' => true, 'is_active' => true]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $source->id, 'koh_sap_value' => 0.19, 'source_notes' => 'INTERNAL SAP PROVENANCE']);
+    $fattyAcid = FattyAcid::factory()->create();
+    IngredientFattyAcid::factory()->create(['ingredient_id' => $source->id, 'fatty_acid_id' => $fattyAcid->id, 'percentage' => 85, 'source_notes' => 'INTERNAL FATTY ACID PROVENANCE']);
+    $this->actingAs($user);
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $user);
+
+    $editor = Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
+        ->assertDontSee('INTERNAL SAP PROVENANCE')
+        ->assertDontSee('INTERNAL FATTY ACID PROVENANCE');
+    expect($editor->get('data.sap_profile'))->not->toHaveKey('source_notes')
+        ->and(collect($editor->get('data.fatty_acid_entries'))->first())->not->toHaveKey('source_notes');
+
+    $fattyRowKey = array_key_first($editor->get('data.fatty_acid_entries'));
+    $editor->set('data.sap_profile.source_notes', 'Client replacement')
+        ->set('data.fatty_acid_entries.'.$fattyRowKey.'.source_notes', 'Client replacement')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertDontSee('INTERNAL SAP PROVENANCE')
+        ->assertDontSee('INTERNAL FATTY ACID PROVENANCE');
+
+    expect($copy->fresh()->sapProfile->source_notes)->toBe('INTERNAL SAP PROVENANCE')
+        ->and($copy->fresh()->fattyAcidEntries->first()->source_notes)->toBe('INTERNAL FATTY ACID PROVENANCE');
 });

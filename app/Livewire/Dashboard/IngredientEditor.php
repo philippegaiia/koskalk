@@ -1131,10 +1131,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.soap.iodine')),
                                         LocalizedDecimalInput::make('sap_profile.ins_value')
                                             ->label(__('ingredients.editor.soap.ins')),
-                                        Textarea::make('sap_profile.source_notes')
-                                            ->label(__('ingredients.editor.soap.notes'))
-                                            ->rows(3)
-                                            ->columnSpanFull(),
                                         Group::make([
                                             TextEntry::make('fatty_acid_total')
                                                 ->label(__('ingredients.editor.soap.fatty_acid_total'))
@@ -1529,7 +1525,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'aliases',
             'components.componentIngredient.translations',
             'functions',
-            'sapProfile',
+            'sapProfile:id,ingredient_id,koh_sap_value,iodine_value,ins_value',
+            'fattyAcidEntries:id,ingredient_id,fatty_acid_id,percentage',
             'fattyAcidEntries.fattyAcid',
             'allergenEntries.allergen',
             'substanceEntries.substance',
@@ -1631,7 +1628,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->values()
             ->all();
 
-        $soap = $this->referenceSoapData($ingredient, $canSeePrivateData, $canSeeTechnicalData);
+        $soap = $this->referenceSoapData($ingredient, $canSeeTechnicalData);
         $ifra = $this->referenceIfraData($ingredient, $canSeePrivateData, $canSeeTechnicalData);
         $guidance = $this->referenceGuidanceData($ingredient, $workspace, $canSeePrivateData, $guidanceRecord);
         $materialCode = ! $this->isPlatformIngredient($ingredient)
@@ -1753,7 +1750,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
      */
     private function referenceSoapData(
         Ingredient $ingredient,
-        bool $canSeePrivateData,
         bool $canSeeTechnicalData,
     ): ?array {
         if (! $ingredient->is_soap_saponification_trusted || ! $canSeeTechnicalData) {
@@ -1780,7 +1776,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->map(fn ($entry): array => [
                 'name' => $entry->fattyAcid?->name,
                 'percentage' => $entry->percentage === null ? null : (float) $entry->percentage,
-                'source_notes' => $canSeePrivateData ? $entry->source_notes : null,
             ])
             ->filter(fn (array $entry): bool => filled($entry['name']))
             ->values()
@@ -1791,7 +1786,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'naoh_sap_value' => round(SoapSap::deriveNaohFromKoh((float) $koh), 6),
             'iodine_value' => $profile?->iodine_value === null ? null : (float) $profile->iodine_value,
             'ins_value' => $profile?->ins_value === null ? null : (float) $profile->ins_value,
-            'source_notes' => $canSeePrivateData ? $profile?->source_notes : null,
             'fatty_acids' => $fattyAcids,
         ];
     }
@@ -2214,7 +2208,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     }
 
     /**
-     * @return array<int, string>
+     * @return array<int, array{name: string, inci_name: ?string}>
      */
     public function componentIngredientOptions(): array
     {
@@ -2227,14 +2221,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->get()
             ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->catalog_key))
             ->mapWithKeys(function (Ingredient $ingredient): array {
-                $label = $ingredient->display_name ?? $ingredient->catalog_key;
-                $inciName = $ingredient->inci_name;
-
-                if (filled($inciName)) {
-                    $label .= sprintf(' (%s)', $inciName);
-                }
-
-                return [$ingredient->id => $label];
+                return [$ingredient->id => [
+                    'name' => $ingredient->display_name ?? $ingredient->catalog_key,
+                    'inci_name' => $ingredient->inci_name,
+                ]];
             })
             ->all();
     }

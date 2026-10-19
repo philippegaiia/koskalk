@@ -3,7 +3,12 @@
     $componentRows = is_array($editor->data['components'] ?? null) ? $editor->data['components'] : [];
     $ingredientOptions = $editor->componentIngredientOptions();
     $componentOptions = collect($ingredientOptions)
-        ->map(fn (string $label, int|string $id): array => ['id' => (int) $id, 'label' => $label])
+        ->map(fn (array $option, int|string $id): array => [
+            'id' => (int) $id,
+            'label' => $option['name'],
+            'description' => filled($option['inci_name']) ? \App\Support\InciName::display($option['inci_name']) : null,
+            'searchText' => $option['name'].' '.($option['inci_name'] ?? ''),
+        ])
         ->values()
         ->all();
     $total = $editor->componentPercentageTotal();
@@ -148,18 +153,24 @@
             </div>
         @else
             <div class="overflow-hidden rounded-lg border border-[var(--color-line)]" aria-label="{{ __('ingredients.editor.composition.list_label') }}">
-                <div class="hidden text-sm lg:grid lg:grid-cols-[minmax(0,1fr)_9rem_3.5rem] lg:gap-px lg:bg-[var(--color-line)]" aria-hidden="true">
+                <div class="hidden text-sm lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem_3.5rem] lg:gap-px lg:bg-[var(--color-line)]" aria-hidden="true">
                     <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.composition.ingredient') }}</div>
+                    <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.reference.inci') }}</div>
                     <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.composition.percentage') }}</div>
                     <div class="bg-[var(--color-field-muted)]"></div>
                 </div>
                 <div class="divide-y divide-[var(--color-line)] bg-white">
                     @foreach ($componentRows as $index => $row)
-                        @php($componentLabel = $ingredientOptions[(int) ($row['component_ingredient_id'] ?? 0)] ?? __('ingredients.editor.composition.unavailable'))
+                        @php($component = $ingredientOptions[(int) ($row['component_ingredient_id'] ?? 0)] ?? null)
+                        @php($componentLabel = $component['name'] ?? __('ingredients.editor.composition.unavailable'))
                         @php($shareField = 'data.components.'.$index.'.percentage_in_parent')
-                        <div class="grid grid-cols-1 gap-3 bg-white p-3 text-sm lg:grid-cols-[minmax(0,1fr)_9rem_3.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0" wire:key="composition-row-{{ $index }}">
+                        <div class="grid grid-cols-1 gap-3 bg-white p-3 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem_3.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0" wire:key="composition-row-{{ $index }}">
                             <div class="flex items-center bg-white lg:px-4 lg:py-3">
                                 <p class="min-w-0 break-words font-medium text-[var(--color-ink-strong)]">{{ $componentLabel }}</p>
+                            </div>
+                            <div class="min-w-0 bg-white lg:px-4 lg:py-3">
+                                <p class="sk-eyebrow lg:sr-only">{{ __('ingredients.editor.reference.inci') }}</p>
+                                <p class="break-words text-[var(--color-ink-soft)]">{{ filled($component['inci_name'] ?? null) ? \App\Support\InciName::display($component['inci_name']) : __('ingredients.editor.common.not_available') }}</p>
                             </div>
                             <div class="flex flex-col gap-2 bg-white lg:px-3 lg:py-3">
                                 <label for="composition-share-{{ $index }}" class="sk-eyebrow lg:sr-only">{{ __('ingredients.editor.composition.percentage_for', ['ingredient' => $componentLabel]) }}</label>

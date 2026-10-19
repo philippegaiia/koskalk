@@ -88,7 +88,7 @@
                 wire:model="workspaceMaterialCode"
                 maxlength="64"
                 placeholder="{{ __('ingredients.editor.material_code.placeholder') }}"
-                class="sk-field-control w-full"
+                class="sk-input w-full"
                 aria-describedby="workspace-material-code-help"
                 aria-invalid="{{ $errors->has('workspaceMaterialCode') ? 'true' : 'false' }}"
             />

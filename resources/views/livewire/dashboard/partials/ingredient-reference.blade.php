@@ -191,12 +191,6 @@
                 <dd class="mt-1 tabular-nums text-sm text-[var(--color-ink-strong)]">{{ $displayReferenceNumber($referenceData['soap']['ins_value'] ?? null) }}</dd>
             </div>
         </dl>
-        @if (filled($referenceData['soap']['source_notes'] ?? null))
-            <p class="mt-5 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">
-                <span class="font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.reference.source_notes') }}:</span>
-                {{ $referenceData['soap']['source_notes'] }}
-            </p>
-        @endif
         @if (count($referenceData['soap']['fatty_acids'] ?? []) > 0)
             <div class="mt-6">
                 <h3 class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.reference.fatty_acids') }}</h3>
@@ -207,7 +201,6 @@
                             <tr>
                                 <th scope="col" class="pb-3 pr-4 font-medium">{{ __('ingredients.editor.reference.fatty_acid') }}</th>
                                 <th scope="col" class="pb-3 pr-4 font-medium">{{ __('ingredients.editor.reference.percentage') }}</th>
-                                <th scope="col" class="pb-3 font-medium">{{ __('ingredients.editor.reference.source_notes') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
@@ -215,7 +208,6 @@
                                 <tr>
                                     <th scope="row" class="py-3 pr-4 font-medium text-[var(--color-ink-strong)]">{{ $fattyAcid['name'] }}</th>
                                     <td class="py-3 pr-4 tabular-nums text-[var(--color-ink-strong)]">{{ $displayReferencePercentage($fattyAcid['percentage'] ?? null) }}</td>
-                                    <td class="py-3 text-[var(--color-ink-soft)]">{{ $fattyAcid['source_notes'] ?: $notAvailable }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

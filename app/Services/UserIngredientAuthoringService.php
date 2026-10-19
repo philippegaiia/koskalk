@@ -124,14 +124,13 @@ class UserIngredientAuthoringService
                 'koh_sap_value' => data_get($entryData, 'sap_profile.koh_sap_value'),
                 'iodine_value' => data_get($entryData, 'sap_profile.iodine_value'),
                 'ins_value' => data_get($entryData, 'sap_profile.ins_value'),
-                'source_notes' => data_get($entryData, 'sap_profile.source_notes'),
             ],
             'fatty_acid_entries' => collect(data_get($entryData, 'fatty_acid_entries', []))
                 ->map(function (array $entry): array {
                     $percentage = $entry['percentage'] ?? null;
 
                     return [
-                        ...$entry,
+                        ...Arr::except($entry, ['source_notes']),
                         'percentage' => $percentage === null ? null : round((float) $percentage, 1),
                         '_original_percentage' => $percentage,
                     ];
@@ -849,6 +848,9 @@ class UserIngredientAuthoringService
         $state['fatty_acid_entries'] = $this->reconcileFattyAcidPrecision(
             Arr::get($state, 'fatty_acid_entries', []),
         );
+        $state['fatty_acid_entries'] = collect($state['fatty_acid_entries'])
+            ->map(fn (mixed $entry): mixed => is_array($entry) ? Arr::except($entry, ['source_notes']) : $entry)
+            ->all();
 
         $this->validateAllergenEntries(Arr::get($state, 'allergen_entries', []));
         $this->validateIfraState(Arr::get($state, 'ifra', []));
@@ -868,7 +870,10 @@ class UserIngredientAuthoringService
             'additional_identifiers' => Arr::get($state, 'additional_identifiers', []),
             'aliases' => Arr::get($state, 'aliases', []),
             'function_ids' => Arr::get($state, 'function_ids', []),
-            'sap_profile' => Arr::get($state, 'sap_profile', []),
+            'sap_profile' => [
+                ...Arr::get($state, 'sap_profile', []),
+                'source_notes' => $ingredient->sapProfile?->source_notes,
+            ],
             'fatty_acid_entries' => Arr::get($state, 'fatty_acid_entries', []),
             'allergen_entries' => Arr::get($state, 'allergen_entries', []),
             'substance_entries' => Arr::get($state, 'substance_entries', []),

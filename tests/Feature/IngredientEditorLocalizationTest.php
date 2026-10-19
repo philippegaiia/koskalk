@@ -185,6 +185,8 @@ it('keeps the complete platform reference available as plain technical values', 
         ->assertSeeText('Emollient')
         ->assertSeeText('0.185')
         ->assertSeeText('Oleic acid')
+        ->assertDontSee('SAP source note')
+        ->assertDontSee('Fatty acid source note')
         ->assertSeeText('42%')
         ->assertSeeText('LIMONENE')
         ->assertSeeText('0.25%')
@@ -206,6 +208,9 @@ it('keeps the complete platform reference available as plain technical values', 
     expect($component->html())
         ->toContain('break-words [overflow-wrap:anywhere]')
         ->toContain('PDF document');
+
+    expect($component->instance()->referenceData['soap'])->not->toHaveKey('source_notes')
+        ->and($component->instance()->referenceData['soap']['fatty_acids'][0])->not->toHaveKey('source_notes');
 
     expect($component->instance()->referenceData)->toHaveKey('documents')
         ->and($component->instance()->referenceData['documents'][0])->toHaveKey('type')
@@ -795,7 +800,7 @@ it('retains public technical chemistry and IFRA limits without private source no
         ->assertDontSeeText('PRIVATE IFRA LIMIT SOURCE SENTINEL');
 
     expect($component->instance()->referenceData['soap']['koh_sap_value'])->toBe(0.187)
-        ->and($component->instance()->referenceData['soap']['fatty_acids'][0]['source_notes'])->toBeNull()
+        ->and($component->instance()->referenceData['soap']['fatty_acids'][0])->not->toHaveKey('source_notes')
         ->and($component->instance()->referenceData['ifra']['limits'][0]['max_percentage'])->toBe(8.75)
         ->and($component->instance()->referenceData['ifra']['source_notes'])->toBeNull()
         ->and($component->instance()->referenceData['ifra']['limits'][0]['restriction_note'])->toBeNull();
@@ -1893,7 +1898,7 @@ it('shows inherited chemistry limits in the duplicated lipid editor', function (
         ->assertSeeText('Allowed KOH SAP range: 0.182360–0.193640 g KOH/g oil')
         ->assertSeeText('NaOH SAP (g NaOH/g oil)')
         ->assertSeeText('Calculated automatically from KOH SAP as g NaOH/g oil.')
-        ->assertSeeText('Soap data source notes')
+        ->assertDontSeeText('Soap data source notes')
         ->assertSeeText('Required total: 80–100%')
         ->assertSeeText('Allowed: 0.0%–5.0%. Limits are based on the source oil.')
         ->assertSeeText('Allowed: 48.0%–72.0%. Limits are based on the source oil.');
@@ -2235,4 +2240,29 @@ it('presents primary identifiers separately from supported additional schemes', 
         ->assertSeeText('Primary EC / EINECS number')
         ->assertSeeText('InChIKey')
         ->assertSeeText('PubChem CID');
+});
+
+it('does not fetch internal soap source notes for the user reference view', function () {
+    $user = User::factory()->create();
+    $oil = Ingredient::factory()->create(['is_soap_saponification_trusted' => true, 'is_active' => true]);
+    IngredientSapProfile::factory()->for($oil)->create(['koh_sap_value' => '0.190000', 'source_notes' => 'Internal oil source']);
+    IngredientFattyAcid::factory()->create(['ingredient_id' => $oil->id, 'fatty_acid_id' => FattyAcid::factory()->create()->id, 'percentage' => 85, 'source_notes' => 'Internal fatty acid source']);
+    $this->actingAs($user);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $view = Livewire::test(IngredientEditor::class, ['ingredient' => $oil]);
+        $queries = collect(DB::getQueryLog())->pluck('query');
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $view->assertDontSee('Internal oil source')->assertDontSee('Internal fatty acid source');
+    $soapQueries = $queries->filter(fn (string $query): bool => str_contains($query, 'from "ingredient_sap_profiles"') || str_contains($query, 'from "ingredient_fatty_acids"'));
+
+    expect($soapQueries)->not->toBeEmpty();
+    foreach ($soapQueries as $query) {
+        expect($query)->not->toContain('"source_notes"')->not->toContain('select *');
+    }
 });

@@ -54,6 +54,7 @@ use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\MediaStorage;
 use Database\Seeders\PlanSeeder;
 use Filament\Actions\DeleteAction;
@@ -642,7 +643,7 @@ it('renders all assigned ingredient functions in one editable Filament multi sel
         ->toBe([$functions->first()->id]);
 });
 
-it('lists user ingredients anonymously in a separate read only admin resource', function () {
+it('lists user ingredient owner emails in a separate read only admin resource', function () {
     $admin = User::factory()->admin()->create();
     $ingredientOwner = User::factory()->create([
         'name' => 'Confidential Maker',
@@ -673,10 +674,10 @@ it('lists user ingredients anonymously in a separate read only admin resource', 
         ->assertSeeText('User Ingredients')
         ->assertSeeText($userIngredient->display_name)
         ->assertSeeText('Not provided')
-        ->assertSeeText('Private catalogue note')
+        ->assertDontSeeText('Private catalogue note')
         ->assertDontSeeText($platformIngredient->display_name)
         ->assertDontSeeText($ingredientOwner->name)
-        ->assertDontSeeText($ingredientOwner->email)
+        ->assertSeeText($ingredientOwner->email)
         ->assertDontSeeText('Formula');
 
     Livewire::test(ListUserIngredients::class)
@@ -1504,6 +1505,38 @@ it('blocks non-admin users from the admin panel resources', function () {
     $this->get(RegulatoryRegimeResource::getUrl(panel: 'admin'))
         ->assertForbidden();
 
+    $this->get('/admin/user-ingredients')->assertForbidden();
+
     $this->get(UserResource::getUrl(panel: 'admin'))
         ->assertForbidden();
+});
+
+it('shows and filters user ingredients by their workspace and owner email', function () {
+    $admin = User::factory()->admin()->create();
+    $firstOwner = User::factory()->create(['email' => 'first-maker@example.test']);
+    $first = Workspace::factory()->for($firstOwner, 'owner')->create(['name' => 'First workshop']);
+    $second = Workspace::factory()->create(['name' => 'Other workshop']);
+    $firstIngredient = Ingredient::factory()->create(['owner_type' => OwnerType::Workspace, 'owner_id' => $first->id, 'workspace_id' => $first->id, 'visibility' => Visibility::Private]);
+    $secondIngredient = Ingredient::factory()->create(['owner_type' => OwnerType::Workspace, 'owner_id' => $second->id, 'workspace_id' => null, 'visibility' => Visibility::Private]);
+    $this->actingAs($admin);
+
+    Livewire::test(ListUserIngredients::class)
+        ->loadTable()
+        ->assertSeeText('First workshop')
+        ->assertSeeText('Other workshop')
+        ->assertSeeText('first-maker@example.test')
+        ->filterTable('workspace', ['name' => 'First workshop'])
+        ->assertCanSeeTableRecords([$firstIngredient])
+        ->assertCanNotSeeTableRecords([$secondIngredient])
+        ->removeTableFilters()
+        ->filterTable('owner_email', ['email' => 'first-maker@example.test'])
+        ->assertCanSeeTableRecords([$firstIngredient])
+        ->assertCanNotSeeTableRecords([$secondIngredient])
+        ->removeTableFilters()
+        ->searchTable('First workshop')
+        ->assertCanSeeTableRecords([$firstIngredient])
+        ->assertCanNotSeeTableRecords([$secondIngredient])
+        ->searchTable('first-maker@example.test')
+        ->assertCanSeeTableRecords([$firstIngredient])
+        ->assertCanNotSeeTableRecords([$secondIngredient]);
 });

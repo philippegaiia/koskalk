@@ -99,6 +99,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
                     'can_add_to_additives' => in_array('additives', $availablePhases, true),
                     'can_add_to_fragrance' => in_array('fragrance', $availablePhases, true),
                     'liquid_soap_neutralizer' => $liquidSoapNeutralizer?->value,
+                    'can_dilute_liquid_soap' => $isLiquidSoap && $ingredient->isLiquidSoapDilutionLiquid(),
                     'default_price_per_kg' => $defaultPrice?->price_per_canonical_unit === null
                         ? null
                         : (float) bcmul($defaultPrice->price_per_canonical_unit, '1000', 12),

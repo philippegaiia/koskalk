@@ -98,12 +98,15 @@ it('keeps the bar soap bench without the liquid process and with every alkali', 
     ]);
 });
 
-it('offers neither plain water nor neutralizers as dilution liquids', function () {
+it('offers only liquids as dilution liquids', function () {
     $family = ProductFamily::factory()->liquidSoapPaste()->create();
     $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
-    Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'subcategory' => IngredientSubcategory::Water, 'display_name' => 'Plain Tap Water', 'owner_type' => null, 'owner_id' => null, 'is_active' => true]);
-    Ingredient::factory()->create(['category' => IngredientCategory::PhAdjustersBuffers, 'display_name' => 'Citric Neutralizer', 'owner_type' => null, 'owner_id' => null, 'is_active' => true, 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous]);
-    Ingredient::factory()->create(['category' => IngredientCategory::BotanicalsExtracts, 'subcategory' => IngredientSubcategory::Hydrosols, 'display_name' => 'Rose Hydrosol', 'owner_type' => null, 'owner_id' => null, 'is_active' => true]);
+    $platform = ['owner_type' => null, 'owner_id' => null, 'is_active' => true];
+    Ingredient::factory()->create([...$platform, 'category' => IngredientCategory::WaterSolventsCarriers, 'subcategory' => IngredientSubcategory::Water, 'display_name' => 'Plain Tap Water']);
+    Ingredient::factory()->create([...$platform, 'category' => IngredientCategory::PhAdjustersBuffers, 'display_name' => 'Citric Neutralizer', 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous]);
+    Ingredient::factory()->create([...$platform, 'category' => IngredientCategory::Lipids, 'subcategory' => IngredientSubcategory::VegetableOils, 'display_name' => 'Olive Carrier Oil']);
+    Ingredient::factory()->create([...$platform, 'category' => IngredientCategory::BotanicalsExtracts, 'subcategory' => IngredientSubcategory::Hydrosols, 'display_name' => 'Rose Hydrosol']);
+    Ingredient::factory()->create([...$platform, 'category' => IngredientCategory::HumectantsPolyols, 'subcategory' => IngredientSubcategory::GlycerinGlycols, 'display_name' => 'Vegetable Glycerine']);
 
     $html = $this->actingAs(User::factory()->create())
         ->get(route('recipes.create', ['family' => 'liquid-soap', 'type' => $productType->slug]))
@@ -114,6 +117,27 @@ it('offers neither plain water nor neutralizers as dilution liquids', function (
     $search = (string) $document->getElementById('liquid-final_dilution-liquids-heading')?->parentNode?->C14N();
 
     expect($search)->toContain('Rose Hydrosol')
+        ->and($search)->toContain('Vegetable Glycerine')
         ->and($search)->not->toContain('Plain Tap Water')
-        ->and($search)->not->toContain('Citric Neutralizer');
+        ->and($search)->not->toContain('Citric Neutralizer')
+        ->and($search)->not->toContain('Olive Carrier Oil');
 });
+
+it('accepts only liquids as liquid soap dilution liquids', function (IngredientCategory $category, ?IngredientSubcategory $subcategory, bool $accepted) {
+    $ingredient = Ingredient::factory()->make(['category' => $category, 'subcategory' => $subcategory]);
+
+    expect($ingredient->isLiquidSoapDilutionLiquid())->toBe($accepted);
+})->with([
+    'hydrosol' => [IngredientCategory::BotanicalsExtracts, IngredientSubcategory::Hydrosols, true],
+    'aqueous extract' => [IngredientCategory::BotanicalsExtracts, IngredientSubcategory::AqueousGlycerinatedExtracts, true],
+    'oil macerate' => [IngredientCategory::BotanicalsExtracts, IngredientSubcategory::OilMacerates, false],
+    'glycerine' => [IngredientCategory::HumectantsPolyols, IngredientSubcategory::GlycerinGlycols, true],
+    'alcohol' => [IngredientCategory::WaterSolventsCarriers, IngredientSubcategory::Alcohols, true],
+    'plain water' => [IngredientCategory::WaterSolventsCarriers, IngredientSubcategory::Water, false],
+    'milk filed under other' => [IngredientCategory::Other, null, true],
+    'vegetable oil' => [IngredientCategory::Lipids, IngredientSubcategory::VegetableOils, false],
+    'surfactant' => [IngredientCategory::Surfactants, IngredientSubcategory::Amphoteric, false],
+    'salt' => [IngredientCategory::MineralsSaltsPowders, IngredientSubcategory::Salts, false],
+    'essential oil' => [IngredientCategory::AromaticMaterials, IngredientSubcategory::EssentialOils, false],
+    'alkali' => [IngredientCategory::SoapmakingAlkalis, IngredientSubcategory::PotassiumHydroxide, false],
+]);

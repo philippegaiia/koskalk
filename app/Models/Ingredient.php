@@ -366,6 +366,30 @@ class Ingredient extends Model
     }
 
     /**
+     * Liquids a liquid soap paste may be diluted with: solvents and carriers
+     * other than plain water (the step remainder), humectants such as
+     * glycerine, hydrosols and aqueous extracts, and Other, which holds milks
+     * and juices until the taxonomy has a class for them. Neutralizers belong
+     * to the neutralization step.
+     */
+    public function isLiquidSoapDilutionLiquid(): bool
+    {
+        if ($this->liquid_soap_neutralizer !== null) {
+            return false;
+        }
+
+        return match ($this->category) {
+            IngredientCategory::WaterSolventsCarriers => $this->subcategory !== IngredientSubcategory::Water,
+            IngredientCategory::HumectantsPolyols, IngredientCategory::Other => true,
+            IngredientCategory::BotanicalsExtracts => in_array($this->subcategory, [
+                IngredientSubcategory::Hydrosols,
+                IngredientSubcategory::AqueousGlycerinatedExtracts,
+            ], true),
+            default => false,
+        };
+    }
+
+    /**
      * The neutralizer kind the liquid soap bench may use this material as.
      * Only platform materials qualify, and a fatty acid also needs trusted
      * soap chemistry because its KOH SAP sets how much KOH it takes up.

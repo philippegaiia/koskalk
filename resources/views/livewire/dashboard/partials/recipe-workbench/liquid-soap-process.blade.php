@@ -1,10 +1,7 @@
 @php
     $dilutionLiquidOptions = collect($workbench['ingredients'] ?? [])
-        // Plain water is the remainder of each step and acids belong to the
-        // neutralizer, so neither is offered as a dilution liquid.
-        ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis'
-            || ($ingredient['subcategory'] ?? null) === 'water'
-            || filled($ingredient['liquid_soap_neutralizer'] ?? null))
+        // Ingredient::isLiquidSoapDilutionLiquid() decides which liquids qualify.
+        ->filter(fn (array $ingredient): bool => (bool) ($ingredient['can_dilute_liquid_soap'] ?? false))
         ->map(fn (array $ingredient): array => [
             'id' => $ingredient['id'],
             'label' => $ingredient['name'],

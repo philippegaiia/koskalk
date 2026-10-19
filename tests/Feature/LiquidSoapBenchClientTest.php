@@ -457,7 +457,7 @@ it('adds dilution liquids to a step and sends them as a share of its water', fun
     $process = runLiquidSoapBenchScript(<<<'JS'
 const liquid = bench(liquidFamily);
 liquid.ingredients = [
-    { id: 7, name: 'Lavender hydrosol', category: 'water_solvents_carriers', available_phases: ['additives'] },
+    { id: 7, name: 'Lavender hydrosol', category: 'botanicals_extracts', subcategory: 'hydrosols', available_phases: ['additives'], can_dilute_liquid_soap: true },
     { id: 9, name: 'KOH', category: 'soapmaking_alkalis', available_phases: [] },
     { id: 11, name: 'Water', category: 'water_solvents_carriers', subcategory: 'water', available_phases: ['additives'] },
     { id: 12, name: 'Citric acid', category: 'ph_adjusters_buffers', available_phases: ['additives', 'neutralization'], liquid_soap_neutralizer: 'citric_acid_anhydrous' },

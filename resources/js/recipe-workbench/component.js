@@ -1479,18 +1479,13 @@ function createLiquidSoapSection(payload) {
         },
 
         /**
-         * Adds a liquid to a dilution step, up to four per step. Plain water is
-         * the step remainder and acids belong to the neutralizer, so neither is
-         * added here.
+         * Adds a liquid to a dilution step, up to four per step. The catalog
+         * flags which ingredients qualify (Ingredient::isLiquidSoapDilutionLiquid).
          */
         addDilutionLiquid(phaseKey, ingredientId) {
             const ingredient = (this.ingredients ?? []).find((candidate) => Number(candidate.id) === Number(ingredientId));
 
-            if (!ingredient
-                || ingredient.category === 'soapmaking_alkalis'
-                || ingredient.subcategory === 'water'
-                || ingredient.liquid_soap_neutralizer
-                || this.dilutionLiquidRows(phaseKey).length >= 4) {
+            if (!ingredient?.can_dilute_liquid_soap || this.dilutionLiquidRows(phaseKey).length >= 4) {
                 return;
             }
 

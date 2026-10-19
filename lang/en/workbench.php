@@ -667,6 +667,7 @@ return [
             'add' => 'Add a liquid',
             'search' => 'Search hydrosols, milks, juices…',
             'share_for' => 'Share of the step water for :ingredient',
+            'share_column' => '% of step water',
             'remove' => 'Remove :ingredient',
             'water_left' => 'Water: :percentage% · :weight :unit',
             'exceeds' => 'The liquids replace more than all of this step water.',

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\LiquidSoapNeutralizer;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
@@ -95,4 +96,24 @@ it('keeps the bar soap bench without the liquid process and with every alkali', 
         'dilution_liquids' => false,
         'output_heading' => 'Cured soap output',
     ]);
+});
+
+it('offers neither plain water nor neutralizers as dilution liquids', function () {
+    $family = ProductFamily::factory()->liquidSoapPaste()->create();
+    $productType = ProductType::factory()->create(['product_family_id' => $family->id]);
+    Ingredient::factory()->create(['category' => IngredientCategory::WaterSolventsCarriers, 'subcategory' => IngredientSubcategory::Water, 'display_name' => 'Plain Tap Water', 'owner_type' => null, 'owner_id' => null, 'is_active' => true]);
+    Ingredient::factory()->create(['category' => IngredientCategory::PhAdjustersBuffers, 'display_name' => 'Citric Neutralizer', 'owner_type' => null, 'owner_id' => null, 'is_active' => true, 'liquid_soap_neutralizer' => LiquidSoapNeutralizer::CitricAcidAnhydrous]);
+    Ingredient::factory()->create(['category' => IngredientCategory::BotanicalsExtracts, 'subcategory' => IngredientSubcategory::Hydrosols, 'display_name' => 'Rose Hydrosol', 'owner_type' => null, 'owner_id' => null, 'is_active' => true]);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('recipes.create', ['family' => 'liquid-soap', 'type' => $productType->slug]))
+        ->assertOk()
+        ->getContent();
+    $document = new DOMDocument;
+    $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+    $search = (string) $document->getElementById('liquid-final_dilution-liquids-heading')?->parentNode?->C14N();
+
+    expect($search)->toContain('Rose Hydrosol')
+        ->and($search)->not->toContain('Plain Tap Water')
+        ->and($search)->not->toContain('Citric Neutralizer');
 });

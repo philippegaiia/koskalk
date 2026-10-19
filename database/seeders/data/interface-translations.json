@@ -45096,6 +45096,18 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.dilution_liquids.share_column",
+      "text": {
+        "de": "% des Stufenwassers",
+        "es": "% del agua de la etapa",
+        "fr": "% de l’eau de l’étape",
+        "it": "% dell’acqua della fase",
+        "nl": "% van het stapwater",
+        "pt_BR": "% da água da etapa"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "liquid.dilution_liquids.share_for",
       "text": {
         "de": "Anteil am Wasser des Schritts für :ingredient",

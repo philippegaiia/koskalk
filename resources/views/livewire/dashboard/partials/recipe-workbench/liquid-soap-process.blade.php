@@ -1,6 +1,10 @@
 @php
     $dilutionLiquidOptions = collect($workbench['ingredients'] ?? [])
-        ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis')
+        // Plain water is the remainder of each step and acids belong to the
+        // neutralizer, so neither is offered as a dilution liquid.
+        ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis'
+            || ($ingredient['subcategory'] ?? null) === 'water'
+            || filled($ingredient['liquid_soap_neutralizer'] ?? null))
         ->map(fn (array $ingredient): array => [
             'id' => $ingredient['id'],
             'label' => $ingredient['name'],
@@ -22,7 +26,7 @@
  <label class="block">
  <span id="liquid-first-dilution-label" class="sk-eyebrow">{{ __('workbench.liquid.first_dilution') }}</span>
  <div class="mt-2 flex items-center gap-2">
- <input aria-labelledby="liquid-first-dilution-label" x-model="liquidProcess.firstDilutionPercentage" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="sk-input numeric" />
+ <input aria-labelledby="liquid-first-dilution-label" x-model="liquidProcess.firstDilutionPercentage" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
  <span class="text-sm text-[var(--color-ink-soft)]">%</span>
  </div>
  <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.first_dilution_help') }}</span>
@@ -30,7 +34,7 @@
  <label class="block">
  <span id="liquid-final-dilution-label" class="sk-eyebrow">{{ __('workbench.liquid.final_dilution') }}</span>
  <div class="mt-2 flex items-center gap-2">
- <input aria-labelledby="liquid-final-dilution-label" x-model="liquidProcess.finalDilutionPercentage" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="sk-input numeric" />
+ <input aria-labelledby="liquid-final-dilution-label" x-model="liquidProcess.finalDilutionPercentage" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
  <span class="text-sm text-[var(--color-ink-soft)]">%</span>
  </div>
  <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.final_dilution_help') }}</span>
@@ -38,7 +42,7 @@
  <label class="block">
  <span id="liquid-solution-label" class="sk-eyebrow">{{ __('workbench.liquid.solution_strength') }}</span>
  <div class="mt-2 flex items-center gap-2">
- <input aria-labelledby="liquid-solution-label" x-model="liquidProcess.neutralizerSolutionPercentage" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="sk-input numeric" />
+ <input aria-labelledby="liquid-solution-label" x-model="liquidProcess.neutralizerSolutionPercentage" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
  <span class="text-sm text-[var(--color-ink-soft)]">%</span>
  </div>
  <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.solution_strength_help') }}</span>
@@ -46,31 +50,17 @@
  <label class="block">
  <span id="liquid-weighed-paste-label" class="sk-eyebrow">{{ __('workbench.liquid.weighed_paste') }}</span>
  <div class="mt-2 flex items-center gap-2">
- <input aria-labelledby="liquid-weighed-paste-label" x-model="liquidProcess.measuredPasteWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" :placeholder="liquidProcessIsReady ? format(liquidProcessPreview.paste.theoretical_weight, calculatedMassDecimals(liquidProcessPreview.paste.theoretical_weight)) : ''" class="sk-input numeric" />
+ <input aria-labelledby="liquid-weighed-paste-label" x-model="liquidProcess.measuredPasteWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" :placeholder="liquidProcessIsReady ? format(liquidProcessPreview.paste.theoretical_weight, calculatedMassDecimals(liquidProcessPreview.paste.theoretical_weight)) : ''" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
  <span class="text-sm text-[var(--color-ink-soft)]" x-text="oilUnit"></span>
  </div>
  <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.weighed_paste_help') }}</span>
  </label>
  </div>
 
- <div class="grid grid-cols-1 gap-4 @5xl/workbench:grid-cols-2">
+ <div class="space-y-4">
  @foreach (['first_dilution', 'final_dilution'] as $dilutionStep)
  <section class="sk-inset space-y-3 p-4" aria-labelledby="liquid-{{ $dilutionStep }}-liquids-heading">
- <div class="flex flex-wrap items-baseline justify-between gap-3">
  <p id="liquid-{{ $dilutionStep }}-liquids-heading" class="sk-eyebrow">{{ __('workbench.liquid.dilution_liquids.'.$dilutionStep) }}</p>
- <p class="numeric text-xs text-[var(--color-ink-soft)]" x-text="t('liquid.dilution_liquids.water_left', { percentage: format(Math.max(0, 100 - dilutionLiquidShareTotal('{{ $dilutionStep }}')), 2), weight: format(dilutionWaterWeight('{{ $dilutionStep }}'), calculatedMassDecimals(dilutionWaterWeight('{{ $dilutionStep }}'))), unit: oilUnit })"></p>
- </div>
- <template x-for="row in dilutionLiquidRows('{{ $dilutionStep }}')" :key="row.id">
- <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_7rem_2.5rem] sm:items-center">
- <p class="min-w-0 truncate font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
- <label class="flex items-center gap-2">
- <input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('liquid.dilution_liquids.share_for', { ingredient: row.name })" class="sk-input numeric" />
- <span class="text-sm text-[var(--color-ink-soft)]">%</span>
- </label>
- <span class="numeric text-right text-sm text-[var(--color-ink-strong)]" x-text="`${format(dilutionLiquidWeight('{{ $dilutionStep }}', row), calculatedMassDecimals(dilutionLiquidWeight('{{ $dilutionStep }}', row)))} ${oilUnit}`"></span>
- <button type="button" @click="removeIngredient('{{ $dilutionStep }}', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('liquid.dilution_liquids.remove', { ingredient: row.name })"><x-action-icon name="close" /></button>
- </div>
- </template>
  <div x-show="dilutionLiquidRows('{{ $dilutionStep }}').length < 4">
  <x-search-combobox
  id="liquid-{{ $dilutionStep }}-liquid-search"
@@ -81,6 +71,38 @@
  :placeholder="__('workbench.liquid.dilution_liquids.search')"
  x-on:search-combobox-selected="addDilutionLiquid('{{ $dilutionStep }}', $event.detail.id)"
  />
+ </div>
+ <div class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-white">
+ <template x-if="dilutionLiquidRows('{{ $dilutionStep }}').length > 0">
+ <div>
+ <div class="hidden grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] gap-3 bg-[var(--color-field-muted)] px-3 text-xs font-medium text-[var(--color-ink-soft)] sm:grid sm:items-center">
+ <div class="py-2">{{ __('workbench.common.ingredient') }}</div>
+ <div class="py-2">{{ __('workbench.liquid.dilution_liquids.share_column') }}</div>
+ <div class="py-2" x-text="t('settings.lye_liquid_fresh_weight', { unit: oilUnit })"></div>
+ <div></div>
+ </div>
+ <div class="divide-y divide-[var(--color-line)]">
+ <template x-for="row in dilutionLiquidRows('{{ $dilutionStep }}')" :key="row.id">
+ <div class="grid gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] sm:items-center">
+ <div class="min-w-0"><p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p><p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p></div>
+ <label class="flex items-center gap-2">
+ <span class="sk-eyebrow sm:hidden">{{ __('workbench.liquid.dilution_liquids.share_column') }}</span>
+ <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" :style="decimalAlignmentStyle(row.percentage)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('liquid.dilution_liquids.share_for', { ingredient: row.name })" class="numeric sk-decimal-aligned w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm" />
+ </label>
+ <span class="flex items-center gap-2 text-sm">
+ <span class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_fresh_weight_mobile') }}</span>
+ <span class="numeric text-[var(--color-ink-strong)]" x-text="`${format(dilutionLiquidWeight('{{ $dilutionStep }}', row), calculatedMassDecimals(dilutionLiquidWeight('{{ $dilutionStep }}', row)))} ${oilUnit}`"></span>
+ </span>
+ <button type="button" @click="removeIngredient('{{ $dilutionStep }}', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('liquid.dilution_liquids.remove', { ingredient: row.name })"><x-action-icon name="close" /></button>
+ </div>
+ </template>
+ </div>
+ </div>
+ </template>
+ <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-2.5 text-xs first:border-t-0">
+ <span :class="dilutionLiquidShareTotal('{{ $dilutionStep }}') > 100.00001 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-soft)]'" x-text="t('settings.lye_liquid_replaced', { percentage: format(dilutionLiquidShareTotal('{{ $dilutionStep }}'), 2) })"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="t('settings.lye_liquid_water_summary', { percentage: format(Math.max(0, 100 - dilutionLiquidShareTotal('{{ $dilutionStep }}')), 2), weight: format(dilutionWaterWeight('{{ $dilutionStep }}'), calculatedMassDecimals(dilutionWaterWeight('{{ $dilutionStep }}'))), unit: oilUnit })"></span>
+ </div>
  </div>
  <template x-if="dilutionLiquidShareTotal('{{ $dilutionStep }}') > 100.00001">
  <p role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ __('workbench.liquid.dilution_liquids.exceeds') }}</p>
@@ -93,7 +115,7 @@
  <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
  <label class="block min-w-0 flex-1">
  <span id="liquid-neutralizer-label" class="sk-eyebrow">{{ __('workbench.liquid.neutralizer') }}</span>
- <select aria-labelledby="liquid-neutralizer-label" :value="liquidNeutralizerRow?.ingredient_id ?? ''" @change="chooseLiquidNeutralizer($event.target.value)" class="sk-input mt-2">
+ <select aria-labelledby="liquid-neutralizer-label" :value="liquidNeutralizerRow?.ingredient_id ?? ''" @change="chooseLiquidNeutralizer($event.target.value)" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]">
  <option value="">{{ __('workbench.liquid.neutralizer_none') }}</option>
  <template x-for="option in liquidNeutralizerOptions" :key="option.id">
  <option :value="option.id" :selected="liquidNeutralizerRow?.ingredient_id === option.id" x-text="option.name"></option>
@@ -103,7 +125,7 @@
  <template x-if="liquidNeutralizerRow !== null">
  <label class="block lg:w-48">
  <span id="liquid-neutralizer-amount-label" class="sk-eyebrow" x-text="t('liquid.neutralizer_amount', { unit: oilUnit })"></span>
- <input aria-labelledby="liquid-neutralizer-amount-label" x-effect="syncFormattedInput($el, liquidNeutralizerWeight(), additionWeightDecimals(liquidNeutralizerWeight()))" @input="setLiquidNeutralizerWeight($event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(liquidNeutralizerWeight(), additionWeightDecimals(liquidNeutralizerWeight()))" type="text" inputmode="decimal" class="sk-input numeric mt-2" />
+ <input aria-labelledby="liquid-neutralizer-amount-label" x-effect="syncFormattedInput($el, liquidNeutralizerWeight(), additionWeightDecimals(liquidNeutralizerWeight()))" @input="setLiquidNeutralizerWeight($event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(liquidNeutralizerWeight(), additionWeightDecimals(liquidNeutralizerWeight()))" type="text" inputmode="decimal" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
  </label>
  </template>
  <template x-if="liquidNeutralizerRow !== null && liquidProcessPreview?.neutralizer">

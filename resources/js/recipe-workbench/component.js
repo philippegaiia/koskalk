@@ -1478,11 +1478,19 @@ function createLiquidSoapSection(payload) {
             return this.dilutionLiquidRows(phaseKey).reduce((total, row) => total + Math.max(0, this.number(row.percentage)), 0);
         },
 
-        /** Adds a non-alkali liquid to a dilution step, up to four per step. */
+        /**
+         * Adds a liquid to a dilution step, up to four per step. Plain water is
+         * the step remainder and acids belong to the neutralizer, so neither is
+         * added here.
+         */
         addDilutionLiquid(phaseKey, ingredientId) {
             const ingredient = (this.ingredients ?? []).find((candidate) => Number(candidate.id) === Number(ingredientId));
 
-            if (!ingredient || ingredient.category === 'soapmaking_alkalis' || this.dilutionLiquidRows(phaseKey).length >= 4) {
+            if (!ingredient
+                || ingredient.category === 'soapmaking_alkalis'
+                || ingredient.subcategory === 'water'
+                || ingredient.liquid_soap_neutralizer
+                || this.dilutionLiquidRows(phaseKey).length >= 4) {
                 return;
             }
 

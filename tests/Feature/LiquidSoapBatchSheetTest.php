@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\LiquidSoapNeutralizer;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
@@ -256,4 +257,27 @@ it('keeps a liquid soap sheet when the neutralizer is more than the free KOH nee
 
     $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
         ->assertSeeInOrder(['Neutralization', 'Acid: 10.00 g', 'Final dilution', __('workbench.liquid.status.unsupported')]);
+});
+
+it('keeps the first dilution liquids on a sheet whose neutralizer exceeds the free KOH', function () {
+    $hydrosol = Ingredient::factory()->create([
+        'category' => IngredientCategory::BotanicalsExtracts,
+        'subcategory' => IngredientSubcategory::Hydrosols,
+        'display_name' => 'Rose Hydrosol',
+        'is_active' => true,
+    ]);
+
+    $document = liquidSoapBatchSheetDocument([
+        'phase_items' => [
+            'neutralization' => [['percentage' => 1, 'weight' => 10]],
+            'first_dilution' => [['ingredient_id' => $hydrosol->id, 'percentage' => 25, 'weight' => 0, 'note' => null]],
+        ],
+    ]);
+    $steps = collect($document['liquid_process']['steps'])->keyBy('key');
+
+    expect($document['liquid_process']['is_complete'])->toBeFalse()
+        ->and($steps['first_dilution']['add'])->toBe(1679.327)
+        ->and($steps['first_dilution']['instruction'])->toBe('Add 1259.4953 g water + 419.8317 g Rose Hydrosol to bring the paste to 35.0% anhydrous soap.')
+        ->and($steps['final_dilution']['mass'])->toBeNull()
+        ->and($steps['final_dilution']['instruction'])->not->toContain('Rose Hydrosol');
 });

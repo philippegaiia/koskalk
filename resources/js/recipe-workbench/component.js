@@ -1424,6 +1424,9 @@ const LIQUID_PROCESS_DEFAULTS = Object.freeze({
 function createLiquidSoapSection(payload) {
     const isLiquidSoapFormula = payload.productFamily?.soap_process === 'liquid_paste';
     let recommendationRequest = null;
+    // Bumped by every manual dose edit, so a recommendation still waiting for
+    // its preview never overwrites a dose typed after the click.
+    let recommendationGeneration = 0;
 
     return {
         liquidProcess: isLiquidSoapFormula ? { ...LIQUID_PROCESS_DEFAULTS } : null,
@@ -1508,8 +1511,14 @@ function createLiquidSoapSection(payload) {
             return this.liquidNeutralizerRow === null ? 0 : this.rowWeight(this.liquidNeutralizerRow);
         },
 
-        /** Neutralizer rows are stored as % of oils like every soap addition. */
+        /** A dose typed by the user; it cancels any pending recommendation. */
         setLiquidNeutralizerWeight(value) {
+            recommendationGeneration += 1;
+            this.applyLiquidNeutralizerWeight(value);
+        },
+
+        /** Neutralizer rows are stored as % of oils like every soap addition. */
+        applyLiquidNeutralizerWeight(value) {
             const row = this.liquidNeutralizerRow;
             const oilWeight = this.number(this.oilWeight);
             const weight = Math.max(0, this.number(value));
@@ -1523,16 +1532,17 @@ function createLiquidSoapSection(payload) {
 
         useRecommendedLiquidNeutralizer() {
             const row = this.liquidNeutralizerRow;
+            const generation = ++recommendationGeneration;
             this.isApplyingLiquidNeutralizerRecommendation = true;
             const request = (async () => {
-                if (!await this.refreshCalculationPreview() || row !== this.liquidNeutralizerRow) {
+                if (!await this.refreshCalculationPreview() || row !== this.liquidNeutralizerRow || generation !== recommendationGeneration) {
                     return;
                 }
 
                 const recommended = this.liquidProcessPreview?.neutralizer?.recommended_weight;
 
                 if (recommended !== undefined && recommended !== null) {
-                    this.setLiquidNeutralizerWeight(recommended);
+                    this.applyLiquidNeutralizerWeight(recommended);
                 }
             })();
             recommendationRequest = request;

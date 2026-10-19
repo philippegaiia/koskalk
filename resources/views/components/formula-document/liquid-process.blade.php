@@ -54,6 +54,9 @@
                                         {{ __('formula_documents.liquid.neutralized_anhydrous_soap_weight', ['amount' => $mass($process['final_anhydrous_soap_weight']), 'unit' => $document['unit']]) }}
                                     </p>
                                 @endif
+                                @if ($step['key'] === 'final_dilution' && ! ($process['is_complete'] ?? true))
+                                    <p class="mt-0.5 text-xs text-[var(--color-warning-strong)]">{{ __('workbench.liquid.status.unsupported') }}</p>
+                                @endif
                                 @if ($step['key'] === 'paste' && $process['paste']['is_weighed'])
                                     <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
                                         {{ __('formula_documents.liquid.weighed_paste', ['theoretical' => $mass($process['paste']['theoretical_weight']), 'unit' => $document['unit']]) }}
@@ -61,8 +64,8 @@
                                 @endif
                             </td>
                             <td class="numeric px-4 py-2.5 text-right align-top">{{ $step['add'] === null ? '—' : $mass($step['add']) }}</td>
-                            <td class="numeric px-4 py-2.5 text-right align-top">{{ $mass($step['mass']) }}</td>
-                            <td class="numeric px-4 py-2.5 text-right align-top">{{ $percent($step['anhydrous_percentage']) }}%</td>
+                            <td class="numeric px-4 py-2.5 text-right align-top">{{ $step['mass'] === null ? '—' : $mass($step['mass']) }}</td>
+                            <td class="numeric px-4 py-2.5 text-right align-top">{{ $step['anhydrous_percentage'] === null ? '—' : $percent($step['anhydrous_percentage']).'%' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

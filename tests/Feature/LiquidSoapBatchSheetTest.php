@@ -239,3 +239,21 @@ it('exports dilution liquids, the neutralizer and all added water as raw materia
         ->and($rows->firstWhere('name', 'Lavender Oil')['quantity'])->toEqualWithDelta(95.2, 0.001)
         ->and($rows->sum('quantity'))->toEqualWithDelta(4760.0, 0.01);
 });
+
+it('keeps a liquid soap sheet when the neutralizer is more than the free KOH needs', function () {
+    $document = liquidSoapBatchSheetDocument([
+        'phase_items' => ['neutralization' => [['percentage' => 1, 'weight' => 10]]],
+    ]);
+    $steps = collect($document['liquid_process']['steps'])->keyBy('key');
+
+    expect($document['soap_output'])->toBeNull()
+        ->and(collect($document['results'])->pluck('label')->all())->not->toContain(__('formula_documents.results.cured_weight'))
+        ->and($document['liquid_process']['is_complete'])->toBeFalse()
+        ->and($document['liquid_process']['neutralizer']['weight'])->toBe(10.0)
+        ->and($document['liquid_process']['warnings'])->toContain(__('workbench.liquid.warnings.excess_acid_splits_soap'))
+        ->and($steps['first_dilution']['mass'])->toBe(3400.0)
+        ->and($steps['final_dilution']['mass'])->toBeNull();
+
+    $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
+        ->assertSeeInOrder(['Neutralization', 'Acid: 10.00 g', 'Final dilution', __('workbench.liquid.status.unsupported')]);
+});

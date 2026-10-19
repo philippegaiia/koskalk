@@ -25,6 +25,7 @@ class FormulaDocumentBuilder
         $basisWeight = round((float) data_get($snapshot, 'draft.oilWeight', 0), 4);
         $labeling = is_array($snapshot['labeling'] ?? null) ? $snapshot['labeling'] : [];
         $liquidProcess = $isCosmetic ? null : $this->liquidProcess($snapshot);
+        $isLiquidSoap = ! $isCosmetic && $this->isLiquidSoap($snapshot);
 
         return [
             'identity' => $identity,
@@ -34,12 +35,16 @@ class FormulaDocumentBuilder
             'basis_weight' => $basisWeight,
             'settings' => $this->settings($snapshot, $isCosmetic),
             'sections' => $this->sections($snapshot, $isCosmetic, $basisWeight, $useExplicitRowWeights),
-            'results' => $liquidProcess === null
-                ? $this->results($snapshot, $isCosmetic, $basisWeight)
-                : $this->liquidResults($snapshot, $liquidProcess),
+            'results' => match (true) {
+                $liquidProcess !== null => $this->liquidResults($snapshot, $liquidProcess),
+                // A liquid soap whose process cannot be calculated has no
+                // final batch to report, and never a cured bar.
+                $isLiquidSoap => [],
+                default => $this->results($snapshot, $isCosmetic, $basisWeight),
+            },
             'liquid_process' => $liquidProcess === null ? null : $this->liquidProcessDocument($snapshot, $liquidProcess),
             // A liquid soap is not cured, so it has no cured-soap output.
-            'soap_output' => $isCosmetic || $liquidProcess !== null ? null : $this->soapCuredOutputBuilder->build(
+            'soap_output' => $isCosmetic || $isLiquidSoap ? null : $this->soapCuredOutputBuilder->build(
                 $labeling,
                 $this->curedWeight($snapshot, $basisWeight),
                 $this->curedWaterPercentage($snapshot),
@@ -70,7 +75,12 @@ class FormulaDocumentBuilder
     {
         $process = data_get($snapshot, 'calculation.liquid_process');
 
-        return is_array($process) && ($process['status'] ?? null) === 'ok' ? $process : null;
+        // More acid than the free KOH needs still has a paste, a first
+        // dilution and a neutralization to print; only the final dilution and
+        // composition are left out.
+        return is_array($process) && in_array($process['status'] ?? null, ['ok', 'acid_exceeds_free_koh'], true)
+            ? $process
+            : null;
     }
 
     /**
@@ -136,8 +146,9 @@ class FormulaDocumentBuilder
 
         return [
             'anhydrous_soap_weight' => (float) $process['anhydrous_soap_weight'],
-            'final_anhydrous_soap_weight' => (float) $process['final_anhydrous_soap_weight'],
-            'final_weight' => (float) $process['final_weight'],
+            'is_complete' => $process['status'] === 'ok',
+            'final_anhydrous_soap_weight' => $process['final_anhydrous_soap_weight'] === null ? null : (float) $process['final_anhydrous_soap_weight'],
+            'final_weight' => $process['final_weight'] === null ? null : (float) $process['final_weight'],
             'paste' => [
                 'theoretical_weight' => (float) $process['paste']['theoretical_weight'],
                 'weight' => (float) $process['paste']['weight'],
@@ -166,15 +177,15 @@ class FormulaDocumentBuilder
                     'instruction' => $neutralizationInstruction,
                     'add' => (float) $process['stages']['neutralization']['add_weight'],
                     'mass' => (float) $process['stages']['neutralization']['mass'],
-                    'anhydrous_percentage' => (float) $process['stages']['neutralization']['anhydrous_percentage'],
+                    'anhydrous_percentage' => $process['stages']['neutralization']['anhydrous_percentage'] === null ? null : (float) $process['stages']['neutralization']['anhydrous_percentage'],
                 ],
                 [
                     'key' => 'final_dilution',
                     'label' => __('formula_documents.liquid.steps.final_dilution'),
                     'instruction' => $dilutionInstruction('final_dilution'),
-                    'add' => (float) $process['stages']['final_dilution']['add_weight'],
-                    'mass' => (float) $process['stages']['final_dilution']['mass'],
-                    'anhydrous_percentage' => (float) $process['stages']['final_dilution']['anhydrous_percentage'],
+                    'add' => $process['stages']['final_dilution']['add_weight'] === null ? null : (float) $process['stages']['final_dilution']['add_weight'],
+                    'mass' => $process['stages']['final_dilution']['mass'] === null ? null : (float) $process['stages']['final_dilution']['mass'],
+                    'anhydrous_percentage' => $process['stages']['final_dilution']['anhydrous_percentage'] === null ? null : (float) $process['stages']['final_dilution']['anhydrous_percentage'],
                 ],
             ],
             'neutralizer' => $neutralizer === null ? null : [
@@ -207,6 +218,14 @@ class FormulaDocumentBuilder
     {
         $unit = (string) data_get($snapshot, 'draft.oilUnit', 'g');
         $pasteAnhydrousSoapWeight = round((float) $process['anhydrous_soap_weight'], 4);
+
+        if ($process['status'] !== 'ok') {
+            return [
+                ['label' => __('formula_documents.results.paste_anhydrous_soap_weight'), 'value' => $pasteAnhydrousSoapWeight, 'unit' => $unit],
+                ['label' => __('formula_documents.results.glycerine'), 'value' => round((float) data_get($process, 'paste_composition.glycerine_weight', 0), 4), 'unit' => $unit],
+            ];
+        }
+
         $finalAnhydrousSoapWeight = round((float) $process['final_anhydrous_soap_weight'], 4);
 
         return [

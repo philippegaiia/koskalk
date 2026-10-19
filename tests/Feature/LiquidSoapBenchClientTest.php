@@ -522,3 +522,29 @@ JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('keeps a dose typed while the recommendation is still loading', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.oilWeight = 1000;
+workbench.phaseItems.neutralization = [{ id: 'acid', ingredient_id: 7, percentage: 0.5, weight: 5 }];
+workbench.syncIngredientListVariantSelection = () => {};
+const previews = [];
+workbench.$wire = { previewCalculation: () => new Promise(resolve => { previews.push(resolve); }) };
+const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+const runningPreview = workbench.refreshCalculationPreview();
+const recommendation = workbench.useRecommendedLiquidNeutralizer();
+workbench.setLiquidNeutralizerWeight('7.1');
+previews[0]({ ok: true, calculation: { liquid_process: { neutralizer: { recommended_weight: '6.5062' } } } });
+await runningPreview;
+await tick();
+previews[1]({ ok: true, calculation: { liquid_process: { neutralizer: { recommended_weight: '6.5062' } } } });
+await recommendation;
+
+assert.ok(Math.abs(workbench.liquidNeutralizerWeight() - 7.1) < 1e-9);
+clearTimeout(workbench.calculationPreviewTimer);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

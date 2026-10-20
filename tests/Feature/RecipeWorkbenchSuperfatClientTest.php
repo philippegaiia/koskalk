@@ -163,6 +163,19 @@ JS);
         ->and($process->getOutput())->toBe('');
 });
 
+it('shows a localized trace value for positive composition amounts below display precision', function () {
+    $process = runRecipeWorkbenchSuperfatScript(<<<'JS'
+assert.equal(workbench.formatCompositionPercentage(0), '0.000%');
+assert.equal(workbench.formatCompositionPercentage(0.00002), '<0.001%');
+assert.equal(workbench.formatCompositionPercentage(0.001), '0.001%');
+assert.equal(workbench.formatCompositionPercentage(12.3456), '12.346%');
+workbench.numberLocale = 'fr_FR';
+assert.equal(workbench.formatCompositionPercentage(0.00002), '<0,001%');
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
 it('lists rejected save reasons for the dialog without editing lease conflicts', function () {
     $process = runRecipeWorkbenchSuperfatScript(<<<'JS'
 assert.deepEqual(saveErrorMessages({

@@ -2100,6 +2100,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "composition.inci_kinds.derived_fatty_acids",
+      "text": {
+        "de": "Nur Zusammensetzungsschätzung",
+        "es": "Solo estimación de composición",
+        "fr": "Estimation de composition uniquement",
+        "it": "Solo stima della composizione",
+        "nl": "Alleen samenstellingsschatting",
+        "pt_BR": "Apenas estimativa de composição"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "composition.inci_kinds.ingredient",
       "text": {
         "de": "Inhaltsstoff",
@@ -45036,6 +45048,18 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.composition_only",
+      "text": {
+        "de": "Nur Zusammensetzungsschätzung",
+        "es": "Solo estimación de composición",
+        "fr": "Estimation de composition uniquement",
+        "it": "Solo stima della composizione",
+        "nl": "Alleen samenstellingsschatting",
+        "pt_BR": "Apenas estimativa de composição"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "liquid.dilution_liquids.add",
       "text": {
         "de": "Flüssigkeit hinzufügen",
@@ -45156,26 +45180,26 @@
     },
     {
       "group": "workbench",
-      "key": "liquid.fatty_acid_label_review",
+      "key": "liquid.estimated_free_fatty_acids",
       "text": {
-        "de": "Die Säureumwandlung ist geschätzt. Die abgeleiteten Fettsäurezeilen sind beschreibend; prüfen Sie ihre INCI-Namen vor Verwendung dieser Zutatenliste.",
-        "es": "La conversión por ácido es estimada. Las filas de ácidos grasos derivados son descriptivas; verifique sus nombres INCI antes de usar esta lista.",
-        "fr": "La conversion par l’acide est estimée. Les lignes d’acides gras formés sont descriptives ; vérifiez leurs noms INCI avant d’utiliser cette liste.",
-        "it": "La conversione con acido è stimata. Le righe degli acidi grassi derivati sono descrittive; verificarne i nomi INCI prima di usare questo elenco.",
-        "nl": "De omzetting door zuur is geschat. De regels met gevormde vetzuren zijn beschrijvend; controleer de INCI-namen voordat u deze ingrediëntenlijst gebruikt.",
-        "pt_BR": "A conversão por ácido é estimada. As linhas de ácidos graxos formados são descritivas; verifique os nomes INCI antes de usar esta lista."
+        "de": "Geschätzte freie Fettsäuren",
+        "es": "Ácidos grasos libres estimados",
+        "fr": "Acides gras libres estimés",
+        "it": "Acidi grassi liberi stimati",
+        "nl": "Geschatte vrije vetzuren",
+        "pt_BR": "Ácidos graxos livres estimados"
       }
     },
     {
       "group": "workbench",
-      "key": "liquid.fatty_acids_from",
+      "key": "liquid.fatty_acid_label_review",
       "text": {
-        "de": "Fettsäuren aus :ingredient (Namen prüfen)",
-        "es": "Ácidos grasos de :ingredient (revisar nombres)",
-        "fr": "Acides gras issus de :ingredient (noms à vérifier)",
-        "it": "Acidi grassi da :ingredient (nomi da verificare)",
-        "nl": "Vetzuren uit :ingredient (namen controleren)",
-        "pt_BR": "Ácidos graxos de :ingredient (revisar nomes)"
+        "de": "Das Modell sagt voraus, dass überschüssiges Neutralisationsmittel einen Teil der Seife in freie Fettsäuren umwandelt. Diese erscheinen nur in der geschätzten Zusammensetzung, ohne zugewiesene INCI-Namen. Prüfen Sie die Neutralisatormenge und die Zutatendeklaration.",
+        "es": "El modelo predice que el exceso de neutralizante convierte parte del jabón en ácidos grasos libres. Estos aparecen solo en la estimación de composición, sin nombres INCI asignados. Revise la dosis de neutralizante y la declaración de ingredientes.",
+        "fr": "Le modèle prévoit qu’un excès de neutralisant transforme une partie du savon en acides gras libres. Ceux-ci apparaissent uniquement dans l’estimation de composition, sans noms INCI attribués. Vérifiez la dose de neutralisant et la déclaration des ingrédients.",
+        "it": "Il modello prevede che il neutralizzante in eccesso trasformi parte del sapone in acidi grassi liberi. Questi compaiono solo nella stima della composizione, senza nomi INCI assegnati. Verificare la dose di neutralizzante e la dichiarazione degli ingredienti.",
+        "nl": "Het model voorspelt dat overtollig neutralisatiemiddel een deel van de zeep omzet in vrije vetzuren. Deze staan alleen in de geschatte samenstelling, zonder toegekende INCI-namen. Controleer de hoeveelheid neutralisator en de ingrediëntendeclaratie.",
+        "pt_BR": "O modelo prevê que o excesso de neutralizante converte parte do sabão em ácidos graxos livres. Eles aparecem apenas na estimativa de composição, sem nomes INCI atribuídos. Revise a dose de neutralizante e a declaração de ingredientes."
       }
     },
     {

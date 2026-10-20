@@ -137,7 +137,7 @@
  <p x-show="outputIngredientCommonName(row)" class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="outputIngredientCommonName(row)"></p>
  </td>
  <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
- <td class="numeric px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 3)}%`"></span></td>
+ <td class="numeric px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="formatCompositionPercentage(row.percent_of_cured_basis)"></span></td>
  <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">

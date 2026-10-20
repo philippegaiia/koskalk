@@ -131,7 +131,7 @@ class InciGenerationService
             $soapCalculation,
             $declarationRuleState['market_code'] ?? null,
         );
-        $ingredientListBasisHash = $this->ingredientListBasisHash($payload, $basis);
+        $ingredientListBasisHash = $this->ingredientListBasisHash($payload, $basis, $soapCalculation);
         $finalIngredientList = $this->finalIngredientListState(
             $payload,
             $ingredientListBasisHash,
@@ -548,7 +548,7 @@ class InciGenerationService
         return [
             ...array_map(
                 fn (array $row): string => $row['label'],
-                $ingredientRows,
+                array_values(array_filter($ingredientRows, fn (array $row): bool => $row['included_in_ingredient_list'] ?? true)),
             ),
             ...array_map(
                 fn (array $row): string => $row['label'],
@@ -1000,13 +1000,18 @@ class InciGenerationService
      *
      * @param  array<string, mixed>  $payload
      * @param  array{cured_weight: float|null}  $basis
+     * @param  array<string, mixed>|null  $soapCalculation
      */
-    private function ingredientListBasisHash(array $payload, array $basis): string
+    private function ingredientListBasisHash(array $payload, array $basis, ?array $soapCalculation): string
     {
         $basisPayload = $payload;
 
         if (($basis['cured_weight'] ?? null) !== null && $basis['cured_weight'] > 0) {
             $basisPayload['declaration_threshold_basis'] = 'cured_weight';
+        }
+
+        if ((float) data_get($soapCalculation, 'liquid_process.composition.free_fatty_acid_weight', 0) > 0) {
+            $basisPayload['derived_fatty_acids_declaration'] = 'composition_only';
         }
 
         foreach ([
@@ -1352,6 +1357,7 @@ class InciGenerationService
                         ? round((((float) $row['weight']) / $formulaWeight) * 100, 5)
                         : 0.0,
                     'kind' => $row['kind'],
+                    'included_in_ingredient_list' => $row['kind'] !== 'derived_fatty_acids',
                     'source_ingredients' => $sourceIngredients,
                     'source_is_user_owned' => $sourceIsUserOwned,
                 ];
@@ -1468,7 +1474,7 @@ class InciGenerationService
                         $soapCalculation,
                         $saponifiedWeight,
                         $declarationRuleState,
-                    ), $context, $soapCalculation),
+                    ), $soapCalculation),
                 ];
             }
 
@@ -1546,14 +1552,13 @@ class InciGenerationService
     /**
      * Nominal acid conversion removes the same fraction of every paste soap.
      * Fatty-acid identities cannot be inferred from an oil's soap INCI, so
-     * their derived row is explicitly a placeholder for label review.
+     * their combined derived row is composition-only, never a declaration name.
      *
      * @param  list<array{label: string|null, weight: float, kind: string, warning: string|null}>  $contributions
-     * @param  array<string, mixed>  $context
      * @param  array<string, mixed>|null  $soapCalculation
      * @return list<array{label: string|null, weight: float, kind: string, warning: string|null}>
      */
-    private function acidAdjustedSoapContributions(array $contributions, array $context, ?array $soapCalculation): array
+    private function acidAdjustedSoapContributions(array $contributions, ?array $soapCalculation): array
     {
         $process = $this->liquidProcess($soapCalculation);
         $decimal = fn (mixed $value): string => NumberLocale::normalizeDecimalString(is_float($value) ? sprintf('%.18F', $value) : (string) ($value ?? '0')) ?? '0';
@@ -1571,10 +1576,12 @@ class InciGenerationService
         return [
             ...collect($contributions)->map(fn (array $row): array => [...$row, 'weight' => (float) bcmul($decimal($row['weight']), $remainingFraction, 18)])->all(),
             [
-                'label' => __('workbench.liquid.fatty_acids_from', ['ingredient' => $context['ingredient_name']]),
+                'label' => __('workbench.liquid.estimated_free_fatty_acids'),
                 'weight' => (float) bcdiv(bcmul($decimal(data_get($process, 'composition.free_fatty_acid_weight', 0)), $rowSoap, 18), $pasteSoap, 18),
                 'kind' => 'derived_fatty_acids',
-                'warning' => __('workbench.liquid.fatty_acid_label_review'),
+                'warning' => in_array('excess_acid_converts_soap', $process['warnings'] ?? [], true)
+                    ? __('workbench.liquid.fatty_acid_label_review')
+                    : null,
             ],
         ];
     }

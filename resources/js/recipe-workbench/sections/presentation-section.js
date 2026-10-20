@@ -775,7 +775,19 @@ export function createPresentationSection() {
             return this.curedSoapDeclarationRows.filter((row) => row.included_in_inci);
         },
 
+        formatCompositionPercentage(value) {
+            const percentage = this.number(value);
+
+            return percentage > 0 && percentage < 0.001
+                ? `<${this.format(0.001, 3)}%`
+                : `${this.format(percentage, 3)}%`;
+        },
+
         outputRowKindLabel(row) {
+            if (row?.included_in_ingredient_list === false) {
+                return this.t('liquid.composition_only');
+            }
+
             if (row?.label === 'AQUA') {
                 return this.isLiquidSoapFormula ? 'Water' : 'Residual water';
             }

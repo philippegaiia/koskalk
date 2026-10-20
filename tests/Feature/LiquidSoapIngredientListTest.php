@@ -256,7 +256,7 @@ it('withholds the finished free fat estimate while excess KOH remains', function
     'insufficient neutralizer' => 3.0,
 ]);
 
-it('includes excess fatty acid neutralizer in finished free fat without counting the reacted dose', function (): void {
+it('counts excess fatty acid neutralizer as free fat even below one percent', function (): void {
     $formula = liquidSoapLabelFormula(LiquidSoapNeutralizer::FattyAcid);
     $formula['payload']['phase_items']['neutralization'][0]['weight'] = 38.9047;
     $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 3.89047;
@@ -266,6 +266,112 @@ it('includes excess fatty acid neutralizer in finished free fat without counting
     expect($labeling['free_fat']['weight'])->toEqualWithDelta(10, 0.001)
         ->and($labeling['free_fat']['nominal_percentage'])->toBe(-3.0)
         ->and($labeling['free_fat']['percentage'])->toEqualWithDelta(10 / $labeling['basis']['formula_weight'] * 100, 0.0001);
+});
+
+it('changes the free fat percentage with dilution while preserving its full weight', function (): void {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 20;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 2;
+    $addition = Ingredient::factory()->create(['category' => IngredientCategory::Lipids, 'is_soap_saponification_trusted' => true]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $addition->id, 'koh_sap_value' => 0.19]);
+    $formula['payload']['phase_items']['additives'] = [['ingredient_id' => $addition->id, 'percentage' => 1, 'weight' => 10]];
+    $concentrated = liquidSoapLabeling($formula);
+    $formula['payload']['liquid_process']['final_dilution_percentage'] = 15;
+
+    $diluted = liquidSoapLabeling($formula);
+
+    expect($diluted['free_fat']['weight'])->toBe($concentrated['free_fat']['weight'])
+        ->and($diluted['free_fat']['weight'])->toBeGreaterThan(10)
+        ->and($diluted['free_fat']['percentage'])->toBeLessThan($concentrated['free_fat']['percentage']);
+
+    foreach ([$concentrated, $diluted] as $labeling) {
+        $variant = collect($labeling['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+        $derived = collect($variant['ingredient_rows'])->where('kind', 'derived_fatty_acids');
+        expect($derived)->toHaveCount(1)
+            ->and($derived->first()['included_in_ingredient_list'])->toBeFalse()
+            ->and($variant['final_labels'])->not->toContain($derived->first()['label'])
+            ->and($labeling['free_fat']['weight'])->toEqualWithDelta(10 + $derived->first()['weight'], 0.001)
+            ->and(collect($variant['ingredient_rows'])->sum('weight'))->toEqualWithDelta($labeling['basis']['formula_weight'], 0.001)
+            ->and($variant['warnings'])->toContain(__('workbench.liquid.fatty_acid_label_review'));
+    }
+});
+
+it('counts base paste free fat together with the neutralization contribution', function (): void {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['superfat'] = 2;
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 0.5;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 0.05;
+
+    $labeling = liquidSoapLabeling($formula);
+    $variant = collect($labeling['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $derived = collect($variant['ingredient_rows'])->firstWhere('kind', 'derived_fatty_acids');
+
+    expect($labeling['free_fat']['weight'])->toBeGreaterThan(20)
+        ->and($labeling['free_fat']['weight'])->toEqualWithDelta(20 + $derived['weight'], 0.001);
+});
+
+it('flags saved ingredient lists for review when inferred fatty acids become composition only', function (): void {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 10;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 1;
+    $service = app(RecipeWorkbenchService::class);
+    $calculation = $service->previewSoapCalculation($formula['payload'], null, $formula['family']);
+    $previousCalculation = $calculation;
+    $previousCalculation['liquid_process']['composition']['free_fatty_acid_weight'] = 0;
+    $previous = $service->previewInci($formula['payload'], $previousCalculation);
+    $formula['payload']['final_ingredient_list'] = 'My reviewed ingredient list';
+    $formula['payload']['final_ingredient_list_basis_hash'] = $previous['ingredient_list_basis_hash'];
+
+    $labeling = $service->previewInci($formula['payload'], $calculation);
+
+    expect($labeling['final_ingredient_list']['is_outdated'])->toBeTrue()
+        ->and($labeling['final_ingredient_list']['final_text'])->toBe('My reviewed ingredient list');
+});
+
+it('uses the process rounding tolerance for the inferred fatty acid review alert', function (float $dose, bool $warns): void {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = $dose;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = $dose / 10;
+
+    $labeling = liquidSoapLabeling($formula);
+
+    expect(in_array(__('workbench.liquid.fatty_acid_label_review'), $labeling['warnings'], true))->toBe($warns);
+})->with([
+    'recommended rounded dose' => [6.5062, false],
+    'two milligrams extra' => [6.5082, false],
+    'at the rounding allowance' => [6.5112, false],
+    'just beyond the rounding allowance' => [6.5122, true],
+    'substantial extra acid' => [10.0, true],
+]);
+
+it('aggregates inferred fatty acids without placing composition descriptions in a label', function (): void {
+    $formula = liquidSoapLabelFormula();
+    $secondOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Castor Oil',
+        'inci_name' => 'RICINUS COMMUNIS SEED OIL',
+        'soap_inci_koh_name' => 'POTASSIUM CASTORATE',
+        'is_soap_saponification_trusted' => true,
+    ]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $secondOil->id, 'koh_sap_value' => 0.19]);
+    $formula['payload']['phase_items']['saponified_oils'][0]['weight'] = 500;
+    $formula['payload']['phase_items']['saponified_oils'][0]['percentage'] = 50;
+    $formula['payload']['phase_items']['saponified_oils'][] = ['ingredient_id' => $secondOil->id, 'percentage' => 50, 'weight' => 500];
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 20;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 2;
+    $service = app(RecipeWorkbenchService::class);
+
+    $calculation = $service->previewSoapCalculation($formula['payload'], null, $formula['family']);
+    $labeling = $service->previewInci($formula['payload'], $calculation);
+    $variant = collect($labeling['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $derived = collect($variant['ingredient_rows'])->where('kind', 'derived_fatty_acids');
+
+    expect($derived)->toHaveCount(1)
+        ->and($derived->first()['weight'])->toEqualWithDelta((float) $calculation['liquid_process']['composition']['free_fatty_acid_weight'], 0.001)
+        ->and($derived->first()['source_ingredients'])->toContain('Olive Oil', 'Castor Oil')
+        ->and($variant['final_labels'])->not->toContain($derived->first()['label'])
+        ->and($variant['plain_label_text'])->not->toContain($derived->first()['label'])
+        ->and(collect($variant['ingredient_rows'])->sum('weight'))->toEqualWithDelta($labeling['basis']['formula_weight'], 0.001);
 });
 
 it('shares a compound neutralizer product between its components', function () {

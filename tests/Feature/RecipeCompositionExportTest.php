@@ -186,6 +186,7 @@ it('renders localized incorporated INCI kinds and selected label variant in prin
                         ['name' => 'Lye component', 'kind' => 'lye'],
                         ['name' => 'Alias component', 'kind' => 'declaration_alias'],
                         ['name' => 'Liquid component', 'kind' => 'lye_liquid'],
+                        ['name' => 'Estimated free fatty acids', 'kind' => 'derived_fatty_acids'],
                     ])->map(fn (array $row): array => [
                         'label' => $row['name'],
                         'weight' => 1,
@@ -237,6 +238,7 @@ it('renders localized incorporated INCI kinds and selected label variant in prin
         __('formula_documents.composition.inci_kinds.lye'),
         __('formula_documents.composition.inci_kinds.declaration_alias'),
         __('formula_documents.composition.inci_kinds.lye_liquid'),
+        'Composition estimate only',
         __('workbench.output.lists.saponified'),
     ];
 

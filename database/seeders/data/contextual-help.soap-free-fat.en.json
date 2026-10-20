@@ -43,24 +43,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "e10114cc-23c4-4315-b130-6bec514f8d7d",
+          "latest_revision_uuid": "762fec2a-95d5-4923-902d-314989025c2a",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "e10114cc-23c4-4315-b130-6bec514f8d7d",
+              "public_id": "762fec2a-95d5-4923-902d-314989025c2a",
               "revision_number": 1,
               "title": "Lye reduction, nominal superfat and estimated free fat",
               "summary": "The lye setting, recipe shorthand and fat concentration in the finished soap answer different questions.",
-              "body_markdown": "### Lye reduction / excess\n\n**Your input: how much alkali to use.** Positive values use less alkali than the base oils in **Saponification** need. Negative values add extra alkali: −3% means 3% more than those oils need.\n\nHere, “base oils” includes any butter, wax or fatty acid in Saponification with verified soap chemistry.\n\n### Nominal superfat\n\n**The familiar recipe shorthand: lye reduction + fatty additions, as % of base oils.**\n\nFor example, 1,000 g of base oils (770 g shea butter and 230 g coconut oil), 2% lye reduction and 60 g sunflower oil in Formula additions give **2% + 6% = 8% nominal superfat**.\n\nThis shortcut is not an exact equivalent lye reduction. Different SAP values mean that equal weights of fatty materials do not need equal amounts of alkali. A fatty acid used for liquid-soap neutralization belongs to that reaction, not to the finishing additions in this shortcut.\n\n### Estimated free fat\n\n**Estimated unsaponified fatty material as a percentage of the whole finished soap.**\n\nIn that example, the model leaves about **80 g** of fatty material: 20 g from the base oils + 60 g sunflower oil. With 11% residual water, the cured soap weighs about **1,346 g**. Using the unrounded cured mass, **free fat ÷ cured soap mass × 100 ≈ 5.95% of cured soap**.\n\nThe 8% nominal figure uses recipe percentages; 5.95% uses the whole cured soap, including water and glycerin. They answer different questions.\n\nFor liquid soap, free fat uses the final diluted batch mass, after neutralization and additions. It includes modeled remaining fatty acid from neutralization. If excess KOH remains beyond the calculation tolerance, this estimate is withheld: that alkali could still react with finishing fats.\n\nChanging residual water or dilution changes the percentage without changing the amount of fat.\n\n### What counts, and what is assumed?\n\nOils, butters, waxes and fatty acids count when their soap chemistry is verified. Known fatty components of mixtures count too, including a fatty carrier in a fragrance mixture. Water, glycerin and non-fatty components do not count. Check any named materials omitted for missing chemistry.\n\nFor bar soap with zero or positive lye reduction, the model treats fatty finishing additions as unreacted. With negative lye reduction, it shares the modeled reaction proportionally between base oils and all saponifiable finishing additions, including fatty carriers in fragrance blends; it does not consume additions first. Liquid soap models paste neutralization before finishing additions.\n\nThese are estimates, not measurements or a prediction of which particular oils survive. In cold process, oil added at trace can still react. SAP data alone does not separately quantify naturally unsaponifiable constituents.",
+              "body_markdown": "### Lye reduction / excess\n\n**Your input: how much alkali to use.** Positive values use less alkali than the base oils in **Saponification** need. Negative values add extra alkali: −3% means 3% more than those oils need.\n\nHere, “base oils” includes any butter, wax or fatty acid in Saponification with verified soap chemistry.\n\n### Nominal superfat\n\n**The familiar recipe shorthand: lye reduction + fatty additions, as % of base oils.**\n\nFor example, 1,000 g of base oils (770 g shea butter and 230 g coconut oil), 2% lye reduction and 60 g sunflower oil in Formula additions give **2% + 6% = 8% nominal superfat**.\n\nThis shortcut is not an exact equivalent lye reduction. Different SAP values mean that equal weights of fatty materials do not need equal amounts of alkali. A fatty acid used for liquid-soap neutralization belongs to that reaction, not to the finishing additions in this shortcut.\n\n### Estimated free fat\n\n**Estimated unsaponified fatty material as a percentage of the whole finished soap.**\n\nIn that example, the model leaves about **80 g** of fatty material: 20 g from the base oils + 60 g sunflower oil. With 11% residual water, the cured soap weighs about **1,346 g**. Using the unrounded cured mass, **free fat ÷ cured soap mass × 100 ≈ 5.95% of cured soap**.\n\nThe 8% nominal figure uses recipe percentages; 5.95% uses the whole cured soap, including water and glycerin. They answer different questions.\n\nFor liquid soap, free fat uses the final diluted batch mass, after neutralization and additions. It counts all modeled remaining fat: base-paste free fat, explicit fatty additions, unreacted fatty-acid neutralizer and fatty acids released from soap by acid conversion. There is no percentage cutoff that removes fat from this estimate.\n\nIf excess KOH remains beyond the process calculation tolerance, the free-fat estimate is withheld: that alkali could still react with finishing fats.\n\nChanging residual water or dilution changes the percentage without changing the amount of fat.\n\n### What counts, and what is assumed?\n\nOils, butters, waxes and fatty acids count when their soap chemistry is verified. Known fatty components of mixtures count too, including a fatty carrier in a fragrance mixture. Water, glycerin and non-fatty components do not count. Check any named materials omitted for missing chemistry.\n\nFor bar soap with zero or positive lye reduction, the model treats fatty finishing additions as unreacted. With negative lye reduction, it shares the modeled reaction proportionally between base oils and all saponifiable finishing additions, including fatty carriers in fragrance blends; it does not consume additions first. Liquid soap models paste neutralization before finishing additions.\n\nThese are estimates, not measurements or a prediction of which particular oils survive. In cold process, oil added at trace can still react. SAP data alone does not separately quantify naturally unsaponifiable constituents.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-10-20T06:07:51+00:00"
+              "created_at": "2026-10-20T16:58:03+00:00"
             }
           ],
           "translation_requests": []
@@ -107,24 +107,24 @@
       "locales": [
         {
           "locale": "en",
-          "latest_revision_uuid": "cae28d67-7292-49ae-b316-47cbbea857a8",
+          "latest_revision_uuid": "40981c8a-af04-4ea1-b5e4-2c57b035760f",
           "published_revision_uuid": null,
           "lock_version": 1,
           "published_by_uuid": null,
           "published_at": null,
           "revisions": [
             {
-              "public_id": "cae28d67-7292-49ae-b316-47cbbea857a8",
+              "public_id": "40981c8a-af04-4ea1-b5e4-2c57b035760f",
               "revision_number": 1,
               "title": "Why do soap percentages differ between tables?",
               "summary": "Check what the percentage divides by: base oils, the wet batch or the finished soap.",
-              "body_markdown": "The same ingredient amount gives a different percentage on each basis:\n\n- **% oils:** base oils in Saponification, including butters, waxes and fatty acids with verified soap chemistry.\n- **Wet batch:** the complete batch before estimated water loss.\n- **Cured soap:** the estimated bar after reaction and water loss, including its selected residual water content.\n- **Finished liquid soap:** the final diluted batch after modeled neutralization and additions.\n\n**Estimated free fat** divides the remaining unsaponified fatty material by the whole cured bar or final diluted batch. Water, glycerin, soap salts and other retained ingredients contribute to that finished mass.\n\n**Nominal superfat** is recipe shorthand. In the worked example under Lye reduction, 2% lye reduction + a 6% sunflower addition gives **8% nominal superfat**, while about 80 g of free fat in a cured batch of about 1,346 g gives **5.95% of cured soap** at 11% residual water.\n\nChanging only the water content or dilution changes the free-fat percentage without creating or removing fat. Saved formulas retain their own residual-water assumption; a new family default applies to new formulas.\n\nAllergens are already included in their source ingredients. Their declaration rows do not add mass. Ingredients as added describe the inputs; resulting composition includes the reaction assumptions.",
+              "body_markdown": "The same ingredient amount gives a different percentage on each basis:\n\n- **% oils:** base oils in Saponification, including butters, waxes and fatty acids with verified soap chemistry.\n- **Wet batch:** the complete batch before estimated water loss.\n- **Cured soap:** the estimated bar after reaction and water loss, including its selected residual water content.\n- **Finished liquid soap:** the final diluted batch after modeled neutralization and additions.\n\n**Estimated free fat** divides the remaining unsaponified fatty material by the whole cured bar or final diluted batch. Water, glycerin, soap salts and other retained ingredients contribute to that finished mass.\n\n**Nominal superfat** is recipe shorthand. In the worked example under Lye reduction, 2% lye reduction + a 6% sunflower addition gives **8% nominal superfat**, while about 80 g of free fat in a cured batch of about 1,346 g gives **5.95% of cured soap** at 11% residual water.\n\nChanging only the water content or dilution changes the free-fat percentage without creating or removing fat. Saved formulas retain their own residual-water assumption; a new family default applies to new formulas.\n\nAllergens are already included in their source ingredients. Their declaration rows do not add mass. Ingredients as added describe the inputs; resulting composition includes the reaction assumptions.\n\nFatty acids inferred from acid conversion appear together as **Estimated free fatty acids**, marked **Composition estimate only**. Their full modeled mass contributes to the composition and the estimated free-fat value. Adding dilution water changes their percentage, not their weight.\n\nThat description is not an INCI name and is excluded from the generated ingredient list. Specifically identified added fatty acids and their modeled soap salts keep their own names. When acid conversion exceeds the calculator's existing rounding tolerance, review the neutralizer dose and ingredient declaration. This alert does not set a labeling exemption.\n\nTiny positive composition values below the table precision appear as **<0.001%**, rather than zero.",
               "source_english_revision_uuid": null,
               "origin": "import",
               "ai_model": null,
               "prompt_version": null,
               "created_by_uuid": null,
-              "created_at": "2026-10-20T06:07:51+00:00"
+              "created_at": "2026-10-20T16:58:03+00:00"
             }
           ],
           "translation_requests": []
@@ -132,5 +132,5 @@
       ]
     }
   ],
-  "digest": "e8f63db2cd7800b53a6e8d753f2090523a2cf63ee7c0fd16e1973af13bfa8cde"
+  "digest": "3d94f5a5a638746bf71fd51e6582d85cde6e9a9c97422cece686e7509baabf05"
 }

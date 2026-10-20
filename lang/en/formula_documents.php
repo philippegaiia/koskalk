@@ -96,6 +96,7 @@ return [
         ],
         'inci_kinds' => [
             'declaration_alias' => 'Declaration alias',
+            'derived_fatty_acids' => 'Composition estimate only',
             'ingredient' => 'Ingredient',
             'lye' => 'Lye',
             'lye_liquid' => 'Dilution liquid',

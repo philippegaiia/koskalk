@@ -18,6 +18,16 @@ final class SoapSap
 
     public const MAX_CURED_WATER_PERCENTAGE = 30.0;
 
+    /** Preserve at least four gram decimals when calculating in larger units. */
+    public static function calculationMassPrecision(string $unit): int
+    {
+        return match ($unit) {
+            'kg', 'lb' => 7,
+            'oz' => 6,
+            default => 4,
+        };
+    }
+
     /**
      * Resolve a stored or submitted cured-water percentage, falling back to the
      * historical default when it is missing or outside the supported range.

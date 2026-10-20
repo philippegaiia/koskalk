@@ -30,6 +30,7 @@ class InciGenerationService
         private readonly IngredientDeclarationNameResolver $ingredientDeclarationNameResolver,
         private readonly SoapCalculationService $soapCalculationService,
         private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
+        private readonly SoapFreeFatSummaryBuilder $soapFreeFatSummaryBuilder,
     ) {}
 
     /**
@@ -143,6 +144,7 @@ class InciGenerationService
 
         return [
             'basis' => $basis,
+            'free_fat' => $this->soapFreeFatSummaryBuilder->build($payload, $rowContexts, $soapCalculation, $basis),
             'ingredient_list_basis_hash' => $ingredientListBasisHash,
             'ingredient_rows' => $defaultVariant['ingredient_rows'],
             'declaration_rows' => $defaultVariant['declaration_rows'],
@@ -1157,10 +1159,10 @@ class InciGenerationService
         $waterWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0);
         $naohWeight = (float) data_get($soapCalculation, 'lye.selected.naoh_weight', 0);
         $kohToWeigh = (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0);
-        $formulaWeight = round($phaseWeight + $waterWeight + $naohWeight + $kohToWeigh, 5);
+        $formulaWeight = round($phaseWeight + $waterWeight + $naohWeight + $kohToWeigh, 9);
         $nonWaterWeight = max(0.0, $formulaWeight - $waterWeight);
         $curedWaterPercentage = SoapSap::curedWaterPercentage($payload['cured_water_percentage'] ?? null);
-        $curedWeight = $nonWaterWeight > 0 ? round(SoapSap::curedWeight($nonWaterWeight, $curedWaterPercentage), 5) : null;
+        $curedWeight = $nonWaterWeight > 0 ? round(SoapSap::curedWeight($nonWaterWeight, $curedWaterPercentage), 9) : null;
 
         return [
             'label' => 'Current batch basis',
@@ -1168,7 +1170,7 @@ class InciGenerationService
             'formula_weight' => $formulaWeight,
             'threshold_percent' => $thresholdPercent,
             'cured_weight' => $curedWeight,
-            'residual_water_weight' => $curedWeight === null ? null : round($curedWeight * ($curedWaterPercentage / 100), 5),
+            'residual_water_weight' => $curedWeight === null ? null : round($curedWeight * ($curedWaterPercentage / 100), 9),
             'residual_water_percentage' => $curedWaterPercentage,
         ];
     }
@@ -1344,8 +1346,8 @@ class InciGenerationService
                 return [
                     'label' => $row['label'],
                     'display_label' => InciName::display($row['label']),
-                    'weight' => round((float) $row['weight'], 5),
-                    'lye_liquid_weight' => round((float) $row['lye_liquid_weight'], 5),
+                    'weight' => round((float) $row['weight'], 9),
+                    'lye_liquid_weight' => round((float) $row['lye_liquid_weight'], 9),
                     'percent_of_formula' => $formulaWeight > 0
                         ? round((((float) $row['weight']) / $formulaWeight) * 100, 5)
                         : 0.0,
@@ -1578,9 +1580,9 @@ class InciGenerationService
     }
 
     /**
-     * Share of an oil added after the reaction that the lye
-     * saponifies. Only trusted saponifiable oils in the additions phase take
-     * part, matching the oils the soap calculation counted.
+     * Share of a fatty addition that the alkali saponifies, including fatty
+     * carriers in fragrance blends. All supported addition phases take part,
+     * matching the verified materials the soap calculation counted.
      *
      * @param  array{phase_key: string, weight: float, ingredient: Ingredient|null}  $context
      * @param  array<string, mixed>|null  $soapCalculation
@@ -1589,7 +1591,7 @@ class InciGenerationService
     {
         $ingredient = $context['ingredient'] ?? null;
 
-        if ($context['phase_key'] !== 'additives'
+        if (! in_array($context['phase_key'], RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES, true)
             || ! is_array($soapCalculation)
             || ! $ingredient instanceof Ingredient
             || ! $ingredient->canDriveSoapSaponification()
@@ -1712,6 +1714,7 @@ class InciGenerationService
                     $this->sharesLyeWithPostReactionOils($soapCalculation) => 100 * (1 - (float) data_get($soapCalculation, 'lye.saponified_fraction', 1)),
                     default => data_get($soapCalculation, 'lye.superfat_percentage', $payload['superfat'] ?? 5),
                 },
+                'mass_precision' => SoapSap::calculationMassPrecision((string) ($payload['oil_unit'] ?? 'g')),
                 'lye_type' => data_get($soapCalculation, 'lye.selected.type', $payload['lye_type'] ?? 'naoh'),
                 'dual_lye_koh_percentage' => data_get(
                     $soapCalculation,

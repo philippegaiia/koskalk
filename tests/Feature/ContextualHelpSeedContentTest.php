@@ -39,4 +39,5 @@ it('installs all English drafts and never replaces owner edits on repeat install
     ['contextual-help.application.en.json', 9],
     ['contextual-help.collaboration.en.json', 5],
     ['contextual-help.label-markets.en.json', 1],
+    ['contextual-help.soap-free-fat.en.json', 4],
 ]);

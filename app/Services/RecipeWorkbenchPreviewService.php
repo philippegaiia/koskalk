@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\User;
+use App\SoapSap;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -102,6 +102,7 @@ class RecipeWorkbenchPreviewService
         $postReactionOils = $includePostReactionOils ? $this->postReactionOils($additionContexts) : [];
 
         $calculation = $this->soapCalculationService->calculate($oils, [
+            'mass_precision' => SoapSap::calculationMassPrecision((string) ($payload['oil_unit'] ?? 'g')),
             'superfat' => (float) ($payload['superfat'] ?? 5),
             'lye_type' => $payload['lye_type'] ?? 'naoh',
             'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
@@ -382,7 +383,7 @@ class RecipeWorkbenchPreviewService
     private function postReactionOils(array $additionContexts): array
     {
         return collect($additionContexts)
-            ->filter(fn (array $context): bool => $context['phase_key'] === 'additives'
+            ->filter(fn (array $context): bool => in_array($context['phase_key'], RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES, true)
                 && $context['ingredient'] instanceof Ingredient
                 && $context['ingredient']->canDriveSoapSaponification())
             ->map(fn (array $context): array => [
@@ -403,14 +404,15 @@ class RecipeWorkbenchPreviewService
     {
         return $this->ingredientFormulaContextResolver->resolve([
             'oil_weight' => $payload['oil_weight'] ?? 0,
-            'phase_items' => ['additives' => $payload['phase_items']['additives'] ?? []],
+            'phase_items' => collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
+                ->mapWithKeys(fn (string $phase): array => [$phase => $payload['phase_items'][$phase] ?? []])
+                ->all(),
         ], ['sapProfile']);
     }
 
     /**
-     * Oils and butters in the additions phase that cannot share the lye
-     * because they have no verified saponification data, such as workspace
-     * oils that were not copied from a trusted platform ingredient.
+     * Fatty additions, including compound carriers, that cannot share the
+     * alkali because their soap chemistry has not been verified.
      *
      * @param  array<int, array{phase_key: string, weight: float, ingredient: Ingredient|null}>  $additionContexts
      * @return array<int, string>
@@ -418,9 +420,9 @@ class RecipeWorkbenchPreviewService
     private function uncountedPostReactionOils(array $additionContexts): array
     {
         return collect($additionContexts)
-            ->filter(fn (array $context): bool => $context['phase_key'] === 'additives'
+            ->filter(fn (array $context): bool => in_array($context['phase_key'], RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES, true)
                 && $context['ingredient'] instanceof Ingredient
-                && $context['ingredient']->category === IngredientCategory::Lipids
+                && $context['ingredient']->mayCarrySoapChemistry()
                 && ! $context['ingredient']->canDriveSoapSaponification())
             ->map(fn (array $context): string => $context['ingredient']->localizedDisplayName() ?? $context['ingredient']->display_name)
             ->unique()

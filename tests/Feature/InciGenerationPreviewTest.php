@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
@@ -300,6 +301,208 @@ it('uses each oil SAP value when assigning theoretical soap salt mass', function
         ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(186.6521)
         ->and($ingredientRows['GLYCERIN']['weight'])->toBe(80.4311);
 });
+
+it('keeps cured composition balanced across mass units for shea soap with an oil additive', function (string $unit, float $oilWeight, float $lyeReduction, float $estimatedFreeFatPercentage): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $shea = makeSoapOilIngredient([
+        'display_name' => 'Shea Butter',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+    ], 0.179);
+    $coconut = makeSoapOilIngredient([
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'soap_inci_naoh_name' => 'SODIUM COCOATE',
+    ], 0.257);
+    $sunflower = makeSoapOilIngredient([
+        'display_name' => 'Sunflower Oil',
+        'inci_name' => 'HELIANTHUS ANNUUS SEED OIL',
+    ], 0.189);
+    $payload = soapDraftPayloadWithFragrance($shea, $sunflower);
+    $payload['oil_unit'] = $unit;
+    $payload['oil_weight'] = $oilWeight;
+    $payload['superfat'] = $lyeReduction;
+    $payload['water_mode'] = 'lye_concentration';
+    $payload['water_value'] = 34;
+    $payload['phase_items']['saponified_oils'] = [
+        ['ingredient_id' => $shea->id, 'percentage' => 77, 'weight' => $oilWeight * 0.77],
+        ['ingredient_id' => $coconut->id, 'percentage' => 23, 'weight' => $oilWeight * 0.23],
+    ];
+    $payload['phase_items']['additives'] = [
+        ['ingredient_id' => $sunflower->id, 'percentage' => 6, 'weight' => $oilWeight * 0.06],
+    ];
+    $payload['phase_items']['fragrance'] = [];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue();
+    $variant = collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat');
+    $retainedWeight = collect($variant['ingredient_rows'])->reject(fn (array $row): bool => $row['label'] === 'AQUA')->sum('weight');
+    $curedWeight = $result['labeling']['basis']['cured_weight'];
+    $residualWaterWeight = $result['labeling']['basis']['residual_water_weight'];
+
+    expect(($retainedWeight + $residualWaterWeight) / $curedWeight * 100)->toEqualWithDelta(100, 0.0005);
+    expect($result['labeling']['free_fat']['nominal_percentage'])->toEqualWithDelta($lyeReduction + 6, 0.00001)
+        ->and($result['labeling']['free_fat']['percentage'])->toEqualWithDelta($estimatedFreeFatPercentage, 0.0001)
+        ->and($result['labeling']['free_fat']['basis'])->toBe('cured_soap');
+})->with([
+    'grams' => ['g', 1000.0, 0.0, 4.44845],
+    'kilograms' => ['kg', 1.0, 0.0, 4.44845],
+    'ounces' => ['oz', 35.27396195, 0.0, 4.44845],
+    'pounds' => ['lb', 2.204622622, 0.0, 4.44845],
+    'two percent reduction and six percent addition' => ['kg', 1.0, 2.0, 5.94516],
+    'positive lye reduction' => ['kg', 1.0, 5.0, 8.2035],
+    'additives consume excess alkali' => ['kg', 1.0, -3.0, 2.0423874],
+]);
+
+it('estimates finished superfat from enabled soap chemistry rather than ingredient category', function (IngredientCategory $category, ?IngredientSubcategory $subcategory, bool $trusted): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $oil = makeSoapOilIngredient();
+    $addition = makeSoapOilIngredient([
+        'category' => $category,
+        'subcategory' => $subcategory,
+        'display_name' => 'Fatty addition',
+        'inci_name' => 'FATTY ADDITION',
+        'is_soap_saponification_trusted' => $trusted,
+    ]);
+    $payload = soapDraftPayloadWithFragrance($oil, $addition);
+    $payload['superfat'] = 2;
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items']['additives'] = [['ingredient_id' => $addition->id, 'percentage' => 6, 'weight' => 60]];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue();
+    expect($result['labeling']['free_fat']['weight'])->toEqualWithDelta($trusted ? 80 : 20, 0.0001)
+        ->and($result['labeling']['free_fat']['nominal_percentage'])->toEqualWithDelta($trusted ? 8 : 2, 0.0001)
+        ->and($result['labeling']['free_fat']['percentage'])->toEqualWithDelta(
+            ($trusted ? 80 : 20) / $result['labeling']['basis']['cured_weight'] * 100,
+            0.0001,
+        );
+    expect($result['calculation']['lye']['uncounted_post_reaction_oils'])->toBe($trusted ? [] : ['Fatty addition']);
+})->with([
+    'oil' => [IngredientCategory::Lipids, null, true],
+    'wax' => [IngredientCategory::Waxes, null, true],
+    'fatty acid' => [IngredientCategory::PhAdjustersBuffers, IngredientSubcategory::FattyAcids, true],
+    'unverified wax' => [IngredientCategory::Waxes, null, false],
+]);
+
+it('counts the fatty constituent of a compound once even when its free-fat label merges with a base oil', function (): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $oil = makeSoapOilIngredient();
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'inci_name' => 'PARFUM']);
+    $blend = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'inci_name' => 'PARFUM, OLEA EUROPAEA FRUIT OIL']);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $oil->id, 'percentage_in_parent' => 30, 'sort_order' => 1]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $fragrance->id, 'percentage_in_parent' => 70, 'sort_order' => 2]);
+    $payload = soapDraftPayloadWithFragrance($oil, $blend);
+    $payload['superfat'] = 2;
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items']['additives'] = [['ingredient_id' => $blend->id, 'percentage' => 10, 'weight' => 100]];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue();
+    expect($result['labeling']['free_fat']['weight'])->toEqualWithDelta(50, 0.0001)
+        ->and($result['labeling']['free_fat']['nominal_percentage'])->toEqualWithDelta(5, 0.0001);
+    $row = collect($result['labeling']['ingredient_rows'])->firstWhere('label', 'OLEA EUROPAEA FRUIT OIL');
+    expect($row['weight'])->toEqualWithDelta(50, 0.0001);
+});
+
+it('uses the same chemistry for fatty fragrance carriers in either addition phase', function (string $phase, float $lyeReduction, float $freeFatWeight): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $oil = makeSoapOilIngredient();
+    $carrier = makeSoapOilIngredient([
+        'display_name' => 'Almond Oil',
+        'inci_name' => 'PRUNUS AMYGDALUS DULCIS OIL',
+        'soap_inci_naoh_name' => 'SODIUM ALMONDATE',
+    ]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'inci_name' => 'PARFUM']);
+    $blend = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'inci_name' => 'PARFUM, PRUNUS AMYGDALUS DULCIS OIL']);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $carrier->id, 'percentage_in_parent' => 60, 'sort_order' => 1]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $fragrance->id, 'percentage_in_parent' => 40, 'sort_order' => 2]);
+    $payload = soapDraftPayloadWithFragrance($oil, $blend);
+    $payload['superfat'] = $lyeReduction;
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items'][$phase] = [['ingredient_id' => $blend->id, 'percentage' => 10, 'weight' => 100]];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['post_reaction_oils_weight'])->toBe(60.0)
+        ->and($result['labeling']['free_fat']['nominal_percentage'])->toBe($lyeReduction + 6)
+        ->and($result['labeling']['free_fat']['weight'])->toEqualWithDelta($freeFatWeight, 0.0001)
+        ->and($result['labeling']['free_fat']['percentage'])->toEqualWithDelta(
+            $freeFatWeight / $result['labeling']['basis']['cured_weight'] * 100,
+            0.0001,
+        );
+    $rows = collect(collect($result['labeling']['list_variants'])->firstWhere('key', 'saponified_with_superfat')['ingredient_rows']);
+
+    expect($rows->firstWhere('label', 'PARFUM')['weight'])->toEqualWithDelta(40, 0.0001)
+        ->and($rows->reject(fn (array $row): bool => $row['label'] === 'AQUA')->sum('weight') + $result['labeling']['basis']['residual_water_weight'])
+        ->toEqualWithDelta($result['labeling']['basis']['cured_weight'], 0.001);
+})->with(['additives', 'fragrance'])->with([
+    'negative lye reduction' => [-3.0, 30.0],
+    'zero lye reduction' => [0.0, 60.0],
+    'positive lye reduction' => [5.0, 110.0],
+    'alkali exceeds all fatty material' => [-10.0, 0.0],
+]);
+
+it('names unverified fatty fragrance carriers omitted from the chemistry estimates', function (string $phase): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $oil = makeSoapOilIngredient();
+    $carrier = makeSoapOilIngredient(['display_name' => 'Unverified Carrier', 'is_soap_saponification_trusted' => false]);
+    $fragrance = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'inci_name' => 'PARFUM']);
+    $blend = Ingredient::factory()->create(['category' => IngredientCategory::AromaticMaterials, 'inci_name' => 'PARFUM']);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $carrier->id, 'percentage_in_parent' => 60, 'sort_order' => 1]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $fragrance->id, 'percentage_in_parent' => 40, 'sort_order' => 2]);
+    $payload = soapDraftPayloadWithFragrance($oil, $blend);
+    $payload['superfat'] = -3;
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items'][$phase] = [['ingredient_id' => $blend->id, 'percentage' => 10, 'weight' => 100]];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation']['lye']['post_reaction_oils_weight'])->toBe(0.0)
+        ->and($result['calculation']['lye']['uncounted_post_reaction_oils'])->toBe(['Unverified Carrier'])
+        ->and($result['labeling']['free_fat']['nominal_percentage'])->toBe(-3.0)
+        ->and($result['labeling']['free_fat']['weight'])->toBe(0.0);
+})->with(['additives', 'fragrance']);
+
+it('reports estimated free fat without fatty additives', function (float $lyeReduction, float $water): void {
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $oil = makeSoapOilIngredient();
+    $payload = soapDraftPayloadWithFragrance($oil, $oil);
+    $payload['superfat'] = $lyeReduction;
+    $payload['cured_water_percentage'] = $water;
+    $payload['phase_items']['fragrance'] = [];
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue();
+    expect($result['labeling']['free_fat']['nominal_percentage'])->toBe($lyeReduction)
+        ->and($result['labeling']['free_fat']['weight'])->toEqualWithDelta(max(0, $lyeReduction * 10), 0.0001)
+        ->and($result['labeling']['free_fat']['percentage'])->toEqualWithDelta(
+            max(0, $lyeReduction * 10) / $result['labeling']['basis']['cured_weight'] * 100,
+            0.0001,
+        )->and($result['labeling']['free_fat']['residual_water_percentage'])->toBe($water);
+})->with([
+    'zero fat' => [0.0, 11.0],
+    'positive lye reduction' => [5.0, 11.0],
+    'different water assumption' => [5.0, 20.0],
+    'alkali excess has no negative free fat' => [-3.0, 11.0],
+]);
 
 it('generates a plain-language soap ingredient list starting with saponified oils', function () {
     ProductFamily::factory()->create([
@@ -708,7 +911,7 @@ it('batches ingredient graph loading for composite aromatics', function () {
         app(RecipeWorkbenchService::class),
     );
 
-    expect($ingredientQueries)->toHaveCount(3);
+    expect($ingredientQueries)->toHaveCount(5);
 });
 
 it('splits each saponified oil into soap and theoretical superfat rows', function () {

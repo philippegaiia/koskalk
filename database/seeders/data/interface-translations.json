@@ -48324,42 +48324,6 @@
     },
     {
       "group": "workbench",
-      "key": "settings.effective_superfat",
-      "text": {
-        "de": "Effektive Überfettung",
-        "es": "Sobreengrasado efectivo",
-        "fr": "Surgraissage effectif",
-        "it": "Superfat effettivo",
-        "nl": "Effectieve overvetting",
-        "pt_BR": "Sobreengorduramento efetivo"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "settings.effective_superfat_note_absorbed",
-      "text": {
-        "de": "Die überschüssige Lauge reagiert mit den nach der Reaktion zugegebenen Ölen. Diese Öle werden teilweise verseift und zählen nicht mehr zur Überfettung.",
-        "es": "El álcali en exceso reacciona con los aceites añadidos después de la reacción. Esos aceites se saponifican en parte y ya no cuentan como sobreengrasado.",
-        "fr": "L’excès de soude réagit avec les huiles ajoutées après la réaction. Ces huiles sont en partie saponifiées et ne comptent plus comme surgraissage.",
-        "it": "L’alcali in eccesso reagisce con gli oli aggiunti dopo la reazione. Questi oli sono in parte saponificati e non contano più come superfat.",
-        "nl": "De overtollige loog reageert met de oliën die na de reactie zijn toegevoegd. Die oliën worden deels verzeept en tellen niet meer mee als overvetting.",
-        "pt_BR": "O excesso de álcali reage com os óleos adicionados após a reação. Esses óleos ficam parcialmente saponificados e deixam de contar como sobreengorduramento."
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "settings.effective_superfat_note_kept",
-      "text": {
-        "de": "Ihre Laugen-Überfettung plus die nach der Reaktion zugegebenen Öle. Diese Öle bleiben unverseift und werden auf dem Etikett wie zugegeben aufgeführt.",
-        "es": "Su sobreengrasado de álcali más los aceites añadidos después de la reacción. Esos aceites no se saponifican y figuran en la etiqueta tal como se añadieron.",
-        "fr": "Votre surgraissage de soude plus les huiles ajoutées après la réaction. Ces huiles restent non saponifiées et figurent sur l’étiquette telles qu’ajoutées.",
-        "it": "Il vostro superfat dell’alcali più gli oli aggiunti dopo la reazione. Questi oli restano non saponificati e figurano in etichetta così come aggiunti.",
-        "nl": "Uw loog-overvetting plus de oliën die na de reactie zijn toegevoegd. Die oliën blijven onverzeept en staan op het etiket zoals toegevoegd.",
-        "pt_BR": "Seu sobreengorduramento de álcali mais os óleos adicionados após a reação. Esses óleos permanecem não saponificados e aparecem no rótulo como adicionados."
-      }
-    },
-    {
-      "group": "workbench",
       "key": "settings.entry_mode",
       "text": {
         "de": "Mengen eingeben als",
@@ -48392,6 +48356,78 @@
         "it": "L'output è questo prodotto. Un lotto di produzione realizza questo prodotto; non esiste un selettore di prodotto separato.",
         "nl": "De uitvoer is dit product. Eén productiepartij maakt dit product; er is geen aparte productkeuze.",
         "pt_BR": "A saída é este produto. Um lote de produção fabrica este produto; não há um seletor de produto separado."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.free_fat",
+      "text": {
+        "de": "Geschätztes freies Fett",
+        "es": "Grasa libre estimada",
+        "fr": "Matière grasse libre estimée",
+        "it": "Grassi liberi stimati",
+        "nl": "Geschat vrij vet",
+        "pt_BR": "Gordura livre estimada"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.free_fat_cured_basis",
+      "text": {
+        "de": "der gereiften Seife",
+        "es": "del jabón curado",
+        "fr": "du savon après cure",
+        "it": "del sapone stagionato",
+        "nl": "van de uitgeharde zeep",
+        "pt_BR": "do sabão após a cura"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.free_fat_cured_note",
+      "text": {
+        "de": "· Anteil an der gereiften Seife bei :water% Restwasser.",
+        "es": "· Porcentaje del jabón curado, con :water% de agua residual.",
+        "fr": "· Pourcentage du savon après cure, avec :water% d’eau résiduelle.",
+        "it": "· Percentuale del sapone stagionato, con :water% di acqua residua.",
+        "nl": "· Percentage van de uitgeharde zeep, met :water% restwater.",
+        "pt_BR": "· Porcentagem do sabão após a cura, com :water% de água residual."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.free_fat_liquid_basis",
+      "text": {
+        "de": "der fertig verdünnten Seife",
+        "es": "del jabón diluido final",
+        "fr": "du savon dilué final",
+        "it": "del sapone diluito finale",
+        "nl": "van de uiteindelijke verdunde zeep",
+        "pt_BR": "do sabão diluído final"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.free_fat_liquid_note",
+      "text": {
+        "de": "· Anteil an der fertig verdünnten Seife nach Neutralisation und Zugaben.",
+        "es": "· Porcentaje del jabón diluido final, tras la neutralización y las adiciones.",
+        "fr": "· Pourcentage du savon dilué final, après neutralisation et ajouts.",
+        "it": "· Percentuale del sapone diluito finale, dopo neutralizzazione e aggiunte.",
+        "nl": "· Percentage van de uiteindelijke verdunde zeep, na neutralisatie en toevoegingen.",
+        "pt_BR": "· Porcentagem do sabão diluído final, após neutralização e adições."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.free_fat_unavailable_koh",
+      "text": {
+        "de": "Geschätztes freies Fett nicht verfügbar: Überschüssiges KOH könnte noch mit den Fettzugaben reagieren. Neutralisation prüfen.",
+        "es": "Grasa libre estimada no disponible: el exceso de KOH aún podría reaccionar con las grasas añadidas. Revisa la neutralización.",
+        "fr": "Estimation de matière grasse libre indisponible : l’excès de KOH pourrait encore réagir avec les matières grasses ajoutées. Vérifiez la neutralisation.",
+        "it": "Stima dei grassi liberi non disponibile: il KOH in eccesso potrebbe ancora reagire con i grassi aggiunti. Controlla la neutralizzazione.",
+        "nl": "Schatting van vrij vet niet beschikbaar: overtollig KOH kan nog met toegevoegde vetten reageren. Controleer de neutralisatie.",
+        "pt_BR": "Estimativa de gordura livre indisponível: o excesso de KOH ainda pode reagir com as gorduras adicionadas. Verifique a neutralização."
       }
     },
     {
@@ -48684,6 +48720,18 @@
     },
     {
       "group": "workbench",
+      "key": "settings.lye_reduction",
+      "text": {
+        "de": "Laugenreduktion / -überschuss",
+        "es": "Reducción / exceso de álcali",
+        "fr": "Réduction / excès d’alcali",
+        "it": "Riduzione / eccesso di alcali",
+        "nl": "Loogreductie / -overschot",
+        "pt_BR": "Redução / excesso de álcali"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.manufactured_ingredient",
       "text": {
         "de": "Ingrediens",
@@ -48828,6 +48876,30 @@
     },
     {
       "group": "workbench",
+      "key": "settings.nominal_superfat",
+      "text": {
+        "de": "Nominelle Überfettung",
+        "es": "Sobreengrasado nominal",
+        "fr": "Surgraissage nominal",
+        "it": "Superfat nominale",
+        "nl": "Nominale overvetting",
+        "pt_BR": "Sobreengorduramento nominal"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.nominal_superfat_note",
+      "text": {
+        "de": "Laugenreduktion + verseifbare Zusätze (% der Öle). Eine Rezeptkonvention, keine exakt gleichwertige Laugenreduktion.",
+        "es": "Reducción de álcali + adiciones saponificables (% de aceites). Una convención de receta, no una reducción de álcali equivalente exacta.",
+        "fr": "Réduction d’alcali + ajouts saponifiables (% des huiles). Une convention de formulation, pas une réduction d’alcali exactement équivalente.",
+        "it": "Riduzione dell’alcali + aggiunte saponificabili (% degli oli). Una convenzione di ricetta, non una riduzione dell’alcali esattamente equivalente.",
+        "nl": "Loogreductie + verzeepbare toevoegingen (% van de oliën). Een receptconventie, geen exact gelijkwaardige loogreductie.",
+        "pt_BR": "Redução de álcali + adições saponificáveis (% dos óleos). Uma convenção de receita, não uma redução de álcali exatamente equivalente."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.one_batch_one_product_help",
       "text": {
         "de": "Eine Charge erzeugt ein Produkt. Für eine andere Größe duplizieren Sie dieses Produkt und ändern dann Name, Nenninhalt und Verpackung.",
@@ -48842,12 +48914,12 @@
       "group": "workbench",
       "key": "settings.post_reaction_oils_not_counted",
       "text": {
-        "de": "Nicht in der effektiven Überfettung berücksichtigt: :ingredients. Berücksichtigt werden nur Öle mit geprüften Verseifungsdaten aus dem Plattformkatalog oder Ihre Kopien davon.",
-        "es": "No se tiene en cuenta en el sobreengrasado efectivo: :ingredients. Solo cuentan los aceites con datos de saponificación verificados del catálogo de la plataforma o tus copias de ellos.",
-        "fr": "Non pris en compte dans le surgraissage effectif : :ingredients. Seules les huiles du catalogue de la plateforme avec des données de saponification vérifiées, ou vos copies de celles-ci, sont prises en compte.",
-        "it": "Non considerato nel superfat effettivo: :ingredients. Contano solo gli oli con dati di saponificazione verificati del catalogo della piattaforma o le tue copie di essi.",
-        "nl": "Niet meegeteld in de effectieve overvetting: :ingredients. Alleen oliën met geverifieerde verzepingsgegevens uit de platformcatalogus, of je kopieën daarvan, tellen mee.",
-        "pt_BR": "Não considerado no sobreengorduramento efetivo: :ingredients. Só contam os óleos com dados de saponificação verificados do catálogo da plataforma ou suas cópias deles."
+        "de": "In den Fettschätzungen nicht berücksichtigt: :ingredients. Es zählen nur Materialien mit verifizierten Verseifungsdaten, darunter Öle, Butter, Wachse und Fettsäuren.",
+        "es": "No se incluyen en las estimaciones de grasa: :ingredients. Solo cuentan materiales con datos de saponificación verificados, incluidos aceites, mantecas, ceras y ácidos grasos.",
+        "fr": "Non pris en compte dans les estimations de matière grasse : :ingredients. Seules les matières aux données de saponification vérifiées sont comptées : huiles, beurres, cires et acides gras.",
+        "it": "Non inclusi nelle stime dei grassi: :ingredients. Sono conteggiati solo materiali con dati di saponificazione verificati, inclusi oli, burri, cere e acidi grassi.",
+        "nl": "Niet meegerekend in de vetschattingen: :ingredients. Alleen materialen met geverifieerde verzepingsgegevens tellen mee, waaronder oliën, boters, wassen en vetzuren.",
+        "pt_BR": "Não incluídos nas estimativas de gordura: :ingredients. Contam apenas materiais com dados de saponificação verificados, incluindo óleos, manteigas, ceras e ácidos graxos."
       }
     },
     {

@@ -158,9 +158,9 @@ it('derives the cured weight from the submitted residual water', function () {
     $nonWaterWeight = $standardBasis['formula_weight'] - $standard['calculation']['lye']['water']['weight'];
 
     expect($drierBasis['residual_water_percentage'])->toBe(10.0)
-        ->and($drierBasis['cured_weight'])->toBe(round($nonWaterWeight / 0.9, 5))
-        ->and($standardBasis['cured_weight'])->toBe(round($nonWaterWeight / 0.89, 5))
-        ->and($drierBasis['residual_water_weight'])->toBe(round($drierBasis['cured_weight'] * 0.1, 5));
+        ->and($drierBasis['cured_weight'])->toEqualWithDelta($nonWaterWeight / 0.9, 0.00000001)
+        ->and($standardBasis['cured_weight'])->toEqualWithDelta($nonWaterWeight / 0.89, 0.00000001)
+        ->and($drierBasis['residual_water_weight'])->toEqualWithDelta($drierBasis['cured_weight'] * 0.1, 0.00000001);
 });
 
 it('falls back to the historical residual water for missing or out-of-range values', function () {

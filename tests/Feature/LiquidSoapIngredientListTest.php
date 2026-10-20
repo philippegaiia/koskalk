@@ -200,6 +200,74 @@ it('labels additions with the weight the process sized from the final batch', fu
     expect($weights['LAVANDULA ANGUSTIFOLIA OIL'])->toBe(59.5);
 });
 
+it('reports finished liquid free fat after neutralization and final dilution', function (float $finalDilution, float $addedWeight, float $expectedPercentage, string $phase): void {
+    $formula = liquidSoapLabelFormula();
+    $addition = Ingredient::factory()->create([
+        'category' => IngredientCategory::Waxes,
+        'inci_name' => 'SIMMONDSIA CHINENSIS SEED OIL',
+        'is_soap_saponification_trusted' => true,
+    ]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $addition->id, 'koh_sap_value' => 0.09]);
+    $formula['payload']['liquid_process']['final_dilution_percentage'] = $finalDilution;
+    $formula['payload']['phase_items'][$phase] = [['ingredient_id' => $addition->id, 'percentage' => $addedWeight / 10, 'weight' => $addedWeight]];
+
+    $labeling = liquidSoapLabeling($formula);
+
+    expect($labeling['free_fat']['basis'])->toBe('finished_liquid_soap')
+        ->and($labeling['free_fat']['weight'])->toEqualWithDelta($addedWeight, 0.0001)
+        ->and($labeling['free_fat']['percentage'])->toEqualWithDelta($expectedPercentage, 0.0001);
+})->with([
+    'no additions after neutralization' => [25.0, 0.0, 0.0],
+    'wax at twenty five percent soap' => [25.0, 47.6, 1.0],
+    'same wax diluted further' => [20.0, 47.6, 0.8],
+])->with(['additives', 'fragrance']);
+
+it('does not report finished free fat before the final liquid batch can be calculated', function (): void {
+    $formula = liquidSoapLabelFormula();
+    $formula['payload']['liquid_process']['final_dilution_percentage'] = null;
+
+    $labeling = liquidSoapLabeling($formula);
+
+    expect($labeling['free_fat'])->toBeNull();
+});
+
+it('withholds the finished free fat estimate while excess KOH remains', function (float $neutralizerWeight): void {
+    $formula = liquidSoapLabelFormula();
+    $addition = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $addition->id, 'koh_sap_value' => 0.19]);
+    $formula['payload']['phase_items']['additives'] = [['ingredient_id' => $addition->id, 'percentage' => 6, 'weight' => 60]];
+    $formula['payload']['phase_items']['neutralization'] = $neutralizerWeight > 0
+        ? [['ingredient_id' => $formula['neutralizer']->id, 'percentage' => $neutralizerWeight / 10, 'weight' => $neutralizerWeight]]
+        : [];
+
+    $calculation = app(RecipeWorkbenchService::class)->previewSoapCalculation($formula['payload'], null, $formula['family']);
+    $labeling = app(RecipeWorkbenchService::class)->previewInci($formula['payload'], $calculation);
+
+    expect($calculation['liquid_process']['warnings'])->toContain('free_koh_remains')
+        ->and($labeling['free_fat']['nominal_percentage'])->toBe(3.0)
+        ->and($labeling['free_fat']['percentage'])->toBeNull()
+        ->and($labeling['free_fat']['weight'])->toBeNull()
+        ->and($labeling['free_fat']['unavailable_reason'])->toBe('free_koh_remains');
+})->with([
+    'no neutralizer' => 0.0,
+    'insufficient neutralizer' => 3.0,
+]);
+
+it('includes excess fatty acid neutralizer in finished free fat without counting the reacted dose', function (): void {
+    $formula = liquidSoapLabelFormula(LiquidSoapNeutralizer::FattyAcid);
+    $formula['payload']['phase_items']['neutralization'][0]['weight'] = 38.9047;
+    $formula['payload']['phase_items']['neutralization'][0]['percentage'] = 3.89047;
+
+    $labeling = liquidSoapLabeling($formula);
+
+    expect($labeling['free_fat']['weight'])->toEqualWithDelta(10, 0.001)
+        ->and($labeling['free_fat']['nominal_percentage'])->toBe(-3.0)
+        ->and($labeling['free_fat']['percentage'])->toEqualWithDelta(10 / $labeling['basis']['formula_weight'] * 100, 0.0001);
+});
+
 it('shares a compound neutralizer product between its components', function () {
     $formula = liquidSoapLabelFormula(LiquidSoapNeutralizer::FattyAcid);
     $blend = $formula['neutralizer'];

@@ -250,11 +250,31 @@ export function createFormulaSection() {
                     },
                     {
                         id: 'formula-superfat',
-                        label: this.t('common.superfat'),
+                        label: this.t('settings.lye_reduction'),
                         value: `${this.format(this.superfat, 1)}%`,
                         tone: { excess_lye: 'danger', low_margin: 'warning' }[this.superfatStatus] ?? 'chemistry',
                     },
                 );
+
+                if (this.freeFatSummary) {
+                    cards.push(
+                        {
+                            id: 'formula-nominal-superfat',
+                            label: this.t('settings.nominal_superfat'),
+                            value: `${this.formatPercentageTotal(this.nominalSuperfat)}%`,
+                            tone: 'chemistry',
+                        },
+                    );
+                }
+
+                if (this.estimatedFreeFat !== null) {
+                    cards.push({
+                        id: 'formula-free-fat',
+                        label: this.t('settings.free_fat'),
+                        value: `${this.format(this.estimatedFreeFat, 2)}% ${this.t(this.freeFatSummary.basis === 'finished_liquid_soap' ? 'settings.free_fat_liquid_basis' : 'settings.free_fat_cured_basis')}`,
+                        tone: 'chemistry',
+                    });
+                }
             }
 
             if (this.canPersist) {
@@ -457,14 +477,16 @@ export function createFormulaSection() {
             return Array.isArray(names) ? names : [];
         },
 
-        get effectiveSuperfat() {
-            const lye = this.backendCalculation?.lye ?? null;
+        get freeFatSummary() {
+            return this.isCalculationRejected ? null : (this.backendLabeling?.free_fat ?? null);
+        },
 
-            if (!lye || this.number(lye.post_reaction_oils_weight) <= 0) {
-                return null;
-            }
+        get nominalSuperfat() {
+            return this.freeFatSummary ? this.number(this.freeFatSummary.nominal_percentage) : null;
+        },
 
-            return this.number(lye.effective_superfat_percentage);
+        get estimatedFreeFat() {
+            return this.freeFatSummary?.percentage != null ? this.number(this.freeFatSummary.percentage) : null;
         },
 
         get lyeSummaryCards() {

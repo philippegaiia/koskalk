@@ -181,7 +181,7 @@
 	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="sk-input numeric mt-3" />
 	 </div>
 	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
-	 <p id="setting-superfat" class="sk-eyebrow">{{ __('workbench.common.superfat') }} <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" /></p>
+	 <p id="setting-superfat" class="sk-eyebrow">{{ __('workbench.settings.lye_reduction') }} <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" /></p>
 	 <div class="mt-3 flex items-center justify-between gap-3 text-sm">
 	 <span>
 	 <template x-if="superfatStatus === 'excess_lye'">
@@ -195,17 +195,26 @@
 	 </div>
 	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfatStatus === 'excess_lye' ? 'accent-[var(--color-danger)]' : (superfatStatus === 'low_margin' ? 'accent-[var(--color-warning)]' : 'accent-[var(--color-active)]')" class="mt-3 w-full" />
 	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfatStatus === 'excess_lye' ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'border-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]')" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
-	 <template x-if="effectiveSuperfat !== null">
+	 <template x-if="nominalSuperfat !== null">
+	 <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+	 <span class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.settings.nominal_superfat') }}</span>
+	 <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="`${formatPercentageTotal(nominalSuperfat)}%`"></span>
+	 · {{ __('workbench.settings.nominal_superfat_note') }}
+	 </p>
+	 </template>
+	 <template x-if="estimatedFreeFat !== null">
 	 <p role="status" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
-	 <span class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.settings.effective_superfat') }}</span>
-	 <span class="numeric font-semibold" :class="superfatStatus === 'excess_lye' ? 'text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]')" x-text="`${format(effectiveSuperfat, 1)}%`"></span>
-	 <span x-show="number(superfat) >= 0">· {{ __('workbench.settings.effective_superfat_note_kept') }}</span>
-	 <span x-show="number(superfat) < 0">· {{ __('workbench.settings.effective_superfat_note_absorbed') }}</span>
+	 <span class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.settings.free_fat') }}</span>
+	 <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="`${format(estimatedFreeFat, 2)}%`"></span>
+	 <span x-text="freeFatSummary.basis === 'finished_liquid_soap' ? t('settings.free_fat_liquid_note') : t('settings.free_fat_cured_note', { water: curedWaterPercentageLabel })"></span>
 	 <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" />
 	 </p>
 	 </template>
 	 <template x-if="uncountedPostReactionOils.length > 0">
 	 <p role="status" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="t('settings.post_reaction_oils_not_counted', { ingredients: uncountedPostReactionOils.join(', ') })"></p>
+	 </template>
+	 <template x-if="freeFatSummary?.unavailable_reason === 'free_koh_remains'">
+	 <p role="status" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.settings.free_fat_unavailable_koh') }}</p>
 	 </template>
 	 </div>
 	 </div>

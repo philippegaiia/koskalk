@@ -87,11 +87,11 @@ JS);
         ->and($process->getOutput())->toBe('');
 });
 
-it('takes the superfat indicator and effective superfat from the server calculation', function () {
+it('takes the lye indicator and estimated free fat from their separate server results', function () {
     $process = runRecipeWorkbenchSuperfatScript(<<<'JS'
 workbench.superfat = -5;
 assert.equal(workbench.superfatStatus, 'excess_lye');
-assert.equal(workbench.effectiveSuperfat, null);
+assert.equal(workbench.estimatedFreeFat, null);
 
 workbench.backendCalculation = {
     lye: {
@@ -101,17 +101,62 @@ workbench.backendCalculation = {
         superfat_status: 'normal',
     },
 };
+workbench.backendLabeling = { free_fat: {
+    nominal_percentage: 5,
+    percentage: 2.5,
+    weight: 50,
+    basis: 'cured_soap',
+    basis_weight: 2000,
+    residual_water_percentage: 11,
+} };
 assert.equal(workbench.superfatStatus, 'normal');
-assert.equal(workbench.effectiveSuperfat, 4.5455);
+assert.equal(workbench.estimatedFreeFat, 2.5);
+assert.equal(workbench.nominalSuperfat, 5);
+workbench.translations = { settings: {
+    free_fat: 'Estimated free fat',
+    free_fat_cured_basis: 'of cured soap',
+    free_fat_liquid_basis: 'of finished diluted soap',
+} };
+const freeFatCard = () => workbench.formulaSetupSummaryCards.find((card) => card.id === 'formula-free-fat');
+assert.equal(freeFatCard().label, 'Estimated free fat');
+assert.equal(freeFatCard().value, '2.50% of cured soap');
+workbench.backendLabeling.free_fat.basis = 'finished_liquid_soap';
+assert.equal(freeFatCard().value, '2.50% of finished diluted soap');
 
 workbench.backendCalculation.lye.superfat_status = 'low_margin';
 assert.equal(workbench.superfatStatus, 'low_margin');
 
 workbench.backendCalculation.lye.post_reaction_oils_weight = 0;
-assert.equal(workbench.effectiveSuperfat, null);
+assert.equal(workbench.estimatedFreeFat, 2.5);
+workbench.backendLabeling.free_fat.percentage = 0;
+assert.equal(workbench.estimatedFreeFat, 0);
+assert.equal(freeFatCard().value, '0.00% of finished diluted soap');
+workbench.backendLabeling = null;
+assert.equal(workbench.estimatedFreeFat, null);
 assert.deepEqual(workbench.uncountedPostReactionOils, []);
 workbench.backendCalculation.lye.uncounted_post_reaction_oils = ['Bacuri Butter'];
 assert.deepEqual(workbench.uncountedPostReactionOils, ['Bacuri Butter']);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($process->getOutput())->toBe('');
+});
+
+it('keeps nominal superfat visible without presenting residual alkali as zero free fat', function () {
+    $process = runRecipeWorkbenchSuperfatScript(<<<'JS'
+workbench.backendCalculation = { lye: { superfat_status: 'excess_lye' } };
+workbench.backendLabeling = { free_fat: {
+    nominal_percentage: 3,
+    percentage: null,
+    weight: null,
+    basis: 'finished_liquid_soap',
+    unavailable_reason: 'free_koh_remains',
+} };
+assert.equal(workbench.nominalSuperfat, 3);
+assert.equal(workbench.estimatedFreeFat, null);
+const cards = workbench.formulaSetupSummaryCards;
+assert.ok(cards.some((card) => card.id === 'formula-nominal-superfat'));
+assert.ok(!cards.some((card) => card.id === 'formula-free-fat'));
 JS);
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
@@ -174,7 +219,7 @@ it('labels the formula settings summary through translations', function () {
     $process = runRecipeWorkbenchSuperfatScript(<<<'JS'
 workbench.translations = {
     common: { superfat: 'Surgraissage' },
-    settings: { summary: { base: 'Base', entry: 'Saisie', lye: 'Alcali', lye_concentration: 'Concentration :value %' } },
+    settings: { lye_reduction: 'Réduction / excès d’alcali', summary: { base: 'Base', entry: 'Saisie', lye: 'Alcali', lye_concentration: 'Concentration :value %' } },
 };
 workbench.waterMode = 'lye_concentration';
 workbench.waterValue = 34;
@@ -182,7 +227,7 @@ workbench.superfat = -3;
 
 const cards = Object.fromEntries(workbench.formulaSetupSummaryCards.map((card) => [card.id, card]));
 
-assert.equal(cards['formula-superfat'].label, 'Surgraissage');
+assert.equal(cards['formula-superfat'].label, 'Réduction / excès d’alcali');
 assert.equal(cards['formula-superfat'].tone, 'danger');
 assert.equal(cards['formula-lye'].label, 'Alcali');
 assert.equal(cards['formula-weight'].label, 'Base');

@@ -43,6 +43,7 @@ class SoapCalculationService
      *     fatty_acid_profile?: array<string, float|int|string>,
      * }>  $oils
      * @param  array{
+     *     mass_precision?: int,
      *     superfat?: float|int|string,
      *     lye_type?: 'naoh'|'koh'|'dual',
      *     dual_lye_koh_percentage?: float|int|string,
@@ -90,9 +91,10 @@ class SoapCalculationService
      *     }
      * }
      *
-     * Post-reaction oils are saponifiable oils added outside the saponified
-     * oil phase. They do not change the lye amount, but they consume part of
-     * it, so they lower the effective superfat of the whole formula.
+     * Post-reaction materials do not change the alkali selected for the
+     * reaction core. Their SAP demand contributes to the signed overall
+     * alkali balance used for warnings. The finished-product free-fat
+     * concentration is calculated separately by SoapFreeFatSummaryBuilder.
      */
     public function calculate(array $oils, array $settings = [], array $postReactionOils = []): array
     {
@@ -101,6 +103,7 @@ class SoapCalculationService
         }
 
         $superfat = $this->normalizeNumericValue($settings['superfat'] ?? 5, 'superfat');
+        $massPrecision = max(4, min(12, (int) ($settings['mass_precision'] ?? 4)));
         $waterMode = (string) ($settings['water_mode'] ?? 'percent_of_oils');
         $waterValue = $this->normalizeNumericValue($settings['water_value'] ?? 38, 'water value');
         $lyeType = (string) ($settings['lye_type'] ?? 'naoh');
@@ -165,6 +168,7 @@ class SoapCalculationService
             $kohAdjusted,
             $dualLyeKohPercentage,
             $kohPurityPercentage,
+            $massPrecision,
         );
         $saponification = $this->saponificationShare(
             $lyeType,
@@ -177,7 +181,7 @@ class SoapCalculationService
         );
 
         if ($saponification['glycerine_weight'] !== null) {
-            $selectedLye['glycerine_weight'] = $this->roundValue($saponification['glycerine_weight']);
+            $selectedLye['glycerine_weight'] = $this->roundValue($saponification['glycerine_weight'], $massPrecision);
         }
         $waterWeight = $this->calculateWaterWeight($waterMode, $waterValue, $oilsWeight, $selectedLye['total_active_lye_weight']);
         $waterProcessModifiers = $this->calculateWaterProcessModifiers($waterWeight, $oilsWeight, $selectedLye['total_active_lye_weight']);
@@ -191,38 +195,38 @@ class SoapCalculationService
 
         return [
             'totals' => [
-                'oils_weight' => $this->roundValue($oilsWeight),
+                'oils_weight' => $this->roundValue($oilsWeight, $massPrecision),
             ],
             'lye' => [
                 'naoh' => [
-                    'theoretical' => $this->roundValue($naohTheoretical),
-                    'adjusted' => $this->roundValue($naohAdjusted),
+                    'theoretical' => $this->roundValue($naohTheoretical, $massPrecision),
+                    'adjusted' => $this->roundValue($naohAdjusted, $massPrecision),
                 ],
                 'koh' => [
-                    'theoretical' => $this->roundValue($kohTheoretical),
-                    'adjusted' => $this->roundValue($kohAdjusted),
+                    'theoretical' => $this->roundValue($kohTheoretical, $massPrecision),
+                    'adjusted' => $this->roundValue($kohAdjusted, $massPrecision),
                 ],
                 'water' => [
                     'mode' => $waterMode,
                     'value' => $this->roundValue($waterValue),
-                    'weight' => $this->roundValue($waterWeight),
+                    'weight' => $this->roundValue($waterWeight, $massPrecision),
                 ],
                 'glycerine' => [
-                    'naoh_theoretical' => $this->roundValue($naohTheoretical * self::GLYCERINE_FROM_NAOH_RATIO),
-                    'naoh_adjusted' => $this->roundValue($naohAdjusted * self::GLYCERINE_FROM_NAOH_RATIO),
-                    'koh_theoretical' => $this->roundValue($kohTheoretical * self::GLYCERINE_FROM_KOH_RATIO),
-                    'koh_adjusted' => $this->roundValue($kohAdjusted * self::GLYCERINE_FROM_KOH_RATIO),
+                    'naoh_theoretical' => $this->roundValue($naohTheoretical * self::GLYCERINE_FROM_NAOH_RATIO, $massPrecision),
+                    'naoh_adjusted' => $this->roundValue($naohAdjusted * self::GLYCERINE_FROM_NAOH_RATIO, $massPrecision),
+                    'koh_theoretical' => $this->roundValue($kohTheoretical * self::GLYCERINE_FROM_KOH_RATIO, $massPrecision),
+                    'koh_adjusted' => $this->roundValue($kohAdjusted * self::GLYCERINE_FROM_KOH_RATIO, $massPrecision),
                 ],
                 'selected' => $selectedLye,
                 'excess' => [
-                    'naoh_weight' => $this->roundValue($saponification['free_naoh_weight']),
-                    'koh_weight' => $this->roundValue($saponification['free_koh_weight']),
+                    'naoh_weight' => $this->roundValue($saponification['free_naoh_weight'], $massPrecision),
+                    'koh_weight' => $this->roundValue($saponification['free_koh_weight'], $massPrecision),
                 ],
                 'saponified_fraction' => round($saponification['fraction'], 8),
                 'post_reaction_saponified_fraction' => round($saponification['post_reaction_fraction'], 8),
                 'superfat_percentage' => $this->roundValue($superfat),
                 'effective_superfat_percentage' => $this->roundValue($effectiveSuperfat),
-                'post_reaction_oils_weight' => $this->roundValue($postReactionOilsWeight),
+                'post_reaction_oils_weight' => $this->roundValue($postReactionOilsWeight, $massPrecision),
                 'superfat_status' => $this->superfatStatus($effectiveSuperfat),
             ],
             'soap_context' => $soapContext,
@@ -248,6 +252,7 @@ class SoapCalculationService
      * the oil's soap-specific INCI output.
      *
      * @param  array{
+     *     mass_precision?: int,
      *     superfat?: float|int|string,
      *     lye_type?: 'naoh'|'koh'|'dual',
      *     dual_lye_koh_percentage?: float|int|string,
@@ -273,6 +278,7 @@ class SoapCalculationService
         }
 
         $superfat = $this->normalizeNumericValue($settings['superfat'] ?? 5, 'superfat');
+        $massPrecision = max(4, min(12, (int) ($settings['mass_precision'] ?? 4)));
         $lyeType = (string) ($settings['lye_type'] ?? 'naoh');
         $dualLyeKohPercentage = $this->normalizeNumericValue($settings['dual_lye_koh_percentage'] ?? 50, 'dual lye KOH percentage');
         $kohPurityPercentage = $this->normalizeNumericValue($settings['koh_purity_percentage'] ?? 100, 'KOH purity percentage');
@@ -292,6 +298,7 @@ class SoapCalculationService
             $kohAdjusted,
             $dualLyeKohPercentage,
             $kohPurityPercentage,
+            $massPrecision,
         );
         $kohRatio = $this->kohRatio($lyeType, $dualLyeKohPercentage);
         $naohRatio = 1 - $kohRatio;
@@ -315,16 +322,16 @@ class SoapCalculationService
             - $kohGlycerineWeight;
 
         return [
-            'saponified_weight' => $this->roundValue($saponifiedWeight),
+            'saponified_weight' => $this->roundValue($saponifiedWeight, $massPrecision),
             'selected_naoh_weight' => $selectedLye['naoh_weight'],
             'selected_koh_weight' => $selectedLye['koh_weight'],
             'koh_to_weigh' => $selectedLye['koh_to_weigh'],
-            'glycerine_weight' => $this->roundValue($naohGlycerineWeight + $kohGlycerineWeight),
-            'naoh_soap_salt_weight' => $this->roundValue($naohSoapSaltWeight),
-            'koh_soap_salt_weight' => $this->roundValue($kohSoapSaltWeight),
-            'soap_salt_weight' => $this->roundValue($naohSoapSaltWeight + $kohSoapSaltWeight),
-            'excess_naoh_weight' => $this->roundValue($superfat < 0 ? max(0.0, $naohAdjusted * $naohRatio - $reactingLye['naoh_weight']) : 0.0),
-            'excess_koh_weight' => $this->roundValue($superfat < 0 ? max(0.0, $kohAdjusted * $kohRatio - $reactingLye['koh_weight']) : 0.0),
+            'glycerine_weight' => $this->roundValue($naohGlycerineWeight + $kohGlycerineWeight, $massPrecision),
+            'naoh_soap_salt_weight' => $this->roundValue($naohSoapSaltWeight, $massPrecision),
+            'koh_soap_salt_weight' => $this->roundValue($kohSoapSaltWeight, $massPrecision),
+            'soap_salt_weight' => $this->roundValue($naohSoapSaltWeight + $kohSoapSaltWeight, $massPrecision),
+            'excess_naoh_weight' => $this->roundValue($superfat < 0 ? max(0.0, $naohAdjusted * $naohRatio - $reactingLye['naoh_weight']) : 0.0, $massPrecision),
+            'excess_koh_weight' => $this->roundValue($superfat < 0 ? max(0.0, $kohAdjusted * $kohRatio - $reactingLye['koh_weight']) : 0.0, $massPrecision),
         ];
     }
 
@@ -670,6 +677,7 @@ class SoapCalculationService
         float $kohAdjusted,
         float $dualLyeKohPercentage,
         float $kohPurityPercentage,
+        int $massPrecision = 4,
     ): array {
         if (! in_array($lyeType, ['naoh', 'koh', 'dual'], true)) {
             throw new InvalidArgumentException('Unsupported lye type.');
@@ -697,17 +705,19 @@ class SoapCalculationService
             'type' => $lyeType,
             'dual_lye_koh_percentage' => $this->roundValue($dualLyeKohPercentage),
             'koh_purity_percentage' => $this->roundValue($kohPurityPercentage),
-            'naoh_weight' => $this->roundValue($selectedNaohWeight),
-            'koh_weight' => $this->roundValue($selectedKohWeight),
+            'naoh_weight' => $this->roundValue($selectedNaohWeight, $massPrecision),
+            'koh_weight' => $this->roundValue($selectedKohWeight, $massPrecision),
             'koh_to_weigh' => $this->roundValue(
                 $selectedKohWeight <= 0
                     ? 0
-                    : SoapSap::adjustKohForPurity($selectedKohWeight, $kohPurityPercentage)
+                    : SoapSap::adjustKohForPurity($selectedKohWeight, $kohPurityPercentage),
+                $massPrecision,
             ),
-            'total_active_lye_weight' => $this->roundValue($selectedNaohWeight + $selectedKohWeight),
+            'total_active_lye_weight' => $this->roundValue($selectedNaohWeight + $selectedKohWeight, $massPrecision),
             'glycerine_weight' => $this->roundValue(
                 ($selectedNaohWeight * self::GLYCERINE_FROM_NAOH_RATIO)
-                + ($selectedKohWeight * self::GLYCERINE_FROM_KOH_RATIO)
+                + ($selectedKohWeight * self::GLYCERINE_FROM_KOH_RATIO),
+                $massPrecision,
             ),
         ];
     }
@@ -1001,8 +1011,8 @@ class SoapCalculationService
         return strtolower(str_replace([' ', '-'], '_', trim($key)));
     }
 
-    private function roundValue(float $value): float
+    private function roundValue(float $value, int $precision = 4): float
     {
-        return round($value, 4);
+        return round($value, $precision);
     }
 }

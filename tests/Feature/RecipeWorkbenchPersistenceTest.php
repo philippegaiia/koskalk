@@ -4165,6 +4165,43 @@ assert.deepEqual(
   soap.formulaRowMoveTargets('saponified_oils', eligibleOil.id).map((phase) => phase.key),
   [],
 );
+
+const trustedWax = {
+  id: 'trusted-wax',
+  ingredient_id: 4,
+  name: 'Jojoba Oil',
+  category: 'waxes',
+  available_phases: ['saponified_oils', 'additives'],
+};
+const waxWithoutSoapChemistry = {
+  id: 'plain-wax',
+  ingredient_id: 5,
+  name: 'Beeswax',
+  category: 'waxes',
+  available_phases: ['additives'],
+};
+
+soap.phaseItems = {
+  saponified_oils: [trustedWax],
+  lye_water: [],
+  additives: [waxWithoutSoapChemistry],
+  fragrance: [],
+};
+
+assert.deepEqual(
+  soap.formulaRowMoveTargets('saponified_oils', trustedWax.id).map((phase) => phase.key),
+  ['additives'],
+);
+assert.deepEqual(
+  soap.formulaRowMoveTargets('additives', waxWithoutSoapChemistry.id).map((phase) => phase.key),
+  [],
+);
+
+assert.equal(soap.moveFormulaRow('saponified_oils', trustedWax.id, 'additives', 0), true);
+assert.deepEqual(
+  soap.formulaRowMoveTargets('additives', trustedWax.id).map((phase) => phase.key),
+  ['saponified_oils'],
+);
 JS;
 
     $process = Process::fromShellCommandline(

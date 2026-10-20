@@ -612,6 +612,27 @@ it('renders the catalog list resources in the admin panel', function () {
         ->assertSee('Olive Oil');
 });
 
+it('offers soap chemistry on waxes but not on materials that never saponify', function (IngredientCategory $category, ?IngredientSubcategory $subcategory, bool $showsSoapChemistry): void {
+    $this->actingAs(User::factory()->admin()->create());
+
+    $ingredient = Ingredient::factory()->create([
+        'category' => $category,
+        'subcategory' => $subcategory,
+        'display_name' => 'Soap chemistry candidate',
+    ]);
+
+    $response = $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
+        ->assertSuccessful();
+
+    $showsSoapChemistry
+        ? $response->assertSee('Fatty acid profile')
+        : $response->assertDontSee('Fatty acid profile');
+})->with([
+    'liquid wax' => [IngredientCategory::Waxes, IngredientSubcategory::LiquidWaxes, true],
+    'animal wax' => [IngredientCategory::Waxes, IngredientSubcategory::AnimalWaxes, true],
+    'humectant' => [IngredientCategory::HumectantsPolyols, null, false],
+]);
+
 it('renders all assigned ingredient functions in one editable Filament multi select', function (): void {
     $admin = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([

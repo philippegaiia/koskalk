@@ -366,6 +366,29 @@ class Ingredient extends Model
     }
 
     /**
+     * Whether this material may hold soap chemistry (KOH SAP and fatty
+     * acids) at all. Oils and fats saponify, waxes such as jojoba, beeswax
+     * and carnauba carry a residual SAP value, and a fatty acid neutralizer
+     * needs its KOH SAP. Whether the chemistry actually drives soap math is
+     * decided by canDriveSoapSaponification(), never by the category.
+     */
+    public function mayCarrySoapChemistry(): bool
+    {
+        return self::categoryMayCarrySoapChemistry($this->category, $this->subcategory);
+    }
+
+    public static function categoryMayCarrySoapChemistry(
+        IngredientCategory|string|null $category,
+        IngredientSubcategory|string|null $subcategory = null,
+    ): bool {
+        $category = $category instanceof IngredientCategory ? $category : IngredientCategory::tryFrom((string) $category);
+        $subcategory = $subcategory instanceof IngredientSubcategory ? $subcategory : IngredientSubcategory::tryFrom((string) $subcategory);
+
+        return in_array($category, [IngredientCategory::Lipids, IngredientCategory::Waxes], true)
+            || $subcategory === IngredientSubcategory::FattyAcids;
+    }
+
+    /**
      * Liquids a liquid soap paste may be diluted with: solvents and carriers
      * other than plain water (the step remainder), humectants such as
      * glycerine, hydrosols and aqueous extracts, and Other, which holds milks

@@ -219,6 +219,7 @@ class IngredientController extends Controller
                     'duplication' => [
                         'available' => $duplicationReason === null,
                         'reason' => $duplicationReason,
+                        'may_carry_soap_chemistry' => $ingredient->mayCarrySoapChemistry(),
                         'inherits_soap_chemistry' => $chemistry !== null,
                         'chemistry' => $this->formatDuplicationChemistry($chemistry, $numberLocale),
                     ],

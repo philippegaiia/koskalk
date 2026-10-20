@@ -116,23 +116,7 @@ function preferredFormulaDiagnosticsOpen() {
     return false;
 }
 
-function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
-    if (sourcePhaseKey === targetPhaseKey) {
-        return true;
-    }
-
-    const oilAdditivePhases = ['saponified_oils', 'additives'];
-
-    if (row?.category !== 'lipids'
-        || !oilAdditivePhases.includes(sourcePhaseKey)
-        || !oilAdditivePhases.includes(targetPhaseKey)) {
-        return false;
-    }
-
-    if (targetPhaseKey === 'additives') {
-        return true;
-    }
-
+function rowCanDriveSoapSaponification(row) {
     if (Array.isArray(row.available_phases)) {
         return row.available_phases.includes('saponified_oils');
     }
@@ -142,6 +126,29 @@ function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
     }
 
     return Number(row.koh_sap_value) > 0;
+}
+
+function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
+    if (sourcePhaseKey === targetPhaseKey) {
+        return true;
+    }
+
+    const oilAdditivePhases = ['saponified_oils', 'additives'];
+
+    if (!row
+        || !oilAdditivePhases.includes(sourcePhaseKey)
+        || !oilAdditivePhases.includes(targetPhaseKey)) {
+        return false;
+    }
+
+    // Trusted soap chemistry, not the category, decides: waxes such as jojoba
+    // saponify too. An oil that lost its soap chemistry may still leave the
+    // oil phase for Additives.
+    if (targetPhaseKey === 'additives') {
+        return row.category === 'lipids' || rowCanDriveSoapSaponification(row);
+    }
+
+    return rowCanDriveSoapSaponification(row);
 }
 
 /**

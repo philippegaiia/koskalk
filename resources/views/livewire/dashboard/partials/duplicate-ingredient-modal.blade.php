@@ -14,7 +14,6 @@
         initialIngredientId: @js($sourceIngredientId),
         destinationWorkspaceId: @js($destinationWorkspaceId),
         destinationWorkspaceSignature: @js($duplicateDestinationSignature),
-        lipidCategoryLabel: @js(__('ingredients.categories.lipids.label')),
         isEditorDirty: @if ($editorDirtyGuard) () => hasPendingChanges() || blocksNavigation() @else null @endif,
         messages: @js([
             'searchFailed' => __('ingredients.duplicate.errors.search_failed'),

@@ -170,3 +170,18 @@ it('keeps a real picker image ahead of the category fallback', function (): void
         ->toBe(route('ingredients.media', ['ingredient' => $ingredient, 'path' => $iconPath]))
         ->not->toBe($ingredient->categoryFallbackImageUrl());
 });
+
+it('lets oils, waxes and fatty acids carry soap chemistry', function (?IngredientCategory $category, ?IngredientSubcategory $subcategory, bool $mayCarry) {
+    $ingredient = new Ingredient(['category' => $category, 'subcategory' => $subcategory]);
+
+    expect($ingredient->mayCarrySoapChemistry())->toBe($mayCarry)
+        ->and(Ingredient::categoryMayCarrySoapChemistry($category?->value, $subcategory?->value))->toBe($mayCarry);
+})->with([
+    'carrier oil' => [IngredientCategory::Lipids, IngredientSubcategory::VegetableOils, true],
+    'liquid wax' => [IngredientCategory::Waxes, IngredientSubcategory::LiquidWaxes, true],
+    'animal wax' => [IngredientCategory::Waxes, IngredientSubcategory::AnimalWaxes, true],
+    'fatty acid' => [IngredientCategory::FattyDerivatives, IngredientSubcategory::FattyAcids, true],
+    'fatty alcohol' => [IngredientCategory::FattyDerivatives, IngredientSubcategory::FattyAlcohols, false],
+    'aromatic material' => [IngredientCategory::AromaticMaterials, null, false],
+    'blank category' => [null, null, false],
+]);

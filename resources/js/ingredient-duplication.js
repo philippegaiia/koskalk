@@ -196,6 +196,7 @@ function normalizedCandidate(candidate, maxIdentifiers, maxAliases, maxFattyAcid
         duplication: {
             available: duplication.available === true,
             reason: duplication.reason ?? null,
+            may_carry_soap_chemistry: duplication.may_carry_soap_chemistry === true,
             inherits_soap_chemistry: duplication.inherits_soap_chemistry === true,
             chemistry: normalizedChemistry(duplication.chemistry, maxFattyAcids),
         },
@@ -265,7 +266,6 @@ export function createIngredientDuplicationModal(options = {}) {
         destinationWorkspaceId: options.destinationWorkspaceId ?? null,
         destinationWorkspaceSignature: options.destinationWorkspaceSignature ?? '',
         destinationLabel: options.destinationLabel ?? '',
-        lipidCategoryLabel: options.lipidCategoryLabel ?? 'Lipids',
         initialIngredientId,
         messages,
 
@@ -555,18 +555,13 @@ export function createIngredientDuplicationModal(options = {}) {
         },
 
         chemistryState(candidate = this.selected) {
-            if (!candidate || candidate.duplication?.available !== true || !this.isLipid(candidate)) {
+            if (!candidate
+                || candidate.duplication?.available !== true
+                || candidate.duplication?.may_carry_soap_chemistry !== true) {
                 return null;
             }
 
             return candidate.duplication.inherits_soap_chemistry ? 'inherited' : 'untrusted';
-        },
-
-        isLipid(candidate = this.selected) {
-            const category = String(candidate?.category_key ?? candidate?.category ?? '').trim().toLocaleLowerCase();
-            const lipidCategory = String(this.lipidCategoryLabel ?? 'lipids').trim().toLocaleLowerCase();
-
-            return category === 'lipids' || category === lipidCategory;
         },
 
         trapFocus(event) {

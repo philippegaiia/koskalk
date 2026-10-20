@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\WorkspaceMemberRole;
@@ -491,6 +492,41 @@ it('does not expose chemistry limits for untrusted, incomplete, or unrelated pla
         ->and($results->get('Preview source missing oil')['duplication']['chemistry'])->toBeNull()
         ->and($results->get('Preview source aromatic oil')['duplication']['inherits_soap_chemistry'])->toBeFalse()
         ->and($results->get('Preview source aromatic oil')['duplication']['chemistry'])->toBeNull();
+});
+
+it('previews inherited soap chemistry for a trusted platform wax', function (): void {
+    $user = User::factory()->create();
+
+    $wax = Ingredient::factory()->create([
+        'display_name' => 'Preview wax jojoba',
+        'category' => IngredientCategory::Waxes,
+        'subcategory' => IngredientSubcategory::LiquidWaxes,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $wax->sapProfile()->create(['koh_sap_value' => 0.092]);
+
+    Ingredient::factory()->create([
+        'display_name' => 'Preview wax aromatic',
+        'category' => IngredientCategory::AromaticMaterials,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+        'is_active' => true,
+    ]);
+
+    actingAs($user);
+
+    $results = collect($this->getJson(route('ingredients.search-platform').'?q=preview%20wax')->json())
+        ->keyBy('name');
+
+    expect($results->get('Preview wax jojoba')['duplication']['may_carry_soap_chemistry'])->toBeTrue()
+        ->and($results->get('Preview wax jojoba')['duplication']['inherits_soap_chemistry'])->toBeTrue()
+        ->and($results->get('Preview wax jojoba')['duplication']['chemistry'])->not->toBeNull()
+        ->and($results->get('Preview wax aromatic')['duplication']['may_carry_soap_chemistry'])->toBeFalse();
 });
 
 it('reports role denial in search metadata and does not create a copy', function (): void {

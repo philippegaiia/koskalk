@@ -6,7 +6,7 @@
      && $ingredient->workspace_id === null;
  $isReadOnlyIngredient = ! $isCreate && ! $isPlatformIngredient && ! $canEditIngredientData;
  $ingredientContext = $ingredient?->localizedDisplayName() ?: __('ingredients.editor.common.new_ingredient');
- $isCarrierOil = \App\Enums\IngredientCategory::tryFrom((string) ($data['category'] ?? '')) === \App\Enums\IngredientCategory::Lipids;
+ $isCarrierOil = \App\Models\Ingredient::categoryMayCarrySoapChemistry($data['category'] ?? null, $data['subcategory'] ?? null);
  $destinationWorkspaceName = filled($workspaceName)
      ? $workspaceName
      : __('ingredients.editor.composition.workspace_fallback');

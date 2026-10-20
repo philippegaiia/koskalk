@@ -437,10 +437,7 @@ class IngredientForm
     {
         return Tab::make(__('ingredients.editor.admin.specialist.soap_chemistry'))
             ->icon(Heroicon::Beaker)
-            // Fatty acids saponify too, and a fatty acid liquid soap neutralizer
-            // needs its KOH SAP and potassium soap name.
-            ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::Lipids)
-                || IngredientSubcategory::tryFrom((string) $get('subcategory')) === IngredientSubcategory::FattyAcids)
+            ->visible(fn (Get $get): bool => Ingredient::categoryMayCarrySoapChemistry($get('category'), $get('subcategory')))
             ->schema([
                 Section::make(__('ingredients.editor.admin.saponified_declaration.section'))
                     ->description(__('ingredients.editor.admin.saponified_declaration.description'))

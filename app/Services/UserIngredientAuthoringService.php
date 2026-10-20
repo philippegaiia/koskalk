@@ -1079,7 +1079,7 @@ class UserIngredientAuthoringService
      */
     public function duplicationChemistryPreview(Ingredient $ingredient): ?array
     {
-        if ($ingredient->category !== IngredientCategory::Lipids || ! $ingredient->is_soap_saponification_trusted) {
+        if (! $ingredient->mayCarrySoapChemistry() || ! $ingredient->is_soap_saponification_trusted) {
             return null;
         }
 

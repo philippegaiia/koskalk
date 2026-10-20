@@ -306,19 +306,19 @@ it('restricts ordinary replacements to the same category', function (): void {
         ->not->toContain($additive->id);
 });
 
-it('requires a soap eligible carrier replacement when the source is used in saponified oils', function (): void {
+it('requires a soap eligible carrier replacement when the source is used in saponified oils', function (IngredientCategory $category, string $name): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Lipids, 'Olive Oil');
+    $source = privateMutationIngredient($user, $category, $name);
     $recipe = privateMutationRecipe($user, 'Soap Formula');
     $version = privateMutationVersion($user, $recipe);
     privateMutationItem($user, $source, $version, phaseSlug: 'saponified_oils');
 
     $carrierWithoutSap = Ingredient::factory()->create([
-        'category' => IngredientCategory::Lipids,
+        'category' => $category,
         'is_soap_saponification_trusted' => true,
     ]);
     $carrierWithSap = Ingredient::factory()->create([
-        'category' => IngredientCategory::Lipids,
+        'category' => $category,
         'is_soap_saponification_trusted' => true,
     ]);
     IngredientSapProfile::factory()->for($carrierWithSap)->create(['koh_sap_value' => 0.19]);
@@ -330,7 +330,10 @@ it('requires a soap eligible carrier replacement when the source is used in sapo
     expect($impact['requires_soap_carrier'])->toBeTrue()
         ->and($candidateIds)->toContain($carrierWithSap->id)
         ->not->toContain($carrierWithoutSap->id);
-});
+})->with([
+    'carrier oil' => [IngredientCategory::Lipids, 'Olive Oil'],
+    'liquid wax' => [IngredientCategory::Waxes, 'Jojoba Oil'],
+]);
 
 it('allows a non sap carrier replacement outside saponified oils', function (): void {
     $user = User::factory()->create();

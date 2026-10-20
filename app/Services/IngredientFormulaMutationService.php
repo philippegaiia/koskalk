@@ -117,7 +117,7 @@ class IngredientFormulaMutationService
             'editable_composites' => $editableComposites,
             'blocked_composites' => $blockedComposites,
             'inaccessible_blocked_composite_count' => $inaccessibleBlockedCompositeCount,
-            'requires_soap_carrier' => $this->requiresSoapCarrier($ingredient, $dependencyGraph['ingredient_ids']),
+            'requires_soap_carrier' => $this->requiresSoapCarrier($dependencyGraph['ingredient_ids']),
         ];
     }
 
@@ -158,10 +158,7 @@ class IngredientFormulaMutationService
             ->orderBy('id')
             ->get();
 
-        if (
-            $ingredient->category !== IngredientCategory::Lipids
-            || ! $this->requiresSoapCarrier($ingredient, $dependencyGraph['ingredient_ids'])
-        ) {
+        if (! $this->requiresSoapCarrier($dependencyGraph['ingredient_ids'])) {
             return $candidates;
         }
 
@@ -302,15 +299,14 @@ class IngredientFormulaMutationService
     }
 
     /** @param Collection<int, int> $ingredientIds */
-    private function requiresSoapCarrier(Ingredient $ingredient, Collection $ingredientIds): bool
+    private function requiresSoapCarrier(Collection $ingredientIds): bool
     {
-        return $ingredient->category === IngredientCategory::Lipids
-            && RecipeItem::withoutGlobalScopes()
-                ->whereIn('ingredient_id', $ingredientIds)
-                ->whereHas('recipePhase', fn (Builder $phaseQuery): Builder => $phaseQuery
-                    ->withoutGlobalScopes()
-                    ->where('slug', 'saponified_oils'))
-                ->exists();
+        return RecipeItem::withoutGlobalScopes()
+            ->whereIn('ingredient_id', $ingredientIds)
+            ->whereHas('recipePhase', fn (Builder $phaseQuery): Builder => $phaseQuery
+                ->withoutGlobalScopes()
+                ->where('slug', 'saponified_oils'))
+            ->exists();
     }
 
     /**
@@ -587,7 +583,7 @@ class IngredientFormulaMutationService
             return false;
         }
 
-        if ($ingredient->category !== IngredientCategory::Lipids || ! $requiresSoapCarrier) {
+        if (! $requiresSoapCarrier) {
             return true;
         }
 

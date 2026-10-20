@@ -330,7 +330,7 @@
                 $hasBlockedComposites = $pendingDeleteImpact['blocked_composites']->isNotEmpty() || $pendingDeleteImpact['inaccessible_blocked_composite_count'] > 0;
                 $hasBlockedDependencies = $hasBlockedFormulas || $hasBlockedComposites;
                 $hasReplacementCandidates = $replacementCandidates->isNotEmpty();
-                $isCarrierOil = $pendingDeleteIngredient->category === \App\Enums\IngredientCategory::Lipids;
+                $isCarrierOil = $pendingDeleteImpact['requires_soap_carrier'];
             @endphp
             <div
                 class="fixed inset-0 z-50 flex items-center justify-center bg-[color:oklch(20.3%_0.026_149_/_0.46)] p-4"

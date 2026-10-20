@@ -29,6 +29,7 @@ function candidate(overrides = {}) {
         duplication: {
             available: true,
             reason: null,
+            may_carry_soap_chemistry: true,
             inherits_soap_chemistry: true,
         },
         ...overrides,
@@ -361,22 +362,24 @@ test('turns auth expiry, non-JSON, and network failures into actionable inline e
     }
 });
 
-test('only exposes chemistry messaging for relevant lipid candidates', () => {
-    const modal = createIngredientDuplicationModal({
-        lipidCategoryLabel: 'Lipids',
-        messages,
-    });
+test('only exposes chemistry messaging for materials that may carry soap chemistry', () => {
+    const modal = createIngredientDuplicationModal({ messages });
 
     assert.equal(modal.chemistryState(candidate()), 'inherited');
     assert.equal(modal.chemistryState(candidate({
-        duplication: { available: true, reason: null, inherits_soap_chemistry: false },
+        duplication: { available: true, reason: null, may_carry_soap_chemistry: true, inherits_soap_chemistry: false },
     })), 'untrusted');
     assert.equal(modal.chemistryState(candidate({
+        name: 'Jojoba Oil',
+        category: 'Waxes',
+        duplication: { available: true, reason: null, may_carry_soap_chemistry: true, inherits_soap_chemistry: true },
+    })), 'inherited');
+    assert.equal(modal.chemistryState(candidate({
         category: 'Aromatic materials',
-        duplication: { available: true, reason: null, inherits_soap_chemistry: false },
+        duplication: { available: true, reason: null, may_carry_soap_chemistry: false, inherits_soap_chemistry: false },
     })), null);
     assert.equal(modal.chemistryState(candidate({
-        duplication: { available: false, reason: 'SAP is missing', inherits_soap_chemistry: false },
+        duplication: { available: false, reason: 'SAP is missing', may_carry_soap_chemistry: true, inherits_soap_chemistry: false },
     })), null);
 });
 
@@ -387,6 +390,7 @@ test('keeps trusted chemistry limit metadata bounded in the preview', () => {
         duplication: {
             available: true,
             reason: null,
+            may_carry_soap_chemistry: true,
             inherits_soap_chemistry: true,
             chemistry: {
                 koh_sap: { minimum: '0.182360', maximum: '0.193640', original: '0.188000' },

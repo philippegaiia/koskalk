@@ -21,6 +21,7 @@ function declaredAllergen(SupplierQualification $qualification, Allergen $allerg
         'supplier_qualification_id' => $qualification->id,
         'type' => EvidenceType::AllergenDeclaration,
         'retired_at' => $retired ? now() : null,
+        'constituents_complete' => true,
     ]);
     DossierEvidenceConstituent::factory()->create([
         'dossier_evidence_item_id' => $item->id,
@@ -90,7 +91,7 @@ it('resolves impurities in ppm the same way', function (): void {
     $workspace = Workspace::factory()->create();
     $olive = Ingredient::factory()->create();
     $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
-    $sheet = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => EvidenceType::TechnicalSheet]);
+    $sheet = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => EvidenceType::TechnicalSheet, 'constituents_complete' => true]);
     $lead = DossierEvidenceConstituent::factory()->create([
         'dossier_evidence_item_id' => $sheet->id, 'kind' => ConstituentKind::Impurity,
         'allergen_id' => null, 'substance_id' => Substance::factory(), 'max_value' => '0.1', 'unit' => 'ppm',
@@ -101,4 +102,42 @@ it('resolves impurities in ppm the same way', function (): void {
     expect($row['substance_id'])->toBe($lead->substance_id)
         ->and($row['unit'])->toBe('ppm')
         ->and($row['max_value'])->toBe('0.100000');
+});
+
+it('keeps flagging a supplier whose current document is not fully transcribed', function (): void {
+    $workspace = Workspace::factory()->create();
+    $lavandin = Ingredient::factory()->create();
+    $linalool = Allergen::factory()->create();
+    $a = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    $b = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    declaredAllergen($a, $linalool, '30');
+    declaredAllergen($b, $linalool, '60', retired: true);
+    DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $b->id, 'type' => EvidenceType::AllergenDeclaration]);
+
+    $row = app(SupplierConstituentResolver::class)->allergens($workspace, $lavandin)->sole();
+
+    expect($row['max_value'])->toBe('30.000000')
+        ->and($row['suppliers_without_declaration'])->toBe([$b->id])
+        ->and($row['needs_justification'])->toBeTrue();
+});
+
+it('does not treat a technical sheet with only microbiology data as an impurity declaration', function (): void {
+    $workspace = Workspace::factory()->create();
+    $olive = Ingredient::factory()->create();
+    $declared = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $microOnly = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $sheet = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $declared->id, 'type' => EvidenceType::TechnicalSheet, 'constituents_complete' => true]);
+    DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $sheet->id, 'kind' => ConstituentKind::Impurity,
+        'allergen_id' => null, 'substance_id' => Substance::factory(), 'max_value' => '0.1', 'unit' => 'ppm',
+    ]);
+    DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $microOnly->id, 'type' => EvidenceType::TechnicalSheet,
+        'facts' => ['microbiology_specification' => 'TAMC < 100 CFU/g'],
+    ]);
+
+    $row = app(SupplierConstituentResolver::class)->impurities($workspace, $olive)->sole();
+
+    expect($row['suppliers_without_declaration'])->toBe([$microOnly->id])
+        ->and($row['needs_justification'])->toBeTrue();
 });

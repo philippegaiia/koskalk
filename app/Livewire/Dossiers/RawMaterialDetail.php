@@ -29,6 +29,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Utilities\Get;
@@ -174,9 +175,13 @@ class RawMaterialDetail extends Component implements HasForms
                             ->numeric()
                             ->suffix(fn (Get $get): string => ConstituentKind::tryFrom((string) $get('kind'))?->unit() === 'ppm' ? 'ppm' : '%')
                             ->required(),
+                        TextInput::make('note')->label(__('dossiers.evidence_data.note'))->maxLength(500)->columnSpanFull(),
                     ])
                     ->columns(['md' => 3])
                     ->defaultItems(0),
+                $kinds === [] ? null : Toggle::make('constituents_complete')
+                    ->label(__('dossiers.evidence_data.constituents_complete'))
+                    ->helperText(__('dossiers.evidence_data.constituents_complete_help')),
                 $basis === null ? null : Repeater::make('use_limits')
                     ->label(__('dossiers.evidence_data.use_limits'))
                     ->schema([
@@ -211,9 +216,11 @@ class RawMaterialDetail extends Component implements HasForms
                 'allergen_id' => $row->allergen_id,
                 'substance_id' => $row->substance_id,
                 'max_value' => $row->max_value,
+                'note' => $row->note,
             ])->all(),
             'use_limits' => $item->useLimits->map(fn ($row): array => $row->only(['ifra_product_category_id', 'product_class_label', 'max_percent']))->all(),
             'facts' => $item->facts ?? [],
+            'constituents_complete' => $item->constituents_complete,
         ]);
     }
 
@@ -226,6 +233,7 @@ class RawMaterialDetail extends Component implements HasForms
             'constituents' => array_values($state['constituents'] ?? []),
             'use_limits' => array_values($state['use_limits'] ?? []),
             'facts' => $state['facts'] ?? [],
+            'constituents_complete' => (bool) ($state['constituents_complete'] ?? false),
         ]));
 
         $this->dataItemId = null;

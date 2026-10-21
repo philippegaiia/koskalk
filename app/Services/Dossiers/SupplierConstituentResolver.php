@@ -88,7 +88,8 @@ class SupplierConstituentResolver
     }
 
     /**
-     * Validated qualifications of the ingredient with no current document of the given types.
+     * Validated qualifications of the ingredient with no current, fully transcribed document of the given types.
+     * A document that is merely uploaded, or transcribed only in part, does not clear the flag.
      *
      * @return list<int>
      */
@@ -100,6 +101,7 @@ class SupplierConstituentResolver
             ->where('status', SupplierQualificationStatus::Valide->value)
             ->whereDoesntHave('evidenceItems', fn ($query) => $query
                 ->whereNull('retired_at')
+                ->where('constituents_complete', true)
                 ->whereIn('type', array_map(fn (EvidenceType $type): string => $type->value, $types)))
             ->orderBy('id')
             ->pluck('id')

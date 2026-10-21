@@ -19,7 +19,7 @@ use LogicException;
 #[Fillable([
     'workspace_id', 'dossier_evidence_file_id', 'type', 'supplier_qualification_id',
     'issued_on', 'revision_due_on', 'notes', 'retired_at', 'replaced_by_id', 'withdrawn_reason', 'withdrawn_by_user_id', 'created_by_user_id',
-    'facts', 'data_updated_by_user_id', 'data_updated_at',
+    'facts', 'constituents_complete', 'data_updated_by_user_id', 'data_updated_at',
 ])]
 class DossierEvidenceItem extends Model
 {
@@ -83,6 +83,7 @@ class DossierEvidenceItem extends Model
             'revision_due_on' => 'date',
             'retired_at' => 'datetime',
             'facts' => 'array',
+            'constituents_complete' => 'bool',
             'data_updated_at' => 'datetime',
         ];
     }

@@ -5,6 +5,7 @@ use App\Livewire\Dossiers\QuickSupplierCreate;
 use App\Livewire\Dossiers\RawMaterialDetail;
 use App\Livewire\Dossiers\RawMaterialsIndex;
 use App\Models\Allergen;
+use App\Models\DossierEvidenceConstituent;
 use App\Models\DossierEvidenceItem;
 use App\Models\Ingredient;
 use App\Models\Recipe;
@@ -145,4 +146,28 @@ it('withdraws a document from the page with a reason', function (): void {
         ->assertHasNoErrors();
 
     expect($item->refresh()->withdrawn_reason)->toBe('Uploaded by mistake');
+});
+
+it('keeps constituent notes and the completeness flag when data is opened and saved unchanged', function (): void {
+    [$owner, $workspace] = rawMaterialWorkspace();
+    $lavandin = ingredientUsedIn($workspace, 'Lavandin');
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    $item = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => EvidenceType::AllergenDeclaration,
+        'constituents_complete' => true,
+    ]);
+    DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $item->id,
+        'note' => 'Batch 2023-14 chromatography',
+    ]);
+    $this->actingAs($owner);
+
+    Livewire::test(RawMaterialDetail::class, ['ingredient' => $lavandin->public_id])
+        ->call('startEditData', $item->id)
+        ->call('saveEvidenceData')
+        ->assertHasNoFormErrors([], 'evidenceDataForm');
+
+    expect($item->constituents()->sole()->note)->toBe('Batch 2023-14 chromatography')
+        ->and($item->refresh()->constituents_complete)->toBeTrue();
 });

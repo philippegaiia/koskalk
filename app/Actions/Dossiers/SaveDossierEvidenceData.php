@@ -21,7 +21,9 @@ class SaveDossierEvidenceData
     /**
      * Replaces everything a document states (constituents, use limits, facts) in one transaction.
      *
-     * @param  array{constituents?: list<array<string, mixed>>, use_limits?: list<array<string, mixed>>, facts?: array<string, mixed>}  $data
+     * @param  array{constituents?: list<array<string, mixed>>, use_limits?: list<array<string, mixed>>, facts?: array<string, mixed>,
+     *               constituents_complete?: bool}  $data  `constituents_complete`: every content the document declares is entered
+     *                                                     (an empty list then means it declares none).
      */
     public function handle(User $actor, Workspace $workspace, DossierEvidenceItem $item, array $data): DossierEvidenceItem
     {
@@ -67,6 +69,7 @@ class SaveDossierEvidenceData
 
             $current->update([
                 'facts' => $validated['facts'] === [] ? null : $validated['facts'],
+                'constituents_complete' => $validated['constituents_complete'],
                 'data_updated_by_user_id' => $freshActor->id,
                 'data_updated_at' => now(),
             ]);
@@ -77,7 +80,7 @@ class SaveDossierEvidenceData
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{constituents: list<array<string, mixed>>, use_limits: list<array<string, mixed>>, facts: array<string, mixed>}
+     * @return array{constituents: list<array<string, mixed>>, use_limits: list<array<string, mixed>>, facts: array<string, mixed>, constituents_complete: bool}
      */
     private function validate(DossierEvidenceItem $item, array $data): array
     {
@@ -87,11 +90,16 @@ class SaveDossierEvidenceData
         $constituents = array_values($data['constituents'] ?? []);
         $useLimits = array_values($data['use_limits'] ?? []);
         $facts = array_filter($data['facts'] ?? [], fn (mixed $value): bool => filled($value));
+        $constituentsComplete = (bool) ($data['constituents_complete'] ?? false);
 
         $errors = [];
 
         if ($kinds === [] && $constituents !== []) {
             $errors['constituents'] = __('dossiers.evidence.no_constituents_for_type');
+        }
+
+        if ($kinds === [] && $constituentsComplete) {
+            $errors['constituents_complete'] = __('dossiers.evidence.no_constituents_for_type');
         }
 
         if ($basis === null && $useLimits !== []) {
@@ -111,10 +119,11 @@ class SaveDossierEvidenceData
             'constituents.*.kind' => ['required', Rule::in($kinds)],
             'constituents.*.allergen_id' => ['required_if:constituents.*.kind,allergen', 'nullable', 'integer', 'exists:allergen_catalog,id'],
             'constituents.*.substance_id' => ['exclude_if:constituents.*.kind,allergen', 'required', 'integer', 'exists:substance_catalog,id'],
-            'constituents.*.max_value' => ['required', 'numeric', 'gt:0'],
+            // Zero is information ("absent", "not allowed in this category"), distinct from missing data.
+            'constituents.*.max_value' => ['required', 'numeric', 'gte:0'],
             'constituents.*.note' => ['nullable', 'string', 'max:500'],
             'use_limits' => ['array'],
-            'use_limits.*.max_percent' => ['required', 'numeric', 'gt:0', 'lte:100'],
+            'use_limits.*.max_percent' => ['required', 'numeric', 'gte:0', 'lte:100'],
             'use_limits.*.ifra_product_category_id' => $basis === 'ifra_category'
                 ? ['required', 'integer', 'exists:ifra_product_categories,id']
                 : ['nullable'],
@@ -136,6 +145,6 @@ class SaveDossierEvidenceData
         });
         $validator->validate();
 
-        return ['constituents' => $constituents, 'use_limits' => $useLimits, 'facts' => $facts];
+        return ['constituents' => $constituents, 'use_limits' => $useLimits, 'facts' => $facts, 'constituents_complete' => $constituentsComplete];
     }
 }

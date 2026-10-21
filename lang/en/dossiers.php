@@ -105,6 +105,9 @@ return [
         'microbiology' => 'Microbiology specification',
         'save' => 'Save data',
         'none' => 'No data recorded.',
+        'note' => 'Note',
+        'constituents_complete' => 'All contents this document declares are entered',
+        'constituents_complete_help' => 'Leave off while the document is only partly transcribed: its supplier then stays flagged as without a declaration.',
     ],
     'evidence_types' => [
         'technical_sheet' => 'Technical sheet (FT)',

@@ -37,6 +37,7 @@ return new class extends Migration
 
         Schema::table('dossier_evidence_items', function (Blueprint $table) {
             $table->json('facts')->nullable()->after('notes');
+            $table->boolean('constituents_complete')->default(false)->after('facts');
             $table->foreignId('data_updated_by_user_id')->nullable()->after('facts')->constrained('users')->nullOnDelete();
             $table->timestamp('data_updated_at')->nullable()->after('data_updated_by_user_id');
         });
@@ -46,7 +47,7 @@ return new class extends Migration
     {
         Schema::table('dossier_evidence_items', function (Blueprint $table) {
             $table->dropConstrainedForeignId('data_updated_by_user_id');
-            $table->dropColumn(['facts', 'data_updated_at']);
+            $table->dropColumn(['facts', 'constituents_complete', 'data_updated_at']);
         });
         Schema::dropIfExists('dossier_evidence_use_limits');
         Schema::dropIfExists('dossier_evidence_constituents');

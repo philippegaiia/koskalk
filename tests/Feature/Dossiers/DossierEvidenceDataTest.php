@@ -124,3 +124,35 @@ it('refuses data on a retired document or without the module', function (): void
     expect(fn () => app(SaveDossierEvidenceData::class)->handle($outsider, $plain, evidenceOfType($plain, EvidenceType::AllergenDeclaration), ['constituents' => []]))
         ->toThrow(AuthorizationException::class);
 });
+
+it('records whether all contents of a document are entered, only where the type declares contents', function (): void {
+    [$owner, $workspace] = evidenceDataWorkspace();
+    $declaration = evidenceOfType($workspace, EvidenceType::AllergenDeclaration);
+    $ifra = evidenceOfType($workspace, EvidenceType::IfraCertificate);
+
+    app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $declaration, ['constituents' => [], 'constituents_complete' => true]);
+
+    expect($declaration->refresh()->constituents_complete)->toBeTrue()
+        ->and(fn () => app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $ifra, ['constituents_complete' => true]))
+        ->toThrow(ValidationException::class);
+});
+
+it('accepts explicit zero values as information distinct from missing data', function (): void {
+    [$owner, $workspace] = evidenceDataWorkspace();
+    $declaration = evidenceOfType($workspace, EvidenceType::AllergenDeclaration);
+    $rce = evidenceOfType($workspace, EvidenceType::RegulatoryConformityCertificate);
+    $linalool = Allergen::factory()->create();
+
+    app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $declaration, [
+        'constituents' => [['kind' => 'allergen', 'allergen_id' => $linalool->id, 'max_value' => '0']],
+    ]);
+    app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $rce, [
+        'use_limits' => [['product_class_label' => 'Produits bucco-dentaires enfants', 'max_percent' => '0']],
+    ]);
+
+    expect($declaration->constituents()->sole()->max_value)->toBe('0.000000')
+        ->and($rce->useLimits()->sole()->max_percent)->toBe('0.000000')
+        ->and(fn () => app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $declaration, [
+            'constituents' => [['kind' => 'allergen', 'allergen_id' => $linalool->id, 'max_value' => '-1']],
+        ]))->toThrow(ValidationException::class);
+});

@@ -1200,6 +1200,30 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence_data.constituents_complete",
+      "text": {
+        "de": "Alle in diesem Dokument angegebenen Gehalte sind erfasst",
+        "es": "Todos los contenidos que declara este documento están registrados",
+        "fr": "Toutes les teneurs déclarées par ce document sont saisies",
+        "it": "Tutti i contenuti dichiarati da questo documento sono inseriti",
+        "nl": "Alle gehaltes die dit document vermeldt, zijn ingevoerd",
+        "pt_BR": "Todos os teores declarados por este documento estão registrados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.constituents_complete_help",
+      "text": {
+        "de": "Deaktiviert lassen, solange das Dokument nur teilweise erfasst ist: Der Lieferant bleibt dann als ohne Angabe markiert.",
+        "es": "Déjelo desactivado mientras el documento esté transcrito solo en parte: su proveedor seguirá marcado como sin declaración.",
+        "fr": "Laissez désactivé tant que le document n’est saisi qu’en partie : son fournisseur reste alors signalé comme sans déclaration.",
+        "it": "Lasciare disattivato finché il documento è trascritto solo in parte: il fornitore resta segnalato come privo di dichiarazione.",
+        "nl": "Laat uit zolang het document maar gedeeltelijk is ingevoerd: de leverancier blijft dan gemarkeerd als zonder verklaring.",
+        "pt_BR": "Deixe desativado enquanto o documento estiver transcrito só em parte: o fornecedor continua sinalizado como sem declaração."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence_data.edit",
       "text": {
         "de": "Daten",
@@ -1316,6 +1340,18 @@
         "it": "Nessun dato registrato.",
         "nl": "Geen gegevens vastgelegd.",
         "pt_BR": "Nenhum dado registrado."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.note",
+      "text": {
+        "de": "Notiz",
+        "es": "Nota",
+        "fr": "Note",
+        "it": "Nota",
+        "nl": "Notitie",
+        "pt_BR": "Nota"
       }
     },
     {

@@ -17,7 +17,7 @@ use LogicException;
  */
 #[Fillable([
     'workspace_id', 'dossier_evidence_file_id', 'type', 'supplier_qualification_id',
-    'issued_on', 'revision_due_on', 'notes', 'retired_at', 'replaced_by_id', 'created_by_user_id',
+    'issued_on', 'revision_due_on', 'notes', 'retired_at', 'replaced_by_id', 'withdrawn_reason', 'withdrawn_by_user_id', 'created_by_user_id',
 ])]
 class DossierEvidenceItem extends Model
 {

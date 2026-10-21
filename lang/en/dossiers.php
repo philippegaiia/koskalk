@@ -31,6 +31,8 @@ return [
         'needs_qualification' => 'Attach this supplier document to a qualified supplier of this workspace.',
         'needs_products' => 'Attach this document to at least one product of this workspace.',
         'not_replaceable' => 'Only a current document of this workspace can be replaced.',
+        'withdrawal_reason_required' => 'Say why this document is withdrawn.',
+        'not_withdrawable' => 'Only a current document of this workspace can be withdrawn.',
     ],
     'raw_materials' => [
         'title' => 'Raw materials',

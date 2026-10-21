@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
 /**
@@ -18,6 +19,7 @@ use LogicException;
 #[Fillable([
     'workspace_id', 'dossier_evidence_file_id', 'type', 'supplier_qualification_id',
     'issued_on', 'revision_due_on', 'notes', 'retired_at', 'replaced_by_id', 'withdrawn_reason', 'withdrawn_by_user_id', 'created_by_user_id',
+    'facts', 'data_updated_by_user_id', 'data_updated_at',
 ])]
 class DossierEvidenceItem extends Model
 {
@@ -42,6 +44,16 @@ class DossierEvidenceItem extends Model
     public function recipes(): BelongsToMany
     {
         return $this->belongsToMany(Recipe::class, 'dossier_evidence_item_recipe')->withoutGlobalScopes();
+    }
+
+    public function constituents(): HasMany
+    {
+        return $this->hasMany(DossierEvidenceConstituent::class);
+    }
+
+    public function useLimits(): HasMany
+    {
+        return $this->hasMany(DossierEvidenceUseLimit::class);
     }
 
     public function replacedBy(): BelongsTo
@@ -70,6 +82,8 @@ class DossierEvidenceItem extends Model
             'issued_on' => 'date',
             'revision_due_on' => 'date',
             'retired_at' => 'datetime',
+            'facts' => 'array',
+            'data_updated_at' => 'datetime',
         ];
     }
 }

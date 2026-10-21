@@ -71,6 +71,41 @@ enum EvidenceType: string
     }
 
     /**
+     * @return list<ConstituentKind>
+     */
+    public function constituentKinds(): array
+    {
+        return match ($this) {
+            self::AllergenDeclaration => [ConstituentKind::Allergen],
+            self::TechnicalSheet, self::CertificateOfAnalysis => [ConstituentKind::Impurity],
+            self::RegulatoryConformityCertificate => [ConstituentKind::RestrictedSubstance],
+            default => [],
+        };
+    }
+
+    /** 'ifra_category', 'product_class' or null. */
+    public function useLimitBasis(): ?string
+    {
+        return match ($this) {
+            self::IfraCertificate => 'ifra_category',
+            self::RegulatoryConformityCertificate => 'product_class',
+            default => null,
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function factKeys(): array
+    {
+        return match ($this) {
+            self::TechnicalSheet, self::CertificateOfAnalysis => ['microbiology_specification'],
+            self::RegulatoryConformityCertificate, self::IfraCertificate => ['peroxide_value_mmol_l'],
+            default => [],
+        };
+    }
+
+    /**
      * @return list<self>
      */
     public static function forLevel(EvidenceLevel $level): array

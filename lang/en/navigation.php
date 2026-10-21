@@ -8,6 +8,7 @@ return [
         'packaging' => 'Packaging',
         'media_library' => 'Media Library',
         'compliance' => 'Compliance',
+        'raw_materials' => 'Product dossiers',
         'account' => 'Account',
         'admin' => 'Admin',
         'settings' => 'Settings',

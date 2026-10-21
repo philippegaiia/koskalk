@@ -1056,6 +1056,810 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence.needs_products",
+      "text": {
+        "de": "Hängen Sie dieses Dokument an mindestens ein Produkt dieses Arbeitsbereichs an.",
+        "es": "Adjunte este documento al menos a un producto de este espacio de trabajo.",
+        "fr": "Rattachez ce document à au moins un produit de cet espace de travail.",
+        "it": "Allega questo documento ad almeno un prodotto di questo spazio di lavoro.",
+        "nl": "Koppel dit document aan minstens één product van deze werkruimte.",
+        "pt_BR": "Vincule este documento a pelo menos um produto deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.needs_qualification",
+      "text": {
+        "de": "Hängen Sie dieses Lieferantendokument an einen qualifizierten Lieferanten dieses Arbeitsbereichs an.",
+        "es": "Adjunte este documento a un proveedor cualificado de este espacio de trabajo.",
+        "fr": "Rattachez ce document fournisseur à un fournisseur qualifié de cet espace de travail.",
+        "it": "Allega questo documento a un fornitore qualificato di questo spazio di lavoro.",
+        "nl": "Koppel dit leveranciersdocument aan een gekwalificeerde leverancier van deze werkruimte.",
+        "pt_BR": "Vincule este documento a um fornecedor qualificado deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.not_replaceable",
+      "text": {
+        "de": "Nur ein aktuelles Dokument dieses Arbeitsbereichs kann ersetzt werden.",
+        "es": "Solo se puede sustituir un documento vigente de este espacio de trabajo.",
+        "fr": "Seul un document en vigueur de cet espace de travail peut être remplacé.",
+        "it": "Solo un documento in vigore di questo spazio di lavoro può essere sostituito.",
+        "nl": "Alleen een geldig document van deze werkruimte kan worden vervangen.",
+        "pt_BR": "Apenas um documento vigente deste espaço de trabalho pode ser substituído."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.allergen_declaration",
+      "text": {
+        "de": "Allergenerklärung",
+        "es": "Declaración de alérgenos",
+        "fr": "Déclaration allergènes",
+        "it": "Dichiarazione allergeni",
+        "nl": "Allergenenverklaring",
+        "pt_BR": "Declaração de alergênicos"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.assessor_qualification",
+      "text": {
+        "de": "Qualifikation des Sicherheitsbewerters",
+        "es": "Cualificación del evaluador de seguridad",
+        "fr": "Qualification de l’évaluateur de la sécurité",
+        "it": "Qualifica del valutatore della sicurezza",
+        "nl": "Kwalificatie van de veiligheidsbeoordelaar",
+        "pt_BR": "Qualificação do avaliador de segurança"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.certificate_of_analysis",
+      "text": {
+        "de": "Analysezertifikat",
+        "es": "Certificado de análisis",
+        "fr": "Certificat d’analyse",
+        "it": "Certificato di analisi",
+        "nl": "Analysecertificaat",
+        "pt_BR": "Certificado de análise"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.challenge_test",
+      "text": {
+        "de": "Konservierungsbelastungstest",
+        "es": "Challenge test",
+        "fr": "Challenge test",
+        "it": "Challenge test",
+        "nl": "Challengetest",
+        "pt_BR": "Challenge test"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.claim_evidence",
+      "text": {
+        "de": "Nachweis der Werbeaussagen",
+        "es": "Prueba de las alegaciones",
+        "fr": "Preuve des allégations",
+        "it": "Prova dei claim",
+        "nl": "Onderbouwing van claims",
+        "pt_BR": "Comprovação das alegações"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.cpnp_notification",
+      "text": {
+        "de": "CPNP-Notifizierung",
+        "es": "Notificación CPNP",
+        "fr": "Notification CPNP",
+        "it": "Notifica CPNP",
+        "nl": "CPNP-notificatie",
+        "pt_BR": "Notificação CPNP"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.finished_product_specification",
+      "text": {
+        "de": "Spezifikation des Fertigprodukts",
+        "es": "Especificación del producto terminado",
+        "fr": "Spécifications du produit fini",
+        "it": "Specifiche del prodotto finito",
+        "nl": "Specificatie van het eindproduct",
+        "pt_BR": "Especificação do produto acabado"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.gmp_declaration",
+      "text": {
+        "de": "GMP-Erklärung",
+        "es": "Declaración de BPF",
+        "fr": "Déclaration BPF",
+        "it": "Dichiarazione GMP",
+        "nl": "GMP-verklaring",
+        "pt_BR": "Declaração de BPF"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.ifra_certificate",
+      "text": {
+        "de": "IFRA-Zertifikat",
+        "es": "Certificado IFRA",
+        "fr": "Certificat IFRA",
+        "it": "Certificato IFRA",
+        "nl": "IFRA-certificaat",
+        "pt_BR": "Certificado IFRA"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.labelling",
+      "text": {
+        "de": "Kennzeichnung",
+        "es": "Etiquetado",
+        "fr": "Étiquetage",
+        "it": "Etichettatura",
+        "nl": "Etikettering",
+        "pt_BR": "Rotulagem"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.manufacturing_method",
+      "text": {
+        "de": "Herstellungs- und Abfüllverfahren",
+        "es": "Método de fabricación y envasado",
+        "fr": "Méthode de fabrication et de conditionnement",
+        "it": "Metodo di fabbricazione e confezionamento",
+        "nl": "Productie- en verpakkingsmethode",
+        "pt_BR": "Método de fabricação e envase"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.mucosa_irritation_test",
+      "text": {
+        "de": "Schleimhautreizungstest",
+        "es": "Prueba de irritación de mucosas",
+        "fr": "Test d’irritation des muqueuses",
+        "it": "Test di irritazione delle mucose",
+        "nl": "Slijmvliesirritatietest",
+        "pt_BR": "Teste de irritação de mucosas"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.organic_certificate",
+      "text": {
+        "de": "Bio-Zertifikat",
+        "es": "Certificado ecológico",
+        "fr": "Certificat bio",
+        "it": "Certificato biologico",
+        "nl": "Biologisch certificaat",
+        "pt_BR": "Certificado orgânico"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.other_safety_test",
+      "text": {
+        "de": "Weiterer Sicherheitstest",
+        "es": "Otra prueba de seguridad",
+        "fr": "Autre test de sécurité",
+        "it": "Altro test di sicurezza",
+        "nl": "Andere veiligheidstest",
+        "pt_BR": "Outro teste de segurança"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.other_supplier_document",
+      "text": {
+        "de": "Sonstiges Lieferantendokument",
+        "es": "Otro documento del proveedor",
+        "fr": "Autre document fournisseur",
+        "it": "Altro documento del fornitore",
+        "nl": "Ander leveranciersdocument",
+        "pt_BR": "Outro documento do fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.pao_assessment",
+      "text": {
+        "de": "PAO-Bewertung",
+        "es": "Evaluación del PAO",
+        "fr": "Évaluation de la PAO",
+        "it": "Valutazione del PAO",
+        "nl": "PAO-beoordeling",
+        "pt_BR": "Avaliação do PAO"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.primary_packaging",
+      "text": {
+        "de": "Primärverpackung",
+        "es": "Envase primario",
+        "fr": "Emballage primaire",
+        "it": "Imballaggio primario",
+        "nl": "Primaire verpakking",
+        "pt_BR": "Embalagem primária"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.product_animal_testing_statement",
+      "text": {
+        "de": "Erklärung zu Tierversuchen (Produkt)",
+        "es": "Declaración sobre experimentación animal (producto)",
+        "fr": "Attestation de non-expérimentation animale (produit)",
+        "it": "Dichiarazione sulla sperimentazione animale (prodotto)",
+        "nl": "Verklaring over dierproeven (product)",
+        "pt_BR": "Declaração sobre testes em animais (produto)"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.raw_material_animal_testing_statement",
+      "text": {
+        "de": "Erklärung zu Tierversuchen",
+        "es": "Declaración sobre experimentación animal",
+        "fr": "Attestation de non-expérimentation animale",
+        "it": "Dichiarazione sulla sperimentazione animale",
+        "nl": "Verklaring over dierproeven",
+        "pt_BR": "Declaração sobre testes em animais"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.regulatory_conformity_certificate",
+      "text": {
+        "de": "Zertifikat Kosmetikverordnung (RCE)",
+        "es": "Certificado del reglamento cosmético (RCE)",
+        "fr": "Certificat règlement cosmétique (RCE)",
+        "it": "Certificato regolamento cosmetico (RCE)",
+        "nl": "Certificaat cosmeticaverordening (RCE)",
+        "pt_BR": "Certificado do regulamento cosmético (RCE)"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.safety_data_sheet",
+      "text": {
+        "de": "Sicherheitsdatenblatt (SDB)",
+        "es": "Ficha de datos de seguridad (FDS)",
+        "fr": "Fiche de données de sécurité (FDS)",
+        "it": "Scheda di dati di sicurezza (SDS)",
+        "nl": "Veiligheidsinformatieblad (VIB)",
+        "pt_BR": "Ficha de dados de segurança (FDS)"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.secondary_packaging",
+      "text": {
+        "de": "Sekundärverpackung",
+        "es": "Envase secundario",
+        "fr": "Emballage secondaire",
+        "it": "Imballaggio secondario",
+        "nl": "Secundaire verpakking",
+        "pt_BR": "Embalagem secundária"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.skin_irritation_test",
+      "text": {
+        "de": "Hautverträglichkeitstest",
+        "es": "Prueba de irritación cutánea",
+        "fr": "Test d’irritation cutanée",
+        "it": "Test di irritazione cutanea",
+        "nl": "Huidirritatietest",
+        "pt_BR": "Teste de irritação cutânea"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.stability_test",
+      "text": {
+        "de": "Stabilitäts- und Verträglichkeitstest",
+        "es": "Prueba de estabilidad y compatibilidad",
+        "fr": "Test de stabilité et de compatibilité",
+        "it": "Test di stabilità e compatibilità",
+        "nl": "Stabiliteits- en compatibiliteitstest",
+        "pt_BR": "Teste de estabilidade e compatibilidade"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.supplier_safety_assessment",
+      "text": {
+        "de": "Sicherheitsbewertung des Lieferanten",
+        "es": "Evaluación de seguridad del proveedor",
+        "fr": "Évaluation de la sécurité du fournisseur",
+        "it": "Valutazione della sicurezza del fornitore",
+        "nl": "Veiligheidsbeoordeling van de leverancier",
+        "pt_BR": "Avaliação de segurança do fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_types.technical_sheet",
+      "text": {
+        "de": "Technisches Datenblatt",
+        "es": "Ficha técnica (FT)",
+        "fr": "Fiche technique (FT)",
+        "it": "Scheda tecnica",
+        "nl": "Technisch datablad",
+        "pt_BR": "Ficha técnica (FT)"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "qualification.ingredient_not_usable",
+      "text": {
+        "de": "Dieser Rohstoff ist in diesem Arbeitsbereich nicht verfügbar.",
+        "es": "Este ingrediente no está disponible en este espacio de trabajo.",
+        "fr": "Cet ingrédient n’est pas disponible dans cet espace de travail.",
+        "it": "Questo ingrediente non è disponibile in questo spazio di lavoro.",
+        "nl": "Dit ingrediënt is niet beschikbaar in deze werkruimte.",
+        "pt_BR": "Este ingrediente não está disponível neste espaço de trabalho."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "qualification.supplier_not_in_workspace",
+      "text": {
+        "de": "Dieser Lieferant gehört nicht zu diesem Arbeitsbereich.",
+        "es": "Este proveedor no pertenece a este espacio de trabajo.",
+        "fr": "Ce fournisseur n’appartient pas à cet espace de travail.",
+        "it": "Questo fornitore non appartiene a questo spazio di lavoro.",
+        "nl": "Deze leverancier hoort niet bij deze werkruimte.",
+        "pt_BR": "Este fornecedor não pertence a este espaço de trabalho."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.add_qualification",
+      "text": {
+        "de": "Lieferanten für diesen Rohstoff hinzufügen",
+        "es": "Añadir proveedor para este ingrediente",
+        "fr": "Ajouter un fournisseur pour cet ingrédient",
+        "it": "Aggiungi fornitore per questo ingrediente",
+        "nl": "Leverancier voor dit ingrediënt toevoegen",
+        "pt_BR": "Adicionar fornecedor para este ingrediente"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.back",
+      "text": {
+        "de": "Alle Rohstoffe",
+        "es": "Todas las materias primas",
+        "fr": "Toutes les matières premières",
+        "it": "Tutte le materie prime",
+        "nl": "Alle grondstoffen",
+        "pt_BR": "Todas as matérias-primas"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.coverage",
+      "text": {
+        "de": "Sicherheitsprüfung",
+        "es": "Revisión de seguridad",
+        "fr": "Revue de sécurité",
+        "it": "Revisione della sicurezza",
+        "nl": "Veiligheidsbeoordeling",
+        "pt_BR": "Revisão de segurança"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.coverage_states.insufficient",
+      "text": {
+        "de": "Unzureichend",
+        "es": "Insuficiente",
+        "fr": "Insuffisante",
+        "it": "Insufficiente",
+        "nl": "Onvoldoende",
+        "pt_BR": "Insuficiente"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.coverage_states.not_reviewed",
+      "text": {
+        "de": "Nicht geprüft",
+        "es": "Sin revisar",
+        "fr": "Non revue",
+        "it": "Non revisionato",
+        "nl": "Niet beoordeeld",
+        "pt_BR": "Não revisado"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.coverage_states.sufficient",
+      "text": {
+        "de": "Ausreichend",
+        "es": "Suficiente",
+        "fr": "Suffisante",
+        "it": "Sufficiente",
+        "nl": "Voldoende",
+        "pt_BR": "Suficiente"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.create_supplier",
+      "text": {
+        "de": "Lieferanten anlegen",
+        "es": "Crear proveedor",
+        "fr": "Créer le fournisseur",
+        "it": "Crea fornitore",
+        "nl": "Leverancier aanmaken",
+        "pt_BR": "Criar fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.document_type",
+      "text": {
+        "de": "Dokumenttyp",
+        "es": "Tipo de documento",
+        "fr": "Type de document",
+        "it": "Tipo di documento",
+        "nl": "Documenttype",
+        "pt_BR": "Tipo de documento"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.documents",
+      "text": {
+        "de": "Dokumente",
+        "es": "Documentos",
+        "fr": "Documents",
+        "it": "Documenti",
+        "nl": "Documenten",
+        "pt_BR": "Documentos"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.documents_heading",
+      "text": {
+        "de": "Dokumente",
+        "es": "Documentos",
+        "fr": "Documents",
+        "it": "Documenti",
+        "nl": "Documenten",
+        "pt_BR": "Documentos"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.download",
+      "text": {
+        "de": "Herunterladen",
+        "es": "Descargar",
+        "fr": "Télécharger",
+        "it": "Scarica",
+        "nl": "Downloaden",
+        "pt_BR": "Baixar"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.empty",
+      "text": {
+        "de": "In den Rezepturen dieses Arbeitsbereichs wird noch kein Rohstoff verwendet.",
+        "es": "Aún no se usa ningún ingrediente en una fórmula de este espacio de trabajo.",
+        "fr": "Aucun ingrédient n’est encore utilisé dans une formule de cet espace de travail.",
+        "it": "Nessun ingrediente è ancora usato in una formula di questo spazio di lavoro.",
+        "nl": "Er wordt nog geen ingrediënt gebruikt in een formule van deze werkruimte.",
+        "pt_BR": "Nenhum ingrediente é usado ainda em uma fórmula deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.file",
+      "text": {
+        "de": "Datei (PDF, JPEG oder PNG, bis 10 MB)",
+        "es": "Archivo (PDF, JPEG o PNG, hasta 10 MB)",
+        "fr": "Fichier (PDF, JPEG ou PNG, 10 Mo maximum)",
+        "it": "File (PDF, JPEG o PNG, fino a 10 MB)",
+        "nl": "Bestand (PDF, JPEG of PNG, tot 10 MB)",
+        "pt_BR": "Arquivo (PDF, JPEG ou PNG, até 10 MB)"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.fingerprint",
+      "text": {
+        "de": "Fingerabdruck",
+        "es": "Huella",
+        "fr": "Empreinte",
+        "it": "Impronta",
+        "nl": "Vingerafdruk",
+        "pt_BR": "Impressão digital"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.inci",
+      "text": {
+        "de": "INCI",
+        "es": "INCI",
+        "fr": "INCI",
+        "it": "INCI",
+        "nl": "INCI",
+        "pt_BR": "INCI"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.ingredient",
+      "text": {
+        "de": "Rohstoff",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.intro",
+      "text": {
+        "de": "Die in Ihren Rezepturen verwendeten Rohstoffe, mit den für Ihre Dossiers validierten Lieferanten und deren Dokumenten.",
+        "es": "Los ingredientes usados en sus fórmulas, con los proveedores validados para sus expedientes y sus documentos.",
+        "fr": "Les ingrédients utilisés dans vos formules, avec les fournisseurs validés pour vos dossiers et leurs documents.",
+        "it": "Gli ingredienti usati nelle vostre formule, con i fornitori convalidati per i vostri fascicoli e i loro documenti.",
+        "nl": "De ingrediënten in uw formules, met de voor uw dossiers gevalideerde leveranciers en hun documenten.",
+        "pt_BR": "Os ingredientes usados em suas fórmulas, com os fornecedores validados para seus dossiês e seus documentos."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.issued_on",
+      "text": {
+        "de": "Ausgestellt am",
+        "es": "Emitido el",
+        "fr": "Émis le",
+        "it": "Emesso il",
+        "nl": "Uitgegeven op",
+        "pt_BR": "Emitido em"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.new_supplier",
+      "text": {
+        "de": "Neuer Lieferant",
+        "es": "Nuevo proveedor",
+        "fr": "Nouveau fournisseur",
+        "it": "Nuovo fornitore",
+        "nl": "Nieuwe leverancier",
+        "pt_BR": "Novo fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.no_documents",
+      "text": {
+        "de": "Noch keine Dokumente.",
+        "es": "Aún no hay documentos.",
+        "fr": "Aucun document pour l’instant.",
+        "it": "Ancora nessun documento.",
+        "nl": "Nog geen documenten.",
+        "pt_BR": "Nenhum documento ainda."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.open",
+      "text": {
+        "de": "Öffnen",
+        "es": "Abrir",
+        "fr": "Ouvrir",
+        "it": "Apri",
+        "nl": "Openen",
+        "pt_BR": "Abrir"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.replace",
+      "text": {
+        "de": "Ersetzen",
+        "es": "Sustituir",
+        "fr": "Remplacer",
+        "it": "Sostituisci",
+        "nl": "Vervangen",
+        "pt_BR": "Substituir"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.revision_due_on",
+      "text": {
+        "de": "Revisions- oder Ablaufdatum",
+        "es": "Fecha de revisión o caducidad",
+        "fr": "Date de révision ou d’expiration",
+        "it": "Data di revisione o scadenza",
+        "nl": "Herzienings- of vervaldatum",
+        "pt_BR": "Data de revisão ou validade"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.save_qualification",
+      "text": {
+        "de": "Speichern",
+        "es": "Guardar",
+        "fr": "Enregistrer",
+        "it": "Salva",
+        "nl": "Opslaan",
+        "pt_BR": "Salvar"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.saved",
+      "text": {
+        "de": "Gespeichert.",
+        "es": "Guardado.",
+        "fr": "Enregistré.",
+        "it": "Salvato.",
+        "nl": "Opgeslagen.",
+        "pt_BR": "Salvo."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.status",
+      "text": {
+        "de": "Status",
+        "es": "Estado",
+        "fr": "Statut",
+        "it": "Stato",
+        "nl": "Status",
+        "pt_BR": "Status"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.statuses.en_evaluation",
+      "text": {
+        "de": "In Bewertung",
+        "es": "En evaluación",
+        "fr": "En évaluation",
+        "it": "In valutazione",
+        "nl": "In beoordeling",
+        "pt_BR": "Em avaliação"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.statuses.retire",
+      "text": {
+        "de": "Zurückgezogen",
+        "es": "Retirado",
+        "fr": "Retiré",
+        "it": "Ritirato",
+        "nl": "Ingetrokken",
+        "pt_BR": "Retirado"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.statuses.valide",
+      "text": {
+        "de": "Validiert",
+        "es": "Validado",
+        "fr": "Validé",
+        "it": "Convalidato",
+        "nl": "Gevalideerd",
+        "pt_BR": "Validado"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.supplier",
+      "text": {
+        "de": "Lieferant",
+        "es": "Proveedor",
+        "fr": "Fournisseur",
+        "it": "Fornitore",
+        "nl": "Leverancier",
+        "pt_BR": "Fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.supplier_reference",
+      "text": {
+        "de": "Lieferantenreferenz oder Qualität",
+        "es": "Referencia o calidad del proveedor",
+        "fr": "Référence ou qualité fournisseur",
+        "it": "Riferimento o qualità del fornitore",
+        "nl": "Leveranciersreferentie of kwaliteit",
+        "pt_BR": "Referência ou qualidade do fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.suppliers_heading",
+      "text": {
+        "de": "Qualifizierte Lieferanten",
+        "es": "Proveedores cualificados",
+        "fr": "Fournisseurs qualifiés",
+        "it": "Fornitori qualificati",
+        "nl": "Gekwalificeerde leveranciers",
+        "pt_BR": "Fornecedores qualificados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.title",
+      "text": {
+        "de": "Rohstoffe",
+        "es": "Materias primas",
+        "fr": "Matières premières",
+        "it": "Materie prime",
+        "nl": "Grondstoffen",
+        "pt_BR": "Matérias-primas"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.upload",
+      "text": {
+        "de": "Dokument hochladen",
+        "es": "Subir documento",
+        "fr": "Ajouter un document",
+        "it": "Carica documento",
+        "nl": "Document uploaden",
+        "pt_BR": "Enviar documento"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.uploaded",
+      "text": {
+        "de": "Dokument gespeichert.",
+        "es": "Documento guardado.",
+        "fr": "Document enregistré.",
+        "it": "Documento salvato.",
+        "nl": "Document opgeslagen.",
+        "pt_BR": "Documento salvo."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.validated_suppliers",
+      "text": {
+        "de": "Validierte Lieferanten",
+        "es": "Proveedores validados",
+        "fr": "Fournisseurs validés",
+        "it": "Fornitori convalidati",
+        "nl": "Gevalideerde leveranciers",
+        "pt_BR": "Fornecedores validados"
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "settings.assessor",
       "text": {
         "de": "Sicherheitsbewerter",
@@ -21260,6 +22064,18 @@
         "it": "Imballaggi",
         "nl": "Verpakkingen",
         "pt_BR": "Embalagens"
+      }
+    },
+    {
+      "group": "navigation",
+      "key": "items.raw_materials",
+      "text": {
+        "de": "Produktdossiers",
+        "es": "Expedientes de producto",
+        "fr": "Dossiers produit",
+        "it": "Fascicoli prodotto",
+        "nl": "Productdossiers",
+        "pt_BR": "Dossiês de produto"
       }
     },
     {

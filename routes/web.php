@@ -108,6 +108,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/dashboard/media/{mediaAsset}/download', MediaAssetDownloadController::class)
         ->middleware('throttle:120,1')
         ->name('media.download');
+    Route::prefix('/dashboard/dossiers')
+        ->name('dossiers.')
+        ->group(function (): void {
+            Route::view('/raw-materials', 'dossiers.raw-materials')->name('raw-materials');
+            Route::get('/raw-materials/{ingredient}', fn (string $ingredient) => view('dossiers.raw-material', ['ingredient' => $ingredient]))
+                ->name('raw-material');
+        });
     Route::get('/dashboard/dossiers/evidence/{item}/download', DossierEvidenceDownloadController::class)
         ->middleware('throttle:60,1')
         ->name('dossiers.evidence.download');

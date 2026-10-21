@@ -199,6 +199,11 @@ class Ingredient extends Model
         return $this->hasMany(IngredientAllergenEntry::class);
     }
 
+    public function supplierQualifications(): HasMany
+    {
+        return $this->hasMany(SupplierQualification::class);
+    }
+
     public function substanceEntries(): HasMany
     {
         return $this->hasMany(IngredientSubstanceEntry::class);
